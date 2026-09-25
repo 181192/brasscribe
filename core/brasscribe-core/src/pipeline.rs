@@ -1,0 +1,483 @@
+//! End-to-end entry points, mirroring the reference scripts:
+//!
+//! * [`arrange_layers_song`]: layer transcriptions + beats -> solo-with-band score
+//! * [`arrange_song`]: melody/support/bass/harmony transcriptions + beats -> minimal band score
+//! * [`lead_sheet`]: melody/support/bass transcriptions + beats -> two-stave concert lead sheet
+//! * [`composition_from_reference`]: notated reference notes -> Composition (arranger benchmark)
+//!
+//! Inputs are in-memory (parsed MIDI files, beat tables); nothing here touches the file system.
+
+use std::collections::{HashMap, HashSet};
+
+use serde_json::Value;
+
+use crate::arranger::{arrange, arrange_layers, Arrangement};
+use crate::consensus::{cluster, consensus, Sources};
+use crate::harmony::{harmony_slots, slots_to_notes};
+use crate::lines::{line, MIN_DUR};
+use crate::midi::{MidiFile, RawNote};
+use crate::model::{Composition, KeySig, Meter, Note, Voice, VoiceRole, TICKS_PER_BEAT};
+use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
+use crate::py;
+use crate::durations::{apply_written, contour_offsets, Contour, SEPARATED_STEM};
+use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, FreeTimePlan};
+use crate::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, BeatMap, QNote};
+use crate::spelling::key_of;
+
+/// A beat table as written by the beat tracker: time in seconds and position in the bar (1 = downbeat).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Beats {
+    pub times: Vec<f64>,
+    pub positions: Vec<i64>,
+}
+
+impl Beats {
+    /// Parse whitespace-separated rows `time position` (as `np.loadtxt` reads them).
+    pub fn parse(text: &str) -> Result<Beats, String> {
+        let mut times = Vec::new();
+        let mut positions = Vec::new();
+        for (i, raw) in text.lines().enumerate() {
+            let l = raw.split('#').next().unwrap_or("").trim();
+            if l.is_empty() {
+                continue;
+            }
+            let cols: Vec<&str> = l.split_whitespace().collect();
+            if cols.len() < 2 {
+                return Err(format!("beats line {}: expected two columns", i + 1));
+            }
+            let t: f64 = cols[0].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
+            let p: f64 = cols[1].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
+            times.push(t);
+            positions.push(p.trunc() as i64);
+        }
+        if times.len() < 2 {
+            return Err("need at least two beats".into());
+        }
+        Ok(Beats { times, positions })
+    }
+
+    /// Most common distance between downbeats (first seen wins a tie).
+    pub fn beats_per_bar(&self) -> Result<i64, String> {
+        let downs: Vec<usize> = self.positions.iter().enumerate().filter(|(_, &p)| p == 1).map(|(i, _)| i).collect();
+        let mut counts: Vec<(i64, usize)> = Vec::new();
+        for w in downs.windows(2) {
+            let d = (w[1] - w[0]) as i64;
+            match counts.iter_mut().find(|(k, _)| *k == d) {
+                Some(e) => e.1 += 1,
+                None => counts.push((d, 1)),
+            }
+        }
+        let mut best: Option<(i64, usize)> = None;
+        for &(k, c) in &counts {
+            if best.map_or(true, |(_, bc)| c > bc) {
+                best = Some((k, c));
+            }
+        }
+        best.map(|b| b.0).ok_or_else(|| "fewer than two downbeats in the beat table".to_string())
+    }
+
+    /// Index of the first downbeat (0 when there is none).
+    pub fn first_downbeat(&self) -> i64 {
+        self.positions.iter().position(|&p| p == 1).unwrap_or(0) as i64
+    }
+}
+
+fn to_notes(qnotes: &[QNote], pickup: i64, source: &str) -> Vec<Note> {
+    qnotes
+        .iter()
+        .map(|q| Note::new(q.pitch, q.start - pickup, q.end - q.start, q.confidence, vec![source.to_string()]).with_times(Some(q.onset_s), Some(q.offset_s)))
+        .collect()
+}
+
+/// Metrical level and bar origin shared by the song entry points: fix the level
+/// once from all onsets, then put tick 0 on the downbeat at or before the earliest note.
+fn grid(beats: &Beats, onsets: &[f64]) -> Result<(Vec<f64>, i64, i64), String> {
+    let mut bpb = beats.beats_per_bar()?;
+    let mut first_down = beats.first_downbeat();
+    let times = choose_level(&beats.times, onsets);
+    if times.len() != beats.times.len() {
+        bpb *= 2;
+        first_down *= 2;
+    }
+    let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
+    let earliest = BeatMap::new(&times)?.to_beats(min_on);
+    while first_down as f64 > earliest + 1e-6 {
+        first_down -= bpb;
+    }
+    Ok((times, bpb, first_down))
+}
+
+fn tonal_key(notes: &[&Note]) -> i32 {
+    let du: Vec<f64> = notes.iter().map(|n| n.dur as f64 / TICKS_PER_BEAT as f64).collect();
+    let ps: Vec<i32> = notes.iter().map(|n| n.pitch).collect();
+    key_of(&du, &ps).1
+}
+
+#[derive(Debug, Clone)]
+pub struct BandResult {
+    pub composition: Composition,
+    pub arrangement: Arrangement,
+    pub musicxml: String,
+}
+
+/// Transcribed layers of one recording.
+#[derive(Debug, Clone)]
+pub struct Layers {
+    pub solo_sw: MidiFile,
+    pub solo_mus: MidiFile,
+    pub solo_bp: MidiFile,
+    pub bass: MidiFile,
+    pub orchestra: MidiFile,
+    pub drums: MidiFile,
+}
+
+/// (hits, lines): short notes sharing an attack with >= 2 others are chordal hits.
+pub fn split_orchestra(notes: Vec<Note>) -> (Vec<Note>, Vec<Note>) {
+    let mut by_start: HashMap<i64, usize> = HashMap::new();
+    for n in &notes {
+        *by_start.entry(n.start).or_default() += 1;
+    }
+    let (hits, lines): (Vec<Note>, Vec<Note>) = notes.into_iter().partition(|n| by_start[&n.start] >= 3 && n.dur <= TICKS_PER_BEAT);
+    (hits, lines)
+}
+
+/// Options of the solo-with-band arrangement.
+#[derive(Debug, Clone, Default)]
+pub struct LayersOptions {
+    /// Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.
+    pub solo_contour: Option<Contour>,
+    /// Keep the beat grid through free-time passages.
+    pub no_free_time: bool,
+    /// Notate free-time passages at this BPM instead of estimating one.
+    pub free_tempo: Option<f64>,
+}
+
+/// One voice with written durations from its performed lengths (held vs detached, staccato).
+fn written_line(qnotes: Vec<QNote>, times: &[f64], pickup: i64, source: &str) -> Result<Vec<Note>, String> {
+    let bm = BeatMap::new(times)?;
+    Ok(apply_written(qnotes, Some(&bm))
+        .into_iter()
+        .map(|(q, w)| {
+            let mut n = to_notes(std::slice::from_ref(&q), pickup, source).remove(0);
+            n.performed_dur = Some(py::round_int(w.performed));
+            if w.staccato {
+                n.articulations.push("staccato".into());
+            }
+            n
+        })
+        .collect())
+}
+
+/// Solo-with-band arrangement from textural layers.
+///
+/// The solo is SwiftF0's line confirmed by MuScriptor and Basic Pitch (3 sources
+/// 0.98, 2 sources 0.91, SwiftF0 alone 0.54; notes without SwiftF0 are dropped).
+/// The orchestra residual is split by what the notes do: short notes attacked
+/// together with two or more others are brass-choir hits, the rest strings.
+/// Free-time passages get synthetic beats and proportional notation; solo and
+/// bass get written lengths from their performed lengths.
+pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+    let solo_mus = layers.solo_mus.pitched();
+    let solo_bp = layers.solo_bp.pitched();
+    let bass_raw = layers.bass.pitched();
+    let orch_raw = layers.orchestra.pitched();
+    let drum_raw = layers.drums.drums();
+    let solo_sw = layers.solo_sw.pitched();
+
+    let mut bpb = beats.beats_per_bar()?;
+    let mut first_down = beats.first_downbeat();
+    let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
+    let mut times = choose_level(&beats.times, &onsets);
+    let doubled = times.len() != beats.times.len();
+    if doubled {
+        bpb *= 2;
+        first_down *= 2;
+    }
+    let mut plan: Option<FreeTimePlan> = None;
+    if !opts.no_free_time {
+        let downs: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
+        let sw_onsets: Vec<f64> = solo_sw.iter().map(|n| n.onset).collect();
+        let p = plan_free_time(&times, &onsets, bpb, first_down, if doubled { None } else { Some(&downs) }, opts.free_tempo, Some(&sw_onsets));
+        times = p.beat_times.clone();
+        first_down = p.first_downbeat;
+        plan = Some(p);
+    }
+    let coarse: Option<Vec<(f64, f64)>> = plan.as_ref().map(|p| p.beat_ranges());
+    let coarse = coarse.as_deref();
+    let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
+    let earliest = BeatMap::new(&times)?.to_beats(min_on);
+    while first_down as f64 > earliest + 1e-6 {
+        first_down -= bpb;
+    }
+    let pickup = first_down * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+
+    let votes: Sources = vec![
+        ("sw".into(), line(&solo_sw, 52, 88, true, MIN_DUR)),
+        ("mus".into(), line(&solo_mus, 52, 88, true, MIN_DUR)),
+        ("bp".into(), line(&solo_bp, 52, 88, true, MIN_DUR)),
+    ];
+    let cand: Vec<RawNote> = cluster(&votes)
+        .into_iter()
+        .filter(|c| c.sources.contains("sw"))
+        .map(|c| RawNote {
+            pitch: c.pitch,
+            onset: c.median_onset(),
+            offset: c.median_offset(),
+            confidence: Some(match c.sources.len() {
+                3 => 0.98,
+                2 => 0.91,
+                _ => 0.54,
+            }),
+        })
+        .collect();
+    let mut solo_line = line(&cand, 52, 88, true, MIN_DUR);
+    if let Some(c) = &opts.solo_contour {
+        // Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
+        let keys: Vec<(f64, i32)> = solo_line.iter().map(|n| (n.onset, n.pitch)).collect();
+        let ends = contour_offsets(c, &keys, SEPARATED_STEM);
+        for (n, e) in solo_line.iter_mut().zip(ends) {
+            if e > n.offset {
+                n.offset = e;
+            }
+        }
+    }
+    let mut solo = written_line(quantize_coarse(&solo_line, &times, true, false, coarse), &times, pickup, "solo")?;
+    let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
+
+    let solo_keys: HashSet<(u64, i32)> = solo_line.iter().map(|n| (py::py_round(n.onset, 1).to_bits(), n.pitch)).collect();
+    let orch: Vec<RawNote> = orch_raw
+        .iter()
+        // Solo onsets are Python floats (medians), orchestra onsets NumPy scalars: they round differently.
+        .filter(|n| 36 <= n.pitch && n.pitch <= 88 && !solo_keys.contains(&(py::np_round(n.onset, 1).to_bits(), n.pitch)))
+        .cloned()
+        .collect();
+    let orch_q: Vec<Note> =
+        to_notes(&quantize_coarse(&orch, &times, false, false, coarse), pickup, "orchestra").into_iter().filter(|n| n.start >= 0).collect();
+    let (mut hits, mut lines) = split_orchestra(orch_q);
+
+    let dq = quantize_coarse(&drum_raw, &times, false, false, coarse);
+    let mut starts: Vec<i64> = dq.iter().map(|q| q.start).collect();
+    starts.sort();
+    starts.dedup();
+    let nxt: HashMap<i64, i64> = starts.windows(2).map(|w| (w[0], w[1])).collect();
+    let mut drums: Vec<Note> = dq
+        .iter()
+        .filter(|q| q.start - pickup >= 0)
+        .map(|q| {
+            let d = (nxt.get(&q.start).copied().unwrap_or(q.start + half) - q.start).min(TICKS_PER_BEAT);
+            Note::new(q.pitch, q.start - pickup, d, 1.0, vec!["drums".into()])
+        })
+        .collect();
+
+    let regions = plan.as_ref().map(|p| p.regions(first_down)).unwrap_or_default();
+    for v in [&mut solo, &mut bass, &mut lines, &mut hits, &mut drums] {
+        clip_to_regions(v, &regions);
+    }
+    mark_fermatas(&mut solo, &regions);
+
+    let voice = |id: &str, role, notes: Vec<Note>, hint: &str, layer: &str| Voice {
+        id: id.into(),
+        role,
+        notes,
+        instrument_hint: Some(hint.into()),
+        layer: Some(layer.into()),
+    };
+    let tonal: Vec<&Note> = solo.iter().chain(bass.iter()).chain(lines.iter()).collect();
+    let fifths = tonal_key(&tonal);
+    let comp = Composition {
+        title: title.into(),
+        voices: vec![
+            voice("solo", VoiceRole::Melody, solo.clone(), "trumpet/cornet", "solo"),
+            voice("bass", VoiceRole::Bass, bass.clone(), "electric bass", "bass"),
+            voice("strings", VoiceRole::Harmony, lines.clone(), "orchestra", "strings"),
+            voice("brass", VoiceRole::Harmony, hits, "orchestra hits", "brass"),
+            voice("drums", VoiceRole::Rhythm, drums, "drum kit", "drums"),
+        ],
+        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        beat_times: times,
+        first_downbeat: first_down,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: regions,
+    };
+    let arrangement = arrange_layers(&comp);
+    let musicxml = write_score(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml })
+}
+
+/// Transcriptions for the minimal-band song arrangement.
+#[derive(Debug, Clone)]
+pub struct SongInputs {
+    pub melody: MidiFile,
+    pub melody_support: Option<MidiFile>,
+    pub bass: MidiFile,
+    pub harmony: Vec<MidiFile>,
+}
+
+fn melody_votes(melody: &MidiFile, support: Option<&MidiFile>) -> Vec<RawNote> {
+    let mut sources: Sources = vec![("mus".into(), melody.pitched())];
+    if let Some(s) = support {
+        sources.push(("bp".into(), s.pitched()));
+    }
+    let (cand, _) = consensus(&sources, &[("mus", 0.6), ("bp", 0.4)], 0.5);
+    cand.iter().map(|c| c.raw()).collect()
+}
+
+/// Minimal brass-band arrangement: melody (MuScriptor confirmed by Basic Pitch),
+/// bass line, and the accompaniment reduced to a per-beat harmonic rhythm.
+pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<BandResult, String> {
+    let mel_all = inp.melody.pitched();
+    let bass_all = inp.bass.pitched();
+    let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();
+    let all_onsets: Vec<f64> = mel_all.iter().chain(bass_all.iter()).chain(harm_all.iter().flatten()).map(|n| n.onset).collect();
+    let (times, bpb, first_down) = grid(beats, &all_onsets)?;
+    let pickup = first_down * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+
+    let cand = melody_votes(&inp.melody, inp.melody_support.as_ref());
+    let mel_raw = line(&cand, 52, 88, true, MIN_DUR);
+    let melody = to_notes(&fill_gaps(quantize(&mel_raw, &times, true, false), half, 0.0), pickup, "melody");
+    let bass = to_notes(&fill_gaps(quantize(&line(&bass_all, 28, 55, false, MIN_DUR), &times, true, false), half, 0.0), pickup, "bass");
+
+    let mel_keys: HashSet<(u64, i32)> = mel_raw.iter().map(|n| (py::py_round(n.onset, 2).to_bits(), n.pitch)).collect();
+    let acc: Vec<RawNote> = harm_all
+        .iter()
+        .flatten()
+        .filter(|n| 40 <= n.pitch && n.pitch <= 84 && !mel_keys.contains(&(py::np_round(n.onset, 2).to_bits(), n.pitch)))
+        .cloned()
+        .collect();
+    let acc_q = to_notes(&quantize(&acc, &times, false, false), pickup, "accompaniment");
+    let end = melody.iter().chain(bass.iter()).chain(acc_q.iter()).map(|n| n.end()).max().ok_or("no notes")?;
+    let harm = slots_to_notes(&harmony_slots(&acc_q, end, 4, 0.35), 0.8);
+
+    let plain = |id: &str, role, notes: Vec<Note>| Voice { id: id.into(), role, notes, instrument_hint: None, layer: None };
+    let tonal: Vec<&Note> = melody.iter().chain(bass.iter()).chain(harm.iter()).collect();
+    let fifths = tonal_key(&tonal);
+    let comp = Composition {
+        title: title.into(),
+        voices: vec![plain("melody", VoiceRole::Melody, melody.clone()), plain("bass", VoiceRole::Bass, bass.clone()), plain("harmony", VoiceRole::Harmony, harm.clone())],
+        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        beat_times: times,
+        first_downbeat: first_down,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: Vec::new(),
+    };
+    let arrangement = arrange(&comp);
+    let musicxml = write_score(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml })
+}
+
+/// Draft lead sheet: melody + bass lines as concert-pitch staves, first downbeat at bar 1.
+pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile, beats: &Beats, title: &str) -> Result<String, String> {
+    let bpb = beats.beats_per_bar()?;
+    let diffs: Vec<f64> = beats.times.windows(2).map(|w| w[1] - w[0]).collect();
+    let bpm = 60.0 / py::median(&diffs);
+    let pickup = beats.first_downbeat() * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+    let cand = melody_votes(melody, support);
+    let mel = fill_gaps(quantize(&line(&cand, 52, 86, true, MIN_DUR), &beats.times, true, true), half, 0.0);
+    let bas = fill_gaps(quantize(&line(&bass.pitched(), 28, 55, false, MIN_DUR), &beats.times, true, true), half, 0.0);
+    let spec = ScoreSpec {
+        parts: vec![PartSpec::concert("Melody", mel, "treble"), PartSpec::concert("Bass", bas, "bass")],
+        beats_per_bar: bpb,
+        bpm,
+        title: title.into(),
+        pickup_ticks: pickup,
+        low_confidence: 0.7,
+        key_fifths: None,
+        sounds: Vec::new(),
+        free_spans: Vec::new(),
+        encoding_date: String::new(),
+    };
+    Ok(write_score(&spec))
+}
+
+/// Reference notes with notated positions -> Composition (SATB or numbered parts).
+pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Composition, String> {
+    let notes = match reference {
+        Value::Object(m) => m.get("notes").and_then(|v| v.as_array()).ok_or("reference has no notes")?,
+        Value::Array(a) => a,
+        _ => return Err("reference must be an object or array".into()),
+    };
+    let refs: Vec<&serde_json::Map<String, Value>> = notes.iter().filter_map(|v| v.as_object()).filter(|o| o.contains_key("quarter")).collect();
+    let f = |o: &serde_json::Map<String, Value>, k: &str| o.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let mut names: Vec<String> = refs.iter().filter_map(|o| o.get("part").and_then(|v| v.as_str()).map(String::from)).collect();
+    names.sort();
+    names.dedup();
+    let roles: Vec<(String, VoiceRole)> = if names.len() == 4 && ["S", "A", "T", "B"].iter().all(|p| names.iter().any(|n| n == p)) {
+        vec![("S".into(), VoiceRole::Melody), ("A".into(), VoiceRole::Harmony), ("T".into(), VoiceRole::Harmony), ("B".into(), VoiceRole::Bass)]
+    } else {
+        let mut ordered = names.clone();
+        let num = |p: &String| p.split('-').next().and_then(|x| x.parse::<i64>().ok()).unwrap_or(0);
+        ordered.sort_by_key(num);
+        let n = ordered.len();
+        ordered
+            .into_iter()
+            .enumerate()
+            .map(|(i, p)| {
+                let role = if i + 1 == n { VoiceRole::Bass } else if i == 0 { VoiceRole::Melody } else { VoiceRole::Harmony };
+                (p, role)
+            })
+            .collect()
+    };
+    let mut voices = Vec::new();
+    for (part, role) in roles {
+        let mut vn: Vec<Note> = refs
+            .iter()
+            .filter(|o| o.get("part").and_then(|v| v.as_str()) == Some(part.as_str()))
+            .map(|o| {
+                let start = py::round_int(f(o, "quarter") * TICKS_PER_BEAT as f64);
+                let dur = py::round_int(f(o, "dur_quarter") * TICKS_PER_BEAT as f64).max(1);
+                Note::new(o.get("pitch").and_then(|v| v.as_i64()).unwrap_or(0) as i32, start, dur, 1.0, vec!["reference".into()])
+                    .with_times(Some(f(o, "onset")), Some(f(o, "offset")))
+            })
+            .collect();
+        vn.sort_by_key(|n| n.start);
+        voices.push(Voice { id: part.clone(), role, notes: vn, instrument_hint: Some(part.clone()), layer: None });
+    }
+    let ts = refs.iter().find_map(|o| o.get("time_sig").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(String::from));
+    let beats = ts.and_then(|t| t.split('/').next().and_then(|x| x.trim().parse::<i64>().ok())).unwrap_or(4);
+    let all: Vec<&Note> = voices.iter().flat_map(|v| v.notes.iter()).collect();
+    let fifths = tonal_key(&all);
+    Ok(Composition {
+        title: title.into(),
+        voices,
+        meters: vec![Meter { tick: 0, beats, beat_unit: 4 }],
+        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        beat_times: Vec::new(),
+        first_downbeat: 0,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: Vec::new(),
+    })
+}
+
+/// Arranger benchmark path: reference -> Composition -> minimal band score.
+pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, String> {
+    let comp = composition_from_reference(reference, title)?;
+    let arrangement = arrange(&comp);
+    let musicxml = write_score(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml })
+}
+
+/// Reference notes (with "quarter") quantized on a beat table, as rows for comparison.
+pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
+    let notes = match reference {
+        Value::Object(m) => m.get("notes").and_then(|v| v.as_array()).cloned().unwrap_or_default(),
+        Value::Array(a) => a.clone(),
+        _ => Vec::new(),
+    };
+    let raw: Vec<RawNote> = notes
+        .iter()
+        .filter_map(|v| v.as_object())
+        .filter(|o| o.contains_key("quarter"))
+        .map(|o| RawNote {
+            pitch: o.get("pitch").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+            onset: o.get("onset").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            offset: o.get("offset").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            confidence: o.get("confidence").and_then(|v| v.as_f64()),
+        })
+        .collect();
+    quantize(&raw, &beats.times, false, true)
+}
