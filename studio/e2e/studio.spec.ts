@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { crc32 } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +23,44 @@ async function axe(page: Page, label: string): Promise<void> {
 
 async function shot(page: Page, name: string, fullPage = true): Promise<void> {
   await page.screenshot({ path: join(shots, `${name}.png`), fullPage });
+}
+
+/** A zip archive with the files stored uncompressed (enough for .mxl). */
+function zipStored(files: [string, Buffer][]): Buffer {
+  const locals: Buffer[] = [];
+  const central: Buffer[] = [];
+  let offset = 0;
+  for (const [name, data] of files) {
+    const n = Buffer.from(name);
+    const crc = crc32(data);
+    const head = Buffer.alloc(30);
+    head.writeUInt32LE(0x04034b50, 0);
+    head.writeUInt16LE(20, 4);
+    head.writeUInt32LE(crc, 14);
+    head.writeUInt32LE(data.length, 18);
+    head.writeUInt32LE(data.length, 22);
+    head.writeUInt16LE(n.length, 26);
+    locals.push(head, n, data);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0);
+    c.writeUInt16LE(20, 4);
+    c.writeUInt16LE(20, 6);
+    c.writeUInt32LE(crc, 16);
+    c.writeUInt32LE(data.length, 20);
+    c.writeUInt32LE(data.length, 24);
+    c.writeUInt16LE(n.length, 28);
+    c.writeUInt32LE(offset, 42);
+    central.push(c, n);
+    offset += 30 + n.length + data.length;
+  }
+  const cd = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(cd.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
 }
 
 interface JobLite {
@@ -128,9 +166,13 @@ test("inspector tabs render and pass axe", async ({ page }) => {
     if (tab === "stems") await expect(panel.getByRole("img", { name: /Energy over time.*for / })).toBeVisible({ timeout: 180_000 });
     if (tab === "musicxml") {
       await expect(panel.getByText(/parts identical/)).toBeVisible({ timeout: 60_000 });
-      await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
-      await expect(panel.getByText(/read back by MuseScore/)).toBeVisible({ timeout: 180_000 });
-      console.log(`round trip: ${await panel.getByText(/read back by MuseScore/).textContent()}`);
+      // Running the round trip launches MuseScore on the desktop, so only on request; the stored result shows otherwise.
+      await expect(panel.getByRole("button", { name: /Run the round trip|Run again/ })).toBeVisible({ timeout: 60_000 });
+      if (process.env.STUDIO_E2E_MUSESCORE) {
+        await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
+        await expect(panel.getByText(/read back by MuseScore/)).toBeVisible({ timeout: 180_000 });
+        console.log(`round trip: ${await panel.getByText(/read back by MuseScore/).textContent()}`);
+      }
     }
     await page.waitForTimeout(500);
     await shot(page, `run-${tab}`);
@@ -229,13 +271,11 @@ test("score viewer opens compressed MusicXML (.mxl)", async ({ page }, info) => 
   test.skip(!existsSync(src), "data/golden is not available");
   const mxl = info.outputPath("golden.mxl");
   mkdirSync(dirname(mxl), { recursive: true });
-  // MuseScore 4 aborts on shutdown after writing: check the file, not the exit code.
-  try {
-    execFileSync("mscore", ["-o", mxl, src], { stdio: "ignore", timeout: 120_000 });
-  } catch {
-    /* see above */
-  }
-  test.skip(!existsSync(mxl), "mscore could not write .mxl");
+  // Build the .mxl here (a zip with META-INF/container.xml) instead of launching MuseScore.
+  writeFileSync(mxl, zipStored([
+    ["META-INF/container.xml", Buffer.from('<?xml version="1.0" encoding="UTF-8"?><container><rootfiles><rootfile full-path="score.musicxml"/></rootfiles></container>')],
+    ["score.musicxml", readFileSync(src)],
+  ]));
   await page.goto("/#/viewer");
   await page.setInputFiles("#open-musicxml", mxl);
   await waitRendered(page);
