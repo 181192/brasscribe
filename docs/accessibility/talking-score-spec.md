@@ -192,7 +192,7 @@ In a region from `Composition.free_regions[]`:
 
 The same commands on every platform. The apps map them to native gestures.
 
-| Command | Result | Apple (VoiceOver) | Android (TalkBack) | Windows (Narrator/NVDA) and Studio (keyboard) |
+| Command | Result | Apple (VoiceOver) | Android (TalkBack) | Keyboard: Windows, Studio (macOS uses Option in place of Ctrl; full list in `qa/screen-reader-scripts/keyboard-desktop.md`) |
 |---|---|---|---|---|
 | Next / previous note | next event in the part (skips tie continuations) | rotor "Notes", swipe down/up | swipe right/left on the score list (one item per event) | → / ← |
 | Next / previous beat | event or `held` at the next beat | rotor "Beats" | custom action "Next beat" | Ctrl+→ / Ctrl+← |
