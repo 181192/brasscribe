@@ -20,6 +20,7 @@ import numpy as np
 import pretty_midi
 import soundfile as sf
 from brasscribe_music.arranger import arrange_layers
+from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
 from brasscribe_music.beats import clean_beats_gated
@@ -221,17 +222,12 @@ def main() -> None:
 
     arr = arrange_layers(comp)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
-    for ext in () if args.no_render else ("pdf", "mp3"):
-        f = xml.with_suffix(f".{ext}")
-        f.unlink(missing_ok=True)
-        subprocess.run(["mscore", "-o", str(f), str(xml)], capture_output=True)
-    # Individual parts (mscore -P crashes): one MusicXML per part, rendered one by one.
-    for f in split_parts(xml, args.out / "parts"):
-        pdf = f.with_suffix(".pdf")
-        pdf.unlink(missing_ok=True)
-        subprocess.run(["mscore", "-S", str(PART_STYLE), "-o", str(pdf), str(f)], capture_output=True)
-        if not pdf.exists():
-            print(f"(no pdf for {f.name})")
+    if not args.no_render:
+        musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
+    # Individual parts (mscore -P crashes): one MusicXML per part, all rendered in one MuseScore launch.
+    parts = split_parts(xml, args.out / "parts")
+    for pdf in musescore.convert_many([(f, f.with_suffix(".pdf")) for f in parts], style=PART_STYLE):
+        print(f"(no pdf for {pdf.name})")
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)

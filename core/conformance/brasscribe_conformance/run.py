@@ -147,9 +147,9 @@ def main() -> None:
             entry["musescore"] = musescore_roundtrip(rs / "brass-band.musicxml", rs / "composition.json")
         elif args.musescore and p.returncode == 0 and case.kind == "lead":
             out = rs / "lead.mscore.musicxml"
-            out.unlink(missing_ok=True)
-            subprocess.run(["mscore", "-o", str(out), str(rs / "lead.musicxml")], capture_output=True)
-            written = out.exists() and out.stat().st_size > 0
+            from brasscribe_music import musescore
+
+            written = musescore.convert(rs / "lead.musicxml", out) and out.stat().st_size > 0
             entry["musescore"] = {"written": written, "pitches_match": written}
         entry["paths"] = {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}
         results.append(entry)

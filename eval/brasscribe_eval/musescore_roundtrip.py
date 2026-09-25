@@ -9,6 +9,8 @@ It also reports which instrument sound MuseScore assigned to each part.
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import re
 import subprocess
@@ -37,9 +39,7 @@ def _merge_ties(part) -> list[int]:
 
 def check(xml: Path, comp_json: Path) -> bool:
     re_xml = xml.with_name(xml.stem + ".mscore.musicxml")
-    re_xml.unlink(missing_ok=True)
-    subprocess.run(["mscore", "-o", str(re_xml), str(xml)], capture_output=True)
-    if not re_xml.exists():
+    if not musescore.convert(xml, re_xml):
         raise SystemExit("MuseScore did not re-export the file")
     raw = re_xml.read_text()
     sounds = dict(zip([norm(n) for n in re.findall(r"<part-name>([^<]*)</part-name>", raw)],

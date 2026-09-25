@@ -6,6 +6,8 @@ bottom line of the bass source. Beats come from Beat This! (time, beat-in-bar).
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import subprocess
 from collections import Counter
@@ -73,7 +75,7 @@ def main() -> None:
         pdf = args.out.with_suffix(".pdf")
         pdf.unlink(missing_ok=True)
         # MuseScore 4.7 CLI aborts during shutdown after writing its output; trust the file, not the exit code.
-        subprocess.run(["mscore", "-o", str(pdf), str(args.out)], capture_output=True)
+        musescore.convert(args.out, pdf)
         if not pdf.exists():
             raise SystemExit(f"MuseScore did not produce {pdf}")
         print(pdf)
