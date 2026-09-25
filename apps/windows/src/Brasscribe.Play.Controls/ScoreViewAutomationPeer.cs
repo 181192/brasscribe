@@ -34,8 +34,22 @@ public sealed partial class ScoreViewAutomationPeer : FrameworkElementAutomation
         _ => base.GetPatternCore(patternInterface),
     };
 
-    protected override IList<AutomationPeer> GetChildrenCore() =>
-        _owner.CurrentEvents.Select(e => (AutomationPeer)new ScoreEventAutomationPeer(this, e)).ToList();
+    private int _childrenVersion = -1;
+    private List<AutomationPeer> _children = [];
+
+    /// <summary>One list item per event of the current bar that has a place on screen; cached per bar so runtime ids stay stable.</summary>
+    protected override IList<AutomationPeer> GetChildrenCore()
+    {
+        if (_childrenVersion != _owner.EventsVersion)
+        {
+            _children = _owner.CurrentEvents
+                .Where(e => e.Bounds.Width > 0 && e.Bounds.Height > 0)
+                .Select(e => (AutomationPeer)new ScoreEventAutomationPeer(this, e))
+                .ToList();
+            _childrenVersion = _owner.EventsVersion;
+        }
+        return _children;
+    }
 
     // ---- Value pattern ----
 
@@ -67,7 +81,7 @@ public sealed partial class ScoreViewAutomationPeer : FrameworkElementAutomation
 
     internal IRawElementProviderSimple Provider => ProviderFromPeer(this);
 
-    internal Rect ScreenBounds(Rect local) => _owner.ToScreen?.Invoke(local) ?? local;
+    internal Rect ScreenBounds(Rect local) => _owner.SurfaceToScreen(local, GetBoundingRectangle());
 
     internal Rect FocusBounds => _owner.FocusRect is { } r ? ScreenBounds(r) : GetBoundingRectangle();
 
@@ -101,7 +115,8 @@ public sealed partial class ScoreEventAutomationPeer(ScoreViewAutomationPeer par
     protected override bool IsContentElementCore() => true;
     protected override bool IsControlElementCore() => true;
     protected override bool IsKeyboardFocusableCore() => false;
-    protected override bool HasKeyboardFocusCore() => item.IsCurrent;
+    // Keyboard focus stays on the score (the list); the current event is exposed through Value and Text.
+    protected override bool HasKeyboardFocusCore() => false;
     protected override Rect GetBoundingRectangleCore() => parent.ScreenBounds(item.Bounds);
     protected override AutomationPeer GetPeerFromPointCore(Point point) => this;
     protected override bool IsOffscreenCore() => false;

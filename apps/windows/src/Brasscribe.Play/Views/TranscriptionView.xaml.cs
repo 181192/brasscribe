@@ -15,9 +15,16 @@ public sealed partial class TranscriptionView : UserControl
     }
 
     public static readonly DependencyProperty ViewModelProperty =
-        DependencyProperty.Register(nameof(ViewModel), typeof(TranscriptionViewModel), typeof(TranscriptionView), new PropertyMetadata(null));
+        DependencyProperty.Register(nameof(ViewModel), typeof(TranscriptionViewModel), typeof(TranscriptionView),
+            new PropertyMetadata(null, (d, _) => ((TranscriptionView)d).Bindings.Update()));
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+
+    private void OnBackClick(object sender, RoutedEventArgs e)
+    {
+        var main = App.MainWindowInstance?.ViewModel;
+        if (main?.BackCommand.CanExecute(null) == true) main.BackCommand.Execute(null);
+    }
 
     /// <summary>Cancel asks first: Esc (Close) keeps going and returns focus to Cancel; "Stop" stops.</summary>
     private async void OnCancelClick(object sender, RoutedEventArgs e)

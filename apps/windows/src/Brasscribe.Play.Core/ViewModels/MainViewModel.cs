@@ -64,6 +64,10 @@ public sealed partial class MainViewModel : ObservableObject
             Score.Load(r.MusicXml, r.Composition);
             Screen = Screen.Score;
         };
+        Transcription.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TranscriptionViewModel.IsRunning)) BackCommand.NotifyCanExecuteChanged();
+        };
         Output.Arranged += (_, xml) => Score.Load(xml, Score.Composition);
         Settings.PropertyChanged += (_, e) =>
         {
@@ -121,12 +125,14 @@ public sealed partial class MainViewModel : ObservableObject
         Screen = Screen switch
         {
             Screen.SourceKind => Screen.Start,
+            Screen.Transcribing => Screen.SourceKind, // after a failure: pick again or fix the engine, source kept
             Screen.Score => Screen.Start,
             _ => Screen,
         };
     }
 
-    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score;
+    /// <summary>Back works everywhere except while a transcription runs (Cancel is the way out then).</summary>
+    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score || Screen == Screen.Transcribing && !Transcription.IsRunning;
 
     /// <summary>For tests: the last transcription result.</summary>
     public TranscriptionResult? LastResult => _result;

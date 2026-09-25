@@ -11,12 +11,15 @@ public sealed record Health(string Version, string Device, bool AuthRequired, st
 
 public sealed record AudioRef(string AudioId, string Sha256, string Filename, long Bytes);
 
+/// <summary>Exactly one of AudioId (an upload), SourceId (a listed source) or Path (a file in the engine's data directory).</summary>
 public sealed record JobCreate(
-    string AudioId,
+    string? AudioId,
     string Profile = "orchestra-with-soloist",
     bool RenderAudio = true,
     bool AllowHeavy = true,
-    string? Title = null);
+    string? Title = null,
+    string? SourceId = null,
+    string? Path = null);
 
 public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null);
 
@@ -32,7 +35,8 @@ public sealed record Job(
     double? Started = null,
     double? Finished = null,
     double Progress = 0.0,
-    IReadOnlyList<string>? Outputs = null)
+    IReadOnlyList<string>? Outputs = null,
+    string? PreviousRunId = null)
 {
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
@@ -71,7 +75,7 @@ public sealed record JobEvent(
     string? Message = null,
     string? Error = null);
 
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(Health))]
 [JsonSerializable(typeof(AudioRef))]
 [JsonSerializable(typeof(JobCreate))]

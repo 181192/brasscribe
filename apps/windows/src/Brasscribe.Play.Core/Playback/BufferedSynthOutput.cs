@@ -22,6 +22,12 @@ public sealed class BufferedSynthOutput : ISynthOutput
     public double SampleRate { get; }
     public bool IsPlaying => _playing;
 
+    /// <summary>
+    /// Lock shared with the player: alphaTab's synth is not thread-safe, and it renders on the
+    /// audio thread (through <see cref="SampleRequest"/>) while the UI thread seeks, mutes and loads.
+    /// </summary>
+    public object SyncRoot { get; } = new();
+
     public IEventEmitter Ready { get; } = new Emitter();
     public IEventEmitterOfT<double> SamplesPlayed { get; } = new Emitter<double>();
     public IEventEmitter SampleRequest { get; } = new Emitter();
@@ -109,7 +115,7 @@ public sealed class BufferedSynthOutput : ISynthOutput
             lock (_gate) count = _count;
             if (count >= Math.Max(_lowWater, wanted)) return;
             int before = count;
-            ((Emitter)SampleRequest).Trigger();
+            lock (SyncRoot) ((Emitter)SampleRequest).Trigger();
             lock (_gate) if (_count == before) return; // the synth has nothing more to give
         }
     }

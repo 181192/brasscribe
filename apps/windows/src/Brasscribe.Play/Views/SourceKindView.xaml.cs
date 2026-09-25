@@ -15,7 +15,8 @@ public sealed partial class SourceKindView : UserControl
     }
 
     public static readonly DependencyProperty ViewModelProperty =
-        DependencyProperty.Register(nameof(ViewModel), typeof(SourceKindViewModel), typeof(SourceKindView), new PropertyMetadata(null));
+        DependencyProperty.Register(nameof(ViewModel), typeof(SourceKindViewModel), typeof(SourceKindView),
+            new PropertyMetadata(null, (d, _) => ((SourceKindView)d).Bindings.Update()));
 
     public void FocusHeading()
     {

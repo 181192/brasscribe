@@ -810,6 +810,12 @@
   <data name="TalkingScoreToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Show the score as text, one line per note (Ctrl+T)</value>
   </data>
+  <data name="TranscribeBackButton.Content" xml:space="preserve">
+    <value>Back to the choices</value>
+  </data>
+  <data name="TranscribeBackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Choose again or check the engine settings, the recording is kept</value>
+  </data>
   <data name="TranscribeErrorBar.Title" xml:space="preserve">
     <value>Transcription stopped</value>
   </data>

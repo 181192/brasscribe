@@ -18,7 +18,8 @@ public sealed partial class StartView : UserControl
     }
 
     public static readonly DependencyProperty ViewModelProperty =
-        DependencyProperty.Register(nameof(ViewModel), typeof(StartViewModel), typeof(StartView), new PropertyMetadata(null));
+        DependencyProperty.Register(nameof(ViewModel), typeof(StartViewModel), typeof(StartView),
+            new PropertyMetadata(null, (d, _) => ((StartView)d).Bindings.Update()));
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
 

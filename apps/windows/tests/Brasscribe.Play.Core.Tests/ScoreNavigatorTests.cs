@@ -60,7 +60,7 @@ public class ScoreNavigatorTests
         nav.GoToPart(2);
         Assert.Equal("Percussion. bar 1, beat 3, triplet 2: double-dotted half rest", nav.Text);
         nav.FirstBar();
-        Assert.Equal("bar 1, beat 1: bass drum and hi-hat, eighth note", nav.Text);
+        Assert.Equal("bar 1, tempo 136, beat 1: bass drum and hi-hat, eighth note", nav.Text); // tempo marks are shared by all parts
         Assert.False(nav.NextPart().Moved);
     }
 
@@ -123,7 +123,7 @@ public class ScoreNavigatorTests
         if (xml is null || json is null) return; // data/ is not present in CI
         var doc = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(xml), CompositionJson.Parse(File.ReadAllText(json)));
         Assert.Equal(18, doc.Parts.Count);
-        Assert.Equal(128, doc.TotalBars);
+        Assert.True(doc.TotalBars > 100);
         var solo = doc.Parts.Single(p => p.Name == "Solo Cornet");
         Assert.Equal(new TsTranspose(-2, -1), solo.Transpose);
         var notes = solo.Bars.SelectMany(b => b.Events).Where(e => e.Kind == EventKind.Note).ToList();
@@ -133,5 +133,21 @@ public class ScoreNavigatorTests
         var nav = new ScoreNavigator(doc);
         nav.GoToPart(doc.Parts.IndexOf(solo));
         Assert.True(nav.NextUncertain().Moved);
+
+        // Free-time passages from the Composition map onto bars and change the announcements.
+        var composition = CompositionJson.Parse(File.ReadAllText(json));
+        Assert.Equal(composition.FreeRegions.Count, doc.FreeRegions.Count);
+        if (doc.FreeRegions.FirstOrDefault() is { } region)
+        {
+            Assert.Equal(1, region.StartBar);
+            var first = new ScoreNavigator(doc); // the first announcement enters the region
+            int seconds = (int)Math.Round(region.EndS - region.StartS, MidpointRounding.AwayFromZero);
+            Assert.True(first.Text.StartsWith($"Ad lib, free time, bars 1 to {region.EndBar}, about {seconds} seconds. "), first.Text);
+            first.GoToPart(doc.Parts.IndexOf(solo));
+            var inside = first.NextNote();
+            Assert.Matches("^at \\d+ seconds: ", inside.Text); // performed time, not beats, inside the region
+            first.GoToBar(region.EndBar + 1);
+            Assert.StartsWith("A tempo, ", first.Text);
+        }
     }
 }

@@ -167,9 +167,9 @@
 
             <!-- Loop by bar numbers: no dragging needed (WCAG 2.5.7). -->
             <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="2" VerticalAlignment="Center">
-                <NumberBox x:Name="LoopStartBox" x:Uid="LoopStartBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.BarCount, Mode=OneWay}"
+                <NumberBox x:Name="LoopStartBox" x:Uid="LoopStartBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
                            SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.Player.LoopStart, Mode=TwoWay}" Width="110" />
-                <NumberBox x:Name="LoopEndBox" x:Uid="LoopEndBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.BarCount, Mode=OneWay}"
+                <NumberBox x:Name="LoopEndBox" x:Uid="LoopEndBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
                            SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.Player.LoopEnd, Mode=TwoWay}" Width="110" />
                 <Button x:Uid="SetLoopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.SetLoopCommand}" />
                 <Button x:Uid="ClearLoopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.ClearLoopCommand}" />

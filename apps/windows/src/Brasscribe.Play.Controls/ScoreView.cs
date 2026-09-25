@@ -83,8 +83,21 @@ public sealed partial class ScoreView : UserControl
     /// <summary>Pixels kept free at the bottom so the player bar never covers the focused note (WCAG 2.4.11).</summary>
     public double BottomObscuredHeight { get; set; } = 96;
 
-    /// <summary>Converts a rectangle in this control's coordinates to screen pixels, for automation bounds.</summary>
-    public Func<Rect, Rect>? ToScreen { get; set; }
+    /// <summary>
+    /// Screen rectangle (physical pixels) of a rectangle on the score surface, given this control's own
+    /// screen bounds from its automation peer. Accounts for scrolling and display scale.
+    /// </summary>
+    internal Rect SurfaceToScreen(Rect local, Rect ownScreenBounds)
+    {
+        double scale = XamlRoot?.RasterizationScale ?? 1.0;
+        var origin = _scroller.TransformToVisual(this).TransformPoint(new Point(0, 0));
+        double x = ownScreenBounds.X + (origin.X + local.X - _scroller.HorizontalOffset) * scale;
+        double y = ownScreenBounds.Y + (origin.Y + local.Y - _scroller.VerticalOffset) * scale;
+        return new Rect(x, y, local.Width * scale, local.Height * scale);
+    }
+
+    /// <summary>Changes whenever <see cref="CurrentEvents"/> is replaced, so peers can be cached per bar.</summary>
+    internal int EventsVersion { get; private set; }
 
     public IReadOnlyList<ScoreEventItem> CurrentEvents { get; private set; } = [];
 
@@ -205,6 +218,7 @@ public sealed partial class ScoreView : UserControl
     /// <summary>Shows the keyboard focus on a note or bar and scrolls it into view above the player bar.</summary>
     public void SetFocusRect(Rect? rect, IReadOnlyList<ScoreEventItem> currentEvents)
     {
+        if (!ReferenceEquals(CurrentEvents, currentEvents)) EventsVersion++;
         CurrentEvents = currentEvents;
         FocusRect = rect;
         if (rect is { } r)

@@ -24,5 +24,7 @@
 
         <Button x:Name="CancelButton" x:Uid="CancelTranscriptionButton" Style="{StaticResource ActionButtonStyle}"
                 Click="OnCancelClick" AccessKey="X" IsEnabled="{x:Bind ViewModel.IsRunning, Mode=OneWay}" />
+        <Button x:Name="BackToChoiceButton" x:Uid="TranscribeBackButton" Style="{StaticResource ActionButtonStyle}"
+                Click="OnBackClick" Visibility="{x:Bind vm:Screens.Not(ViewModel.IsRunning), Mode=OneWay}" />
     </StackPanel>
 </UserControl>

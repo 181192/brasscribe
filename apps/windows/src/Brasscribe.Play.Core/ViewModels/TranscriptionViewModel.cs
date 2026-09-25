@@ -81,9 +81,9 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             {
                 if (ev.Type == "stage")
                 {
-                    if (ev.Fraction is { } f) Update(estimator, f);
                     if (ev.Stage is { } stage && ev.Status == "started") StageText = StageName(stage);
                     if (ev.Device is { } device) DeviceText = _s.Format("Transcribe_Device", device.ToUpperInvariant());
+                    if (ev.Fraction is { } f) Update(estimator, f);
                 }
                 else if (ev.Type == "job" && ev.Status is { } status)
                 {
@@ -143,7 +143,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             Percent = Math.Round(fraction * 100);
             EtaText = remaining is { } r ? EtaPhrase(r) : _s["Transcribe_Eta_Unknown"];
             long now = _clock.GetTimestamp();
-            if (_lastAnnounce == 0 || _clock.GetElapsedTime(_lastAnnounce) >= AnnounceEvery)
+            if (fraction > 0 && (_lastAnnounce == 0 || _clock.GetElapsedTime(_lastAnnounce) >= AnnounceEvery))
             {
                 _lastAnnounce = now;
                 _announcer.Announce(_s.Format("Transcribe_ProgressAnnouncement", Percent, StageText, EtaText), AnnouncementKind.Progress);

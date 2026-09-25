@@ -55,7 +55,12 @@ public sealed partial class PlayerViewModel : ObservableObject
     public ObservableCollection<MixerPartViewModel> Parts { get; } = [];
 
     [ObservableProperty] public partial bool IsPlaying { get; set; }
-    [ObservableProperty] public partial int BarCount { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LastBar))]
+    public partial int BarCount { get; set; }
+
+    /// <summary>The highest bar number as a double, for NumberBox.Maximum.</summary>
+    public double LastBar => Math.Max(1, BarCount);
     [ObservableProperty] public partial int CurrentBar { get; set; } = 1;
     [ObservableProperty] public partial string PositionText { get; set; } = "";
 

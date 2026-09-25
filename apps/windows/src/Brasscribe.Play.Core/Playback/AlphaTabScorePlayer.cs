@@ -30,6 +30,8 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     {
         Output = output;
         _synth = new AlphaSynth(output, bufferMs);
+        // alphaTab is not thread-safe: every synth call below holds Output.SyncRoot, the lock the
+        // audio thread takes when it asks the synth for samples.
         _synth.MetronomeVolume = 0;
         _synth.CountInVolume = 0;
         _synth.PositionChanged.On((PositionChangedEventArgs e) =>
@@ -47,13 +49,14 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     }
 
     public BufferedSynthOutput Output { get; }
+    private object Gate => Output.SyncRoot;
     public Exception? LoadError { get; private set; }
     public Score? Score => _score;
     public MidiTickLookup? TickLookup => _lookup;
 
     public IReadOnlyList<TrackInfo> Tracks { get; private set; } = [];
     public int BarCount => _score?.MasterBars.Count ?? 0;
-    public bool IsReady => _synth.IsReadyForPlayback;
+    public bool IsReady { get { lock (Gate) return _synth.IsReadyForPlayback; } }
     public PlaybackState State => _state;
     public PlaybackPosition Position { get; private set; } = new(0, 0, 0, 0);
 
@@ -63,20 +66,20 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     public double Speed
     {
-        get => _synth.PlaybackSpeed;
-        set => _synth.PlaybackSpeed = Math.Clamp(value, MinSpeed, MaxSpeed);
+        get { lock (Gate) return _synth.PlaybackSpeed; }
+        set { lock (Gate) _synth.PlaybackSpeed = Math.Clamp(value, MinSpeed, MaxSpeed); }
     }
 
     public bool Metronome
     {
-        get => _synth.MetronomeVolume > 0;
-        set => _synth.MetronomeVolume = value ? 1 : 0;
+        get { lock (Gate) return _synth.MetronomeVolume > 0; }
+        set { lock (Gate) _synth.MetronomeVolume = value ? 1 : 0; }
     }
 
     public bool CountIn
     {
-        get => _synth.CountInVolume > 0;
-        set => _synth.CountInVolume = value ? 1 : 0;
+        get { lock (Gate) return _synth.CountInVolume > 0; }
+        set { lock (Gate) _synth.CountInVolume = value ? 1 : 0; }
     }
 
     public int Transpose
@@ -85,9 +88,10 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         set
         {
             _transpose = Math.Clamp(value, -12, 12);
-            foreach (var (track, channels) in Channels())
-                if (!track.IsPercussion)
-                    foreach (var ch in channels) _synth.SetChannelTranspositionPitch(ch, _transpose);
+            lock (Gate)
+                foreach (var (track, channels) in Channels())
+                    if (!track.IsPercussion)
+                        foreach (var ch in channels) _synth.SetChannelTranspositionPitch(ch, _transpose);
         }
     }
 
@@ -98,39 +102,56 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             (int)t.Index, t.Name.Replace('\u00A0', ' '), t.Staves.Any(s => s.IsPercussion),
             (int)(t.Staves.FirstOrDefault()?.DisplayTranspositionPitch ?? 0))).ToList();
 
+        if (ProgramMap is { } map)
+            foreach (var t in _score.Tracks)
+                if (map(t.Name.Replace('\u00A0', ' ')) is { } program)
+                    SetProgram(t, program);
+
         _midi = new MidiFile();
         var generator = new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(_midi, false));
         generator.Generate();
         _lookup = generator.TickLookup;
         _muted.Clear();
         _solo.Clear();
-        _synth.LoadMidiFile(_midi);
+        lock (Gate) _synth.LoadMidiFile(_midi);
         Transpose = _transpose;
     }
 
     public void LoadSoundFont(byte[] soundFont, bool append = false)
     {
-        _synth.LoadSoundFont(new Uint8Array(soundFont), append);
+        lock (Gate) _synth.LoadSoundFont(new Uint8Array(soundFont), append);
         _soundFontLoaded = true;
     }
 
     public bool HasSoundFont => _soundFontLoaded;
 
+    /// <summary>Optional MIDI program per part name (0-based), applied when a score loads.</summary>
+    public Func<string, int?>? ProgramMap { get; set; }
+
     public void Play()
     {
-        if (!_synth.IsReadyForPlayback) return;
-        _synth.Play();
+        lock (Gate)
+        {
+            if (!_synth.IsReadyForPlayback) return;
+            _synth.Play();
+        }
     }
 
-    public void Pause() => _synth.Pause();
+    public void Pause()
+    {
+        lock (Gate) _synth.Pause();
+    }
 
-    public void Stop() => _synth.Stop();
+    public void Stop()
+    {
+        lock (Gate) _synth.Stop();
+    }
 
     public void SeekToBar(int barIndex)
     {
         if (_lookup is null || _lookup.MasterBars.Count == 0) return;
         var mb = _lookup.MasterBars[Math.Clamp(barIndex, 0, _lookup.MasterBars.Count - 1)];
-        _synth.TickPosition = mb.Start;
+        lock (Gate) _synth.TickPosition = mb.Start;
     }
 
     public (int First, int Last)? Loop { get; private set; }
@@ -139,33 +160,39 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     {
         if (_lookup is null || firstBar is null || lastBar is null)
         {
-            _synth.PlaybackRange = null!;
-            _synth.IsLooping = false;
+            lock (Gate)
+            {
+                _synth.PlaybackRange = null!;
+                _synth.IsLooping = false;
+            }
             Loop = null;
             return;
         }
         int a = Math.Clamp(Math.Min(firstBar.Value, lastBar.Value), 0, _lookup.MasterBars.Count - 1);
         int b = Math.Clamp(Math.Max(firstBar.Value, lastBar.Value), 0, _lookup.MasterBars.Count - 1);
-        _synth.PlaybackRange = new PlaybackRange { StartTick = _lookup.MasterBars[a].Start, EndTick = _lookup.MasterBars[b].End };
-        _synth.IsLooping = true;
+        lock (Gate)
+        {
+            _synth.PlaybackRange = new PlaybackRange { StartTick = _lookup.MasterBars[a].Start, EndTick = _lookup.MasterBars[b].End };
+            _synth.IsLooping = true;
+        }
         Loop = (a, b);
     }
 
     public void SetMute(int track, bool mute)
     {
         if (mute) _muted.Add(track); else _muted.Remove(track);
-        foreach (var ch in ChannelsOf(track)) _synth.SetChannelMute(ch, mute);
+        lock (Gate) foreach (var ch in ChannelsOf(track)) _synth.SetChannelMute(ch, mute);
     }
 
     public void SetSolo(int track, bool solo)
     {
         if (solo) _solo.Add(track); else _solo.Remove(track);
-        foreach (var ch in ChannelsOf(track)) _synth.SetChannelSolo(ch, solo);
+        lock (Gate) foreach (var ch in ChannelsOf(track)) _synth.SetChannelSolo(ch, solo);
     }
 
     public void SetVolume(int track, double volume)
     {
-        foreach (var ch in ChannelsOf(track)) _synth.SetChannelVolume(ch, Math.Clamp(volume, 0, 1));
+        lock (Gate) foreach (var ch in ChannelsOf(track)) _synth.SetChannelVolume(ch, Math.Clamp(volume, 0, 1));
     }
 
     public bool IsMuted(int track) => _muted.Contains(track);
@@ -189,7 +216,25 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             ? null
             : (_lookup.MasterBars[barIndex].Start, _lookup.MasterBars[barIndex].End);
 
-    public void Dispose() => _synth.Destroy();
+    public void Dispose()
+    {
+        lock (Gate) _synth.Destroy();
+    }
+
+    /// <summary>
+    /// Points a track at a program: its default and every instrument change in it (the MusicXML
+    /// importer turns &lt;midi-instrument&gt; into instrument automations that would override the default).
+    /// </summary>
+    private static void SetProgram(Track track, int program)
+    {
+        track.PlaybackInfo.Program = program;
+        foreach (var staff in track.Staves)
+            foreach (var bar in staff.Bars)
+                foreach (var voice in bar.Voices)
+                    foreach (var beat in voice.Beats)
+                        foreach (var a in beat.Automations)
+                            if (a.Type == AutomationType.Instrument) a.Value = program;
+    }
 
     private int BarAt(double tick)
     {

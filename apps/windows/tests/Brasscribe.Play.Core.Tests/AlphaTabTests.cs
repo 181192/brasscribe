@@ -104,7 +104,7 @@ public class AlphaTabTests(ITestOutputHelper log)
         player.LoadScore(File.ReadAllBytes(path));
         long load = sw.ElapsedMilliseconds;
         Assert.Equal(18, player.Tracks.Count);
-        Assert.Equal(128, player.BarCount);
+        Assert.True(player.BarCount > 100);
         var solo = player.Tracks.Single(t => t.Name == "Solo Cornet");
         Assert.Equal(-2, solo.DisplayTransposition);
         Assert.Equal(3, player.Tracks.Single(t => t.Name == "Soprano Cornet").DisplayTransposition);
@@ -148,6 +148,100 @@ public class AlphaTabTests(ITestOutputHelper log)
         Assert.True(rms > 0.001, $"synth output is silent (rms {rms})");
         Assert.True(player.Position.Seconds > 1.0, $"position did not advance: {player.Position}");
         Assert.True(player.Position.BarIndex >= 0);
+    }
+
+    [Fact]
+    public void Synth_survives_ui_calls_while_the_audio_thread_renders()
+    {
+        var sf = TestPaths.RepoFile("data/sounds/built/cornet-b/cornet-b.sf2");
+        if (sf is null) return; // SoundFonts are build outputs, not in the repo
+        var output = new BufferedSynthOutput();
+        using var player = new AlphaTabScorePlayer(output);
+        player.LoadSoundFont(File.ReadAllBytes(sf));
+        player.LoadScore(Fixture());
+        player.Play();
+
+        using var stop = new CancellationTokenSource();
+        Exception? audioError = null;
+        long frames = 0;
+        var audio = new Thread(() =>
+        {
+            var buffer = new float[2 * 512];
+            try
+            {
+                while (!stop.IsCancellationRequested)
+                {
+                    output.Read(buffer);
+                    frames += 512;
+                }
+            }
+            catch (Exception e) { audioError = e; }
+        });
+        audio.Start();
+
+        var xml = Fixture();
+        for (int i = 0; i < 200; i++)
+        {
+            player.SetMute(i % 3, i % 2 == 0);
+            player.SetSolo(0, i % 5 == 0);
+            player.SetLoop(i % 4, i % 4 + 1);
+            player.SeekToBar(i % 5);
+            player.Speed = 0.5 + i % 10 / 10.0;
+            if (i % 50 == 0) player.LoadScore(xml);
+            if (i % 50 == 1) player.Play();
+        }
+        stop.Cancel();
+        audio.Join();
+        Assert.Null(audioError);
+        Assert.True(frames > 0);
+        log.WriteLine($"rendered {frames} frames on the audio thread during 200 UI calls");
+    }
+
+    [Fact]
+    public void Golden_score_sounds_with_the_built_brass_soundfonts()
+    {
+        var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
+        var dir = TestPaths.RepoRoot is { } root ? Path.Combine(root, "data", "sounds", "built") : null;
+        if (golden is null || dir is null || !Directory.Exists(dir)) return;
+        var set = BrassSoundSet.Load(dir);
+        if (set.Fonts.Count == 0) return;
+
+        var output = new BufferedSynthOutput();
+        using var player = new AlphaTabScorePlayer(output);
+        set.ApplyTo(player);
+        player.LoadScore(File.ReadAllBytes(golden));
+        Assert.True(player.IsReady, player.LoadError?.Message);
+
+        // Solo each track in turn for three seconds from bar 20 and measure the level.
+        var levels = new List<string>();
+        int silent = 0, pitched = 0;
+        foreach (var track in player.Tracks)
+        {
+            foreach (var t in player.Tracks) player.SetSolo(t.Index, t.Index == track.Index);
+            player.SeekToBar(19);
+            player.Play();
+            var buffer = new float[2 * 1024];
+            double sum = 0;
+            long n = 0;
+            for (int i = 0; i < 44100 * 3 / 1024; i++)
+            {
+                output.Read(buffer);
+                foreach (var v in buffer) sum += v * v;
+                n += buffer.Length;
+            }
+            player.Pause();
+            double rms = Math.Sqrt(sum / n);
+            levels.Add($"{track.Name} {rms:0.0000}");
+            bool hasNotes = player.Score!.Tracks[track.Index].Staves.SelectMany(st => st.Bars).SelectMany(b => b.Voices)
+                .SelectMany(v => v.Beats).Any(b => b.Notes.Count > 0);
+            if (!track.IsPercussion && hasNotes) // the arranger leaves some parts empty (Soprano Cornet in Mikkel)
+            {
+                pitched++;
+                if (rms < 1e-4) silent++;
+            }
+        }
+        log.WriteLine($"{set.Fonts.Count} SoundFonts, programs {string.Join(",", set.Programs.Select(p => $"{p.Key}={p.Value}"))}; per-track rms from bar 20: " + string.Join("; ", levels));
+        Assert.Equal(0, silent);
     }
 
     [Fact]

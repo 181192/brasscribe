@@ -200,6 +200,15 @@ public static class MusicXmlTalkingScoreBuilder
             firstPart = false;
         }
 
+        // Tempo marks are global but usually written in one part only: share them with every part.
+        for (int b = 0; b < ts.Parts.FirstOrDefault()?.Bars.Count; b++)
+        {
+            var tempo = ts.Parts.Select(p => b < p.Bars.Count ? p.Bars[b].TempoBpm : null).FirstOrDefault(t => t is not null);
+            if (tempo is null) continue;
+            foreach (var p in ts.Parts)
+                if (b < p.Bars.Count) p.Bars[b].TempoBpm ??= tempo;
+        }
+
         ts.TotalBars = ts.Parts.Count == 0 ? 0 : ts.Parts.Max(p => p.Bars.Count);
         if (composition is not null && ts.Parts.Count > 0)
             ts.FreeRegions = MapFreeRegions(composition, measureStartQuarters, ts.Parts[0]);

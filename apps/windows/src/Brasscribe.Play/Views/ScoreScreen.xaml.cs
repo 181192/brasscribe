@@ -32,7 +32,6 @@ public sealed partial class ScoreScreen : UserControl
         Notation.LeaveRequested += (_, _) => PlayButton.Focus(FocusState.Keyboard);
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
         Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
-        Notation.ToScreen = ToScreen;
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
     }
 
@@ -52,7 +51,8 @@ public sealed partial class ScoreScreen : UserControl
     }
 
     public static readonly DependencyProperty OutputProperty =
-        DependencyProperty.Register(nameof(Output), typeof(OutputOptionsViewModel), typeof(ScoreScreen), new PropertyMetadata(null));
+        DependencyProperty.Register(nameof(Output), typeof(OutputOptionsViewModel), typeof(ScoreScreen),
+            new PropertyMetadata(null, (d, _) => ((ScoreScreen)d).Bindings.Update()));
 
     private static void OnViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -69,6 +69,8 @@ public sealed partial class ScoreScreen : UserControl
             vm.Player.Player.PositionChanged += (_, p) => self.DispatcherQueue.TryEnqueue(() => self.OnPlaybackPosition(p));
             self.Notation.ViewModel = vm;
         }
+        // x:Bind on a property the parent sets: refresh the one-time bindings once it arrives.
+        self.Bindings.Update();
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
@@ -97,9 +99,11 @@ public sealed partial class ScoreScreen : UserControl
                 FillPartPicker();
                 QueueRender();
                 break;
-            case nameof(ScoreViewModel.SelectedPartIndex) or nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch)
-                or nameof(ScoreViewModel.UncertainLeft):
+            case nameof(ScoreViewModel.SelectedPartIndex) or nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
                 QueueRender();
+                break;
+            case nameof(ScoreViewModel.UncertainLeft):
+                DrawOverlays(); // rings only; notehead colours follow on the next render
                 break;
         }
     }
@@ -226,15 +230,6 @@ public sealed partial class ScoreScreen : UserControl
     }
 
     private static Rect ToRect(Box b) => new(b.X, b.Y, Math.Max(0, b.W), Math.Max(0, b.H));
-
-    private Rect ToScreen(Rect local)
-    {
-        var transform = Notation.TransformToVisual(null);
-        var topLeft = transform.TransformPoint(new Point(local.X, local.Y));
-        double scale = XamlRoot?.RasterizationScale ?? 1.0;
-        var window = App.MainWindowInstance?.AppWindow.Position ?? new Windows.Graphics.PointInt32(0, 0);
-        return new Rect(window.X + topLeft.X * scale, window.Y + topLeft.Y * scale, local.Width * scale, local.Height * scale);
-    }
 
     private void OnZoomOut(object sender, RoutedEventArgs e) => ViewModel.Execute(ScoreCommand.ZoomOut);
     private void OnZoomIn(object sender, RoutedEventArgs e) => ViewModel.Execute(ScoreCommand.ZoomIn);

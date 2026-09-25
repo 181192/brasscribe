@@ -89,18 +89,12 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Loads the baseline SoundFonts shipped next to the exe (SoundFonts\*.sf2). Several files are
-    /// appended so each brass-band instrument can come from its own SoundFont.
+    /// Loads the baseline brass SoundFonts shipped next to the exe (SoundFonts\&lt;instrument&gt;\*.sf2),
+    /// one program pair per instrument, and routes each part to its instrument.
     /// </summary>
     private static void LoadSoundFonts(AlphaTabScorePlayer player)
     {
         var dir = Path.Combine(AppContext.BaseDirectory, "SoundFonts");
-        if (!Directory.Exists(dir)) return;
-        bool first = true;
-        foreach (var sf in Directory.EnumerateFiles(dir, "*.sf2", SearchOption.AllDirectories).Order())
-        {
-            player.LoadSoundFont(File.ReadAllBytes(sf), append: !first);
-            first = false;
-        }
+        if (Directory.Exists(dir)) BrassSoundSet.Load(dir).ApplyTo(player);
     }
 }
