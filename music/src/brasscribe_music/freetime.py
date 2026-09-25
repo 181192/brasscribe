@@ -172,18 +172,34 @@ def plan_free_time(beat_times: np.ndarray, onsets: np.ndarray, beats_per_bar: in
     return FreeTimePlan(np.array(out), new_first, spans, notation, label)
 
 
+FREE_MIN_DUR = TICKS_PER_BEAT // 2  # no value shorter than an 8th in proportional notation
+FERMATA_MIN_DUR = TICKS_PER_BEAT  # a fermata sits on a note of a beat or longer
+
+
 def clip_to_regions(notes: list[Note], regions: list[FreeRegion]) -> None:
-    """End notes that start inside a free region at its end, so the strict grid resumes on a clean bar."""
+    """Tidy notes that start inside a free region.
+
+    They end at the region's end at the latest, so the strict grid resumes on
+    a clean bar, and are at least an 8th long where the next onset allows
+    (proportional notation has no use for 16ths).
+    """
+    starts = sorted({n.start for n in notes})
+    nxt = dict(zip(starts, starts[1:]))
     for r in regions:
         for n in notes:
-            if r.start <= n.start < r.end < n.end:
+            if not r.start <= n.start < r.end:
+                continue
+            room = min(nxt.get(n.start, r.end), r.end) - n.start
+            if n.dur < FREE_MIN_DUR:
+                n.dur = min(FREE_MIN_DUR, room)
+            if n.end > r.end:
                 n.dur = r.end - n.start
 
 
 def mark_fermatas(notes: list[Note], regions: list[FreeRegion]) -> None:
-    """Fermata on the last note of a line that starts inside each free region (the cadence before a tempo)."""
+    """Fermata on the last held note (a beat or longer) of a line inside each free region."""
     for r in regions:
-        inside = [n for n in notes if r.start <= n.start < r.end]
+        inside = [n for n in notes if r.start <= n.start < r.end and n.dur >= FERMATA_MIN_DUR]
         if inside:
             last = max(inside, key=lambda n: n.start)
             if Articulation.FERMATA not in last.articulations:

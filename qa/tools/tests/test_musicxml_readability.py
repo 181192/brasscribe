@@ -77,6 +77,29 @@ def test_baseline_only_fails_on_regression(tmp_path):
     assert r.main([str(FIXTURE), "--check", "--baseline", str(base)]) == 1
 
 
+def test_question_mark_direction_counts_as_shape(tmp_path):
+    xml = """<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><clef><sign>G</sign><line>2</line></clef></attributes>
+    <direction placement="above"><direction-type><words>?</words></direction-type></direction>
+    <note color="#0063A6"><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <direction placement="above"><direction-type><words enclosure="rectangle">?</words></direction-type><offset>1</offset></direction>
+    <note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <note color="#B04A00"><pitch><step>F</step><alter>1</alter><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <note color="#B04A00"><pitch><step>G</step><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+  </measure></part>
+</score-partwise>"""
+    f = tmp_path / "marks.musicxml"
+    f.write_text(xml)
+    parts, score = r.parse(f)
+    m, _ = r.analyse_part(parts[0], None)
+    assert m["uncertain_pct"] == 75.0
+    assert m["colour_only_uncertain"] == 1  # only the G5 has no "?" at its onset
+    assert score["words"] == []
+
+
 def test_range_filter_and_check_exit_code():
     parts, _ = r.parse(FIXTURE)
     solo = next(p for p in parts if p.name == "Solo Cornet")

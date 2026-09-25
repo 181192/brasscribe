@@ -15,7 +15,8 @@ Reports per part and for the whole score:
   - awkward spellings (E#, B#, Cb, Fb, double accidentals), printed-accidental density,
     bars mixing sharps and flats, leaps over an octave
   - empty-bar ratio, and runs of empty bars that should be multi-bar rests in parts
-  - colour-only uncertainty (coloured notes without a distinct notehead)
+  - colour-only uncertainty: coloured notes with neither a distinct notehead nor a "?" words
+    direction at the same onset in the same part and bar (docs/accessibility/visual-design-tokens.md §2)
   - divisi (chords in a monophonic brass part)
 
 `--bars` lists every flagged bar with reasons. `--range A-B` restricts to bars A..B.
@@ -111,6 +112,7 @@ class Part:
     notes: list[Note] = field(default_factory=list)
     rests: list[Note] = field(default_factory=list)
     divisi: list[str] = field(default_factory=list)  # bar numbers of chord notes
+    marks: set[tuple[str, Fraction]] = field(default_factory=set)  # (bar, onset) of "?" directions
 
 
 def _t(el: ET.Element | None, path: str, default: str | None = None) -> str | None:
@@ -179,20 +181,25 @@ def parse(path: Path) -> tuple[list[Part], dict]:
                             score["time_changes"] += 1
                         if el.find("key") is not None:
                             score["key_changes"] += 1
-                elif tag == "direction" and first_part:
+                elif tag == "direction":
+                    # A "?" words direction marks the uncertain note starting at its onset.
+                    off = _t(el, "offset")
+                    at = pos + (Fraction(int(off), divisions) if off else 0)
+                    texts = [(w.text or "").strip() for w in el.iter("words")]
+                    if "?" in texts:
+                        part.marks.add((bar, at))
                     for dt in el.iter("direction-type"):
                         if dt.find("dynamics") is not None:
                             score["dynamics"] += 1
+                        if not first_part:
+                            continue
                         if dt.find("rehearsal") is not None:
                             score["rehearsal"] += 1
                         if dt.find("metronome") is not None:
                             score["tempos"] += 1
                         for w in dt.findall("words"):
-                            if w.text:
+                            if w.text and w.text.strip() != "?":
                                 score["words"].append((bar, w.text.strip()))
-                elif tag == "direction":
-                    if any(dt.find("dynamics") is not None for dt in el.iter("direction-type")):
-                        score["dynamics"] += 1
                 elif tag == "backup":
                     pos -= Fraction(int(_t(el, "duration", "0") or 0), divisions)
                 elif tag == "forward":
@@ -315,7 +322,9 @@ def analyse_part(part: Part, rng: tuple[int, int] | None) -> tuple[dict, dict[st
     ties = [n for n in notes if n.tie_start]
     short_rests = [r for r in rests if r.dur < EIGHTH]
     uncertain = [n for n in notes if n.colour and n.colour.upper() not in {"#000000", "#000"}]
-    colour_only = [n for n in uncertain if (n.notehead or "normal") not in UNCERTAIN_NOTEHEADS]
+    colour_only = [n for n in uncertain
+                   if (n.notehead or "normal") not in UNCERTAIN_NOTEHEADS
+                   and (n.bar, n.onset) not in part.marks]
     offgrid = [n for n in notes if not n.tuplet and (n.onset / EIGHTH).denominator != 1]
     rests_by_bar: dict[str, int] = {}
     for r in rests:

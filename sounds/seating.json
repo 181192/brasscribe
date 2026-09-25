@@ -1,0 +1,374 @@
+{
+ "about": "Standard contest brass-band horseshoe (British/Norwegian championship layout). Coordinates in metres on the stage plane: origin at the conductor, +x to the conductor's right (audience right), +y upstage. Azimuth is degrees from straight ahead for the listener, positive to the right. The renderer uses x/y; azimuth/distance are precomputed per listener for engines that take polar input (AVAudioEnvironmentNode, Web Audio PannerNode).",
+ "bell_directivity": {
+  "forward": {
+   "highshelf_db": 0.0,
+   "f": 2000
+  },
+  "up": {
+   "highshelf_db": -4.0,
+   "f": 2000
+  },
+  "none": {
+   "highshelf_db": 0.0,
+   "f": 2000
+  }
+ },
+ "player_spread_m": 0.7,
+ "listeners": {
+  "audience": {
+   "x": 0.0,
+   "y": -6.0,
+   "note": "front stalls, 6 m behind the conductor (default)"
+  },
+  "conductor": {
+   "x": 0.0,
+   "y": -0.5,
+   "note": "conductor's podium"
+  }
+ },
+ "seats": {
+  "solo-cornets": {
+   "x": -4.0,
+   "y": 1.4,
+   "bell": "forward",
+   "parts": [
+    "Solo Cornet"
+   ],
+   "note": "front row, conductor's left; principal nearest the conductor",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -28.4,
+     "distance_m": 8.41
+    },
+    "conductor": {
+     "azimuth_deg": -64.6,
+     "distance_m": 4.43
+    }
+   }
+  },
+  "third-cornets": {
+   "x": -4.8,
+   "y": 3.6,
+   "bell": "forward",
+   "parts": [
+    "3rd Cornet"
+   ],
+   "note": "back row, far left",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -26.6,
+     "distance_m": 10.73
+    },
+    "conductor": {
+     "azimuth_deg": -49.5,
+     "distance_m": 6.31
+    }
+   }
+  },
+  "second-cornets": {
+   "x": -4.1,
+   "y": 4.7,
+   "bell": "forward",
+   "parts": [
+    "2nd Cornet"
+   ],
+   "note": "back row left",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -21.0,
+     "distance_m": 11.46
+    },
+    "conductor": {
+     "azimuth_deg": -38.3,
+     "distance_m": 6.62
+    }
+   }
+  },
+  "repiano": {
+   "x": -3.1,
+   "y": 5.4,
+   "bell": "forward",
+   "parts": [
+    "Repiano Cornet"
+   ],
+   "note": "back row left of centre",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -15.2,
+     "distance_m": 11.81
+    },
+    "conductor": {
+     "azimuth_deg": -27.7,
+     "distance_m": 6.66
+    }
+   }
+  },
+  "soprano": {
+   "x": -1.9,
+   "y": 5.9,
+   "bell": "forward",
+   "parts": [
+    "Soprano Cornet"
+   ],
+   "note": "back row, next to the basses",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -9.1,
+     "distance_m": 12.05
+    },
+    "conductor": {
+     "azimuth_deg": -16.5,
+     "distance_m": 6.68
+    }
+   }
+  },
+  "flugel": {
+   "x": -1.7,
+   "y": 3.2,
+   "bell": "up",
+   "parts": [
+    "Flugelhorn"
+   ],
+   "note": "inner row, beside the solo horn",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -10.5,
+     "distance_m": 9.36
+    },
+    "conductor": {
+     "azimuth_deg": -24.7,
+     "distance_m": 4.07
+    }
+   }
+  },
+  "solo-horn": {
+   "x": -0.8,
+   "y": 2.7,
+   "bell": "up",
+   "parts": [
+    "Solo Horn"
+   ],
+   "note": "inner row, facing the conductor",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -5.3,
+     "distance_m": 8.74
+    },
+    "conductor": {
+     "azimuth_deg": -14.0,
+     "distance_m": 3.3
+    }
+   }
+  },
+  "first-horn": {
+   "x": 0.0,
+   "y": 2.6,
+   "bell": "up",
+   "parts": [
+    "1st Horn"
+   ],
+   "note": "inner row centre",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 0.0,
+     "distance_m": 8.6
+    },
+    "conductor": {
+     "azimuth_deg": 0.0,
+     "distance_m": 3.1
+    }
+   }
+  },
+  "second-horn": {
+   "x": 0.8,
+   "y": 2.7,
+   "bell": "up",
+   "parts": [
+    "2nd Horn"
+   ],
+   "note": "inner row",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 5.3,
+     "distance_m": 8.74
+    },
+    "conductor": {
+     "azimuth_deg": 14.0,
+     "distance_m": 3.3
+    }
+   }
+  },
+  "first-baritone": {
+   "x": 1.7,
+   "y": 3.2,
+   "bell": "up",
+   "parts": [
+    "1st Baritone"
+   ],
+   "note": "inner row right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 10.5,
+     "distance_m": 9.36
+    },
+    "conductor": {
+     "azimuth_deg": 24.7,
+     "distance_m": 4.07
+    }
+   }
+  },
+  "second-baritone": {
+   "x": 2.4,
+   "y": 3.7,
+   "bell": "up",
+   "parts": [
+    "2nd Baritone"
+   ],
+   "note": "inner row right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 13.9,
+     "distance_m": 9.99
+    },
+    "conductor": {
+     "azimuth_deg": 29.7,
+     "distance_m": 4.84
+    }
+   }
+  },
+  "euphoniums": {
+   "x": 4.0,
+   "y": 1.4,
+   "bell": "up",
+   "parts": [
+    "Euphonium"
+   ],
+   "note": "front row, conductor's right, opposite the solo cornets",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 28.4,
+     "distance_m": 8.41
+    },
+    "conductor": {
+     "azimuth_deg": 64.6,
+     "distance_m": 4.43
+    }
+   }
+  },
+  "first-trombone": {
+   "x": 2.9,
+   "y": 5.4,
+   "bell": "forward",
+   "parts": [
+    "1st Trombone"
+   ],
+   "note": "back row right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 14.3,
+     "distance_m": 11.76
+    },
+    "conductor": {
+     "azimuth_deg": 26.2,
+     "distance_m": 6.57
+    }
+   }
+  },
+  "second-trombone": {
+   "x": 3.9,
+   "y": 4.7,
+   "bell": "forward",
+   "parts": [
+    "2nd Trombone"
+   ],
+   "note": "back row right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 20.0,
+     "distance_m": 11.39
+    },
+    "conductor": {
+     "azimuth_deg": 36.9,
+     "distance_m": 6.5
+    }
+   }
+  },
+  "bass-trombone": {
+   "x": 4.7,
+   "y": 3.7,
+   "bell": "forward",
+   "parts": [
+    "Bass Trombone"
+   ],
+   "note": "back row, far right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 25.9,
+     "distance_m": 10.78
+    },
+    "conductor": {
+     "azimuth_deg": 48.2,
+     "distance_m": 6.3
+    }
+   }
+  },
+  "eb-basses": {
+   "x": -0.7,
+   "y": 6.2,
+   "bell": "up",
+   "parts": [
+    "E♭ Bass"
+   ],
+   "note": "back row centre-left",
+   "polar": {
+    "audience": {
+     "azimuth_deg": -3.3,
+     "distance_m": 12.22
+    },
+    "conductor": {
+     "azimuth_deg": -6.0,
+     "distance_m": 6.74
+    }
+   }
+  },
+  "bb-basses": {
+   "x": 1.0,
+   "y": 6.2,
+   "bell": "up",
+   "parts": [
+    "B♭ Bass"
+   ],
+   "note": "back row centre-right",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 4.7,
+     "distance_m": 12.24
+    },
+    "conductor": {
+     "azimuth_deg": 8.5,
+     "distance_m": 6.77
+    }
+   }
+  },
+  "percussion": {
+   "x": 0.0,
+   "y": 7.8,
+   "bell": "none",
+   "parts": [
+    "Percussion"
+   ],
+   "note": "behind the basses",
+   "polar": {
+    "audience": {
+     "azimuth_deg": 0.0,
+     "distance_m": 13.8
+    },
+    "conductor": {
+     "azimuth_deg": 0.0,
+     "distance_m": 8.3
+    }
+   }
+  }
+ }
+}
