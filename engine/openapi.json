@@ -185,9 +185,39 @@
       },
       "Body_createJobFromUpload": {
         "properties": {
+          "difficulty": {
+            "default": "faithful",
+            "enum": [
+              "faithful",
+              "standard",
+              "easier"
+            ],
+            "title": "Difficulty",
+            "type": "string"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "title": "File",
+            "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "lineup": {
+            "default": "full",
+            "enum": [
+              "full",
+              "minimal"
+            ],
+            "title": "Lineup",
             "type": "string"
           },
           "profile": {
@@ -210,6 +240,19 @@
               }
             ],
             "title": "Title"
+          },
+          "transpose": {
+            "anyOf": [
+              {
+                "maximum": 11.0,
+                "minimum": -11.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transpose"
           }
         },
         "required": [
@@ -719,6 +762,39 @@
             ],
             "title": "Audio Id"
           },
+          "difficulty": {
+            "default": "faithful",
+            "description": "faithful keeps every transcribed note; standard and easier simplify rhythms and ranges",
+            "enum": [
+              "faithful",
+              "standard",
+              "easier"
+            ],
+            "title": "Difficulty",
+            "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it",
+            "title": "Key"
+          },
+          "lineup": {
+            "default": "full",
+            "description": "full: the 18-part brass band; minimal: the 8-part minimal band",
+            "enum": [
+              "full",
+              "minimal"
+            ],
+            "title": "Lineup",
+            "type": "string"
+          },
           "path": {
             "anyOf": [
               {
@@ -763,6 +839,20 @@
               }
             ],
             "title": "Title"
+          },
+          "transpose": {
+            "anyOf": [
+              {
+                "maximum": 11.0,
+                "minimum": -11.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "transpose the arrangement by this many semitones (instead of key)",
+            "title": "Transpose"
           }
         },
         "title": "JobCreate",
@@ -2370,6 +2460,83 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/braille": {
+      "get": {
+        "description": "Braille music (BRF) of the score or of one part, transcribed by music21.",
+        "operationId": "getBraille",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "part number (1-based, score order) or name, e.g. 2 or Solo Cornet; omit for the score",
+            "in": "query",
+            "name": "part",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "part number (1-based, score order) or name, e.g. 2 or Solo Cornet; omit for the score",
+              "title": "Part"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Braille music in North American Braille ASCII (.brf, 40 cells per line, 25 lines per page)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Braille",
+        "tags": [
+          "results"
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/compare": {
       "get": {
         "description": "composition.json byte equality and per-part MusicXML note content against a reference or another job.",
@@ -3345,6 +3512,145 @@
         "summary": "Get Stage File",
         "tags": [
           "inspection"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/talking-score": {
+      "get": {
+        "description": "Talking score of the whole score or one part, rendered from the job's talking-score.json.",
+        "operationId": "getTalkingScore",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "html",
+              "pattern": "^(html|text|json)$",
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "pattern": "^(en|nb)$",
+              "title": "Lang",
+              "type": "string"
+            }
+          },
+          {
+            "description": "part number (1-based) or name; omit for all parts",
+            "in": "query",
+            "name": "part",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "part number (1-based) or name; omit for all parts",
+              "title": "Part"
+            }
+          },
+          {
+            "description": "default: written for one part, concert for the score",
+            "in": "query",
+            "name": "pitch_mode",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(written|concert)$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "default: written for one part, concert for the score",
+              "title": "Pitch Mode"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verbosity",
+            "required": false,
+            "schema": {
+              "default": "standard",
+              "pattern": "^(brief|standard|full)$",
+              "title": "Verbosity",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Talking score (docs/accessibility/talking-score-spec.md): HTML with a heading per part and bar, plain text, or the TalkingScore JSON"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Talking Score",
+        "tags": [
+          "results"
         ]
       }
     },
