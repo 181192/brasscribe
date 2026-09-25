@@ -51,12 +51,13 @@ All of this is desk research. No model has been installed or run yet. Every pick
 | Area | PRIMARY | BACKUP | Code / weights licence (primary) | Apple Silicon (primary) |
 |---|---|---|---|---|
 | Source separation, stage 1 | BS-RoFormer SW (6-stem) via python-audio-separator / MSST | HT-Demucs v4 `htdemucs_ft` / `_6s` | MIT / **undocumented** | claimed (MPS); MLX port lists SW |
-| Source separation, brass sub-stems | MVSep Mega-53 v1 (brass, trumpet, trombone, horn, tuba) | SAM-Audio text prompts (experimental; generative, can invent notes) | MIT / **not stated** | unknown (author asks ≥16 GB VRAM) |
+| Source separation, brass sub-stems | MVSep Mega-53 v1 (ckpt in MSST release v1.0.21, 1.37 GB; SW ckpt in audio-separator `model-configs` release — both verified 2026-09-25) (brass, trumpet, trombone, horn, tuba) | SAM-Audio text prompts (experimental; generative, can invent notes) | MIT / **not stated** | unknown (author asks ≥16 GB VRAM) |
 | Multi-instrument AMT | **MuScriptor** medium/large | YourMT3+ (YPTF.MoE+Multi) | MIT / **CC BY-NC 4.0, gated** | claimed (MPS) |
 | Instrument-agnostic stem AMT | MuScriptor (instrument-conditioned) + Basic Pitch, fused | — | Basic Pitch Apache-2.0 | Basic Pitch: CoreML default. **Pin Py 3.10** (arm64+3.12 install broken, #203) |
 | Monophonic f0 (lead / single line) | SwiftF0 → note segmentation | torchcrepe (Viterbi) + CREPE Notes | MIT | ONNX, fine |
 | Bass-register f0 | torchcrepe / RMVPE (reach ~32 Hz) | Basic Pitch (27.5 Hz) | MIT | fine |
 | Vocals → notes | GAME (openvpi 2026) | ROSVOT | MIT | unknown |
+| Instrument recognition | User-supplied instrument list (brass-band input) + MuScriptor conditioning; Essentia `mtg_jamendo_instrument` tagger for unknown pop/rock input | PANNs (AudioSet) frame-wise SED | Essentia model CC BY-NC-SA | TF; unknown |
 | Beats / downbeats / tempo | **Beat This!** (no DBN) | allin1 | MIT / MIT | reported working (MPS) |
 | Meter | Derived from downbeat spacing, per bar, with user override | madmom DBN `beats_per_bar` | — | — |
 | Quantization | Our own beat-grid DP/HMM quantizer (24 ticks/beat) → music21/partitura for ties/tuplets | MuseScore 4 `mscore` MIDI import on a beat-locked tempo map; PM2S with injected beats | — | — |
@@ -68,6 +69,7 @@ All of this is desk research. No model has been installed or run yet. Every pick
 | Melody f0 | Deep Salience `melody2` | MSNet melody | MIT | unknown |
 | Countermelody | **No audio model exists.** Symbolic melodic-line ranking over transcribed voices | — | — | — |
 | Verification loop | Chroma/CENS + MrMsDTW (synctoolbox); same-AMT diff (source vs render); score-informed NMF residual | MuQ early layers, CLEWS | MIT | fine |
+| Audio/music embeddings | MuQ early layers (frame-level) | CLEWS segment embeddings; MERT | MuQ weights CC BY-NC | unknown |
 | Arrangement | In-house: OR-Tools CP-SAT allocation with hard range/transposition constraints; Anticipatory Music Transformer for infill with per-instrument logit masking | REMI-z arranger (licence blank), METEOR | Apache-2.0 / Apache-2.0 | plausible (HF GPT-2); unverified |
 | Capture | Swift CLI on a Core Audio process tap, called from Go | audiotee (MIT), BlackHole | ours | native |
 | Metadata | Spotify AppleScript (`osascript`) | media-control / mediaremote-adapter | — | — |
@@ -143,13 +145,13 @@ The candidate models pull in incompatible dependencies:
 
 | Set | Content | Use |
 |---|---|---|
-| ChoraleBricks | Real, isolated SATB chorales on trumpet, flugelhorn, baritone, French horn, trombone, tuba; CC-BY 4.0 | Closest thing to brass-band texture; close-voiced same-family polyphony; **primary brass benchmark** |
+| ChoraleBricks v1.1.0 ([Zenodo](https://zenodo.org/records/20849469), [TISMIR](https://transactions.ismir.net/articles/10.5334/tismir.252)) | Real, isolated SATB chorales, 13 wind instruments incl. trumpet, baritone, trombone, tuba; CC-BY 4.0; MusicXML/MIDI + note-level onset/offset CSV + f0 + audio-score alignment (verified 2026-09-25) | Closest thing to brass-band texture; close-voiced same-family polyphony; **primary brass benchmark** |
 | URMP | Real chamber recordings, per-instrument stems incl. trumpet/horn/trombone/tuba | Per-stem vs mixture AMT; f0 trackers |
 | PHENICX-Anechoic | Orchestral sections incl. horn and trumpet sections | Section polyphony, orchestral |
 | CocoChorales | 350 h synthetic brass quartets | Large-scale synthetic; fine-tuning candidate |
 | Slakh2100 (brass subset) | Synthetic pop/rock multitrack | Pop-context brass, separation+AMT |
 | **Own synthetic brass band** | Public-domain brass-band / hymn / march MusicXML rendered with good brass samples, varied reverb/tempo/balance (spec §24) | Only source of full-band ground truth |
-| **Own real recordings** | A few brass-band recordings with hand-corrected scores (Kalli's band, if possible) | Final sanity check; small but real |
+| **Own real recordings** | A few real brass-band recordings with hand-corrected scores | Final sanity check; small but real |
 
 **Metrics (mir_eval unless noted):**
 - note P/R/F1 (onset), onset+offset F1, multi-instrument F1 (onset+pitch+program)
