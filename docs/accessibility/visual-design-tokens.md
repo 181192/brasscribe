@@ -66,8 +66,8 @@ What this means:
 | State | Notehead | Extra mark | Talking score | MusicXML export |
 |---|---|---|---|---|
 | Confident (≥ 0.7) | normal | – | – | normal |
-| Uncertain (0.4–0.7) | normal, colour `uncertain` | a small "?" above the note, outside the staff, like a fingering | "uncertain" | `color`; the level in an extension field (open question below) |
-| Very uncertain (< 0.4) | normal, colour `very-uncertain` | a boxed "?" above the note | "very uncertain" | `color`; the level in an extension field |
+| Uncertain (0.4–0.7) | normal, colour `uncertain` | a small "?" above the note, outside the staff, like a fingering | "uncertain" | `color` + `<direction placement="above"><direction-type><words>?</words></direction-type></direction>` at the note's onset |
+| Very uncertain (< 0.4) | normal, colour `very-uncertain` | a boxed "?" above the note | "very uncertain" | `color` + the same direction with `<words enclosure="rectangle">?</words>` |
 | Checked by user | normal | – | – | normal |
 | Free time (*ad lib*) | normal | `adlib-tint` band plus the text "ad lib." at the start, "a tempo" at the end, dashed bar lines | "Ad lib, free time…" | `<words>ad lib.</words>`, dashed `<bar-style>` |
 | Loop range | – | tint band plus bracket-shaped edge markers at both ends, labelled "Loop 12–16" | "Loop set, bars 12 to 16" | – |
@@ -82,7 +82,7 @@ Why "?" and not the obvious alternatives:
 
 **Open questions**
 - Confirm with brass-band players that "?" and a boxed "?" read as "check this note" and not as anything else.
-- How to encode the uncertainty level in MusicXML exports. Colour survives MuseScore import. The level needs a custom field (e.g. `<other-notation>` or `<other-technical>`) or a `<words>`-style marking. Agree it with the MusicXML writer.
+- MusicXML encoding, agreed with the MusicXML writer: colour on the note, plus a `?` words direction (boxed with `enclosure="rectangle"` below 0.4) at the note's onset in the same part. A `<words>` direction survives MuseScore and other editors, where `<other-technical>` is often dropped. `musicxml_readability.py` counts a coloured note as shape-encoded when such a direction sits at its onset. The MusicXML writer reports that the rectangle enclosure survives a MuseScore `mscore -o` re-export. That was tested on a test file; the Mikkel output has no note below 0.4 yet. Colour and "?" go on the attack only; tied continuations stay plain.
 
 On Apple, `accessibilityDifferentiateWithoutColor` needs nothing extra, because the "?" marks are always on. When the setting is on, it may make the marks larger.
 
