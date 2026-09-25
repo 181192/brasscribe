@@ -111,22 +111,38 @@ class Written:
     staccato: bool
 
 
-def _readable(performed: float, room: int | None) -> int:
+STUB_PENALTY = 0.35  # log-length units: prefer a slightly off length to a 16th tied over a beat
+
+
+def _stub(start: int, end: int) -> bool:
+    """The written note would cross a beat and end on a 16th tied from it."""
+    return start // TICKS_PER_BEAT != (end - 1) // TICKS_PER_BEAT and end % TICKS_PER_BEAT in (6, 18) \
+        and end % TICKS_PER_BEAT < end - start
+
+
+def _readable(performed: float, room: int | None, start: int = 0) -> int:
     cands = [c for c in READABLE if room is None or c <= room]
     if room is not None and room not in cands and room <= READABLE[-1]:
         cands.append(room)
     if not cands:
         return max(1, room or 1)
     p = max(performed, 1.0)
-    return min(cands, key=lambda c: (abs(np.log(c / p)), -c))
+    return min(cands, key=lambda c: (abs(np.log(c / p)) + STUB_PENALTY * _stub(start, start + c), -c))
 
 
 def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_ratio: float = LEGATO_RATIO,
-                      max_held_gap: float = MAX_HELD_GAP, staccato_ratio: float = STACCATO_RATIO) -> list[Written]:
+                      max_held_gap: float = MAX_HELD_GAP, staccato_ratio: float = STACCATO_RATIO,
+                      hold_within: int = 0, min_detached: int = 0) -> list[Written]:
     """Written length and staccato flag per note of one voice (chords share an onset), in input order.
 
     Performed length comes from onset_s/offset_s through `bm` when given
-    (unsnapped), else from the quantized start/end.
+    (unsnapped), else from the quantized start/end. `hold_within` (ticks)
+    writes every note whose next onset is at most that far away up to it, so a
+    detached 8th-note run reads as staccato 8ths instead of 16ths and 16th
+    rests, and `min_detached` is the shortest value a detached note gets
+    (an 8th with a staccato reads easier than a 16th and a rest). Both are
+    part-writing choices: scores write either, and duration_bench measures
+    the defaults (0).
     """
     if not notes:
         return []
@@ -142,10 +158,12 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
     for q, p in zip(notes, perf):
         n = nxt.get(q.start)
         room = None if n is None else n - q.start
-        if room is not None and p >= legato_ratio * room and room - p <= max_held_gap:
+        if room is not None and (room <= hold_within or (p >= legato_ratio * room and room - p <= max_held_gap)):
             dur = room
         else:
-            dur = _readable(p, room)
+            dur = _readable(p, room, q.start)
+            if dur < min_detached:
+                dur = min(min_detached, room) if room is not None else min_detached
         out.append(Written(int(dur), float(p), p < staccato_ratio * dur))
     return out
 

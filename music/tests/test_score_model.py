@@ -53,7 +53,7 @@ def test_golden_composition_loads_and_rewrites_losslessly(tmp_path):
     p = tmp_path / "g.json"
     c.to_json(p)
     old, new = json.loads(GOLDEN.read_text()), json.loads(p.read_text())
-    assert new.pop("free_regions") == []
+    assert new.pop("free_regions") == [] and new.pop("dynamics") == [] and new.pop("sections") == []
     for v in new["voices"]:
         for n in v["notes"]:
             assert n.pop("performed_dur") is None and n.pop("articulations") == []
