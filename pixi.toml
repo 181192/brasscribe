@@ -6,6 +6,7 @@ channels = ["conda-forge"]
 platforms = [
     { name = "osx-arm64-macos14", platform = "osx-arm64", macos = "14.0" },
     "linux-64",
+    "linux-aarch64",
     "win-64",
     { name = "linux-64-cuda12", platform = "linux-64", cuda = "12" },
     { name = "win-64-cuda12", platform = "win-64", cuda = "12" },
@@ -14,7 +15,7 @@ requires-pixi = ">=0.80"
 
 # Plain platforms: every environment except the CUDA ones.
 [feature.host]
-platforms = ["osx-arm64-macos14", "linux-64", "win-64"]
+platforms = ["osx-arm64-macos14", "linux-64", "linux-aarch64", "win-64"]
 
 # ---------------------------------------------------------------------------
 # Python versions. Basic Pitch needs 3.10; everything else runs on 3.12.
@@ -67,9 +68,18 @@ bench-cpu = "brasscribe bench cpu"
 # ---------------------------------------------------------------------------
 [feature.torch.target.linux-64.dependencies]
 pytorch = ">=2.6"
+torchaudio = "*"  # conda-forge builds match the conda PyTorch ABI; PyPI wheels do not
+torchvision = "*"
+
+[feature.torch.target.linux-aarch64.dependencies]
+pytorch = ">=2.6"
+torchaudio = "*"  # conda-forge builds match the conda PyTorch ABI; PyPI wheels do not
+torchvision = "*"
 
 [feature.torch.target.win-64.dependencies]
 pytorch = ">=2.6"
+torchaudio = "*"  # conda-forge builds match the conda PyTorch ABI; PyPI wheels do not
+torchvision = "*"
 
 # PyPI wheels on macOS: the same MPS-enabled build the uv environments use.
 [feature.torch.target.osx-arm64.pypi-dependencies]
@@ -106,6 +116,9 @@ scikit-learn = "<=1.5.1"
 basic-pitch = { version = ">=0.4.0", extras = ["coreml"] }
 
 [feature.basic-pitch.target.linux-64.pypi-dependencies]
+basic-pitch = { version = ">=0.4.0", extras = ["onnx"] }
+
+[feature.basic-pitch.target.linux-aarch64.pypi-dependencies]
 basic-pitch = { version = ">=0.4.0", extras = ["onnx"] }
 
 [feature.basic-pitch.target.win-64.pypi-dependencies]
@@ -147,6 +160,17 @@ tqdm = ">=4.70.1"
 audio-separator = ">=0.47.0"
 audioread = ">=3.1.0"
 onnxruntime = ">=1.30.0"
+
+# diffq (an audio-separator dependency) ships only an sdist with a C extension; a clean
+# Linux or Windows machine has no compiler, so the environment brings its own.
+[feature.separator.target.linux-64.dependencies]
+c-compiler = "*"
+
+[feature.separator.target.linux-aarch64.dependencies]
+c-compiler = "*"
+
+[feature.separator.target.win-64.dependencies]
+c-compiler = "*"
 
 [feature.panns.pypi-dependencies]
 librosa = ">=1.0.0"
