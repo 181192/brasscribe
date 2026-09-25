@@ -73,6 +73,11 @@ def transcribe(paths: dict[str, Path]) -> None:
             out = paths[layer].with_name(f"{layer}-{suffix}.mid")
             if not out.exists():
                 subprocess.run([str(ADAPTERS / tool / "run.sh"), str(paths[layer]), str(out)], check=True)
+    # Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.
+    contour = paths["solo"].with_name("solo-sw.contour.npz")
+    if not contour.exists():
+        subprocess.run(["uv", "run", "--project", str(ADAPTERS / "swift-f0"), "python",
+                        str(Path(__file__).with_name("swiftf0_contour.py")), str(paths["solo"]), str(contour)], check=True)
 
 
 def main() -> None:
