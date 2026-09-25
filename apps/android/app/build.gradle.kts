@@ -50,7 +50,6 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        unitTests.all { it.systemProperty("robolectric.logging.enabled", "true") }
     }
 
     lint {
@@ -127,11 +126,6 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.test.core)
-    testImplementation(platform(libs.compose.bom))
-    testImplementation(libs.compose.ui.test.junit4)
-    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)

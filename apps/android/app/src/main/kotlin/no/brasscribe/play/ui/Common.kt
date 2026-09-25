@@ -53,8 +53,10 @@ fun SubHeading(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun StatusLine(status: Status?, modifier: Modifier = Modifier) {
     val t = LocalPlayTokens.current
+    // An empty live region would be an unlabeled focusable item; the line appears with its first message.
+    if (status == null || status.text.isEmpty()) return
     Text(
-        status?.text.orEmpty(),
+        status.text,
         color = t.text,
         style = MaterialTheme.typography.bodyMedium,
         modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },

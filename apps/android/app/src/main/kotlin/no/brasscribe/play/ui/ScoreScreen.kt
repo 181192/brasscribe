@@ -65,7 +65,8 @@ import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.ui.theme.LocalPlayTokens
 
 /** Index of the part a player most likely wants first: the solo cornet, else the first part. */
-fun defaultPart(parts: List<String>): Int = parts.indexOfFirst { it.equals("Solo Cornet", true) }.takeIf { it >= 0 } ?: 0
+fun defaultPart(parts: List<String>): Int =
+    parts.indexOfFirst { it.trim().equals("Solo Cornet", ignoreCase = true) }.takeIf { it >= 0 } ?: 0
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable

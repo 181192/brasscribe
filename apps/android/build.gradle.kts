@@ -9,3 +9,10 @@ plugins {
 /** The repository root (two levels up): golden fixtures and converted models live under data/ and models/ there. */
 val repoRoot: File = rootDir.parentFile.parentFile
 extra["repoRoot"] = repoRoot
+
+// `./gradlew testDebugUnitTest` also runs the plain Kotlin/JVM modules' tests.
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        tasks.register("testDebugUnitTest") { dependsOn("test") }
+    }
+}

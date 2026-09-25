@@ -91,7 +91,10 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
             val s = ScoreLoader.loadScoreFromBytes(Uint8Array(bytes.asUByteArray()), view.settings)
             score = s
             s.tracks.forEach { t -> writtenTransposition[t.index.toInt()] = t.staves[0].displayTranspositionPitch }
-            val names = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].name.ifBlank { s.tracks[i].shortName } }
+            // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
+            val names = (0 until s.tracks.length.toInt()).map { i ->
+                s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace(' ', ' ').trim()
+            }
             val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
             _state.value = _state.value.copy(
                 loaded = true, error = null, title = s.title, parts = names,
