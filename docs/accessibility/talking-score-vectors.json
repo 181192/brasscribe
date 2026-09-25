@@ -174,16 +174,28 @@
                    "nb": "Ad lib, fritt tempo, takt 1 til 4, omtrent 32 sekunder. takt 1, ved 0 sekunder: D 4, åttendedelsnote"}
     },
     {
-      "id": "adlib-inside-fermata",
+      "id": "adlib-inside-held",
       "settings": {"verbosity": "standard", "pitch_mode": "written"},
       "context": {"part": "Solo Cornet", "bar": 3},
       "bar": {"number": 3, "free_region": {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": false}},
       "event": {"kind": "note", "pos": {"beat": 2, "num": 0, "den": 1}, "time_s": 21.8, "performed_s": 2.6,
-                "type": "half", "dots": 0, "articulations": ["fermata"],
+                "type": "half", "dots": 0, "articulations": [],
                 "written": {"step": "D", "alter": 0, "octave": 5}, "concert": {"step": "C", "alter": 0, "octave": 5},
                 "confidence": 0.88, "sources": ["swiftf0", "muscriptor"]},
-      "expected": {"en": "at 22 seconds: D 5, half note, fermata, held about 2.5 seconds",
-                   "nb": "ved 22 sekunder: D 5, halvnote, fermat, holdes omtrent 2,5 sekunder"}
+      "expected": {"en": "at 22 seconds: D 5, half note, held about 2.5 seconds",
+                   "nb": "ved 22 sekunder: D 5, halvnote, holdes omtrent 2,5 sekunder"}
+    },
+    {
+      "id": "adlib-last-note-fermata",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 4},
+      "bar": {"number": 4, "free_region": {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": false}},
+      "event": {"kind": "note", "pos": {"beat": 3, "num": 0, "den": 1}, "time_s": 28.2, "performed_s": 3.3,
+                "type": "half", "dots": 0, "articulations": ["fermata"],
+                "written": {"step": "E", "alter": 0, "octave": 4}, "concert": {"step": "D", "alter": 0, "octave": 4},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "at 28 seconds: E 4, half note, fermata, held about 3.5 seconds",
+                   "nb": "ved 28 sekunder: E 4, halvnote, fermat, holdes omtrent 3,5 sekunder"}
     },
     {
       "id": "adlib-exit-a-tempo",

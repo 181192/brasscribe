@@ -66,8 +66,8 @@ What this means:
 | State | Notehead | Extra mark | Talking score | MusicXML export |
 |---|---|---|---|---|
 | Confident (≥ 0.7) | normal | – | – | normal |
-| Uncertain (0.4–0.7) | normal, colour `uncertain` | small open ring (0.6 staff-space) beside the notehead, on the side away from the stem | "uncertain" | `color`; level in an extension field (open question below) |
-| Very uncertain (< 0.4) | **parenthesised** notehead, colour `very-uncertain` | filled ring beside the notehead | "very uncertain" | `<notehead parentheses="yes">` + `color` |
+| Uncertain (0.4–0.7) | normal, colour `uncertain` | a small "?" above the note, outside the staff, like a fingering | "uncertain" | `color`; the level in an extension field (open question below) |
+| Very uncertain (< 0.4) | normal, colour `very-uncertain` | a boxed "?" above the note | "very uncertain" | `color`; the level in an extension field |
 | Checked by user | normal | – | – | normal |
 | Free time (*ad lib*) | normal | `adlib-tint` band plus the text "ad lib." at the start, "a tempo" at the end, dashed bar lines | "Ad lib, free time…" | `<words>ad lib.</words>`, dashed `<bar-style>` |
 | Loop range | – | tint band plus bracket-shaped edge markers at both ends, labelled "Loop 12–16" | "Loop set, bars 12 to 16" | – |
@@ -75,9 +75,16 @@ What this means:
 | Focus (score) | – | 2 px `focus` outline plus a 2 px gap around the focused note or bar | the announcement | – |
 | Active part | – | part name in bold plus a leading bar marker, not only highlight colour | "Part: Solo Cornet" | – |
 
-**Open question:** the MusicXML encoding of the uncertainty level for exports. Parenthesised noteheads mean "editorial" to engravers, which is close in meaning. The colour survives MuseScore import, but the level needs a custom field (e.g. `<other-notation>`) or a notehead choice. Agree it with the MusicXML writer.
+Why "?" and not the obvious alternatives:
+- **Rings or circles** near a note mean *open* (the "o" after a mute or stopped-horn sign) to brass players.
+- **Parenthesised noteheads** mean *optional* or editorial, so a player might simply skip a "very uncertain" note.
+- A "?" has no existing meaning in brass notation. It is the same mark on screen and in print, and it survives black-and-white photocopies.
 
-On Apple, when `accessibilityDifferentiateWithoutColor` is on, add a letter badge ("?") on uncertain noteheads, on top of the rules above.
+**Open questions**
+- Confirm with brass-band players that "?" and a boxed "?" read as "check this note" and not as anything else.
+- How to encode the uncertainty level in MusicXML exports. Colour survives MuseScore import. The level needs a custom field (e.g. `<other-notation>` or `<other-technical>`) or a `<words>`-style marking. Agree it with the MusicXML writer.
+
+On Apple, `accessibilityDifferentiateWithoutColor` needs nothing extra, because the "?" marks are always on. When the setting is on, it may make the marks larger.
 
 ## 3. High-contrast theme
 
@@ -141,5 +148,5 @@ Never, in any mode:
 
 ## Open questions
 
-1. The MusicXML encoding of uncertainty levels (§2).
+1. The MusicXML encoding of uncertainty levels, and players' reading of the "?" marks (§2).
 2. Whether ΔE 20 is the right "distinguishable" threshold at notehead size. It is a heuristic. A pilot with colour-blind players would settle it.

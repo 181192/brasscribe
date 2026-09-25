@@ -19,7 +19,10 @@ Reports per part and for the whole score:
   - divisi (chords in a monophonic brass part)
 
 `--bars` lists every flagged bar with reasons. `--range A-B` restricts to bars A..B.
-`--check` exits 1 when a threshold in THRESHOLDS is exceeded (CI gate).
+`--check` exits 1 when a threshold in THRESHOLDS is exceeded (CI gate). With
+`--baseline report.json` (a saved `--json` output) it fails only on regressions: metrics over
+threshold that are also worse than the baseline. Update the baseline deliberately, like the
+golden output.
 """
 
 from __future__ import annotations
@@ -406,14 +409,21 @@ def analyse_part(part: Part, rng: tuple[int, int] | None) -> tuple[dict, dict[st
     return m, flags
 
 
-def violations(metrics: list[dict]) -> list[str]:
+def violations(metrics: list[dict], baseline: dict | None = None) -> list[str]:
+    """Metrics over their threshold. With a baseline, only those that also got worse than it."""
     out = []
+    base = {m["part"]: m for m in (baseline or {}).get("parts", [])}
     for m in metrics:
         if m["tacet"]:
             continue
         for key, limit in THRESHOLDS.items():
-            if key in m and m[key] > limit:
-                out.append(f"{m['part']}: {key}={m[key]} > {limit}")
+            if key not in m or m[key] <= limit:
+                continue
+            prev = base.get(m["part"], {}).get(key)
+            if baseline is not None and prev is not None and m[key] <= prev:
+                continue
+            was = f" (baseline {prev})" if prev is not None else ""
+            out.append(f"{m['part']}: {key}={m[key]} > {limit}{was}")
     return out
 
 
@@ -465,13 +475,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--bars", action="store_true", help="list flagged bars per part")
     ap.add_argument("--range", help="restrict to bars A-B, e.g. 1-16")
     ap.add_argument("--check", action="store_true", help="exit 1 on threshold violations")
+    ap.add_argument("--baseline", type=Path,
+                    help="JSON from --json; with --check, fail only on metrics over threshold and worse than the baseline")
     a = ap.parse_args(argv)
     rng = tuple(int(x) for x in a.range.split("-")) if a.range else None
     parts, score = parse(a.musicxml)
     results = [analyse_part(p, rng) for p in parts]
     metrics = [r[0] for r in results]
     agg = aggregate(metrics, parts, rng)
-    viol = violations(metrics)
+    baseline = json.loads(a.baseline.read_text()) if a.baseline else None
+    viol = violations(metrics, baseline)
     if a.json:
         out = {"file": str(a.musicxml), "range": rng, "score": {**score, "words": score["words"]},
                "aggregate": agg, "parts": metrics, "violations": viol}

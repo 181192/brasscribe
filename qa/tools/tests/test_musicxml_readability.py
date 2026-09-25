@@ -61,6 +61,22 @@ def test_accidentals():
     assert solo["bars_mixed_sharp_flat"] == 0
 
 
+def test_baseline_only_fails_on_regression(tmp_path):
+    import json
+
+    parts, _ = r.parse(FIXTURE)
+    metrics = [r.analyse_part(p, None)[0] for p in parts]
+    base = tmp_path / "base.json"
+    base.write_text(json.dumps({"parts": metrics}))
+    assert r.main([str(FIXTURE), "--check", "--baseline", str(base)]) == 0
+    better = [dict(m) for m in metrics]
+    for m in better:
+        if m["part"] == "Solo Cornet":
+            m["double_dotted"] = 0
+    base.write_text(json.dumps({"parts": better}))
+    assert r.main([str(FIXTURE), "--check", "--baseline", str(base)]) == 1
+
+
 def test_range_filter_and_check_exit_code():
     parts, _ = r.parse(FIXTURE)
     solo = next(p for p in parts if p.name == "Solo Cornet")

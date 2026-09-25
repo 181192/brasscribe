@@ -73,23 +73,37 @@ Norwegian musicians use German-derived names. Writing "B-flat" style names in No
 ## 4. Announcement grammar
 
 ```
-announcement := [region_change ". "] [part_change ". "] location ": " body {", " modifier}
-location     := [bar_part ", "] position          (standard, full)
-              | beat_short                         (brief)
-bar_part     := "bar" N [" of " TOTAL (full)] {", " bar_change}
-position     := beat_position | time_position      (time_position inside ad lib)
+announcement := mode_change                                   (§3.4, on its own)
+              | [region_change ". "] [part_change ". "] location ": " body {", " modifier}
+location     := [bar_part ", "] position                      (standard, full)
+              | [bar_part ", "] beat_short                    (brief)
+              | bar_part                                      (body is bar_rest, one bar)
+              | "bars " A " to " B                            (body is bar_rest over several bars; nb "takt A til B")
+bar_part     := "bar " N [" of " TOTAL] {", " bar_change}    (" of TOTAL" in full only; nb "takt N av TOTAL")
+position     := beat_position | time_position                 (time_position inside ad lib, §4.8)
 body         := note | held | rest | bar_rest | chord | unpitched
+note         := pitch ", " duration                           (standard, full)
+              | pitch " " duration_brief                      (brief: one space, no comma)
 modifier     := tie | tuplet | articulation | dynamic | performed | confidence   (in this order)
 ```
 
 - Separators are `", "` and `". "`, so the screen reader pauses between parts.
 - Numbers are digits. The decimal separator follows the locale (nb "2,5").
-- Casing: the apps pass the string as is. Only region and part changes start with a capital letter.
-- `bar_part` appears when the bar differs from the context (the previous announcement), and always when navigating by bar.
+- **Rounding** is always *round half up*, never banker's rounding (Rust `f64::round` and Python `round` differ: use `floor(x + 0.5)`):
+  - region length: whole seconds (31.5 → 32)
+  - time position: whole seconds (21.8 → 22)
+  - performed length: to 0.5 s (2.6 → 2.5)
+  - confidence percent: whole percent of `confidence × 100` (0.55 → 55)
+- Casing: the apps pass the string as is. Only region changes, part changes and mode changes start with a capital letter.
+- `bar_part` appears when:
+  - the bar differs from the context (the previous announcement)
+  - navigating by bar
+  - the part changes (§4.9)
+- In brief verbosity, `bar_part` has the same form as in standard.
 - `bar_change` lists what changes at this bar, in this order:
   - key: en "key 3 sharps" / nb "3 kryss"; "key 1 flat" / "1 b"; "no sharps or flats" / "ingen faste fortegn"
   - time: en "3 4 time" / nb "3 fjerdedels takt"; en "6 8 time" / nb "6 åttendedels takt"
-  - tempo: "tempo 136" / "tempo 136"
+  - tempo: "tempo 136" / "tempo 136". Leave it out when the same announcement starts with the "A tempo, N beats per minute." region message (§4.8).
   - rehearsal mark: "rehearsal A" / "øvingsbokstav A"
 
 ### 4.1 Positions (beats)
@@ -135,7 +149,7 @@ The offset inside a beat is `num/den` of a beat.
 - **Note navigation skips tie continuations.** The note that starts a tie announces what follows:
   - one continuation: en "tied to `<dur>`[ in bar N]" / nb "bundet til `<dur>`[ i takt N]". Add "in bar N" only when the continuation is in another bar.
   - a chain of more than two notes: en "tied, `<beats>` beats in all" / nb "bundet, `<beats>` slag i alt". Halves are spoken as "3 and a half" / "3 og et halvt".
-- **Beat navigation** can land where a tied note is still sounding. It then announces kind `held`: en "`<pitch>` held, from bar N beat B" / nb "`<pitch>` holdes, fra takt N slag B". Drop "bar N" when it's the same bar.
+- **Beat navigation** can land where a tied note is still sounding. It then announces kind `held`: en "`<pitch>` held, from bar N beat B" / nb "`<pitch>` holdes, fra takt N slag B". B uses the position form without the word "beat" ("4 and" / "4-og"). Drop "bar N" when it is the same bar.
 
 ### 4.4 Tuplets
 
@@ -164,7 +178,18 @@ The offset inside a beat is `num/den` of a beat.
 | 0.4 – < 0.7 | uncertain | usikker |
 | < 0.4 | very uncertain | svært usikker |
 
-- `full` adds "confidence 55 percent, source SwiftF0" / "sikkerhet 55 prosent, kilde SwiftF0". With several sources, they are joined with "and" / "og".
+- `full` adds "confidence 55 percent, source SwiftF0" / "sikkerhet 55 prosent, kilde SwiftF0". With several sources, use "sources" / "kilder" and join them with "and" / "og".
+- Spoken source names:
+
+  | id | spoken |
+  |---|---|
+  | `swiftf0` | SwiftF0 |
+  | `muscriptor` | MuScriptor |
+  | `basic-pitch` | Basic Pitch |
+  | `mega53` | Mega-53 |
+  | `beat-this` | Beat This |
+
+  An unknown id is spoken as given.
 - The 0.7 threshold matches the engine's red colouring today.
 - **Open question:** the 0.4 threshold for the second level is a proposal. It should be calibrated against the measured precision per confidence bin (`10-benchmark-results.md`).
 - A note the user has reviewed and accepted ("Mark as checked") no longer announces uncertainty.
@@ -180,12 +205,14 @@ In a region from `Composition.free_regions[]`:
   - Under 60 s: "at 22 seconds" / "ved 22 sekunder".
   - Otherwise: "at 1 minute 5 seconds" / "ved 1 minutt 5 sekunder".
 - **Performed length:** when the performed duration is ≥ 1.0 s, add "held about X seconds" / "holdes omtrent X sekunder" after the articulations. X is rounded to 0.5 s. Shorter notes get no length.
+- **Fermata:** the engine writes a fermata only on the last melody note that starts inside a region, and clips that note to end at the region end. The announcer speaks it like any articulation.
 - **Leaving:** en "A tempo, 136 beats per minute." / nb "A tempo, 136 slag per minutt."
 - `notation: "tempo"` regions (the user entered a tempo instead): announce "Ad lib" on entry, but keep beat positions.
 
 ### 4.9 Part change
 
 - When the part differs from the context, the part name comes first as its own sentence: "Solo Horn." / "Solo althorn."
+- After a part change, `bar_part` is always included, **with the new part's current key** as a `bar_change`, and its time signature if it differs from the previous part's. The key is included even when it doesn't change at this bar. Brass-band parts have different key signatures (the E♭ horns have 3 sharps where the B♭ cornets have 2), so a player moving between parts needs to hear it. Example: "Solo Horn. bar 12, key 3 sharps, beat 1: C-sharp 5, quarter note".
 - nb part names use the table in §7.
 
 ## 5. Navigation
@@ -306,7 +333,7 @@ The same commands on every platform. The apps map them to native gestures.
 | triplet | beat 3, triplet 2: F-sharp 4, eighth note, triplet, 2 of 3 | slag 3, triol 2: Fiss 4, åttendedelsnote, triol, 2 av 3 |
 | very-uncertain-and-dynamic-and-articulation | beat 4: A 5, quarter note, accent, fortissimo, very uncertain | slag 4: A 5, fjerdedelsnote, aksent, fortissimo, svært usikker |
 | adlib-region-entry | Ad lib, free time, bars 1 to 4, about 32 seconds. bar 1, at 0 seconds: D 4, eighth note | Ad lib, fritt tempo, takt 1 til 4, omtrent 32 sekunder. takt 1, ved 0 sekunder: D 4, åttendedelsnote |
-| adlib-inside-fermata | at 22 seconds: D 5, half note, fermata, held about 2.5 seconds | ved 22 sekunder: D 5, halvnote, fermat, holdes omtrent 2,5 sekunder |
+| adlib-inside-held | at 22 seconds: D 5, half note, held about 2.5 seconds | ved 22 sekunder: D 5, halvnote, holdes omtrent 2,5 sekunder |
 | adlib-exit-a-tempo | A tempo, 136 beats per minute. bar 5, beat 1 and: D 4, sixteenth note | A tempo, 136 slag per minutt. takt 5, slag 1-og: D 4, sekstendedelsnote |
 | part-change-and-key | Solo Horn. bar 12, key 3 sharps, beat 1: C-sharp 5, quarter note | Solo althorn. takt 12, 3 kryss, slag 1: Ciss 5, fjerdedelsnote |
 | full-verbosity-both-pitches | bar 2 of 128, beat 1: written B-flat 4, sounds A-flat 4, eighth note, uncertain, confidence 55 percent, source SwiftF0 | takt 2 av 128, slag 1: skrevet B 4, klinger Ass 4, åttendedelsnote, usikker, sikkerhet 55 prosent, kilde SwiftF0 |
