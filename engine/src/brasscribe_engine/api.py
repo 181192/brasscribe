@@ -45,7 +45,8 @@ MEDIA = {
 }
 SUFFIX_MEDIA = {".json": "application/json", ".musicxml": MEDIA["brass-band.musicxml"], ".pdf": "application/pdf",
                 ".mid": "audio/midi", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac",
-                ".beats": "text/plain"}
+                ".beats": "text/plain", ".brf": "text/plain; charset=us-ascii", ".html": "text/html; charset=utf-8",
+                ".txt": "text/plain; charset=utf-8"}
 
 
 def media_type(name: str) -> str:
@@ -207,8 +208,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
         path, filename = job_input(body)
         title = body.title or profiles.default_title(body.profile, Path(filename))
-        job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title,
-                          params={"audio": body.render_audio}, allow_heavy=body.allow_heavy)
+        params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
+                  "key": body.key, "transpose": body.transpose}
+        try:
+            profiles.arrangement_options(params)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from e
+        job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
+                          allow_heavy=body.allow_heavy)
         return job_model(job)
 
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
@@ -226,10 +233,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
               tags=["jobs"], dependencies=[Depends(auth)])
     def create_job_from_upload(file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
-                               title: str | None = Form(None), render_audio: bool = Form(True)) -> m.Job:
+                               title: str | None = Form(None), render_audio: bool = Form(True),
+                               lineup: m.Lineup = Form("full"), difficulty: m.Difficulty = Form("faithful"),
+                               key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
-        return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio))
+        return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
+                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose))
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:
@@ -335,6 +345,70 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
              responses={200: {"content": {"audio/mpeg": {"schema": {"type": "string", "format": "binary"}}}}})
     def get_audio(job_id: str):
         return output_file(job_id, "brass-band.mp3")
+
+    def part_file(job_id: str, part: str, suffix: str) -> str:
+        """Output name of one part's file: part is its 1-based number in score order or its name."""
+        d = jobs.run_dir(job_or_404(job_id).id) / "outputs" / "parts"
+        files = sorted(d.glob(f"*{suffix}")) if d.is_dir() else []
+        want = part.strip().lower()
+        for f in files:
+            num, _, name = f.name[: -len(suffix)].partition("-")
+            if want == num.lstrip("0") or want == num or want == name.lower() or want == name.replace("-", " ").lower():
+                return f"parts/{f.name}"
+        raise HTTPException(404, f"no part {part!r}; parts are {[f.name[:-len(suffix)] for f in files]}")
+
+    @app.get("/v1/jobs/{job_id}/braille", operation_id="getBraille", tags=["results"], dependencies=[Depends(auth)],
+             response_class=FileResponse,
+             responses={200: {"description": "Braille music in North American Braille ASCII (.brf, 40 cells per line, "
+                                             "25 lines per page)",
+                              "content": {"text/plain": {"schema": {"type": "string"}}}}})
+    def get_braille(job_id: str, part: str | None = Query(None, description="part number (1-based, score order) or "
+                                                                             "name, e.g. 2 or Solo Cornet; omit for the score")):
+        """Braille music (BRF) of the score or of one part, transcribed by music21."""
+        return output_file(job_id, part_file(job_id, part, ".brf") if part else "brass-band.brf")
+
+    @app.get("/v1/jobs/{job_id}/talking-score", operation_id="getTalkingScore", tags=["results"],
+             dependencies=[Depends(auth)],
+             responses={200: {"description": "Talking score (docs/accessibility/talking-score-spec.md): HTML with a "
+                                             "heading per part and bar, plain text, or the TalkingScore JSON",
+                              "content": {"text/html": {"schema": {"type": "string"}},
+                                          "text/plain": {"schema": {"type": "string"}},
+                                          "application/json": {"schema": {"type": "object"}}}}})
+    def get_talking_score(job_id: str,
+                          format: str = Query("html", pattern="^(html|text|json)$"),
+                          lang: str = Query("en", pattern="^(en|nb)$"),
+                          part: str | None = Query(None, description="part number (1-based) or name; omit for all parts"),
+                          pitch_mode: str | None = Query(None, pattern="^(written|concert)$",
+                                                         description="default: written for one part, concert for the score"),
+                          verbosity: str = Query("standard", pattern="^(brief|standard|full)$")):
+        """Talking score of the whole score or one part, rendered from the job's talking-score.json."""
+        from fastapi.responses import HTMLResponse, PlainTextResponse
+
+        from . import talking_score as T
+
+        p = jobs.run_dir(job_or_404(job_id).id) / "outputs" / "talking-score.json"
+        if not p.exists():
+            raise HTTPException(404, f"no talking score for job {job_id}")
+        doc = json.loads(p.read_text())
+        parts = None
+        if part:
+            names = [x["name"].lower() for x in doc["parts"]]
+            want = part.strip().lower()
+            if want.isdigit() and 1 <= int(want) <= len(names):
+                parts = [int(want) - 1]
+            elif want in names:
+                parts = [names.index(want)]
+            else:
+                raise HTTPException(404, f"no part {part!r}; parts are {[x['name'] for x in doc['parts']]}")
+        if format == "json":
+            if parts is not None:
+                doc = {**doc, "parts": [doc["parts"][parts[0]]]}
+            return JSONResponse(doc)
+        settings = T.Settings(lang=lang, verbosity=verbosity,
+                              pitch_mode=pitch_mode or ("written" if parts is not None else "concert"))
+        if format == "html":
+            return HTMLResponse(T.to_html(doc, settings, parts))
+        return PlainTextResponse(T.to_text(doc, settings, parts))
 
     # ------------------------------------------------------------ benchmarks
 

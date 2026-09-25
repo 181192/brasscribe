@@ -33,6 +33,34 @@ class Profile:
     build: callable  # (title, params) -> list[Stage] and outputs
 
 
+ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None, "transpose": None}
+LINEUPS = ("full", "minimal")
+DIFFICULTIES = ("faithful", "standard", "easier")
+
+
+def arrangement_options(params: dict) -> dict:
+    """The job's arrangement options that differ from the defaults (so a default job keeps its cache keys)."""
+    opts = {k: params.get(k) for k in ARRANGEMENT_DEFAULTS if params.get(k) not in (None, ARRANGEMENT_DEFAULTS[k])}
+    if opts.get("lineup") not in (None, *LINEUPS):
+        raise ValueError(f"lineup must be one of {', '.join(LINEUPS)}")
+    if opts.get("difficulty") not in (None, *DIFFICULTIES):
+        raise ValueError(f"difficulty must be one of {', '.join(DIFFICULTIES)}")
+    if "key" in opts and "transpose" in opts:
+        raise ValueError("give key or transpose, not both")
+    if "transpose" in opts:
+        opts["transpose"] = int(opts["transpose"])
+        if not -11 <= opts["transpose"] <= 11:
+            raise ValueError("transpose is in semitones, -11 to 11")
+        if opts["transpose"] == 0:
+            del opts["transpose"]
+    return opts
+
+
+def _arrange_params(title: str, params: dict) -> dict:
+    opts = arrangement_options(params)
+    return {"title": title, "arrangement": opts} if opts else {"title": title}
+
+
 def _beats() -> Stage:
     return Stage("beats", "beats", {"audio": Input(SOURCE)}, S.beats, adapter="beat-this",
                  outputs=("mix.beats",), reuse_subdir=".")
@@ -44,7 +72,7 @@ def _transcribe(layer: str, tool: str, suffix: str, src: Input, reuse_subdir: st
 
 
 def _export(arrange: str, audio: bool) -> Stage:
-    code = (THIS, S.PART_STYLE) if S.PART_STYLE.exists() else (THIS,)
+    code = S.EXPORT_CODE + ((S.PART_STYLE,) if S.PART_STYLE.exists() else ())
     return Stage("export", "export", {"score": Input(arrange)}, S.export, params={"audio": audio}, code=code,
                  outputs=("export.json",))
 
@@ -58,7 +86,11 @@ def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
         "brass-band.mp3": ("export", "brass-band.mp3"),
         "separation-check.json": (arrange, "separation-check.json"),
         "parts/": (arrange, "parts/"),  # a trailing slash copies every file under that directory
-        "parts-pdf/": ("export", "parts/"),
+        "parts-pdf/": ("export", "parts/"),  # part PDFs and BRF land next to the part MusicXML
+        "brass-band.brf": ("export", "brass-band.brf"),
+        "talking-score.json": ("export", "talking-score.json"),
+        "talking-score.html": ("export", "talking-score.html"),
+        "talking-score.txt": ("export", "talking-score.txt"),
     }
 
 
@@ -97,7 +129,7 @@ def layered(title: str, params: dict) -> Pipeline:
     # Layer audio: energy gate, separation check, dynamics and rehearsal marks read it.
     for layer in LAYER_TOOLS:
         arrange_inputs[f"{layer}.wav"] = Input("layers", f"{layer}.wav")
-    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params={"title": title},
+    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params),
                     code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("orchestra-with-soloist", "layered", st, _outputs("arrange"), params)
@@ -111,7 +143,7 @@ def brass_band(title: str, params: dict) -> Pipeline:
         "melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid"),
         "bass": Input("transcribe.mix.muscriptor", "mix-mus.mid"),
         "harmony0": Input("transcribe.mix.muscriptor", "mix-mus.mid")},
-        S.arrange_band, params={"title": title}, code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("brass-band", "A", st, _outputs("arrange"), params)
 
@@ -122,7 +154,7 @@ def solo(title: str, params: dict) -> Pipeline:
     st.append(Stage("arrange", "arrange", {
         "beats": Input("beats", "mix.beats"), "sw": Input("transcribe.mix.swift-f0", "mix-sw.mid"),
         "mus": Input("transcribe.mix.muscriptor", "mix-mus.mid"), "bp": Input("transcribe.mix.basic-pitch", "mix-bp.mid")},
-        S.arrange_solo, params={"title": title}, code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+        S.arrange_solo, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("solo", "A-solo", st, _outputs("arrange"), params)
 
@@ -144,7 +176,7 @@ def pop_rock(title: str, params: dict) -> Pipeline:
         "beats": Input("beats", "mix.beats"), "melody": Input(f"transcribe.{melody_stem}.muscriptor", f"{melody_stem}-mus.mid"),
         "melody_support": Input(f"transcribe.{melody_stem}.basic-pitch", f"{melody_stem}-bp.mid"),
         "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"), **harmony},
-        S.arrange_band, params={"title": title}, code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("pop-rock", "B", st, _outputs("arrange"), params)
 

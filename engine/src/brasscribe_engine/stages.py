@@ -25,6 +25,7 @@ MUSIC_SRC = Path(brasscribe_music.__file__).resolve().parent
 EVAL_SRC = Path(brasscribe_eval.__file__).resolve().parent
 THIS = Path(__file__).resolve()
 PART_STYLE = MUSIC_SRC / "parts.mss"  # MuseScore style for rendering individual parts
+EXPORT_CODE = (THIS, THIS.with_name("braille.py"), THIS.with_name("talking_score.py"))
 SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS) + ((PART_STYLE,) if PART_STYLE.exists() else ())
 
 
@@ -92,12 +93,43 @@ def _stable_musicxml(ctx: StageContext) -> None:
             xml.write_text(stable_ids(xml.read_text()))
 
 
+_HELP: dict[str, str] = {}
+
+
+def _supported(module: str) -> str:
+    """The module's --help text (cached): which arrangement flags this arranger accepts."""
+    if module not in _HELP:
+        proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, "--help"], capture_output=True, text=True)
+        _HELP[module] = proc.stdout
+    return _HELP[module]
+
+
+def _arrangement_flags(ctx: StageContext, module: str) -> list[str]:
+    """--lineup / --difficulty / --key / --transpose for the job's non-default options.
+
+    An option the arranger does not implement yet fails the stage, except difficulty: it is
+    accepted as a parameter (it is part of the cache key) and logged as not applied."""
+    opts = ctx.params.get("arrangement") or {}
+    help_text = _supported(module) if opts else ""
+    flags = []
+    for name, value in opts.items():
+        flag = f"--{name}"
+        if re.search(rf"{flag}\b", help_text):
+            flags += [flag, str(value)]
+        elif name == "difficulty":
+            ctx.log(f"difficulty {value!r} recorded; {module} does not apply it yet")
+        else:
+            raise StageFailed(ctx.stage.name, f"{module} does not support {flag} yet")
+    return flags
+
+
 def arrange_layered(ctx: StageContext) -> None:
     names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz", ".wav"))}
     with tempfile.TemporaryDirectory(dir=ctx.out.parent) as tmp:
         view = _view(names, Path(tmp) / "layers")
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
-                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render")
+                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render",
+                *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
     _stable_musicxml(ctx)
 
 
@@ -109,14 +141,15 @@ def arrange_band(ctx: StageContext) -> None:
             "--harmony", *harmony, "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render"]
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
-    _python(ctx, "brasscribe_eval.arrange_song", *args)
+    _python(ctx, "brasscribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "brasscribe_eval.arrange_song"))
     _stable_musicxml(ctx)
 
 
 def arrange_solo(ctx: StageContext) -> None:
     i = ctx.inputs
     _python(ctx, "brasscribe_eval.arrange_solo", "--beats", str(i["beats"]), "--sw", str(i["sw"]), "--mus", str(i["mus"]),
-            "--bp", str(i["bp"]), "--out", str(ctx.out), "--title", ctx.params["title"])
+            "--bp", str(i["bp"]), "--out", str(ctx.out), "--title", ctx.params["title"],
+            *_arrangement_flags(ctx, "brasscribe_eval.arrange_solo"))
     _stable_musicxml(ctx)
 
 
@@ -145,5 +178,39 @@ def export(ctx: StageContext) -> None:
         written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
     if not mscore:
         ctx.log("mscore not found: PDF, MIDI and MP3 skipped")
+    accessible = accessible_exports(score, ctx)
+    written += accessible.pop("written")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
-                                                     "skipped": [] if mscore else formats}, indent=1))
+                                                     "skipped": [] if mscore else formats, **accessible}, indent=1))
+
+
+def accessible_exports(score: Path, ctx: StageContext) -> dict:
+    """Braille music (BRF) for the score and every part, and the talking score (JSON, HTML, text).
+
+    Neither needs MuseScore. A part music21 cannot transcribe is listed, not fatal."""
+    from . import braille, talking_score
+
+    written, failed, dropped = [], {}, []
+    xml = score / "brass-band.musicxml"
+    for src in [xml, *sorted((score / "parts").glob("*.musicxml"))]:
+        rel = "brass-band.brf" if src == xml else f"parts/{src.with_suffix('.brf').name}"
+        try:
+            r = braille.translate(src)
+        except Exception as e:  # noqa: BLE001 - reported per file
+            failed[rel] = f"{type(e).__name__}: {e}"
+            ctx.log(f"braille {rel} failed: {failed[rel]}")
+            continue
+        dst = ctx.out / rel
+        dst.parent.mkdir(exist_ok=True)
+        dst.write_bytes(r.brf.encode("ascii"))
+        written.append(rel)
+        if r.text_directions_dropped:
+            dropped.append(rel)
+    comp = talking_score.load_composition(score / "composition.json")
+    doc = talking_score.build(xml, comp)
+    (ctx.out / "talking-score.json").write_text(json.dumps(doc, ensure_ascii=False, indent=1))
+    en = talking_score.Settings()
+    (ctx.out / "talking-score.html").write_text(talking_score.to_html(doc, en))
+    (ctx.out / "talking-score.txt").write_text(talking_score.to_text(doc, en))
+    written += ["talking-score.json", "talking-score.html", "talking-score.txt"]
+    return {"written": written, "braille_failed": failed, "braille_text_directions_dropped": dropped}
