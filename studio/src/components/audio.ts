@@ -2,6 +2,7 @@
 // playback that keeps the position when switching sources.
 import { fetchBytes } from "../api/client";
 import { mixdown, peaks, spectrogram } from "../lib/dsp";
+import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, loading, nextId, token } from "../ui/dom";
 import { plot, timeAxis, type Plot } from "./canvas";
 
@@ -71,12 +72,12 @@ export class AudioAB extends HTMLElement {
 
   private render(): void {
     const name = nextId("ab");
-    this.playBtn = h("button", { type: "button", class: "primary", onclick: () => this.toggle() }, "Play");
-    this.radios = h("div", { class: "row", role: "radiogroup", "aria-label": "Listen to" },
+    this.playBtn = h("button", { type: "button", class: "primary", onclick: () => this.toggle() }, t("score.play"));
+    this.radios = h("div", { class: "row", role: "radiogroup", "aria-label": t("audio.listenTo") },
       this.sources.map((s, i) => h("label", {},
         h("input", { type: "radio", name, value: String(i), checked: i === 0, onchange: () => this.switchTo(i) }),
         `${String.fromCharCode(65 + i)}: ${s.label}`)));
-    this.status = h("p", { class: "hint", role: "status" }, "Loading audio…");
+    this.status = h("p", { class: "hint", role: "status" }, t("audio.loading"));
     this.wave = plot("Waveform", 110, (c, w, hh) => this.drawWave(c, w, hh));
     this.spec = plot("Spectrogram", 220, (c, w, hh) => this.drawSpec(c, w, hh));
     this.wave.canvas.addEventListener("click", (e) => {
@@ -84,15 +85,15 @@ export class AudioAB extends HTMLElement {
       this.seek(((e.clientX - r.left) / r.width) * this.duration);
     });
     const nav = h("div", { class: "row" },
-      h("button", { type: "button", onclick: () => this.pan(-0.8) }, "◀ Earlier"),
-      h("button", { type: "button", onclick: () => this.pan(0.8) }, "Later ▶"),
-      h("button", { type: "button", onclick: () => this.zoom(0.5) }, "Zoom in"),
-      h("button", { type: "button", onclick: () => this.zoom(2) }, "Zoom out"),
-      h("button", { type: "button", onclick: () => this.seek(this.viewStart) }, "Play from window start"));
+      h("button", { type: "button", onclick: () => this.pan(-0.8) }, t("common.earlier")),
+      h("button", { type: "button", onclick: () => this.pan(0.8) }, t("common.later")),
+      h("button", { type: "button", onclick: () => this.zoom(0.5) }, t("common.zoomIn")),
+      h("button", { type: "button", onclick: () => this.zoom(2) }, t("common.zoomOut")),
+      h("button", { type: "button", onclick: () => this.seek(this.viewStart) }, t("audio.fromWindow")));
     clear(this,
-      h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.seek(0) }, "Back to start"), this.radios),
+      h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.seek(0) }, t("audio.backToStart")), this.radios),
       this.status,
-      h("p", { class: "small muted" }, "Waveform of the whole file; click it (or use the buttons) to move. The spectrogram shows the window marked on the waveform."),
+      h("p", { class: "small muted" }, t("audio.hint")),
       this.wave.box,
       h("div", { style: "height:0.5rem" }),
       this.spec.box,
@@ -132,7 +133,7 @@ export class AudioAB extends HTMLElement {
   private play(at: number): void {
     const l = this.loaded[this.active];
     if (!l) {
-      announce("This source is still loading.");
+      announce(t("audio.stillLoading"));
       return;
     }
     const ac = audioContext();
@@ -147,13 +148,13 @@ export class AudioAB extends HTMLElement {
       if (this.node === node) {
         this.offset = this.position();
         this.node = null;
-        this.playBtn.textContent = "Play";
+        this.playBtn.textContent = t("score.play");
       }
     };
     this.node = node;
     this.offset = start;
     this.startedAt = ac.currentTime;
-    this.playBtn.textContent = "Pause";
+    this.playBtn.textContent = t("score.pause");
     const tick = () => {
       this.follow();
       this.wave.redraw();
@@ -166,7 +167,7 @@ export class AudioAB extends HTMLElement {
   private pause(): void {
     this.offset = this.position();
     this.stopPlayback();
-    this.playBtn.textContent = "Play";
+    this.playBtn.textContent = t("score.play");
     this.updateStatus();
   }
 
@@ -192,7 +193,7 @@ export class AudioAB extends HTMLElement {
     else this.offset = at;
     this.spec.redraw();
     this.updateStatus();
-    announce(`Listening to ${String.fromCharCode(65 + i)}: ${this.sources[i].label}`);
+    announce(t("audio.listening", { which: String.fromCharCode(65 + i), label: this.sources[i].label }));
   }
 
   private seek(t: number): void {
@@ -235,16 +236,16 @@ export class AudioAB extends HTMLElement {
     const l = this.current();
     if (!l) return;
     const b = l.buffer;
-    this.status.textContent = `${String.fromCharCode(65 + this.active)}: ${l.source.label} · ${fmt.seconds(b.duration)}, ${b.sampleRate} Hz, ${b.numberOfChannels} ch · position ${fmt.seconds(this.position())} · window ${fmt.seconds(this.viewStart)}–${fmt.seconds(this.viewStart + this.window)}`;
-    this.wave.setLabel(`Waveform of ${l.source.label}, ${fmt.seconds(b.duration)}`);
-    this.spec.setLabel(`Spectrogram of ${l.source.label} from ${fmt.seconds(this.viewStart)} to ${fmt.seconds(this.viewStart + this.window)}, 0 to 8 kHz`);
+    this.status.textContent = t("audio.status", { which: String.fromCharCode(65 + this.active), label: l.source.label, dur: fmt.seconds(b.duration), rate: b.sampleRate, ch: b.numberOfChannels, pos: fmt.seconds(this.position()), from: fmt.seconds(this.viewStart), to: fmt.seconds(this.viewStart + this.window) });
+    this.wave.setLabel(t("audio.waveform", { label: l.source.label, dur: fmt.seconds(b.duration) }));
+    this.spec.setLabel(t("audio.spectrogram", { label: l.source.label, from: fmt.seconds(this.viewStart), to: fmt.seconds(this.viewStart + this.window) }));
   }
 
   private drawWave(c: CanvasRenderingContext2D, w: number, hh: number): void {
     const dur = this.duration;
     if (!dur) {
       c.fillStyle = token("text-muted");
-      c.fillText("Loading…", 8, 16);
+      c.fillText(t("common.loading"), 8, 16);
       return;
     }
     const mid = (hh - 16) / 2;
@@ -344,9 +345,9 @@ function viridis(t: number): [number, number, number] {
 customElements.define("bs-audio-ab", AudioAB);
 
 export function audioPanel(sources: AudioSource[]): HTMLElement {
-  if (!sources.length) return h("p", {}, "No audio for this selection.");
+  if (!sources.length) return h("p", {}, t("audio.none"));
   const el = h("bs-audio-ab", {}) as AudioAB;
-  el.append(loading("Loading audio…"));
+  el.append(loading(t("audio.loading")));
   el.data = sources;
   return el;
 }

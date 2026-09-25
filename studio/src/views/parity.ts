@@ -2,16 +2,17 @@
 // or the reference runtime, note F1 and latency per device.
 import { api } from "../api/client";
 import type { ParityReport } from "../api/types";
+import { t } from "../i18n";
 import { clear, errorNotice, fmt, h, loading, pill, table } from "../ui/dom";
 
 const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
 
 export function parityView(root: HTMLElement): void {
   const el = h("div", {}, loading());
-  clear(root, h("h1", {}, "Conversion parity"),
-    h("p", {}, "Each converted model is compared with its reference runtime on the eval sets. A variant is ready for on-device use when its note F1 against the reference meets the report's threshold."),
+  clear(root, h("h1", {}, t("nav.parity")),
+    h("p", {}, t("parity.intro")),
     el);
-  api.parity().then((reports) => clear(el, reports.length ? reports.map(report) : h("p", {}, "No parity reports yet (models/convert/reports/*.json)."))).catch((e) => clear(el, errorNotice(e)));
+  api.parity().then((reports) => clear(el, reports.length ? reports.map(report) : h("p", {}, t("parity.none")))).catch((e) => clear(el, errorNotice(e)));
 }
 
 function report(r: ParityReport): HTMLElement {
@@ -29,15 +30,15 @@ function report(r: ParityReport): HTMLElement {
   const latency = latencyRows(r);
   const verdict = (r as { pass?: unknown }).pass;
   const ref = r.reference ?? {};
-  return h("section", { class: "card stack", "aria-label": `Parity for ${r.model ?? r._file}` },
-    h("h2", { class: "row" }, h("span", {}, r.model ?? "model"), typeof verdict === "boolean" ? pill(verdict ? "pass" : "fail") : null, h("span", { class: "small muted" }, `${r.device ?? ""} · threshold F1 ${thr ?? "–"}`)),
-    h("p", { class: "small" }, `Reference: ${[ref.runtime, ref.model].filter(Boolean).join(", ")}${ref.note_segmentation ? `; notes by ${ref.note_segmentation}` : ""}`,
+  return h("section", { class: "card stack", "aria-label": t("parity.for", { model: r.model ?? r._file ?? "" }) },
+    h("h2", { class: "row" }, h("span", {}, r.model ?? "model"), typeof verdict === "boolean" ? pill(verdict ? "pass" : "fail") : null, h("span", { class: "small muted" }, `${r.device ?? ""} · ${t("parity.threshold", { t: thr ?? "–" })}`)),
+    h("p", { class: "small" }, t("parity.reference", { ref: [ref.runtime, ref.model].filter(Boolean).join(", ") }) + (ref.note_segmentation ? t("parity.notesBy", { seg: String(ref.note_segmentation) }) : ""),
       r._file ? h("span", { class: "muted" }, ` · ${r._file}`) : null),
-    table("Note F1 against the reference", ["Variant", "Set", "F1", "P", "R", "Worst clip F1", "Worst clip", "Clips", "Meets threshold"], metricRows),
-    latency.length ? table("Latency on this device", ["Backend", "Audio (s)", "Load (s)", "Median run (s)", "Real-time factor", "Peak memory"], latency)
-      : h("p", { class: "hint" }, "This report has no latency figures."),
-    typeof r.command === "string" ? h("p", { class: "small" }, "Produced by ", h("code", {}, r.command)) : null,
-    r.artifacts ? table("Converted artifacts", ["File", "Size", "SHA-256"], Object.entries(r.artifacts).map(([k, v]) => [h("span", { class: "mono small" }, k), fmt.bytes(v.size_bytes), h("span", { class: "mono small" }, fmt.hash(v.sha256))])) : null);
+    table(t("parity.f1"), [t("parity.col.variant"), t("parity.col.set"), "F1", "P", "R", t("parity.col.worst"), t("parity.col.worstClip"), t("parity.col.clips"), t("parity.col.meets")], metricRows),
+    latency.length ? table(t("parity.latency"), [t("parity.col.backend"), t("parity.col.audio"), t("parity.col.load"), t("parity.col.median"), t("parity.col.rtf"), t("parity.col.rss")], latency)
+      : h("p", { class: "hint" }, t("parity.noLatency")),
+    typeof r.command === "string" ? h("p", { class: "small" }, t("parity.command"), h("code", {}, r.command)) : null,
+    r.artifacts ? table(t("parity.artifacts"), [t("run.col.file"), t("run.col.size"), t("run.col.sha")], Object.entries(r.artifacts).map(([k, v]) => [h("span", { class: "mono small" }, k), fmt.bytes(v.size_bytes), h("span", { class: "mono small" }, fmt.hash(v.sha256))])) : null);
 }
 
 /** Latency per backend from the report's `benchmarks` block (timed on `audio_s` seconds of audio). */

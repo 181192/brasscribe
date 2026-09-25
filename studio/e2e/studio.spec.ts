@@ -13,6 +13,12 @@ mkdirSync(shots, { recursive: true });
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
+// Runs a test created; removed afterwards even when the test fails.
+const createdRuns: string[] = [];
+test.afterAll(async ({ request }) => {
+  for (const id of createdRuns.splice(0)) await request.delete(`/v1/runs/${id}`);
+});
+
 async function axe(page: Page, label: string): Promise<void> {
   const res = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   const bad = res.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
@@ -311,6 +317,7 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   await panel.getByRole("button", { name: "Re-run" }).click();
   await page.waitForURL((u) => !u.hash.includes(run.id) && u.hash.startsWith("#/runs/"), { timeout: 30_000 });
   const id = decodeURIComponent(page.url().split("#/runs/")[1].split("/")[0]);
+  createdRuns.push(id);
   await expect(page.locator(".pill-succeeded, .pill-failed").first()).toBeVisible({ timeout: 540_000 });
   const job = await (await page.request.get(`/v1/jobs/${id}`)).json();
   const stages = job.stages.map((s: { name: string; status: string; seconds?: number; device?: string }) =>
@@ -327,4 +334,107 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   await expect(engine).toBeVisible();
   console.log(await engine.textContent());
   await shot(page, "compare-rerun");
+
+  // Clean up: remove the run this test created (the cache stays).
+  const del = await page.request.delete(`/v1/runs/${id}`);
+  expect(del.status()).toBe(204);
+  createdRuns.splice(createdRuns.indexOf(id), 1);
+  expect((await page.request.get(`/v1/jobs/${id}`)).status()).toBe(404);
+});
+
+test("both scores side by side with the differences marked", async ({ page }) => {
+  // A Mikkel run that differs from data/golden (an older arrangement), else skip.
+  const jobs = (await (await page.request.get("/v1/jobs")).json()) as JobLite[];
+  let other: JobLite | undefined;
+  for (const j of jobs.filter((x) => /mikkel/i.test(x.title ?? "") && x.status === "succeeded" && x.outputs?.includes("brass-band.musicxml"))) {
+    const c = await page.request.get(`/v1/jobs/${j.id}/compare?reference=mikkel-arranged-band`);
+    if (c.ok() && !(await c.json()).ok) {
+      other = j;
+      break;
+    }
+  }
+  test.skip(!other, "no Mikkel run that differs from data/golden");
+  await page.goto(`/#/compare?a=${other!.id}&b=ref:mikkel-arranged-band`);
+  await page.waitForFunction(() => {
+    const s = document.querySelectorAll("#main bs-score");
+    return s.length === 2 && Array.from(s).every((x) => (x as unknown as { rendered: boolean }).rendered);
+  }, undefined, { timeout: 120_000 });
+  const status = page.locator("#cmp-notation-status");
+  await expect(status).toContainText(/bars differ in/);
+  console.log(`notation: ${await status.textContent()}`);
+  await page.getByRole("button", { name: "Next difference" }).click();
+  await expect(status).toContainText(/Bar \d+: \d+ changed in A, \d+ in B\./);
+  console.log(`notation: ${await status.textContent()}`);
+  const marked = await page.evaluate(() => Array.from(document.querySelectorAll("#main bs-score")).map((s) => {
+    const api = (s as unknown as { api: { score: { tracks: { staves: { bars: { voices: { beats: { notes: { style?: { noteHead?: number } }[] }[] }[] }[] }[] }[] } } }).api;
+    return api.score.tracks.flatMap((tr) => tr.staves[0].bars.flatMap((b) => b.voices.flatMap((v) => v.beats.flatMap((be) => be.notes)))).filter((n) => n.style?.noteHead !== undefined).length;
+  }));
+  console.log(`notes with a changed notehead: A ${marked[0]}, B ${marked[1]}`);
+  expect(marked[0] + marked[1]).toBeGreaterThan(0);
+  await page.waitForTimeout(800);
+  const views = page.locator("#main bs-score .score-view");
+  await views.nth(0).screenshot({ path: join(shots, "compare-notation-a.png") });
+  await views.nth(1).screenshot({ path: join(shots, "compare-notation-b.png") });
+  await axe(page, "compare with notation");
+});
+
+async function said(page: Page): Promise<string> {
+  return page.evaluate(() => (document.querySelector("#main bs-score") as unknown as { lastAnnouncement: string }).lastAnnouncement);
+}
+
+test("talking score in the viewer, in English and Norwegian", async ({ page }) => {
+  test.skip(!existsSync(join(golden, "brass-band.musicxml")), "data/golden is not available");
+  await page.goto("/#/viewer");
+  await page.locator("#lang-select").selectOption("en");
+  await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+  await waitRendered(page);
+  const view = page.locator(".score-view");
+  await view.focus();
+  // Bar navigation, then note by note through the Solo Cornet part.
+  await page.keyboard.press("Alt+ArrowDown");
+  const bar = await said(page);
+  await page.keyboard.press("ArrowRight");
+  const note = await said(page);
+  await page.keyboard.press("u");
+  const unc = await said(page);
+  await page.keyboard.press("w");
+  const where = await said(page);
+  await page.keyboard.press("Control+Shift+ArrowDown");
+  const part = await said(page);
+  console.log(`talking score (en):\n  ${[bar, note, unc, where, part].join("\n  ")}`);
+  expect(bar).toMatch(/^bar 2(, [^:]+)?: /);
+  expect(note).toMatch(/^(bar \d+, )?beat \d/);
+  expect(unc).toMatch(/uncertain/);
+  expect(where).toMatch(/ of \d+, /);
+  expect(part).toMatch(/^Repiano Cornet\. bar \d+, key /);
+  // The announcements go to the live region.
+  await expect(page.locator("#announcer")).toHaveText(part);
+  // Alt+T opens the text form with the current line marked.
+  await page.keyboard.press("Alt+t");
+  await expect(page.locator(".talk-text [aria-current=true]")).toBeVisible();
+  await shot(page, "viewer-talking", false);
+  await axe(page, "viewer talking score");
+
+  // Norwegian: the whole UI and the talking score switch.
+  await page.locator("#lang-select").selectOption("nb");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Notevisning");
+  await expect(page.locator("html")).toHaveAttribute("lang", "nb");
+  await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+  await waitRendered(page);
+  await page.locator(".score-view").focus();
+  await page.keyboard.press("Alt+ArrowDown");
+  const nbBar = await said(page);
+  await page.keyboard.press("u");
+  const nbUnc = await said(page);
+  console.log(`talking score (nb):\n  ${nbBar}\n  ${nbUnc}`);
+  expect(nbBar).toMatch(/^takt 2(, [^:]+)?: /);
+  expect(nbUnc).toMatch(/usikker/);
+  await shot(page, "viewer-nb", false);
+  await axe(page, "viewer (nb)");
+  await page.goto("/#/runs");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kjøringer");
+  await expect(page.getByRole("button", { name: "Start kjøring" })).toBeVisible();
+  await shot(page, "runs-nb");
+  await axe(page, "runs (nb)");
+  await page.locator("#lang-select").selectOption("en");
 });
