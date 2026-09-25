@@ -1,0 +1,88 @@
+{
+  "$comment": "Colour tokens for Play and Studio. Checked by qa/tools/contrast.py; the generated report is qa/reports/contrast-tokens.md. Pairs list [foreground, background, minimum ratio, WCAG criterion].",
+  "themes": {
+    "light": {
+      "bg": "#FFFFFF",
+      "surface": "#F4F4F2",
+      "text": "#1A1A1A",
+      "text-muted": "#595959",
+      "ink": "#000000",
+      "staff": "#4D4D4D",
+      "uncertain": "#0063A6",
+      "very-uncertain": "#B04A00",
+      "adlib-tint": "#EEF3F8",
+      "loop-tint": "#FFF3D6",
+      "loop-edge": "#8A5A00",
+      "cursor": "#6B3FA0",
+      "focus": "#0050B3",
+      "error": "#B3261E"
+    },
+    "dark": {
+      "bg": "#121212",
+      "surface": "#1E1E1E",
+      "text": "#EDEDED",
+      "text-muted": "#B3B3B3",
+      "ink": "#F2F2F2",
+      "staff": "#A6A6A6",
+      "uncertain": "#56B4E9",
+      "very-uncertain": "#F0A04B",
+      "adlib-tint": "#1B2530",
+      "loop-tint": "#33290F",
+      "loop-edge": "#E0B65C",
+      "cursor": "#C9A7F0",
+      "focus": "#8AB4F8",
+      "error": "#F2B8B5"
+    },
+    "high-contrast": {
+      "bg": "#000000",
+      "surface": "#000000",
+      "text": "#FFFFFF",
+      "text-muted": "#FFFFFF",
+      "ink": "#FFFFFF",
+      "staff": "#FFFFFF",
+      "uncertain": "#00FFFF",
+      "very-uncertain": "#FFFF00",
+      "adlib-tint": "#000000",
+      "loop-tint": "#000000",
+      "loop-edge": "#FFFF00",
+      "cursor": "#FF80FF",
+      "focus": "#FFFF00",
+      "error": "#FF8080"
+    }
+  },
+  "pairs": [
+    ["text", "bg", 4.5, "1.4.3"],
+    ["text", "surface", 4.5, "1.4.3"],
+    ["text-muted", "bg", 4.5, "1.4.3"],
+    ["text-muted", "surface", 4.5, "1.4.3"],
+    ["text", "adlib-tint", 4.5, "1.4.3"],
+    ["ink", "bg", 3.0, "1.4.11"],
+    ["ink", "adlib-tint", 3.0, "1.4.11"],
+    ["ink", "loop-tint", 3.0, "1.4.11"],
+    ["staff", "bg", 3.0, "1.4.11"],
+    ["uncertain", "bg", 3.0, "1.4.11"],
+    ["uncertain", "adlib-tint", 3.0, "1.4.11"],
+    ["uncertain", "loop-tint", 3.0, "1.4.11"],
+    ["very-uncertain", "bg", 3.0, "1.4.11"],
+    ["very-uncertain", "adlib-tint", 3.0, "1.4.11"],
+    ["very-uncertain", "loop-tint", 3.0, "1.4.11"],
+    ["loop-edge", "bg", 3.0, "1.4.11"],
+    ["cursor", "bg", 3.0, "1.4.11"],
+    ["cursor", "loop-tint", 3.0, "1.4.11"],
+    ["focus", "bg", 3.0, "2.4.13 (AAA, used as target)"],
+    ["focus", "surface", 3.0, "1.4.11"],
+    ["error", "bg", 4.5, "1.4.3"]
+  ],
+  "distinguish": [
+    ["ink", "uncertain"],
+    ["ink", "very-uncertain"],
+    ["uncertain", "very-uncertain"],
+    ["cursor", "uncertain"],
+    ["cursor", "very-uncertain"],
+    ["cursor", "ink"]
+  ],
+  "legacy": {
+    "$comment": "Colour used by the current engine output for SwiftF0-only notes; checked for reference.",
+    "light": { "golden-red": "#D0021B" }
+  }
+}
