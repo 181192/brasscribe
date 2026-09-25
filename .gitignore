@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+models/
+data/
+*.wav
+.DS_Store
