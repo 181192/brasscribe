@@ -155,6 +155,22 @@ Corrected results (100 ms):
 - Mikkel has a steady ~138 BPM after its intro, so it should be less affected.
 - The penalty scale is tuned on rhythmically simple chorales. Revalidate on URMP and faster material.
 
+## Melody extraction (Slakh, trumpet line vs reference trumpet part, 100 ms)
+
+"Line" means the top note per onset within E3–D6 (`lead_sheet.line`).
+
+| Melody source | T06 P / R / F | T14 P / R / F |
+|---|---|---|
+| MuScriptor on the SW "other" stem | .63 / .77 / .69 | .62 / .51 / .56 |
+| **Agreement of MuScriptor ∧ Basic Pitch on "other"** | .73 / .80 / **.76** | .69 / .50 / **.58** |
+| Mega-53 trumpet stem → Basic Pitch | .65 / .72 / .68 | .73 / .47 / .57 |
+| Mega-53 trumpet stem → MuScriptor | .03 / .06 / .04 | .19 / .17 / .18 |
+
+- **MuScriptor hallucinates on second-stage separated stems.** On the Mega-53 trumpet stem it produced 2 672 "piano" notes. Timing is intact, since Basic Pitch on the same file is fine.
+- After a second separation stage, use Basic Pitch.
+- Mega-53's trumpet stem does not beat simple two-model agreement on synthetic Slakh brass. Its SDR on Slakh trumpet is likely poor because Slakh's trumpet patch reads to it as sax or harmonica. On Mikkel's real trumpet it holds 24% of the "other" energy, so judge it by ear there.
+- "Top line" fails when the melody is not the highest voice (T14 recall ≈ .5). The next step is melody-vs-accompaniment selection by continuity and salience, not pitch height.
+
 ## URMP brass (real recordings)
 
 **Set.** `urmp-brass`, built by `eval/brasscribe_eval/urmp.py`: 8 brass-only URMP pieces, 5 129 notes.
