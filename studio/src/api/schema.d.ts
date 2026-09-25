@@ -716,7 +716,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pass" | "regressed" | "improved" | "missing" | "new";
+            status: "pass" | "regressed" | "improved" | "missing" | "skipped" | "new";
             /** Tolerance */
             tolerance: number;
             /** Value */
@@ -726,6 +726,13 @@ export interface components {
         Comparison: {
             /** Composition Identical */
             composition_identical: boolean;
+            /**
+             * Extra Files
+             * @description parts/*.musicxml and separation-check.json the reference has: identical?
+             */
+            extra_files?: {
+                [key: string]: boolean;
+            };
             /** Musicxml Identical */
             musicxml_identical: boolean;
             /** Notes Identical */
@@ -1211,6 +1218,11 @@ export interface components {
              * @default 0
              */
             seconds: number;
+            /**
+             * Skipped Parts
+             * @description eval sets (metric prefixes) without data
+             */
+            skipped_parts?: string[];
             /**
              * Status
              * @enum {string}
