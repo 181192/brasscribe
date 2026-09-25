@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brasscribe Studio</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { max-width: 48rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  code { font-size: 0.95em; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 0.25rem 0.5rem; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Brasscribe Studio</h1>
+  <p>The engine is running. The Studio interface is not built yet; this page lists recent runs.
+     The HTTP API is described at <a href="/docs">/docs</a> (<a href="/openapi.json">openapi.json</a>).</p>
+  <h2 id="runs-heading">Recent runs</h2>
+  <table aria-labelledby="runs-heading">
+    <thead><tr><th scope="col">Run</th><th scope="col">Profile</th><th scope="col">Status</th></tr></thead>
+    <tbody id="runs"><tr><td colspan="3">Loading…</td></tr></tbody>
+  </table>
+</main>
+<script>
+fetch("/v1/jobs").then(r => r.json()).then(jobs => {
+  const body = document.getElementById("runs");
+  body.replaceChildren(...(jobs.length ? jobs.slice(0, 20).map(j => {
+    const tr = document.createElement("tr");
+    for (const v of [j.id, j.profile, j.status]) {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.append(td);
+    }
+    return tr;
+  }) : [Object.assign(document.createElement("tr"), {innerHTML: "<td colspan=3>No runs yet.</td>"})]));
+}).catch(() => { document.getElementById("runs").innerHTML = "<tr><td colspan=3>Could not load runs.</td></tr>"; });
+</script>
+</body>
+</html>
