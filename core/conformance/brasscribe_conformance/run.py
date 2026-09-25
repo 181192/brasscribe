@@ -67,12 +67,24 @@ def compare(ref_dir: Path, rs_dir: Path, names: list[str]) -> list[tuple[str, bo
     return rows
 
 
-def musescore_roundtrip(xml: Path) -> bool:
+def musescore_roundtrip(xml: Path, comp_json: Path) -> dict:
+    """Re-export the Rust MusicXML with MuseScore and compare every part's sounding pitches
+    with the reference arrangement of the same composition (eval's musescore_roundtrip)."""
+    import contextlib
+    import io
+
+    sys.path.insert(0, str(REPO / "eval"))
+    from brasscribe_eval import musescore_roundtrip as mr  # noqa: PLC0415
+
     out = xml.with_name(xml.stem + ".mscore.musicxml")
-    out.unlink(missing_ok=True)
-    # MuseScore 4.7 aborts on shutdown after writing: trust the file, not the exit code.
-    subprocess.run(["mscore", "-o", str(out), str(xml)], capture_output=True, timeout=600)
-    return out.exists() and out.stat().st_size > 0
+    buf = io.StringIO()
+    try:
+        # MuseScore 4.7 aborts on shutdown after writing: the check trusts the file, not the exit code.
+        with contextlib.redirect_stdout(buf):
+            same = mr.check(xml, comp_json)
+    except SystemExit:
+        same = False
+    return {"written": out.exists() and out.stat().st_size > 0, "pitches_match": bool(same)}
 
 
 def main() -> None:
@@ -89,7 +101,7 @@ def main() -> None:
     results = []
     for case in cases:
         d = args.work / case.id
-        py, rs = d / "py", d / "rs"
+        py, rs = d / "py", d / "rust"
         if case.kind == "layers" and "song" in case.args:
             synth_layers(case.args["song"], case.args["layers"])
         t0 = time.time()
@@ -110,12 +122,14 @@ def main() -> None:
         if case.golden is not None and p.returncode == 0:
             # Informational: the golden set is re-saved deliberately, so it may lag the reference.
             entry["golden"] = {n: compare(case.golden, rs, [n])[0][1] for n in OUTPUTS[case.kind]}
-        if args.musescore and ok and case.kind in ("layers", "song", "bench"):
-            entry["musescore"] = musescore_roundtrip(rs / "brass-band.musicxml")
+        if args.musescore and p.returncode == 0 and case.kind in ("layers", "song", "bench"):
+            entry["musescore"] = musescore_roundtrip(rs / "brass-band.musicxml", rs / "composition.json")
+        entry["paths"] = {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}
         results.append(entry)
         mark = "OK  " if ok else "DIFF"
         print(f"{mark} {case.id:70s} py {t_py:6.2f}s rs {t_rs:6.3f}s" + (
-            f" mscore={'ok' if entry.get('musescore') else 'FAIL'}" if "musescore" in entry else "") + (
+            f" mscore={'ok' if entry['musescore']['written'] and entry['musescore']['pitches_match'] else entry['musescore']}"
+            if "musescore" in entry else "") + (
             f" golden={entry['golden']}" if "golden" in entry else ""), flush=True)
         for n, s, det in rows:
             if not s:
@@ -124,9 +138,41 @@ def main() -> None:
         files = [c for r in results for c in r["checks"]]
         n_ok = sum(r["ok"] for r in results)
         print(f"\ncases identical: {n_ok}/{len(results)}; files identical: {sum(c['ok'] for c in files)}/{len(files)}")
+        if "musescore" in results[0] or any("musescore" in r for r in results):
+            ms = [r["musescore"] for r in results if "musescore" in r]
+            print(f"musescore round trip: file written {sum(m['written'] for m in ms)}/{len(ms)}, "
+                  f"sounding pitches match {sum(m['pitches_match'] for m in ms)}/{len(ms)}")
+        report = write_report(args.work, results)
         if args.report:
             args.report.write_text(json.dumps(results, indent=1))
+        print(f"report: {report}")
         sys.exit(0 if n_ok == len(results) else 1)
+
+
+def write_report(work: Path, results: list[dict]) -> Path:
+    """Summary for Studio: <work>/report.json, one row per (set, item, stage)."""
+    sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    version = subprocess.run([str(CORE / "target" / "release" / "brasscribe-core"), "version"], capture_output=True,
+                             text=True).stdout.strip()
+    rows = []
+    for r in results:
+        parts = r["case"].split("/")
+        s, item, stage = (parts[0], parts[0], parts[1]) if len(parts) == 2 else (parts[0], parts[1], parts[2])
+        failed = [c for c in r["checks"] if not c["ok"]]
+        missing = any(c["detail"].startswith("missing") for c in failed)
+        row = {"set": s, "item": item, "stage": stage, "status": "pass" if r["ok"] else ("missing" if missing else "fail"),
+               "diffs": len(failed), "py": r["paths"]["py"], "rust": r["paths"]["rust"]}
+        if failed:
+            row["detail"] = "; ".join(f"{c['file']}: {c['detail'][:300]}" for c in failed)
+        if "musescore" in r:
+            row["musescore"] = r["musescore"]
+        if "golden" in r:
+            row["golden"] = r["golden"]
+        rows.append(row)
+    out = work / "report.json"
+    out.write_text(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "git_sha": sha, "core_version": version,
+                               "sets": rows}, indent=1))
+    return out
 
 
 if __name__ == "__main__":
