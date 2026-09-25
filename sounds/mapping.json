@@ -1,0 +1,141 @@
+{
+  "about": "Brass-band parts mapped to the nearest sampled instrument. 'targets' are built instruments (one SFZ + one SF2 each); 'parts' assign score parts to targets per player desk. Ranges come from music/src/brasscribe_music/instruments.py (sounding pitch, MIDI). EQ stages are RBJ-cookbook biquads applied offline to the built sample copies (see sounds/dsp.py), so every player plays identical audio. 'seat' refers to sounds/seating.json.",
+  "eq_reference": "RBJ Audio EQ Cookbook biquads (lowshelf/highshelf/peak with gain_db and q; lowpass/highpass with q), cascaded in list order at 44.1 kHz, applied with scipy.signal.sosfilt (causal, same as a native biquad chain).",
+  "targets": {
+    "soprano-cornet": {
+      "instrument": "eb-soprano-cornet",
+      "source": {"library": "vsco2ce", "instrument": "trumpet"},
+      "stac_source": {"library": "vsco2ce", "instrument": "trumpet"},
+      "eq": [
+        {"type": "highshelf", "f": 4500, "gain_db": -2.5, "q": 0.7},
+        {"type": "peak", "f": 1400, "gain_db": -1.5, "q": 1.0}
+      ],
+      "why": "E-flat soprano is a small cornet: keep trumpet brilliance, trim the upper presence a little."
+    },
+    "cornet-a": {
+      "instrument": "bb-cornet",
+      "source": {"library": "iowa-mis", "instrument": "trumpet"},
+      "stac_source": {"library": "iowa-mis", "instrument": "trumpet"},
+      "eq": [
+        {"type": "lowshelf", "f": 350, "gain_db": 2.0, "q": 0.7},
+        {"type": "peak", "f": 1600, "gain_db": -2.0, "q": 1.0},
+        {"type": "highshelf", "f": 3200, "gain_db": -5.0, "q": 0.7},
+        {"type": "lowpass", "f": 9000, "q": 0.707}
+      ],
+      "why": "Cornet: shorter, more conical bore than trumpet; less energy above ~3 kHz and a rounder low-mid."
+    },
+    "cornet-b": {
+      "instrument": "bb-cornet",
+      "source": {"library": "vsco2ce", "instrument": "trumpet"},
+      "stac_source": {"library": "vsco2ce", "instrument": "trumpet"},
+      "eq": [
+        {"type": "lowshelf", "f": 350, "gain_db": 2.0, "q": 0.7},
+        {"type": "peak", "f": 1600, "gain_db": -2.0, "q": 1.0},
+        {"type": "highshelf", "f": 3200, "gain_db": -5.0, "q": 0.7},
+        {"type": "lowpass", "f": 9000, "q": 0.707}
+      ],
+      "why": "Same cornet adaptation from the second trumpet library, so unison desks are not sample clones."
+    },
+    "flugelhorn": {
+      "instrument": "flugelhorn",
+      "source": {"library": "iowa-mis", "instrument": "horn"},
+      "stac_source": {"library": "iowa-mis", "instrument": "horn"},
+      "eq": [
+        {"type": "highpass", "f": 90, "q": 0.707},
+        {"type": "peak", "f": 1100, "gain_db": 2.0, "q": 0.9},
+        {"type": "highshelf", "f": 5000, "gain_db": -3.0, "q": 0.7}
+      ],
+      "why": "Flugel from horn: similar dark, wide-bore tone; recorded horn is heard off the back of the bell, so lift the 1 kHz region the forward-facing flugel projects."
+    },
+    "tenor-horn": {
+      "instrument": "eb-tenor-horn",
+      "source": {"library": "vsco2ce", "instrument": "horn"},
+      "stac_source": {"library": "vsco2ce", "instrument": "horn"},
+      "eq": [
+        {"type": "highpass", "f": 80, "q": 0.707},
+        {"type": "peak", "f": 900, "gain_db": 1.5, "q": 0.9},
+        {"type": "highshelf", "f": 4000, "gain_db": -1.5, "q": 0.7}
+      ],
+      "why": "E-flat tenor horn from F horn: close in register and colour; a small mid lift for the upright bell."
+    },
+    "baritone": {
+      "instrument": "baritone",
+      "source": {"library": "vsco2ce", "instrument": "tenor-trombone"},
+      "stac_source": {"library": "vsco2ce", "instrument": "tenor-trombone"},
+      "eq": [
+        {"type": "lowshelf", "f": 250, "gain_db": 1.5, "q": 0.7},
+        {"type": "peak", "f": 2200, "gain_db": -3.0, "q": 0.9},
+        {"type": "highshelf", "f": 4000, "gain_db": -5.0, "q": 0.7},
+        {"type": "lowpass", "f": 8000, "q": 0.707}
+      ],
+      "why": "Baritone from tenor trombone: same register and bore size class, but conical valved tone with less edge."
+    },
+    "trombone": {
+      "instrument": "tenor-trombone",
+      "source": {"library": "vsco2ce", "instrument": "tenor-trombone"},
+      "stac_source": {"library": "vsco2ce", "instrument": "tenor-trombone"},
+      "eq": [],
+      "why": "Direct match."
+    },
+    "bass-trombone": {
+      "instrument": "bass-trombone",
+      "source": {"library": "iowa-mis", "instrument": "bass-trombone"},
+      "stac_source": {"library": "iowa-mis", "instrument": "bass-trombone"},
+      "eq": [],
+      "why": "Direct match."
+    },
+    "euphonium": {
+      "instrument": "euphonium",
+      "source": {"library": "iowa-mis", "instrument": "tenor-trombone"},
+      "stac_source": {"library": "iowa-mis", "instrument": "tenor-trombone"},
+      "eq": [
+        {"type": "lowshelf", "f": 200, "gain_db": 3.0, "q": 0.7},
+        {"type": "peak", "f": 1800, "gain_db": -3.0, "q": 0.8},
+        {"type": "highshelf", "f": 3000, "gain_db": -7.0, "q": 0.7},
+        {"type": "lowpass", "f": 6500, "q": 0.707}
+      ],
+      "why": "Euphonium from tenor trombone: tenor-tuba bore, much darker and rounder, strong fundamental."
+    },
+    "eb-bass": {
+      "instrument": "eb-bass",
+      "source": {"library": "vsco2ce", "instrument": "tuba"},
+      "stac_source": {"library": "vsco2ce", "instrument": "tuba"},
+      "eq": [
+        {"type": "highshelf", "f": 2500, "gain_db": -1.5, "q": 0.7}
+      ],
+      "why": "E-flat bass is a tuba; slight top trim for the upright bell."
+    },
+    "bb-bass": {
+      "instrument": "bb-bass",
+      "source": {"library": "iowa-mis", "instrument": "tuba"},
+      "stac_source": {"library": "iowa-mis", "instrument": "tuba"},
+      "eq": [
+        {"type": "lowshelf", "f": 120, "gain_db": 1.5, "q": 0.7},
+        {"type": "highshelf", "f": 2500, "gain_db": -2.0, "q": 0.7}
+      ],
+      "why": "B-flat bass (BBb tuba): the larger bore gets a touch more low end."
+    }
+  },
+  "parts": {
+    "Soprano Cornet": {"instrument": "eb-soprano-cornet", "players": [{"target": "soprano-cornet"}], "seat": "soprano", "gain_db": -1.0},
+    "Solo Cornet": {"instrument": "bb-cornet", "players": [{"target": "cornet-a"}, {"target": "cornet-b"}, {"target": "cornet-a"}, {"target": "cornet-b"}], "seat": "solo-cornets", "gain_db": 0.0},
+    "Repiano Cornet": {"instrument": "bb-cornet", "players": [{"target": "cornet-b"}], "seat": "repiano", "gain_db": -1.0},
+    "2nd Cornet": {"instrument": "bb-cornet", "players": [{"target": "cornet-a"}, {"target": "cornet-b"}], "seat": "second-cornets", "gain_db": -2.0},
+    "3rd Cornet": {"instrument": "bb-cornet", "players": [{"target": "cornet-b"}, {"target": "cornet-a"}], "seat": "third-cornets", "gain_db": -2.0},
+    "Flugelhorn": {"instrument": "flugelhorn", "players": [{"target": "flugelhorn"}], "seat": "flugel", "gain_db": -1.0},
+    "Solo Horn": {"instrument": "eb-tenor-horn", "players": [{"target": "tenor-horn"}], "seat": "solo-horn", "gain_db": -1.0},
+    "1st Horn": {"instrument": "eb-tenor-horn", "players": [{"target": "tenor-horn"}], "seat": "first-horn", "gain_db": -2.0},
+    "2nd Horn": {"instrument": "eb-tenor-horn", "players": [{"target": "tenor-horn"}], "seat": "second-horn", "gain_db": -2.0},
+    "1st Baritone": {"instrument": "baritone", "players": [{"target": "baritone"}], "seat": "first-baritone", "gain_db": -2.0},
+    "2nd Baritone": {"instrument": "baritone", "players": [{"target": "baritone"}], "seat": "second-baritone", "gain_db": -2.0},
+    "1st Trombone": {"instrument": "tenor-trombone", "players": [{"target": "trombone"}], "seat": "first-trombone", "gain_db": -2.0},
+    "2nd Trombone": {"instrument": "tenor-trombone", "players": [{"target": "trombone"}], "seat": "second-trombone", "gain_db": -2.0},
+    "Bass Trombone": {"instrument": "bass-trombone", "players": [{"target": "bass-trombone"}], "seat": "bass-trombone", "gain_db": -2.0},
+    "Euphonium": {"instrument": "euphonium", "players": [{"target": "euphonium"}, {"target": "euphonium"}], "seat": "euphoniums", "gain_db": 0.0},
+    "E♭ Bass": {"instrument": "eb-bass", "players": [{"target": "eb-bass"}, {"target": "eb-bass"}], "seat": "eb-basses", "gain_db": 0.0},
+    "B♭ Bass": {"instrument": "bb-bass", "players": [{"target": "bb-bass"}, {"target": "bb-bass"}], "seat": "bb-basses", "gain_db": 0.0},
+    "Percussion": {"instrument": "drum-kit", "players": [{"target": "msbasic-drums"}], "seat": "percussion", "gain_db": -3.0,
+                   "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass."}
+  },
+  "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback."
+}
