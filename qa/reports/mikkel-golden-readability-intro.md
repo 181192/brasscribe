@@ -1,25 +1,25 @@
 # Readability: brass-band.musicxml (bars 1-4)
 
-| part | notes | empty_bar_pct | short_lt16_pct | sixteenth_pct | tuplet_pct | double_dotted | tie_stub_pct | rests_per_bar | short_rest_pct | max_ledger | ledger3_pct | written_low | written_high | out_of_comfort_pct | out_of_extreme | awkward_spelling | leaps_gt_octave | uncertain_pct | colour_only_uncertain |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Soprano Cornet | 0 | 100.0 | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet |
-| Solo Cornet | 13 | 0.0 | 0.0 | 30.8 | 0.0 | 1 | 0.0 | 2.25 | 22.2 | 0 | 0.0 | D4 | D5 | 0.0 | 0 | 0 | 0 | 38.5 | 5 |
-| Repiano Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 1 | 0.0 | B3 | D4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 2nd Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | A3 | D4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 3rd Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | G3 | D4 | 50.0 | 0 | 0 | 0 | 0.0 | 0 |
-| Flugelhorn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 11.1 | F#3 | E5 | 11.1 | 0 | 0 | 1 | 0.0 | 0 |
-| Solo Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 2 | 0.0 | A3 | D5 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 1st Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 11.1 | F#3 | Ab4 | 11.1 | 0 | 0 | 0 | 0.0 | 0 |
-| 2nd Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 22.2 | F#3 | F#4 | 22.2 | 0 | 0 | 0 | 0.0 | 0 |
-| 1st Baritone | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 1 | 0.0 | B3 | G4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 2nd Baritone | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 1 | 0.0 | B3 | G4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 1st Trombone | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 1 | 0.0 | B3 | E4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| 2nd Trombone | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | A3 | D4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| Bass Trombone | 3 | 75.0 | 0.0 | 66.7 | 0.0 | 0 | 33.3 | 2.0 | 0.0 | 0 | 0.0 | F2 | F2 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| Euphonium | 16 | 25.0 | 0.0 | 37.5 | 0.0 | 0 | 0.0 | 1.0 | 0.0 | 1 | 0.0 | B3 | B4 | 0.0 | 0 | 0 | 0 | 0.0 | 0 |
-| E♭ Bass | 13 | 25.0 | 0.0 | 30.8 | 0.0 | 2 | 23.1 | 0.33 | 0.0 | 1 | 0.0 | D4 | A5 | 7.7 | 1 | 0 | 1 | 0.0 | 0 |
-| B♭ Bass | 13 | 25.0 | 0.0 | 30.8 | 0.0 | 2 | 23.1 | 0.33 | 0.0 | 2 | 0.0 | G3 | D5 | 0.0 | 0 | 0 | 1 | 0.0 | 0 |
-| Percussion | 0 | 100.0 | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet |
+| part | notes | empty_bar_pct | short_lt16_pct | sixteenth_pct | tuplet_pct | double_dotted | tie_stub_pct | rests_per_bar | short_rest_pct | max_ledger | ledger3_pct | written_low | written_high | out_of_comfort_pct | out_of_extreme | awkward_spelling | accidental_pct | bars_mixed_sharp_flat | leaps_gt_octave | uncertain_pct | colour_only_uncertain |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Soprano Cornet | 0 | 100.0 | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet |
+| Solo Cornet | 13 | 0.0 | 0.0 | 30.8 | 0.0 | 1 | 0.0 | 2.25 | 22.2 | 0 | 0.0 | D4 | D5 | 0.0 | 0 | 0 | 23.1 | 1 | 0 | 38.5 | 5 |
+| Repiano Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 1 | 0.0 | B3 | D4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 2nd Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | A3 | D4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 3rd Cornet | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | G3 | D4 | 50.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| Flugelhorn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 11.1 | F#3 | E5 | 11.1 | 0 | 0 | 0.0 | 0 | 1 | 0.0 | 0 |
+| Solo Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 2 | 0.0 | A3 | D5 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 1st Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 11.1 | F#3 | Ab4 | 11.1 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 2nd Horn | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 3 | 22.2 | F#3 | F#4 | 22.2 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 1st Baritone | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 1 | 0.0 | B3 | G4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 2nd Baritone | 9 | 25.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.67 | 0.0 | 1 | 0.0 | B3 | G4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 1st Trombone | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 1 | 0.0 | B3 | E4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| 2nd Trombone | 2 | 75.0 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 2.0 | 0.0 | 2 | 0.0 | A3 | D4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| Bass Trombone | 3 | 75.0 | 0.0 | 66.7 | 0.0 | 0 | 33.3 | 2.0 | 0.0 | 0 | 0.0 | F2 | F2 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| Euphonium | 16 | 25.0 | 0.0 | 37.5 | 0.0 | 0 | 0.0 | 1.0 | 0.0 | 1 | 0.0 | B3 | B4 | 0.0 | 0 | 0 | 0.0 | 0 | 0 | 0.0 | 0 |
+| E♭ Bass | 13 | 25.0 | 0.0 | 30.8 | 0.0 | 2 | 23.1 | 0.33 | 0.0 | 1 | 0.0 | D4 | A5 | 7.7 | 1 | 0 | 0.0 | 0 | 1 | 0.0 | 0 |
+| B♭ Bass | 13 | 25.0 | 0.0 | 30.8 | 0.0 | 2 | 23.1 | 0.33 | 0.0 | 2 | 0.0 | G3 | D5 | 0.0 | 0 | 0 | 0.0 | 0 | 1 | 0.0 | 0 |
+| Percussion | 0 | 100.0 | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet |
 
 Score:
 

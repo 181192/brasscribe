@@ -12,7 +12,8 @@ Reports per part and for the whole score:
   - rests per non-empty bar and rests shorter than an eighth
   - ledger lines (max, and share of notes with 3 or more) from written pitch and clef
   - written range against heuristic brass-band instrument ranges
-  - awkward spellings (E#, B#, Cb, Fb, double accidentals), leaps over an octave
+  - awkward spellings (E#, B#, Cb, Fb, double accidentals), printed-accidental density,
+    bars mixing sharps and flats, leaps over an octave
   - empty-bar ratio, and runs of empty bars that should be multi-bar rests in parts
   - colour-only uncertainty (coloured notes without a distinct notehead)
   - divisi (chords in a monophonic brass part)
@@ -67,6 +68,7 @@ THRESHOLDS = {
     "ledger3_pct": 5.0,
     "out_of_extreme": 0,
     "awkward_spelling": 0,
+    "accidental_pct": 25.0,       # notes with a printed accidental
     "colour_only_uncertain": 0,
     "divisi_notes": 0,
 }
@@ -92,6 +94,7 @@ class Note:
     tie_stop: bool
     colour: str | None
     notehead: str | None
+    accidental: str | None = None  # printed accidental
     ledgers: int = 0
 
 
@@ -204,6 +207,7 @@ def parse(path: Path) -> tuple[list[Part], dict]:
                         tuplet=el.find("time-modification") is not None,
                         tie_start="start" in ties, tie_stop="stop" in ties,
                         colour=el.get("color"), notehead=_t(el, "notehead"),
+                        accidental=_t(el, "accidental"),
                     )
                     if el.find("rest") is not None:
                         part.rests.append(n)
@@ -364,6 +368,18 @@ def analyse_part(part: Part, rng: tuple[int, int] | None) -> tuple[dict, dict[st
         if abs(a.midi - b.midi) > 12:
             leaps += 1
             flag(b.bar, f"leap {abs(a.midi - b.midi)} semitones")
+    acc = [n for n in pitched if n.accidental]
+    acc_by_bar: dict[str, set[str]] = {}
+    acc_count: dict[str, int] = {}
+    for n in acc:
+        acc_by_bar.setdefault(n.bar, set()).add(n.accidental)
+        acc_count[n.bar] = acc_count.get(n.bar, 0) + 1
+    mixed = [b for b, kinds in acc_by_bar.items() if {"sharp", "flat"} <= kinds]
+    for b in mixed:
+        flag(b, "sharps and flats mixed")
+    for b, c in acc_count.items():
+        if c >= 6:
+            flag(b, f"{c} accidentals")
     lo, hi = min(n.midi for n in pitched), max(n.midi for n in pitched)
     m.update({
         "written_low": midi_name(lo),
@@ -371,6 +387,8 @@ def analyse_part(part: Part, rng: tuple[int, int] | None) -> tuple[dict, dict[st
         "max_ledger": max(led),
         "ledger3_pct": pct(sum(1 for x in led if x >= 3), len(led)),
         "awkward_spelling": len(aw),
+        "accidental_pct": pct(len(acc), len(pitched)),
+        "bars_mixed_sharp_flat": len(mixed),
         "leaps_gt_octave": leaps,
     })
     r = range_for(part.name)
@@ -425,7 +443,7 @@ def md_report(path: Path, score: dict, agg: dict, metrics: list[dict], rng) -> s
     cols = ["part", "notes", "empty_bar_pct", "short_lt16_pct", "sixteenth_pct", "tuplet_pct",
             "double_dotted", "tie_stub_pct", "rests_per_bar", "short_rest_pct", "max_ledger",
             "ledger3_pct", "written_low", "written_high", "out_of_comfort_pct", "out_of_extreme",
-            "awkward_spelling", "leaps_gt_octave", "uncertain_pct", "colour_only_uncertain"]
+            "awkward_spelling", "accidental_pct", "bars_mixed_sharp_flat", "leaps_gt_octave", "uncertain_pct", "colour_only_uncertain"]
     lines = [f"# Readability: {path.name}" + (f" (bars {rng[0]}-{rng[1]})" if rng else ""), ""]
     lines.append("| " + " | ".join(cols) + " |")
     lines.append("|" + "---|" * len(cols))

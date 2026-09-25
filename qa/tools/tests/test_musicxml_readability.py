@@ -54,6 +54,13 @@ def test_tacet_and_divisi_and_abbreviations():
     assert agg["duplicate_abbreviations"] == {"Cnt.": ["Solo Cornet", "Repiano Cornet"]}
 
 
+def test_accidentals():
+    m, _, _ = metrics()
+    solo, _ = m["Solo Cornet"]
+    assert solo["accidental_pct"] == round(100 / 7, 1)
+    assert solo["bars_mixed_sharp_flat"] == 0
+
+
 def test_range_filter_and_check_exit_code():
     parts, _ = r.parse(FIXTURE)
     solo = next(p for p in parts if p.name == "Solo Cornet")

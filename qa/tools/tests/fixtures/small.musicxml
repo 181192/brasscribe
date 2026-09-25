@@ -11,7 +11,7 @@
       <!-- 32nd note (short) and 32nd rest, 16th (tie start), 16th tie stop (stub) -->
       <note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><type>32nd</type></note>
       <note><rest/><duration>1</duration><type>32nd</type></note>
-      <note><pitch><step>E</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><tie type="start"/><type>16th</type></note>
+      <note><pitch><step>E</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><tie type="start"/><type>16th</type><accidental>sharp</accidental></note>
       <note><pitch><step>E</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><tie type="stop"/><type>16th</type></note>
       <note><rest/><duration>2</duration><type>16th</type></note>
       <!-- coloured note without a distinct notehead: colour-only uncertainty -->
