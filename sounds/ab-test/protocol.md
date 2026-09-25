@@ -14,7 +14,8 @@
 ## Preparing the material
 
 ```sh
-uv run --project sounds python sounds/render.py data/runs/sound/mikkel.mid -o data/runs/sound/realistic
+uv run --project sounds python sounds/render.py data/runs/sound/mikkel.mid -o data/runs/sound/realistic \
+  --composition data/golden/mikkel-arranged-band/composition.json
 uv run --project sounds python sounds/ab-test/generate.py \
   --baseline data/golden/mikkel-arranged-band/brass-band.mp3 \
   --realistic data/runs/sound/realistic/mikkel.realistic.wav \
