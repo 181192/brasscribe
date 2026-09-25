@@ -1,0 +1,915 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AboutText.Text" xml:space="preserve">
+    <value>Brasscribe Play er et ikke-kommersielt prosjekt. Noter og synth: alphaTab (MPL-2.0). Transkripsjonsmodellene kjører i Brasscribe-motoren; MuScriptor-vektene er CC BY-NC 4.0 og lastes ned av deg.</value>
+  </data>
+  <data name="AdLibNotice.Text" xml:space="preserve">
+    <value>Noen partier er i fritt tempo (ad lib.). De er notert etter gehør, ikke på et fast slag.</value>
+  </data>
+  <data name="AppCaptureUnavailable.Text" xml:space="preserve">
+    <value>Opptak av én app krever Windows 11. Du kan fortsatt ta opp alt PC-en spiller.</value>
+  </data>
+  <data name="AppPicker.Header" xml:space="preserve">
+    <value>App som skal tas opp</value>
+  </data>
+  <data name="AppPicker.PlaceholderText" xml:space="preserve">
+    <value>Velg en app som spiller</value>
+  </data>
+  <data name="AppPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Apper som spiller lyd akkurat nå, står øverst</value>
+  </data>
+  <data name="AppTitle.Text" xml:space="preserve">
+    <value>Brasscribe Play</value>
+  </data>
+  <data name="AppWindowTitle" xml:space="preserve">
+    <value>Brasscribe Play</value>
+  </data>
+  <data name="ApplyOutputButton.Content" xml:space="preserve">
+    <value>Bruk</value>
+  </data>
+  <data name="ApplyOutputButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Arranger på nytt med disse valgene</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gå tilbake til forrige skjermbilde (Alt+Venstre)</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Tilbake</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Tilbake</value>
+  </data>
+  <data name="CancelDialog_Content" xml:space="preserve">
+    <value>Motoren tar vare på arbeidet så langt, så det går raskere å starte på nytt.</value>
+  </data>
+  <data name="CancelDialog_Keep" xml:space="preserve">
+    <value>Fortsett</value>
+  </data>
+  <data name="CancelDialog_Stop" xml:space="preserve">
+    <value>Stopp</value>
+  </data>
+  <data name="CancelDialog_Title" xml:space="preserve">
+    <value>Stoppe transkripsjonen?</value>
+  </data>
+  <data name="CancelTranscriptionButton.Content" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="CancelTranscriptionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stopp transkripsjonen</value>
+  </data>
+  <data name="CaptureNotice.Title" xml:space="preserve">
+    <value>Ingenting blir tatt opp</value>
+  </data>
+  <data name="ClearLoopButton.Content" xml:space="preserve">
+    <value>Fjern løkke</value>
+  </data>
+  <data name="ClearLoopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill uten løkke</value>
+  </data>
+  <data name="ConcertPitchSwitch.Header" xml:space="preserve">
+    <value>Klingende tone</value>
+  </data>
+  <data name="ConcertPitchSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Vis klingende tone i stedet for skrevet tone</value>
+  </data>
+  <data name="ConnectButton.Content" xml:space="preserve">
+    <value>Koble til</value>
+  </data>
+  <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Sjekk motoren og par med koden hvis den ber om det</value>
+  </data>
+  <data name="ContinueButton.Content" xml:space="preserve">
+    <value>Fortsett</value>
+  </data>
+  <data name="ContinueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Start transkripsjonen. Velg først hva opptaket er.</value>
+  </data>
+  <data name="CountInToggle.Content" xml:space="preserve">
+    <value>Innslag</value>
+  </data>
+  <data name="CountInToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slå inn én takt før avspilling (K)</value>
+  </data>
+  <data name="DecodingProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Leser filen</value>
+  </data>
+  <data name="DifficultyBox.Header" xml:space="preserve">
+    <value>Vanskegrad</value>
+  </data>
+  <data name="DifficultyEasier.Content" xml:space="preserve">
+    <value>Enklere</value>
+  </data>
+  <data name="DifficultyFaithful.Content" xml:space="preserve">
+    <value>Tro mot opptaket</value>
+  </data>
+  <data name="DifficultyStandard.Content" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="DrmNote.Text" xml:space="preserve">
+    <value>Windows lar ikke apper ta opp beskyttet avspilling (DRM), for eksempel fra noen strømmetjenester. Brasscribe sier fra når det skjer, i stedet for å ta opp stillhet.</value>
+  </data>
+  <data name="Duration_MinutesSeconds" xml:space="preserve">
+    <value>{0} minutter {1} sekunder</value>
+  </data>
+  <data name="Duration_Seconds" xml:space="preserve">
+    <value>{0} sekunder</value>
+  </data>
+  <data name="EngineAddressBox.Header" xml:space="preserve">
+    <value>Adresse til motoren</value>
+  </data>
+  <data name="EngineAddressBox.PlaceholderText" xml:space="preserve">
+    <value>http://127.0.0.1:8765</value>
+  </data>
+  <data name="ExportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Lagre partituret, en stemme, MIDI, lyd eller den talende noten (Ctrl+E)</value>
+  </data>
+  <data name="ExportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Eksporter</value>
+  </data>
+  <data name="ExportButtonLabel.Text" xml:space="preserve">
+    <value>Eksporter</value>
+  </data>
+  <data name="ExportDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="ExportDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Lagre …</value>
+  </data>
+  <data name="ExportDialog.Title" xml:space="preserve">
+    <value>Eksporter</value>
+  </data>
+  <data name="ExportFormatList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="ExportPartBox.Header" xml:space="preserve">
+    <value>Stemme</value>
+  </data>
+  <data name="Export_Done" xml:space="preserve">
+    <value>Lagret {0} som {1}</value>
+  </data>
+  <data name="Export_Failed" xml:space="preserve">
+    <value>Kunne ikke lagre: {0}</value>
+  </data>
+  <data name="Export_Format_Audio" xml:space="preserve">
+    <value>Lyd (MP3)</value>
+  </data>
+  <data name="Export_Format_Braille" xml:space="preserve">
+    <value>Punktskrift for noter (BRF)</value>
+  </data>
+  <data name="Export_Format_Midi" xml:space="preserve">
+    <value>MIDI</value>
+  </data>
+  <data name="Export_Format_MusicXmlPart" xml:space="preserve">
+    <value>MusicXML, én stemme</value>
+  </data>
+  <data name="Export_Format_MusicXmlScore" xml:space="preserve">
+    <value>MusicXML, hele partituret</value>
+  </data>
+  <data name="Export_Format_Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="Export_Format_TalkingScoreHtml" xml:space="preserve">
+    <value>Talende note, nettside</value>
+  </data>
+  <data name="Export_Format_TalkingScoreText" xml:space="preserve">
+    <value>Talende note, ren tekst</value>
+  </data>
+  <data name="Export_Reason_BrailleMissing" xml:space="preserve">
+    <value>Eksport til punktskrift finnes ikke ennå: motoren lager ikke BRF-filer.</value>
+  </data>
+  <data name="Export_Reason_NeedsEngine" xml:space="preserve">
+    <value>Krever motoren som laget dette partituret.</value>
+  </data>
+  <data name="Export_Reason_NoScore" xml:space="preserve">
+    <value>Åpne eller lag et partitur først.</value>
+  </data>
+  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>5 prosent raskere (=)</value>
+  </data>
+  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Raskere</value>
+  </data>
+  <data name="GoToBarBox.Header" xml:space="preserve">
+    <value>Taktnummer</value>
+  </data>
+  <data name="GoToBarDialog.CloseButtonText" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="GoToBarDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Gå</value>
+  </data>
+  <data name="GoToBarDialog.Title" xml:space="preserve">
+    <value>Gå til takt</value>
+  </data>
+  <data name="GoToBarItem.Text" xml:space="preserve">
+    <value>Gå til takt …</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Vis alle hurtigtaster (F1)</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hurtigtaster</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Hurtigtaster</value>
+  </data>
+  <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Åpne en lydfil, en videofil eller et MusicXML-partitur (Ctrl+O)</value>
+  </data>
+  <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Importer lyd eller video</value>
+  </data>
+  <data name="ImportButtonLabel.Text" xml:space="preserve">
+    <value>Importer lyd eller video</value>
+  </data>
+  <data name="KeyBox.Header" xml:space="preserve">
+    <value>Toneart</value>
+  </data>
+  <data name="KeyOriginal.Content" xml:space="preserve">
+    <value>Som i opptaket</value>
+  </data>
+  <data name="KindHeading.Text" xml:space="preserve">
+    <value>Hva er dette?</value>
+  </data>
+  <data name="KindIntro.Text" xml:space="preserve">
+    <value>Velg hva opptaket er. Svaret avgjør hvordan det blir transkribert.</value>
+  </data>
+  <data name="KindOptions.Header" xml:space="preserve">
+    <value>Type opptak</value>
+  </data>
+  <data name="Kind_BrassBand_Description" xml:space="preserve">
+    <value>Et brassband eller et messingensemble.</value>
+  </data>
+  <data name="Kind_BrassBand_Label" xml:space="preserve">
+    <value>Brassband</value>
+  </data>
+  <data name="Kind_OrchestraWithSoloist_Description" xml:space="preserve">
+    <value>En solist foran et orkester eller et komp.</value>
+  </data>
+  <data name="Kind_OrchestraWithSoloist_Label" xml:space="preserve">
+    <value>Orkester med solist</value>
+  </data>
+  <data name="Kind_PopRock_Description" xml:space="preserve">
+    <value>Et band med sang, gitar, bass og trommer.</value>
+  </data>
+  <data name="Kind_PopRock_Label" xml:space="preserve">
+    <value>Pop eller rock</value>
+  </data>
+  <data name="Kind_Solo_Description" xml:space="preserve">
+    <value>Én messingblåser alene.</value>
+  </data>
+  <data name="Kind_Solo_Label" xml:space="preserve">
+    <value>Soloinstrument</value>
+  </data>
+  <data name="LanguageBox.Header" xml:space="preserve">
+    <value>Appspråk</value>
+  </data>
+  <data name="LanguageRestartNote.Text" xml:space="preserve">
+    <value>Nytt språk tas i bruk neste gang du starter appen.</value>
+  </data>
+  <data name="LanguageSystem.Content" xml:space="preserve">
+    <value>Samme som Windows</value>
+  </data>
+  <data name="LevelMeter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Inngangsnivå</value>
+  </data>
+  <data name="LineupBox.Header" xml:space="preserve">
+    <value>Besetning</value>
+  </data>
+  <data name="LineupFull.Content" xml:space="preserve">
+    <value>Fullt korps</value>
+  </data>
+  <data name="LineupMinimal.Content" xml:space="preserve">
+    <value>Lite korps</value>
+  </data>
+  <data name="LinkNote.Text" xml:space="preserve">
+    <value>Lenker, for eksempel til YouTube, lastes ikke ned. Spill av videoen og ta den opp, eller importer en fil du har.</value>
+  </data>
+  <data name="ListenBarButton.Content" xml:space="preserve">
+    <value>Lytt til takt</value>
+  </data>
+  <data name="ListenBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill den gjeldende takten i løkke (P)</value>
+  </data>
+  <data name="ListenToBarItem.Text" xml:space="preserve">
+    <value>Lytt til denne takten</value>
+  </data>
+  <data name="LoopEndBox.Header" xml:space="preserve">
+    <value>til takt</value>
+  </data>
+  <data name="LoopEndItem.Text" xml:space="preserve">
+    <value>Løkken slutter her</value>
+  </data>
+  <data name="LoopStartBox.Header" xml:space="preserve">
+    <value>Løkke fra takt</value>
+  </data>
+  <data name="LoopStartItem.Text" xml:space="preserve">
+    <value>Løkken starter her</value>
+  </data>
+  <data name="MarkCheckedButton.Content" xml:space="preserve">
+    <value>Merk som kontrollert</value>
+  </data>
+  <data name="MarkCheckedButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Noten er riktig; slutt å merke den som usikker (C)</value>
+  </data>
+  <data name="MarkCheckedItem.Text" xml:space="preserve">
+    <value>Merk som kontrollert</value>
+  </data>
+  <data name="MetronomeToggle.Content" xml:space="preserve">
+    <value>Metronom</value>
+  </data>
+  <data name="MetronomeToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Klikk på hvert slag (T)</value>
+  </data>
+  <data name="Mixer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mikser</value>
+  </data>
+  <data name="MixerHeading.Text" xml:space="preserve">
+    <value>Stemmer</value>
+  </data>
+  <data name="Mixer_Mute" xml:space="preserve">
+    <value>Demp {0}</value>
+  </data>
+  <data name="Mixer_Solo" xml:space="preserve">
+    <value>Solo {0}</value>
+  </data>
+  <data name="OutputHeading.Text" xml:space="preserve">
+    <value>Velg utgave</value>
+  </data>
+  <data name="OutputOptionsButton.Content" xml:space="preserve">
+    <value>Utgave</value>
+  </data>
+  <data name="OutputOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Besetning, vanskegrad og toneart</value>
+  </data>
+  <data name="Output_Failed" xml:space="preserve">
+    <value>Kunne ikke arrangere: {0}</value>
+  </data>
+  <data name="Output_NeedsCore" xml:space="preserve">
+    <value>Arrangering på denne PC-en krever Brasscribe-kjernebiblioteket, som ikke er installert.</value>
+  </data>
+  <data name="Output_NotYet" xml:space="preserve">
+    <value>Valg av vanskegrad og toneart finnes ikke ennå.</value>
+  </data>
+  <data name="Output_Ready" xml:space="preserve">
+    <value>Arrangementet er klart</value>
+  </data>
+  <data name="PairingCodeBox.Header" xml:space="preserve">
+    <value>Paringskode</value>
+  </data>
+  <data name="PairingCodeBox.PlaceholderText" xml:space="preserve">
+    <value>Vises av motoren på den andre datamaskinen</value>
+  </data>
+  <data name="PartPicker.Header" xml:space="preserve">
+    <value>Vis</value>
+  </data>
+  <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Hele partituret eller én stemme i skrevet tone</value>
+  </data>
+  <data name="PlayAlongToggle.Content" xml:space="preserve">
+    <value>Spill med</value>
+  </data>
+  <data name="PlayAlongToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Demp stemmen din og spill den selv, med innslag</value>
+  </data>
+  <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Mellomrom i noten, Ctrl+Shift+Mellomrom hvor som helst</value>
+  </data>
+  <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Avspiller</value>
+  </data>
+  <data name="Player_CountInOff" xml:space="preserve">
+    <value>Innslag av</value>
+  </data>
+  <data name="Player_CountInOn" xml:space="preserve">
+    <value>Innslag på</value>
+  </data>
+  <data name="Player_LoopOff" xml:space="preserve">
+    <value>Ingen løkke</value>
+  </data>
+  <data name="Player_LoopSet" xml:space="preserve">
+    <value>Løkke satt, takt {0} til {1}</value>
+  </data>
+  <data name="Player_LoopStartAt" xml:space="preserve">
+    <value>Løkken starter i takt {0}</value>
+  </data>
+  <data name="Player_MetronomeOff" xml:space="preserve">
+    <value>Metronom av</value>
+  </data>
+  <data name="Player_MetronomeOn" xml:space="preserve">
+    <value>Metronom på</value>
+  </data>
+  <data name="Player_Muted" xml:space="preserve">
+    <value>{0} dempet</value>
+  </data>
+  <data name="Player_NotReady" xml:space="preserve">
+    <value>Avspillingen er ikke klar: ingen lyder er lastet.</value>
+  </data>
+  <data name="Player_PlayAlongOff" xml:space="preserve">
+    <value>Spill med er av</value>
+  </data>
+  <data name="Player_PlayAlongOn" xml:space="preserve">
+    <value>Spill med: {0} er dempet</value>
+  </data>
+  <data name="Player_Position" xml:space="preserve">
+    <value>Takt {0} av {1}</value>
+  </data>
+  <data name="Player_Soloed" xml:space="preserve">
+    <value>{0} solo</value>
+  </data>
+  <data name="Player_Speed" xml:space="preserve">
+    <value>Tempo {0} prosent</value>
+  </data>
+  <data name="Player_Unmuted" xml:space="preserve">
+    <value>{0} på</value>
+  </data>
+  <data name="Player_Unsoloed" xml:space="preserve">
+    <value>{0} solo av</value>
+  </data>
+  <data name="ReadBarItem.Text" xml:space="preserve">
+    <value>Les takten</value>
+  </data>
+  <data name="RecordAppButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ta opp den valgte appen og ingenting annet</value>
+  </data>
+  <data name="RecordAppButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ta opp bare denne appen</value>
+  </data>
+  <data name="RecordAppButtonLabel.Text" xml:space="preserve">
+    <value>Ta opp bare denne appen</value>
+  </data>
+  <data name="RecordHeading.Text" xml:space="preserve">
+    <value>Ta opp</value>
+  </data>
+  <data name="RecordMicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ta opp deg selv eller rommet (Ctrl+Shift+R)</value>
+  </data>
+  <data name="RecordMicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ta opp med mikrofonen</value>
+  </data>
+  <data name="RecordMicButtonLabel.Text" xml:space="preserve">
+    <value>Ta opp med mikrofonen</value>
+  </data>
+  <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ta opp alt som spilles i høyttalerne</value>
+  </data>
+  <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ta opp det PC-en spiller</value>
+  </data>
+  <data name="RecordSystemButtonLabel.Text" xml:space="preserve">
+    <value>Ta opp det PC-en spiller</value>
+  </data>
+  <data name="RecordingTime.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Opptakstid</value>
+  </data>
+  <data name="ReduceMotionSwitch.Header" xml:space="preserve">
+    <value>Mindre bevegelse</value>
+  </data>
+  <data name="ReduceMotionSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Markøren hopper ett slag om gangen, og noten blar i stedet for å rulle</value>
+  </data>
+  <data name="RefreshAppsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Se etter apper som spiller lyd på nytt</value>
+  </data>
+  <data name="RefreshAppsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Oppdater applisten</value>
+  </data>
+  <data name="RefreshAppsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Oppdater applisten</value>
+  </data>
+  <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Piltaster flytter én note, Ctrl+piltaster ett slag eller én takt, Ctrl+Shift+piltaster én stemme. U finner usikre noter. Tab går ut av noten.</value>
+  </data>
+  <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Partitur</value>
+  </data>
+  <data name="Score_Checked" xml:space="preserve">
+    <value>Kontrollert. {0} igjen</value>
+  </data>
+  <data name="Score_ControlType" xml:space="preserve">
+    <value>partitur</value>
+  </data>
+  <data name="Score_FullScore" xml:space="preserve">
+    <value>Hele partituret</value>
+  </data>
+  <data name="Score_ListeningOriginal" xml:space="preserve">
+    <value>Spiller takt {0} fra opptaket</value>
+  </data>
+  <data name="Score_ListeningScore" xml:space="preserve">
+    <value>Spiller takt {0}</value>
+  </data>
+  <data name="Score_PartShown" xml:space="preserve">
+    <value>{0}-stemmen.</value>
+  </data>
+  <data name="Score_UncertainLeft" xml:space="preserve">
+    <value>{0} usikre noter å kontrollere</value>
+  </data>
+  <data name="Score_Zoom" xml:space="preserve">
+    <value>Zoom {0} prosent</value>
+  </data>
+  <data name="Screen_Score" xml:space="preserve">
+    <value>Partitur</value>
+  </data>
+  <data name="Screen_SourceKind" xml:space="preserve">
+    <value>Hva er dette?</value>
+  </data>
+  <data name="Screen_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Screen_Transcribing" xml:space="preserve">
+    <value>Transkriberer</value>
+  </data>
+  <data name="SetLoopButton.Content" xml:space="preserve">
+    <value>Lag løkke</value>
+  </data>
+  <data name="SetLoopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill taktene du skrev inn i løkke (L)</value>
+  </data>
+  <data name="SettingsAboutHeading.Text" xml:space="preserve">
+    <value>Om</value>
+  </data>
+  <data name="SettingsAccessibilityHeading.Text" xml:space="preserve">
+    <value>Tilgjengelighet</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Språk, tastatur, talende note og motor (Ctrl+,)</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="SettingsDialog.Title" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsEngineHeading.Text" xml:space="preserve">
+    <value>Transkripsjonsmotor</value>
+  </data>
+  <data name="SettingsLanguageHeading.Text" xml:space="preserve">
+    <value>Språk</value>
+  </data>
+  <data name="Settings_CoreManaged" xml:space="preserve">
+    <value>innebygd (det native kjernebiblioteket er ikke installert)</value>
+  </data>
+  <data name="Settings_CoreVersion" xml:space="preserve">
+    <value>Kjernebibliotek: {0}</value>
+  </data>
+  <data name="Settings_Engine_Connected" xml:space="preserve">
+    <value>Koblet til motor {0}, kjører på {1}</value>
+  </data>
+  <data name="Settings_Engine_NeedsCode" xml:space="preserve">
+    <value>Motoren ber om en paringskode. Skriv inn koden den viser.</value>
+  </data>
+  <data name="Shortcut_Bar" xml:space="preserve">
+    <value>Neste eller forrige takt</value>
+  </data>
+  <data name="Shortcut_Beat" xml:space="preserve">
+    <value>Neste eller forrige slag</value>
+  </data>
+  <data name="Shortcut_Checked" xml:space="preserve">
+    <value>Merk som kontrollert</value>
+  </data>
+  <data name="Shortcut_Close" xml:space="preserve">
+    <value>Lukk en dialog eller gå ut av noten</value>
+  </data>
+  <data name="Shortcut_CountInMetronome" xml:space="preserve">
+    <value>Innslag, metronom</value>
+  </data>
+  <data name="Shortcut_Export" xml:space="preserve">
+    <value>Eksporter</value>
+  </data>
+  <data name="Shortcut_FirstLast" xml:space="preserve">
+    <value>Første eller siste takt</value>
+  </data>
+  <data name="Shortcut_GoToBar" xml:space="preserve">
+    <value>Gå til takt</value>
+  </data>
+  <data name="Shortcut_Help" xml:space="preserve">
+    <value>Hurtigtaster</value>
+  </data>
+  <data name="Shortcut_Import" xml:space="preserve">
+    <value>Importer en fil</value>
+  </data>
+  <data name="Shortcut_Leave" xml:space="preserve">
+    <value>Gå ut av noten</value>
+  </data>
+  <data name="Shortcut_Loop" xml:space="preserve">
+    <value>Løkkestart, løkkeslutt, løkke av eller på</value>
+  </data>
+  <data name="Shortcut_MuteSolo" xml:space="preserve">
+    <value>Demp eller solo gjeldende stemme</value>
+  </data>
+  <data name="Shortcut_Note" xml:space="preserve">
+    <value>Neste eller forrige note</value>
+  </data>
+  <data name="Shortcut_Part" xml:space="preserve">
+    <value>Neste eller forrige stemme</value>
+  </data>
+  <data name="Shortcut_PlayBar" xml:space="preserve">
+    <value>Spill denne takten, eller spill herfra</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="Shortcut_PlayPauseGlobal" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="Shortcut_ReadBar" xml:space="preserve">
+    <value>Les takten</value>
+  </data>
+  <data name="Shortcut_Record" xml:space="preserve">
+    <value>Start eller stopp opptak</value>
+  </data>
+  <data name="Shortcut_Settings" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="Shortcut_Speed" xml:space="preserve">
+    <value>Saktere, raskere, normalt tempo</value>
+  </data>
+  <data name="Shortcut_TalkingScore" xml:space="preserve">
+    <value>Bytt mellom noter og talende note</value>
+  </data>
+  <data name="Shortcut_Uncertain" xml:space="preserve">
+    <value>Neste eller forrige usikre note</value>
+  </data>
+  <data name="Shortcut_WhereAmI" xml:space="preserve">
+    <value>Hvor er jeg (alle detaljer)</value>
+  </data>
+  <data name="Shortcut_Zoom" xml:space="preserve">
+    <value>Zoom ut, zoom inn, tilbakestill zoom</value>
+  </data>
+  <data name="ShortcutsDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="ShortcutsDialog.Title" xml:space="preserve">
+    <value>Hurtigtaster</value>
+  </data>
+  <data name="Shortcuts_Global" xml:space="preserve">
+    <value>Overalt</value>
+  </data>
+  <data name="Shortcuts_Score" xml:space="preserve">
+    <value>I noten</value>
+  </data>
+  <data name="SingleKeySwitch.Header" xml:space="preserve">
+    <value>Hurtigtaster med én tast i noten</value>
+  </data>
+  <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Taster som U, R og P. Piltastene virker alltid.</value>
+  </data>
+  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>5 prosent saktere (-)</value>
+  </data>
+  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Saktere</value>
+  </data>
+  <data name="SpeedSlider.Header" xml:space="preserve">
+    <value>Tempo</value>
+  </data>
+  <data name="SpeedSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>25 til 150 prosent, uten å endre tonehøyden</value>
+  </data>
+  <data name="StartError.Title" xml:space="preserve">
+    <value>Det gikk ikke</value>
+  </data>
+  <data name="StartHeading.Text" xml:space="preserve">
+    <value>Lag et korpspartitur</value>
+  </data>
+  <data name="StartIntro.Text" xml:space="preserve">
+    <value>Importer et opptak eller en video, eller ta opp det du hører. Brasscribe skriver det ut for brassband.</value>
+  </data>
+  <data name="Start_Error_AppCaptureUnsupported" xml:space="preserve">
+    <value>Opptak av én app krever Windows 11.</value>
+  </data>
+  <data name="Start_Error_Capture" xml:space="preserve">
+    <value>Opptaket kunne ikke starte: {0}</value>
+  </data>
+  <data name="Start_Error_ChooseApp" xml:space="preserve">
+    <value>Velg først appen som skal tas opp.</value>
+  </data>
+  <data name="Start_Error_Decode" xml:space="preserve">
+    <value>{0} kunne ikke leses. Prøv en annen fil.</value>
+  </data>
+  <data name="Start_Error_Link" xml:space="preserve">
+    <value>Lenker lastes ikke ned. Spill av videoen og ta den opp, eller importer en fil.</value>
+  </data>
+  <data name="Start_Error_MicrophonePermission" xml:space="preserve">
+    <value>Brasscribe har ikke lov til å bruke mikrofonen. Gi tilgang i Windows-innstillinger, Personvern, Mikrofon.</value>
+  </data>
+  <data name="Start_Error_Score" xml:space="preserve">
+    <value>{0} kunne ikke åpnes som partitur.</value>
+  </data>
+  <data name="Start_Error_TooShort" xml:space="preserve">
+    <value>Opptaket er kortere enn ett sekund. Prøv igjen.</value>
+  </data>
+  <data name="Start_Error_Unsupported" xml:space="preserve">
+    <value>{0} er ikke en lyd-, video- eller MusicXML-fil.</value>
+  </data>
+  <data name="Start_Imported" xml:space="preserve">
+    <value>Importerte {0}, {1}</value>
+  </data>
+  <data name="Start_Level_Good" xml:space="preserve">
+    <value>Inngangsnivå, bra</value>
+  </data>
+  <data name="Start_Level_Low" xml:space="preserve">
+    <value>Inngangsnivå, lavt</value>
+  </data>
+  <data name="Start_Level_Silent" xml:space="preserve">
+    <value>Inngangsnivå, stille</value>
+  </data>
+  <data name="Start_Level_TooLoud" xml:space="preserve">
+    <value>Inngangsnivå, for høyt</value>
+  </data>
+  <data name="Start_Notice_NothingPlaying" xml:space="preserve">
+    <value>Det kommer bare stillhet. Sjekk at noe spiller. Beskyttet avspilling (DRM) kan ikke tas opp.</value>
+  </data>
+  <data name="Start_Notice_SilenceWhilePlaying" xml:space="preserve">
+    <value>Appen spiller, men Windows gir Brasscribe bare stillhet. Det skjer med beskyttet avspilling (DRM), som ikke kan tas opp.</value>
+  </data>
+  <data name="Start_Notice_TooLoud" xml:space="preserve">
+    <value>Inngangen er for høy og forvrenges. Skru ned volumet litt.</value>
+  </data>
+  <data name="Start_RecordingName" xml:space="preserve">
+    <value>Opptak</value>
+  </data>
+  <data name="Start_RecordingStarted" xml:space="preserve">
+    <value>Opptaket har startet</value>
+  </data>
+  <data name="Start_RecordingStopped" xml:space="preserve">
+    <value>Opptaket er stoppet, {0}</value>
+  </data>
+  <data name="StopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stopp avspillingen</value>
+  </data>
+  <data name="StopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Stopp</value>
+  </data>
+  <data name="StopButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Stopp</value>
+  </data>
+  <data name="StopRecordingButton.Content" xml:space="preserve">
+    <value>Stopp opptaket</value>
+  </data>
+  <data name="StopRecordingButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stopp og gå videre med opptaket (Ctrl+Shift+R)</value>
+  </data>
+  <data name="TalkingList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Talende note</value>
+  </data>
+  <data name="TalkingScoreToggle.Content" xml:space="preserve">
+    <value>Talende note</value>
+  </data>
+  <data name="TalkingScoreToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Vis noten som tekst, én linje per note (Ctrl+T)</value>
+  </data>
+  <data name="TranscribeErrorBar.Title" xml:space="preserve">
+    <value>Transkripsjonen stoppet</value>
+  </data>
+  <data name="TranscribeHeading.Text" xml:space="preserve">
+    <value>Transkriberer</value>
+  </data>
+  <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Framdrift for transkripsjonen</value>
+  </data>
+  <data name="Transcribe_Cancelled" xml:space="preserve">
+    <value>Transkripsjonen er avbrutt</value>
+  </data>
+  <data name="Transcribe_Device" xml:space="preserve">
+    <value>Kjører på {0}</value>
+  </data>
+  <data name="Transcribe_Done" xml:space="preserve">
+    <value>Partituret er klart</value>
+  </data>
+  <data name="Transcribe_Error" xml:space="preserve">
+    <value>Transkripsjonen stoppet: {0}</value>
+  </data>
+  <data name="Transcribe_Eta_Hours" xml:space="preserve">
+    <value>Omtrent {0} timer igjen (anslag)</value>
+  </data>
+  <data name="Transcribe_Eta_Minutes" xml:space="preserve">
+    <value>Omtrent {0} minutter igjen (anslag)</value>
+  </data>
+  <data name="Transcribe_Eta_UnderMinute" xml:space="preserve">
+    <value>Under ett minutt igjen (anslag)</value>
+  </data>
+  <data name="Transcribe_Eta_Unknown" xml:space="preserve">
+    <value>Beregner tiden som gjenstår</value>
+  </data>
+  <data name="Transcribe_Failed" xml:space="preserve">
+    <value>Transkripsjonen mislyktes</value>
+  </data>
+  <data name="Transcribe_ProgressAnnouncement" xml:space="preserve">
+    <value>{0} prosent. {1}. {2}</value>
+  </data>
+  <data name="Transcribe_Stage_Arrange" xml:space="preserve">
+    <value>Arrangerer for brassband</value>
+  </data>
+  <data name="Transcribe_Stage_Beats" xml:space="preserve">
+    <value>Finner slagene</value>
+  </data>
+  <data name="Transcribe_Stage_Engrave" xml:space="preserve">
+    <value>Setter partituret</value>
+  </data>
+  <data name="Transcribe_Stage_Notes" xml:space="preserve">
+    <value>Skriver ned notene</value>
+  </data>
+  <data name="Transcribe_Stage_Separate" xml:space="preserve">
+    <value>Skiller instrumentene</value>
+  </data>
+  <data name="Transcribe_Stage_Upload" xml:space="preserve">
+    <value>Sender opptaket til motoren</value>
+  </data>
+  <data name="Transcribe_Stage_Working" xml:space="preserve">
+    <value>Arbeider</value>
+  </data>
+  <data name="Transcribe_Started" xml:space="preserve">
+    <value>Transkriberer {0} som {1}</value>
+  </data>
+  <data name="TransposeBox.Header" xml:space="preserve">
+    <value>Transponer, halvtoner</value>
+  </data>
+  <data name="VerbosityBox.Header" xml:space="preserve">
+    <value>Detaljer i talende note</value>
+  </data>
+  <data name="VerbosityBrief.Content" xml:space="preserve">
+    <value>Kort</value>
+  </data>
+  <data name="VerbosityFull.Content" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="VerbosityStandard.Content" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="ZoomBox.Header" xml:space="preserve">
+    <value>Zoom, prosent</value>
+  </data>
+  <data name="ZoomBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Notestørrelse fra 50 til 400 prosent</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Større noter (Ctrl+=)</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom inn</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zoom inn</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Mindre noter (Ctrl+-)</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom ut</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zoom ut</value>
+  </data>
+</root>

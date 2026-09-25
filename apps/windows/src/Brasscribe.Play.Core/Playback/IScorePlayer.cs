@@ -31,7 +31,8 @@ public interface IScorePlayer : IDisposable
     event EventHandler? Finished;
 
     void LoadScore(byte[] musicXml);
-    void LoadSoundFont(byte[] soundFont);
+    /// <summary>Loads a SoundFont2; append keeps the presets already loaded.</summary>
+    void LoadSoundFont(byte[] soundFont, bool append = false);
 
     void Play();
     void Pause();

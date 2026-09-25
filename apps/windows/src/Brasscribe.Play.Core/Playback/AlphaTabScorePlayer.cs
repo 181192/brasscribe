@@ -108,9 +108,9 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         Transpose = _transpose;
     }
 
-    public void LoadSoundFont(byte[] soundFont)
+    public void LoadSoundFont(byte[] soundFont, bool append = false)
     {
-        _synth.LoadSoundFont(new Uint8Array(soundFont), false);
+        _synth.LoadSoundFont(new Uint8Array(soundFont), append);
         _soundFontLoaded = true;
     }
 

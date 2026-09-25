@@ -21,9 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Resource files of the app, checked for key parity between en-US and nb-NO. -->
-    <None Include="../../src/Brasscribe.Play/Strings/**/*.resw" Link="Strings/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../src/Brasscribe.Play/**/*.xaml" Exclude="../../src/Brasscribe.Play/obj/**;../../src/Brasscribe.Play/bin/**" Link="Xaml/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

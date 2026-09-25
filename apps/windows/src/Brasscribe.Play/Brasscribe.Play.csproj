@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Brasscribe Play for Windows: WinUI 3 (Windows App SDK), unpackaged and self-contained so CI can
+    start the exe directly for the accessibility scan. Package.appxmanifest is kept for an MSIX build
+    (set WindowsPackageType to MSIX).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(BrasscribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(BrasscribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <RootNamespace>Brasscribe.Play</RootNamespace>
+    <AssemblyName>BrasscribePlay</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <SatelliteResourceLanguages>en-US;nb-NO</SatelliteResourceLanguages>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- DirectML build of ONNX Runtime; never together with the CPU package (both ship onnxruntime.dll). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
+    <!-- Native Skia for alphaTab's bitmap rendering. -->
+    <PackageReference Include="AlphaSkia.Native.Windows" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brasscribe.Play.Core\Brasscribe.Play.Core.csproj" />
+    <ProjectReference Include="..\Brasscribe.Play.Audio.Windows\Brasscribe.Play.Audio.Windows.csproj" />
+    <ProjectReference Include="..\Brasscribe.Play.Controls\Brasscribe.Play.Controls.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Optional SoundFont and models are copied next to the exe when present (never committed). -->
+    <Content Include="..\..\..\..\data\sounds\built\**\*.sf2" Link="SoundFonts\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\data\sounds\built')" />
+    <Content Include="..\..\..\..\models\converted\swift-f0\*.onnx" Link="Models\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\models\converted\swift-f0')" />
+  </ItemGroup>
+</Project>
