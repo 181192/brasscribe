@@ -255,6 +255,7 @@
               "regressed",
               "improved",
               "missing",
+              "skipped",
               "new"
             ],
             "title": "Status",
@@ -291,6 +292,14 @@
           "composition_identical": {
             "title": "Composition Identical",
             "type": "boolean"
+          },
+          "extra_files": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "parts/*.musicxml and separation-check.json the reference has: identical?",
+            "title": "Extra Files",
+            "type": "object"
           },
           "musicxml_identical": {
             "title": "Musicxml Identical",
@@ -1546,6 +1555,14 @@
             "default": 0.0,
             "title": "Seconds",
             "type": "number"
+          },
+          "skipped_parts": {
+            "description": "eval sets (metric prefixes) without data",
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Parts",
+            "type": "array"
           },
           "status": {
             "enum": [

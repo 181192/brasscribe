@@ -34,7 +34,9 @@ def solo_line(sw: list[dict], mus: list[dict], bp: list[dict]) -> list[dict]:
 
 
 def build(beats: Path, sw: Path, mus: Path, bp: Path, title: str) -> Composition:
-    b = np.loadtxt(beats)
+    b = np.loadtxt(beats, ndmin=2)
+    if len(b) < 2:
+        raise SystemExit(f"only {len(b)} beat(s) tracked in {beats.name}; the recording is too short to notate")
     pos = b[:, 1].astype(int)
     downs = np.where(pos == 1)[0]
     beats_per_bar = Counter(np.diff(downs)).most_common(1)[0][0] if len(downs) > 1 else 4

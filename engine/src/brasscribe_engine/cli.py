@@ -2,8 +2,8 @@
 
     brasscribe run <audio> [--profile P] [--out DIR] [--reuse DIR] [--no-heavy] [--cold STAGES] [--check-golden DIR]
     brasscribe bench <suite|group> [--mode cached|live] [--json FILE] [--allow-improved] [--require-data]
-    brasscribe serve [--host H] [--port N]
-    brasscribe studio [--port N] [--no-browser]
+    brasscribe serve [--host H] [--port N] [--lan]
+    brasscribe studio [--port N] [--lan] [--no-browser]   (opens the default browser)
     brasscribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
     brasscribe compare <candidate dir> <reference dir>
     brasscribe profiles | suites
@@ -78,22 +78,67 @@ def cmd_bench(args) -> int:
     return 0 if report["passed"] else 1
 
 
+def lan_addresses() -> list[str]:
+    """IPv4 addresses of this machine that LAN clients can reach, private (RFC 1918) ranges first."""
+    import ipaddress
+    import socket
+
+    found: list[str] = []
+    for target in ("192.168.255.255", "10.255.255.255", "172.31.255.255", "8.8.8.8"):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            try:
+                sock.connect((target, 1))  # no packet is sent; this only picks the outgoing interface
+                found.append(sock.getsockname()[0])
+            except OSError:
+                pass
+    try:
+        found += socket.gethostbyname_ex(socket.gethostname())[2]
+    except OSError:
+        pass
+    # A VPN can own the default route, so also read every interface address.
+    import re
+    import shutil
+    import subprocess
+
+    for cmd in (["ifconfig"], ["ip", "-4", "-o", "addr"], ["ipconfig"]):
+        if shutil.which(cmd[0]):
+            try:
+                out = subprocess.run(cmd, capture_output=True, text=True, timeout=5).stdout
+            except (OSError, subprocess.TimeoutExpired):
+                continue
+            found += re.findall(r"(?:inet |IPv4[^:]*:\s*)(\d+\.\d+\.\d+\.\d+)", out)
+            break
+    ips = [ipaddress.ip_address(a) for a in dict.fromkeys(found)]
+    ips = [ip for ip in ips if not ip.is_loopback and not ip.is_link_local]
+    return [str(ip) for ip in sorted(ips, key=lambda ip: (not ip.is_private or ip in ipaddress.ip_network("100.64.0.0/10"), str(ip)))]
+
+
+def serve_banner(app, host: str, port: int) -> tuple[str, list[str]]:
+    """(URL to open locally, lines to print)."""
+    local = f"http://{'127.0.0.1' if host in ('0.0.0.0', '::') else host}:{port}/"
+    lines = [f"brasscribe engine on {local}"]
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        ips = lan_addresses() if host in ("0.0.0.0", "::") else [host]
+        lines += [f"LAN URL: http://{ip}:{port}/" for ip in ips] or ["LAN URL: no network address found"]
+        lines.append(f"LAN pairing code: {app.state.pairing.code}  (POST /v1/pair, then send the token as a Bearer header)")
+    return local, lines
+
+
 def cmd_serve(args, open_browser: bool = False) -> int:
     import uvicorn
 
     from .api import create_app
 
+    host = "0.0.0.0" if args.lan else args.host
     app = create_app()
-    if args.host not in ("127.0.0.1", "localhost", "::1"):
-        print(f"LAN pairing code: {app.state.pairing.code}  (POST /v1/pair)", flush=True)
-    url = f"http://{'localhost' if args.host in ('0.0.0.0', '::') else args.host}:{args.port}/"
-    print(f"brasscribe engine on {url}", flush=True)
+    url, lines = serve_banner(app, host, args.port)
+    print("\n".join(lines), flush=True)
     if open_browser:
         import threading
         import webbrowser
 
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    uvicorn.run(app, host=host, port=args.port, log_level="warning")
     return 0
 
 
@@ -152,6 +197,8 @@ def main(argv: list[str] | None = None) -> int:
         sv = sub.add_parser(name, help="start the HTTP engine" + (" and open Studio" if browser else ""))
         sv.add_argument("--host", default="127.0.0.1")
         sv.add_argument("--port", type=int, default=8765)
+        sv.add_argument("--lan", action="store_true",
+                        help="listen on all interfaces and print the LAN URL and pairing code for the Play apps")
         if browser:
             sv.add_argument("--no-browser", action="store_true")
             sv.set_defaults(fn=lambda a: cmd_serve(a, open_browser=not a.no_browser))

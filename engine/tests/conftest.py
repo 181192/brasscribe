@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import stat
 from pathlib import Path
 
 import pytest
@@ -12,12 +11,14 @@ from brasscribe_engine import profiles
 from brasscribe_engine.config import Settings
 from brasscribe_engine.dag import SOURCE, Input, Pipeline, Stage
 
-FAKE_RUN = """#!/bin/sh
-# fake adapter: <in> <out>; appends a marker so outputs differ per adapter
-set -eu
-[ -n "${FAKE_FAIL:-}" ] && { echo boom >&2; exit 3; }
-cat "$1" > "$2"
-printf '%s' "{name}" >> "$2"
+FAKE_RUNNER = """import os, sys
+# fake run_adapter.py: <adapter> <in> <out>; copies the input and appends the adapter name
+name, src, dst = sys.argv[1:4]
+if os.environ.get("FAKE_FAIL"):
+    sys.stderr.write("boom")
+    sys.exit(3)
+with open(src, "rb") as f, open(dst, "wb") as g:
+    g.write(f.read() + name.encode())
 """
 
 
@@ -25,10 +26,8 @@ def make_adapters(root: Path) -> Path:
     for name in ("swift-f0", "basic-pitch", "muscriptor"):
         d = root / name
         d.mkdir(parents=True)
-        run = d / "run.sh"
-        run.write_text(FAKE_RUN.replace("{name}", name))
-        run.chmod(run.stat().st_mode | stat.S_IEXEC)
         (d / "pyproject.toml").write_text(f'[project]\nname = "fake-{name}"\nversion = "9.9.9"\n')
+    (root / "run_adapter.py").write_text(FAKE_RUNNER)
     return root
 
 

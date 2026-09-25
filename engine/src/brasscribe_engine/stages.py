@@ -24,7 +24,8 @@ from .dag import StageContext, StageFailed
 MUSIC_SRC = Path(brasscribe_music.__file__).resolve().parent
 EVAL_SRC = Path(brasscribe_eval.__file__).resolve().parent
 THIS = Path(__file__).resolve()
-SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS)
+PART_STYLE = MUSIC_SRC / "parts.mss"  # MuseScore style for rendering individual parts
+SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS) + ((PART_STYLE,) if PART_STYLE.exists() else ())
 
 
 def _python(ctx: StageContext, module: str, *args: str) -> None:
@@ -75,7 +76,10 @@ def _view(files: dict[str, Path], where: Path) -> Path:
     """A directory of symlinks with the names the reference scripts expect."""
     where.mkdir(parents=True, exist_ok=True)
     for name, src in files.items():
-        (where / name).symlink_to(src.resolve())
+        try:
+            (where / name).symlink_to(src.resolve())
+        except OSError:  # no symlink privilege (Windows)
+            shutil.copy2(src, where / name)
     return where
 
 
@@ -83,13 +87,13 @@ def _stable_musicxml(ctx: StageContext) -> None:
     """Deterministic part/instrument ids, so an unchanged arrangement has unchanged bytes (and downstream cache hits)."""
     from .compare import stable_ids
 
-    xml = ctx.out / "brass-band.musicxml"
-    if xml.exists():
-        xml.write_text(stable_ids(xml.read_text()))
+    for xml in [ctx.out / "brass-band.musicxml", *sorted((ctx.out / "parts").glob("*.musicxml"))]:
+        if xml.exists():
+            xml.write_text(stable_ids(xml.read_text()))
 
 
 def arrange_layered(ctx: StageContext) -> None:
-    names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz"))}
+    names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz", ".wav"))}
     with tempfile.TemporaryDirectory(dir=ctx.out.parent) as tmp:
         view = _view(names, Path(tmp) / "layers")
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
@@ -117,12 +121,13 @@ def arrange_solo(ctx: StageContext) -> None:
 
 
 def export(ctx: StageContext) -> None:
-    """PDF, MIDI and (optionally) MP3 via the MuseScore CLI.
+    """Score PDF, MIDI and (optionally) MP3, plus one PDF per part, via the MuseScore CLI.
 
     MuseScore 4 aborts during shutdown after writing its output, so success is
     judged by the output file, never the exit code.
     """
-    xml = ctx.inputs["musicxml"]
+    score = ctx.inputs["score"]
+    xml = score / "brass-band.musicxml"
     formats = ["pdf", "mid"] + (["mp3"] if ctx.params.get("audio", True) else [])
     from brasscribe_music import musescore
 
@@ -130,10 +135,14 @@ def export(ctx: StageContext) -> None:
     written = []
     if mscore:
         dsts = [ctx.out / f"brass-band.{ext}" for ext in formats]
+        parts = sorted((score / "parts").glob("*.musicxml"))
+        part_dsts = [ctx.out / "parts" / part.with_suffix(".pdf").name for part in parts]
         missing = musescore.convert_many([(xml, dsts)])
+        missing += musescore.convert_many(list(zip(parts, part_dsts)),
+                                          style=PART_STYLE if PART_STYLE.exists() else None)
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
-        written = [d.name for d in dsts]
+        written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
     if not mscore:
         ctx.log("mscore not found: PDF, MIDI and MP3 skipped")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
