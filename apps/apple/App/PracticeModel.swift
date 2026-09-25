@@ -77,7 +77,6 @@ final class PracticeModel {
         } catch {
             loadError = error.localizedDescription
         }
-        relayout()
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
