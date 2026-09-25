@@ -67,9 +67,7 @@ public final class SVGDocument: @unchecked Sendable {
         })
         ctx.saveGState()
         ctx.setLineCap(.butt)
-        let clip = ctx.boundingBoxOfClipPath
         for op in ops {
-            if let p = op.path, !clip.isNull, !clip.isInfinite, !p.boundingBoxOfPath.insetBy(dx: -50, dy: -50).intersects(clip) { continue }
             var color = keepDocumentColors ? (op.color ?? ink) : ink
             if !hi.isEmpty { for o in op.owners.reversed() { if let c = hi[o] { color = c; break } } }
             switch op.kind {

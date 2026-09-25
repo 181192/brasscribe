@@ -36,7 +36,6 @@ targets:
   BrasscribePlay:
     type: application
     platform: [iOS, macOS]
-    productName: Brasscribe Play
     sources:
       - path: App
       - path: Frameworks/VerovioResources
@@ -94,20 +93,17 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [musicxml]
               public.mime-type: [application/vnd.recordare.musicxml+xml]
-    entitlements:
-      path: App/BrasscribePlay-${platform}.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.network.client: true
-        com.apple.security.device.audio-input: true
-        com.apple.security.files.user-selected.read-write: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play
+        CODE_SIGN_ENTITLEMENTS: App/BrasscribePlay-${platform}.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
         ENABLE_HARDENED_RUNTIME: YES
         SUPPORTS_MACCATALYST: NO
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: App/Debug.entitlements
 
   BrasscribePlayTests:
     type: bundle.unit-test
@@ -130,6 +126,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play.uitests
+        SWIFT_VERSION: "5.0"
         TEST_TARGET_NAME: BrasscribePlay_${platform}
 
 schemes:

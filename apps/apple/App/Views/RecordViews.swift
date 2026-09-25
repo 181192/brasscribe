@@ -61,6 +61,7 @@ struct MicRecordView: View {
                 .keyboardShortcut(.space, modifiers: [])
             }
             .padding()
+            .formStyle(.grouped)
             .navigationTitle(Text("Record"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { rec.stop(); dismiss() } } }
         }
@@ -101,6 +102,7 @@ struct CaptureView: View {
                     .keyboardShortcut(.space, modifiers: [])
             }
             .padding()
+            .formStyle(.grouped)
             .navigationTitle(Text("Record this Mac"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { _ = try? recorder?.stop(); dismiss() } } }
             .onAppear { apps = ProcessTapRecorder.audioApps() }
@@ -164,6 +166,7 @@ struct SettingsView: View {
                     Text("Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.")
                 } header: { Text("About") }
             }
+            .formStyle(.grouped)
             .navigationTitle(Text("Settings"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }

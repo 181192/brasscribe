@@ -41,6 +41,7 @@ struct MixerView: View {
                     LabeledContent { Text(model.soundDescription) } label: { Text("Sounds") }
                 } header: { Text("Sound") }
             }
+            .formStyle(.grouped)
             .navigationTitle(Text("Parts and sound"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
@@ -75,6 +76,7 @@ struct TalkingScoreView: View {
                     .accessibilityAction(named: Text("Play this bar")) { model.goToBar(i); if !model.isPlaying { model.togglePlay() } }
                 }
             }
+            .formStyle(.grouped)
             .navigationTitle(Text("Talking score"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { if partID.isEmpty { partID = model.shownPart ?? model.myPart ?? model.score.parts.first?.id ?? "" } }
@@ -103,6 +105,7 @@ struct ExportView: View {
                 row(String(localized: "Braille music (BRF)"), "hand.point.up.braille", kind: .brailleBRF)
                 if let message { Text(message).foregroundStyle(.secondary) }
             }
+            .formStyle(.grouped)
             .navigationTitle(Text("Export"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .fileExporter(isPresented: Binding(get: { document != nil }, set: { if !$0 { document = nil } }),

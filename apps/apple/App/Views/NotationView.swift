@@ -40,24 +40,32 @@ struct NotationView: View {
         let palette = NotationPalette.make(dark: scheme == .dark, highContrast: contrast == .increased)
         GeometryReader { geo in
             ScrollViewReader { proxy in
-                ScrollView([.vertical, .horizontal]) {
+                ScrollView(.vertical) {
                     LazyVStack(spacing: 12) {
                         ForEach(model.pages, id: \.number) { page in
                             PageView(model: model, page: page, palette: palette, rotorNS: rotorNS)
+                                .id("page-\(page.number)")
                         }
                     }
                     .padding(.vertical, 8)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(Text("Score pages"))
                 }
                 .background(palette.paper)
                 .onAppear { model.viewWidth = geo.size.width - 16 }
                 .onChange(of: geo.size.width) { _, w in
                     if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
                 }
+                .onChange(of: model.layoutVersion) { _, _ in
+                    // after (re)engraving, show the current bar
+                    DispatchQueue.main.async { proxy.scrollTo("page-\(model.pageNumber(forBar: model.currentBar))", anchor: .top) }
+                }
                 .onChange(of: model.currentBar) { _, bar in
-                    guard bar != lastScrolledBar else { return }
-                    lastScrolledBar = bar
-                    let id = "bar-\(bar)"
-                    if reduceMotion { proxy.scrollTo(id, anchor: .center) } else { withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(id, anchor: .center) } }
+                    let page = model.pageNumber(forBar: bar)
+                    guard page != lastScrolledBar else { return }
+                    lastScrolledBar = page
+                    let id = "page-\(page)"
+                    if reduceMotion { proxy.scrollTo(id, anchor: .top) } else { withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(id, anchor: .top) } }
                 }
             }
         }
@@ -145,8 +153,6 @@ private struct PageView: View {
                             .position(x: mf.midX, y: mf.midY)
                             .accessibilityHidden(true)
                     }
-                    Color.clear.frame(width: 1, height: 1).position(x: mf.minX, y: mf.midY).id("bar-\(bar)")
-                        .accessibilityHidden(true)
                     ForEach(Array((page.staves[mid] ?? []).enumerated()), id: \.offset) { k, staffID in
                         if let sf = doc.frames[staffID], model.displayedParts.indices.contains(k) {
                             StaffElement(model: model, bar: bar, partIndex: k, frame: sf.union(CGRect(x: mf.minX, y: sf.minY, width: mf.width, height: sf.height)),

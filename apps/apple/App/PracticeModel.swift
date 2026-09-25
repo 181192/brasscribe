@@ -19,6 +19,7 @@ final class PracticeModel {
     private(set) var pages: [ScoreRenderer.Page] = []
     private(set) var loadError: String?
     private(set) var engraving = false
+    private(set) var layoutVersion = 0
 
     // View settings
     var shownPart: String? { didSet { if shownPart != oldValue { relayout() } } }
@@ -106,10 +107,17 @@ final class PracticeModel {
             let pages = r.renderAllPages()
             await MainActor.run {
                 self.pages = pages
+                self.layoutVersion += 1
                 self.engraving = false
                 self.updateSounding()
             }
         }
+    }
+
+    /// Page (1-based) showing a bar.
+    func pageNumber(forBar bar: Int) -> Int {
+        guard let ids = renderer?.measureIDs, ids.indices.contains(bar) else { return 1 }
+        return pages.first { $0.measureIDs.contains(ids[bar]) }?.number ?? 1
     }
 
     /// Displayed parts, in order.

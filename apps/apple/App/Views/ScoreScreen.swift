@@ -58,6 +58,8 @@ struct PracticeView: View {
             Divider()
             TransportBar(model: model)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(model.piece.title))
         .sheet(isPresented: $showMixer) { MixerView(model: model) }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
         .sheet(isPresented: $showExport) { ExportView(model: model) }

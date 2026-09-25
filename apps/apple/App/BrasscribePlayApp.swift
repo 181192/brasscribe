@@ -20,6 +20,7 @@ struct BrasscribePlayApp: App {
                 .onOpenURL { url in Task { await app.accept(url: url) } }
         }
         #if os(macOS)
+        .defaultSize(width: 1280, height: 900)
         .commands { PlaybackCommands() }
         #endif
     }
@@ -40,6 +41,8 @@ struct RootView: View {
                     }
                 }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Brasscribe Play"))
         .sheet(item: $app.pending) { src in SourceSheet(source: src) }
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
         .sheet(isPresented: $app.showSettings) { SettingsView() }
@@ -50,20 +53,24 @@ struct RootView: View {
             Alert(title: Text(a.title), message: Text(a.message), dismissButton: .default(Text("OK")))
         }
         .onAppear {
+            FileHandle.standardError.write(Data("root appeared \(ProcessInfo.processInfo.arguments)\n".utf8))
             if ProcessInfo.processInfo.arguments.contains("-open-demo-score") { openDemoScore() }
         }
     }
 
     /// UI tests and screenshots: import the fixture straight into a piece and open it.
     private func openDemoScore() {
-        guard let dir = app.fixtureDirectory,
-              let xml = try? Data(contentsOf: dir.appending(path: "brass-band.musicxml")) else { return }
-        let comp = (try? Data(contentsOf: dir.appending(path: "composition.json"))).flatMap { try? Composition.decode($0) }
-        let result = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: FixtureService(directory: dir).available)
-        if let p = try? Piece.create(title: "Mikkel", profile: .orchestraWithSoloist, result: result, original: app.originalForFixture,
-                                     video: app.videoForFixture, fixtureDirectory: dir) {
+        guard let dir = app.fixtureDirectory else { FileHandle.standardError.write(Data("open-demo-score: no fixture directory\n".utf8)); return }
+        do {
+            let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
+            let comp = (try? Data(contentsOf: dir.appending(path: "composition.json"))).flatMap { try? Composition.decode($0) }
+            let result = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: FixtureService(directory: dir).available)
+            let p = try Piece.create(title: "Mikkel", profile: .orchestraWithSoloist, result: result, original: app.originalForFixture,
+                                     video: app.videoForFixture, fixtureDirectory: dir)
             app.refresh()
             app.path = [.score(p)]
+        } catch {
+            FileHandle.standardError.write(Data("open-demo-score: \(error)\n".utf8))
         }
     }
 }

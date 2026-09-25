@@ -114,6 +114,7 @@ struct SourceSheet: View {
                     Text("Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them.")
                 }
             }
+            .formStyle(.grouped)
             .navigationTitle(Text(source.title))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { app.pending = nil } }
