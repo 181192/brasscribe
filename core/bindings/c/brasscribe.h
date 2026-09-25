@@ -41,11 +41,18 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 // Solo-with-band arrangement from six MIDI files (solo SwiftF0, solo
 // MuScriptor, solo Basic Pitch, bass, orchestra, drums, in that order) and a
 // beat table. Writes the Composition JSON to `*out_composition` and MusicXML
-// to `*out_musicxml`. Free time is detected; no solo contour is used.
+// to `*out_musicxml`.
+//
+// `options_json` may be null (defaults) or
+// `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
+//   "free_time": true, "free_tempo": null}`: the SwiftF0 contour of the solo
+// stem (where sustained notes end), free-time detection on/off, and a fixed
+// BPM for free-time passages.
 int32_t bc_arrange_layers_song(const uint8_t *const *midi,
                                const uintptr_t *midi_len,
                                const char *beats_text,
                                const char *title,
+                               const char *options_json,
                                char **out_composition,
                                char **out_musicxml,
                                char **err);

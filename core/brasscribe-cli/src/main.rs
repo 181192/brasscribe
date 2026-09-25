@@ -93,7 +93,7 @@ fn today() -> String {
 }
 
 fn stamp(xml: String) -> String {
-    xml.replacen("<encoding-date></encoding-date>", &format!("<encoding-date>{}</encoding-date>", today()), 1)
+    xml.replacen("<encoding>\n", &format!("<encoding>\n      <encoding-date>{}</encoding-date>\n", today()), 1)
 }
 
 /// Arrays of a NumPy .npz archive (float32/float64 1-D arrays).
@@ -201,6 +201,10 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
             let arr = if comp.voices.iter().any(|v| v.layer.is_some()) { arrange_layers(&comp) } else { arrange(&comp) };
             write(Path::new(&a.one("out")?), &stamp(write_score(&band_score(&arr, &comp))))
+        }
+        "normalize" => {
+            let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
+            write(Path::new(&a.one("out")?), &comp.to_json_string())
         }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);

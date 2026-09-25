@@ -88,17 +88,25 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// Solo-with-band arrangement from six MIDI files (solo SwiftF0, solo
 /// MuScriptor, solo Basic Pitch, bass, orchestra, drums, in that order) and a
 /// beat table. Writes the Composition JSON to `*out_composition` and MusicXML
-/// to `*out_musicxml`. Free time is detected; no solo contour is used.
+/// to `*out_musicxml`.
+///
+/// `options_json` may be null (defaults) or
+/// `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
+///   "free_time": true, "free_tempo": null}`: the SwiftF0 contour of the solo
+/// stem (where sustained notes end), free-time detection on/off, and a fixed
+/// BPM for free-time passages.
 #[no_mangle]
 pub unsafe extern "C" fn bc_arrange_layers_song(
     midi: *const *const u8,
     midi_len: *const usize,
     beats_text: *const c_char,
     title: *const c_char,
+    options_json: *const c_char,
     out_composition: *mut *mut c_char,
     out_musicxml: *mut *mut c_char,
     err: *mut *mut c_char,
 ) -> i32 {
+    let options = from_c(options_json);
     if midi.is_null() || midi_len.is_null() {
         return BC_NULL;
     }
@@ -123,7 +131,19 @@ pub unsafe extern "C" fn bc_arrange_layers_song(
             orchestra: files[4].clone(),
             drums: files[5].clone(),
         };
-        let r = crate::arrange_layers_song(layers, beats, title, None, true, None).map_err(map_err)?;
+        let opts: serde_json::Value = match &options {
+            Some(s) if !s.trim().is_empty() => serde_json::from_str(s).map_err(|e| (BC_INVALID, format!("options: {e}")))?,
+            _ => serde_json::Value::Null,
+        };
+        let floats = |v: &serde_json::Value| -> Vec<f64> { v.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() };
+        let contour = opts.get("solo_contour").filter(|c| c.is_object()).map(|c| crate::SoloContour {
+            times: floats(&c["times"]),
+            pitch_hz: floats(&c["pitch_hz"]),
+            loudness_db: floats(&c["loudness_db"]),
+        });
+        let free_time = opts.get("free_time").and_then(|v| v.as_bool()).unwrap_or(true);
+        let free_tempo = opts.get("free_tempo").and_then(|v| v.as_f64());
+        let r = crate::arrange_layers_song(layers, beats, title, contour, free_time, free_tempo).map_err(map_err)?;
         xml = r.musicxml;
         Ok(r.composition_json)
     });

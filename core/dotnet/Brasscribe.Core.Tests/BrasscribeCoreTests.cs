@@ -38,6 +38,19 @@ public class BrasscribeCoreTests
     }
 
     [Fact]
+    public void ArrangesMikkelLayersWhenDataIsPresent()
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "../../../../../../data/mikkel/repro");
+        if (!Directory.Exists(dir)) return; // data/ is not in the repository
+        byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
+        var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
+        var (comp, xml) = BrasscribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
+        Assert.Contains("\"free_regions\": [", comp);
+        Assert.Equal(18, xml.Split("<score-part ").Length - 1);
+        Assert.Contains("<words>ad lib.</words>", xml);
+    }
+
+    [Fact]
     public void SpellsPitches()
     {
         var s = BrasscribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);

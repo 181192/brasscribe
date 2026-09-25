@@ -79,6 +79,23 @@ with NumPy's unstable introsort; music21's notation rules (accidental display,
 tuplet completion and brackets, beam partials, stems per beam group,
 transposed accidentals, MIDI channel assignment) are ported in `notation/`.
 
+Each band case also checks the app path: the reference `composition.json` read
+back by Rust gives the same bytes, and arranging it (`brasscribe-core
+musicxml`) gives the reference MusicXML.
+
+Open points:
+
+- The reference is pinned to the machine it runs on (macOS arm64, NumPy
+  2.5.3, music21 10.5.0, partitura 1.9.0). On x86 with AVX2/AVX-512 NumPy's
+  argsort takes another code path (x86-simd-sort) and orders ties
+  differently, and builds without FMA contraction round `interp` differently,
+  so a Linux CI reference may not agree with this one.
+- MuseScore rejects two reference scores (synthetic layers of URMP 31 and 34)
+  that the port reproduces exactly: a triplet-quarter written length followed
+  by a rest music21 writes as a 24:13 tuplet.
+- The golden set predates the free-time and duration changes; the runner
+  compares against it for information only.
+
 ## Bindings
 
 Swift (UniFFI):

@@ -86,11 +86,95 @@ def duration_cases() -> list[dict]:
     return out
 
 
+def freetime_cases_exact(rng) -> list[dict]:
+    """Same as freetime_cases, recording which tempo onsets were passed."""
+    from brasscribe_music.freetime import local_tempo, plan_free_time, unstable_runs
+
+    out = []
+    for k in range(150):
+        nb = int(rng.integers(8, 160))
+        ref = rng.uniform(0.35, 0.9)
+        ibi = ref * rng.uniform(0.93, 1.07, size=nb)
+        for _ in range(int(rng.integers(0, 3))):
+            a = int(rng.integers(0, nb))
+            n = len(ibi[a:a + int(rng.integers(2, 9))])
+            ibi[a:a + n] = rng.uniform(1.0, 6.0, size=n)
+        if rng.random() < 0.2:
+            i = int(rng.integers(0, nb - 1))
+            ibi[i], ibi[i + 1] = ref * 0.4, ref * 0.6
+        t = np.cumsum(ibi) + rng.uniform(0, 3)
+        bpb = int(rng.choice([2, 3, 4, 6]))
+        first = int(rng.integers(0, bpb))
+        on = np.sort(rng.uniform(t[0] - 1.5, t[-1], size=int(rng.integers(1, 400))))
+        tempo_on = on[:: int(rng.integers(1, 4))] if rng.random() < 0.7 else None
+        mode = rng.random()
+        downs = None if mode < 0.5 else (((np.arange(len(t)) - first) % bpb == 0) if mode < 0.8 else rng.random(len(t)) < 0.25)
+        tempo = float(rng.uniform(40, 110)) if rng.random() < 0.2 else None
+        p = plan_free_time(t, on, bpb, first, downs, tempo=tempo, tempo_onsets=tempo_on)
+        out.append({
+            "t": t.tolist(), "onsets": on.tolist(), "tempo_onsets": None if tempo_on is None else tempo_on.tolist(),
+            "bpb": bpb, "first": first, "downbeats": None if downs is None else [bool(x) for x in downs], "tempo": tempo,
+            "runs": [list(map(int, r)) for r in unstable_runs(t)],
+            "local_tempo": local_tempo(on, float(t[0]), float(t[-1])),
+            "plan": {"beat_times": np.asarray(p.beat_times).tolist(), "first_downbeat": int(p.first_downbeat),
+                     "spans": [[int(a), int(b), float(s0), float(s1), float(bpm)] for a, b, s0, s1, bpm in p.spans],
+                     "notation": p.notation.value,
+                     "regions": [[r.start, r.end, r.start_s, r.end_s, r.tempo_bpm] for r in p.regions(first)]},
+        })
+    return out
+
+
+def durations_cases(rng) -> list[dict]:
+    from brasscribe_music.durations import SEPARATED_STEM, Contour, contour_offsets, written_durations
+    from brasscribe_music.quantize import BeatMap, QNote
+
+    out = []
+    for k in range(120):
+        # a contour: frames every 16 ms, a melody of held and detached notes with dropouts
+        n_frames = int(rng.integers(50, 900))
+        t = np.arange(n_frames) * 0.016 + rng.uniform(0, 0.02)
+        hz = np.zeros(n_frames)
+        db = rng.uniform(-120, -60, size=n_frames)
+        notes = []
+        i = int(rng.integers(0, 20))
+        while i < n_frames - 5:
+            p = int(rng.integers(50, 85))
+            length = int(rng.integers(3, 120))
+            f = 440.0 * 2 ** ((p - 69 + rng.uniform(-0.3, 0.3, size=min(length, n_frames - i))) / 12)
+            if rng.random() < 0.1:
+                f = f * 2  # octave error
+            hz[i:i + length] = f
+            db[i:i + length] = rng.uniform(-40, -5) - np.linspace(0, rng.uniform(0, 90), len(f))
+            holes = rng.random(len(f)) < 0.05
+            hz[i:i + length][holes] = 0
+            notes.append((float(t[i] + rng.uniform(-0.02, 0.02)), p))
+            i += length + int(rng.integers(0, 40))
+        midi = np.where(hz > 0, 69 + 12 * np.log2(np.where(hz > 0, hz, 1.0) / 440.0), np.nan)
+        c = Contour(t, midi, db)
+        settings = SEPARATED_STEM if k % 2 else {}
+        ends = contour_offsets(c, notes, **settings)
+        # written durations of a quantized voice from those notes
+        beats = np.cumsum(rng.uniform(0.4, 0.8, size=max(4, len(t) // 30))) + t[0] - 0.5
+        q, pos = [], 0
+        for (on, p), e in zip(notes, ends):
+            pos += int(rng.choice([6, 8, 12, 18, 24, 36, 48]))
+            q.append(QNote(p, pos, pos + int(rng.choice([6, 12, 24])), on, float(e)))
+        use_bm = bool(k % 3)
+        w = written_durations(q, BeatMap(beats) if use_bm else None) if q else []
+        out.append({"t": t.tolist(), "hz": hz.tolist(), "db": db.tolist(), "midi": [None if np.isnan(x) else x for x in midi],
+                    "notes": [[o, p] for o, p in notes], "separated": bool(settings), "ends": [float(e) for e in ends],
+                    "beats": beats.tolist(), "use_beat_map": use_bm,
+                    "qnotes": [[x.pitch, x.start, x.end, x.onset_s, x.offset_s] for x in q],
+                    "written": [[int(x.dur), float(x.performed), bool(x.staccato)] for x in w]})
+    return out
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
     for name, data in (("spelling", spelling_cases(rng)), ("quantize", quantize_cases(rng)),
-                       ("argsort", argsort_cases(rng)), ("duration", duration_cases())):
+                       ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
+                       ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng))):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 

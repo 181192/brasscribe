@@ -52,6 +52,25 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
     raise ValueError(case.kind)
 
 
+def from_composition(binary: Path, py: Path, rs: Path) -> list[tuple[str, bool, str]]:
+    """The app path: the reference's composition.json read back by Rust, re-serialised
+    (must give the same bytes) and arranged to MusicXML (must match the reference score)."""
+    rows = []
+    comp = py / "composition.json"
+    p = subprocess.run([str(binary), "normalize", "--composition", str(comp), "--out", str(rs / "normalized.json")],
+                       capture_output=True, text=True)
+    same = p.returncode == 0 and (rs / "normalized.json").read_bytes() == comp.read_bytes()
+    rows.append(("composition.json (read back)", same, "" if same else p.stderr[-500:] or "bytes differ"))
+    p = subprocess.run([str(binary), "musicxml", "--composition", str(comp), "--out", str(rs / "from-composition.musicxml")],
+                       capture_output=True, text=True)
+    if p.returncode != 0:
+        rows.append(("brass-band.musicxml (from composition)", False, p.stderr[-500:]))
+    else:
+        same, detail = musicxml_equal(py / "brass-band.musicxml", rs / "from-composition.musicxml")
+        rows.append(("brass-band.musicxml (from composition)", same, detail))
+    return rows
+
+
 def compare(ref_dir: Path, rs_dir: Path, names: list[str]) -> list[tuple[str, bool, str]]:
     rows = []
     for name in names:
@@ -116,6 +135,8 @@ def main() -> None:
         p = subprocess.run(rust_cmd(binary, case, rs), capture_output=True, text=True)
         t_rs = time.time() - t0
         rows = compare(py, rs, OUTPUTS[case.kind]) if p.returncode == 0 else [("rust", False, p.stderr[-2000:])]
+        if case.kind in ("layers", "song", "bench"):
+            rows += from_composition(binary, py, rs)
         ok = all(r[1] for r in rows)
         entry = {"case": case.id, "ok": ok, "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
                  "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows]}
@@ -124,6 +145,12 @@ def main() -> None:
             entry["golden"] = {n: compare(case.golden, rs, [n])[0][1] for n in OUTPUTS[case.kind]}
         if args.musescore and p.returncode == 0 and case.kind in ("layers", "song", "bench"):
             entry["musescore"] = musescore_roundtrip(rs / "brass-band.musicxml", rs / "composition.json")
+        elif args.musescore and p.returncode == 0 and case.kind == "lead":
+            out = rs / "lead.mscore.musicxml"
+            out.unlink(missing_ok=True)
+            subprocess.run(["mscore", "-o", str(out), str(rs / "lead.musicxml")], capture_output=True)
+            written = out.exists() and out.stat().st_size > 0
+            entry["musescore"] = {"written": written, "pitches_match": written}
         entry["paths"] = {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}
         results.append(entry)
         mark = "OK  " if ok else "DIFF"

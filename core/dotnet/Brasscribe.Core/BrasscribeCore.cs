@@ -16,6 +16,9 @@ public sealed class BrasscribeException : Exception
 /// <summary>A spelled pitch: step "C".."B", alteration in semitones, octave (C4 = middle C).</summary>
 public readonly record struct SpelledPitch(string Step, int Alter, int Octave);
 
+/// <summary>Frame-level SwiftF0 contour of the solo stem.</summary>
+public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb);
+
 /// <summary>The six layer transcriptions (MIDI file bytes) of a recording.</summary>
 public sealed record LayerMidi(byte[] SoloSwiftF0, byte[] SoloMuScriptor, byte[] SoloBasicPitch, byte[] Bass, byte[] Orchestra, byte[] Drums);
 
@@ -35,15 +38,25 @@ public static class BrasscribeCore
         Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_musicxml(compositionJson, arranger, out o, out e));
 
     /// <summary>Solo-with-band arrangement from layer transcriptions and a beat table ("time position" per line).</summary>
-    public static (string CompositionJson, string MusicXml) ArrangeLayersSong(LayerMidi layers, string beatsText, string title)
+    /// <param name="soloContour">SwiftF0 contour of the solo stem (frame times, pitch in Hz, loudness in dB), or null.</param>
+    /// <param name="freeTime">Detect free-time passages and notate them proportionally.</param>
+    /// <param name="freeTempo">Notate free-time passages at this BPM instead of estimating one.</param>
+    public static (string CompositionJson, string MusicXml) ArrangeLayersSong(LayerMidi layers, string beatsText, string title,
+        SoloContour? soloContour = null, bool freeTime = true, double? freeTempo = null)
     {
+        var options = JsonSerializer.Serialize(new
+        {
+            solo_contour = soloContour is null ? null : new { times = soloContour.Times, pitch_hz = soloContour.PitchHz, loudness_db = soloContour.LoudnessDb },
+            free_time = freeTime,
+            free_tempo = freeTempo,
+        });
         byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
         var handles = files.Select(f => GCHandle.Alloc(f, GCHandleType.Pinned)).ToArray();
         try
         {
             var ptrs = handles.Select(h => h.AddrOfPinnedObject()).ToArray();
             var lens = files.Select(f => (nuint)f.Length).ToArray();
-            int code = Native.bc_arrange_layers_song(ptrs, lens, beatsText, title, out var comp, out var xml, out var err);
+            int code = Native.bc_arrange_layers_song(ptrs, lens, beatsText, title, options, out var comp, out var xml, out var err);
             if (code != 0)
             {
                 throw new BrasscribeException(code, TakeString(err) ?? $"brasscribe core error {code}");
@@ -110,6 +123,7 @@ public static class BrasscribeCore
         [DllImport(Lib)]
         public static extern int bc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson,
             out IntPtr outComposition, out IntPtr outMusicXml, out IntPtr error);
 
         [DllImport(Lib)]
