@@ -7,10 +7,13 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>One mixer row: mute, solo and volume for a part.</summary>
-public sealed partial class MixerPartViewModel(IScorePlayer player, TrackInfo track) : ObservableObject
+public sealed partial class MixerPartViewModel(IScorePlayer player, TrackInfo track, string muteLabel = "", string soloLabel = "") : ObservableObject
 {
     public int Index { get; } = track.Index;
     public string Name { get; } = track.Name;
+    /// <summary>Accessible names of the M and S buttons ("Mute Solo Cornet").</summary>
+    public string MuteLabel { get; } = muteLabel;
+    public string SoloLabel { get; } = soloLabel;
     public bool IsPercussion { get; } = track.IsPercussion;
 
     [ObservableProperty] public partial bool IsMuted { get; set; }
@@ -74,7 +77,8 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         _player.LoadScore(musicXml);
         Parts.Clear();
-        foreach (var t in _player.Tracks) Parts.Add(new MixerPartViewModel(_player, t));
+        foreach (var t in _player.Tracks)
+            Parts.Add(new MixerPartViewModel(_player, t, _s.Format("Mixer_Mute", t.Name), _s.Format("Mixer_Solo", t.Name)));
         BarCount = _player.BarCount;
         LoopStart = 1;
         LoopEnd = Math.Min(4, BarCount);

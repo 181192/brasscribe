@@ -1,15 +1,15 @@
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.TalkingScore;
 
 namespace Brasscribe.Play.Core.Bridge;
 
 /// <summary>
-/// Calls the Rust core through its C ABI (library brasscribe_ffi). Every call takes UTF-8
-/// NUL-terminated strings, returns 0 on success, and hands back strings through out-parameters
-/// that are released with bc_string_free. The ABI is being built alongside this app; until the
-/// library ships with the app, <see cref="TryCreate"/> returns null and the managed bridge is used.
+/// Calls the Rust core through its C ABI (library brasscribe_ffi, core/bindings/c/brasscribe.h).
+/// Every call takes UTF-8 NUL-terminated strings and returns 0 ok, 1 invalid input, 2 failed,
+/// /// 3 null argument or 4 panic; strings come back through out-parameters released with bc_string_free.
+/// The library is looked up next to the app, or at BRASSCRIBE_FFI_PATH; when it is missing
+/// <see cref="TryCreate"/> returns null and the managed bridge is used.
 /// Talking-score functions are not in the Rust core, so they stay managed here.
 /// </summary>
 public sealed partial class NativeCoreBridge : ICoreBridge
@@ -22,13 +22,33 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     public string Version { get; }
     public bool IsNative => true;
 
-    /// <summary>Loads the native core if present next to the app; null when it is missing or incompatible.</summary>
-    public static NativeCoreBridge? TryCreate()
+    private static nint _handle;
+    private static bool _resolverSet;
+    private static readonly object Gate = new();
+
+    /// <summary>Loads the native core if present; null when it is missing or incompatible.</summary>
+    public static NativeCoreBridge? TryCreate(string? libraryPath = null)
     {
-        if (!NativeLibrary.TryLoad(Lib, typeof(NativeCoreBridge).Assembly, null, out var handle)) return null;
+        libraryPath ??= Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH");
+        lock (Gate)
+        {
+            if (_handle == 0)
+            {
+                bool loaded = libraryPath is { Length: > 0 }
+                    ? NativeLibrary.TryLoad(libraryPath, out _handle)
+                    : NativeLibrary.TryLoad(Lib, typeof(NativeCoreBridge).Assembly, null, out _handle);
+                if (!loaded) return null;
+            }
+            if (!_resolverSet)
+            {
+                NativeLibrary.SetDllImportResolver(typeof(NativeCoreBridge).Assembly,
+                    (name, _, _) => name == Lib ? _handle : 0);
+                _resolverSet = true;
+            }
+        }
+        if (!NativeLibrary.TryGetExport(_handle, "bc_version", out _)) return null;
         try
         {
-            if (!NativeLibrary.TryGetExport(handle, "bc_version", out _)) return null;
             nint v = bc_version();
             try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native"); }
             finally { bc_string_free(v); }
@@ -41,7 +61,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     public Composition ParseComposition(string json)
     {
-        Check(bc_composition_validate(json, out var normalised, out var err), err);
+        Check(bc_composition_normalize(json, out var normalised, out var err), err);
         return CompositionJson.Parse(Take(normalised));
     }
 
@@ -53,9 +73,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     public string? ArrangeMusicXml(Composition composition, string arranger = "auto")
     {
-        string options = JsonSerializer.Serialize(new Dictionary<string, string> { ["arranger"] = arranger },
-            BridgeJsonContext.Default.DictionaryStringString);
-        Check(bc_arrange_musicxml(CompositionJson.Serialize(composition), options, out var xml, out var err), err);
+        Check(bc_arrange_musicxml(CompositionJson.Serialize(composition), arranger, out var xml, out var err), err);
         return Take(xml);
     }
 
@@ -66,7 +84,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             if (err != 0) bc_string_free(err);
             return;
         }
-        string message = err != 0 ? Take(err) : $"core error {status}";
+        string kind = status switch { 1 => "invalid input", 2 => "failed", 3 => "missing argument", 4 => "internal error", _ => $"error {status}" };
+        string message = err != 0 ? $"{kind}: {Take(err)}" : kind;
         throw new CoreBridgeException(message, status);
     }
 
@@ -83,16 +102,13 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     private static partial void bc_string_free(nint s);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
-    private static partial int bc_composition_validate(string json, out nint normalised, out nint err);
+    private static partial int bc_composition_normalize(string json, out nint normalised, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
-    private static partial int bc_arrange_musicxml(string compositionJson, string optionsJson, out nint xml, out nint err);
+    private static partial int bc_arrange_musicxml(string compositionJson, string arranger, out nint xml, out nint err);
 }
 
 public sealed class CoreBridgeException(string message, int status) : Exception(message)
 {
     public int Status { get; } = status;
 }
-
-[System.Text.Json.Serialization.JsonSerializable(typeof(Dictionary<string, string>))]
-internal sealed partial class BridgeJsonContext : System.Text.Json.Serialization.JsonSerializerContext;

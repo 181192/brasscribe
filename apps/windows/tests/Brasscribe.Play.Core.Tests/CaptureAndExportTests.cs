@@ -6,6 +6,7 @@ using Brasscribe.Play.Core.TalkingScore;
 
 namespace Brasscribe.Play.Core.Tests;
 
+[Collection(AlphaTabCollection.Name)]
 public class CaptureAndExportTests
 {
     private static CaptureLevel L(double s, float peak, bool silent = false) => new(TimeSpan.FromSeconds(s), peak, silent);

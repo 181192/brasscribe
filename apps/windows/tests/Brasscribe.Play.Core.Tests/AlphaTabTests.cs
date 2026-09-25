@@ -12,6 +12,7 @@ namespace Brasscribe.Play.Core.Tests;
 /// alphaTab .NET run headless: MusicXML import, transposition display, SVG rendering, MIDI and the
 /// synth pulled through <see cref="BufferedSynthOutput"/> without an audio device.
 /// </summary>
+[Collection(AlphaTabCollection.Name)]
 public class AlphaTabTests(ITestOutputHelper log)
 {
     private static byte[] Fixture() => File.ReadAllBytes(TestPaths.Fixture("two-parts.musicxml"));
