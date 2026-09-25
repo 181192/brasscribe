@@ -20,7 +20,8 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-ADAPTERS = Path(__file__).resolve().parents[2] / "ml" / "adapters"
+from .paths import ADAPTERS
+
 STEMS = {"solo": "trumpet", "bass": "bass", "drums": "drums"}
 TRANSCRIBERS = {
     "solo": [("muscriptor", "mus"), ("basic-pitch", "bp"), ("swift-f0", "sw")],

@@ -52,6 +52,7 @@ def main() -> None:
     ap.add_argument("--beats", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--title", default="Draft")
+    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF/MP3 export")
     args = ap.parse_args()
     L = args.layers
     args.out.mkdir(parents=True, exist_ok=True)
@@ -116,7 +117,7 @@ def main() -> None:
 
     arr = arrange_layers(comp)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
-    for ext in ("pdf", "mp3"):
+    for ext in () if args.no_render else ("pdf", "mp3"):
         f = xml.with_suffix(f".{ext}")
         f.unlink(missing_ok=True)
         subprocess.run(["mscore", "-o", str(f), str(xml)], capture_output=True)

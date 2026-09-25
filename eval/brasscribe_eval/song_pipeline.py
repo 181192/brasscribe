@@ -18,8 +18,7 @@ import sys
 from pathlib import Path
 
 from . import layers
-
-ADAPTERS = Path(__file__).resolve().parents[2] / "ml" / "adapters"
+from .paths import ADAPTERS
 
 
 def main() -> None:
