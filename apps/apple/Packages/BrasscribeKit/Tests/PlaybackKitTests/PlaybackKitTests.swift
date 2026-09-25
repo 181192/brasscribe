@@ -71,7 +71,8 @@ func goldenDir() -> URL? {
         #expect(e.loop == 3...4)
         #expect(e.position == 12)
         e.setLoop(200...300)
-        #expect(e.loop == 127...127)
+        let last = score.measures.count - 1
+        #expect(e.loop == last...last)
         e.setLoop(nil)
         #expect(e.loop == nil)
     }

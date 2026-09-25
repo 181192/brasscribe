@@ -151,7 +151,7 @@ public struct TalkingScore: Sendable {
         case .unpitched: return drumName(note.midiPitch ?? 0)
         case .pitched(let written):
             if pitchMode == .written || part.transposeSemitones == 0 { return noteName(written) }
-            return noteName(SpelledPitch.spelling(midi: note.midiPitch ?? written.midi, fifths: part.concertFifths))
+            return noteName(SpelledPitch.spelling(midi: note.midiPitch ?? written.midi, fifths: part.concertFifths(inMeasure: note.measureIndex)))
         }
     }
 
@@ -193,14 +193,30 @@ public struct TalkingScore: Sendable {
             let pitches = ns.compactMap { pitch(of: $0, in: part) }.joined(separator: nb ? " og " : " and ")
             var s = "\(beatLabel(beat)): \(pitches), \(durationName(type: head.type, dots: head.dots, ticks: head.durTicks))"
             if head.tieStop { s += nb ? ", bundet fra forrige" : ", tied from previous" }
+            if let dyn = part.dynamics[tick] { s += ", \(dynamicName(dyn))" }
             if ns.contains(where: uncertainty.isUncertain) { s += nb ? ", usikker" : ", uncertain" }
             return s
         }
     }
 
+    public func dynamicName(_ mark: String) -> String {
+        let en = ["ppp": "pianississimo", "pp": "pianissimo", "p": "piano", "mp": "mezzo-piano", "mf": "mezzo-forte",
+                  "f": "forte", "ff": "fortissimo", "fff": "fortississimo", "sfz": "sforzando", "sf": "sforzando", "fp": "forte-piano"]
+        return en[mark] ?? mark
+    }
+
+    /// Rehearsal marks and directions ("ad lib.", "a tempo") at the start of a bar.
+    public func directionText(_ measureIndex: Int) -> String? {
+        let d = score.directions(inMeasure: measureIndex)
+        guard !d.isEmpty else { return nil }
+        return d.map { $0.kind == .rehearsal ? (nb ? "rettledningsbokstav \($0.text)" : "rehearsal \($0.text)") : $0.text }
+            .joined(separator: ", ")
+    }
+
     /// Full spoken description of one bar of one part.
     public func describe(part: Part, measureIndex: Int) -> String {
-        "\(barLabel(measureIndex)), \(part.name). " + events(part: part, measureIndex: measureIndex).joined(separator: ". ") + "."
+        let dir = directionText(measureIndex).map { ", \($0)" } ?? ""
+        return "\(barLabel(measureIndex))\(dir), \(part.name). " + events(part: part, measureIndex: measureIndex).joined(separator: ". ") + "."
     }
 
     /// Plain-text talking score of the whole piece: a heading per part, a line per bar.
@@ -208,12 +224,17 @@ public struct TalkingScore: Sendable {
         var out = "\(score.title)\n"
         out += nb ? "Tempo \(Int(score.tempoBPM)) slag per minutt. \(score.measures.count) takter.\n"
                   : "Tempo \(Int(score.tempoBPM)) beats per minute. \(score.measures.count) bars.\n"
+        for t in score.tempos.dropFirst() {
+            let bar = score.measureIndex(atTick: t.tick)
+            out += nb ? "\(barLabel(bar)): tempo \(Int(t.bpm)).\n" : "\(barLabel(bar)): tempo \(Int(t.bpm)).\n"
+        }
         out += pitchMode == .written ? (nb ? "Skrevet toneart.\n" : "Written pitch.\n")
                                      : (nb ? "Klingende tonehøyde.\n" : "Concert pitch.\n")
         for p in parts ?? score.parts {
             out += "\n## \(p.name)\n"
             for i in score.measures.indices {
-                out += "\(barLabel(i)): " + events(part: p, measureIndex: i).joined(separator: "; ") + "\n"
+                let dir = directionText(i).map { " (\($0))" } ?? ""
+                out += "\(barLabel(i))\(dir): " + events(part: p, measureIndex: i).joined(separator: "; ") + "\n"
             }
         }
         return out

@@ -83,6 +83,10 @@ extension Composition {
     /// the passage is free time: consecutive intervals more than 1.8× or less than 0.55×
     /// the median. Shown as *ad lib* in review.
     var freeTimeBeats: [ClosedRange<Double>] {
+        if !freeRegions.isEmpty {
+            let tpb = Double(ticksPerBeat)
+            return freeRegions.map { Double($0.start) / tpb...Double($0.end) / tpb }
+        }
         guard beatTimes.count > 3 else { return [] }
         let d = zip(beatTimes.dropFirst(), beatTimes).map { $0 - $1 }
         let med = d.sorted()[d.count / 2]

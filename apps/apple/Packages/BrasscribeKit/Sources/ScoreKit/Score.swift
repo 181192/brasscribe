@@ -8,14 +8,54 @@ public struct Score: Sendable, Equatable {
     public var title: String
     public var parts: [Part]
     public var measures: [Measure]
-    /// Tempo marking in quarter notes per minute (first `<sound tempo>`), 120 if absent.
-    public var tempoBPM: Double
+    /// Tempo changes (`<sound tempo>`), quarter notes per minute, sorted by tick; first at tick 0.
+    public var tempos: [Tempo]
+    /// Rehearsal marks and text directions such as "ad lib." and "a tempo", from the first part.
+    public var directions: [Direction]
+
+    public struct Tempo: Sendable, Equatable { public var tick: Int; public var bpm: Double }
+    public struct Direction: Sendable, Equatable {
+        public enum Kind: Sendable, Equatable { case rehearsal, words }
+        public var tick: Int
+        public var kind: Kind
+        public var text: String
+    }
+
+    /// The tempo at the start (kept for callers that need one number).
+    public var tempoBPM: Double { tempos.first?.bpm ?? 120 }
 
     public var endTick: Int { measures.last.map { $0.startTick + $0.lengthTicks } ?? 0 }
-    public var durationSeconds: Double { Double(endTick) / Double(Self.ticksPerQuarter) * 60 / tempoBPM }
+    public var durationSeconds: Double { seconds(atTick: endTick) }
+
+    public init(title: String, parts: [Part], measures: [Measure], tempos: [Tempo], directions: [Direction] = []) {
+        self.title = title; self.parts = parts; self.measures = measures
+        self.tempos = tempos.isEmpty ? [Tempo(tick: 0, bpm: 120)] : tempos
+        self.directions = directions
+    }
 
     public init(title: String, parts: [Part], measures: [Measure], tempoBPM: Double) {
-        self.title = title; self.parts = parts; self.measures = measures; self.tempoBPM = tempoBPM
+        self.init(title: title, parts: parts, measures: measures, tempos: [Tempo(tick: 0, bpm: tempoBPM)])
+    }
+
+    public func tempo(atTick tick: Int) -> Double { tempos.last { $0.tick <= tick }?.bpm ?? tempoBPM }
+
+    /// Seconds from the start of bar 1 at the notated tempi.
+    public func seconds(atTick tick: Int) -> Double {
+        var s = 0.0
+        let q = Double(Self.ticksPerQuarter)
+        for (i, t) in tempos.enumerated() {
+            let next = i + 1 < tempos.count ? tempos[i + 1].tick : Int.max
+            guard tick > t.tick else { break }
+            s += Double(min(tick, next) - t.tick) / q * 60 / t.bpm
+        }
+        return s
+    }
+
+    /// Text directions starting in a measure.
+    public func directions(inMeasure i: Int) -> [Direction] {
+        guard measures.indices.contains(i) else { return [] }
+        let m = measures[i]
+        return directions.filter { $0.tick >= m.startTick && $0.tick < m.startTick + m.lengthTicks }
     }
 
     public func part(id: String) -> Part? { parts.first { $0.id == id } }
@@ -68,6 +108,19 @@ public struct Part: Sendable, Equatable, Identifiable {
     /// Key signature (fifths) as written at the start of the part.
     public var writtenFifths: Int
     public var notes: [ScoreNote]
+    /// Dynamic marks (`p`, `mf`, …) by tick.
+    public var dynamics: [Int: String] = [:]
+    /// Written key signature per measure (follows key changes).
+    public var measureFifths: [Int] = []
+
+    /// Concert key signature in a measure.
+    public func concertFifths(inMeasure i: Int) -> Int {
+        let written = measureFifths.indices.contains(i) ? measureFifths[i] : writtenFifths
+        var f = written + ((transposeSemitones % 12) * 7 % 12 + 12) % 12
+        while f > 6 { f -= 12 }
+        while f < -6 { f += 12 }
+        return f
+    }
 
     /// Key signature at concert pitch, derived from the written key and transposition.
     public var concertFifths: Int {

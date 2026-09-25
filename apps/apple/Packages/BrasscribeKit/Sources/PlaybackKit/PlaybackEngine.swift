@@ -168,12 +168,22 @@ public final class PlaybackEngine {
 
     private var stoppedBeat: Double = 0
 
+    /// Seconds in the original recording (tempo map) or, without one, at the notated tempi.
     public func seconds(atBeat beat: Double) -> Double {
-        tempoMap?.seconds(atBeat: beat) ?? beat * 60 / score.tempoBPM
+        tempoMap?.seconds(atBeat: beat) ?? score.seconds(atTick: Int(beat * Double(Score.ticksPerQuarter)))
     }
 
     public func beat(atSeconds s: Double) -> Double {
-        tempoMap?.beat(atSeconds: s) ?? s * score.tempoBPM / 60
+        if let tempoMap { return tempoMap.beat(atSeconds: s) }
+        var lo = 0.0, hi = Double(score.endTick) / Double(Score.ticksPerQuarter) + 1000
+        for _ in 0..<60 { let mid = (lo + hi) / 2; if seconds(atBeat: mid) < s { lo = mid } else { hi = mid } }
+        return lo
+    }
+
+    /// Wall-clock seconds of score playback between two beats at the current rate.
+    func playSeconds(from a: Double, to b: Double) -> Double {
+        let q = Double(Score.ticksPerQuarter)
+        return (score.seconds(atTick: Int(b * q)) - score.seconds(atTick: Int(a * q))) / rate
     }
 
     public func play() throws {
@@ -249,7 +259,7 @@ public final class PlaybackEngine {
     private func startCountIn(then beat: Double) {
         let m = score.measures[score.measureIndex(atTick: Int(beat * Double(Score.ticksPerQuarter)))]
         let clicks = m.beats * countInBars
-        let interval = 60 / (score.tempoBPM * rate) * 4 / Double(m.beatType)
+        let interval = 60 / (score.tempo(atTick: Int(beat * Double(Score.ticksPerQuarter))) * rate) * 4 / Double(m.beatType)
         var n = 0
         pendingStartBeat = beat
         state = .countingIn(beat: 1)
@@ -369,7 +379,7 @@ public final class PlaybackEngine {
     public func renderScore(fromBeat: Double, beats: Double) throws -> AVAudioPCMBuffer {
         guard engine.isInManualRenderingMode else { throw PlaybackError.notOffline }
         let format = engine.manualRenderingFormat
-        let seconds = beats * 60 / (score.tempoBPM * rate)
+        let seconds = playSeconds(from: fromBeat, to: fromBeat + beats)
         let total = AVAudioFrameCount(seconds * format.sampleRate)
         guard let out = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: total),
               let chunk = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: engine.manualRenderingMaximumFrameCount)
@@ -392,7 +402,6 @@ public final class PlaybackEngine {
 
     /// Render the whole score (audible parts only) to an audio file (offline mode only).
     public func exportScore(to url: URL, tailSeconds: Double = 2) throws {
-        let beats = Double(score.endTick) / Double(Score.ticksPerQuarter) + tailSeconds * score.tempoBPM / 60
         let fmt = engine.manualRenderingFormat
         let file = try AVAudioFile(forWriting: url, settings: [
             AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: fmt.sampleRate,
@@ -400,7 +409,7 @@ public final class PlaybackEngine {
         ])
         guard let chunk = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: engine.manualRenderingMaximumFrameCount)
         else { throw PlaybackError.render("buffer") }
-        let total = AVAudioFramePosition(beats * 60 / (score.tempoBPM * rate) * fmt.sampleRate)
+        let total = AVAudioFramePosition((score.durationSeconds / rate + tailSeconds) * fmt.sampleRate)
         var done: AVAudioFramePosition = 0
         try startNow(at: 0)
         while done < total {

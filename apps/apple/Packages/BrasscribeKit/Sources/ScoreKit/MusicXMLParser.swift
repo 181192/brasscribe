@@ -74,7 +74,11 @@ private final class Delegate: NSObject, XMLParserDelegate {
     var partInfos: [String: PartInfo] = [:]
     var partOrder: [String] = []
     var currentInfo: PartInfo?
-    var tempo: Double?
+    var tempos: [Int: Double] = [:]
+    var directions: [Score.Direction] = []
+    var partDynamics: [String: [Int: String]] = [:]
+    var firstPart: String?
+    var currentTick: Int { partTick + toTicks(pos) }
 
     // Per-part parse state
     var partMeasures: [String: [RawMeasure]] = [:]
@@ -109,6 +113,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "part":
             let id = a["id"] ?? "P\(partMeasures.count + 1)"
             curPart = id
+            if firstPart == nil { firstPart = id }
             partMeasures[id] = []
             partNotes[id] = []
             divisions = 1; beats = 4; beatType = 4; fifths = 0; chromatic = 0; octaveChange = 0
@@ -133,7 +138,9 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "forward": inForward = true; moveDuration = 0
         case "transpose": inTranspose = true; chromatic = 0; octaveChange = 0
         case "sound":
-            if tempo == nil, let t = a["tempo"], let v = Double(t), v > 0 { tempo = v }
+            if let t = a["tempo"], let v = Double(t), v > 0, tempos[currentTick] == nil { tempos[currentTick] = v }
+        case "p", "pp", "ppp", "f", "ff", "fff", "mp", "mf", "sf", "sfz", "fp", "sfp", "rf", "fz":
+            if stack.dropLast().last == "dynamics", let part = curPart { partDynamics[part, default: [:]][currentTick] = name }
         default: break
         }
     }
@@ -163,6 +170,10 @@ private final class Delegate: NSObject, XMLParserDelegate {
 
         switch name {
         case "work-title": title = t
+        case "words" where curPart == firstPart && !t.isEmpty && t != "?":
+            directions.append(.init(tick: currentTick, kind: .words, text: t))
+        case "rehearsal" where curPart == firstPart && !t.isEmpty:
+            directions.append(.init(tick: currentTick, kind: .rehearsal, text: t))
         case "movement-title": movementTitle = t
         case "divisions": divisions = max(1, Int(t) ?? 1)
         case "fifths":
@@ -256,8 +267,12 @@ private final class Delegate: NSObject, XMLParserDelegate {
             return Part(id: id, name: info.name, abbreviation: info.abbreviation, instrumentName: info.instrumentName,
                         instrumentSound: info.instrumentSound, midiProgram: perc ? nil : info.midiProgram,
                         midiChannel: info.midiChannel, transposeSemitones: partTranspose[id] ?? 0,
-                        isPercussion: perc, writtenFifths: partFifths[id] ?? 0, notes: partNotes[id] ?? [])
+                        isPercussion: perc, writtenFifths: partFifths[id] ?? 0, notes: partNotes[id] ?? [],
+                        dynamics: partDynamics[id] ?? [:], measureFifths: partMeasures[id]?.map(\.fifths) ?? [])
         }
-        return Score(title: title.isEmpty ? movementTitle : title, parts: parts, measures: measures, tempoBPM: tempo ?? 120)
+        var tempoList = tempos.sorted { $0.key < $1.key }.map { Score.Tempo(tick: $0.key, bpm: $0.value) }
+        if let first = tempoList.first, first.tick > 0 { tempoList.insert(.init(tick: 0, bpm: first.bpm), at: 0) }
+        return Score(title: title.isEmpty ? movementTitle : title, parts: parts, measures: measures, tempos: tempoList,
+                     directions: directions.sorted { $0.tick < $1.tick })
     }
 }

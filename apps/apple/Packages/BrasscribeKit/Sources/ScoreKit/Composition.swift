@@ -16,19 +16,25 @@ public struct Composition: Codable, Sendable, Equatable {
         public var sources: [String]
         public var onsetS: Double?
         public var offsetS: Double?
+        /// Performed length in ticks, when known (notated `dur` may be shorter or longer).
+        public var performedDur: Int?
+        /// `staccato`, `tenuto`, `accent` …
+        public var articulations: [String]
 
         public var end: Int { start + dur }
 
         enum CodingKeys: String, CodingKey {
-            case pitch, start, dur, confidence, sources
+            case pitch, start, dur, confidence, sources, articulations
             case onsetS = "onset_s"
             case offsetS = "offset_s"
+            case performedDur = "performed_dur"
         }
 
         public init(pitch: Int, start: Int, dur: Int, confidence: Double = 1, sources: [String] = [],
                     onsetS: Double? = nil, offsetS: Double? = nil) {
             self.pitch = pitch; self.start = start; self.dur = dur; self.confidence = confidence
             self.sources = sources; self.onsetS = onsetS; self.offsetS = offsetS
+            self.performedDur = nil; self.articulations = []
         }
 
         public init(from decoder: Decoder) throws {
@@ -40,6 +46,8 @@ public struct Composition: Codable, Sendable, Equatable {
             sources = try c.decodeIfPresent([String].self, forKey: .sources) ?? []
             onsetS = try c.decodeIfPresent(Double.self, forKey: .onsetS)
             offsetS = try c.decodeIfPresent(Double.self, forKey: .offsetS)
+            performedDur = try c.decodeIfPresent(Int.self, forKey: .performedDur)
+            articulations = try c.decodeIfPresent([String].self, forKey: .articulations) ?? []
         }
     }
 
@@ -76,6 +84,32 @@ public struct Composition: Codable, Sendable, Equatable {
         public var mode: String
     }
 
+    /// A passage in free time (ad lib.): no beat grid was imposed on it.
+    public struct FreeRegion: Codable, Sendable, Equatable {
+        public var start: Int
+        public var end: Int
+        public var startS: Double
+        public var endS: Double
+        public var tempoBPM: Double
+        public var notation: String
+        public var label: String
+        enum CodingKeys: String, CodingKey {
+            case start, end, notation, label
+            case startS = "start_s", endS = "end_s", tempoBPM = "tempo_bpm"
+        }
+    }
+
+    public struct Dynamic: Codable, Sendable, Equatable {
+        public var tick: Int
+        public var layer: String
+        public var mark: String
+    }
+
+    public struct Section: Codable, Sendable, Equatable {
+        public var tick: Int
+        public var label: String
+    }
+
     public var title: String
     public var voices: [Voice]
     public var meters: [Meter]
@@ -83,9 +117,13 @@ public struct Composition: Codable, Sendable, Equatable {
     public var beatTimes: [Double]
     public var firstDownbeat: Int
     public var ticksPerBeat: Int
+    public var freeRegions: [FreeRegion]
+    public var dynamics: [Dynamic]
+    public var sections: [Section]
 
     enum CodingKeys: String, CodingKey {
-        case title, voices, meters, keys
+        case title, voices, meters, keys, dynamics, sections
+        case freeRegions = "free_regions"
         case beatTimes = "beat_times"
         case firstDownbeat = "first_downbeat"
         case ticksPerBeat = "ticks_per_beat"
@@ -100,6 +138,9 @@ public struct Composition: Codable, Sendable, Equatable {
         beatTimes = try c.decodeIfPresent([Double].self, forKey: .beatTimes) ?? []
         firstDownbeat = try c.decodeIfPresent(Int.self, forKey: .firstDownbeat) ?? 0
         ticksPerBeat = try c.decodeIfPresent(Int.self, forKey: .ticksPerBeat) ?? 24
+        freeRegions = try c.decodeIfPresent([FreeRegion].self, forKey: .freeRegions) ?? []
+        dynamics = try c.decodeIfPresent([Dynamic].self, forKey: .dynamics) ?? []
+        sections = try c.decodeIfPresent([Section].self, forKey: .sections) ?? []
     }
 
     public static func decode(_ data: Data) throws -> Composition {

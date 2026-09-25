@@ -76,14 +76,19 @@ public enum MIDIWriter {
         // Tempo / meter track
         var t0 = TrackBuilder()
         t0.meta(0, type: 0x03, Array(score.title.utf8.prefix(120)))
-        let mpq = Int((60_000_000 / score.tempoBPM).rounded())
-        t0.meta(0, type: 0x51, [UInt8((mpq >> 16) & 0xFF), UInt8((mpq >> 8) & 0xFF), UInt8(mpq & 0xFF)])
+        var meta: [(Int, UInt8, [UInt8])] = []
+        for t in score.tempos {
+            let mpq = Int((60_000_000 / t.bpm).rounded())
+            meta.append((t.tick == 0 ? 0 : t.tick + options.leadInTicks, 0x51,
+                         [UInt8((mpq >> 16) & 0xFF), UInt8((mpq >> 8) & 0xFF), UInt8(mpq & 0xFF)]))
+        }
         var lastMeter: (Int, Int)?
         for m in score.measures where lastMeter.map({ $0 != (m.beats, m.beatType) }) ?? true {
             let dd = UInt8(max(0, Int(log2(Double(m.beatType)))))
-            t0.meta(m.startTick + options.leadInTicks, type: 0x58, [UInt8(m.beats), dd, 24, 8])
+            meta.append((m.startTick + options.leadInTicks, 0x58, [UInt8(m.beats), dd, 24, 8]))
             lastMeter = (m.beats, m.beatType)
         }
+        for (t, type, payload) in meta.sorted(by: { $0.0 < $1.0 }) { t0.meta(t, type: type, payload) }
         tracks.append(t0.finish())
 
         for p in parts {

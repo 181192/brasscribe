@@ -7,6 +7,7 @@ Usage: python make-parser-reference.py score.musicxml out.json
 Run with the music package environment, e.g. music/.venv/bin/python.
 """
 
+import hashlib
 import json
 import sys
 
@@ -15,7 +16,7 @@ from music21 import converter, note, chord
 
 def main(src: str, dst: str) -> None:
     s = converter.parse(src)
-    out = {"parts": []}
+    out = {"source_sha256": hashlib.sha256(open(src, "rb").read()).hexdigest(), "parts": []}
     for p in s.parts:
         concert = p.toSoundingPitch(inPlace=False).stripTies()
         events = []

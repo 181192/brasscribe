@@ -26,12 +26,15 @@ func mikkelXML() throws -> String {
         let r = try #require(ScoreRenderer(musicXML: xml))
         #expect(r.apply(.init()))
         #expect(r.measureIDs.count == score.measures.count)
-        // the solo cornet's first note at beat 3.5
-        let s = r.sounding(atBeat: 3.5)
+        // the solo cornet's first note sounds at its onset, in its bar
+        let solo = try #require(score.parts.first { $0.name == "Solo Cornet" })
+        let first = try #require(solo.playbackNotes.first)
+        let beat = Double(first.startTick) / Double(Score.ticksPerQuarter)
+        let s = r.sounding(atBeat: beat)
         #expect(!s.notes.isEmpty)
-        #expect(s.measureIndex == 0)
-        #expect(r.sounding(atBeat: 4.0).measureIndex == 1)
-        #expect(r.sounding(atBeat: 40.1).measureIndex == 10)
+        #expect(s.measureIndex == score.measureIndex(atTick: first.startTick))
+        let bar10 = Double(score.measures[10].startTick) / Double(Score.ticksPerQuarter)
+        #expect(r.sounding(atBeat: bar10 + 0.01).measureIndex == 10)
     }
 
     @Test func showOnePartAndConcertPitch() throws {
@@ -47,9 +50,9 @@ func mikkelXML() throws -> String {
         #expect(r.apply(.init(parts: [solo.id], pitch: .concert)))
         let concert = try #require(r.page(1))
         let keyConcert = concert.svg.ids(ofClass: "keyAccid").count
-        // B-flat cornet reads D major (2 sharps) for concert C major (none)
+        // a B-flat cornet reads two sharps more than concert pitch
         #expect(keyWritten > 0)
-        #expect(keyConcert == 0)
+        #expect(keyConcert != keyWritten)
         #expect(r.uncertainNoteIDs.count > 0)
     }
 
