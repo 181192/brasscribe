@@ -66,18 +66,15 @@
       }
     },
     "quant-chorales": {
-      "source": "10-benchmark-results.md: Rhythm, Results (10 chorales, reference notes), penalties x20 rows",
+      "source": "10-benchmark-results.md: Rhythm, Results (10 chorales), penalties x20 rows. The Beat This! row is measured on all 10 chorales (0.490 / 0.930 / 0.771); the doc's '~0.45 / 0.92 / 0.76' matches the 9 chorales without Drese (0.464 / 0.922 / 0.760) and is being corrected",
       "metrics": {
         "reference_beats.position_acc": 0.99,
         "reference_beats.subdivision_acc": 0.99,
         "reference_beats.duration_acc": 0.88,
-        "beat_this.position_acc": 0.45,
-        "beat_this.subdivision_acc": 0.92,
-        "beat_this.duration_acc": 0.76
-      },
-      "open_questions": [
-        "The doc gives Beat This! position as '~0.45' (approximate)."
-      ]
+        "beat_this.position_acc": 0.49,
+        "beat_this.subdivision_acc": 0.93,
+        "beat_this.duration_acc": 0.771
+      }
     },
     "quant-urmp": {
       "source": "10-benchmark-results.md: URMP brass, Rhythm (reference notes); Beat This! row with metrical-level selection",
@@ -251,6 +248,34 @@
         },
         "pieces": {
           "value": 18,
+          "tolerance": 0
+        },
+        "chorales.grid.position": 0.49,
+        "chorales.grid.subdivision": 0.93,
+        "chorales.grid.duration": 0.771,
+        "chorales.free.position": 0.49,
+        "chorales.free.subdivision": 0.93,
+        "chorales.free.duration": 0.771,
+        "chorales.pieces_with_regions": {
+          "value": 0.0,
+          "tolerance": 0
+        },
+        "chorales.pieces": {
+          "value": 10.0,
+          "tolerance": 0
+        },
+        "urmp.grid.position": 0.453,
+        "urmp.grid.subdivision": 0.83,
+        "urmp.grid.duration": 0.448,
+        "urmp.free.position": 0.453,
+        "urmp.free.subdivision": 0.83,
+        "urmp.free.duration": 0.448,
+        "urmp.pieces_with_regions": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "urmp.pieces": {
+          "value": 8.0,
           "tolerance": 0
         }
       }

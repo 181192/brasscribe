@@ -255,6 +255,7 @@
               "regressed",
               "improved",
               "missing",
+              "skipped",
               "new"
             ],
             "title": "Status",
@@ -1546,6 +1547,14 @@
             "default": 0.0,
             "title": "Seconds",
             "type": "number"
+          },
+          "skipped_parts": {
+            "description": "eval sets (metric prefixes) without data",
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Parts",
+            "type": "array"
           },
           "status": {
             "enum": [

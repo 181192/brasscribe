@@ -167,7 +167,7 @@ class Check(BaseModel):
     value: float | None
     baseline: float | None
     tolerance: float
-    status: Literal["pass", "regressed", "improved", "missing", "new"]
+    status: Literal["pass", "regressed", "improved", "missing", "skipped", "new"]
 
 
 class SuiteResult(BaseModel):
@@ -177,6 +177,7 @@ class SuiteResult(BaseModel):
     seconds: float = 0.0
     metrics: dict[str, float] = Field(default_factory=dict)
     checks: list[Check] = Field(default_factory=list)
+    skipped_parts: list[str] = Field(default_factory=list, description="eval sets (metric prefixes) without data")
 
 
 class BenchRun(BaseModel):
