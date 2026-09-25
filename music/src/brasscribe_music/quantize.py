@@ -28,6 +28,7 @@ class QNote:
     onset_s: float
     offset_s: float
     confidence: float = 1.0
+    articulations: tuple[str, ...] = ()  # "staccato", "fermata" (see score_model.Articulation)
 
 
 class BeatMap:
@@ -72,8 +73,19 @@ def choose_level(beat_times: np.ndarray, onsets: np.ndarray) -> np.ndarray:
     return beat_times
 
 
-def choose_grids(onset_beats: np.ndarray) -> dict[int, int]:
-    """Pick a subdivision per beat index that minimizes squared snap error + complexity."""
+FREE_GRIDS = (1, 2)  # inside free-time regions: quarters and 8ths only
+
+
+def _in_ranges(k: int, ranges: list[tuple[float, float]] | None) -> bool:
+    return bool(ranges) and any(a <= k < b for a, b in ranges)
+
+
+def choose_grids(onset_beats: np.ndarray, coarse: list[tuple[float, float]] | None = None) -> dict[int, int]:
+    """Pick a subdivision per beat index that minimizes squared snap error + complexity.
+
+    Beats inside a `coarse` range [start, end) (beat indices) choose only from
+    FREE_GRIDS: in proportional notation finer values would just transcribe rubato.
+    """
     by_beat: dict[int, list[float]] = {}
     for x in onset_beats:
         # Onsets just before a beat belong to that beat's downbeat slot.
@@ -82,7 +94,8 @@ def choose_grids(onset_beats: np.ndarray) -> dict[int, int]:
     choice = {}
     for k, fracs in by_beat.items():
         f = np.array(fracs)
-        best = min(GRIDS, key=lambda g: np.sum((f - np.round(f * g) / g) ** 2) + GRIDS[g] * len(f))
+        allowed = FREE_GRIDS if _in_ranges(k, coarse) else GRIDS
+        best = min(allowed, key=lambda g: np.sum((f - np.round(f * g) / g) ** 2) + GRIDS[g] * len(f))
         choice[k] = best
     return choice
 
@@ -93,7 +106,8 @@ def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
     return int(round((k + round((x - k) * g) / g) * TICKS_PER_BEAT))
 
 
-def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False, auto_level: bool = True) -> list[QNote]:
+def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False, auto_level: bool = True,
+             coarse: list[tuple[float, float]] | None = None) -> list[QNote]:
     if not notes:
         return []
     if auto_level:
@@ -101,12 +115,14 @@ def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False
     bm = BeatMap(beat_times)
     on = bm.to_beats(np.array([n["onset"] for n in notes]))
     off = bm.to_beats(np.array([n["offset"] for n in notes]))
-    grids = choose_grids(on)
+    grids = choose_grids(on, coarse)
     out = []
     for n, a, b in zip(notes, on, off):
         start = snap(a, grids)
-        end = snap(b, grids)
-        unit = TICKS_PER_BEAT // grids.get(int(np.floor(a + 1 / 12)), 4)
+        kb = int(np.floor(b + 1 / 12))
+        end = snap(b, grids, 2 if _in_ranges(kb, coarse) else 4)
+        k = int(np.floor(a + 1 / 12))
+        unit = TICKS_PER_BEAT // grids.get(k, 2 if _in_ranges(k, coarse) else 4)
         end = max(end, start + unit)
         out.append(QNote(n["pitch"], start, end, n["onset"], n["offset"], n.get("confidence", 1.0)))
     out.sort(key=lambda q: (q.start, -q.pitch))
