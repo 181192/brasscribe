@@ -3,6 +3,10 @@
 Each rendered stem becomes a reference "part" named after its MIDI program, so
 score.py reports per-instrument recall (e.g. the trumpet melody vs the bass).
 Drums are excluded from the note reference.
+
+Slakh renders bass patches an octave below the MIDI (bass is written an octave
+above sounding), so Bass-class stems are shifted down 12 to sounding pitch.
+Verified with pYIN on the rendered stems.
 """
 
 from __future__ import annotations
@@ -25,10 +29,11 @@ def build(track: Path, out: Path) -> None:
             continue
         name = f"{sid}-{stem['midi_program_name']}"
         parts[name] = stem["inst_class"]
+        shift = -12 if stem["inst_class"] == "Bass" else 0
         pm = pretty_midi.PrettyMIDI(str(track / "MIDI" / f"{sid}.mid"))
         for inst in pm.instruments:
             for n in inst.notes:
-                notes.append({"pitch": n.pitch, "onset": n.start, "offset": n.end,
+                notes.append({"pitch": n.pitch + shift, "onset": n.start, "offset": n.end,
                               "part": name, "instrument": stem["midi_program_name"]})
     notes.sort(key=lambda n: (n["onset"], n["pitch"]))
 

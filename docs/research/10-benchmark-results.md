@@ -82,6 +82,46 @@ Per-part recall is measured against *all* estimated notes, so a note can be cred
    - The consensus design should route by role: melody from agreement of both, bass from Basic Pitch on the bass stem, inner voices from union with voting.
 3. **Melody recovery at notation tolerance is roughly 80–90%** on synthetic trumpet-lead songs and above 95% on real brass chorales.
 
+### Ground-truth fix: Slakh bass octave
+
+- Both models consistently put the Slakh bass notes 12 semitones below the MIDI.
+- pYIN on the rendered bass stems confirms it: Track00014 audio median MIDI 39 against 51 in the MIDI file.
+- Slakh renders bass patches an octave below the written MIDI. `slakh.py` now shifts Bass-class stems −12 to sounding pitch.
+- Every other part lines up at 0 semitones except Track00014's Rock Organ (−24, a minor part; not corrected).
+- The table above predates this fix.
+
+Corrected results (100 ms):
+
+| Pipeline | onset F1 | trumpet recall (T06 / T14) | bass recall (T06 / T14) |
+|---|---|---|---|
+| A: Basic Pitch on mix | 0.47 | .79 / .57 | .77 / .75 |
+| A: MuScriptor on mix | 0.56 | .62 / .65 | .86 / .78 |
+| **B: SW → MuScriptor per stem** | **0.70** | .79 / .69 | .96 / .93 |
+| B: SW → Basic Pitch per stem | 0.56 | .87 / .68 | .91 / .84 |
+
+### Consensus (`eval/brasscribe_eval/consensus.py`, `consensus_bench.py`)
+
+**Method:**
+- Notes from all sources are clustered on equal pitch with onsets within 100 ms.
+- Confidence = 1 − Π(1 − precision) over supporting *models*.
+- A model's stems vote once, using the stem's precision. Stems are not independent because separation bleed duplicates notes.
+- Precision is estimated leave-one-song-out.
+- Rejected candidates are kept as `alternatives`.
+
+**Chorales (MuScriptor + Basic Pitch on mix):**
+- Weighted vote: F1 0.76 against 0.75 for MuScriptor alone.
+- **Agreement-only notes are 92% precise.**
+- The union recalls 94% (tuba 87%, baritone 95%).
+
+**Slakh (4 sources: both models × mix and SW stems):**
+- The best F1 is 0.63 at threshold 0.8, *below* pipeline B with MuScriptor alone (0.70). The mix-level sources add accompaniment false positives.
+- At threshold 0.7, trumpet recall reaches .95 and bass .995, against .79 / .96 for B alone. Precision drops to 0.60.
+
+**Verdict:**
+- Consensus does not yet beat the best single pipeline on overall F1.
+- It does deliver what the spec needs for the arranger: near-complete melody and bass recall, plus a usable confidence signal (agreement ⇒ high precision).
+- Two songs are too few to fit per-stem precision. Revisit with URMP and more Slakh tracks, and add a role-aware metric (melody/bass precision, not only recall).
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.
