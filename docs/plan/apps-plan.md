@@ -5,14 +5,18 @@ Two applications on one shared engine:
 - **Studio**: a technical workbench. Inspect every pipeline stage, compare models, run benchmarks, and debug scores.
 - **Play**: a musician app. Recording in, brass-band score out, then read, listen, practise and play along.
 
+**Ground rules from the owner:**
+- The project is **non-commercial**.
+- The apps should use **as much of each native platform as possible and stay as slim as possible**. That means separate native apps (Swift, Kotlin, C#) rather than one cross-platform web shell.
+
 This plan is written so a team can start in a fresh session. Read it together with:
 
 | Doc | What it holds |
 |---|---|
 | `docs/research/00-summary.md` §0 | Current architecture decision: which models, which pipeline, and why |
-| `docs/research/10-benchmark-results.md` | All measured results; the regression baseline |
-| `docs/songs/mikkel.md` | The end-to-end target song and the layered solo-with-band approach |
-| `docs/plan/research-app-stack.md` | Shells, packaging, notation libraries, capture limits, accessibility law (sources inline) |
+| `docs/research/10-benchmark-results.md` | All measured results, how to reproduce each, and the regression baseline |
+| `docs/songs/mikkel.md` | The end-to-end target song, the layered solo-with-band approach, and an external tool comparison |
+| `docs/plan/research-app-stack.md` | Notation libraries, capture limits per OS, packaging, accessibility law (sources inline). Its shell recommendation (Tauri) is superseded by the native-first rule above |
 | `docs/plan/research-sound-and-mobile-ml.md` | Sample libraries, neural synthesis, room sound, mobile ML, licences (sources inline) |
 
 ---
@@ -22,7 +26,7 @@ This plan is written so a team can start in a fresh session. Read it together wi
 What exists today, all in this repo and committed:
 
 - **Capture:** `capture/`, a Swift Core Audio process-tap CLI for macOS. Records any app or system audio and has passed a loopback test.
-- **Model adapters:** `ml/adapters/*`, one uv environment each, all behind the same `run.sh <in> <out>` contract. They cover:
+- **Model adapters:** `ml/adapters/*`, one uv environment each, behind the same `run.sh <in> <out>` contract. They cover:
   - MuScriptor
   - Basic Pitch
   - SwiftF0
@@ -35,10 +39,10 @@ What exists today, all in this repo and committed:
   - quantizer with metrical-level selection
   - ps13 pitch spelling and key estimation
   - harmony reduction
-  - instrument knowledge for the full brass band with transpositions and ranges
+  - instrument knowledge for the full brass band (transpositions, ranges)
   - deterministic arrangers: minimal band, and layered solo-with-band
   - MusicXML export with transposing parts, `<instrument-sound>` IDs and percussion
-- **Evaluation:** `eval/brasscribe_eval/`, with builders for ChoraleBricks, URMP and Slakh and benchmarks for:
+- **Evaluation:** `eval/brasscribe_eval/`, with dataset builders (ChoraleBricks, URMP, Slakh) and benchmarks for:
   - transcription
   - consensus
   - rhythm
@@ -46,15 +50,21 @@ What exists today, all in this repo and committed:
   - solo vote
   - arrangement
   - a MuseScore round-trip gate
-- **End-to-end:** Mikkel audio → 18-part brass-band MusicXML, PDF and MP3, verified through MuseScore.
+- **End to end:** `brasscribe_eval.song_pipeline`, which takes a recording to an 18-part brass-band MusicXML, PDF and MP3.
+  - Reproducible: a fresh run matched the golden output in `data/golden/mikkel-arranged-band/` note for note.
 
-Known engine gaps. These are engine work that runs in parallel with the apps (see §8):
-- The free-time (rubato) intro is forced onto a beat grid.
-- Sustained notes are shortened.
-- Bar lines drift when beats are inserted or dropped.
-- The melody-as-inner-voice case is not handled.
-- There are no articulations or dynamics.
-- The key is ambiguous (Mikkel: C major or F lydian).
+**Known engine gaps.** Detail in §8; the first two are part of the kickoff:
+1. **Free-time (rubato) passages are forced onto a beat grid.** In the Mikkel intro the detected "beats" are 1–6 s apart, so rhythm there is nonsense.
+2. **Sustained notes are written short.** Durations should come from the audio: SwiftF0 knows when a note ends.
+3. Bar lines drift when beats are inserted or dropped.
+4. The key is ambiguous (Mikkel: C major or F lydian). There are no articulations or dynamics, and the melody-as-inner-voice case is not handled.
+
+An external comparison (songscription, first 30 s of the Mikkel video, aligned to our capture) showed the same two weaknesses in that tool. Where it placed notes, its pitches were mostly right: 4 of 8 exact and 3 within a semitone. But:
+- it wrote every note as a 32nd plus rests;
+- it stacked impossible chords on a solo trumpet;
+- it missed the phrase peak (B5–C6), which we have and two models confirm.
+
+Nobody writes this intro readably yet. Fixing items 1 and 2 would put us ahead.
 
 ---
 
@@ -62,321 +72,296 @@ Known engine gaps. These are engine work that runs in parallel with the apps (se
 
 | Topic | Decision | Reason |
 |---|---|---|
-| Shell, both apps | **Tauri 2** with a TypeScript web UI | The notation and playback layer (alphaTab) is web. The webview gives native screen-reader support (VoiceOver, Narrator/NVDA, TalkBack). One codebase covers desktop and mobile. Electron is the fallback if Linux screen-reader support (WebKitGTK/Orca) fails its test. |
-| Engine | Stays **Python**, run as a local service (FastAPI on localhost or stdio) | All models and the music library are Python. The spec suggested Go for orchestration, but nothing so far needs it, so it is dropped until a measured need appears. |
-| Engine packaging | **pixi workspace**: one lockfile, one environment per adapter (Python 3.10 for Basic Pitch, 3.12 elsewhere), platforms `osx-arm64` (MPS), `linux-64`/`win-64` with CUDA 12, plus CPU fallbacks | uv workspaces can't mix Python versions. Docker Desktop has no Metal GPU, so Docker is for Linux CI and benchmark runners only. |
-| Installer strategy | Small installer. On first run it installs the environment (pixi-pack) and downloads model weights into a cache | Weights total about 3–4 GB. Never embed them in the installer. |
-| Score view and playback | **alphaTab** (MPL-2.0) | Built-in synth, cursor, loop, speed, per-part mute/solo and part selection. It shows written pitch for B♭/E♭ parts while sounding at concert pitch, and can follow the original recording. It cannot handle transposition changes mid-piece, which we don't generate. |
-| Accessible score | A **talking score**: a structured text view navigable bar by bar and part by part, plus **braille music (BRF)** via music21 | No SVG notation library is screen-reader navigable. |
-| Accessibility target | **WCAG 2.2 AA** plus EN 301 549 | Norwegian law today requires WCAG 2.0 AA for private businesses and 2.1 AA for the public sector. 2.2 is where the law is heading, so build to it now. |
-| Mobile | Tauri 2 mobile UI with native audio modules. **Transcription stays on desktop**; see §5.6–5.7 for what runs on the phone | The models plus PyTorch don't run on phones without ports, and some weights can't legally be shipped (§7). |
-| Contract between stages | `Composition` JSON (concert pitch, ticks, voices with role and layer, per-note confidence and source models) plus content-addressed artifacts | Already implemented and tested; every UI reads the same thing. |
+| Play on Apple | **One SwiftUI codebase for macOS, iOS and iPadOS** | Native UI and accessibility (VoiceOver), and native audio: AVAudioEngine, AVAudioUnitSampler for SF2/DLS/EXS, AVAudioEnvironmentNode for 3D placement, convolution via AU, AUv3 hosting. Core ML and MLX run on the GPU/Neural Engine. The capture code already exists in Swift. |
+| Play on Android | **Kotlin + Jetpack Compose** | Native UI and TalkBack. Audio via Oboe/AAudio. ML via LiteRT or ONNX Runtime Mobile (NNAPI/GPU). alphaTab ships a native Kotlin build (notation and synth). |
+| Play on Windows | **C# / .NET, WinUI 3** | Native UI and Narrator/NVDA via UI Automation. WASAPI loopback capture. ONNX Runtime with DirectML (any GPU) or CUDA. alphaTab ships a .NET build. |
+| Play on Linux | **Deferred.** Linux users get Studio's browser UI (it can open a score and play it) until demand justifies a GTK4 app | Keeps the app count honest |
+| Studio | **The engine serves its own web UI on localhost; open it in the system browser.** No desktop shell | Slimmest cross-platform option: nothing to install besides the engine, and the GPU is used wherever the engine runs. It's a technical tool, so a browser tab is fine. |
+| Shared logic | **A Rust core library** (`core/`): Composition model, quantizer, spelling, harmony reduction, instrument knowledge, arrangers, MusicXML writer, confidence voting | One implementation for all native apps, bound to Swift and Kotlin with UniFFI and to C# with csbindgen or C ABI. The Python library stays the reference, and a **conformance suite** proves the Rust core produces identical Compositions and MusicXML on the golden set. |
+| Model inference in Play | **Platform runtimes, not PyTorch.** Core ML or MLX on Apple, LiteRT/ONNX Runtime Mobile on Android, ONNX Runtime + DirectML on Windows. Models are converted per platform and verified against the Python outputs | Slim, uses each platform's accelerators, works offline. Conversion is real work (§6), so the engine service bridges the gap. |
+| Engine (Python) | Stays as the reference implementation, the home of Studio, and a **companion service** that native apps can use on the local network while model conversions are pending | Everything works from day one; conversions replace it model by model. |
+| Engine packaging | pixi workspace: one lockfile, one environment per adapter (Python 3.10 for Basic Pitch, 3.12 elsewhere), CUDA 12 on Windows/Linux, MPS on macOS, CPU fallback | uv workspaces can't mix Python versions. Docker is for Linux CI/benchmark runners only (no Metal GPU in Docker Desktop). |
+| Accessibility | **WCAG 2.2 AA** (EN 301 549) on the native accessibility APIs, plus a talking score and braille music (BRF) | Norwegian law today requires WCAG 2.0 AA for private businesses and 2.1 AA for the public sector; build to where it's heading. Native apps get the best screen-reader behaviour. |
+| Contract | `Composition` JSON and MusicXML | Already implemented and tested. Every app, runtime and language agrees on it. |
 
 ---
 
 ## 3. Target architecture
 
 ```
-                     ┌──────────────────────── Studio (Tauri) ───────────────────────┐
-                     │ pipeline graph · stage inspector · A/B · benchmarks · logs     │
-                     └───────────────┬───────────────────────────────────────────────┘
-                                     │ HTTP/JSON (OpenAPI) + server-sent events
-┌──────────── Play (Tauri, desktop + mobile UI) ─────────┐        │
-│ import · record · score · parts · play-along · a11y    │────────┤
-└────────────────────────────────────────────────────────┘        │
-                                     ┌───────────────▼───────────────────────────────┐
-                                     │ engine service (Python, FastAPI)              │
-                                     │  job runner: DAG of stages, per-stage cache    │
-                                     │  stages call adapters (pixi envs, subprocess)  │
-                                     │  artifacts: content-hashed files + SQLite index│
-                                     └───────┬──────────────┬──────────────┬──────────┘
-                                             │              │              │
-                                   ml/adapters/*   music (brasscribe_music)   capture helpers
-                                   (per-env)       (Composition, arranger,    (macOS tap, WASAPI,
-                                                    MusicXML)                  PipeWire)
+                 Studio (browser UI served by the engine)          Play: native apps
+                 pipeline graph · inspector · benchmarks           ┌───────────────┬──────────────┬──────────────┐
+                               │                                   │ Apple (Swift)  │ Android      │ Windows      │
+                               │ HTTP/JSON + SSE                    │ macOS·iOS·iPad │ (Kotlin)     │ (C#/.NET)    │
+                               ▼                                   └──────┬────────┴──────┬───────┴──────┬───────┘
+ ┌──────────── engine (Python, reference + companion) ───────────┐        │ UniFFI / C ABI │              │
+ │ job DAG · artifact cache · profiles · benchmark suites        │        ▼                ▼              ▼
+ │ adapters (pixi envs): MuScriptor, Mega-53, SW, Basic Pitch,   │   ┌──────────────── core (Rust) ─────────────────┐
+ │ SwiftF0, Beat This!                                           │   │ Composition · quantize · spell · harmony      │
+ │ music (brasscribe_music) = reference implementation           │◄──│ instruments · arrange · MusicXML · voting      │
+ └───────────────────────────────────────────────────────────────┘   │ conformance-tested against the Python library │
+          ▲  companion mode (LAN, pairing code)                       └───────────────────────────────────────────────┘
+          └──────────────── Play apps send audio, get Composition/MusicXML ────────────────┘
+                              (until the on-device models land)
+
+ On-device inference per platform:  Core ML / MLX (Apple) · LiteRT / ONNX Runtime Mobile (Android) · ONNX Runtime + DirectML (Windows)
 ```
 
-- **Shared UI package** (`ui/`, TypeScript):
-  - score view (alphaTab wrapper): part selection, written/concert toggle, confidence overlay, cursor sync with the original audio
-  - waveform and piano roll with a confidence layer
-  - talking-score component
-  - accessible transport controls
-  Both apps consume it.
-- **Engine API**:
-  - `POST /jobs` with source and profile; `GET /jobs/{id}` for status; `GET /jobs/{id}/events` as SSE
-  - `GET /artifacts/{hash}`
-  - `GET /compositions/{id}`; `POST /arrange` with a composition and lineup
-  - `POST /benchmarks/{suite}`
-  - OpenAPI is the contract, and the TypeScript client is generated from it.
-- **Profiles:**
-  - `licence-clean`: HT-Demucs, Basic Pitch, SwiftF0, Beat This!
-  - `best-quality`: adds MuScriptor, BS-RoFormer SW and Mega-53. Personal use only (§7).
-  - `fast`: mobile/companion subset.
-  A profile is data (YAML), not code.
-- **Reproducibility.** Every job writes a run manifest: adapter versions, model hashes, profile, parameters, git SHA. Studio can re-run any manifest.
-
-Target repo layout (additive; existing folders stay):
+Repo layout (additive):
 
 ```
-engine/          FastAPI service, job runner, stage definitions, profiles/*.yaml
-music/           (exists) brasscribe_music core
-ml/adapters/     (exists) → migrated into pixi environments
-eval/            (exists) benchmarks become engine "benchmark suites"
-capture/         (exists, macOS) + capture-win/ (WASAPI loopback) + capture-linux/ (PipeWire)
-ui/              shared TS components (score, waveform, talking score, transport)
-apps/studio/     Tauri app
-apps/play/       Tauri app (desktop + iOS + Android targets)
-sounds/          SFZ instrument mappings, IR metadata (audio assets downloaded, not committed)
-pixi.toml        workspace
+core/            Rust crate: shared symbolic logic + UniFFI/C ABI bindings; conformance tests
+engine/          Python FastAPI service, job runner, profiles, Studio web UI (served static)
+music/ ml/ eval/ capture/   (exist) Python reference, adapters, benchmarks, macOS capture
+models/convert/  per-model conversion scripts (Core ML, ONNX, LiteRT) + parity tests vs PyTorch
+apps/apple/      SwiftUI app (macOS, iOS, iPadOS targets), Swift packages for audio/ML
+apps/android/    Kotlin/Compose app
+apps/windows/    C# WinUI 3 app
+sounds/          SFZ/SF2 instrument mappings and IR metadata (audio downloaded, not committed)
+pixi.toml        engine workspace
 ```
 
 ---
 
 ## 4. Studio (technical workbench)
 
-**Who it's for:** Kalli and contributors. Accuracy and insight over polish.
+**Who it's for:** Kalli and contributors. Insight over polish.
+
+**Form:** `brasscribe studio` starts the engine and opens `http://localhost:…` in the default browser.
+- There's no desktop shell. The UI is plain TypeScript and web components, built into the engine package.
+- For viewing scores it uses alphaTab (web build, MPL-2.0).
 
 ### Features
-
-1. **Run a pipeline** on any source (file, capture, dataset item) with a chosen profile. The live stage graph shows timings, device (CUDA/MPS/CPU) and cache hits.
-2. **Stage inspector:** for each stage, the artifact viewer that fits it:
-   - audio: waveform plus spectrogram, playable, with A/B against the original
-   - stems: solo, mute, per-stem energy over time
-   - notes: piano roll coloured by source model and confidence
-   - beats and downbeats over the waveform, including the detected metrical level
+1. **Run a pipeline** on a file, a capture, or a dataset item, with a chosen profile. The live stage graph shows timings, device (CUDA/MPS/CPU) and cache hits.
+2. **Stage inspector:**
+   - audio: waveform and spectrogram with A/B against the original
+   - stems: solo, mute, energy over time
+   - piano roll coloured by source model and confidence
+   - beats and downbeats, including the chosen metrical level and free-time regions
    - Composition: voices by role and layer
-   - arrangement: score view plus range and crossing validator warnings
-   - MusicXML: score view, MuseScore round-trip status
-3. **Compare runs:** diff two runs note by note (added, removed, moved, octave), score overlay, metric deltas.
-4. **Benchmarks:** run any suite on a GPU or CPU backend.
-   - Suites: transcription, consensus, rhythm, melody, solo vote, arrangement, MuseScore gate.
-   - Results are stored with manifests. There is a trend view per suite and a regression gate against the numbers in `10-benchmark-results.md`.
-5. **Datasets:** registry of ChoraleBricks, URMP and Slakh with download helpers. Datasets are never bundled; each has its licence noted.
-6. **Model manager:** installed models, sizes, licences, hashes; download and verify; GPU/CPU per adapter.
-7. **Logs and reproducibility:** per-job logs, run manifest export and re-run.
+   - arrangement: score plus validator warnings (range, crossing)
+   - MusicXML: MuseScore round-trip status
+3. **Compare runs:** note-level diff (added, removed, moved, octave), score overlay, metric deltas.
+4. **Benchmarks:** run any suite on GPU or CPU. Results are stored with run manifests. There's a trend view and a regression gate against `10-benchmark-results.md` (±0.01 F1).
+5. **Conversion parity:** for each converted model (Core ML, ONNX, LiteRT), compare its outputs with PyTorch on the eval sets. It reports note-level F1 against the PyTorch output and the latency per device. This is where on-device readiness is decided.
+6. **Core conformance:** run the Rust core against the Python reference on the golden set and show any diff.
+7. **Datasets and models:** download helpers, licences, sizes, hashes, device per adapter.
+8. **Reproducibility:** every job writes a run manifest (adapter versions, model hashes, profile, parameters, git SHA). Any manifest can be re-run.
 
 ### Packaging and GPU
+- pixi environments per adapter, installed on first run, with model weights downloaded into a cache. The installer itself is small.
+- `brasscribe bench <suite>` works headless for CI. A Linux Docker image with the NVIDIA runtime is available for dedicated benchmark machines.
+- **Isolation:** adapters run as subprocesses in their own environments. All data lives in one directory: models, cache, datasets, runs.
 
-- pixi environments per adapter.
-  - Backends: CUDA 12 on Windows/Linux, MPS on macOS arm64, and a CPU fallback everywhere.
-  - Device selection is automatic, and can be overridden per adapter in the UI.
-- Headless mode: `brasscribe bench <suite>` CLI in the same package, for CI.
-- Linux Docker image with the NVIDIA runtime for dedicated benchmark runners. It is optional and not the desktop path.
-- **Isolation.** Adapters run as subprocesses in their own environments; the engine never imports model code. The app keeps its data in one directory: models, cache, datasets, runs.
-
-### Done means
-
-- It installs on a clean macOS arm64, Windows 11 and Ubuntu 24.04 machine.
-- A first-run download sets up the environments and models.
-- One Mikkel run and the full chorale benchmark complete with GPU where available.
-- Numbers match `10-benchmark-results.md` within ±0.01 F1 (or ±1 percentage point for accuracy figures).
+**Done means:**
+- It installs on clean macOS arm64, Windows 11 and Ubuntu 24.04.
+- `brasscribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` note for note.
+- The chorale and URMP suites match `10-benchmark-results.md` within ±0.01 F1.
+- The GPU is used on CUDA and MPS machines, confirmed in the run manifests.
 
 ---
 
-## 5. Play (musician app)
+## 5. Play (musician app, native per platform)
 
 **Who it's for:** brass-band musicians and arrangers. Speed, clarity, accessibility.
 
 ### 5.1 Inputs
 
-| Input | macOS | Windows | Linux | iOS | Android |
-|---|---|---|---|---|---|
-| Audio file (wav, mp3, flac, m4a) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Video file (mp4, mov, mkv): audio extracted | ✓ ffmpeg | ✓ ffmpeg | ✓ ffmpeg | ✓ AVFoundation | ✓ MediaExtractor |
-| Microphone | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Sound playing on the device | ✓ process tap (exists) | ✓ WASAPI loopback (per-app from build 20348) | ✓ PipeWire monitor | ✗ only a user-started screen broadcast, never DRM content | ◐ AudioPlaybackCapture, apps may opt out |
-| Link (YouTube etc.) | Not planned: platform terms. Users record playback or import files | | | | |
+| Input | Apple (macOS) | Apple (iOS/iPadOS) | Android | Windows |
+|---|---|---|---|---|
+| Audio file | AVFoundation | AVFoundation | MediaExtractor/MediaCodec | Media Foundation |
+| Video file → audio (+ synced video view) | AVFoundation | AVFoundation | MediaExtractor | Media Foundation |
+| Microphone | AVAudioEngine | AVAudioEngine | Oboe/AAudio | WASAPI |
+| Sound playing on the device | Core Audio process tap (exists in `capture/`) | ✗ only a user-started ReplayKit broadcast, never DRM content | ◐ AudioPlaybackCapture; apps may opt out | WASAPI loopback, per-app from build 20348 |
+| Share sheet / "open with" | ✓ | ✓ | ✓ | ✓ |
 
-DRM-protected playback (Apple Music, most browser DRM) is blocked on every platform. The app says so plainly instead of recording silence. The capture helpers already detect silence.
+DRM-protected playback is blocked on every platform, and the app says so instead of recording silence. Links (YouTube etc.) are not downloaded: platform terms. Users record the playback or import a file.
 
 ### 5.2 From source to score
+1. **Import or record → "What is this?"** The options are solo instrument, brass band, orchestra with soloist, or pop/rock. The answer picks the pipeline profile; the app never guesses silently.
+2. **Transcribe:**
+   - progress in plain language, with an estimated time and cancel;
+   - on-device where the models for that profile are converted;
+   - otherwise via the companion engine on your own computer (LAN).
+3. **Review:**
+   - Uncertain notes carry colour **and** shape.
+   - "Listen to this bar" plays the original and the score, looped.
+   - Free-time passages are shown as *ad lib*.
+4. **Choose output:** lineup (full band, minimal band), difficulty (faithful, standard, easier), key.
+5. **Export:** MusicXML (score and parts), PDF, MIDI, audio, talking-score text, braille (BRF). Also share to MuseScore and Files.
 
-1. **One button:** import or record, then Transcribe.
-   - The first screen of the flow asks what kind of source it is: solo instrument, brass band, orchestra with soloist, or pop/rock. The answer picks a profile, which keeps the pipeline from guessing.
-   - Advanced options are hidden behind "More".
-2. **Progress:** readable stages ("Separating instruments… Finding the beat… Writing parts…") with an estimated time. Cancel is always available.
-3. **Result:** the score opens with the source audio aligned.
-4. **Review:**
-   - Uncertain notes are marked with colour **and** a shape or pattern, since colour must never be the only signal.
-   - "Listen to this bar": the original against the score, looped.
-   - Free-time passages are labelled *ad lib*, never forced onto a grid (engine backlog, §8).
-5. **Choose output:**
-   - lineup: full band, minimal band, or solo plus piano reduction later
-   - difficulty: faithful, standard, easier; the architecture already allows modes
-   - key
-6. **Export:** MusicXML (full score plus parts), PDF, MIDI, MP3, talking-score text and braille (BRF).
+### 5.3 Score, parts, practice
+- **Show all / show one:** parts in written pitch, with a concert-pitch toggle.
+- **Playback:** per-part mute and solo, speed from 25 to 150% without pitch change, loop a bar range, count-in, metronome, transpose.
+- **Play along:** mute your part.
+  - Later: follow the player's tempo from the microphone (SwiftF0 plus Beat This!, both small enough to run live), and intonation and rhythm feedback.
+- **Original vs score:** switch at the same position. The video plays in picture-in-picture, synced.
+- **Notation rendering:**
+  - Android: alphaTab Kotlin (notation and synth, cursor, loop, speed, part selection).
+  - Windows: alphaTab .NET.
+  - Apple: there's no native alphaTab, so **Verovio** (C++, built as a dynamic framework, LGPL-compatible) renders SVG. Playback uses the Verovio timemap and AVAudioUnitSampler for cursor sync.
+  - Spike first: Verovio SVG shown natively versus in a system WKWebView, compared on memory, speed and VoiceOver.
 
-### 5.3 Score, parts and practice
+### 5.4 Sound: realistic playback
 
-- **Show all / show one:** full score, or one part. Parts are in written pitch, with a concert-pitch toggle.
-- **Playback:** mute/solo per part, speed from 25 to 150% without pitch change, loop a bar range, count-in, metronome, transpose.
-- **Play along:** mute your own part and play with the band.
-  - Later: follow the player's tempo from the microphone (score following using SwiftF0 plus Beat This!, both small enough to run live).
-  - Later: an intonation and rhythm feedback overlay.
-- **Original vs score:** switch between the source recording and the synthesized score at the same position. The two are synced; alphaTab supports following external audio.
-- **Video:** when the source was a video, it plays in a picture-in-picture window synced to the score.
+MIDI plus General MIDI sounds is not enough, and **no free library has cornet, tenor horn, baritone or euphonium**. Each tier ships on its own:
 
-### 5.4 Sound: making playback realistic
-
-MIDI plus General MIDI sounds is not enough, and there is **no free, redistributable sample library with cornet, tenor horn, baritone or euphonium**. So we build up in layers, and each layer ships on its own:
-
-| Tier | What | Licence status |
+| Tier | What | Native implementation |
 |---|---|---|
-| Baseline | MuseScore MS Basic SF3 via alphaTab's built-in synth. The same file already drives our MP3 renders | MIT, bundle freely |
-| Realistic sections | SFZ instruments via **sfizz**. Sources: VSCO 2 CE (CC0) and University of Iowa MIS (unrestricted), covering trumpet, horn, trombone and tuba. Brass-band parts are mapped to the nearest instrument with timbre EQ (cornet → darker trumpet; tenor horn/flugel → horn; baritone/euphonium → trombone/tuba). Velocity layers come from our dynamics | Bundle freely |
-| Room | Convolution reverb with a concert-hall or band-room impulse response (OpenAIR, CC BY 4.0), plus seating-based stereo/HRTF placement per section (cornets left, basses centre-back…) | Bundle with attribution |
-| Humanization | Timing, dynamic and articulation variation taken from the *transcribed performance* (we have onset offsets and velocities), not random jitter | Ours |
-| Own brass-band samples | Record an SFZ set with real players: cornet, flugel, tenor horn, baritone, euphonium, E♭/B♭ bass; 3 dynamics; sustain plus staccato. About a day per instrument | We own it |
-| Apple extra | Host AUv3 instruments the user already owns (e.g. SWAM Euphonium/Flugelhorn) on macOS and iOS | No redistribution |
-| Research | DDSP timbre models (Apache-2.0, real-time on CPU) trained on our own recorded stems | Ours, experimental |
+| Baseline | MuseScore MS Basic SF3 (MIT) | Apple: AVAudioUnitSampler. Android/Windows: alphaTab synth (TinySoundFont) |
+| Realistic sections | VSCO 2 CE (CC0) and University of Iowa MIS (unrestricted) trumpet, horn, trombone and tuba. Brass-band parts mapped to the nearest instrument with timbre EQ (cornet → darker trumpet; tenor horn/flugel → horn; baritone/euphonium → trombone/tuba) | Apple: AVAudioUnitSampler (EXS/SF2 built from the samples). Android/Windows: sfizz (BSD, C++ via NDK/P/Invoke) |
+| Room | Concert-hall or band-room impulse responses (OpenAIR, CC BY 4.0) plus seating placement per section | Apple: convolution AU plus AVAudioEnvironmentNode (HRTF). Android: Oboe with a convolution kernel. Windows: XAudio2/convolution |
+| Humanization | Timing, dynamics and articulation from the transcribed performance | Rust core |
+| Own brass-band samples | Record cornet, flugel, tenor horn, baritone, euphonium, E♭/B♭ bass: 3 dynamics, sustain plus staccato, about a day per instrument | All platforms |
+| Apple extra | Host AUv3 instruments the user owns (e.g. SWAM Euphonium/Flugelhorn) | AVAudioUnit hosting |
+| Research | DDSP timbre models (Apache-2.0, real-time on CPU) trained on our own stems | Core ML / ONNX |
 
-Desktop runs sfizz natively. The web and mobile playback path uses alphaTab's synth for SF2, SpessaSynth for the web, and TinySoundFont (MIT) for native mobile. **Avoid FluidSynth on iOS**: LGPL and App Store distribution conflict.
+**Avoid FluidSynth on iOS** (LGPL versus App Store).
 
 ### 5.5 Accessibility (WCAG 2.2 AA, universell utforming)
-
-Requirements, tested on every release:
-- Every action works with the keyboard alone. Focus is always visible, the order is logical, and there are no keyboard traps. Transport controls have documented shortcuts (space, loop, speed, next/previous bar).
-- Screen readers: VoiceOver (macOS/iOS), NVDA and Narrator (Windows), TalkBack (Android), Orca (Linux). Scripted manual test runs for each release. Keep native window decorations, because NVDA goes silent in frameless Tauri windows.
-- **Talking score:** navigable by part, bar and beat. It announces pitch (written or concert), duration, dynamics and confidence ("bar 12, beat 1: E-flat 5, quarter note, uncertain"). It can also play the current bar.
-- **Braille music:** BRF export from music21.
-- Visual:
+- **Native APIs:** SwiftUI accessibility (VoiceOver, Voice Control, Switch Control, Dynamic Type); Compose semantics (TalkBack, Switch Access, font scale); UI Automation (Narrator, NVDA). Custom rotors and actions for bar and part navigation.
+- **Keyboard:** full keyboard operation on desktop. Visible focus, logical order, documented shortcuts (space, loop, speed, next/previous bar).
+- **Talking score:** navigable by part, bar and beat. It announces pitch (written or concert), duration, dynamics and confidence ("bar 12, beat 1: E-flat 5, quarter note, uncertain") and can play the current bar.
+- **Braille music:** BRF export (music21 via the engine now; a core port later).
+- **Visual:**
   - contrast ≥ 4.5:1 for text and 3:1 for UI and notation
-  - notation zoom to 400% without horizontal scrolling of controls
-  - high-contrast theme; honour reduced motion (no animated cursor)
-  - uncertain notes use shape plus colour
-  - a colour-blind-safe palette
-- Media: video import keeps any captions. All app audio cues have visual equivalents, and vice versa.
-- Plain language. Norwegian and English UI from the start (i18n keys, no hard-coded strings).
-- Automated checks: axe-core in UI tests; Lighthouse accessibility ≥ 95 on every screen.
+  - notation zoom to 400%
+  - high-contrast theme; reduced motion (no animated cursor)
+  - uncertainty shown by shape plus colour, with a colour-blind-safe palette
+- **Media:** imported captions are kept. Audio cues have visual equivalents.
+- **Language:** plain language. Norwegian and English from the start, using platform localisation.
+- **Testing:** scripted screen-reader runs per platform on each release; Xcode Accessibility Inspector audits; Android Accessibility Scanner; Accessibility Insights for Windows.
 
 ### 5.6 Offline
 
 | Platform | Transcription | Score, playback, practice |
 |---|---|---|
-| Desktop | **Fully offline** after a one-time model download (about 3–4 GB for `best-quality`, well under 1 GB for `licence-clean`) | Offline |
-| Mobile | Offline for **simple sources**: one instrument recorded with the microphone, using SwiftF0 (135 kB), Basic Pitch and Beat This! small (8 MB). Full-band transcription runs on the user's own desktop over the local network ("companion"), with no cloud needed | Offline |
-| Cloud | Not required. It could be added later as an opt-in; it would need the licence-clean profile | — |
+| macOS | **Offline.** Via the local engine now; on-device Core ML/MLX as conversions land | Offline |
+| Windows | **Offline.** Via the local engine now; ONNX Runtime + DirectML as conversions land | Offline |
+| iOS/iPadOS, Android | **Offline for simple sources** (one instrument, microphone): SwiftF0 (135 kB), Basic Pitch, Beat This! small (8 MB). Full band via the companion on your own computer (LAN), then on-device where memory allows (iPad/high-end phones, after measurement) | Offline |
 
-### 5.7 Mobile specifics
-
-- Tauri 2 mobile targets for iOS and Android share the UI package.
-- Tauri's shell cannot spawn processes on mobile, so audio and ML go through native plugins:
-  - iOS: AVAudioEngine, Core ML
-  - Android: Oboe, ONNX Runtime Mobile
-- On-device models:
-  - SwiftF0 (ONNX)
-  - Basic Pitch (Core ML/TFLite shipped upstream)
-  - Beat This! small, converted to Core ML/ONNX in a spike with measured latency and memory; no published phone numbers exist
-  - HT-Demucs as an optional download
-- **Companion mode:** the phone discovers the desktop engine via mDNS, sends audio and receives the Composition and MusicXML. It is pairing-code protected and stays on the local network.
-- Store limits: use on-demand model downloads (Apple hosted asset packs; Play AI packs) instead of bundling.
+No cloud is required anywhere. Models download once, on demand: Apple hosted asset packs, Play asset/AI packs, or a direct download on desktop.
 
 ---
 
 ## 6. Build order and acceptance criteria
 
-The work is listed in dependency order. Each milestone ends with something runnable, and every milestone keeps the benchmarks green.
+The work is listed in dependency order. Each milestone ends with something runnable and keeps the benchmarks green.
 
-### Engine as a service
-- Migrate `ml/adapters/*`, `music/` and `eval/` into a pixi workspace. Keep one environment per adapter; the `run.sh` contract stays for compatibility.
-- Build the FastAPI engine:
-  - job DAG with stages: capture/import, separate, transcribe per layer, vote, beats, quantize, spell, compose, arrange, export
-  - content-hashed artifact cache, SQLite index, SSE progress, run manifests, profiles
-- Port the benchmarks to engine suites, plus the `brasscribe bench` CLI.
+### Engine as a service, with the free-time and duration fixes
+- Migrate `ml/adapters/*`, `music/` and `eval/` into a pixi workspace.
+- FastAPI engine: job DAG, artifact cache, SSE progress, run manifests, profiles.
+- Port the benchmarks to suites, with the `brasscribe bench` CLI.
+- **Free-time detection:**
+  - Detect passages where beat intervals are wildly irregular.
+  - Mark them *ad lib* in the Composition and MusicXML.
+  - Notate them proportionally from note lengths instead of a grid, or ask for a tempo.
+  - Benchmark on the rubato and fermata material in URMP and ChoraleBricks, plus the Mikkel intro judged by ear.
+- **Durations from audio:**
+  - Use SwiftF0 contour offsets and MuScriptor offsets so sustained notes are written long.
+  - Infer staccato when the performed length is under half the written length.
+  - Benchmark: duration accuracy on URMP and chorales (currently 0.61 / 0.88).
 - **Done when:**
-  - `brasscribe run mikkel.wav --profile best-quality` reproduces the golden output in `data/golden/mikkel-arranged-band/`. That output comes from `eval/brasscribe_eval/song_pipeline.py`; compare per-part note counts and pitch sequences.
-  - `brasscribe bench chorales` reproduces the table in `10-benchmark-results.md`.
-  - The benchmark suites also report a `licence-clean` column.
+  - `brasscribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/`, updated deliberately when the two fixes change it; the diff is reviewed and the golden output re-saved.
+  - Suites match within ±0.01 F1.
+  - The Mikkel intro renders as readable sustained phrases marked *ad lib*.
   - CI runs the CPU suites on Linux.
 
-### Shared UI package
-- alphaTab score view:
-  - part selection and written/concert toggle
-  - confidence overlay (shape plus colour)
-  - cursor synced to external audio
-- Waveform and piano roll; talking-score component; transport with keyboard shortcuts; i18n (nb/en).
-- **Done when:** a Storybook of each component passes axe-core with no violations, and the talking score reads the Mikkel score correctly with VoiceOver and NVDA.
+### Studio
+- Browser UI served by the engine: pipeline graph, inspector, compare, benchmarks, models, datasets.
+- **Done when:** Studio's "done means" in §4 passes.
 
-### Studio first release
-- Tauri app: run a pipeline, see the stage graph, inspect artifacts, compare runs, run benchmarks with a device choice, manage models.
-- First-run installer: environment plus model download with checksum verification.
-- **Done when:** the Studio "done means" in §4 passes on all three desktop OSes, and the GPU is used on CUDA and MPS machines (verified in the run manifest).
+### Rust core with conformance
+- Port the symbolic logic (Composition, quantize with metrical level, fill gaps, ps13 spelling, key, harmony reduction, instruments, both arrangers, voting, MusicXML writer with transposition, instrument sounds and percussion).
+- UniFFI bindings for Swift and Kotlin, a C ABI for C#.
+- **Done when:** on the golden set and every eval set, the Rust core produces Compositions and MusicXML identical to the Python reference, the MuseScore round trip passes, and it builds for macOS, iOS, Android and Windows.
 
-### Play desktop first release
-- Import audio or video, microphone, device-sound capture on all three desktop OSes (Windows and Linux helpers are new).
-- Source-type question → profile → one-button transcription.
-- Score with parts and practice features (§5.3); baseline plus room sound; exports including BRF and talking-score text.
-- **Done when:** a musician can go from a Spotify-captured track or a video file to a playable full-band score offline, and the WCAG 2.2 AA checklist passes with screen-reader test scripts on macOS and Windows.
+### Play for Apple (macOS, iOS, iPadOS)
+- SwiftUI app: import (audio, video, share sheet), microphone, device capture on macOS, companion transcription, review, parts, practice, exports.
+- Verovio notation plus AVAudioUnitSampler playback with room and placement.
+- Talking score and BRF. VoiceOver-first.
+- **Done when:**
+  - A musician goes from a captured track or a video file to a playable full-band score on a Mac offline.
+  - On iPhone/iPad, from a recorded solo to a readable part offline.
+  - VoiceOver test scripts pass.
+  - The app size stays under an agreed budget: models are separate downloads, and the app binary target is under 50 MB.
+
+### On-device models
+- `models/convert/`: Core ML/MLX and ONNX/LiteRT exports with parity tests against PyTorch, run in Studio (§4.5).
+- Order by value and difficulty:
+  1. SwiftF0 (ONNX exists)
+  2. Basic Pitch (Core ML/TFLite exist)
+  3. Beat This! small
+  4. HT-Demucs
+  5. BS-RoFormer SW (ONNX export known, 336 MB fp16)
+  6. Mega-53 (same architecture)
+  7. MuScriptor: decoder with KV cache. Try MLX Swift on Apple and ONNX elsewhere; the hardest.
+- **Done when (per model):** note-level F1 against PyTorch output ≥ 0.98 on the eval sets, with latency and memory recorded per device class. A model is switched on in Play only after this.
+
+### Play for Android
+- Kotlin/Compose app with the Apple feature set (minus device capture where apps opt out). alphaTab Kotlin notation and synth, sfizz via NDK, Oboe audio, LiteRT/ONNX Runtime Mobile.
+- **Done when:** a solo recorded on the phone becomes a readable part offline, a full band works through the companion, and TalkBack scripts pass.
+
+### Play for Windows
+- WinUI 3 app: WASAPI loopback capture, alphaTab .NET, ONNX Runtime + DirectML, Narrator/NVDA.
+- **Done when:** capture/file → full-band score offline on a Windows machine with and without an NVIDIA GPU, and Narrator/NVDA scripts pass.
 
 ### Realistic sound
-- sfizz integration, SFZ mappings (VSCO 2 / Iowa) with brass-band timbre adaptation, section placement, humanization from the performance.
-- Recording plan and SFZ build pipeline for our own brass-band samples, if we go ahead (§9).
-- **Done when:** a blind A/B listening test (5 listeners, 5 excerpts) prefers the realistic tier over the baseline at least 80% of the time.
+- SFZ/EXS instruments from VSCO 2 and Iowa with brass-band timbre adaptation, IR rooms, seating placement, humanization. A recording plan for our own brass-band samples.
+- **Done when:** a blind A/B test (5 listeners, 5 excerpts) prefers the realistic tier over the baseline at least 80% of the time.
 
-### Play mobile
-- Tauri mobile shells for iOS and Android. Native audio plugins. On-device SwiftF0/Basic Pitch/Beat This! with measured latency and memory. Companion mode. On-demand model download.
-- **Done when:** a solo line recorded on the phone becomes a readable part offline; a full-band transcription through the companion desktop works; TalkBack and VoiceOver test scripts pass.
-
-### Engine quality (continuous, alongside everything above)
-See §8. Each item lands with a benchmark and must not regress existing numbers.
+### Engine quality (continuous)
+See §8. Every item lands with a benchmark and no regressions.
 
 ---
 
-## 7. Licences and distribution
+## 7. Licences (non-commercial project)
 
-| Component | Licence | Consequence |
+| Component | Licence | What we do |
 |---|---|---|
-| MuScriptor weights | CC BY-NC 4.0, gated on Hugging Face | Personal and non-commercial use only. The user must accept the licence on Hugging Face; the app downloads with the user's token and never redistributes the weights. Not allowed in any commercial offering, server-side included. |
-| BS-RoFormer SW, Mega-53 weights | Licence unknown or undocumented | Personal use only; downloaded by the user. Excluded from `licence-clean`. |
-| HT-Demucs, Basic Pitch, SwiftF0, Beat This! | MIT / Apache-2.0 | Fine to bundle. This set is the `licence-clean` profile. |
-| alphaTab | MPL-2.0 | Fine. Changes to alphaTab files themselves must be shared. |
-| MuseScore CLI (PDF/MP3 render in Studio) | GPL-3.0 | Called as an external program installed by the user. Never bundled in Play. |
-| Verovio | LGPL | Not used; alphaTab covers the need. |
-| FluidSynth | LGPL | Not on iOS. |
-| VSCO 2 CE / Iowa MIS / MS Basic / OpenAIR IRs | CC0 / unrestricted / MIT / CC BY 4.0 | Bundle, with attribution where required. |
-| Datasets (ChoraleBricks CC BY, URMP, Slakh) | Various | Downloaded by the user in Studio; never bundled. |
+| MuScriptor weights | CC BY-NC 4.0, gated on Hugging Face | Allowed for this non-commercial project. The gate means each user accepts the licence with their own Hugging Face account, and the app downloads with the user's token. We don't redistribute the file. Attribution in the About screen. |
+| BS-RoFormer SW, Mega-53 weights | No stated licence | Downloaded by the user from the original release URLs. Not re-hosted by us. Flagged in the model manager. |
+| HT-Demucs, Basic Pitch, SwiftF0, Beat This! | MIT / Apache-2.0 | May be bundled. |
+| alphaTab (Android, Windows, Studio) | MPL-2.0 | Fine. Changes to alphaTab's own files are shared. |
+| Verovio (Apple) | LGPL-3.0 | Dynamic framework, unmodified or with published changes, so users can relink. |
+| sfizz / TinySoundFont | BSD / MIT | Fine. |
+| FluidSynth | LGPL | Not used on iOS. |
+| MuseScore CLI | GPL-3.0 | Only as an optional external program for Studio renders; never bundled. |
+| VSCO 2 CE / Iowa MIS / MS Basic / OpenAIR IRs | CC0 / unrestricted / MIT / CC BY 4.0 | Bundle or download, with attribution where required. |
+| Datasets (ChoraleBricks, URMP, Slakh) | Various | Studio downloads them on request; never bundled. |
 
-**Rule:** `licence-clean` is the only profile that may ever be shipped preinstalled or run for anyone other than the user themselves.
-
-**What `licence-clean` cannot do today:**
-- It can't isolate a solo instrument from a band or orchestra (no Mega-53). HT-Demucs gives only vocals/drums/bass/other.
-- It has no drum transcription (only MuScriptor transcribes drums), so no percussion part.
-- Its multi-instrument transcription quality is unmeasured. Basic Pitch alone scored 0.47–0.73 onset F1, against MuScriptor's 0.56–0.88.
-
-It currently works for brass-only sources and single-line recordings, not for the Mikkel-style flagship flow. Its benchmark column is part of the "Engine as a service" acceptance criteria, and decision 1 in §9 depends on those numbers.
+**If the project ever becomes commercial,** MuScriptor, BS-RoFormer SW and Mega-53 would have to go. The remaining licence-clean set can't isolate a soloist or transcribe drums today, so that would be a major step back.
 
 ---
 
 ## 8. Engine backlog (quality)
 
-Ordered by impact on Mikkel and on musicians:
+Ordered by impact on Mikkel and on musicians. **Items 1 and 2 are in the first milestone (§6).**
 
-1. **Free-time detection.**
-   - When beat intervals are wildly irregular (the intro gaps are 1–6 s), stop imposing a grid.
-   - Mark the passage *ad lib* and notate proportionally, or ask for a tempo.
-   - Benchmark against rubato passages in URMP and ChoraleBricks (fermatas).
-2. **Durations from audio.** Use SwiftF0 contour offsets and MuScriptor offsets so sustained notes are written long. Add articulation inference: staccato when the performed length is under half the written length.
-3. **Bar-line robustness.** Downbeat-constrained beat cleanup, handling of inserted or deleted beats, and a UI to confirm meter and pickup.
-4. **Key and harmony cross-check.** Audio key (S-KEY) and chords (consonance-ACE) against the symbolic estimate. Support modes (lydian) and key changes.
-5. **Melody when it's an inner voice.** Needs test material; the benchmark currently favours the top line.
-6. **Dynamics** from loudness per layer, and phrase marks.
-7. **Arranger idiom.**
-   - rhythmic figuration from the source (not one chord per beat)
-   - countermelody selection
-   - soprano cornet use
-   - difficulty modes
-   - the full voice-leading solver (CP-SAT) where the greedy voicer fails
-8. **Separation failure detection.** Flag when the solo stem doesn't contain the soloist (two chorales failed silently).
+1. **Free-time detection.** When beat intervals are wildly irregular (Mikkel intro: 1–6 s), stop imposing a grid. Mark the passage *ad lib* and notate proportionally, or ask for a tempo.
+2. **Durations from audio.** Sustained notes written long, from SwiftF0 and MuScriptor offsets; staccato inference.
+3. **Bar-line robustness.** Downbeat-constrained beat cleanup, handling of inserted or deleted beats, meter and pickup confirmation in the UI.
+4. **Key and harmony cross-check.** Audio key (S-KEY) and chords (consonance-ACE) against the symbolic estimate. Modes (lydian), key changes.
+5. **Separation failure detection.** Flag when the solo stem doesn't contain the soloist; two chorales failed silently.
+6. **Validate the non-solo layers.** Bass, orchestra residual and drums are transcribed with MuScriptor on separated or residual audio, which is untested given MuScriptor's collapse on separated solo stems.
+7. **Melody when it's an inner voice.** Needs test material.
+8. **Dynamics and phrasing** from loudness per layer.
+9. **Arranger idiom.** Rhythmic figuration from the source, countermelody choice, soprano cornet use, difficulty modes, and a CP-SAT voice-leading solver where the greedy voicer fails.
 
 ---
 
-## 9. Decisions only Kalli can make
+## 9. Decisions
 
-1. **Commercial intent.** If any future version is sold or offered to others, only the `licence-clean` profile qualifies, and MuScriptor is out. That affects how much effort goes into making the clean profile good.
-2. **Own sample recordings.** Record a brass band (about a day per instrument) to get real cornet, tenor horn, baritone and euphonium sounds we own. It is the only route to authentic brass-band playback.
-3. **Mobile priority.** Build mobile after Play desktop, as this plan orders it, or sooner?
-4. **App names.** "Studio" and "Play" are working names.
-5. **What "native mobile" means.** This plan packages the mobile apps with Tauri: a shared web UI in the system webview, with native Swift/Kotlin plugins for audio and ML. Fully native Swift/Kotlin UIs would mean a separate UI per platform and couldn't reuse the web notation library (alphaTab). Confirm the Tauri route is acceptable.
+Settled:
+- **Non-commercial.**
+- **Native per platform** (Swift, Kotlin, C#).
+- Studio runs in the browser, served by the engine.
+
+Still open, all for Kalli:
+1. **Record our own brass-band samples** (about a day per instrument). It's the only route to authentic cornet, tenor horn, baritone and euphonium playback.
+2. **Platform order after Apple:** Android or Windows next. The plan says Android, because mobile practice is the bigger musician need.
+3. **App names.** "Studio" and "Play" are working names.
+4. **Linux Play app:** deferred. Confirm Studio's browser UI is enough for Linux users for now.
 
 ---
 
@@ -388,27 +373,37 @@ Each role owns folders, which keeps parallel work conflict-free (use git worktre
 
 | Role | Owns |
 |---|---|
-| Engine | `engine/`, `pixi.toml`, `ml/adapters/`, `eval/` → suites |
-| Music core | `music/` (quantizer, spelling, arranger, export, engine backlog items) |
-| UI components | `ui/` (score view, talking score, transport, a11y) |
-| Studio app | `apps/studio/` |
-| Play app | `apps/play/`, `capture-win/`, `capture-linux/` |
-| Sound | `sounds/`, sfizz integration, room and placement |
-| Mobile | mobile targets of `apps/play/`, native plugins, model conversion |
-| Accessibility and QA | Cross-cutting reviewer: axe-core, screen-reader scripts, WCAG checklist sign-off |
+| Engine | `engine/`, `pixi.toml`, `ml/adapters/`, `eval/` suites, the Studio web UI |
+| Music core (Python) | `music/`: the free-time and duration fixes, then the rest of §8 |
+| Rust core | `core/` and the conformance suite |
+| Apple | `apps/apple/`, `capture/` |
+| Android | `apps/android/` |
+| Windows | `apps/windows/` |
+| Models | `models/convert/`: conversions and parity tests |
+| Sound | `sounds/`, instrument building, room and placement |
+| Accessibility and QA | Cross-cutting reviewer: screen-reader scripts, WCAG checklist, platform audit tools |
 
-Start with **Engine**, **UI components** and the **Accessibility and QA** reviewer in parallel. Both depend only on what exists today. Studio and Play start when the engine API and the score view are usable.
+**First wave:** Engine, Music core (Python) and Accessibility and QA. Rust core joins as soon as the free-time and duration fixes have settled the Composition format for rubato passages, so it ports the final logic once. Apple joins when the engine's companion API exists.
 
 ### Working rules
-
 - Conventional commits, ending with the model `Co-Authored-By` trailer.
 - **Docs, commit messages and code comments describe what the code does.** No agent names, task numbers or phase labels.
-- Every engine change runs the benchmark suites. Numbers go into `docs/research/10-benchmark-results.md` only when measured, with the command that produced them.
-- Never commit audio, models or datasets (`data/`, `models/` are gitignored). Record where to download them.
-- The MuseScore round-trip gate must pass for any change to MusicXML export.
-- The MuseScore 4.7 CLI aborts during shutdown *after* writing its output, so check for the file, not the exit code.
+- Every engine or core change runs the benchmark suites. Numbers go into `docs/research/10-benchmark-results.md` only when measured, with the command that produced them.
+- Changing the golden output (`data/golden/mikkel-arranged-band/`) is a deliberate, reviewed step. Record why in the commit message.
+- Never commit audio, models or datasets (`data/`, `models/` are gitignored).
+- The MuseScore round-trip gate must pass for any change to MusicXML output. The MuseScore 4.7 CLI aborts during shutdown *after* writing its output, so check for the file, not the exit code.
 - Unverified claims go in docs as open questions, not facts.
 
 ### Kickoff prompt (paste into the new session)
 
-> Read `docs/plan/apps-plan.md`, `docs/research/00-summary.md` §0 and `docs/research/10-benchmark-results.md`. Build the "Engine as a service" and "Shared UI package" milestones in parallel with three teammates: Engine, UI components, and Accessibility and QA (roles in §10), each in its own git worktree, owning the listed folders. Keep the existing benchmarks green; reproduce `data/golden/mikkel-arranged-band/` through the new engine as the acceptance test (`eval/brasscribe_eval/song_pipeline.py` is the current reference implementation). Report back with what runs, the measured numbers, and any decision from §9 you need from me.
+> Read `docs/plan/apps-plan.md`, `docs/research/00-summary.md` §0, `docs/research/10-benchmark-results.md` and `docs/songs/mikkel.md`. Build the milestone "Engine as a service, with the free-time and duration fixes" using three teammates, each in its own git worktree owning the folders listed in §10:
+> - **Engine** builds the pixi workspace, the FastAPI engine, and the benchmark suites and CLI.
+> - **Music core (Python)** implements free-time detection and durations from audio (§8 items 1 and 2), each with a benchmark.
+> - **Accessibility and QA** writes the WCAG 2.2 AA checklist and screen-reader test scripts for the three native platforms, and reviews output for readability.
+>
+> Acceptance:
+> - `brasscribe run` on `data/mikkel/mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` before the fixes.
+> - After the fixes, the intro renders as readable *ad lib* sustained phrases. Review the diff against the golden output and re-save it deliberately.
+> - All suites stay within ±0.01 F1 except where a fix is meant to improve them.
+>
+> Report what runs, the measured numbers, and any open decision from §9 you need.

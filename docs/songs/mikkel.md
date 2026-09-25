@@ -52,3 +52,26 @@
 - The key estimate is C major. The bass has an F pedal and B naturals are frequent, so this could be F lydian; confirm by ear.
 - Pads are one chord per beat. There's no articulation, dynamics or phrasing yet.
 - Unison doubling of the paired parts (1st/2nd Baritone, 1st/2nd Horn) appears where the chord has fewer tones than players.
+
+## External comparison: songscription (trumpet-only, first 30 s of the video)
+
+- **Alignment:** onset-envelope cross-correlation (peak 0.86) places video time at capture time − 4.57 s. Their transcription starts at a further offset of about 2.2 s, most likely trimmed leading silence. So their t = 0 is about 6.8 s into our capture.
+- **Their output:** 117 BPM, 4/4, two sharps (a written B♭ trumpet part, i.e. concert C, matching our key estimate).
+- **Method:** their 8 notes were checked against the SwiftF0 pitch of our Mega-53 solo stem at each note time.
+
+| Their written note | Sounds as | Solo stem plays |
+|---|---|---|
+| G5 | F5 | F5 ✓ |
+| B5 | A5 | A5 ✓ |
+| C5, C5 | B♭4 | B4 (semitone off, twice) |
+| D5 | C5 | C5 ✓ |
+| E♭4 | C♯4 | C4 (semitone off) |
+| F5 + F♯5 (stacked) | E♭5 + E5 | E5 (F♯ right; the F♮ is spurious) |
+| G5 | F5 | no confident pitch |
+
+**Findings:**
+- **Pitch:** where they place notes, pitches are mostly right (4 exact, 3 within a semitone).
+- **Notation:** every note is written as a 32nd plus rests, so durations are lost. There are impossible chords on a solo trumpet, and a fixed grid on a free-time passage.
+- **Coverage:** they miss the phrase peak. Their bars 4–9 are empty, while our solo line has B5, C6, A5, G5 and D5 there (concert); B5 and C6 are confirmed by two models.
+- **Our own intro is not better notated.** Our beat grid there has gaps of 1–6 s, so our sustained notes are also written short. This is why free-time detection and durations from audio lead the engine backlog.
+- This was a one-off measurement with inline scripts; the method is described above.
