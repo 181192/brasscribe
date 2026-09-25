@@ -7,8 +7,10 @@
 Pipeline (the native players are expected to reproduce each stage):
   1. MusicXML -> concert-pitch MIDI with the MuseScore CLI (same timing as MuseScore's own audio).
   2. Split by MIDI track into score parts; map parts to built instruments (sounds/mapping.json).
-  3. Humanize deterministically per player: onset jitter, velocity jitter, a fixed detune
-     (pitch bend) and a fixed lag, so unison desks never sum as sample clones.
+  3. Humanize deterministically per player (humanize.py, specified in sounds/README.md):
+     micro-timing, lengths, articulation and velocity from the Composition where present,
+     seeded jitter otherwise, plus a fixed lag and detune per player so unison desks never
+     sum as sample clones.
   4. Articulation: a note uses the staccato instrument only when it is at most 0.3 s long and
      lasts under 60% of the time to the next onset; everything else uses the sustain.
   5. Per-player sampler render: sfizz_render with the SFZ (reference) or FluidSynth with the SF2.
@@ -16,7 +18,8 @@ Pipeline (the native players are expected to reproduce each stage):
   6. Placement (sounds/seating.json): distance delay and 1/r gain, bell directivity shelf,
      constant-power panning with a small interaural delay and far-ear shadow, and
      first-order early reflections from a shoebox stage model.
-  7. Late reverb: convolution with the stereo-decoded OpenAIR IR, direct sound removed.
+  7. Late reverb: convolution with the stereo-decoded OpenAIR IR, direct sound removed, scaled
+     so the reverberant energy equals the band's direct energy at the critical distance (5 m).
   8. Loudness-normalise to -16 LUFS (peak <= -1 dBFS) and write WAV + MP3 + dry stems.
 
 The baseline tier renders every part with MS Basic (General MIDI) through FluidSynth,
@@ -30,7 +33,6 @@ import concurrent.futures as cf
 import json
 import math
 import os
-import random
 import shutil
 import subprocess
 import sys
@@ -49,6 +51,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from dsp import SR, apply_eq  # noqa: E402
+from humanize import TPB, Performance, ScoreNote, humanize  # noqa: E402
 
 BUILT = ROOT / "data" / "sounds" / "built"
 RAW = ROOT / "data" / "sounds" / "raw"
@@ -85,6 +88,9 @@ class Note:
     end: float
     pitch: int
     velocity: int
+    tick: int = 0  # score position in Composition ticks (humanize.TPB per beat)
+    dur_tick: int = 0
+    staccato: bool = False  # forced by the Composition's articulations
 
 
 @dataclass
@@ -147,7 +153,9 @@ def read_parts(midi_path: Path) -> tuple[list[Part], float]:
                 on.setdefault(m.note, []).append((tick, m.velocity))
             elif m.type in ("note_off", "note_on") and on.get(m.note):
                 t0, v = on[m.note].pop(0)
-                notes.append(Note(seconds(t0), seconds(tick), m.note, v))
+                ct0 = round(t0 * TPB / mid.ticks_per_beat)
+                notes.append(Note(seconds(t0), seconds(tick), m.note, v, ct0,
+                                  round(tick * TPB / mid.ticks_per_beat) - ct0))
         if name and notes:
             parts.append(Part(name, program, channel if channel is not None else 0, sorted(notes, key=lambda n: n.start)))
     return parts, mid.length
@@ -155,19 +163,14 @@ def read_parts(midi_path: Path) -> tuple[list[Part], float]:
 
 # ------------------------------------------------------------------ humanization
 
-def humanize(notes: list[Note], seed: str, player: int, enabled: bool) -> tuple[list[Note], float]:
-    """Returns (notes, detune cents). Deterministic per (part, player)."""
-    if not enabled:
-        return notes, 0.0
-    rng = random.Random(f"{seed}/{player}")
-    detune = [0.0, 4.0, -5.0, 3.0][player % 4] + rng.uniform(-1.5, 1.5)
-    lag = rng.uniform(-0.006, 0.010)
-    out = []
-    for n in notes:
-        dt = lag + rng.gauss(0, 0.006)
-        v = int(np.clip(n.velocity + rng.randint(-5, 5), 1, 127))
-        out.append(Note(max(0.0, n.start + dt), max(n.start + dt + 0.03, n.end + dt), n.pitch, v))
-    return out, detune
+def humanize_part(notes: list[Note], part: str, player: int, args: argparse.Namespace,
+                  perf: Performance | None) -> tuple[list[Note], float, dict]:
+    """Humanized notes and whole-player detune (cents); see humanize.py and sounds/README.md."""
+    if not args.humanize or args.tier != "realistic":
+        return notes, 0.0, {}
+    score = [ScoreNote(n.tick, n.dur_tick, n.start, n.end, n.pitch, n.velocity) for n in notes]
+    played, detune, stats = humanize(score, part, player, seed=args.seed, perf=perf, timing=args.timing)
+    return [Note(p.start, p.end, p.pitch, p.velocity, staccato=p.staccato) for p in played], detune, stats
 
 
 def detached(notes: list[Note]) -> list[bool]:
@@ -182,7 +185,7 @@ def detached(notes: list[Note]) -> list[bool]:
         later = [t for t in onsets if t > n.start + 0.01]
         ioi = (later[0] - n.start) if later else None
         dur = n.end - n.start
-        out.append(dur <= STAC_MAX_S and ioi is not None and dur / ioi < STAC_GATE)
+        out.append(n.staccato or (dur <= STAC_MAX_S and ioi is not None and dur / ioi < STAC_GATE))
     return out
 
 
@@ -366,6 +369,11 @@ def render(args: argparse.Namespace) -> None:
     lst_spec = seating["listeners"][args.listener]
     lst = (lst_spec["x"], lst_spec["y"])
 
+    comp = args.composition
+    if comp is None and (Path(args.score).parent / "composition.json").exists():
+        comp = Path(args.score).parent / "composition.json"
+    perf = Performance.load(Path(comp)) if comp else None
+    human_stats = {}
     jobs = []  # (part, player index, target, notes, detune, position)
     for p in parts:
         pm = mapping["parts"].get(p.name)
@@ -376,7 +384,12 @@ def render(args: argparse.Namespace) -> None:
         players = pm["players"] if args.tier == "realistic" else [pm["players"][0]]
         pos = player_positions(seat, len(players), seating["player_spread_m"])
         for i, pl in enumerate(players):
-            notes, detune = humanize(p.notes, p.name, i, args.humanize and args.tier == "realistic")
+            if pl["target"] == "msbasic-drums":  # drums stay identical in both tiers
+                notes, detune, st = p.notes, 0.0, {}
+            else:
+                notes, detune, st = humanize_part(p.notes, p.name, i, args, perf)
+            if st:
+                human_stats[f"{p.name}/{i}"] = st
             jobs.append((p, i, pl["target"], notes, detune, pos[i]))
 
     def run(job):
@@ -412,6 +425,7 @@ def render(args: argparse.Namespace) -> None:
 
     mix = np.zeros((n + SR, 2))
     send = np.zeros(n)
+    power_sum = 0.0  # sum of the players' dry energies: players are incoherent sources
     dry_stems: dict[str, np.ndarray] = {}
     box = ROOMS[args.room]["shoebox"]
     for (p, i, target, _, _, pos), dry in results:
@@ -428,11 +442,18 @@ def render(args: argparse.Namespace) -> None:
         placed = _add(direct, er)
         mix[: min(len(mix), len(placed))] += placed[: len(mix)]
         send += dry
+        power_sum += float(np.sum(dry ** 2))
     if args.tier == "realistic":
         ir = room_ir(args.room)
-        # reverberant energy equals direct energy at the critical distance (1/r law, ref 1 m)
-        wet_gain = 1.0 / CRITICAL_DISTANCE_M
-        wet = np.stack([signal.oaconvolve(send, ir[:, c]) for c in range(2)], axis=1) * wet_gain
+        # Calibrate the reverberant field so its total energy equals the direct energy the band
+        # would have at the critical distance: sum_i E_i / rc^2 (players summed as incoherent
+        # sources, 1/r law with 1 m reference). Measuring the convolved send instead of
+        # assuming a gain keeps unison desks from summing coherently in the reverb.
+        wet = np.stack([signal.oaconvolve(send, ir[:, c]) for c in range(2)], axis=1)
+        wet *= math.sqrt(power_sum / CRITICAL_DISTANCE_M ** 2 / max(float(np.sum(wet ** 2)), 1e-20))
+        direct_energy = float(np.sum(mix ** 2))
+        wet_energy = float(np.sum(wet ** 2))
+        wet_to_direct_db = 10 * math.log10(wet_energy / max(direct_energy, 1e-20))
         mix = _add(mix, wet)
     for name, x in dry_stems.items():
         sf.write(str(out / "stems" / f"{name.replace(' ', '_').replace('♭', 'b')}.wav"), x.astype(np.float32), SR,
@@ -452,10 +473,14 @@ def render(args: argparse.Namespace) -> None:
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-codec:a", "libmp3lame", "-b:a", "192k",
                     str(out / f"{name}.mp3")], check=True)
     info = {"score": str(args.score), "tier": args.tier, "engine": args.engine, "room": args.room,
-            "listener": args.listener, "humanize": args.humanize, "players": len(jobs),
+            "listener": args.listener, "humanize": args.humanize, "timing": args.timing, "seed": args.seed,
+            "composition": str(comp) if comp else None, "players": len(jobs),
+            "wet_to_direct_db": round(wet_to_direct_db, 2) if args.tier == "realistic" else None,
             "duration_s": round(len(mix) / SR, 2), "lufs_before_norm": round(lufs, 2),
             "lufs": round(meter.integrated_loudness(mix), 2), "peak_dbfs": round(20 * math.log10(np.abs(mix).max()), 2)}
     (out / f"{name}.json").write_text(json.dumps(info, indent=1))
+    if human_stats:
+        (out / f"{name}.humanize.json").write_text(json.dumps(human_stats, indent=1, ensure_ascii=False))
     print(json.dumps(info))
     shutil.rmtree(work, ignore_errors=True)
 
@@ -469,6 +494,10 @@ def main() -> None:
     ap.add_argument("--room", choices=sorted(ROOMS), default="central-hall")
     ap.add_argument("--listener", default="audience")
     ap.add_argument("--no-humanize", dest="humanize", action="store_false")
+    ap.add_argument("--seed", default="brasscribe", help="humanization seed (any string)")
+    ap.add_argument("--composition", help="composition.json with performed timing (default: next to the score)")
+    ap.add_argument("--timing", choices=["score", "performed"], default="score",
+                    help="score: keep the score tempo, add performed micro-timing; performed: follow the recording's beat map")
     args = ap.parse_args()
     if args.engine == "sfizz" and args.tier == "realistic" and not SFIZZ.exists():
         raise SystemExit(f"{SFIZZ} missing: run sounds/tools/build-sfizz.sh or use --engine fluidsynth")

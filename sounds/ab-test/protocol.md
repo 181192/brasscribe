@@ -14,7 +14,8 @@
 ## Preparing the material
 
 ```sh
-uv run --project sounds python sounds/render.py data/runs/sound/mikkel.mid -o data/runs/sound/realistic
+uv run --project sounds python sounds/render.py data/runs/sound/mikkel.mid -o data/runs/sound/realistic \
+  --composition data/golden/mikkel-arranged-band/composition.json
 uv run --project sounds python sounds/ab-test/generate.py \
   --baseline data/golden/mikkel-arranged-band/brass-band.mp3 \
   --realistic data/runs/sound/realistic/mikkel.realistic.wav \
@@ -51,6 +52,26 @@ This prints per-listener and per-excerpt counts, the overall share, the binomial
 
 ## Known confounds (open questions)
 
-- The baseline is MuseScore's own mix. Which panning and reverb MuseScore applied to this export has not been checked. The realistic tier adds a measured room, so a preference could come from the room alone. **Follow-up test:** baseline plus the same room convolution against the realistic tier.
+- The baseline is MuseScore's own mix. Which panning and reverb MuseScore applied to this export has not been checked. The realistic tier adds a measured room, so a preference could come from the room alone.
+
+## Room-matched control (second A/B set)
+
+This set puts the baseline in the same hall at the same wet-to-direct ratio. It separates "better instruments and placement" from "has a room".
+
+```sh
+uv run --project sounds python sounds/ab-test/room_baseline.py \
+  --baseline data/golden/mikkel-arranged-band/brass-band.mp3 \
+  --realistic-info data/runs/sound/realistic/mikkel.realistic.json \
+  -o data/runs/sound/baseline-room/brass-band.room.mp3
+uv run --project sounds python sounds/ab-test/generate.py \
+  --baseline data/runs/sound/baseline-room/brass-band.room.mp3 \
+  --realistic data/runs/sound/realistic/mikkel.realistic.wav \
+  --midi data/runs/sound/mikkel.mid -o data/runs/sound/ab-test-room
+```
+
+- The excerpt windows are the same as in the first set, because the generator picks them from the MIDI. Each set has its own `key.json`.
+- Run the two sets with different listeners, or with the room set a day later, so memory of the first set does not carry over.
+- Score each set separately with `score.py`.
+- Report both results. Only the room-matched result says whether the samples and placement beat General MIDI.
 - The two tiers differ in loudness balance between sections. Loudness is matched only per excerpt overall.
 - The score has no dynamics (every note is mf in the MIDI), so both tiers play with flat dynamics.
