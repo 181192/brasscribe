@@ -1,0 +1,25 @@
+{
+ "title": "Tiny solo",
+ "voices": [
+  {
+   "id": "solo",
+   "role": "melody",
+   "instrument_hint": "trumpet/cornet",
+   "layer": "solo",
+   "notes": [
+    {"pitch": 70, "start": 0, "dur": 12, "confidence": 0.55, "sources": ["swiftf0"], "onset_s": 1.0, "offset_s": 1.2},
+    {"pitch": 72, "start": 12, "dur": 12, "confidence": 0.95, "sources": ["swiftf0", "muscriptor"], "onset_s": 1.25, "offset_s": 1.5},
+    {"pitch": 74, "start": 24, "dur": 48, "confidence": 0.31, "sources": ["swiftf0"], "onset_s": 1.5, "offset_s": 2.5, "articulations": ["staccato"], "some_future_field": 3},
+    {"pitch": 75, "start": 84, "dur": 36, "confidence": 0.9, "sources": ["swiftf0"], "onset_s": 3.0, "offset_s": 4.0},
+    {"pitch": 70, "start": 288, "dur": 96, "confidence": 0.8, "sources": ["swiftf0"]}
+   ]
+  }
+ ],
+ "meters": [{"tick": 0, "beats": 4, "beat_unit": 4}],
+ "keys": [{"tick": 0, "fifths": -2, "mode": "major"}],
+ "beat_times": [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
+ "first_downbeat": 0,
+ "ticks_per_beat": 24,
+ "free_regions": [],
+ "future_top_level": {"x": 1}
+}

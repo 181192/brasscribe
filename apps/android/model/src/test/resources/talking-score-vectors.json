@@ -1,0 +1,271 @@
+{
+  "$comment": "Conformance vectors for the talking-score announcer. Each case gives settings, the context left by the previous announcement, the event (TalkingScore JSON shape, see talking-score-spec.md §6) and the expected text per language. Pitches are written pitch for a B-flat cornet (transpose chromatic -2, diatonic -1) unless stated. Key: 2 sharps (written D major) unless stated. Musical examples come from the Mikkel golden output, Solo Cornet part.",
+  "cases": [
+    {
+      "id": "note-new-bar-uncertain",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 1},
+      "bar": {"number": 2},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "eighth", "dots": 0,
+                "written": {"step": "B", "alter": -1, "octave": 4}, "concert": {"step": "A", "alter": -1, "octave": 4},
+                "confidence": 0.55, "sources": ["swiftf0"]},
+      "expected": {"en": "bar 2, beat 1: B-flat 4, eighth note, uncertain",
+                   "nb": "takt 2, slag 1: B 4, åttendedelsnote, usikker"}
+    },
+    {
+      "id": "note-same-bar-offbeat",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 2},
+      "bar": {"number": 2},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 1, "den": 2}, "type": "eighth", "dots": 0,
+                "written": {"step": "G", "alter": 0, "octave": 4}, "concert": {"step": "F", "alter": 0, "octave": 4},
+                "confidence": 0.62, "sources": ["swiftf0"]},
+      "expected": {"en": "beat 1 and: G 4, eighth note, uncertain",
+                   "nb": "slag 1-og: G 4, åttendedelsnote, usikker"}
+    },
+    {
+      "id": "note-sixteenth-position-natural-in-key",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 11},
+      "bar": {"number": 11},
+      "event": {"kind": "note", "pos": {"beat": 3, "num": 3, "den": 4}, "type": "16th", "dots": 0,
+                "written": {"step": "C", "alter": 0, "octave": 5}, "concert": {"step": "B", "alter": -1, "octave": 4},
+                "confidence": 0.93, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "beat 3 a: C-natural 5, sixteenth note",
+                   "nb": "slag 3, 4. av 4: C 5, sekstendedelsnote"}
+    },
+    {
+      "id": "concert-pitch-mode",
+      "settings": {"verbosity": "standard", "pitch_mode": "concert"},
+      "context": {"part": "Solo Cornet", "bar": 1},
+      "bar": {"number": 2},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "eighth", "dots": 0,
+                "written": {"step": "B", "alter": -1, "octave": 4}, "concert": {"step": "A", "alter": -1, "octave": 4},
+                "confidence": 0.55, "sources": ["swiftf0"]},
+      "expected": {"en": "bar 2, beat 1: A-flat 4, eighth note, uncertain",
+                   "nb": "takt 2, slag 1: Ass 4, åttendedelsnote, usikker"}
+    },
+    {
+      "id": "full-verbosity-both-pitches",
+      "settings": {"verbosity": "full", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 1},
+      "bar": {"number": 2},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "eighth", "dots": 0,
+                "written": {"step": "B", "alter": -1, "octave": 4}, "concert": {"step": "A", "alter": -1, "octave": 4},
+                "confidence": 0.55, "sources": ["swiftf0"]},
+      "expected": {"en": "bar 2 of 128, beat 1: written B-flat 4, sounds A-flat 4, eighth note, uncertain, confidence 55 percent, source SwiftF0",
+                   "nb": "takt 2 av 128, slag 1: skrevet B 4, klinger Ass 4, åttendedelsnote, usikker, sikkerhet 55 prosent, kilde SwiftF0"}
+    },
+    {
+      "id": "brief-verbosity",
+      "settings": {"verbosity": "brief", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 12},
+      "bar": {"number": 12},
+      "event": {"kind": "note", "pos": {"beat": 2, "num": 0, "den": 1}, "type": "quarter", "dots": 0,
+                "written": {"step": "D", "alter": 0, "octave": 5}, "concert": {"step": "C", "alter": 0, "octave": 5},
+                "confidence": 0.95, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "2: D 5 quarter", "nb": "2: D 5 fjerdedel"}
+    },
+    {
+      "id": "dotted-and-tie-start-across-bar",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 11},
+      "bar": {"number": 11},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 1, "den": 2}, "type": "eighth", "dots": 0,
+                "written": {"step": "G", "alter": 0, "octave": 5}, "concert": {"step": "F", "alter": 0, "octave": 5},
+                "tie": {"start": true, "next": {"bar": 12, "type": "eighth", "dots": 1}, "chain_beats": null},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "beat 4 and: G 5, eighth note, tied to dotted eighth note in bar 12",
+                   "nb": "slag 4-og: G 5, åttendedelsnote, bundet til punktert åttendedelsnote i takt 12"}
+    },
+    {
+      "id": "tie-chain-total",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 70},
+      "bar": {"number": 71},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "half", "dots": 0,
+                "written": {"step": "A", "alter": 0, "octave": 4}, "concert": {"step": "G", "alter": 0, "octave": 4},
+                "tie": {"start": true, "next": {"bar": 71, "type": "quarter", "dots": 0}, "chain_beats": 3.5},
+                "confidence": 0.8, "sources": ["swiftf0", "basic-pitch"]},
+      "expected": {"en": "bar 71, beat 1: A 4, half note, tied, 3 and a half beats in all",
+                   "nb": "takt 71, slag 1: A 4, halvnote, bundet, 3 og et halvt slag i alt"}
+    },
+    {
+      "id": "held-from-tie-beat-navigation",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 12},
+      "bar": {"number": 12},
+      "event": {"kind": "held", "pos": {"beat": 1, "num": 0, "den": 1},
+                "written": {"step": "G", "alter": 0, "octave": 5}, "concert": {"step": "F", "alter": 0, "octave": 5},
+                "held_from": {"bar": 11, "beat": 4, "num": 1, "den": 2}},
+      "expected": {"en": "beat 1: G 5 held, from bar 11 beat 4 and",
+                   "nb": "slag 1: G 5 holdes, fra takt 11 slag 4-og"}
+    },
+    {
+      "id": "rest",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 2},
+      "bar": {"number": 2},
+      "event": {"kind": "rest", "pos": {"beat": 2, "num": 0, "den": 1}, "type": "quarter", "dots": 0},
+      "expected": {"en": "beat 2: quarter rest", "nb": "slag 2: fjerdedelspause"}
+    },
+    {
+      "id": "whole-bar-rest",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 59},
+      "bar": {"number": 60},
+      "event": {"kind": "bar-rest", "bars": 1},
+      "expected": {"en": "bar 60: rest, whole bar", "nb": "takt 60: pause hele takten"}
+    },
+    {
+      "id": "multi-bar-rest",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 81},
+      "bar": {"number": 82},
+      "event": {"kind": "bar-rest", "bars": 7},
+      "expected": {"en": "bars 82 to 88: rest, 7 bars", "nb": "takt 82 til 88: pause, 7 takter"}
+    },
+    {
+      "id": "triplet",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Euphonium", "bar": 20},
+      "bar": {"number": 20},
+      "event": {"kind": "note", "pos": {"beat": 3, "num": 1, "den": 3}, "type": "eighth", "dots": 0,
+                "tuplet": {"actual": 3, "normal": 2, "index": 2},
+                "written": {"step": "F", "alter": 1, "octave": 4}, "concert": {"step": "E", "alter": 0, "octave": 3},
+                "confidence": 0.85, "sources": ["muscriptor"]},
+      "expected": {"en": "beat 3, triplet 2: F-sharp 4, eighth note, triplet, 2 of 3",
+                   "nb": "slag 3, triol 2: Fiss 4, åttendedelsnote, triol, 2 av 3"}
+    },
+    {
+      "id": "quintuplet",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 20},
+      "bar": {"number": 20},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "16th", "dots": 0,
+                "tuplet": {"actual": 5, "normal": 4, "index": 1},
+                "written": {"step": "D", "alter": 1, "octave": 5}, "concert": {"step": "C", "alter": 1, "octave": 5},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "beat 1: D-sharp 5, sixteenth note, 5 in the time of 4, 1 of 5",
+                   "nb": "slag 1: Diss 5, sekstendedelsnote, 5 på 4, 1 av 5"}
+    },
+    {
+      "id": "very-uncertain-and-dynamic-and-articulation",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 34},
+      "bar": {"number": 34},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 0, "den": 1}, "type": "quarter", "dots": 0,
+                "written": {"step": "A", "alter": 0, "octave": 5}, "concert": {"step": "G", "alter": 0, "octave": 5},
+                "articulations": ["accent"], "dynamic": "ff",
+                "confidence": 0.31, "sources": ["swiftf0"]},
+      "expected": {"en": "beat 4: A 5, quarter note, accent, fortissimo, very uncertain",
+                   "nb": "slag 4: A 5, fjerdedelsnote, aksent, fortissimo, svært usikker"}
+    },
+    {
+      "id": "adlib-region-entry",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": null},
+      "bar": {"number": 1, "free_region": {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": true}},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 1, "den": 2}, "time_s": 0.03, "performed_s": 0.12,
+                "type": "eighth", "dots": 0,
+                "written": {"step": "D", "alter": 0, "octave": 4}, "concert": {"step": "C", "alter": 0, "octave": 4},
+                "confidence": 0.91, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "Ad lib, free time, bars 1 to 4, about 32 seconds. bar 1, at 0 seconds: D 4, eighth note",
+                   "nb": "Ad lib, fritt tempo, takt 1 til 4, omtrent 32 sekunder. takt 1, ved 0 sekunder: D 4, åttendedelsnote"}
+    },
+    {
+      "id": "adlib-inside-held",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 3},
+      "bar": {"number": 3, "free_region": {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": false}},
+      "event": {"kind": "note", "pos": {"beat": 2, "num": 0, "den": 1}, "time_s": 21.8, "performed_s": 2.6,
+                "type": "half", "dots": 0, "articulations": [],
+                "written": {"step": "D", "alter": 0, "octave": 5}, "concert": {"step": "C", "alter": 0, "octave": 5},
+                "confidence": 0.88, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "at 22 seconds: D 5, half note, held about 2.5 seconds",
+                   "nb": "ved 22 sekunder: D 5, halvnote, holdes omtrent 2,5 sekunder"}
+    },
+    {
+      "id": "adlib-last-note-fermata",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 4},
+      "bar": {"number": 4, "free_region": {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": false}},
+      "event": {"kind": "note", "pos": {"beat": 3, "num": 0, "den": 1}, "time_s": 28.2, "performed_s": 3.3,
+                "type": "half", "dots": 0, "articulations": ["fermata"],
+                "written": {"step": "E", "alter": 0, "octave": 4}, "concert": {"step": "D", "alter": 0, "octave": 4},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "at 28 seconds: E 4, half note, fermata, held about 3.5 seconds",
+                   "nb": "ved 28 sekunder: E 4, halvnote, fermat, holdes omtrent 3,5 sekunder"}
+    },
+    {
+      "id": "adlib-exit-a-tempo",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 4},
+      "bar": {"number": 5, "tempo_bpm": 136, "a_tempo": true},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 1, "den": 2}, "type": "16th", "dots": 0,
+                "written": {"step": "D", "alter": 0, "octave": 4}, "concert": {"step": "C", "alter": 0, "octave": 4},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "A tempo, 136 beats per minute. bar 5, beat 1 and: D 4, sixteenth note",
+                   "nb": "A tempo, 136 slag per minutt. takt 5, slag 1-og: D 4, sekstendedelsnote"}
+    },
+    {
+      "id": "part-change-and-key",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 12},
+      "part": {"name": "Solo Horn", "name_nb": "Solo althorn"},
+      "bar": {"number": 12, "key_fifths": 3},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "quarter", "dots": 0,
+                "written": {"step": "C", "alter": 1, "octave": 5}, "concert": {"step": "E", "alter": 0, "octave": 4},
+                "confidence": 0.9, "sources": ["muscriptor"]},
+      "expected": {"en": "Solo Horn. bar 12, key 3 sharps, beat 1: C-sharp 5, quarter note",
+                   "nb": "Solo althorn. takt 12, 3 kryss, slag 1: Ciss 5, fjerdedelsnote"}
+    },
+    {
+      "id": "chord-percussion-unpitched",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Percussion", "bar": 33},
+      "bar": {"number": 33},
+      "event": {"kind": "unpitched", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "eighth", "dots": 0,
+                "instruments": ["bass drum", "hi-hat"], "instruments_nb": ["stortromme", "hi-hat"]},
+      "expected": {"en": "beat 1: bass drum and hi-hat, eighth note",
+                   "nb": "slag 1: stortromme og hi-hat, åttendedelsnote"}
+    },
+    {
+      "id": "double-sharp",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 127},
+      "bar": {"number": 127},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 0, "den": 1}, "type": "eighth", "dots": 0,
+                "written": {"step": "F", "alter": 2, "octave": 3}, "concert": {"step": "E", "alter": 1, "octave": 3},
+                "confidence": 0.5, "sources": ["swiftf0"]},
+      "expected": {"en": "beat 4: F-double-sharp 3, eighth note, uncertain",
+                   "nb": "slag 4: F dobbeltkryss 3, åttendedelsnote, usikker"}
+    },
+    {
+      "id": "b-natural-norwegian-h",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 12},
+      "bar": {"number": 12},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 3, "den": 4}, "type": "16th", "dots": 0,
+                "written": {"step": "B", "alter": 0, "octave": 4}, "concert": {"step": "A", "alter": 0, "octave": 4},
+                "confidence": 0.9, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "beat 4 a: B 4, sixteenth note", "nb": "slag 4, 4. av 4: H 4, sekstendedelsnote"}
+    },
+    {
+      "id": "mode-change",
+      "settings": {"verbosity": "standard", "pitch_mode": "concert"},
+      "context": {"part": "Solo Cornet", "bar": 12, "pitch_mode": "written"},
+      "part": {"name": "Solo Cornet", "instrument": "Cornet in B♭"},
+      "event": {"kind": "mode-change"},
+      "expected": {"en": "Concert pitch", "nb": "Klingende tone"}
+    },
+    {
+      "id": "mode-change-written",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 12, "pitch_mode": "concert"},
+      "part": {"name": "Solo Cornet", "instrument": "Cornet in B♭", "instrument_nb": "kornett i B"},
+      "event": {"kind": "mode-change"},
+      "expected": {"en": "Written pitch, Cornet in B-flat", "nb": "Skrevet tone, kornett i B"}
+    }
+  ]
+}
