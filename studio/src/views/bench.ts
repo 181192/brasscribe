@@ -69,7 +69,7 @@ function suiteResult(r: SuiteResult): HTMLElement {
       : h("p", { class: "hint" }, "No checks (no baseline for this suite)."));
 }
 
-/** Small multiples: one line chart per suite metric over time, with the baseline band. */
+/** Per suite: each metric's latest gate check with a sparkline over all stored runs (baseline band shaded). */
 function trend(hist: SuiteRun[]): HTMLElement {
   if (!hist.length) return h("p", {}, "No suite results stored yet. Run a suite above.");
   const bySuite = new Map<string, SuiteRun[]>();
@@ -78,9 +78,14 @@ function trend(hist: SuiteRun[]): HTMLElement {
   for (const [suite, runs] of bySuite) {
     const last = runs[runs.length - 1];
     const metrics = [...new Set(runs.flatMap((r) => r.checks.map((c) => c.metric)))];
-    out.push(h("section", { class: "card", "aria-label": `Trend for ${suite}` },
-      h("h3", { class: "row" }, h("span", { class: "mono" }, suite), pill(last.status), h("span", { class: "small muted" }, `${runs.length} runs, last ${fmt.date(last.time)}`)),
-      h("div", { class: "grid-2" }, metrics.slice(0, 8).map((m) => sparkline(m, runs))),
+    // Suites that pass start collapsed; failing ones open.
+    out.push(h("details", { class: "card", open: last.status !== "pass" },
+      h("summary", {}, h("span", { class: "row", style: "display:inline-flex" }, h("strong", { class: "mono" }, suite), pill(last.status), h("span", { class: "small muted" }, `${runs.length} ${runs.length === 1 ? "run" : "runs"}, last ${fmt.date(last.time)}`))),
+      table(`Gate for ${suite} over time`, ["Metric", "Latest", "Baseline", "Δ", "Status", "Trend"], metrics.map((m) => {
+        const c = last.checks.find((x) => x.metric === m);
+        return [h("span", { class: "mono small" }, m), fmt.num(c?.value), c?.baseline != null ? `${fmt.num(c.baseline)} ± ${c.tolerance}` : "–",
+          c && c.value !== null && c.baseline !== null ? fmt.signed(c.value - c.baseline) : "–", c ? pill(c.status) : "–", sparkline(m, runs)];
+      }), { hideCaption: true }),
       h("details", {}, h("summary", {}, `All ${runs.length} results for ${suite}`),
         table(`History of ${suite}`, ["When", "Status", "Git", "Device", ...metrics], runs.slice().reverse().map((r) => [
           fmt.date(r.time), pill(r.status), h("span", { class: "mono small" }, fmt.hash(r.git_sha)), r.device ?? "–",
@@ -95,14 +100,14 @@ function trend(hist: SuiteRun[]): HTMLElement {
 
 function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
   const pts = runs.map((r) => ({ t: r.time, c: r.checks.find((x) => x.metric === metric) })).filter((p) => p.c && p.c.value !== null);
-  const W = 320;
-  const H = 90;
+  const W = 180;
+  const H = 40;
   const vals = pts.map((p) => p.c!.value!);
   const base = pts.find((p) => p.c!.baseline !== null)?.c;
   const lo = Math.min(...vals, base?.baseline != null ? base.baseline - base.tolerance : Infinity);
   const hi = Math.max(...vals, base?.baseline != null ? base.baseline + base.tolerance : -Infinity);
   const pad = (hi - lo) * 0.15 || 0.01;
-  const y = (v: number) => H - 14 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - 24);
+  const y = (v: number) => H - 4 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - 8);
   const x = (i: number) => (pts.length === 1 ? W / 2 : 8 + (i / (pts.length - 1)) * (W - 16));
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
@@ -110,8 +115,8 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
   svg.setAttribute("role", "img");
   const lastV = vals[vals.length - 1];
   svg.setAttribute("aria-label", `${metric}: ${pts.length} results, latest ${fmt.num(lastV)}${base?.baseline != null ? `, baseline ${fmt.num(base.baseline)} ± ${base.tolerance}` : ""}`);
-  svg.style.width = "100%";
-  svg.style.maxWidth = `${W * 1.5}px`;
+  svg.style.width = `${W}px`;
+  svg.style.height = `${H}px`;
   const add = (tag: string, attrs: Record<string, string | number>) => {
     const el = document.createElementNS(ns, tag);
     for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
@@ -129,7 +134,5 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
       ? { x: x(i) - 4, y: y(p.c!.value!) - 4, width: 8, height: 8, fill: token("error") }
       : { cx: x(i), cy: y(p.c!.value!), r: 3, fill: token("m1") });
   });
-  const txt = add("text", { x: 4, y: H - 2, "font-size": 11, fill: token("text-muted") });
-  txt.textContent = `${fmt.num(lo)} – ${fmt.num(hi)}`;
-  return h("figure", { style: "margin:0" }, h("figcaption", { class: "small mono" }, `${metric}: ${fmt.num(lastV)}`), svg as unknown as HTMLElement);
+  return svg as unknown as HTMLElement;
 }

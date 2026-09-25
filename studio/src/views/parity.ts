@@ -26,29 +26,26 @@ function report(r: ParityReport): HTMLElement {
       return [h("span", { class: "mono small" }, variant), metric, fmt.num(f1), fmt.num(num(m.p)), fmt.num(num(m.r)), fmt.num(minF1),
         h("span", { class: "small" }, String(m.min_clip ?? "–")), String(m.n_clips ?? "–"), ok === null ? "–" : pill(ok ? "pass" : "fail")];
     }));
-  const latency = collectLatency(r);
+  const latency = latencyRows(r);
+  const verdict = (r as { pass?: unknown }).pass;
   const ref = r.reference ?? {};
   return h("section", { class: "card stack", "aria-label": `Parity for ${r.model ?? r._file}` },
-    h("h2", { class: "row" }, h("span", {}, r.model ?? "model"), h("span", { class: "small muted" }, `${r.device ?? ""} · threshold F1 ${thr ?? "–"}`)),
+    h("h2", { class: "row" }, h("span", {}, r.model ?? "model"), typeof verdict === "boolean" ? pill(verdict ? "pass" : "fail") : null, h("span", { class: "small muted" }, `${r.device ?? ""} · threshold F1 ${thr ?? "–"}`)),
     h("p", { class: "small" }, `Reference: ${[ref.runtime, ref.model].filter(Boolean).join(", ")}${ref.note_segmentation ? `; notes by ${ref.note_segmentation}` : ""}`,
       r._file ? h("span", { class: "muted" }, ` · ${r._file}`) : null),
     table("Note F1 against the reference", ["Variant", "Set", "F1", "P", "R", "Worst clip F1", "Worst clip", "Clips", "Meets threshold"], metricRows),
-    latency.length ? table("Latency", ["Variant", "Measure", "Value"], latency) : h("p", { class: "hint" }, "This report has no latency figures."),
+    latency.length ? table("Latency on this device", ["Backend", "Audio (s)", "Load (s)", "Median run (s)", "Real-time factor", "Peak memory"], latency)
+      : h("p", { class: "hint" }, "This report has no latency figures."),
+    typeof r.command === "string" ? h("p", { class: "small" }, "Produced by ", h("code", {}, r.command)) : null,
     r.artifacts ? table("Converted artifacts", ["File", "Size", "SHA-256"], Object.entries(r.artifacts).map(([k, v]) => [h("span", { class: "mono small" }, k), fmt.bytes(v.size_bytes), h("span", { class: "mono small" }, fmt.hash(v.sha256))])) : null);
 }
 
-/** Latency may sit at the top level or inside each variant; pick out keys that look like timings. */
-function collectLatency(r: ParityReport): (string | HTMLElement)[][] {
-  const rows: (string | HTMLElement)[][] = [];
-  const walk = (variant: string, o: unknown, path: string) => {
-    if (!o || typeof o !== "object") return;
-    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
-      const p = path ? `${path}.${k}` : k;
-      if (typeof v === "number" && /(ms|latency|seconds|rtf|time)/i.test(p)) rows.push([h("span", { class: "mono small" }, variant), p, fmt.num(v, 3)]);
-      else if (v && typeof v === "object" && !("f1" in (v as object))) walk(variant, v, p);
-    }
-  };
-  if (r.latency) walk("–", r.latency, "");
-  for (const [variant, m] of Object.entries(r.parity ?? {})) walk(variant, m, "");
-  return rows.slice(0, 60);
+/** Latency per backend from the report's `benchmarks` block (timed on `audio_s` seconds of audio). */
+function latencyRows(r: ParityReport): (string | HTMLElement)[][] {
+  const b = (r as { benchmarks?: Record<string, Record<string, unknown>> }).benchmarks ?? {};
+  return Object.entries(b).map(([name, m]) => {
+    const rss = num(m.peak_rss_mb);
+    return [h("span", { class: "mono small" }, String(m.backend ?? name)), fmt.num(num(m.audio_s), 1), fmt.num(num(m.load_s)),
+      fmt.num(num(m.median_s)), fmt.num(num(m.rtf), 4), rss !== null ? `${Math.round(rss)} MB` : "–"];
+  });
 }

@@ -168,7 +168,7 @@ tr.selected td { background: var(--adlib-tint); }
 .stage-node.status-failed { border-color: var(--error); border-width: 3px; }
 .stage-node[aria-pressed="true"] { background: var(--adlib-tint); color: var(--text); outline: 2px solid var(--text); }
 .stage-col { display: flex; flex-direction: column; gap: 0.5rem; }
-.stage-arrow { align-self: center; color: var(--text-muted); }
+.stage-arrow { align-self: flex-start; margin-top: 1rem; color: var(--text-muted); }
 .progress { width: 100%; max-width: 30rem; height: 0.75rem; accent-color: var(--focus); }
 
 /* Canvases */
@@ -225,3 +225,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   .engine-status { margin-left: 0; width: 100%; }
   .stage-node { min-width: 9rem; }
 }
+#main h1[tabindex="-1"]:focus { outline: none; }
+#main > div > p, .notice { max-width: none; }
+select, input:not([type="checkbox"]):not([type="radio"]) { max-width: 100%; }
+fieldset { min-width: 0; }
+.row > * { min-width: 0; }

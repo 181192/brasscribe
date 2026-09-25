@@ -41,9 +41,12 @@ export class PianoRoll extends HTMLElement {
   set data(layers: RollLayer[]) {
     this.layers = layers.map((l) => ({ ...l, visible: l.visible ?? true }));
     const all = this.layers.flatMap((l) => l.notes);
+    // Pitch range from the final voices when present (raw model output has octave outliers).
+    const blocks = this.layers.filter((l) => l.style === "block").flatMap((l) => l.notes);
+    const range = blocks.length ? blocks : all;
     if (all.length) {
-      this.lo = Math.max(0, Math.min(...all.map((n) => n.pitch)) - 2);
-      this.hi = Math.min(127, Math.max(...all.map((n) => n.pitch)) + 2);
+      this.lo = Math.max(0, Math.min(...range.map((n) => n.pitch)) - 3);
+      this.hi = Math.min(127, Math.max(...range.map((n) => n.pitch)) + 3);
       this.t0 = Math.max(0, Math.min(...all.map((n) => n.start)) - 1);
     }
     this.render();

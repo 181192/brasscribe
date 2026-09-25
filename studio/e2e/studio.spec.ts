@@ -56,6 +56,7 @@ test("the Mikkel run: stage graph, score, play one bar, axe", async ({ page }) =
   await page.goto("/#/runs");
   await expect(page.getByRole("heading", { level: 1, name: "Runs" })).toBeVisible();
   await expect(page.getByRole("link", { name: run.title! }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start run" })).toBeVisible();
   await shot(page, "runs");
   await axe(page, "runs");
 
@@ -124,7 +125,12 @@ test("inspector tabs render and pass axe", async ({ page }) => {
     await page.waitForFunction(() => !document.querySelector(".tabpanel:not([hidden]) .loading"), undefined, { timeout: 120_000 });
     if (tab === "audio") await expect(panel.getByRole("status").first()).toContainText(/Hz/, { timeout: 120_000 });
     if (tab === "stems") await expect(panel.getByText("Loaded").first()).toBeVisible({ timeout: 120_000 });
-    if (tab === "musicxml") await expect(panel.getByText(/parts identical/)).toBeVisible({ timeout: 60_000 });
+    if (tab === "musicxml") {
+      await expect(panel.getByText(/parts identical/)).toBeVisible({ timeout: 60_000 });
+      await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
+      await expect(panel.getByText(/read back by MuseScore/)).toBeVisible({ timeout: 180_000 });
+      console.log(`round trip: ${await panel.getByText(/read back by MuseScore/).textContent()}`);
+    }
     await page.waitForTimeout(500);
     await shot(page, `run-${tab}`);
     await axe(page, `run ${tab}`);
@@ -160,9 +166,40 @@ test("other views render and pass axe", async ({ page }) => {
     await page.goto(`/#/${route}`);
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 120_000 });
+    if (route === "bench") {
+      // Run one CPU suite from the UI and see its gate.
+      await page.getByRole("button", { name: "Run quant-urmp", exact: true }).click();
+      await expect(page.getByText(/Gate (passed|failed) for quant-urmp/)).toBeVisible({ timeout: 120_000 });
+      console.log(`bench: ${await page.getByText(/Gate (passed|failed) for quant-urmp/).textContent()}`);
+    }
     await shot(page, route);
     await axe(page, route);
   }
+});
+
+test("start a run on a capture and follow the live stage graph", async ({ page }) => {
+  // Runs real models (a cache miss can take minutes behind the GPU mutex), so it is opt-in.
+  test.skip(!process.env.STUDIO_E2E_LIVE, "set STUDIO_E2E_LIVE=1 to run a pipeline");
+  test.setTimeout(600_000);
+  await page.goto("/#/runs");
+  await page.getByLabel("Capture or dataset item", { exact: true }).first().check();
+  const source = page.locator("#run-source");
+  await expect(source).toBeEnabled();
+  await source.selectOption("capture:smoke.wav");
+  await page.locator("#run-profile").selectOption("solo");
+  await shot(page, "runs-start");
+  await page.getByRole("button", { name: "Start run" }).click();
+  await page.waitForURL(/#\/runs\/[^/]+-solo-/, { timeout: 30_000 });
+  const id = decodeURIComponent(page.url().split("#/runs/")[1].split("/")[0]);
+  console.log(`started ${id}`);
+  // The graph updates from SSE: some stage leaves "pending" while the job runs.
+  await expect(page.locator(".stage-node:not(.status-pending)").first()).toBeVisible({ timeout: 120_000 });
+  await shot(page, "run-live", false);
+  await expect(page.locator(".pill-succeeded, .pill-failed").first()).toBeVisible({ timeout: 540_000 });
+  const job = await (await page.request.get(`/v1/jobs/${id}`)).json();
+  console.log(`run ${id}: ${job.status}; ${job.stages.map((s: { name: string; status: string; seconds?: number; device?: string }) => `${s.name}=${s.status}${s.seconds != null ? ` ${s.seconds.toFixed(1)}s` : ""}${s.device ? ` ${s.device}` : ""}`).join(", ")}${job.error ? `; error: ${job.error}` : ""}`);
+  await shot(page, "run-live-done");
+  expect(job.stages.every((s: { status: string }) => s.status !== "pending")).toBe(job.status === "succeeded");
 });
 
 test("keyboard: skip link, shortcut sheet, narrow layout", async ({ page }) => {
@@ -173,8 +210,15 @@ test("keyboard: skip link, shortcut sheet, narrow layout", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
+  // Reflow (WCAG 1.4.10): no horizontal page scroll at 360 CSS px; wide tables scroll inside their own region.
   await page.setViewportSize({ width: 360, height: 800 });
-  await shot(page, "runs-narrow");
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(1);
+  const run = await mikkelRun(page);
+  for (const [route, name] of [["runs", "runs-narrow"], [`runs/${run.id}/score`, "run-narrow"], ["compare", "compare-narrow"], ["bench", "bench-narrow"]]) {
+    await page.goto(`/#/${route}`);
+    await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 60_000 });
+    await page.waitForTimeout(500);
+    await shot(page, name, false);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `horizontal overflow on ${route}`).toBeLessThanOrEqual(1);
+  }
 });

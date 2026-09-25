@@ -11,7 +11,7 @@ import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
-import { validateScore } from "../lib/validate";
+import { pitchName, validateScore } from "../lib/validate";
 import { announce, clear, errorNotice, fmt, h, loading, panel, pill, table, tabs } from "../ui/dom";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
@@ -64,7 +64,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         h("progress", { class: "progress", max: t.total, value: t.done, "aria-label": "Stages finished" }), " ",
         `${t.done} of ${t.total} stages finished, ${t.cached} from the cache, ${fmt.seconds(t.seconds)} stage time`,
         m?.devices?.length ? `, devices ${m.devices.join(", ")}` : "") : null,
-      job.error ? h("p", { class: "notice notice-error", role: "alert" }, job.error) : null,
+      job.error ? h("pre", { class: "notice notice-error small", role: "alert", style: "white-space:pre-wrap;overflow-wrap:anywhere" }, job.error) : null,
       h("div", { class: "row" },
         !TERMINAL.has(job.status) ? h("button", { type: "button", onclick: async () => { await api.cancel(job.id); announce("Cancel requested"); } }, "Cancel run") : null,
         job.outputs?.includes("brass-band.musicxml") ? h("a", { class: "button", href: api.musicxmlUrl(job.id), download: "" }, "MusicXML") : null,
@@ -212,7 +212,8 @@ function stemsTab(p: HTMLElement, ctx: Ctx): void {
   }
   const stems = stageFiles(ctx, (s) => s.kind === "layers" || s.kind === "stems" || s.kind === "separate")
     .filter(({ file }) => AUDIO.test(file.name))
-    .map(({ stage, file }) => ({ name: file.name, url: file.url, bytes: file.bytes, group: stage.stage }));
+    .map(({ stage, file }) => ({ name: file.name, url: file.url, bytes: file.bytes, group: stage.stage }))
+    .sort((a, b) => Number(b.group === "layers") - Number(a.group === "layers"));
   if (!stems.length) {
     clear(p, h("p", {}, "This run has no stem or layer audio."));
     return;
@@ -384,7 +385,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
           return [pt.name, pt.transpose ? `${pt.transpose > 0 ? "+" : ""}${pt.transpose} semitones` : "concert", String(pt.bars), String(pt.notes.length),
-            String(pt.notes.filter((n) => n.color).length), w.length ? `${Math.min(...w)}–${Math.max(...w)}` : "–"];
+            String(pt.notes.filter((n) => n.color).length), pt.percussion ? "unpitched" : w.length ? `${pitchName(Math.min(...w))}–${pitchName(Math.max(...w))}` : "–"];
         })));
   } catch (e) {
     clear(parts, h("h3", { id: "parts-h" }, "Parts"), errorNotice(e));
