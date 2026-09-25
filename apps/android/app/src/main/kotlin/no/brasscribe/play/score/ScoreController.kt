@@ -42,6 +42,8 @@ data class ScoreUiState(
     val zoom: Int = 100,
     val realistic: Boolean = false,
     val keyShift: Int = 0,
+    /** Parts playing a real instrument from the sound pack in the realistic tier. */
+    val soundPackParts: Int = 0,
 )
 
 /**
@@ -229,7 +231,20 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
     fun setRealistic(on: Boolean): Boolean {
         val s = score ?: return false
         if (on && !RealisticSynth.start()) return false
-        if (on) for (ch in 0 until 16) if (RealisticSynth.regions(ch) == 0) RealisticSynth.loadTestTone(ch)
+        if (on) {
+            // Each part's MIDI channel gets its instrument from the installed pack, or a test tone.
+            val pack = SoundPack(view.context)
+            var installed = 0
+            for (i in 0 until s.tracks.length.toInt()) {
+                val t = s.tracks[i]
+                val ch = t.playbackInfo.primaryChannel.toInt() % 16
+                if (RealisticSynth.regions(ch) > 0) continue
+                val sfz = pack.sfzFor(t.name.replace(' ', ' '))
+                if (sfz != null && RealisticSynth.load(ch, sfz)) installed++
+            }
+            for (ch in 0 until 16) if (RealisticSynth.regions(ch) == 0) RealisticSynth.loadTestTone(ch)
+            _state.value = _state.value.copy(soundPackParts = installed)
+        }
         view.api.changeTrackVolume(s.tracks, if (on) 0.0 else 1.0)
         view.api.midiEventsPlayedFilter = if (on) alphaTab.collections.List(MidiEventType.NoteOn, MidiEventType.NoteOff) else alphaTab.collections.List()
         if (!on) { RealisticSynth.allOff(); RealisticSynth.stop() }

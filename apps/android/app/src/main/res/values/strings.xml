@@ -177,6 +177,10 @@
     <string name="sound_realistic">Realistic</string>
     <string name="sound_realistic_unavailable">Realistic sound is not included in this build.</string>
     <string name="sound_realistic_test_tone">No sound pack installed: realistic sound plays a test tone.</string>
+    <plurals name="sound_pack_parts">
+        <item quantity="one">%d part plays an installed instrument.</item>
+        <item quantity="other">%d parts play installed instruments.</item>
+    </plurals>
     <string name="action_next_bar">Next bar</string>
     <string name="action_prev_bar">Previous bar</string>
     <string name="action_next_part">Next part</string>

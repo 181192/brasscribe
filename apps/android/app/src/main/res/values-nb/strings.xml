@@ -176,6 +176,10 @@
     <string name="sound_realistic">Realistisk</string>
     <string name="sound_realistic_unavailable">Realistisk lyd er ikke med i denne versjonen av appen.</string>
     <string name="sound_realistic_test_tone">Ingen lydpakke er installert: realistisk lyd spiller en testtone.</string>
+    <plurals name="sound_pack_parts">
+        <item quantity="one">%d stemme spiller et installert instrument.</item>
+        <item quantity="other">%d stemmer spiller installerte instrumenter.</item>
+    </plurals>
     <string name="action_next_bar">Neste takt</string>
     <string name="action_prev_bar">Forrige takt</string>
     <string name="action_next_part">Neste stemme</string>

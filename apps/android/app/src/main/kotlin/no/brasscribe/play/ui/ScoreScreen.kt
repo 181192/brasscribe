@@ -173,7 +173,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     Text(stringResource(R.string.zoom_value, st.zoom))
                     OutlinedButton(onClick = { controller.setZoom(st.zoom + 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_in)) }
                 }
-                SoundChoice(st.realistic) { on -> controller.setRealistic(on) }
+                SoundChoice(st.realistic, st.soundPackParts) { on -> controller.setRealistic(on) }
             }
         }
     }
@@ -245,7 +245,7 @@ fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun SoundChoice(realistic: Boolean, onChange: (Boolean) -> Boolean) {
+private fun SoundChoice(realistic: Boolean, packParts: Int, onChange: (Boolean) -> Boolean) {
     val available = RealisticSynth.available
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         SubHeading(stringResource(R.string.sound))
@@ -258,7 +258,11 @@ private fun SoundChoice(realistic: Boolean, onChange: (Boolean) -> Boolean) {
             }
         }
         Text(
-            stringResource(if (available) R.string.sound_realistic_test_tone else R.string.sound_realistic_unavailable),
+            when {
+                !available -> stringResource(R.string.sound_realistic_unavailable)
+                realistic && packParts > 0 -> androidx.compose.ui.res.pluralStringResource(R.plurals.sound_pack_parts, packParts, packParts)
+                else -> stringResource(R.string.sound_realistic_test_tone)
+            },
             style = MaterialTheme.typography.bodySmall,
         )
     }
