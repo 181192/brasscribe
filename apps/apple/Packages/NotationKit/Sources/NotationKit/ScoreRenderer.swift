@@ -18,9 +18,11 @@ public final class ScoreRenderer: @unchecked Sendable {
         public var zoom: CGFloat
         public var parts: Set<String>?
         public var pitch: PitchMode
+        /// Page height in points at the chosen zoom (content is split into pages this tall).
+        public var height: CGFloat
 
-        public init(width: CGFloat = 820, zoom: CGFloat = 1, parts: Set<String>? = nil, pitch: PitchMode = .written) {
-            self.width = width; self.zoom = zoom; self.parts = parts; self.pitch = pitch
+        public init(width: CGFloat = 820, zoom: CGFloat = 1, parts: Set<String>? = nil, pitch: PitchMode = .written, height: CGFloat = 1160) {
+            self.width = width; self.zoom = zoom; self.parts = parts; self.pitch = pitch; self.height = height
         }
     }
 
@@ -29,6 +31,10 @@ public final class ScoreRenderer: @unchecked Sendable {
         public let svg: SVGDocument
         /// Measure ids on this page in order.
         public let measureIDs: [String]
+        /// Staff ids per measure (top to bottom = displayed parts in score order).
+        public let staves: [String: [String]]
+        /// Note ids per staff id.
+        public let notesByStaff: [String: [String]]
     }
 
     public let musicXML: String
@@ -65,7 +71,7 @@ public final class ScoreRenderer: @unchecked Sendable {
         // pageWidth × scale / 100 px, so ask for a width that lands on the view width.
         let pageWidth = Int(l.width * 100 / CGFloat(scale))
         toolkit.setOptions([
-            "pageWidth": max(500, pageWidth), "pageHeight": 60000, "adjustPageHeight": true,
+            "pageWidth": max(500, pageWidth), "pageHeight": max(1000, Int(l.height * 100 / CGFloat(scale))), "adjustPageHeight": true,
             "scale": scale, "pageMarginLeft": 50, "pageMarginRight": 50, "pageMarginTop": 50, "pageMarginBottom": 50,
             "breaks": "auto", "font": "Leipzig", "svgHtml5": false, "svgBoundingBoxes": false,
             "transposeToSoundingPitch": l.pitch == .concert, "header": "none", "footer": "none",
@@ -87,14 +93,25 @@ public final class ScoreRenderer: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         if let p = pages[n] { return p }
         guard n >= 1, n <= pageCount, let doc = try? SVGDocument(svg: toolkit.renderToSVG(page: n)) else { return nil }
-        let p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"))
-        for (i, op) in doc.ops.enumerated() where op.color != nil {
-            _ = i
+        var staves: [String: [String]] = [:]
+        var notes: [String: [String]] = [:]
+        var seenStaff = Set<String>(), seenNote = Set<String>()
+        for op in doc.ops {
+            var measure: String?, staff: String?
             for o in op.owners {
                 let id = doc.ids[Int(o)]
-                if doc.classes[id] == "note" { uncertainNoteIDs.insert(id) }
+                switch doc.classes[id] {
+                case "measure": measure = id
+                case "staff": staff = id
+                case "note":
+                    if let staff, seenNote.insert(id).inserted { notes[staff, default: []].append(id) }
+                    if op.color != nil { uncertainNoteIDs.insert(id) }
+                default: break
+                }
             }
+            if let measure, let staff, seenStaff.insert(staff).inserted { staves[measure, default: []].append(staff) }
         }
+        let p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes)
         pages[n] = p
         return p
     }

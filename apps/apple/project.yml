@@ -1,0 +1,148 @@
+# XcodeGen spec for Brasscribe Play (macOS, iOS, iPadOS). Generate with `make project`;
+# the .xcodeproj is not committed.
+name: BrasscribePlay
+options:
+  bundleIdPrefix: no.brasscribe
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  developmentLanguage: en
+  knownRegions: [en, nb]
+  createIntermediateGroups: true
+  preGenCommand: ./scripts/check-prereqs.sh
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  BrasscribeKit:
+    path: Packages/BrasscribeKit
+  NotationKit:
+    path: Packages/NotationKit
+  AudioCapture:
+    path: ../../capture
+
+targets:
+  BrasscribePlay:
+    type: application
+    platform: [iOS, macOS]
+    productName: Brasscribe Play
+    sources:
+      - path: App
+      - path: Frameworks/VerovioResources
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: BrasscribeKit
+        product: ScoreKit
+      - package: BrasscribeKit
+        product: TranscriptionKit
+      - package: BrasscribeKit
+        product: PlaybackKit
+      - package: BrasscribeKit
+        product: SVGRender
+      - package: NotationKit
+        product: NotationKit
+      - package: AudioCapture
+        product: AudioCapture
+        destinationFilters: [macOS]
+    info:
+      path: App/Info-${platform}.plist
+      properties:
+        CFBundleDisplayName: Brasscribe Play
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, nb]
+        NSMicrophoneUsageDescription: Brasscribe Play records your playing to turn it into a score.
+        NSAudioCaptureUsageDescription: Brasscribe Play records the sound playing on this Mac to turn it into a score.
+        NSLocalNetworkUsageDescription: Brasscribe Play talks to Brasscribe on your own computer to transcribe recordings.
+        NSBonjourServices: [_brasscribe._tcp]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIBackgroundModes: [audio]
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio recording
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.audio]
+          - CFBundleTypeName: Video
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.movie]
+          - CFBundleTypeName: MusicXML score
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [org.w3.musicxml, com.recordare.musicxml.uncompressed]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.recordare.musicxml.uncompressed
+            UTTypeDescription: MusicXML
+            UTTypeConformsTo: [public.xml]
+            UTTypeTagSpecification:
+              public.filename-extension: [musicxml]
+              public.mime-type: [application/vnd.recordare.musicxml+xml]
+    entitlements:
+      path: App/BrasscribePlay-${platform}.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.device.audio-input: true
+        com.apple.security.files.user-selected.read-write: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
+        ENABLE_HARDENED_RUNTIME: YES
+        SUPPORTS_MACCATALYST: NO
+
+  BrasscribePlayTests:
+    type: bundle.unit-test
+    platform: [iOS, macOS]
+    sources: [AppTests]
+    dependencies:
+      - target: BrasscribePlay_${platform}
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play.tests
+
+  BrasscribePlayUITests:
+    type: bundle.ui-testing
+    platform: [iOS, macOS]
+    sources: [AppUITests]
+    dependencies:
+      - target: BrasscribePlay_${platform}
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play.uitests
+        TEST_TARGET_NAME: BrasscribePlay_${platform}
+
+schemes:
+  BrasscribePlay-iOS:
+    build:
+      targets:
+        BrasscribePlay_iOS: all
+    test:
+      targets: [BrasscribePlayTests_iOS, BrasscribePlayUITests_iOS]
+      gatherCoverageData: false
+  BrasscribePlay-macOS:
+    build:
+      targets:
+        BrasscribePlay_macOS: all
+    test:
+      targets: [BrasscribePlayTests_macOS, BrasscribePlayUITests_macOS]

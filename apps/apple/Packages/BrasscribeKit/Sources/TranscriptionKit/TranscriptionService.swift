@@ -62,6 +62,10 @@ public struct TranscriptionProgress: Sendable, Equatable {
     public var etaSeconds: Double?
     /// Where the engine runs the heavy models (cuda, mps, cpu), when known.
     public var device: String?
+
+    public init(stage: StageKind, stageName: String? = nil, fraction: Double, etaSeconds: Double?, device: String? = nil) {
+        self.stage = stage; self.stageName = stageName; self.fraction = fraction; self.etaSeconds = etaSeconds; self.device = device
+    }
 }
 
 public enum ArtifactKind: String, CaseIterable, Sendable, Codable {
