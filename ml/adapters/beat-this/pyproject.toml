@@ -1,0 +1,16 @@
+[project]
+name = "brasscribe-beat-this"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "beat-this",
+    "soundfile>=0.14.0",
+    "soxr>=1.1.0",
+    "torch>=2.6",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+[tool.uv.sources]
+beat-this = { git = "https://github.com/CPJKU/beat_this", rev = "v1.1.0" }
