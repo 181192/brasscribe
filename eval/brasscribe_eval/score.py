@@ -15,6 +15,7 @@ import numpy as np
 import pretty_midi
 
 ONSET_TOL = 0.05
+LOOSE_TOL = 0.10
 
 
 def load_notes(path: Path) -> list[dict]:
@@ -54,12 +55,19 @@ def score(ref: list[dict], est: list[dict]) -> dict:
             octave += 1
     out["octave_err_rate"] = octave / max(1, len(ref))
 
+    # Notation-level tolerance: brass attacks read ~50 ms late, and anything under a
+    # 16th note is absorbed by beat quantization.
+    p, r, f, _ = mir_eval.transcription.precision_recall_f1_overlap(ri, rp, ei, ep, onset_tolerance=LOOSE_TOL, offset_ratio=None)
+    out.update(onset100_p=p, onset100_r=r, onset100_f1=f)
+
     parts = sorted({n["part"] for n in ref if "part" in n})
     for part in parts:
         sub = [n for n in ref if n.get("part") == part]
         si, sp = to_arrays(sub)
         m = mir_eval.transcription.match_notes(si, sp, ei, ep, onset_tolerance=ONSET_TOL, offset_ratio=None)
         out[f"recall_{part}"] = len(m) / max(1, len(sub))
+        m = mir_eval.transcription.match_notes(si, sp, ei, ep, onset_tolerance=LOOSE_TOL, offset_ratio=None)
+        out[f"recall100_{part}"] = len(m) / max(1, len(sub))
     return out
 
 

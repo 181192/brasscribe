@@ -44,6 +44,44 @@
    - On "Mikkel" (Antonsen, *Landscapes*, 2007) MuScriptor labelled the lead trumpet "distorted electric guitar".
    - BS-RoFormer SW put 0% of the energy in the guitar stem, and PANNs tags trumpet at 0.6–0.7 in most 15 s windows.
 
+## Song benchmark: Slakh trumpet-lead tracks
+
+Mikkel has no ground truth, so it is the end-to-end test only. The song-level benchmark is `slakh-trumpet`, built by `eval/brasscribe_eval/slakh.py`:
+- **BabySlakh Track00006** (241 s): trumpet melody, 2× string ensemble, French horn, trombone, fretless bass, drums, EP, guitars. The closest Mikkel-like texture available with exact notes.
+- **Track00014** (269 s): trumpet lead with band.
+- Each has `mix.wav` (16 kHz), per-stem MIDI ground truth, and `score.musicxml` (MuseScore conversion of the MIDI).
+- **Caveat:** the audio is synthetic (sample-library render).
+
+### Onset timing
+
+Separated-stem transcription found almost every Track00006 trumpet note at the right pitch but 50–150 ms late. The median offset is about +55 ms (IQR 34–79 ms), against about 0 ms for bass and piano. That is the soft brass attack: the note speaks after its MIDI note-on.
+
+Strict 50 ms matching therefore undercounts melody recovery. For notation, anything under a 16th note (about 125 ms here) is absorbed by quantization, so `score.py` now also reports a 100 ms tolerance ("100" columns).
+
+### Results (100 ms tolerance; strict 50 ms in brackets)
+
+| Pipeline | slakh onset F1 | Track00006 trumpet melody recall | fretless bass recall | Track00014 trumpet recall |
+|---|---|---|---|---|
+| A: Basic Pitch on mix | 0.43 (0.36) | 0.79 (0.42) | 0.54 | 0.57 |
+| A: MuScriptor medium on mix | 0.48 (0.43) | 0.62 (0.49) | 0.26 | 0.65 |
+| B: SW separation → MuScriptor per stem | **0.60** (0.52) | 0.79 (0.41) | 0.27 | **0.69** |
+| B: SW separation → Basic Pitch per stem | 0.52 (0.46) | **0.87** (0.49) | **0.68** | 0.68 |
+
+Chorales re-scored at 100 ms:
+- MuScriptor medium: onset F1 0.75; recall S .97 / A .92 / T .76 / B .72.
+- Basic Pitch: onset F1 0.60; recall S .90 / A .89 / T .82 / B .66.
+
+Per-part recall is measured against *all* estimated notes, so a note can be credited to the melody when another stem produced the same pitch. Treat it as an upper bound.
+
+### What this says
+
+1. **Separation helps on full-band songs** (pipeline B beats A by +8 to +12 F1). It is unnecessary for brass-only chorales.
+2. **The best source differs per role.**
+   - MuScriptor is strongest for upper and melodic voices.
+   - Basic Pitch on a separated stem is far better for bass (0.68 vs 0.27) and at least as good for the trumpet line.
+   - The consensus design should route by role: melody from agreement of both, bass from Basic Pitch on the bass stem, inner voices from union with voting.
+3. **Melody recovery at notation tolerance is roughly 80–90%** on synthetic trumpet-lead songs and above 95% on real brass chorales.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.

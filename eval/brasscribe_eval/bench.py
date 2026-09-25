@@ -38,7 +38,7 @@ def main() -> None:
     means = df.drop(columns="song").mean(numeric_only=True)
     df.loc[len(df)] = {"song": "MEAN", **means.to_dict()}
     df.to_csv(args.eval_dir / f"results-{args.name}.csv", index=False)
-    cols = ["onset_f1", "onoff_f1", "octave_err_rate", "recall_S", "recall_A", "recall_T", "recall_B", "runtime_s"]
+    cols = ["onset_f1", "onset100_f1", "onoff_f1", "octave_err_rate", "runtime_s"] + sorted(c for c in means.index if c.startswith("recall"))
     print(json.dumps({c: round(float(means[c]), 3) for c in cols if c in means}, indent=1))
 
 
