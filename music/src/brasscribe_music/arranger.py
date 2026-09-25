@@ -13,7 +13,7 @@ cannot be placed is left out and reported instead.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from .instruments import MINIMAL_BAND, Lineup, Part
 from .score_model import Composition, Note, VoiceRole
@@ -27,6 +27,11 @@ class Arrangement:
     lineup: Lineup
     parts: dict[str, list[Note]] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+
+
+def _moved(n: Note, pitch: int) -> Note:
+    """Copy of a source note at another pitch (timing, confidence and articulations kept)."""
+    return replace(n, pitch=pitch, sources=list(n.sources), articulations=list(n.articulations))
 
 
 def _phrases(notes: list[Note]) -> list[list[Note]]:
@@ -70,11 +75,11 @@ def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra:
                 if inst.check(p) == "impossible":
                     warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
                     continue
-                placed.append(Note(p, n.start, n.dur, n.confidence, n.sources, n.onset_s, n.offset_s))
+                placed.append(_moved(n, p))
             warnings.append(f"{part.name}: phrase at tick {phrase[0].start} needed per-note octave fitting")
             continue
         for n in phrase:
-            placed.append(Note(n.pitch + shift_extra + 12 * k, n.start, n.dur, n.confidence, n.sources, n.onset_s, n.offset_s))
+            placed.append(_moved(n, n.pitch + shift_extra + 12 * k))
     return _hold_small_gaps(placed)
 
 
@@ -129,7 +134,7 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
     for n in arr.parts[eb.name]:
         p = n.pitch - 12
         # Octave below only where that stays comfortable; pedal notes are a player's choice, not a default.
-        low.append(Note(p if bb.instrument.check(p) == "ok" else n.pitch, n.start, n.dur, n.confidence, n.sources))
+        low.append(_moved(n, p if bb.instrument.check(p) == "ok" else n.pitch))
     arr.parts[bb.name] = low
 
     inner = [p for p in lineup.parts if p.name not in (lead.name, eb.name, bb.name)]
@@ -217,7 +222,7 @@ def _place_smooth(notes: list[Note], part: Part) -> list[Note]:
         if not opts:
             continue
         p = min(opts, key=lambda x: abs(x - prev))
-        out.append(Note(p, n.start, n.dur, n.confidence, n.sources, n.onset_s, n.offset_s))
+        out.append(_moved(n, p))
         prev = p
     return _hold_small_gaps(out)
 
@@ -238,8 +243,8 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangeme
     bass = _layer(comp, "bass")
     eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
     arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
-    arr.parts[bb.name] = [Note(n.pitch - 12 if bb.instrument.check(n.pitch - 12) == "ok" else n.pitch,
-                               n.start, n.dur, n.confidence, n.sources) for n in arr.parts[eb.name]]
+    arr.parts[bb.name] = [_moved(n, n.pitch - 12 if bb.instrument.check(n.pitch - 12) == "ok" else n.pitch)
+                          for n in arr.parts[eb.name]]
 
     strings = _layer(comp, "strings")
     keys = _layer(comp, "keys")

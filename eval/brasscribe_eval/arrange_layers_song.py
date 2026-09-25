@@ -18,9 +18,11 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 from brasscribe_music.arranger import arrange_layers
+from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
+from brasscribe_music.freetime import mark_fermatas, plan_free_time
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
+from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
@@ -46,12 +48,27 @@ def split_orchestra(notes: list[Note]) -> tuple[list[Note], list[Note]]:
     return hits, [n for n in notes if id(n) not in hit_ids]
 
 
+def written_line(qnotes, times: np.ndarray, pickup: int, source: str) -> list[Note]:
+    """One voice with written durations from its performed lengths (held vs detached, staccato)."""
+    out = []
+    for q, w in apply_written(qnotes, BeatMap(times)):
+        n = to_notes([q], pickup, source)[0]
+        n.performed_dur = int(round(w.performed))
+        if w.staccato:
+            n.articulations.append(Articulation.STACCATO)
+        out.append(n)
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--layers", type=Path, required=True)
     ap.add_argument("--beats", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--title", default="Draft")
+    ap.add_argument("--solo-contour", type=Path, help="SwiftF0 contour of the solo stem (swiftf0_contour.py); solo notes end where it does")
+    ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
+    ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
     args.out.mkdir(parents=True, exist_ok=True)
@@ -67,9 +84,16 @@ def main() -> None:
     first_down = int(np.argmax(pos == 1))
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
     times = choose_level(b[:, 0], onsets)
-    if len(times) != len(b):
+    doubled = len(times) != len(b)
+    if doubled:
         beats_per_bar *= 2
         first_down *= 2
+    plan = None
+    if not args.no_free_time:
+        plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else pos == 1,
+                              tempo=args.free_tempo, tempo_onsets=np.array([n["onset"] for n in pitched(L / "solo-sw.mid")]))
+        times, first_down = plan.beat_times, plan.first_downbeat
+    coarse = plan.beat_ranges if plan else None
     earliest = float(BeatMap(times).to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
@@ -87,16 +111,22 @@ def main() -> None:
              "confidence": {3: 0.98, 2: 0.91}.get(len(c.sources), 0.54)}
             for c in cluster(votes) if "sw" in c.sources]
     solo_line = line(cand, 52, 88, top=True)
-    solo = to_notes(fill_gaps(quantize(solo_line, times, monophonic=True, auto_level=False), half), pickup, "solo")
-    bass = to_notes(fill_gaps(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False), half),
-                    pickup, "bass")
+    if args.solo_contour:
+        # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
+        ends = contour_offsets(Contour.load(args.solo_contour), [(n["onset"], n["pitch"]) for n in solo_line],
+                               **SEPARATED_STEM)
+        for n, e in zip(solo_line, ends):
+            n["offset"] = max(n["offset"], e)
+    solo = written_line(quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse), times, pickup, "solo")
+    bass = written_line(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False, coarse=coarse),
+                        times, pickup, "bass")
 
     solo_keys = {(round(n["onset"], 1), n["pitch"]) for n in solo_line}
     orch = [n for n in orch_raw if 36 <= n["pitch"] <= 88 and (round(n["onset"], 1), n["pitch"]) not in solo_keys]
-    orch_q = [n for n in to_notes(quantize(orch, times, auto_level=False), pickup, "orchestra") if n.start >= 0]
+    orch_q = [n for n in to_notes(quantize(orch, times, auto_level=False, coarse=coarse), pickup, "orchestra") if n.start >= 0]
     hits, lines = split_orchestra(orch_q)
 
-    dq = quantize(drum_raw, times, auto_level=False)
+    dq = quantize(drum_raw, times, auto_level=False, coarse=coarse)
     starts = sorted({q.start for q in dq})
     nxt = {s: n for s, n in zip(starts, starts[1:])}
     drums = [Note(q.pitch, q.start - pickup, min(nxt.get(q.start, q.start + half) - q.start, TICKS_PER_BEAT), 1.0, ["drums"])
@@ -108,7 +138,9 @@ def main() -> None:
         Voice("strings", VoiceRole.HARMONY, lines, "orchestra", "strings"),
         Voice("brass", VoiceRole.HARMONY, hits, "orchestra hits", "brass"),
         Voice("drums", VoiceRole.RHYTHM, drums, "drum kit", "drums"),
-    ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down)
+    ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down,
+        free_regions=plan.regions(first_down) if plan else [])
+    mark_fermatas(solo, comp.free_regions)
     tonal = solo + bass + lines
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
     comp.keys = [KeySig(0, fifths)]
@@ -124,6 +156,8 @@ def main() -> None:
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
     print(f"key fifths {fifths}; warnings {len(arr.warnings)}")
+    for r in comp.free_regions:
+        print(f"free time {r.start_s:.2f}-{r.end_s:.2f} s -> ticks {r.start}-{r.end} at {r.tempo_bpm:.1f} BPM ({r.notation.value})")
     print(xml, "pdf" if xml.with_suffix(".pdf").exists() else "(no pdf)", "mp3" if xml.with_suffix(".mp3").exists() else "(no mp3)")
 
 

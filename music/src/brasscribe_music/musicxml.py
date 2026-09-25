@@ -12,7 +12,8 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from music21 import chord, clef, instrument, interval, key, meter, note, pitch, stream, tempo
+from music21 import articulations, chord, clef, expressions, instrument, interval, key, meter, note, pitch, stream, tempo
+from music21 import bar as m21bar
 
 from .instruments import Instrument as BandInstrument
 
@@ -88,8 +89,8 @@ def _notatable_end(start: int, end: int) -> int:
     return min(cands, key=lambda c: (abs(c - end), c))
 
 
-def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float]]:
-    """Group by start tick into (start, end, pitches, min confidence); make the line non-overlapping."""
+def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float, set[str]]]:
+    """Group by start tick into (start, end, pitches, min confidence, articulations); make the line non-overlapping."""
     groups: dict[int, list[QNote]] = {}
     for q in notes:
         groups.setdefault(q.start, []).append(q)
@@ -101,12 +102,54 @@ def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float]]:
         end = _notatable_end(s, end)
         if i + 1 < len(starts):
             end = min(end, starts[i + 1])
-        out.append((s, max(end, s + 1), sorted({q.pitch for q in g}), min(q.confidence for q in g)))
+        arts = {str(getattr(a, "value", a)) for q in g for a in q.articulations}
+        out.append((s, max(end, s + 1), sorted({q.pitch for q in g}), min(q.confidence for q in g), arts))
     return out
 
 
+@dataclass
+class FreeSpan:
+    """A free-time passage for the score: [start, end) ticks, notated at `bpm`."""
+    start: int
+    end: int
+    bpm: float
+    label: str = "ad lib."
+
+
+def _articulate(el, arts: set[str]) -> None:
+    if "staccato" in arts:
+        el.articulations.append(articulations.Staccato())
+    if "fermata" in arts:
+        el.expressions.append(expressions.Fermata())
+
+
+def _mark_free_spans(part: stream.Part, spans: list[FreeSpan], pickup_ticks: int, total: int, strict_bpm: float,
+                     with_tempo: bool) -> None:
+    """Direction text and tempo at each free span's start and end ("a tempo")."""
+    for sp in spans:
+        a, b = sp.start - pickup_ticks, sp.end - pickup_ticks
+        if a >= 0:
+            part.insert(a / TICKS_PER_BEAT, expressions.TextExpression(sp.label))
+            if with_tempo:
+                part.insert(a / TICKS_PER_BEAT, tempo.MetronomeMark(number=round(sp.bpm)))
+        if 0 <= b < total:
+            part.insert(b / TICKS_PER_BEAT, expressions.TextExpression("a tempo"))
+            if with_tempo:
+                part.insert(b / TICKS_PER_BEAT, tempo.MetronomeMark(number=round(strict_bpm)))
+
+
+def _dash_free_barlines(score: stream.Score, spans: list[FreeSpan], pickup_ticks: int) -> None:
+    """Dashed bar lines inside free spans: the bars there only group the proportional notation."""
+    for part in score.parts:
+        for m in part.getElementsByClass(stream.Measure):
+            end = round((m.offset + m.duration.quarterLength) * TICKS_PER_BEAT) + pickup_ticks
+            if any(sp.start < end < sp.end for sp in spans):
+                m.rightBarline = m21bar.Barline("dashed")
+
+
 def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
-                pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None) -> stream.Score:
+                pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None,
+                free_spans: list[FreeSpan] | None = None) -> stream.Score:
     score = stream.Score()
     score.metadata = None
     from music21 import metadata
@@ -119,7 +162,7 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         return p.instrument is not None and p.instrument.clef == "percussion"
 
     events = [(pi, ev) for pi, p in enumerate(parts) if not is_drums(p) for ev in _events(p.notes)]
-    flat = [(pi, s, e, p) for pi, (s, e, ps, _) in events for p in ps]
+    flat = [(pi, s, e, p) for pi, (s, e, ps, _, _) in events for p in ps]
     spelled: dict[tuple[int, int, int], pitch.Pitch] = {}
     fifths = 0
     if flat:
@@ -145,11 +188,14 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             part.insert(0, clef.BassClef() if p.clef == "bass" else clef.TrebleClef())
             part.insert(0, key.KeySignature(fifths))
         part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
-        if pi == 0:
+        spans = free_spans or []
+        opens_free = any(sp.start - pickup_ticks == 0 for sp in spans)
+        if pi == 0 and not opens_free:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
+        _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
         cursor = 0
         dropped = 0
-        for start, end, pitches, conf in _events(p.notes):
+        for start, end, pitches, conf, arts in _events(p.notes):
             tick = start
             start -= pickup_ticks
             end -= pickup_ticks
@@ -164,6 +210,8 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             else:
                 sp = [spelled.get((pi, tick, m), pitch.Pitch(midi=m)) for m in pitches]
                 el = note.Note(sp[0], quarterLength=ql) if len(sp) == 1 else chord.Chord(sp, quarterLength=ql)
+            if not is_drums(p):
+                _articulate(el, arts)
             if conf < low_confidence:
                 el.style.color = "#d0021b"  # flag uncertain notes for review
             part.insert(start / TICKS_PER_BEAT, el)
@@ -174,6 +222,8 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             warnings.warn(f"{p.name}: {dropped} note(s) before the first bar were not written")
         score.insert(0, part)
     score = score.makeNotation()
+    if free_spans:
+        _dash_free_barlines(score, free_spans, pickup_ticks)
     score.atSoundingPitch = True
     return score
 
@@ -219,12 +269,15 @@ def build_band_score(arrangement, comp) -> stream.Score:
     """Arrangement (concert notes per band part) -> transposing score in lineup order."""
     specs = []
     for part in arrangement.lineup.parts:
-        notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence)
+        notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence,
+                       tuple(a.value for a in n.articulations))
                  for n in arrangement.parts.get(part.name, [])]
         specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument))
     meter0 = comp.meters[0].beats if comp.meters else 4
     fifths = comp.keys[0].fifths if comp.keys else None
-    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths)
+    spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
+    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths,
+                       free_spans=spans)
 
 
 def band_sounds(arrangement) -> dict[str, str]:
