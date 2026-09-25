@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Brasscribe.Play.Audio.Windows/Brasscribe.Play.Audio.Windows.csproj" />
     <Project Path="src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
