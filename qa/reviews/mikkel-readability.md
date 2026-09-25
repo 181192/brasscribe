@@ -75,7 +75,7 @@ Most severe first. Each item has bar numbers and an owner area (engine, arranger
 
 - 2nd and 3rd Cornet sit on **written F♯3** (3 ledger lines, the lowest valve note) in bars 51–53, 81–87, 90–96 and 112–114, and 3rd Cornet also in 108, 111 and 119.
 - 1st and 2nd Horn reach written F♯3 in 66 and 82 of the 128 bars. That is 34% and 48% of their notes.
-- F♯3 is a weak, hard-to-tune note on cornet and tenor horn. Having it on nearly every chord suggests the voicer clamps to the range floor instead of choosing the next chord tone up.
+- F♯3 is a weak, hard-to-tune note on cornet and tenor horn. Hitting it this often suggests the voicer clamps to the range floor instead of choosing the next chord tone up.
 - Horn players rarely read 3 ledger lines below the staff. The inner parts should sit around written C4–C5.
 
 ### 6. Bass line in the wrong octave (bars 4–5, 122–127): arranger octave placement
