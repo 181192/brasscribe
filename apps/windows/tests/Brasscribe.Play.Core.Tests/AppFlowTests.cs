@@ -128,7 +128,7 @@ public class AppFlowTests
 
         await main.Start.OpenPathAsync(await Take());
         await Until(() => main.Screen == Screen.SourceKind);
-        Assert.Contains(said.Items, a => a.Text.StartsWith("Imported take-") && a.Text.EndsWith("1 minutes 5 seconds"));
+        Assert.Contains(said.Items, a => a.Text.StartsWith("Imported take-") && a.Text.EndsWith("1 min 5 s"));
         Assert.False(main.Kind.ContinueCommand.CanExecute(null)); // nothing chosen yet: the app never guesses
         await Until(() => !main.Kind.Options.Single(o => o.Kind == SourceKind.PopRock).IsAvailable); // engine lists no pop-rock
 

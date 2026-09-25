@@ -60,8 +60,13 @@ public partial class App : Application
         };
         var settingsVm = new SettingsViewModel(Settings, announcer, Strings);
 
+        // No overall timeout (the event stream stays open for the whole job), but a LAN address that
+        // drops packets must fail within seconds rather than hang on connect.
         IEngineClient EngineFactory(Uri uri, string? token) =>
-            new EngineClient(new HttpClient { Timeout = Timeout.InfiniteTimeSpan }, uri) { Token = token };
+            new EngineClient(new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(10) })
+            {
+                Timeout = Timeout.InfiniteTimeSpan,
+            }, uri) { Token = token };
 
         MainViewModel? main = null;
         main = new MainViewModel(

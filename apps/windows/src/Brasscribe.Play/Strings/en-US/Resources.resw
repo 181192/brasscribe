@@ -148,10 +148,10 @@
     <value>Windows does not let apps record protected (DRM) playback, such as some streaming services. Brasscribe tells you when that happens instead of recording silence.</value>
   </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
-    <value>{0} minutes {1} seconds</value>
+    <value>{0} min {1} s</value>
   </data>
   <data name="Duration_Seconds" xml:space="preserve">
-    <value>{0} seconds</value>
+    <value>{0} s</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
     <value>Engine address</value>

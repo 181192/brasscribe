@@ -21,6 +21,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     private Score? _score;
     private MidiFile? _midi;
     private MidiTickLookup? _lookup;
+    private byte[]? _musicXml;
     private readonly HashSet<int> _muted = [], _solo = [];
     private int _transpose;
     private bool _soundFontLoaded;
@@ -97,6 +98,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     public void LoadScore(byte[] musicXml)
     {
+        _musicXml = musicXml;
         _score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(musicXml), _settings);
         Tracks = _score.Tracks.Select(t => new TrackInfo(
             (int)t.Index, t.Name.Replace('\u00A0', ' '), t.Staves.Any(s => s.IsPercussion),
@@ -200,10 +202,13 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     public byte[] ExportMidi()
     {
-        if (_score is null) throw new InvalidOperationException("No score loaded");
-        // The playback MIDI carries synth-only events; a Standard MIDI File needs SMF1 mode.
+        if (_musicXml is null) throw new InvalidOperationException("No score loaded");
+        // From a fresh load: the playback model has remapped programs and display styling that
+        // must not leak into the file. The playback MIDI also carries synth-only events, so the
+        // export is generated in SMF1 mode.
+        var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(_musicXml), new Settings());
         var smf = new MidiFile { Format = MidiFileFormat.MultiTrack };
-        new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(smf, true)).Generate();
+        new MidiFileGenerator(score, new Settings(), new AlphaSynthMidiFileHandler(smf, true)).Generate();
         var bin = smf.ToBinary();
         var bytes = new byte[(int)bin.Length];
         for (int i = 0; i < bytes.Length; i++) bytes[i] = (byte)bin[i];

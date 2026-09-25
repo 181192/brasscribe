@@ -148,10 +148,10 @@
     <value>Windows lar ikke apper ta opp beskyttet avspilling (DRM), for eksempel fra noen strømmetjenester. Brasscribe sier fra når det skjer, i stedet for å ta opp stillhet.</value>
   </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
-    <value>{0} minutter {1} sekunder</value>
+    <value>{0} min {1} s</value>
   </data>
   <data name="Duration_Seconds" xml:space="preserve">
-    <value>{0} sekunder</value>
+    <value>{0} s</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
     <value>Adresse til motoren</value>

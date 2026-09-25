@@ -168,8 +168,8 @@ prop("AboutText", "Text",
 
 # ---- code strings ----
 code = {
-    "Duration_MinutesSeconds": ("{0} minutes {1} seconds", "{0} minutter {1} sekunder"),
-    "Duration_Seconds": ("{0} seconds", "{0} sekunder"),
+    "Duration_MinutesSeconds": ("{0} min {1} s", "{0} min {1} s"),
+    "Duration_Seconds": ("{0} s", "{0} s"),
     "Screen_Start": ("Start", "Start"),
     "Screen_SourceKind": ("What is this?", "Hva er dette?"),
     "Screen_Transcribing": ("Transcribing", "Transkriberer"),

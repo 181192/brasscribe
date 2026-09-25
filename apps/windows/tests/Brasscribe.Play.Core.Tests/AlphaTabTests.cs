@@ -33,6 +33,19 @@ public class AlphaTabTests(ITestOutputHelper log)
     }
 
     [Fact]
+    public void Midi_export_ignores_playback_routing_and_styling()
+    {
+        using var plain = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        plain.LoadScore(Fixture());
+        using var routed = new AlphaTabScorePlayer(new BufferedSynthOutput()) { ProgramMap = _ => 8 };
+        routed.LoadScore(Fixture());
+        var ts = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")));
+        ts.Parts[0].Bars[0].Events[1].Confidence = 0.2; // very uncertain: ghost notehead in the view
+        ScoreStyler.ApplyUncertainty(routed.Score!, ts, UncertaintyPalette.Light);
+        Assert.Equal(plain.ExportMidi(), routed.ExportMidi());
+    }
+
+    [Fact]
     public void Loop_speed_and_mixer_state()
     {
         using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
@@ -120,6 +133,20 @@ public class AlphaTabTests(ITestOutputHelper log)
         Assert.NotEmpty(full.Partials);
         log.WriteLine($"golden: load+midi {load} ms, solo part svg {renderPart} ms ({part.TotalWidth:0}x{part.TotalHeight:0}), " +
                       $"full score svg {renderFull} ms ({full.TotalWidth:0}x{full.TotalHeight:0}), midi {player.ExportMidi().Length} bytes");
+
+        // What the app does on the UI thread for every load, zoom or part change: Skia render plus PNG encode.
+        foreach (var (scale, tracks, label) in new[] { (1.0, player.Tracks.Select(t => t.Index).ToList(), "full 100%"),
+                     (2.0, player.Tracks.Select(t => t.Index).ToList(), "full 200%"), (1.0, [solo.Index], "solo 100%"), (4.0, [solo.Index], "solo 400%") })
+        {
+            sw.Restart();
+            var skia = new ScoreRenderService("skia") { Scale = scale }.Render(player.Score!, tracks, 1600);
+            long render = sw.ElapsedMilliseconds;
+            sw.Restart();
+            long bytes = skia.Partials.Sum(p => (long)(ScoreRenderService.ToPng(p.Result)?.Length ?? 0));
+            long png = sw.ElapsedMilliseconds;
+            ScoreRenderService.Release(skia);
+            log.WriteLine($"golden skia {label}: render {render} ms, png {png} ms, {skia.Partials.Count} partials, {bytes / 1024} KiB");
+        }
     }
 
     [Fact]
