@@ -2,8 +2,8 @@
 
 Two applications on one shared engine:
 
-- **Studio**: a technical workbench. Inspect every pipeline stage, compare models, run benchmarks, and debug scores.
-- **Play**: a musician app. Recording in, brass-band score out, then read, listen, practise and play along.
+- **Brasscribe Studio** ("Studio" below): a technical workbench. Inspect every pipeline stage, compare models, run benchmarks, and debug scores.
+- **Brasscribe Play** ("Play" below): a musician app. Recording in, brass-band score out, then read, listen, practise and play along.
 
 **Ground rules from the owner:**
 - The project is **non-commercial**.
@@ -75,7 +75,7 @@ Nobody writes this intro readably yet. Fixing items 1 and 2 would put us ahead.
 | Play on Apple | **One SwiftUI codebase for macOS, iOS and iPadOS** | Native UI and accessibility (VoiceOver), and native audio: AVAudioEngine, AVAudioUnitSampler for SF2/DLS/EXS, AVAudioEnvironmentNode for 3D placement, convolution via AU, AUv3 hosting. Core ML and MLX run on the GPU/Neural Engine. The capture code already exists in Swift. |
 | Play on Android | **Kotlin + Jetpack Compose** | Native UI and TalkBack. Audio via Oboe/AAudio. ML via LiteRT or ONNX Runtime Mobile (NNAPI/GPU). alphaTab ships a native Kotlin build (notation and synth). |
 | Play on Windows | **C# / .NET, WinUI 3** | Native UI and Narrator/NVDA via UI Automation. WASAPI loopback capture. ONNX Runtime with DirectML (any GPU) or CUDA. alphaTab ships a .NET build. |
-| Play on Linux | **Deferred.** Linux users get Studio's browser UI (it can open a score and play it) until demand justifies a GTK4 app | Keeps the app count honest |
+| Play on Linux | **Not planned.** Linux users use Studio's browser UI (it can open a score and play it) | Confirmed by the owner |
 | Studio | **The engine serves its own web UI on localhost; open it in the system browser.** No desktop shell | Slimmest cross-platform option: nothing to install besides the engine, and the GPU is used wherever the engine runs. It's a technical tool, so a browser tab is fine. |
 | Shared logic | **A Rust core library** (`core/`): Composition model, quantizer, spelling, harmony reduction, instrument knowledge, arrangers, MusicXML writer, confidence voting | One implementation for all native apps, bound to Swift and Kotlin with UniFFI and to C# with csbindgen or C ABI. The Python library stays the reference, and a **conformance suite** proves the Rust core produces identical Compositions and MusicXML on the golden set. |
 | Model inference in Play | **Platform runtimes, not PyTorch.** Core ML or MLX on Apple, LiteRT/ONNX Runtime Mobile on Android, ONNX Runtime + DirectML on Windows. Models are converted per platform and verified against the Python outputs | Slim, uses each platform's accelerators, works offline. Conversion is real work (§6), so the engine service bridges the gap. |
@@ -355,13 +355,13 @@ Ordered by impact on Mikkel and on musicians. **Items 1 and 2 are in the first m
 Settled:
 - **Non-commercial.**
 - **Native per platform** (Swift, Kotlin, C#).
-- Studio runs in the browser, served by the engine.
+- Studio runs in the browser, served by the engine. That also covers Linux users; there is no Linux Play app.
+- **Names:** Brasscribe Play and Brasscribe Studio.
 
 Still open, all for Kalli:
 1. **Record our own brass-band samples** (about a day per instrument). It's the only route to authentic cornet, tenor horn, baritone and euphonium playback.
 2. **Platform order after Apple:** Android or Windows next. The plan says Android, because mobile practice is the bigger musician need.
-3. **App names.** "Studio" and "Play" are working names.
-4. **Linux Play app:** deferred. Confirm Studio's browser UI is enough for Linux users for now.
+
 
 ---
 
