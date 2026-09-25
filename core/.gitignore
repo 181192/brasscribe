@@ -1,2 +1,12 @@
 target/
+dist/
 conformance/.venv/
+swift/BrasscribeCore/BrasscribeFFI.xcframework/
+swift/BrasscribeCore/.build/
+android/.gradle/
+android/build/
+android/brasscribe-core/build/
+android/local.properties
+android/brasscribe-core/src/main/jniLibs/
+dotnet/**/bin/
+dotnet/**/obj/

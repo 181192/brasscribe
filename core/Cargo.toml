@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["brasscribe-core", "brasscribe-cli"]
+members = ["brasscribe-core", "brasscribe-ffi", "brasscribe-cli", "tools/uniffi-bindgen"]
 
 [workspace.package]
 version = "0.1.0"
