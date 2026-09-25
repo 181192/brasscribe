@@ -293,6 +293,41 @@ Visible limits:
 - The melody contains many red, unconfirmed 16th runs, probably orchestral figuration rather than trumpet.
 - Percussion is deferred; drum transcription exists but no kit part is written yet.
 
+## Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)
+
+**Setup.** `eval/brasscribe_eval/solo_vote_bench.py`.
+- Solo stems separated with Mega-53 from mixes with a known solo part: 10 ChoraleBricks brass quartets (trumpet = soprano) and Slakh T06/T14.
+- Each source is reduced to one line.
+- Notes are clustered across sources at 100 ms.
+- Adapter: `ml/adapters/swift-f0` (SwiftF0 contour → built-in DP note segmentation). About 1 s for a 4-minute solo on CPU.
+- On a clean isolated URMP trumpet it scores onset F1 0.994.
+
+| Source on separated solo stem | mean onset F1 (100 ms) |
+|---|---|
+| **SwiftF0** | **0.75** |
+| MuScriptor | 0.50 (0.00 on 3 chorales, 0.06–0.08 on Slakh: hallucination on separated stems) |
+| Basic Pitch | 0.42 |
+| ≥ 2 votes | 0.73 (P 0.89, R 0.66) |
+
+| Agreement | Precision (n) |
+|---|---|
+| all three | **0.98** (193) |
+| SwiftF0 + MuScriptor | 0.99 (110) |
+| SwiftF0 + Basic Pitch | 0.91 (578) |
+| SwiftF0 only | 0.54 (297) |
+| MuScriptor + Basic Pitch (no SwiftF0) | 0.36 (14) |
+| MuScriptor only / Basic Pitch only | 0.02 / 0.05 |
+
+**Adopted rule for solo lines:**
+- SwiftF0 supplies the notes.
+- A note is *confirmed* (black) when another model agrees, and *unconfirmed* (red, 0.54) when SwiftF0 is alone.
+- Notes without SwiftF0 are dropped.
+- The previous rule treated MuScriptor + Basic Pitch agreement as confirmed, which is only 36% precise on separated stems.
+
+**Mikkel:** red solo notes fell from 540/694 (78%) to 214/689 (31%).
+
+**Separation failures:** two chorales (Gesius *Du Friedensfürst*, Jan) fail for every model (F1 ≤ 0.35). Mega-53 did not isolate the trumpet there, and no vote can recover missing audio.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.

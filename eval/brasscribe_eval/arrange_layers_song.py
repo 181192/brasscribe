@@ -24,7 +24,7 @@ from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
-from .consensus import consensus
+from .consensus import cluster
 from .lead_sheet import line
 
 
@@ -65,7 +65,7 @@ def main() -> None:
     pos = b[:, 1].astype(int)
     beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
     first_down = int(np.argmax(pos == 1))
-    onsets = np.array([n["onset"] for n in solo_mus + solo_bp + bass_raw + orch_raw])
+    onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
     times = choose_level(b[:, 0], onsets)
     if len(times) != len(b):
         beats_per_bar *= 2
@@ -76,17 +76,16 @@ def main() -> None:
     pickup = first_down * TICKS_PER_BEAT
     half = TICKS_PER_BEAT // 2
 
-    # Solo: MuScriptor-supported notes where MuScriptor hears the soloist; where it is
-    # silent (the quiet intro), Basic Pitch is the only evidence and its notes stay,
-    # flagged as unconfirmed (confidence 0.4).
-    cand, _ = consensus({"mus": solo_mus, "bp": solo_bp}, {"mus": 0.6, "bp": 0.4}, 0.0)
-    mus_on = np.array(sorted(n["onset"] for n in solo_mus))
-
-    def mus_nearby(t: float, window: float = 1.5) -> bool:
-        i = np.searchsorted(mus_on, t)
-        return any(abs(mus_on[j] - t) <= window for j in (i - 1, i) if 0 <= j < len(mus_on))
-
-    cand = [n for n in cand if n["confidence"] >= 0.5 or not mus_nearby(n["onset"])]
+    # Solo: SwiftF0 is the spine (best single source on separated solo stems); a note
+    # counts as confirmed when MuScriptor or Basic Pitch also has it. Measured on
+    # solo_vote_bench: confirmed 0.91-0.99 precise, SwiftF0-only 0.54, notes without
+    # SwiftF0 0.02-0.36 (dropped).
+    solo_sw = pitched(L / "solo-sw.mid")
+    votes = {"sw": line(solo_sw, 52, 88, top=True), "mus": line(solo_mus, 52, 88, top=True),
+             "bp": line(solo_bp, 52, 88, top=True)}
+    cand = [{"pitch": c.pitch, "onset": float(np.median(c.onsets)), "offset": float(np.median(c.offsets)),
+             "confidence": {3: 0.98, 2: 0.91}.get(len(c.sources), 0.54)}
+            for c in cluster(votes) if "sw" in c.sources]
     solo_line = line(cand, 52, 88, top=True)
     solo = to_notes(fill_gaps(quantize(solo_line, times, monophonic=True, auto_level=False), half), pickup, "solo")
     bass = to_notes(fill_gaps(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False), half),

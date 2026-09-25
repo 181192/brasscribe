@@ -29,8 +29,7 @@
 **Pipeline:**
 1. `layers.py`: Mega-53 on the full mix. Mega-53's strings stems are near-silent for this recording, even though the strings are prominent in the video, so the orchestra is taken as a **residual**: mix minus the Mega-53 trumpet, bass and drums stems.
 2. Transcribe each layer.
-   - Solo: MuScriptor, confirmed by Basic Pitch. This stem comes straight from the full mix, and MuScriptor behaves there.
-   - In the quiet intro MuScriptor hears nothing before 43 s. Basic Pitch notes there are kept and flagged red.
+   - Solo: SwiftF0 is the spine, confirmed by MuScriptor or Basic Pitch. SwiftF0-only notes are red; see "Solo line: three-way vote" in 10-benchmark-results.md.
    - Orchestra, bass and drums: MuScriptor.
 3. `arrange_layers_song.py`: split the orchestra by behaviour, not timbre. Short notes attacked with at least two others are chordal hits (the brass choir); everything else is lines and pads.
 4. `arranger.arrange_layers`: full contest-band lineup plus percussion.
@@ -49,7 +48,7 @@
 - MuseScore round trip: all 17 pitched parts match, with correct brass sounds; the drum kit is recognised.
 
 **Known limits:**
-- Many solo notes are red: MuScriptor-only or Basic Pitch-only.
+- 31% of solo notes are red (SwiftF0 only, measured 54% precise), mostly in fast runs. Black solo notes are measured 91–98% precise.
 - The key estimate is C major. The bass has an F pedal and B naturals are frequent, so this could be F lydian; confirm by ear.
 - Pads are one chord per beat. There's no articulation, dynamics or phrasing yet.
 - Unison doubling of the paired parts (1st/2nd Baritone, 1st/2nd Horn) appears where the chord has fewer tones than players.
