@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Brasscribe.Play.Controls;
 using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Review;
@@ -195,7 +196,6 @@ public sealed partial class ScoreScreen : UserControl
         foreach (var ev in nav.Bar.Events)
         {
             var b = ScoreGeometry.FocusBox(player.Score, bounds, nav.PartIndex, nav.BarIndex, ev.Tick);
-            string name = ViewModel.Navigator.Document.Parts[nav.PartIndex].Name;
             items.Add(new ScoreEventItem(Brief(nav, ev), b is { } r ? ToRect(r) : default, ReferenceEquals(ev, nav.Event)));
         }
         Notation.SetFocusRect(box is { } f ? ToRect(f) : null, items);
