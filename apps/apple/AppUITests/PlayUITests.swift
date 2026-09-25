@@ -41,7 +41,8 @@ final class PlayUITests: XCTestCase {
     func testLoadMikkelAndPlayABar() throws {
         let play = app.buttons["playPause"]
         XCTAssertTrue(play.waitForExistence(timeout: 30))
-        let staff = app.descendants(matching: .any)["staff-0-1"]
+        // bar 1 of the solo cornet (index 1 in the full score, 0 when a phone shows only that part)
+        let staff = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-' AND label CONTAINS 'Solo Cornet'")).firstMatch
         if !staff.waitForExistence(timeout: 60) {
             let tree = app.debugDescription
             print("TREE-BEGIN\n\(tree.prefix(20000))\nTREE-END")
@@ -76,7 +77,7 @@ final class PlayUITests: XCTestCase {
     /// unreachable elements.
     func testAccessibilityAudit() throws {
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
-        XCTAssertTrue(app.descendants(matching: .any)["staff-0-1"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'")).firstMatch.waitForExistence(timeout: 60))
         var issues: [String] = []
         var blocking: [String] = []
         try app.performAccessibilityAudit { issue in

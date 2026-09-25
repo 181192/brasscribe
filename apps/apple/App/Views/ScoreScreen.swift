@@ -100,12 +100,12 @@ struct ScoreToolbar: View {
         .accessibilityIdentifier("pitchMode")
 
         HStack(spacing: 4) {
-            Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass") }
+            Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass").hitTarget() }
                 .accessibilityLabel(Text("Zoom out"))
                 .keyboardShortcut("-", modifiers: .command)
             Text("\(Int(model.zoom * 100)) %").monospacedDigit().frame(minWidth: 48)
                 .accessibilityLabel(Text("Zoom \(Int(model.zoom * 100)) percent"))
-            Button { model.zoom = min(4, model.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass") }
+            Button { model.zoom = min(4, model.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass").hitTarget() }
                 .accessibilityLabel(Text("Zoom in"))
                 .keyboardShortcut("+", modifiers: .command)
         }
@@ -128,7 +128,7 @@ struct TransportBar: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 16) {
-                Button { model.previousBar() } label: { Image(systemName: "backward.end.fill") }
+                Button { model.previousBar() } label: { Image(systemName: "backward.end.fill").hitTarget() }
                     .accessibilityLabel(Text("Previous bar"))
                     .keyboardShortcut(.leftArrow, modifiers: [])
                     .accessibilityIdentifier("previousBar")
@@ -138,7 +138,7 @@ struct TransportBar: View {
                 .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
                 .keyboardShortcut(.space, modifiers: [])
                 .accessibilityIdentifier("playPause")
-                Button { model.nextBar() } label: { Image(systemName: "forward.end.fill") }
+                Button { model.nextBar() } label: { Image(systemName: "forward.end.fill").hitTarget() }
                     .accessibilityLabel(Text("Next bar"))
                     .keyboardShortcut(.rightArrow, modifiers: [])
                     .accessibilityIdentifier("nextBar")
@@ -147,10 +147,10 @@ struct TransportBar: View {
                     if let b = model.countInBeat {
                         Text("Count-in \(b)").font(.headline)
                     } else {
-                        Text(model.positionDescription).font(.headline).monospacedDigit()
+                        Text(model.positionDescription).font(.headline).monospacedDigit().fixedSize()
                     }
                     Text(model.hearOriginal ? String(localized: "Original recording") : String(localized: "Score"))
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("position")
@@ -159,7 +159,7 @@ struct TransportBar: View {
 
                 Spacer()
 
-                Toggle(isOn: $model.hearOriginal) { Label("Original", systemImage: "waveform") }
+                Toggle(isOn: $model.hearOriginal) { Label("Original", systemImage: "waveform").hitTarget() }
                     .toggleStyle(.button)
                     .disabled(!model.hasOriginal)
                     .keyboardShortcut("o", modifiers: [])
@@ -181,20 +181,20 @@ struct TransportBar: View {
 
     @ViewBuilder var practiceControls: some View {
         HStack {
-            Button { model.changeSpeed(by: -5) } label: { Image(systemName: "tortoise") }
+            Button { model.changeSpeed(by: -5) } label: { Image(systemName: "tortoise").hitTarget() }
                 .accessibilityLabel(Text("Slower"))
                 .keyboardShortcut("[", modifiers: [])
             Slider(value: $model.speedPercent, in: 25...150, step: 5) { Text("Speed") }
                 .frame(minWidth: 100, maxWidth: 180)
                 .accessibilityValue(Text("\(Int(model.speedPercent)) percent"))
                 .accessibilityIdentifier("speed")
-            Button { model.changeSpeed(by: 5) } label: { Image(systemName: "hare") }
+            Button { model.changeSpeed(by: 5) } label: { Image(systemName: "hare").hitTarget() }
                 .accessibilityLabel(Text("Faster"))
                 .keyboardShortcut("]", modifiers: [])
             Text("\(Int(model.speedPercent)) %").monospacedDigit().frame(minWidth: 44).accessibilityHidden(true)
         }
         HStack(spacing: 6) {
-            Toggle(isOn: Binding(get: { model.looping }, set: { model.setLoop($0) })) { Label("Loop", systemImage: "repeat") }
+            Toggle(isOn: Binding(get: { model.looping }, set: { model.setLoop($0) })) { Label("Loop", systemImage: "repeat").hitTarget() }
                 .toggleStyle(.button)
                 .keyboardShortcut("l", modifiers: [.shift])
                 .accessibilityIdentifier("loopToggle")
@@ -213,11 +213,11 @@ struct TransportBar: View {
         }
         .fixedSize()
         HStack {
-            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: "1.circle") }.toggleStyle(.button)
+            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: "1.circle").hitTarget() }.toggleStyle(.button)
                 .keyboardShortcut("c", modifiers: [])
-            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: "metronome") }.toggleStyle(.button)
+            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: "metronome").hitTarget() }.toggleStyle(.button)
                 .keyboardShortcut("m", modifiers: [])
-            Toggle(isOn: $model.playAlong) { Label("Play along", systemImage: "music.mic") }.toggleStyle(.button)
+            Toggle(isOn: $model.playAlong) { Label("Play along", systemImage: "music.mic").hitTarget() }.toggleStyle(.button)
                 .accessibilityHint(Text("Mutes your part so you can play it."))
                 .keyboardShortcut("a", modifiers: [])
         }
@@ -241,4 +241,9 @@ struct VideoPiP: View {
     var body: some View {
         VideoPlayer(player: player)
     }
+}
+
+extension View {
+    /// At least 44 × 44 pt to hit (WCAG 2.5.8 asks for 24; Apple's guideline is 44).
+    func hitTarget() -> some View { frame(minWidth: 44, minHeight: 44).contentShape(Rectangle()) }
 }
