@@ -22,15 +22,17 @@ import soundfile as sf
 from brasscribe_music.arranger import arrange_layers
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.beats import clean_beats
+from brasscribe_music.beats import clean_beats_gated
 from brasscribe_music.keys import key_plan
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.parts import STYLE as PART_STYLE
 from brasscribe_music.parts import split_parts
+from brasscribe_music.structure import bar_features, letters, section_starts
 from brasscribe_music.separation import check_stem
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
 from brasscribe_music.dynamics import layer_dynamics
-from brasscribe_music.score_model import Dynamic, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from brasscribe_music.score_model import Dynamic, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
@@ -121,9 +123,9 @@ def main() -> None:
     if not args.no_beat_cleanup:
         # Restore missed and remove inserted beats (outside free time); the bar phase follows
         # the majority of the tracker's downbeat labels.
-        cb = clean_beats(raw_times, down, skip=unstable_runs(raw_times), onsets=onsets)
+        cb = clean_beats_gated(raw_times, down, int(beats_per_bar), skip=unstable_runs(raw_times), onsets=onsets)
         raw_times, down = cb.times, cb.downbeat
-        print(f"beats: +{cb.inserted} restored, -{cb.removed} removed")
+        print(f"beats: {'cleaned' if cb.applied else 'kept as tracked'}, +{cb.inserted} restored, -{cb.removed} removed")
         first_down = cb.phase(int(beats_per_bar))
     else:
         first_down = int(np.argmax(down))
@@ -201,10 +203,19 @@ def main() -> None:
     n_bars = comp.end_tick // bar_ticks + 1
     edges = bm.to_seconds(np.arange(n_bars + 1) * beats_per_bar + first_down)
     bars = [(k * bar_ticks, float(edges[k]), float(edges[k + 1])) for k in range(n_bars)]
-    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")):
+    envs = {}
+    for wav in ("solo", "orchestra", "bass", "drums"):
         if (L / f"{wav}.wav").exists():
             y, sr = sf.read(L / f"{wav}.wav", dtype="float32")
-            comp.dynamics += [Dynamic(t, layer, m) for t, m in layer_dynamics(Envelope.of(y, sr), bars)]
+            envs[wav] = Envelope.of(y, sr)
+    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")):
+        if wav in envs:
+            comp.dynamics += [Dynamic(t, layer, m) for t, m in layer_dynamics(envs[wav], bars)]
+    # Rehearsal letters where the layers' energy changes, and where free time ends.
+    if envs:
+        starts = section_starts(bar_features(list(envs.values()), bars), [r.end // bar_ticks for r in comp.free_regions])
+        comp.sections = [Section(b * bar_ticks, lab) for b, lab in zip(starts, letters(len(starts)))]
+        print("rehearsal marks at bars", [(s.label, s.tick // bar_ticks + 1) for s in comp.sections])
     comp.to_json(args.out / "composition.json")
 
     arr = arrange_layers(comp)
@@ -217,7 +228,7 @@ def main() -> None:
     for f in split_parts(xml, args.out / "parts"):
         pdf = f.with_suffix(".pdf")
         pdf.unlink(missing_ok=True)
-        subprocess.run(["mscore", "-o", str(pdf), str(f)], capture_output=True)
+        subprocess.run(["mscore", "-S", str(PART_STYLE), "-o", str(pdf), str(f)], capture_output=True)
         if not pdf.exists():
             print(f"(no pdf for {f.name})")
     counts = {k: len(v) for k, v in arr.parts.items()}

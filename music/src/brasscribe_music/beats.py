@@ -10,6 +10,10 @@ intervals):
     more regular pair of intervals
 Free-time runs (freetime.unstable_runs) are left alone.
 
+`clean_beats_gated` keeps the result only when the tracker's downbeat
+labels agree better with it (or, without bar labels, when the problem is
+systematic), so a consistent track is left as it is.
+
 The bar phase is then chosen by the tracker's downbeat labels: the phase
 (beat index mod beats per bar) that most labelled downbeats agree with. Labels
 are moved with their beats, and inserted beats carry none.
@@ -33,6 +37,14 @@ class CleanBeats:
     downbeat: np.ndarray  # bool per beat: labelled downbeat (False for restored beats)
     inserted: int
     removed: int
+    applied: bool = True  # False when gated: the times and labels are the tracker's own
+
+    def agreement(self, beats_per_bar: int) -> float:
+        """Share of labelled downbeats that fall on the majority bar phase."""
+        idx = np.where(self.downbeat)[0]
+        if not len(idx):
+            return 0.0
+        return Counter(int(i) % beats_per_bar for i in idx).most_common(1)[0][1] / len(idx)
 
     def phase(self, beats_per_bar: int) -> int:
         """Beat index (0 <= i < beats_per_bar) of the first downbeat, by majority of the labels."""
@@ -124,3 +136,33 @@ def clean_beats(times: np.ndarray, downbeat: np.ndarray | None = None,
         out_t.append(t[i + 1])
         out_l.append(lab[i + 1])
     return CleanBeats(np.array(out_t), np.array(out_l), inserted, removed)
+
+
+MIN_AGREEMENT_GAIN = 0.02  # the downbeat labels must agree this much better with the cleaned beats
+MIN_EDITS_UNLABELLED = 3  # without bar information, only a systematic problem (this many edits) is fixed
+
+
+def clean_beats_gated(times: np.ndarray, downbeat: np.ndarray, beats_per_bar: int,
+                      skip: list[tuple[int, int]] | None = None, onsets: np.ndarray | None = None) -> CleanBeats:
+    """clean_beats, applied only when the evidence says the track was wrong.
+
+    With bars (beats_per_bar > 1) the tracker's own downbeat labels vote: the
+    cleanup is kept only if more of them then fall on one bar phase (by at
+    least MIN_AGREEMENT_GAIN). With one beat per bar the labels carry no bar
+    information, so only a systematic problem (MIN_EDITS_UNLABELLED edits or
+    more) is fixed; a single long interval is more likely a held note than a
+    missed beat. Otherwise the beats are returned unchanged.
+    """
+    raw = CleanBeats(np.asarray(times, dtype=float), np.asarray(downbeat, bool), 0, 0, applied=False)
+    c = clean_beats(times, downbeat, skip=skip, onsets=onsets)
+    edits = c.inserted + c.removed
+    if not edits:
+        return raw
+    if beats_per_bar > 1:
+        ok = c.agreement(beats_per_bar) >= raw.agreement(beats_per_bar) + MIN_AGREEMENT_GAIN
+    else:
+        ok = edits >= MIN_EDITS_UNLABELLED
+    if not ok:
+        raw.inserted, raw.removed = 0, 0
+        return raw
+    return c

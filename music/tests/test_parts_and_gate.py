@@ -30,9 +30,10 @@ def test_part_writing_options_make_staccato_eighths():
 
 
 def test_parts_have_one_part_multi_rests_tempo_and_tacet(tmp_path):
-    solo = [Note(72, 0, 96), Note(74, 5 * 96, 96)]
+    from brasscribe_music.score_model import Section
+    solo = [Note(72, 0, 96), Note(74, 5 * 96, 96), Note(74, 12 * 96, 96)]
     comp = Composition("t", [Voice("solo", VoiceRole.MELODY, solo, layer="solo")], [Meter(0, 4)], [KeySig(0, 0)],
-                       [0.5 * i for i in range(40)])
+                       [0.5 * i for i in range(60)], sections=[Section(8 * 96, "A")])
     arr = arrange_layers(comp)
     xml = write_musicxml(build_band_score(arr, comp), tmp_path / "band.musicxml", band_sounds(arr))
     files = split_parts(xml, tmp_path / "parts")
@@ -40,7 +41,8 @@ def test_parts_have_one_part_multi_rests_tempo_and_tacet(tmp_path):
     solo_file = next(f for f in files if "Solo-Cornet" in f.name)
     root = ET.fromstring(solo_file.read_text().partition("<score-partwise")[1] + solo_file.read_text().partition("<score-partwise")[2])
     assert len(root.findall("part")) == 1
-    assert [m.text for m in root.iter("multiple-rest")] == ["4"]  # bars 2-5
+    assert [m.text for m in root.iter("multiple-rest")] == ["4", "2", "4"]  # bars 2-5, 7-8, then 9-12 after letter A
+    assert [r.text for r in root.iter("rehearsal")] == ["A"]
     horn = next(f for f in files if "Solo-Horn" in f.name).read_text()
     assert "<per-minute>" in horn  # tempo copied from the top part
     assert "(Tacet)" in next(f for f in files if "Soprano" in f.name).read_text()

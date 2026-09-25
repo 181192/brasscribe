@@ -4,7 +4,7 @@
 the parts are cut from our own MusicXML instead and rendered one by one.
 Per part:
   - only that part's <score-part> and <part>
-  - tempo marks copied from the top part, so every player sees them
+  - tempo marks and rehearsal letters copied from the top part, so every player sees them
   - runs of two or more empty bars marked as one multi-bar rest
     (<measure-style><multiple-rest>)
   - a part with no notes at all is written as a one-line "Tacet" part
@@ -25,12 +25,24 @@ def _empty(measure: ET.Element) -> bool:
 
 
 def _tempo_directions(part: ET.Element) -> dict[str, list[ET.Element]]:
+    """Tempo marks and rehearsal letters of a part, per measure number."""
     out: dict[str, list[ET.Element]] = {}
     for m in part.iter("measure"):
         for d in m.findall("direction"):
-            if d.find("direction-type/metronome") is not None or (d.find("sound") is not None and d.find("sound").get("tempo")):
+            sound = d.find("sound")
+            if d.find("direction-type/metronome") is not None or d.find("direction-type/rehearsal") is not None \
+                    or (sound is not None and sound.get("tempo")):
                 out.setdefault(m.get("number"), []).append(d)
     return out
+
+
+STYLE = Path(__file__).with_name("parts.mss")  # MuseScore style for rendering parts: multi-bar rests from 2 bars
+
+
+def _breaks_rest(measure: ET.Element) -> bool:
+    """A multi-bar rest must not swallow a rehearsal letter, tempo or key change."""
+    return measure.find("direction/direction-type/rehearsal") is not None or \
+        measure.find("direction/direction-type/metronome") is not None or measure.find("attributes/key") is not None
 
 
 def _mark_multi_rests(part: ET.Element) -> int:
@@ -41,7 +53,8 @@ def _mark_multi_rests(part: ET.Element) -> int:
             i += 1
             continue
         j = i
-        while j + 1 < len(measures) and _empty(measures[j + 1]) and measures[j + 1].find("attributes/time") is None:
+        while j + 1 < len(measures) and _empty(measures[j + 1]) and measures[j + 1].find("attributes/time") is None \
+                and not _breaks_rest(measures[j + 1]):
             j += 1
         n = j - i + 1
         if n >= MIN_MULTI_REST:

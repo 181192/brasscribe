@@ -216,6 +216,7 @@ def _dash_free_barlines(score: stream.Score, spans: list[FreeSpan], pickup_ticks
 def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
                 pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None,
                 key_changes: list[tuple[int, int]] | None = None,
+                rehearsal: list[tuple[int, str]] | None = None,
                 free_spans: list[FreeSpan] | None = None) -> stream.Score:
     score = stream.Score()
     score.metadata = None
@@ -263,6 +264,10 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         if pi == 0 and not opens_free:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
         _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
+        if pi == 0:  # system text: on the top staff of the score; parts.split_parts copies it to every part
+            for tick, label in rehearsal or []:
+                if 0 <= tick - pickup_ticks < total:
+                    part.insert((tick - pickup_ticks) / TICKS_PER_BEAT, expressions.RehearsalMark(label))
         _place_dynamics(part, p, pickup_ticks, bar)
         cursor = 0
         dropped = 0
@@ -393,6 +398,7 @@ def build_band_score(arrangement, comp) -> stream.Score:
     changes = [(k.tick, k.fifths) for k in comp.keys[1:]]
     spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
     return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths, key_changes=changes,
+                       rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
                        free_spans=spans)
 
 

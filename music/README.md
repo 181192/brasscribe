@@ -29,6 +29,7 @@ defaults: files written before a field existed stay valid.
 | `first_downbeat` | int | index into `beat_times` of tick 0 (may be negative when the first bar starts before the first detected beat) |
 | `ticks_per_beat` | int | 24 |
 | `free_regions` | FreeRegion[] | optional, default `[]` |
+| `sections` | `{tick, label}`[] | optional, default `[]`. Rehearsal marks (A, B, …; no I) at bar lines |
 | `dynamics` | `{tick, layer, mark}`[] | optional, default `[]`. A marking (`pp` `p` `mp` `mf` `f` `ff`) for one textural layer from `tick` on; the parts playing that layer show it at their next note |
 
 ### Voice

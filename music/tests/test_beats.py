@@ -39,3 +39,16 @@ def test_phase_by_majority_of_labels():
     lab[[2, 6, 10, 14, 17]] = True  # one stray label
     from brasscribe_music.beats import CleanBeats
     assert CleanBeats(grid(), lab, 0, 0).phase(4) == 2
+
+
+def test_gate_keeps_a_consistent_track_and_single_unlabelled_edits():
+    from brasscribe_music.beats import clean_beats_gated
+    t = np.delete(grid(), 10)
+    lab = np.delete(np.arange(40) % 4 == 0, 10)
+    # Labels already agree with the tracked beats before the gap: restoring would not improve them.
+    lab2 = np.arange(len(t)) % 4 == 0
+    assert not clean_beats_gated(t, lab2, 4, onsets=grid()).applied
+    # The labels shift by a beat after the gap, so restoring it makes them agree: applied.
+    assert clean_beats_gated(t, lab, 4, onsets=grid()).applied
+    # One beat per bar: a single long interval stays (more likely a held note).
+    assert not clean_beats_gated(t, np.ones(len(t), bool), 1, onsets=grid()).applied

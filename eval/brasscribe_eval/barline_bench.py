@@ -15,10 +15,11 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.beats import clean_beats
+from brasscribe_music.beats import clean_beats_gated
 from brasscribe_music.freetime import unstable_runs
 
 from brasscribe_music.quantize import TICKS_PER_BEAT, quantize
@@ -54,13 +55,16 @@ def main() -> None:
         for song in sorted(p for p in d.iterdir() if (p / "reference.json").exists()):
             b = np.loadtxt(song / "beat-this.beats")
             ref = [r for r in load_notes(song / "reference.json") if "quarter" in r]
-            c = clean_beats(b[:, 0], b[:, 1] == 1, skip=unstable_runs(b[:, 0]), onsets=np.array([r["onset"] for r in ref]))
+            pos = b[:, 1].astype(int)
+            bpb = int(Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0])
+            c = clean_beats_gated(b[:, 0], pos == 1, bpb, skip=unstable_runs(b[:, 0]),
+                                  onsets=np.array([r["onset"] for r in ref]))
             raw = evaluate(song, None)
             fixed = evaluate(song, None, beats_override=c.times)
             raw["drift_events"] = drift_events(ref, b[:, 0])
             fixed["drift_events"] = drift_events(ref, c.times)
             rows.append((raw, fixed))
-            print(f"{song.name:40s} +{c.inserted}/-{c.removed} beats  "
+            print(f"{song.name:40s} {'applied' if c.applied else 'kept   '} +{c.inserted}/-{c.removed} beats  "
                   + " ".join(f"{k[:3]} {raw[k]:.3f}->{fixed[k]:.3f}" for k in KEYS)
                   + f" drift {raw['drift_events']}->{fixed['drift_events']}")
     out = {v: {k: round(float(np.mean([r[i][k] for r in rows])), 3) for k in KEYS} for i, v in enumerate(("raw", "cleaned"))}
