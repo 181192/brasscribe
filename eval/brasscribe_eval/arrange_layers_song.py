@@ -29,7 +29,8 @@ from brasscribe_music.musicxml import band_sounds, build_band_score, write_music
 from brasscribe_music.parts import split_parts
 from brasscribe_music.separation import check_stem
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
-from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from brasscribe_music.dynamics import layer_dynamics
+from brasscribe_music.score_model import Dynamic, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
@@ -194,6 +195,16 @@ def main() -> None:
     if not args.single_key:
         # Key changes where the music modulates (a change must pay for itself over several bars).
         comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass).keys
+    # Dynamics per layer from its own loudness, per bar.
+    bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
+    bm = BeatMap(np.array(comp.beat_times))
+    n_bars = comp.end_tick // bar_ticks + 1
+    edges = bm.to_seconds(np.arange(n_bars + 1) * beats_per_bar + first_down)
+    bars = [(k * bar_ticks, float(edges[k]), float(edges[k + 1])) for k in range(n_bars)]
+    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")):
+        if (L / f"{wav}.wav").exists():
+            y, sr = sf.read(L / f"{wav}.wav", dtype="float32")
+            comp.dynamics += [Dynamic(t, layer, m) for t, m in layer_dynamics(Envelope.of(y, sr), bars)]
     comp.to_json(args.out / "composition.json")
 
     arr = arrange_layers(comp)
@@ -212,6 +223,7 @@ def main() -> None:
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
+    print("dynamics:", {layer: [m for d in comp.dynamics if d.layer == layer for m in [d.mark]] for layer in ("solo", "strings", "bass", "drums")})
     print(f"key fifths {fifths}; keys {[(k.tick // (int(beats_per_bar) * TICKS_PER_BEAT) + 1, k.fifths, k.mode) for k in comp.keys]}; "
           f"warnings {len(arr.warnings)}")
     for r in comp.free_regions:

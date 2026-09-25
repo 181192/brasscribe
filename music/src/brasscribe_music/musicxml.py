@@ -13,7 +13,7 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from music21 import articulations, chord, clef, expressions, instrument, interval, key, meter, note, pitch, stream, tempo
+from music21 import articulations, chord, clef, dynamics, expressions, instrument, interval, key, meter, note, pitch, stream, tempo
 from music21 import bar as m21bar
 
 from .instruments import Instrument as BandInstrument
@@ -31,6 +31,7 @@ class PartSpec:
     instrument: BandInstrument | None = None  # transposing band instrument; None = concert-pitch part
     extra: dict = field(default_factory=dict)
     abbreviation: str | None = None  # staff label after the first system (default: the instrument's)
+    dynamics: list[tuple[int, str]] = field(default_factory=list)  # (tick, marking) changes of this part's layer
 
 
 def _m21_instrument(name: str, band: BandInstrument | None, abbreviation: str | None = None) -> instrument.Instrument:
@@ -140,6 +141,47 @@ def _tie(el, i: int, n: int) -> None:
         el.tie = tie.Tie("start" if i == 0 else "stop" if i == n - 1 else "continue")
 
 
+RESTATE_AFTER_BARS = 2  # a part re-entering after this many empty bars gets its dynamic again
+
+
+def _place_dynamics(part: stream.Part, spec: "PartSpec", pickup_ticks: int, bar: int) -> None:
+    """Put the layer's dynamics on this part's notes: at the first note at or after each change,
+    and again when the part re-enters after a rest of RESTATE_AFTER_BARS bars."""
+    if not spec.dynamics or not spec.notes:
+        return
+    starts = sorted({q.start for q in spec.notes})
+    ends = {}
+    for q in spec.notes:
+        ends[q.start] = max(ends.get(q.start, q.start), q.end)
+    changes = sorted(spec.dynamics)
+
+    def mark_at(tick: int) -> str | None:
+        m = None
+        for t, mk in changes:
+            if t <= tick:
+                m = mk
+        return m
+
+    placed: dict[int, str] = {}
+    for i, (t, mk) in enumerate(changes):
+        nxt = changes[i + 1][0] if i + 1 < len(changes) else None
+        first = next((s for s in starts if s >= t and (nxt is None or s < nxt)), None)
+        if first is not None:
+            placed[first] = mk
+    if starts[0] not in placed:  # the first note always carries a dynamic
+        placed[starts[0]] = mark_at(starts[0]) or changes[0][1]
+    prev_end = None
+    for s in starts:
+        if prev_end is not None and s - prev_end >= RESTATE_AFTER_BARS * bar and s not in placed:
+            m = mark_at(s)
+            if m:
+                placed[s] = m
+        prev_end = max(prev_end or 0, ends[s])
+    for s in sorted(placed):
+        if s - pickup_ticks >= 0:
+            part.insert((s - pickup_ticks) / TICKS_PER_BEAT, dynamics.Dynamic(placed[s]))
+
+
 def _articulate(el, arts: set[str]) -> None:
     if "staccato" in arts:
         el.articulations.append(articulations.Staccato())
@@ -221,6 +263,7 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         if pi == 0 and not opens_free:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
         _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
+        _place_dynamics(part, p, pickup_ticks, bar)
         cursor = 0
         dropped = 0
 
@@ -334,13 +377,17 @@ def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
 
 def build_band_score(arrangement, comp) -> stream.Score:
     """Arrangement (concert notes per band part) -> transposing score in lineup order."""
+    from .arranger import layer_of_part
+
     specs = []
     for part in arrangement.lineup.parts:
         notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence,
                        tuple(a.value for a in n.articulations))
                  for n in arrangement.parts.get(part.name, [])]
+        layer = layer_of_part(part.name)
+        dyn = [(d.tick, d.mark) for d in getattr(comp, "dynamics", []) if d.layer == layer]
         specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument,
-                              abbreviation=part.abbreviation))
+                              abbreviation=part.abbreviation, dynamics=dyn))
     meter0 = comp.meters[0].beats if comp.meters else 4
     fifths = comp.keys[0].fifths if comp.keys else None
     changes = [(k.tick, k.fifths) for k in comp.keys[1:]]

@@ -199,6 +199,21 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
 # The Soprano Cornet is left tacet: the source has no part in its register.
 # ---------------------------------------------------------------------------
 
+def layer_of_part(name: str) -> str | None:
+    """Which source layer a band part plays in the layered arrangement (for its dynamics)."""
+    if name == "Solo Cornet":
+        return "solo"
+    if name in PAD_PARTS or name == "Euphonium":
+        return "strings"
+    if name in CHOIR_PARTS:
+        return "brass"
+    if name in ("E♭ Bass", "B♭ Bass", "Bass Trombone"):
+        return "bass"
+    if name == "Percussion":
+        return "drums"
+    return None
+
+
 PAD_PARTS = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"]
 CHOIR_PARTS = ["Repiano Cornet", "2nd Cornet", "3rd Cornet", "1st Trombone", "2nd Trombone"]
 COUNTER_MIN_MOVE = 2  # a strings note shorter than this many beats counts as melodic movement

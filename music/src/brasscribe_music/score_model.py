@@ -91,6 +91,15 @@ class KeySig:
 
 
 @dataclass
+class Dynamic:
+    """A dynamic marking for one textural layer from `tick` on (pp, p, mp, mf, f, ff)."""
+
+    tick: int
+    layer: str
+    mark: str
+
+
+@dataclass
 class FreeRegion:
     """A passage in free time (ad lib., colla voce): no beat grid was imposed on it.
 
@@ -125,6 +134,7 @@ class Composition:
     first_downbeat: int = 0  # index into beat_times of tick 0
     ticks_per_beat: int = TICKS_PER_BEAT
     free_regions: list[FreeRegion] = field(default_factory=list)
+    dynamics: list[Dynamic] = field(default_factory=list)
 
     def free_region_at(self, tick: int) -> FreeRegion | None:
         return next((r for r in self.free_regions if r.start <= tick < r.end), None)
@@ -157,4 +167,5 @@ class Composition:
                         v.get("layer")) for v in d["voices"]]
         return Composition(d["title"], voices, [Meter(**m) for m in d["meters"]], [KeySig(**k) for k in d["keys"]],
                            d.get("beat_times", []), d.get("first_downbeat", 0), d.get("ticks_per_beat", TICKS_PER_BEAT),
-                           [FreeRegion.from_dict(r) for r in d.get("free_regions", [])])
+                           [FreeRegion.from_dict(r) for r in d.get("free_regions", [])],
+                           [Dynamic(**x) for x in d.get("dynamics", [])])
