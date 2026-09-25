@@ -169,6 +169,14 @@ def load_audio(clip: Clip, sr: int | None = None, mono: bool = False) -> tuple[n
     return y, rate
 
 
+def load_stereo(clip: Clip, sr: int) -> np.ndarray:
+    """(2, samples) float32 at sr; mono files are duplicated, as the separators' own CLIs do."""
+    y, _ = load_audio(clip, sr=sr)
+    if y.shape[1] == 1:
+        y = np.repeat(y, 2, axis=1)
+    return np.ascontiguousarray(y[:, :2].T)
+
+
 # ---------------------------------------------------------------- benchmarking
 
 def peak_rss_bytes() -> int:
