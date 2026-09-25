@@ -9,6 +9,9 @@ their manifests in the runs directory.
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import stat
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -119,6 +122,31 @@ class JobManager:
         if job and job.status not in TERMINAL:
             job.cancel.set()
         return job
+
+    def delete(self, job_id: str) -> str:
+        """Remove a finished run's directory and forget the job; the artifact cache is untouched.
+
+        Returns "deleted", "unknown" or "active" (queued or running: not deleted)."""
+        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+            return "unknown"
+        job = self.get(job_id)
+        if job is None:
+            return "unknown"
+        if job.status not in TERMINAL:
+            return "active"
+        root = self.settings.runs_dir.resolve()
+        d = self.run_dir(job_id).resolve()
+        if d.parent != root:
+            return "unknown"
+        if d.is_dir():
+            def writable_retry(func, path, _exc):  # Windows refuses to unlink read-only files
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+
+            shutil.rmtree(d, onerror=writable_retry)
+        with self.lock:
+            self.jobs.pop(job_id, None)
+        return "deleted"
 
     def run_dir(self, job_id: str) -> Path:
         return self.settings.runs_dir / job_id

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, history, inspection, profiles
@@ -244,6 +244,18 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
     def cancel_job(job_id: str) -> m.Job:
         job_or_404(job_id)
         return job_model(jobs.cancel(job_id))
+
+    @app.delete("/v1/runs/{job_id}", status_code=204, operation_id="deleteRun", tags=["jobs"],
+                dependencies=[Depends(auth)], response_class=Response,
+                responses={404: {"description": "unknown run"}, 409: {"description": "run is queued or running"}})
+    def delete_run(job_id: str) -> Response:
+        """Delete a finished run (its directory under data/runs); cached artifacts stay. Use cancelJob to stop one."""
+        result = jobs.delete(job_id)
+        if result == "unknown":
+            raise HTTPException(404, f"no run {job_id}")
+        if result == "active":
+            raise HTTPException(409, f"run {job_id} is still queued or running; cancel it first")
+        return Response(status_code=204)
 
     @app.get("/v1/jobs/{job_id}/events", operation_id="streamJobEvents", tags=["jobs"], dependencies=[Depends(auth)],
              response_class=StreamingResponse,

@@ -78,3 +78,30 @@ def test_registry_history_and_reports(settings, monkeypatch, tmp_path):
         assert h[0]["suite"] == "arrange" and h[0]["metrics"] == {"x": 1.0} and h[0]["time"] > 0
         assert c.get("/v1/parity").json() == [{"model": "swift-f0", "f1": 0.99, "_file": "swift-f0-coreml.json"}]
         assert c.get("/v1/conformance").json() == []
+
+
+def test_delete_run(settings, audio):
+    with TestClient(create_app(settings)) as c:
+        job = run_job(c, audio)
+        run_dir = settings.runs_dir / job["id"]
+        assert run_dir.is_dir()
+        cache_before = sorted(p for p in settings.cache_dir.rglob("*") if p.is_file())
+        assert c.delete(f"/v1/runs/{job['id']}").status_code == 204
+        assert not run_dir.exists()
+        assert c.get(f"/v1/jobs/{job['id']}").status_code == 404
+        assert sorted(p for p in settings.cache_dir.rglob("*") if p.is_file()) == cache_before
+        assert c.delete(f"/v1/runs/{job['id']}").status_code == 404
+        assert c.delete("/v1/runs/x..y").status_code == 404 and c.delete("/v1/runs/..%2Fcache").status_code == 404
+        # the next run of the same input is served from the cache
+        again = run_job(c, audio)
+        assert all(s["status"] == "cached" for s in again["stages"])
+
+
+def test_delete_active_run_is_refused(settings):
+    from brasscribe_engine.jobs import Job
+
+    with TestClient(create_app(settings)) as c:
+        jobs = c.app.state.jobs
+        jobs.jobs["20990101-000000-test-abcdef"] = Job("20990101-000000-test-abcdef", "test", None, None,
+                                                        settings.data_dir / "x.wav", {}, status="running")
+        assert c.delete("/v1/runs/20990101-000000-test-abcdef").status_code == 409

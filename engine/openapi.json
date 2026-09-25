@@ -3788,6 +3788,64 @@
         ]
       }
     },
+    "/v1/runs/{job_id}": {
+      "delete": {
+        "description": "Delete a finished run (its directory under data/runs); cached artifacts stay. Use cancelJob to stop one.",
+        "operationId": "deleteRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "unknown run"
+          },
+          "409": {
+            "description": "run is queued or running"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Run",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/v1/sources": {
       "get": {
         "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).",
