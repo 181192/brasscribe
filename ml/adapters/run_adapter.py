@@ -9,7 +9,7 @@ the adapter's environment:
                                   BRASSCRIBE_CUDA=1 picks <adapter>-cuda for torch adapters
 
 Adapters and their output:
-  basic-pitch       <input.wav> <output.mid>
+  basic-pitch       <input.wav> <output.mid>     (BASIC_PITCH_SERIALIZATION; ONNX outside macOS)
   beat-this         <input.wav> <output.beats>
   mega53            <input audio> <output dir>   (<stem>.flac for all 53 stems)
   muscriptor        <input.wav> <output.mid>     (MUSCRIPTOR_MODEL, MUSCRIPTOR_INSTRUMENTS)
@@ -52,8 +52,11 @@ def run(project: str, cmd: list[str], quiet_stderr: bool = True) -> None:
 
 
 def basic_pitch(src: Path, dst: Path) -> None:
+    # macOS keeps Basic Pitch's own choice (CoreML). Elsewhere it would pick the TFLite model,
+    # which the environment's TFLite runtime cannot load, so ask for ONNX explicitly.
+    serial = os.environ.get("BASIC_PITCH_SERIALIZATION") or (None if sys.platform == "darwin" else "onnx")
     with tempfile.TemporaryDirectory() as tmp:
-        run("basic-pitch", ["basic-pitch", tmp, str(src)])
+        run("basic-pitch", ["basic-pitch", tmp, str(src), *(["--model-serialization", serial] if serial else [])])
         mids = list(Path(tmp).glob("*.mid"))
         if not mids:
             raise SystemExit("basic-pitch wrote no MIDI")
