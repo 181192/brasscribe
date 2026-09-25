@@ -21,7 +21,8 @@ import soundfile as sf
 from brasscribe_music.arranger import arrange_layers
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time
+from brasscribe_music.beats import clean_beats
+from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.parts import split_parts
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
@@ -76,6 +77,7 @@ def main() -> None:
                     help="SwiftF0 contour of the solo stem (swiftf0_contour.py); default <layers>/solo-sw.contour.npz if present")
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
     ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
+    ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
@@ -97,16 +99,26 @@ def main() -> None:
     b = np.loadtxt(args.beats)
     pos = b[:, 1].astype(int)
     beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
-    first_down = int(np.argmax(pos == 1))
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
-    times = choose_level(b[:, 0], onsets)
-    doubled = len(times) != len(b)
+    down = pos == 1
+    raw_times = b[:, 0]
+    if not args.no_beat_cleanup:
+        # Restore missed and remove inserted beats (outside free time); the bar phase follows
+        # the majority of the tracker's downbeat labels.
+        cb = clean_beats(raw_times, down, skip=unstable_runs(raw_times), onsets=onsets)
+        raw_times, down = cb.times, cb.downbeat
+        print(f"beats: +{cb.inserted} restored, -{cb.removed} removed")
+        first_down = cb.phase(int(beats_per_bar))
+    else:
+        first_down = int(np.argmax(down))
+    times = choose_level(raw_times, onsets)
+    doubled = len(times) != len(raw_times)
     if doubled:
         beats_per_bar *= 2
         first_down *= 2
     plan = None
     if not args.no_free_time:
-        plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else pos == 1,
+        plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else down,
                               tempo=args.free_tempo, tempo_onsets=np.array([n["onset"] for n in pitched(L / "solo-sw.mid")]))
         times, first_down = plan.beat_times, plan.first_downbeat
     coarse = plan.beat_ranges if plan else None
