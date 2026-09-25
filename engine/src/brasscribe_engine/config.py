@@ -9,17 +9,21 @@ environments) or an installed package.
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
     BRASSCRIBE_GPU_LOCK     machine-wide mutex for heavy model runs (default: /tmp/brasscribe-gpu.lock)
     BRASSCRIBE_TOKEN        shared token for LAN clients (default: generated per server start)
-    BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/models/convert/reports)
+    BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/convert/reports, else <repo>/models/convert/reports)
     BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
 """
 
 from __future__ import annotations
 
 import os
+import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+# The machine-wide mutex other tools also use: /tmp on POSIX, the temp dir on Windows.
+DEFAULT_GPU_LOCK = Path(tempfile.gettempdir() if sys.platform == "win32" else "/tmp") / "brasscribe-gpu.lock"
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -31,7 +35,7 @@ def _env_path(name: str, default: Path) -> Path:
 class Settings:
     data_dir: Path = field(default_factory=lambda: _env_path("BRASSCRIBE_DATA", REPO_ROOT / "data"))
     adapters_dir: Path = field(default_factory=lambda: _env_path("BRASSCRIBE_ADAPTERS", REPO_ROOT / "ml" / "adapters"))
-    gpu_lock: Path = field(default_factory=lambda: _env_path("BRASSCRIBE_GPU_LOCK", Path("/tmp/brasscribe-gpu.lock")))
+    gpu_lock: Path = field(default_factory=lambda: _env_path("BRASSCRIBE_GPU_LOCK", DEFAULT_GPU_LOCK))
     models_override: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_MODELS", Path()) if os.environ.get("BRASSCRIBE_MODELS") else None)
     token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_TOKEN"))
 
@@ -68,8 +72,10 @@ class Settings:
 
     @property
     def parity_reports_dir(self) -> Path:
-        """Model-conversion parity reports (JSON), written by models/convert."""
-        return _env_path("BRASSCRIBE_PARITY_REPORTS", REPO_ROOT / "models" / "convert" / "reports")
+        """Model-conversion parity reports (JSON): <repo>/convert/reports, else <repo>/models/convert/reports."""
+        committed = REPO_ROOT / "convert" / "reports"
+        default = committed if committed.is_dir() else REPO_ROOT / "models" / "convert" / "reports"
+        return _env_path("BRASSCRIBE_PARITY_REPORTS", default)
 
     @property
     def conformance_reports_dir(self) -> Path:

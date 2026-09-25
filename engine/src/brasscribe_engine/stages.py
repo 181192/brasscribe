@@ -75,7 +75,10 @@ def _view(files: dict[str, Path], where: Path) -> Path:
     """A directory of symlinks with the names the reference scripts expect."""
     where.mkdir(parents=True, exist_ok=True)
     for name, src in files.items():
-        (where / name).symlink_to(src.resolve())
+        try:
+            (where / name).symlink_to(src.resolve())
+        except OSError:  # no symlink privilege (Windows)
+            shutil.copy2(src, where / name)
     return where
 
 
