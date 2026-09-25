@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  engine:
+    name: tests and CPU benchmark suites (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.81.0
+          environments: default
+          frozen: true
+          cache: true
+
+      - name: Unit tests (engine, music, OpenAPI spec up to date)
+        run: pixi run test
+
+      - name: QA tool tests
+        run: pixi run pytest -q qa/tools/tests
+
+      # Eval data, stems and golden outputs are not in the repository. Without them every
+      # suite reports "skipped" (never "pass"); point BRASSCRIBE_DATA at a provisioned copy
+      # to gate for real.
+      - name: CPU benchmark suites (cached model outputs only)
+        run: pixi run brasscribe bench cpu --json bench-cpu.json --no-history
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-cpu
+          path: bench-cpu.json

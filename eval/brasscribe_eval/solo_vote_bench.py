@@ -20,12 +20,11 @@ import numpy as np
 
 from .consensus import cluster
 from .lead_sheet import line
+from .paths import ADAPTERS, DATA, EVAL_SETS
 from .score import LOOSE_TOL, load_notes, score, to_arrays
 
-ROOT = Path(__file__).resolve().parents[2]
-STEMS = ROOT / "data" / "mega53-out-bench"
-EVAL = ROOT / "data" / "eval"
-ADAPTERS = ROOT / "ml" / "adapters"
+STEMS = DATA / "mega53-out-bench"
+EVAL = EVAL_SETS
 TOOLS = {"mus": "muscriptor", "bp": "basic-pitch", "sw": "swift-f0"}
 
 

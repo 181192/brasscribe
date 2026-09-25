@@ -4,3 +4,4 @@ models/
 data/
 *.wav
 .DS_Store
+.pixi/

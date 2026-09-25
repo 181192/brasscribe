@@ -1,0 +1,172 @@
+[workspace]
+name = "brasscribe"
+channels = ["conda-forge"]
+# The *-cuda12 platforms are Linux and Windows with a CUDA 12 driver; only the
+# *-cuda environments are solved for them.
+platforms = [
+    { name = "osx-arm64-macos14", platform = "osx-arm64", macos = "14.0" },
+    "linux-64",
+    "win-64",
+    { name = "linux-64-cuda12", platform = "linux-64", cuda = "12" },
+    { name = "win-64-cuda12", platform = "win-64", cuda = "12" },
+]
+requires-pixi = ">=0.80"
+
+# Plain platforms: every environment except the CUDA ones.
+[feature.host]
+platforms = ["osx-arm64-macos14", "linux-64", "win-64"]
+
+# ---------------------------------------------------------------------------
+# Python versions. Basic Pitch needs 3.10; everything else runs on 3.12.
+# ---------------------------------------------------------------------------
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.py310.dependencies]
+python = "3.10.*"
+
+# ---------------------------------------------------------------------------
+# Engine: FastAPI service, CLI, symbolic library and benchmark suites.
+# Numeric packages are pinned to the versions the golden output was built with
+# (eval/uv.lock), so the engine reproduces it bit for bit.
+# ---------------------------------------------------------------------------
+[feature.engine.pypi-dependencies]
+brasscribe-engine = { path = "engine", editable = true }
+brasscribe-music = { path = "music", editable = true }
+brasscribe-eval = { path = "eval", editable = true }
+numpy = "==2.5.3"
+scipy = "==1.18.1"
+soundfile = "==0.14.0"
+music21 = "==10.5.0"
+partitura = "==1.9.0"
+pretty-midi = "==0.2.11.post0"
+mido = "==1.3.3"
+mir-eval = "==0.8.2"
+pandas = "==3.0.6"
+
+[feature.engine.tasks]
+engine = "brasscribe"
+serve = "brasscribe serve"
+studio = "brasscribe studio"
+openapi = "python -m brasscribe_engine.openapi engine/openapi.json"
+
+[feature.test.pypi-dependencies]
+pytest = ">=8"
+httpx = ">=0.27"
+
+[feature.test.tasks]
+test = "pytest engine/tests music/tests"
+bench-cpu = "brasscribe bench cpu"
+
+# ---------------------------------------------------------------------------
+# Accelerators. On macOS the PyPI wheel uses MPS. On Linux and Windows,
+# conda-forge PyTorch resolves to CPU builds in the plain environments (no
+# __cuda virtual package) and to CUDA 12 builds in the *-cuda environments.
+# The *-cuda environments also list macOS, where they equal the plain ones;
+# this keeps them solvable here (sdists are built on a platform that runs).
+# ---------------------------------------------------------------------------
+[feature.torch.target.linux-64.dependencies]
+pytorch = ">=2.6"
+
+[feature.torch.target.win-64.dependencies]
+pytorch = ">=2.6"
+
+# PyPI wheels on macOS: the same MPS-enabled build the uv environments use.
+[feature.torch.target.osx-arm64.pypi-dependencies]
+torch = ">=2.6"
+
+[feature.cuda]
+platforms = ["osx-arm64-macos14", "linux-64-cuda12", "win-64-cuda12"]
+
+[feature.cuda.target.linux-64.dependencies]
+cuda-version = "12.*"
+pytorch = { version = ">=2.6", build = "cuda*" }
+
+[feature.cuda.target.win-64.dependencies]
+cuda-version = "12.*"
+pytorch = { version = ">=2.6", build = "cuda*" }
+
+# ---------------------------------------------------------------------------
+# Adapters: one environment each, run as subprocesses behind run.sh.
+# ---------------------------------------------------------------------------
+[feature.swift-f0.pypi-dependencies]
+swift-f0 = ">=0.3.0"
+pretty-midi = ">=0.2.11.post0"
+soundfile = ">=0.14.0"
+soxr = ">=1.1.0"
+
+[feature.swift-f0.tasks]
+swift-f0 = "python ml/adapters/swift-f0/transcribe.py"
+
+[feature.basic-pitch.pypi-dependencies]
+setuptools = "<81"
+scikit-learn = "<=1.5.1"
+
+[feature.basic-pitch.target.osx-arm64.pypi-dependencies]
+basic-pitch = { version = ">=0.4.0", extras = ["coreml"] }
+
+[feature.basic-pitch.target.linux-64.pypi-dependencies]
+basic-pitch = { version = ">=0.4.0", extras = ["onnx"] }
+
+[feature.basic-pitch.target.win-64.pypi-dependencies]
+basic-pitch = { version = ">=0.4.0", extras = ["onnx"] }
+
+[feature.basic-pitch.tasks]
+basic-pitch = "basic-pitch"
+
+[feature.muscriptor.pypi-dependencies]
+muscriptor = ">=0.3.0"
+
+[feature.muscriptor.tasks]
+muscriptor = "muscriptor"
+
+[feature.beat-this.pypi-dependencies]
+beat-this = { git = "https://github.com/CPJKU/beat_this", rev = "v1.1.0" }
+soundfile = ">=0.14.0"
+soxr = ">=1.1.0"
+
+[feature.beat-this.tasks]
+beat-this = "beat_this"
+
+[feature.mega53.pypi-dependencies]
+beartype = ">=0.22.9"
+einops = ">=0.8.2"
+librosa = ">=1.0.0"
+matplotlib = ">=3.11.2"
+ml-collections = ">=1.1.0"
+omegaconf = ">=2.2"
+pandas = ">=3.0.6"
+pyyaml = ">=6.0.3"
+rotary-embedding-torch = ">=0.3.5"
+scipy = ">=1.18.1"
+soundfile = ">=0.14.0"
+torchaudio = ">=2.11.0"
+tqdm = ">=4.70.1"
+
+[feature.separator.pypi-dependencies]
+audio-separator = ">=0.47.0"
+audioread = ">=3.1.0"
+onnxruntime = ">=1.30.0"
+
+[feature.panns.pypi-dependencies]
+librosa = ">=1.0.0"
+panns-inference = ">=0.1.1"
+
+# ---------------------------------------------------------------------------
+# Environments. `default` is the engine; adapters get their own solve groups so
+# their pins never leak into the engine.
+# ---------------------------------------------------------------------------
+[environments]
+default = { features = ["host", "py312", "engine", "test"], solve-group = "engine" }
+swift-f0 = { features = ["host", "py312", "swift-f0"], no-default-feature = true }
+basic-pitch = { features = ["host", "py310", "basic-pitch"], no-default-feature = true }
+muscriptor = { features = ["host", "py312", "torch", "muscriptor"], no-default-feature = true }
+muscriptor-cuda = { features = ["py312", "torch", "cuda", "muscriptor"], no-default-feature = true }
+beat-this = { features = ["host", "py312", "torch", "beat-this"], no-default-feature = true }
+beat-this-cuda = { features = ["py312", "torch", "cuda", "beat-this"], no-default-feature = true }
+mega53 = { features = ["host", "py312", "torch", "mega53"], no-default-feature = true }
+mega53-cuda = { features = ["py312", "torch", "cuda", "mega53"], no-default-feature = true }
+separator = { features = ["host", "py312", "torch", "separator"], no-default-feature = true }
+separator-cuda = { features = ["py312", "torch", "cuda", "separator"], no-default-feature = true }
+panns = { features = ["host", "py312", "torch", "panns"], no-default-feature = true }
+panns-cuda = { features = ["py312", "torch", "cuda", "panns"], no-default-feature = true }

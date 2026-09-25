@@ -14,3 +14,10 @@ dependencies = [
 
 [tool.uv.sources]
 brasscribe-music = { path = "../music", editable = true }
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["brasscribe_eval"]

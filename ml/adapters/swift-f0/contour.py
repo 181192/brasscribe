@@ -1,0 +1,14 @@
+"""Frame-level SwiftF0 contour of a monophonic stem -> .npz (t, pitch_hz, confidence, loudness_db per frame).
+
+Same output as eval/brasscribe_eval/swiftf0_contour.py; brasscribe_music.durations
+reads it to find where sustained notes really end.
+"""
+import sys
+
+import numpy as np
+from swift_f0 import SwiftF0
+
+src, dst = sys.argv[1], sys.argv[2]
+r = SwiftF0().detect_file(src)
+np.savez_compressed(dst, t=r.timestamps, pitch_hz=r.pitch_hz, confidence=r.confidence, loudness_db=r.loudness_db)
+print(f"{len(r.timestamps)} frames -> {dst}")
