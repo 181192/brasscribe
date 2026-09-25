@@ -10,7 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from music21 import chord, clef, instrument, key, meter, note, pitch, stream, tempo
+from music21 import chord, clef, instrument, interval, key, meter, note, pitch, stream, tempo
+
+from .instruments import Instrument as BandInstrument
 
 from .quantize import TICKS_PER_BEAT, QNote
 from .spelling import key_of, spell
@@ -21,7 +23,32 @@ class PartSpec:
     name: str
     notes: list[QNote]
     clef: str = "treble"  # treble | bass
+    instrument: BandInstrument | None = None  # transposing band instrument; None = concert-pitch part
     extra: dict = field(default_factory=dict)
+
+
+def _m21_instrument(name: str, band: BandInstrument | None) -> instrument.Instrument:
+    inst = instrument.Instrument()
+    inst.partName = name
+    if band is None:
+        return inst
+    inst.instrumentName = band.name
+    inst.partAbbreviation = band.short
+    inst.midiProgram = band.gm_program
+    generic = band.diatonic + (1 if band.diatonic >= 0 else -1)
+    inst.transposition = interval.intervalFromGenericAndChromatic(generic, band.chromatic)
+    return inst
+
+
+def _notatable_end(start: int, end: int) -> int:
+    """Snap an end tick to the nearest 16th (6) or triplet-8th (8) position after start.
+
+    Upstream durations can carry odd tick counts (e.g. a MIDI quarter stored as
+    23/24), which music21 can only express as absurd tuplets.
+    """
+    cands = [g * round(end / g) for g in (6, 8)] + [g * (end // g + 1) for g in (6, 8)]
+    cands = [c for c in cands if c > start]
+    return min(cands, key=lambda c: (abs(c - end), c))
 
 
 def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float]]:
@@ -34,6 +61,7 @@ def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float]]:
     for i, s in enumerate(starts):
         g = groups[s]
         end = min(q.end for q in g)
+        end = _notatable_end(s, end)
         if i + 1 < len(starts):
             end = min(end, starts[i + 1])
         out.append((s, max(end, s + 1), sorted({q.pitch for q in g}), min(q.confidence for q in g)))
@@ -45,7 +73,9 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     score = stream.Score()
     score.metadata = None
     from music21 import metadata
-    score.insert(0, metadata.Metadata(title=title))
+    md = metadata.Metadata(title=title)
+    md.composer = "arr. brasscribe"
+    score.insert(0, md)
 
     # Spell every note from the whole ensemble at concert pitch (ps13), and pick the key.
     events = [(pi, ev) for pi, p in enumerate(parts) for ev in _events(p.notes)]
@@ -66,13 +96,12 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     total = -(-max(last, bar) // bar) * bar
     for pi, p in enumerate(parts):
         part = stream.Part()
-        inst = instrument.Instrument()
-        inst.partName = p.name
-        part.insert(0, inst)
+        part.insert(0, _m21_instrument(p.name, p.instrument))
         part.insert(0, clef.BassClef() if p.clef == "bass" else clef.TrebleClef())
         part.insert(0, key.KeySignature(fifths))
         part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
-        part.insert(0, tempo.MetronomeMark(number=round(bpm)))
+        if pi == 0:
+            part.insert(0, tempo.MetronomeMark(number=round(bpm)))
         cursor = 0
         for start, end, pitches, conf in _events(p.notes):
             tick = start
@@ -92,9 +121,25 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         if cursor < total:
             part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(total - cursor) / TICKS_PER_BEAT))
         score.insert(0, part)
-    return score.makeNotation()
+    score = score.makeNotation()
+    score.atSoundingPitch = True
+    return score
 
 
 def write_musicxml(score: stream.Score, path: Path) -> Path:
-    score.write("musicxml", fp=str(path))
+    """Write written-pitch MusicXML: transposing parts are converted exactly once, here."""
+    written = score.toWrittenPitch(inPlace=False) if any(
+        (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
+    written.write("musicxml", fp=str(path))
     return path
+
+
+def build_band_score(arrangement, comp) -> stream.Score:
+    """Arrangement (concert notes per band part) -> transposing score in lineup order."""
+    specs = []
+    for part in arrangement.lineup.parts:
+        notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence)
+                 for n in arrangement.parts.get(part.name, [])]
+        specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument))
+    meter0 = comp.meters[0].beats if comp.meters else 4
+    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7)
