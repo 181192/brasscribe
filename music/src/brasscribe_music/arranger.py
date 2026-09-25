@@ -44,12 +44,19 @@ def _phrases(notes: list[Note]) -> list[list[Note]]:
     return out
 
 
-def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], prefer_low: bool = False) -> int | None:
+BASS_TARGET = 0.35  # bass lines centre a third of the way up the comfortable range
+
+
+def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], prefer_low: bool = False,
+                prev: int | None = None) -> int | None:
     """Octave shift that puts the most notes in [lo, hi] and none outside the pro range.
 
-    Ties go to the octave nearest the middle of the range, or the lowest one for
-    bass lines (brass-band basses sit low and leave room for the inner parts).
+    Ties go to the octave nearest the middle of the range (a third of the way
+    up for bass lines, which sit low and leave room for the inner parts but
+    should not live on ledger lines), and nearest the previous phrase's last
+    note, so the line stays continuous.
     """
+    target = lo + BASS_TARGET * (hi - lo) if prefer_low else (lo + hi) / 2
     best, score = None, None
     for k in range(-4, 5):
         shifted = [p + 12 * k for p in pitches]
@@ -57,22 +64,34 @@ def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], pref
             continue
         inside = sum(lo <= p <= hi for p in shifted)
         mean = sum(shifted) / len(shifted)
-        cand = (inside, -mean if prefer_low else -abs(mean - (lo + hi) / 2))
+        jump = abs(shifted[0] - prev) if prev is not None else 0
+        cand = (inside, -(abs(mean - target) + jump))
         if score is None or cand > score:
             best, score = k, cand
     return best
+
+
+def _nearest_octave(pitch: int, ranges: list[tuple[int, int]], prev: int | None) -> int | None:
+    """The octave of `pitch` inside the first range that has one, nearest `prev` (or the range middle)."""
+    for lo, hi in ranges:
+        opts = [pitch % 12 + 12 * k for k in range(11) if lo <= pitch % 12 + 12 * k <= hi]
+        if opts:
+            ref = prev if prev is not None else (lo + hi) / 2
+            return min(opts, key=lambda x: (abs(x - ref), x))
+    return None
 
 
 def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False) -> list[Note]:
     inst = part.instrument
     placed = []
     for phrase in _phrases(notes):
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.comfortable, inst.pro, prefer_low)
+        prev = placed[-1].pitch if placed else None
+        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.comfortable, inst.pro, prefer_low, prev)
         if k is None:
-            # No single octave fits the whole phrase: fall back to per-note octave fitting.
+            # No single octave fits the whole phrase: per note, the octave nearest the previous note.
             for n in phrase:
-                p = inst.fit_octave(n.pitch + shift_extra)
-                if inst.check(p) == "impossible":
+                p = _nearest_octave(n.pitch + shift_extra, [inst.comfortable, inst.pro], placed[-1].pitch if placed else None)
+                if p is None:
                     warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
                     continue
                 placed.append(_moved(n, p))
