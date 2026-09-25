@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -124,7 +125,7 @@ test("inspector tabs render and pass axe", async ({ page }) => {
     await expect(panel).toBeVisible();
     await page.waitForFunction(() => !document.querySelector(".tabpanel:not([hidden]) .loading"), undefined, { timeout: 120_000 });
     if (tab === "audio") await expect(panel.getByRole("status").first()).toContainText(/Hz/, { timeout: 120_000 });
-    if (tab === "stems") await expect(panel.getByText("Loaded").first()).toBeVisible({ timeout: 120_000 });
+    if (tab === "stems") await expect(panel.getByRole("img", { name: /Energy over time.*for / })).toBeVisible({ timeout: 180_000 });
     if (tab === "musicxml") {
       await expect(panel.getByText(/parts identical/)).toBeVisible({ timeout: 60_000 });
       await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
@@ -221,4 +222,69 @@ test("keyboard: skip link, shortcut sheet, narrow layout", async ({ page }) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `horizontal overflow on ${route}`).toBeLessThanOrEqual(1);
   }
+});
+
+test("score viewer opens compressed MusicXML (.mxl)", async ({ page }, info) => {
+  const src = join(golden, "brass-band.musicxml");
+  test.skip(!existsSync(src), "data/golden is not available");
+  const mxl = info.outputPath("golden.mxl");
+  mkdirSync(dirname(mxl), { recursive: true });
+  // MuseScore 4 aborts on shutdown after writing: check the file, not the exit code.
+  try {
+    execFileSync("mscore", ["-o", mxl, src], { stdio: "ignore", timeout: 120_000 });
+  } catch {
+    /* see above */
+  }
+  test.skip(!existsSync(mxl), "mscore could not write .mxl");
+  await page.goto("/#/viewer");
+  await page.setInputFiles("#open-musicxml", mxl);
+  await waitRendered(page);
+  await page.waitForFunction(() => (document.querySelector("#main bs-score") as unknown as { api: { tracks: unknown[] } }).api.tracks.length === 18, undefined, { timeout: 60_000 });
+  await expect(page.locator("#viewer-status")).toContainText("18 parts");
+});
+
+test("dark and high-contrast themes pass axe", async ({ page }) => {
+  const run = await mikkelRun(page);
+  for (const [name, media] of [["dark", { colorScheme: "dark" }], ["contrast", { contrast: "more" }]] as const) {
+    await page.emulateMedia(media);
+    for (const route of ["runs", `runs/${run.id}/score`, "compare", "bench"]) {
+      await page.goto(`/#/${route}`);
+      await page.reload();
+      await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 60_000 });
+      if (route.endsWith("score")) await waitRendered(page);
+      await page.waitForTimeout(300);
+      if (route === "runs") await shot(page, `runs-${name}`, false);
+      if (route.endsWith("score")) await page.locator("#main bs-score").screenshot({ path: join(shots, `run-score-${name}.png`) });
+      await axe(page, `${route} (${name})`);
+    }
+  }
+});
+
+test("re-run from a manifest, follow it live, compare with the original", async ({ page }) => {
+  test.setTimeout(600_000);
+  const run = await mikkelRun(page);
+  await page.goto(`/#/runs/${run.id}/manifest`);
+  const panel = page.locator(".tabpanel:not([hidden])");
+  await expect(panel.getByRole("button", { name: "Re-run" })).toBeVisible();
+  await expect(panel.getByLabel("Allow heavy models on cache misses")).not.toBeChecked();
+  const t0 = Date.now();
+  await panel.getByRole("button", { name: "Re-run" }).click();
+  await page.waitForURL((u) => !u.hash.includes(run.id) && u.hash.startsWith("#/runs/"), { timeout: 30_000 });
+  const id = decodeURIComponent(page.url().split("#/runs/")[1].split("/")[0]);
+  await expect(page.locator(".pill-succeeded, .pill-failed").first()).toBeVisible({ timeout: 540_000 });
+  const job = await (await page.request.get(`/v1/jobs/${id}`)).json();
+  const stages = job.stages.map((s: { name: string; status: string; seconds?: number; device?: string }) =>
+    `${s.name}=${s.status}${s.seconds != null ? ` ${s.seconds.toFixed(1)}s` : ""}${s.device ? ` ${s.device}` : ""}`).join(", ");
+  console.log(`re-run ${id} of ${run.id}: ${job.status} in ${((Date.now() - t0) / 1000).toFixed(1)} s; ${stages}${job.error ? `; error: ${job.error}` : ""}`);
+  expect(job.status).toBe("succeeded");
+  expect(job.previous_run_id).toBe(run.id);
+  await shot(page, "run-rerun", false);
+  await page.getByRole("link", { name: "Compare with the run it re-ran" }).click();
+  const summary = page.getByText(/notes identical, \d+ added, \d+ removed, \d+ moved, \d+ octave/);
+  await expect(summary).toBeVisible({ timeout: 60_000 });
+  console.log(`re-run vs original: ${await summary.textContent()}`);
+  const engine = page.getByText(/Engine check: composition.json (identical|different)/);
+  await expect(engine).toBeVisible();
+  console.log(await engine.textContent());
+  await shot(page, "compare-rerun");
 });

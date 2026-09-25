@@ -3,7 +3,7 @@
 import type * as AT from "@coderline/alphatab";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName } from "../lib/validate";
-import { announce, clear, h, nextId, prefersReducedMotion, token } from "../ui/dom";
+import { announce, clear, h, nextId, prefersReducedMotion } from "../ui/dom";
 
 declare const alphaTab: typeof AT;
 
@@ -100,9 +100,12 @@ export class ScoreElement extends HTMLElement {
 
   /** Load a MusicXML document (text) and render it. Resolves when the first render finishes. */
   async load(xml: string | ArrayBuffer, label = "Score"): Promise<void> {
-    const text = typeof xml === "string" ? xml : new TextDecoder().decode(xml);
+    // Compressed MusicXML (.mxl) is a zip: alphaTab reads it; the text-level checks are skipped.
+    const bytes = typeof xml === "string" ? new TextEncoder().encode(xml) : new Uint8Array(xml);
+    const zipped = bytes[0] === 0x50 && bytes[1] === 0x4b;
+    const text = zipped ? "" : typeof xml === "string" ? xml : new TextDecoder().decode(xml);
     try {
-      this.xml = parseMusicXml(text);
+      this.xml = zipped ? null : parseMusicXml(text);
     } catch {
       this.xml = null;
     }
@@ -168,7 +171,7 @@ export class ScoreElement extends HTMLElement {
       }
       this.updateStatus();
     });
-    api.load(new TextEncoder().encode(text), this.xml ? this.xml.parts.map((_, i) => i) : undefined);
+    api.load(bytes, this.xml ? this.xml.parts.map((_, i) => i) : undefined);
     await rendered;
   }
 
@@ -193,6 +196,8 @@ export class ScoreElement extends HTMLElement {
         h("span", { class: "row" }, h("label", {}, mute, "Mute"), h("label", {}, solo, "Solo")));
     }));
     this.current = 0;
+    // Without the part list from our own reader alphaTab renders only the first track; show them all.
+    if (!this.xml && score.tracks.length > 1) setTimeout(() => this.api?.renderTracks(score.tracks), 0);
     this.updateStatus();
   }
 
@@ -203,7 +208,8 @@ export class ScoreElement extends HTMLElement {
    */
   private markUncertain(score: AT.model.Score): number {
     if (!this.xml) return 0;
-    const colour = alphaTab.model.Color.fromJson(token("uncertain"));
+    // The score is always drawn on white paper, so use the light-theme `uncertain` token in every theme.
+    const colour = alphaTab.model.Color.fromJson("#0063A6");
     let marked = 0;
     score.tracks.forEach((track, ti) => {
       const part = this.xml!.parts[ti];

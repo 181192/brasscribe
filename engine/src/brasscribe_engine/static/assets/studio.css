@@ -22,7 +22,7 @@
   --m1: #0072B2; /* MuScriptor */
   --m2: #A65E00; /* Basic Pitch (Okabe–Ito orange, darkened for 3:1 on white) */
   --m3: #007A5A; /* SwiftF0 */
-  --m4: #CC79A7;
+  --m4: #A8538A; /* Okabe–Ito reddish purple, darkened for 3:1 on white */
   --space: 1rem;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 100%;
@@ -230,3 +230,6 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 select, input:not([type="checkbox"]):not([type="radio"]) { max-width: 100%; }
 fieldset { min-width: 0; }
 .row > * { min-width: 0; }
+/* The score is white paper in every theme: its marks keep the light-theme tokens. */
+.score-view .at-surface { --cursor: #6B3FA0; --loop-edge: #8A5A00; }
+.score-view .at-cursors { --cursor: #6B3FA0; --loop-edge: #8A5A00; }
