@@ -13,6 +13,7 @@ whose data is missing is reported as skipped, never as passed.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -40,6 +41,28 @@ class Suite:
     requires: tuple[str, ...] = ()
     cpu: bool = True
     tools: tuple[str, ...] = field(default=())
+
+
+HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
+GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK", "/tmp/brasscribe-gpu.lock"))
+
+
+def _run_adapter(tool: str, src: Path, dst: Path) -> None:
+    """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""
+    cmd = [str(ADAPTERS / tool / "run.sh"), str(src), str(dst)]
+    if tool not in HEAVY:
+        subprocess.run(cmd, check=True)
+        return
+    while True:
+        try:
+            GPU_LOCK.mkdir()
+            break
+        except FileExistsError:
+            time.sleep(5)
+    try:
+        subprocess.run(cmd, check=True)
+    finally:
+        GPU_LOCK.rmdir()
 
 
 def _need(data: Path, *rels: str) -> None:
@@ -73,7 +96,7 @@ def _transcription(eval_set: str, models: dict[str, list[str]]) -> Callable[[Pat
             for song in _songs(root):
                 mid = song / f"{model}.mid"
                 if not mid.exists() and mode == "live" and model in adapters:
-                    subprocess.run([str(ADAPTERS / adapters[model] / "run.sh"), str(song / "mix.wav"), str(mid)], check=True)
+                    _run_adapter(adapters[model], song / "mix.wav", mid)
                 if not mid.exists():
                     raise SkipSuite(f"no cached {model}.mid for {song.name}")
                 rows.append(score(load_notes(song / "reference.json"), load_notes(mid)))
@@ -203,7 +226,7 @@ def _solo_vote(data: Path, mode: str) -> dict[str, float]:
             if not mid.exists():
                 if mode != "live":
                     raise SkipSuite(f"no cached {mid.name} for {stem_dir.name}")
-                subprocess.run([str(ADAPTERS / tool / "run.sh"), str(stem_dir / "trumpet.flac"), str(mid)], check=True)
+                _run_adapter(tool, stem_dir / "trumpet.flac", mid)
             from .score import load_notes
 
             src[key] = line(load_notes(mid), 52, 88, top=True)
