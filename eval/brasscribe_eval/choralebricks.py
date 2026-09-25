@@ -28,10 +28,13 @@ def build_song(song_dir: Path, tracks: pd.DataFrame, out_dir: Path, parts: dict[
         row = row.iloc[0]
         y, sr = sf.read(song_dir / "tracks_normalized" / row.path_audio, dtype="float32")
         audio.append(y)
-        df = pd.read_csv(song_dir / "annotations" / row.path_notes, sep=";")
+        # Alignments pair each performed note with its notated position.
+        df = pd.read_csv(song_dir / "alignments" / row.path_audio.replace(".wav", ".csv"), sep=";")
         for n in df.itertuples():
             notes.append({"pitch": int(n.pitch), "onset": float(n.start_sec), "offset": float(n.end_sec),
-                          "part": part, "instrument": instrument})
+                          "part": part, "instrument": instrument,
+                          "quarter": float(n.start_quarter), "dur_quarter": float(n.dur_quarter),
+                          "measure": float(n.start_meas), "time_sig": n.time_sig})
 
     length = max(len(y) for y in audio)
     mix = np.zeros(length, dtype=np.float32)

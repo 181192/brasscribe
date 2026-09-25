@@ -1,0 +1,17 @@
+[project]
+name = "brasscribe-music"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Kalliainen, Kristoffer-Andre", email = "k@kalli.no" }
+]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "music21>=10.5.0",
+    "numpy>=2.5.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

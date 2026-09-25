@@ -122,6 +122,39 @@ Corrected results (100 ms):
 - It does deliver what the spec needs for the arranger: near-complete melody and bass recall, plus a usable confidence signal (agreement ⇒ high precision).
 - Two songs are too few to fit per-stem precision. Revisit with URMP and more Slakh tracks, and add a role-aware metric (melody/bass precision, not only recall).
 
+## Rhythm: beat tracking and quantization
+
+**Ground truth.**
+- Slakh MIDI is largely *unquantized*. It is live-played Lakh MIDI: only 12–25% of Track00014's trumpet onsets sit on any 1/4–1/12 grid. So it cannot serve as notation ground truth.
+- The ChoraleBricks alignments pair every performed note with its notated position (`start_quarter`, `dur_quarter`, time signature). `choralebricks.py` stores these in `reference.json`.
+
+**Method.** `music/src/brasscribe_music/quantize.py`:
+- Warp times onto the beat grid, piecewise linear.
+- Per beat, pick the subdivision in {1, 2, 4, 3, 6} that minimizes squared snap error plus a complexity penalty.
+- 24 ticks per beat.
+
+`eval/brasscribe_eval/quant_bench.py` scores:
+- position (exact notated position, after an integer beat-offset alignment)
+- subdivision (position within the beat)
+- duration.
+
+**Results (10 chorales, reference notes):**
+
+| Beats | position | subdivision | duration |
+|---|---|---|---|
+| Reference beats (from alignments), original penalties | 0.89 | 0.89 | 0.76 |
+| Reference beats, penalties ×20 (adopted) | **0.99** | 0.99 | 0.88 |
+| Beat This!, penalties ×20 | ~0.45 | **0.92** | 0.76 |
+
+**Findings:**
+- With the adopted penalties, remaining quantizer errors are mostly note lengths. Offsets depend on legato vs detached playing; per-voice "hold until next onset" belongs in the voice-separation stage.
+- **The weak link is the beat grid, not the snapping.**
+  - Chorales have fermatas; Beat This! inserts extra beats during held chords (1.1–1.2 detected beats per notated quarter). Bar positions therefore drift, even though positions within the beat stay 92% right.
+  - One 6/4 chorale was tracked at half the metrical level (0.35 beats per quarter).
+  - Fixes: meter- and downbeat-constrained beat selection; fermata detection (long simultaneous holds); a user correction pass in the UI.
+- Mikkel has a steady ~138 BPM after its intro, so it should be less affected.
+- The penalty scale is tuned on rhythmically simple chorales. Revalidate on URMP and faster material.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.
