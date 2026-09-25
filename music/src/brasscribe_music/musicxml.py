@@ -7,6 +7,7 @@ part is a single voice. Real voice separation belongs to a later stage.
 
 from __future__ import annotations
 
+import copy
 import warnings
 
 from dataclasses import dataclass, field
@@ -18,6 +19,7 @@ from music21 import bar as m21bar
 from .instruments import Instrument as BandInstrument
 
 from .quantize import TICKS_PER_BEAT, QNote
+from .rhythm_spelling import pieces as _pieces
 from .spelling import key_of, spell
 
 
@@ -28,21 +30,22 @@ class PartSpec:
     clef: str = "treble"  # treble | bass
     instrument: BandInstrument | None = None  # transposing band instrument; None = concert-pitch part
     extra: dict = field(default_factory=dict)
+    abbreviation: str | None = None  # staff label after the first system (default: the instrument's)
 
 
-def _m21_instrument(name: str, band: BandInstrument | None) -> instrument.Instrument:
+def _m21_instrument(name: str, band: BandInstrument | None, abbreviation: str | None = None) -> instrument.Instrument:
     if band is not None and band.clef == "percussion":
         inst = instrument.UnpitchedPercussion()
         inst.partName = name
         inst.instrumentName = band.name
-        inst.partAbbreviation = band.short
+        inst.partAbbreviation = abbreviation or band.short
         return inst
     inst = instrument.Instrument()
     inst.partName = name
     if band is None:
         return inst
     inst.instrumentName = band.name
-    inst.partAbbreviation = band.short
+    inst.partAbbreviation = abbreviation or band.short
     inst.midiProgram = band.gm_program
     generic = band.diatonic + (1 if band.diatonic >= 0 else -1)
     if band.chromatic:
@@ -116,6 +119,27 @@ class FreeSpan:
     label: str = "ad lib."
 
 
+# Uncertainty encoding (docs/accessibility/visual-design-tokens.md §2): colour plus a "?" above the
+# note, boxed below VERY_UNCERTAIN, so it survives black-and-white print.
+UNCERTAIN_COLOUR = "#0063A6"
+VERY_UNCERTAIN_COLOUR = "#B04A00"
+VERY_UNCERTAIN = 0.4
+
+
+def _uncertainty_mark(very: bool) -> expressions.TextExpression:
+    mark = expressions.TextExpression("?")
+    mark.placement = "above"
+    if very:
+        mark.style.enclosure = "rectangle"
+    return mark
+
+
+def _tie(el, i: int, n: int) -> None:
+    from music21 import tie
+    if n > 1:
+        el.tie = tie.Tie("start" if i == 0 else "stop" if i == n - 1 else "continue")
+
+
 def _articulate(el, arts: set[str]) -> None:
     if "staccato" in arts:
         el.articulations.append(articulations.Staccato())
@@ -181,7 +205,7 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     total = -(-max(last, bar) // bar) * bar
     for pi, p in enumerate(parts):
         part = stream.Part()
-        part.insert(0, _m21_instrument(p.name, p.instrument))
+        part.insert(0, _m21_instrument(p.name, p.instrument, p.abbreviation))
         if is_drums(p):
             part.insert(0, clef.PercussionClef())
         else:
@@ -195,6 +219,11 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
         cursor = 0
         dropped = 0
+
+        def rest(a: int, b: int) -> None:
+            for x, y in _pieces(a, b, bar):
+                part.insert(x / TICKS_PER_BEAT, note.Rest(quarterLength=(y - x) / TICKS_PER_BEAT))
+
         for start, end, pitches, conf, arts in _events(p.notes):
             tick = start
             start -= pickup_ticks
@@ -203,21 +232,31 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                 dropped += 1
                 continue
             if start > cursor:
-                part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(start - cursor) / TICKS_PER_BEAT))
-            ql = (end - start) / TICKS_PER_BEAT
+                rest(cursor, start)
+            segs = _pieces(start, end, bar)
             if is_drums(p):
-                el = _drum_element(pitches, ql)
-            else:
-                sp = [spelled.get((pi, tick, m), pitch.Pitch(midi=m)) for m in pitches]
-                el = note.Note(sp[0], quarterLength=ql) if len(sp) == 1 else chord.Chord(sp, quarterLength=ql)
-            if not is_drums(p):
-                _articulate(el, arts)
-            if conf < low_confidence:
-                el.style.color = "#d0021b"  # flag uncertain notes for review
-            part.insert(start / TICKS_PER_BEAT, el)
+                # A drum hit has no meaningful length: keep its first readable value and rest after it.
+                segs = segs[:1]
+                end = segs[0][1]
+            for i, (a, b) in enumerate(segs):
+                ql = (b - a) / TICKS_PER_BEAT
+                if is_drums(p):
+                    el = _drum_element(pitches, ql)
+                else:
+                    # A fresh Pitch per tied piece: transposing to written pitch works in place.
+                    sp = [copy.deepcopy(spelled.get((pi, tick, m), pitch.Pitch(midi=m))) for m in pitches]
+                    el = note.Note(sp[0], quarterLength=ql) if len(sp) == 1 else chord.Chord(sp, quarterLength=ql)
+                    _tie(el, i, len(segs))
+                    # Staccato on the attack, fermata on the held end.
+                    _articulate(el, {x for x in arts if (x == "staccato" and i == 0) or (x == "fermata" and i == len(segs) - 1)})
+                if conf < low_confidence:
+                    el.style.color = VERY_UNCERTAIN_COLOUR if conf < VERY_UNCERTAIN else UNCERTAIN_COLOUR
+                    if i == 0 and not is_drums(p):
+                        part.insert(a / TICKS_PER_BEAT, _uncertainty_mark(conf < VERY_UNCERTAIN))
+                part.insert(a / TICKS_PER_BEAT, el)
             cursor = end
         if cursor < total:
-            part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(total - cursor) / TICKS_PER_BEAT))
+            rest(cursor, total)
         if dropped:
             warnings.warn(f"{p.name}: {dropped} note(s) before the first bar were not written")
         score.insert(0, part)
@@ -237,10 +276,33 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
     """
     written = score.toWrittenPitch(inPlace=False) if any(
         (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
+    _plain_spellings(written)
     written.write("musicxml", fp=str(path))
     if sounds:
         _add_instrument_sounds(path, sounds)
     return path
+
+
+AWKWARD = {("E", 1), ("B", 1), ("F", -1), ("C", -1)}
+_SHARP_NAMES = ["C", "C#", "D", "E-", "E", "F", "F#", "G", "A-", "A", "B-", "B"]
+_FLAT_NAMES = ["C", "D-", "D", "E-", "E", "F", "G-", "G", "A-", "A", "B-", "B"]
+
+
+def _plain_spellings(score: stream.Score) -> None:
+    """Respell written E♯, B♯, F♭, C♭ and double accidentals as the plain enharmonic.
+
+    Spelling runs at concert pitch; transposing a part can turn a sensible
+    concert name into F𝄪 or E♯ on the page. Flats stay flats and sharps sharps.
+    """
+    for p in (x for el in score.recurse().notes for x in getattr(el, "pitches", ())):
+        alter = int(p.accidental.alter) if p.accidental is not None else 0
+        if abs(alter) >= 2 or (p.step, alter) in AWKWARD:
+            midi = p.midi
+            name = (_FLAT_NAMES if alter < 0 else _SHARP_NAMES)[midi % 12]
+            q = pitch.Pitch(name)
+            q.octave = midi // 12 - 1
+            q.octave += (midi - q.midi) // 12
+            p.step, p.accidental, p.octave = q.step, q.accidental, q.octave
 
 
 def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
@@ -272,7 +334,8 @@ def build_band_score(arrangement, comp) -> stream.Score:
         notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence,
                        tuple(a.value for a in n.articulations))
                  for n in arrangement.parts.get(part.name, [])]
-        specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument))
+        specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument,
+                              abbreviation=part.abbreviation))
     meter0 = comp.meters[0].beats if comp.meters else 4
     fifths = comp.keys[0].fifths if comp.keys else None
     spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
