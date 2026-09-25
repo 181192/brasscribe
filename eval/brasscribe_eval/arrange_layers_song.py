@@ -11,6 +11,7 @@ recording's strings, keys and orchestral brass apart reliably:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from collections import Counter
 from pathlib import Path
@@ -26,6 +27,7 @@ from brasscribe_music.keys import key_plan
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.parts import split_parts
+from brasscribe_music.separation import check_stem
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
 from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
@@ -97,6 +99,17 @@ def main() -> None:
                 kept, dropped = gate(raw, Envelope.of(y, sr))
                 raw[:] = kept
                 print(f"gate {name}: dropped {dropped}")
+
+    # Does the solo stem contain the soloist? The layers sum to the mix (the orchestra is the residual).
+    layer_wavs = [L / f"{n}.wav" for n in ("solo", "bass", "drums", "orchestra")]
+    if all(f.exists() for f in layer_wavs):
+        audio = [sf.read(f, dtype="float32") for f in layer_wavs]
+        n_min = min(len(y) for y, _ in audio)
+        check = check_stem(audio[0][0][:n_min], sum(y[:n_min] for y, _ in audio), audio[0][1])
+        print(check.summary())
+        (args.out / "separation-check.json").write_text(json.dumps(
+            {"stem_minus_mix_db": check.stem_minus_mix_db, "failed": check.failed, "quiet_windows": check.quiet_windows}))
+        del audio
 
     b = np.loadtxt(args.beats)
     pos = b[:, 1].astype(int)
