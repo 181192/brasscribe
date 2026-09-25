@@ -173,6 +173,7 @@ def _dash_free_barlines(score: stream.Score, spans: list[FreeSpan], pickup_ticks
 
 def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
                 pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None,
+                key_changes: list[tuple[int, int]] | None = None,
                 free_spans: list[FreeSpan] | None = None) -> stream.Score:
     score = stream.Score()
     score.metadata = None
@@ -211,6 +212,9 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         else:
             part.insert(0, clef.BassClef() if p.clef == "bass" else clef.TrebleClef())
             part.insert(0, key.KeySignature(fifths))
+            for tick, f in key_changes or []:
+                if tick - pickup_ticks > 0:
+                    part.insert((tick - pickup_ticks) / TICKS_PER_BEAT, key.KeySignature(f))
         part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
         spans = free_spans or []
         opens_free = any(sp.start - pickup_ticks == 0 for sp in spans)
@@ -249,9 +253,10 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                     _tie(el, i, len(segs))
                     # Staccato on the attack, fermata on the held end.
                     _articulate(el, {x for x in arts if (x == "staccato" and i == 0) or (x == "fermata" and i == len(segs) - 1)})
-                if conf < low_confidence:
+                if conf < low_confidence and i == 0:
+                    # Colour and "?" on the attack; tied continuations stay plain.
                     el.style.color = VERY_UNCERTAIN_COLOUR if conf < VERY_UNCERTAIN else UNCERTAIN_COLOUR
-                    if i == 0 and not is_drums(p):
+                    if not is_drums(p):
                         part.insert(a / TICKS_PER_BEAT, _uncertainty_mark(conf < VERY_UNCERTAIN))
                 part.insert(a / TICKS_PER_BEAT, el)
             cursor = end
@@ -338,8 +343,9 @@ def build_band_score(arrangement, comp) -> stream.Score:
                               abbreviation=part.abbreviation))
     meter0 = comp.meters[0].beats if comp.meters else 4
     fifths = comp.keys[0].fifths if comp.keys else None
+    changes = [(k.tick, k.fifths) for k in comp.keys[1:]]
     spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
-    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths,
+    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths, key_changes=changes,
                        free_spans=spans)
 
 

@@ -22,6 +22,7 @@ from brasscribe_music.arranger import arrange_layers
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
 from brasscribe_music.beats import clean_beats
+from brasscribe_music.keys import key_plan
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.parts import split_parts
@@ -78,6 +79,7 @@ def main() -> None:
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
     ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
     ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
+    ap.add_argument("--single-key", action="store_true", help="one key signature for the whole piece")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
@@ -176,6 +178,9 @@ def main() -> None:
     tonal = solo + bass + lines
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
     comp.keys = [KeySig(0, fifths)]
+    if not args.single_key:
+        # Key changes where the music modulates (a change must pay for itself over several bars).
+        comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass).keys
     comp.to_json(args.out / "composition.json")
 
     arr = arrange_layers(comp)
@@ -194,7 +199,8 @@ def main() -> None:
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
-    print(f"key fifths {fifths}; warnings {len(arr.warnings)}")
+    print(f"key fifths {fifths}; keys {[(k.tick // (int(beats_per_bar) * TICKS_PER_BEAT) + 1, k.fifths, k.mode) for k in comp.keys]}; "
+          f"warnings {len(arr.warnings)}")
     for r in comp.free_regions:
         print(f"free time {r.start_s:.2f}-{r.end_s:.2f} s -> ticks {r.start}-{r.end} at {r.tempo_bpm:.1f} BPM ({r.notation.value})")
     print(xml, "pdf" if xml.with_suffix(".pdf").exists() else "(no pdf)", "mp3" if xml.with_suffix(".mp3").exists() else "(no mp3)")

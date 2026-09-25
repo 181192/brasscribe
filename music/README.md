@@ -24,7 +24,7 @@ defaults: files written before a field existed stay valid.
 | `title` | string | |
 | `voices` | Voice[] | |
 | `meters` | `{tick, beats, beat_unit}`[] | time signatures from `tick` on |
-| `keys` | `{tick, fifths, mode}`[] | key signatures; `fifths` < 0 is flats |
+| `keys` | `{tick, fifths, mode}`[] | key signatures from `tick` on (bar lines); `fifths` < 0 is flats. `mode` names the tonic as a degree of the signature's major scale: `major`, `dorian`, `phrygian`, `lydian`, `mixolydian`, `minor`, `locrian` (fifths 0 + `lydian` = F lydian) |
 | `beat_times` | float[] | seconds of beat 0, 1, 2 …: the tick map. Beat `k` is tick `(k - first_downbeat) * ticks_per_beat`; between beats, time is linear. Inside a free region these beats are synthetic (see below) |
 | `first_downbeat` | int | index into `beat_times` of tick 0 (may be negative when the first bar starts before the first detected beat) |
 | `ticks_per_beat` | int | 24 |
