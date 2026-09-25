@@ -1,6 +1,7 @@
 // Beat inspector: the tracker's beats and downbeats against the beat grid the
 // Composition was written on, with free-time and irregular-tempo regions.
 import { irregularRegions, summarise, type Beat, type Region } from "../lib/beats";
+import { t } from "../i18n";
 import { clear, fmt, h, table, token } from "../ui/dom";
 import { plot, timeAxis } from "./canvas";
 
@@ -24,37 +25,36 @@ export class BeatView extends HTMLElement {
   }
 
   private render(): void {
-    const chart = plot("Beats", 40 + this.rows.length * 50, (c, w, hh) => this.draw(c, w, hh));
+    const chart = plot(t("tab.beats"), 40 + this.rows.length * 50, (c, w, hh) => this.draw(c, w, hh));
     const info = h("p", { class: "hint", role: "status" });
     const update = () => {
-      info.textContent = `Showing ${fmt.seconds(this.t0)} to ${fmt.seconds(this.t0 + this.span)}.`;
-      chart.setLabel(`Beat timeline from ${fmt.seconds(this.t0)} to ${fmt.seconds(this.t0 + this.span)}: ${this.rows.map((r) => r.label).join(" and ")}. Tables below list tempo and regions.`);
+      info.textContent = t("common.showing", { from: fmt.seconds(this.t0), to: fmt.seconds(this.t0 + this.span) });
+      chart.setLabel(t("beats.label", { from: fmt.seconds(this.t0), to: fmt.seconds(this.t0 + this.span), rows: this.rows.map((r) => r.label).join(", ") }));
       chart.redraw();
     };
     const dur = Math.max(1, ...this.rows.flatMap((r) => r.beats.map((b) => b.time)));
     const nav = h("div", { class: "row" },
-      h("button", { type: "button", onclick: () => { this.t0 = Math.max(0, this.t0 - this.span * 0.8); update(); } }, "◀ Earlier"),
-      h("button", { type: "button", onclick: () => { this.t0 = Math.min(dur - 5, this.t0 + this.span * 0.8); update(); } }, "Later ▶"),
-      h("button", { type: "button", onclick: () => { this.span = Math.max(5, this.span / 2); update(); } }, "Zoom in"),
-      h("button", { type: "button", onclick: () => { this.span = Math.min(dur + 5, this.span * 2); update(); } }, "Zoom out"));
+      h("button", { type: "button", onclick: () => { this.t0 = Math.max(0, this.t0 - this.span * 0.8); update(); } }, t("common.earlier")),
+      h("button", { type: "button", onclick: () => { this.t0 = Math.min(dur - 5, this.t0 + this.span * 0.8); update(); } }, t("common.later")),
+      h("button", { type: "button", onclick: () => { this.span = Math.max(5, this.span / 2); update(); } }, t("common.zoomIn")),
+      h("button", { type: "button", onclick: () => { this.span = Math.min(dur + 5, this.span * 2); update(); } }, t("common.zoomOut")));
     const sums = this.rows.map((r) => ({ r, s: summarise(r.beats) }));
     const level = sums.length === 2 && sums[0].s.beats ? sums[1].s.beats / sums[0].s.beats : null;
     const legend = h("ul", { class: "legend" },
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:1rem;width:3px;border:none;background:var(--ink)" }), "downbeat (tall, with bar number)"),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:0.5rem;width:1px;border:none;background:var(--staff)" }), "beat (short)"),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--adlib-tint);border:2px dashed var(--very-uncertain)" }), "free time (ad lib.), from the Composition"),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:transparent;border:2px dotted var(--uncertain)" }), "irregular beat spacing (Studio heuristic)"));
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:1rem;width:3px;border:none;background:var(--ink)" }), t("beats.downbeat")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:0.5rem;width:1px;border:none;background:var(--staff)" }), t("beats.beat")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--adlib-tint);border:2px dashed var(--very-uncertain)" }), t("beats.free")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:transparent;border:2px dotted var(--uncertain)" }), t("beats.irregular")));
     clear(this,
       legend, nav, info, chart.box,
-      table("Tempo and metre", ["Beat track", "Beats", "Downbeats", "Beats per bar", "Median tempo"],
-        sums.map(({ r, s }) => [r.label, String(s.beats), String(s.downbeats), String(s.barBeats || "–"), s.bpm ? `${s.bpm.toFixed(1)} bpm` : "–"])),
-      level !== null ? h("p", {}, "Metrical level: the score's beat grid has ",
-        h("strong", {}, `${level.toFixed(2)}×`), " as many beats as the tracker found",
-        Math.abs(level - 1) < 0.1 ? " (it counts the tracker's beat)." : Math.abs(level - 2) < 0.2 ? " (it counts half-beats of the tracker)." : Math.abs(level - 0.5) < 0.1 ? " (it counts every other tracker beat)." : ".") : null,
-      table("Free-time regions", ["From", "To", "Label", "Source"],
-        this.free.map((r) => [fmt.seconds(r.start), fmt.seconds(r.end), r.label ?? "ad lib.", "Composition"])),
-      this.free.length ? null : h("p", { class: "hint" }, "This Composition marks no free-time passages (older engines do not write free_regions)."),
-      table("Irregular beat spacing", ["From", "To"], this.irregular.map((r) => [fmt.seconds(r.start), fmt.seconds(r.end)])));
+      table(t("beats.tempo"), [t("beats.col.track"), t("beats.col.beats"), t("beats.col.downbeats"), t("beats.col.perBar"), t("beats.col.tempo")],
+        sums.map(({ r, s }) => [r.label, String(s.beats), String(s.downbeats), String(s.barBeats || "–"), s.bpm ? `${fmt.num(s.bpm, 1)} bpm` : "–"])),
+      level !== null ? h("p", {}, t("beats.level", { x: `${fmt.num(level, 2)}×` }),
+        Math.abs(level - 1) < 0.1 ? t("beats.level.same") : Math.abs(level - 2) < 0.2 ? t("beats.level.half") : Math.abs(level - 0.5) < 0.1 ? t("beats.level.double") : ".") : null,
+      table(t("beats.freeRegions"), [t("beats.col.from"), t("beats.col.to"), t("beats.col.label"), t("beats.col.source")],
+        this.free.map((r) => [fmt.seconds(r.start), fmt.seconds(r.end), r.label ?? "ad lib.", t("beats.composition")])),
+      this.free.length ? null : h("p", { class: "hint" }, t("beats.noFree")),
+      table(t("beats.irregularTitle"), [t("beats.col.from"), t("beats.col.to")], this.irregular.map((r) => [fmt.seconds(r.start), fmt.seconds(r.end)])));
     update();
   }
 

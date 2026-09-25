@@ -2,6 +2,7 @@
 // over time. Colour says which model; shape says it too, and confidence is
 // drawn as fill (confident), hatching (uncertain) or a dashed outline (very
 // uncertain), so nothing relies on colour alone.
+import { t } from "../i18n";
 import { announce, clear, fmt, h, token } from "../ui/dom";
 import { pitchName } from "../lib/validate";
 import { hatch, plot, timeAxis, type Plot } from "./canvas";
@@ -57,9 +58,9 @@ export class PianoRoll extends HTMLElement {
   }
 
   private render(): void {
-    this.chart = plot("Piano roll", 360, (c, w, hh) => this.draw(c, w, hh));
+    this.chart = plot(t("tab.roll"), 360, (c, w, hh) => this.draw(c, w, hh));
     this.info = h("p", { class: "hint", role: "status" });
-    const toggles = h("fieldset", {}, h("legend", {}, "Layers"),
+    const toggles = h("fieldset", {}, h("legend", {}, t("roll.layers")),
       h("ul", { class: "legend" }, this.layers.map((l) => {
         const box = h("input", { type: "checkbox", checked: l.visible, onchange: () => {
           l.visible = box.checked;
@@ -68,16 +69,16 @@ export class PianoRoll extends HTMLElement {
         } });
         return h("li", {}, h("label", {}, box, swatch(l), `${l.label} (${l.notes.length})`));
       })));
-    const confLegend = h("ul", { class: "legend", "aria-label": "Confidence" },
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--ink)" }), "confident (≥ 0.7): filled"),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:repeating-linear-gradient(135deg,var(--uncertain) 0 2px,transparent 2px 5px)" }), "uncertain (0.4–0.7): hatched"),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "border-style:dashed;background:transparent" }), "very uncertain (< 0.4): dashed outline"));
+    const confLegend = h("ul", { class: "legend", "aria-label": t("roll.confidence") },
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--ink)" }), t("roll.confident")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:repeating-linear-gradient(135deg,var(--uncertain) 0 2px,transparent 2px 5px)" }), t("roll.uncertain")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "border-style:dashed;background:transparent" }), t("roll.veryUncertain")));
     const nav = h("div", { class: "row" },
-      h("button", { type: "button", onclick: () => this.pan(-0.8) }, "◀ Earlier"),
-      h("button", { type: "button", onclick: () => this.pan(0.8) }, "Later ▶"),
-      h("button", { type: "button", onclick: () => this.zoom(0.5) }, "Zoom in"),
-      h("button", { type: "button", onclick: () => this.zoom(2) }, "Zoom out"),
-      h("button", { type: "button", onclick: () => { this.t0 = 0; this.span = this.duration; this.update(); } }, "Whole piece"));
+      h("button", { type: "button", onclick: () => this.pan(-0.8) }, t("common.earlier")),
+      h("button", { type: "button", onclick: () => this.pan(0.8) }, t("common.later")),
+      h("button", { type: "button", onclick: () => this.zoom(0.5) }, t("common.zoomIn")),
+      h("button", { type: "button", onclick: () => this.zoom(2) }, t("common.zoomOut")),
+      h("button", { type: "button", onclick: () => { this.t0 = 0; this.span = this.duration; this.update(); } }, t("roll.whole")));
     this.summaryEl = h("div", {});
     clear(this, toggles, confLegend, nav, this.info, this.chart.box, this.summaryEl);
     this.update();
@@ -96,7 +97,7 @@ export class PianoRoll extends HTMLElement {
   }
 
   private update(): void {
-    this.info.textContent = `Showing ${fmt.seconds(this.t0)} to ${fmt.seconds(this.t0 + this.span)}, pitches ${pitchName(this.lo)} to ${pitchName(this.hi)} (concert).`;
+    this.info.textContent = t("roll.showing", { from: fmt.seconds(this.t0), to: fmt.seconds(this.t0 + this.span), lo: pitchName(this.lo), hi: pitchName(this.hi) });
     this.chart.redraw();
     this.summary();
     announce(this.info.textContent);
@@ -110,13 +111,13 @@ export class PianoRoll extends HTMLElement {
       const marks = ["added", "removed", "moved", "octave"].map((m) => inWin.filter((n) => n.mark === m).length);
       return h("tr", {}, h("th", { scope: "row" }, l.label), h("td", { class: "num" }, inWin.length),
         h("td", { class: "num" }, band(UNCERTAIN, 2)), h("td", { class: "num" }, band(VERY_UNCERTAIN, UNCERTAIN)), h("td", { class: "num" }, band(-1, VERY_UNCERTAIN)),
-        marks.some(Boolean) ? h("td", {}, marks.map((m, i) => (m ? `${["added", "removed", "moved", "octave"][i]} ${m}` : "")).filter(Boolean).join(", ")) : h("td", {}, "–"));
+        marks.some(Boolean) ? h("td", {}, marks.map((m, i) => (m ? `${t(`roll.mark.${["added", "removed", "moved", "octave"][i]}`)} ${m}` : "")).filter(Boolean).join(", ")) : h("td", {}, "–"));
     });
-    clear(this.summaryEl, h("div", { class: "table-wrap", tabindex: 0, role: "region", "aria-label": "Notes in view" },
-      h("table", {}, h("caption", {}, "Notes in view"),
-        h("thead", {}, h("tr", {}, ["Layer", "Notes", "Confident", "Uncertain", "Very uncertain", "Diff marks"].map((c) => h("th", { scope: "col" }, c)))),
+    clear(this.summaryEl, h("div", { class: "table-wrap", tabindex: 0, role: "region", "aria-label": t("roll.inView") },
+      h("table", {}, h("caption", {}, t("roll.inView")),
+        h("thead", {}, h("tr", {}, [t("roll.col.layer"), t("roll.col.notes"), t("roll.col.confident"), t("roll.col.uncertain"), t("roll.col.very"), t("roll.col.marks")].map((c) => h("th", { scope: "col" }, c)))),
         h("tbody", {}, rows))));
-    this.chart.setLabel(`Piano roll from ${fmt.seconds(this.t0)} to ${fmt.seconds(this.t0 + this.span)}; the table below lists the notes in view.`);
+    this.chart.setLabel(t("roll.label", { from: fmt.seconds(this.t0), to: fmt.seconds(this.t0 + this.span) }));
   }
 
   private draw(c: CanvasRenderingContext2D, w: number, hh: number): void {

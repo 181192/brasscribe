@@ -1,6 +1,7 @@
 // Benchmarks: run suites, see the regression gate and the trend per metric.
 import { api } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
+import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, loading, pill, table, token } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
@@ -8,22 +9,21 @@ export function benchView(root: HTMLElement): void {
   const lastEl = h("div", { "aria-live": "polite" });
   const trendEl = h("div", {}, loading());
   clear(root,
-    h("h1", {}, "Benchmarks"),
-    h("p", {}, "Each suite scores model outputs against the baselines in ", h("code", {}, "eval/baselines.json"),
-      " (the numbers in docs/research/10-benchmark-results.md). The gate fails when a metric moves more than its tolerance (±0.01 F1)."),
-    h("section", { "aria-labelledby": "suites-h" }, h("h2", { id: "suites-h" }, "Suites"), suitesEl),
-    h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, "Latest result"), lastEl),
-    h("section", { "aria-labelledby": "trend-h" }, h("h2", { id: "trend-h" }, "Trend"), trendEl));
+    h("h1", {}, t("nav.bench")),
+    h("p", {}, t("bench.intro1"), h("code", {}, "eval/baselines.json"), t("bench.intro2")),
+    h("section", { "aria-labelledby": "suites-h" }, h("h2", { id: "suites-h" }, t("bench.suites")), suitesEl),
+    h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), lastEl),
+    h("section", { "aria-labelledby": "trend-h" }, h("h2", { id: "trend-h" }, t("bench.trend")), trendEl));
 
   const loadTrend = () => api.suiteHistory().then((hist) => clear(trendEl, trend(hist))).catch((e) => clear(trendEl, errorNotice(e)));
   api.suites().then((suites) => {
     clear(suitesEl, suiteTable(suites, async (name, mode, btn) => {
       btn.disabled = true;
-      clear(lastEl, loading(`Running ${name} (${mode})…`));
+      clear(lastEl, loading(t("bench.running", { name, mode })));
       try {
         const run = await api.runSuite(name, mode);
         clear(lastEl, benchResult(run));
-        announce(`${name}: gate ${run.passed ? "passed" : "failed"}`);
+        announce(t("bench.gateAnnounce", { name, state: run.passed ? t("bench.passed") : t("bench.failed") }));
         void loadTrend();
       } catch (e) {
         clear(lastEl, errorNotice(e));
@@ -33,20 +33,20 @@ export function benchView(root: HTMLElement): void {
     }));
   }).catch((e) => clear(suitesEl, errorNotice(e)));
   void loadTrend();
-  clear(lastEl, h("p", { class: "hint" }, "Run a suite to see its gate here. Earlier results are in the trend below."));
+  clear(lastEl, h("p", { class: "hint" }, t("bench.hint")));
 }
 
 function suiteTable(suites: SuiteInfo[], run: (name: string, mode: "cached" | "live", btn: HTMLButtonElement) => void): HTMLElement {
   const groups = ["cpu", "all"];
   const btn = (name: string, mode: "cached" | "live", label?: string) => {
-    const b: HTMLButtonElement = h("button", { type: "button", "aria-label": label ? null : `${mode === "cached" ? "Run" : "Run live"} ${name}`, onclick: () => run(name, mode, b) },
-      label ?? (mode === "cached" ? "Run" : "Run live"));
+    const b: HTMLButtonElement = h("button", { type: "button", "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode, b) },
+      label ?? (mode === "cached" ? t("bench.run") : t("bench.runLive")));
     return b;
   };
   return h("div", {},
-    h("div", { class: "row" }, groups.map((g) => btn(g, "cached", `Run all ${g === "cpu" ? "CPU suites" : "suites"}`))),
-    table("Suites", ["Suite", "Runs on", "Description", "Needs", ""], suites.map((s) => [
-      h("span", { class: "mono" }, s.name), s.cpu ? "CPU (cached model outputs)" : "GPU (runs models)", s.description,
+    h("div", { class: "row" }, groups.map((g) => btn(g, "cached", g === "cpu" ? t("bench.runAllCpu") : t("bench.runAll")))),
+    table(t("bench.suites"), [t("bench.col.suite"), t("bench.col.on"), t("bench.col.desc"), t("bench.col.needs"), ""], suites.map((s) => [
+      h("span", { class: "mono" }, s.name), s.cpu ? t("bench.cpu") : t("bench.gpu"), s.description,
       h("span", { class: "small mono" }, s.requires.join(", ") || "–"),
       h("span", { class: "row" }, btn(s.name, "cached"), s.cpu ? null : btn(s.name, "live")),
     ])));
@@ -54,7 +54,7 @@ function suiteTable(suites: SuiteInfo[], run: (name: string, mode: "cached" | "l
 
 export function benchResult(run: BenchRun): HTMLElement {
   return h("div", { class: "stack" },
-    h("p", { class: "row" }, pill(run.passed ? "pass" : "fail"), `Gate ${run.passed ? "passed" : "failed"} for ${run.target} (${run.mode})`,
+    h("p", { class: "row" }, pill(run.passed ? "pass" : "fail"), t("bench.gate", { state: run.passed ? t("bench.passed") : t("bench.failed"), target: run.target, mode: run.mode }),
       h("span", { class: "small muted" }, `${fmt.date(run.created)} · git ${fmt.hash(run.git_sha)} · ${run.device ?? "–"}`)),
     run.suites.map(suiteResult));
 }
@@ -63,15 +63,15 @@ function suiteResult(r: SuiteResult): HTMLElement {
   return h("div", { class: "card" },
     h("h3", { class: "row" }, h("span", { class: "mono" }, r.suite), pill(r.status), h("span", { class: "small muted" }, fmt.seconds(r.seconds))),
     r.reason ? h("p", { class: "small" }, r.reason) : null,
-    r.checks?.length ? table(`Checks for ${r.suite}`, ["Metric", "Value", "Baseline", "Δ", "Tolerance", "Status"],
+    r.checks?.length ? table(t("bench.checks", { suite: r.suite }), [t("bench.col.metric"), t("bench.col.value"), t("bench.col.baseline"), t("bench.col.delta"), t("bench.col.tol"), t("bench.col.status")],
       r.checks.map((c) => [h("span", { class: "mono small" }, c.metric), fmt.num(c.value), fmt.num(c.baseline),
         c.value !== null && c.baseline !== null ? fmt.signed(c.value - c.baseline) : "–", `±${c.tolerance}`, pill(c.status)]), { hideCaption: true })
-      : h("p", { class: "hint" }, "No checks (no baseline for this suite)."));
+      : h("p", { class: "hint" }, t("bench.noChecks")));
 }
 
 /** Per suite: each metric's latest gate check with a sparkline over all stored runs (baseline band shaded). */
 function trend(hist: SuiteRun[]): HTMLElement {
-  if (!hist.length) return h("p", {}, "No suite results stored yet. Run a suite above.");
+  if (!hist.length) return h("p", {}, t("bench.noHistory"));
   const bySuite = new Map<string, SuiteRun[]>();
   for (const r of [...hist].sort((a, b) => a.time - b.time)) (bySuite.get(r.suite) ?? bySuite.set(r.suite, []).get(r.suite)!).push(r);
   const out: HTMLElement[] = [];
@@ -80,18 +80,18 @@ function trend(hist: SuiteRun[]): HTMLElement {
     const metrics = [...new Set(runs.flatMap((r) => r.checks.map((c) => c.metric)))];
     // Suites that pass start collapsed; failing ones open.
     out.push(h("details", { class: "card", open: last.status !== "pass" },
-      h("summary", {}, h("span", { class: "row", style: "display:inline-flex" }, h("strong", { class: "mono" }, suite), pill(last.status), h("span", { class: "small muted" }, `${runs.length} ${runs.length === 1 ? "run" : "runs"}, last ${fmt.date(last.time)}`))),
-      table(`Gate for ${suite} over time`, ["Metric", "Latest", "Baseline", "Δ", "Status", "Trend"], metrics.map((m) => {
+      h("summary", {}, h("span", { class: "row", style: "display:inline-flex" }, h("strong", { class: "mono" }, suite), pill(last.status), h("span", { class: "small muted" }, runs.length === 1 ? t("bench.run1", { when: fmt.date(last.time) }) : t("bench.runs", { n: runs.length, when: fmt.date(last.time) })))),
+      table(t("bench.gateOver", { suite }), [t("bench.col.metric"), t("bench.col.latest"), t("bench.col.baseline"), t("bench.col.delta"), t("bench.col.status"), t("bench.col.trend")], metrics.map((m) => {
         const c = last.checks.find((x) => x.metric === m);
         return [h("span", { class: "mono small" }, m), fmt.num(c?.value), c?.baseline != null ? `${fmt.num(c.baseline)} ± ${c.tolerance}` : "–",
           c && c.value !== null && c.baseline !== null ? fmt.signed(c.value - c.baseline) : "–", c ? pill(c.status) : "–", sparkline(m, runs)];
       }), { hideCaption: true }),
-      h("details", {}, h("summary", {}, `All ${runs.length} results for ${suite}`),
-        table(`History of ${suite}`, ["When", "Status", "Git", "Device", ...metrics], runs.slice().reverse().map((r) => [
+      h("details", {}, h("summary", {}, t("bench.allResults", { n: runs.length, suite })),
+        table(t("bench.history", { suite }), [t("bench.col.when"), t("bench.col.status"), t("bench.col.git"), t("bench.col.device"), ...metrics], runs.slice().reverse().map((r) => [
           fmt.date(r.time), pill(r.status), h("span", { class: "mono small" }, fmt.hash(r.git_sha)), r.device ?? "–",
           ...metrics.map((m) => {
             const c = r.checks.find((x) => x.metric === m);
-            return c ? `${fmt.num(c.value)}${c.status !== "pass" ? ` (${c.status})` : ""}` : "–";
+            return c ? `${fmt.num(c.value)}${c.status !== "pass" ? ` (${t(`status.${c.status}`)})` : ""}` : "–";
           }),
         ])))));
   }
@@ -114,7 +114,7 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.setAttribute("role", "img");
   const lastV = vals[vals.length - 1];
-  svg.setAttribute("aria-label", `${metric}: ${pts.length} results, latest ${fmt.num(lastV)}${base?.baseline != null ? `, baseline ${fmt.num(base.baseline)} ± ${base.tolerance}` : ""}`);
+  svg.setAttribute("aria-label", t("bench.spark", { metric, n: pts.length, v: fmt.num(lastV) }) + (base?.baseline != null ? t("bench.sparkBase", { b: fmt.num(base.baseline), t: base.tolerance }) : ""));
   svg.style.width = `${W}px`;
   svg.style.height = `${H}px`;
   const add = (tag: string, attrs: Record<string, string | number>) => {

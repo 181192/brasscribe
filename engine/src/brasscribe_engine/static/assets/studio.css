@@ -233,3 +233,10 @@ fieldset { min-width: 0; }
 /* The score is white paper in every theme: its marks keep the light-theme tokens. */
 .score-view .at-surface { --cursor: #6B3FA0; --loop-edge: #8A5A00; }
 .score-view .at-cursors { --cursor: #6B3FA0; --loop-edge: #8A5A00; }
+button.danger { background: var(--error); color: var(--bg); border-color: var(--error); font-weight: 600; }
+.lang-switch { font-size: 0.875rem; }
+.talk-now { font-weight: 600; min-height: 1.5em; }
+.talk-text { max-height: 24rem; overflow: auto; }
+.talk-text li.current { outline: 2px solid var(--focus); outline-offset: 1px; }
+.talk-text h4 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; }
+.talk-text ul { margin: 0; }

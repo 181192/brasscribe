@@ -1,6 +1,7 @@
 // Stems mixer: load stems on demand, play them in sync with solo and mute,
 // and show each stem's energy over time.
 import { energy, mixdown } from "../lib/dsp";
+import { t } from "../i18n";
 import { announce, clear, fmt, h, token } from "../ui/dom";
 import { audioContext, decode } from "./audio";
 import { plot, timeAxis } from "./canvas";
@@ -33,33 +34,33 @@ export class StemsMixer extends HTMLElement {
   private startedAt = 0;
   private offset = 0;
   private playBtn!: HTMLButtonElement;
-  private chart = plot("Energy over time", 140, (c, w, hh) => this.drawEnergy(c, w, hh));
+  private chart = plot(t("stems.energy"), 140, (c, w, hh) => this.drawEnergy(c, w, hh));
   private legend = h("ul", { class: "legend" });
 
   set data(stems: StemSource[]) {
-    this.playBtn = h("button", { type: "button", class: "primary", onclick: () => this.toggle() }, "Play loaded stems");
+    this.playBtn = h("button", { type: "button", class: "primary", onclick: () => this.toggle() }, t("stems.play"));
     this.rows = stems.map((src) => {
-      const status = h("span", { class: "small muted" }, "not loaded");
+      const status = h("span", { class: "small muted" }, t("stems.notLoaded"));
       const row: Row = {
         src, mute: false, solo: false, status,
-        loadBtn: h("button", { type: "button", "aria-label": `Load ${src.name}`, onclick: () => this.load(row) }, "Load"),
-        muteBox: h("input", { type: "checkbox", "aria-label": `Mute ${src.name}`, onchange: () => this.setFlag(row, "mute") }),
-        soloBox: h("input", { type: "checkbox", "aria-label": `Solo ${src.name}`, onchange: () => this.setFlag(row, "solo") }),
+        loadBtn: h("button", { type: "button", "aria-label": t("stems.loadName", { name: src.name }), onclick: () => this.load(row) }, t("stems.load")),
+        muteBox: h("input", { type: "checkbox", "aria-label": t("score.muteName", { name: src.name }), onchange: () => this.setFlag(row, "mute") }),
+        soloBox: h("input", { type: "checkbox", "aria-label": t("score.soloName", { name: src.name }), onchange: () => this.setFlag(row, "solo") }),
       };
       return row;
     });
     const groups = [...new Set(stems.map((s) => s.group))];
-    const hint = h("p", { class: "hint" }, "Stems load when you ask for them (the separator writes dozens). Loaded stems play together; solo and mute apply live.");
-    const loadGroup = (g: string) => h("button", { type: "button", onclick: () => Promise.all(this.rows.filter((r) => r.src.group === g).map((r) => this.load(r))) }, `Load all ${g}`);
+    const hint = h("p", { class: "hint" }, t("stems.hint"));
+    const loadGroup = (g: string) => h("button", { type: "button", onclick: () => Promise.all(this.rows.filter((r) => r.src.group === g).map((r) => this.load(r))) }, t("stems.loadAll", { group: g }));
     clear(this,
-      h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.stop(true) }, "Stop"), groups.map(loadGroup)),
+      h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.stop(true) }, t("score.stop")), groups.map(loadGroup)),
       hint,
-      h("h3", {}, "Energy over time (loaded stems)"),
+      h("h3", {}, t("stems.energy")),
       this.chart.box, this.legend,
-      groups.map((g) => h("div", { class: "table-wrap", role: "region", "aria-label": `${g} stems`, tabindex: 0 },
+      groups.map((g) => h("div", { class: "table-wrap", role: "region", "aria-label": t("stems.group", { group: g }), tabindex: 0 },
         h("table", {},
           h("caption", {}, `${g} (${this.rows.filter((r) => r.src.group === g).length})`),
-          h("thead", {}, h("tr", {}, ["Stem", "Size", "Loaded", "Mute", "Solo", ""].map((c) => h("th", { scope: "col" }, c)))),
+          h("thead", {}, h("tr", {}, [t("stems.col.stem"), t("stems.col.size"), t("stems.col.loaded"), t("stems.col.mute"), t("stems.col.solo"), ""].map((c) => h("th", { scope: "col" }, c)))),
           h("tbody", {}, this.rows.filter((r) => r.src.group === g).map((r) =>
             h("tr", {}, h("td", { class: "mono" }, r.src.name), h("td", { class: "num" }, fmt.bytes(r.src.bytes)), h("td", {}, r.status),
               h("td", {}, r.muteBox), h("td", {}, r.soloBox), h("td", {}, r.loadBtn))))))));
@@ -77,18 +78,18 @@ export class StemsMixer extends HTMLElement {
   private async load(r: Row): Promise<void> {
     if (r.buffer) return;
     r.loadBtn.disabled = true;
-    r.status.textContent = "loading…";
+    r.status.textContent = t("stems.loadingOne");
     try {
       r.buffer = await decode(r.src.url);
       const mono = mixdown(Array.from({ length: r.buffer.numberOfChannels }, (_, c) => r.buffer!.getChannelData(c)));
       r.energy = energy(mono, FRAMES);
       r.status.textContent = `${fmt.seconds(r.buffer.duration)}`;
-      r.loadBtn.textContent = "Loaded";
+      r.loadBtn.textContent = t("stems.loaded");
       this.chart.redraw();
       this.renderLegend();
       if (this.nodes.length) this.restart();
     } catch (e) {
-      r.status.textContent = `failed: ${e instanceof Error ? e.message : e}`;
+      r.status.textContent = t("stems.failed", { e: e instanceof Error ? e.message : String(e) });
       r.loadBtn.disabled = false;
     }
   }
@@ -96,7 +97,7 @@ export class StemsMixer extends HTMLElement {
   private setFlag(r: Row, flag: "mute" | "solo"): void {
     r[flag] = flag === "mute" ? r.muteBox.checked : r.soloBox.checked;
     this.applyGains();
-    announce(`${r.src.name}: ${flag} ${r[flag] ? "on" : "off"}`);
+    announce(t("score.toggled", { name: r.src.name, what: flag === "mute" ? t("score.mute") : t("score.solo"), state: r[flag] ? t("score.on") : t("score.off") }));
     this.chart.redraw();
   }
 
@@ -125,7 +126,7 @@ export class StemsMixer extends HTMLElement {
     void ac.resume();
     const loaded = this.rows.filter((r) => r.buffer);
     if (!loaded.length) {
-      announce("Load at least one stem first.");
+      announce(t("stems.needOne"));
       return;
     }
     const when = ac.currentTime + 0.05;
@@ -140,7 +141,7 @@ export class StemsMixer extends HTMLElement {
     this.applyGains();
     this.offset = at;
     this.startedAt = when;
-    this.playBtn.textContent = "Pause";
+    this.playBtn.textContent = t("score.pause");
   }
 
   private stop(rewind: boolean): void {
@@ -154,7 +155,7 @@ export class StemsMixer extends HTMLElement {
     }
     this.nodes = [];
     if (rewind) this.offset = 0;
-    if (this.playBtn) this.playBtn.textContent = "Play loaded stems";
+    if (this.playBtn) this.playBtn.textContent = t("stems.play");
   }
 
   private colours(): string[] {
@@ -175,7 +176,7 @@ export class StemsMixer extends HTMLElement {
     if (!rows.length) {
       c.fillStyle = token("text-muted");
       c.font = "12px system-ui, sans-serif";
-      c.fillText("Load stems to see their energy.", 8, 20);
+      c.fillText(t("stems.energyEmpty"), 8, 20);
       return;
     }
     const dur = Math.max(...rows.map((r) => r.buffer!.duration));
@@ -200,7 +201,7 @@ export class StemsMixer extends HTMLElement {
     c.setLineDash([]);
     c.globalAlpha = 1;
     timeAxis(c, w, plotH, 0, dur, token("text-muted"));
-    this.chart.setLabel(`Energy over time, −60 to 0 dBFS, for ${rows.map((r) => r.src.name).join(", ")}`);
+    this.chart.setLabel(t("stems.energyLabel", { names: rows.map((r) => r.src.name).join(", ") }));
   }
 }
 
