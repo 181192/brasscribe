@@ -286,8 +286,10 @@ def _mikkel_arrangement(data: Path, out: Path) -> Path:
     layers = data / "mikkel/repro/layers"
     view = out / "layers"
     view.mkdir(parents=True)
-    for f in layers.glob("*.mid"):
-        (view / f.name).symlink_to(f.resolve())
+    # MIDI of every layer plus the layer audio (energy gate, separation check, dynamics, rehearsal marks).
+    for f in [*layers.glob("*.mid"), *(layers / f"{n}.wav" for n in ("solo", "bass", "drums", "orchestra"))]:
+        if f.exists():
+            (view / f.name).symlink_to(f.resolve())
     contour = layers / "solo-sw.contour.npz"
     if contour.exists():
         (view / contour.name).symlink_to(contour.resolve())

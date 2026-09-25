@@ -293,6 +293,14 @@
             "title": "Composition Identical",
             "type": "boolean"
           },
+          "extra_files": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "parts/*.musicxml and separation-check.json the reference has: identical?",
+            "title": "Extra Files",
+            "type": "object"
+          },
           "musicxml_identical": {
             "title": "Musicxml Identical",
             "type": "boolean"

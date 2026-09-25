@@ -79,7 +79,7 @@ def main() -> None:
     ap.add_argument("--beats", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--title", default="Draft")
-    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF/MP3 export")
+    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF/MP3 export of the score and parts")
     ap.add_argument("--solo-contour", type=Path,
                     help="SwiftF0 contour of the solo stem (swiftf0_contour.py); default <layers>/solo-sw.contour.npz if present")
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
@@ -227,6 +227,8 @@ def main() -> None:
         subprocess.run(["mscore", "-o", str(f), str(xml)], capture_output=True)
     # Individual parts (mscore -P crashes): one MusicXML per part, rendered one by one.
     for f in split_parts(xml, args.out / "parts"):
+        if args.no_render:
+            continue
         pdf = f.with_suffix(".pdf")
         pdf.unlink(missing_ok=True)
         subprocess.run(["mscore", "-S", str(PART_STYLE), "-o", str(pdf), str(f)], capture_output=True)

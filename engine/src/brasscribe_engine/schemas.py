@@ -252,6 +252,8 @@ class Comparison(BaseModel):
     parts_total: int
     notes_identical: int
     notes_total: int
+    extra_files: dict[str, bool] = Field(default_factory=dict, description="parts/*.musicxml and separation-check.json "
+                                                                            "the reference has: identical?")
 
 
 class RoundtripPart(BaseModel):

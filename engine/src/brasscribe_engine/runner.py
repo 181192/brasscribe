@@ -132,11 +132,18 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
             outputs_dir.mkdir(exist_ok=True)
             for name, (stage, f) in pipeline.outputs.items():
                 r = results.get(stage)
-                if r and f in r.files:
-                    link_or_clone(r.out_dir / f, outputs_dir / name)
-                    manifest["outputs"][name] = r.files[f]
+                if not r:
+                    continue
+                if f.endswith("/"):  # every file under a directory; parts PDFs land next to the parts
+                    pairs = [(rel, "parts/" + rel[len(f):] if name == "parts-pdf/" else name + rel[len(f):])
+                             for rel in r.files if rel.startswith(f)]
+                else:
+                    pairs = [(f, name)] if f in r.files else []
+                for rel, dest in pairs:
+                    link_or_clone(r.out_dir / rel, outputs_dir / dest)
+                    manifest["outputs"][dest] = r.files[rel]
                     if out is not None:
-                        link_or_clone(r.out_dir / f, Path(out) / name)
+                        link_or_clone(r.out_dir / rel, Path(out) / dest)
             if out is not None:
                 manifest["out"] = str(Path(out).resolve())
         manifest["finished"] = datetime.now(timezone.utc).isoformat()
