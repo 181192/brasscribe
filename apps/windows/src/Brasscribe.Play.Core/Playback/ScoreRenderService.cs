@@ -61,6 +61,21 @@ public sealed class ScoreRenderService
         renderer.Destroy();
         return new RenderOutput(totalW, totalH, partials, bounds);
     }
+
+    /// <summary>PNG bytes of a Skia partial (what the WinUI view shows); null for other engines.</summary>
+    public static byte[]? ToPng(object renderResult) => renderResult switch
+    {
+        AlphaTab.Platform.Skia.AlphaSkiaBridge.AlphaSkiaImage bridge => bridge.Image.ToPng(),
+        AlphaSkia.AlphaSkiaImage image => image.ToPng(),
+        _ => null,
+    };
+
+    /// <summary>Releases native Skia images of a render.</summary>
+    public static void Release(RenderOutput output)
+    {
+        foreach (var p in output.Partials)
+            if (p.Result is IDisposable d) d.Dispose();
+    }
 }
 
 /// <summary>

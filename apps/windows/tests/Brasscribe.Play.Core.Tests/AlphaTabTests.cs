@@ -72,6 +72,28 @@ public class AlphaTabTests(ITestOutputHelper log)
     }
 
     [Fact]
+    public void Renders_png_bitmaps_with_skia_as_the_app_does()
+    {
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(Fixture());
+        var svc = new ScoreRenderService("skia") { Scale = 2.0 };
+        var output = svc.Render(player.Score!, [0, 1], 800);
+        try
+        {
+            Assert.NotEmpty(output.Partials);
+            var png = ScoreRenderService.ToPng(output.Partials[0].Result)!;
+            Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, png[..4]);
+            var small = new ScoreRenderService("skia") { Scale = 1.0 }.Render(player.Score!, [0, 1], 800);
+            Assert.True(output.TotalHeight > small.TotalHeight * 1.5, $"zoom 200% should grow the score: {small.TotalHeight} -> {output.TotalHeight}");
+            ScoreRenderService.Release(small);
+        }
+        finally
+        {
+            ScoreRenderService.Release(output);
+        }
+    }
+
+    [Fact]
     public void Golden_brass_band_score_imports_and_renders()
     {
         var path = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
