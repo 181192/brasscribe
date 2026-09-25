@@ -1,0 +1,21 @@
+[project]
+name = "brasscribe-convert-basic-pitch"
+version = "0.1.0"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "ai-edge-litert>=1.0",
+    "basic-pitch>=0.4.0",
+    "coremltools>=8.0",
+    "numpy<2",
+    "onnx>=1.15,<1.17",
+    "onnxruntime>=1.20",
+    "scikit-learn<=1.5.1",
+    "setuptools<81",
+    "soundfile>=0.12",
+    "soxr>=0.5",
+    "tensorflow-macos>=2.15,<2.15.1",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+package = false
