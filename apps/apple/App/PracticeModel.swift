@@ -20,6 +20,7 @@ final class PracticeModel {
     private(set) var loadError: String?
     private(set) var engraving = false
     private(set) var layoutVersion = 0
+    private var layoutGeneration = 0
 
     // View settings
     var shownPart: String? { didSet { if shownPart != oldValue { relayout() } } }
@@ -102,14 +103,22 @@ final class PracticeModel {
         let layout = ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
                                           height: max(600, viewWidth * 1.3))
         engraving = true
+        layoutGeneration += 1
+        let gen = layoutGeneration
+        // Pages appear one by one so the first system is readable while the rest engrave;
+        // a newer layout request abandons this one.
         Task.detached(priority: .userInitiated) { [r] in
-            r.apply(layout)
-            let pages = r.renderAllPages()
-            await MainActor.run {
-                self.pages = pages
-                self.layoutVersion += 1
-                self.engraving = false
-                self.updateSounding()
+            guard r.apply(layout) else { return }
+            let n = r.pageCount
+            for i in 1...max(1, n) {
+                guard await self.layoutGeneration == gen else { return }
+                guard let p = r.page(i) else { continue }
+                await MainActor.run {
+                    guard self.layoutGeneration == gen else { return }
+                    if i == 1 { self.pages = [p]; self.layoutVersion += 1 } else { self.pages.append(p) }
+                    if i == n { self.engraving = false }
+                    self.updateSounding()
+                }
             }
         }
     }

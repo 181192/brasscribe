@@ -52,7 +52,12 @@ struct NotationView: View {
                     .accessibilityLabel(Text("Score pages"))
                 }
                 .background(palette.paper)
-                .onAppear { model.viewWidth = geo.size.width - 16 }
+                .onAppear {
+                    let w = geo.size.width - 16
+                    // phones open on the musician's own part, which is readable at that width
+                    if w < 600, model.shownPart == nil { model.shownPart = model.myPart }
+                    if abs(w - model.viewWidth) > 40 { model.viewWidth = w; model.relayout() }
+                }
                 .onChange(of: geo.size.width) { _, w in
                     if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
                 }

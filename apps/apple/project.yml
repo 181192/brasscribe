@@ -38,6 +38,7 @@ targets:
     platform: [iOS, macOS]
     sources:
       - path: App
+        excludes: ["Info-*.plist", "*.entitlements"]
       - path: Frameworks/VerovioResources
         type: folder
         buildPhase: resources
@@ -103,7 +104,7 @@ targets:
         SUPPORTS_MACCATALYST: NO
       configs:
         Debug:
-          CODE_SIGN_ENTITLEMENTS: App/Debug.entitlements
+          "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": App/Debug.entitlements
 
   BrasscribePlayTests:
     type: bundle.unit-test

@@ -123,6 +123,7 @@ struct ScoreToolbar: View {
 
 struct TransportBar: View {
     @Bindable var model: PracticeModel
+    @Environment(\.horizontalSizeClass) private var hsize
 
     var body: some View {
         VStack(spacing: 8) {
@@ -165,13 +166,14 @@ struct TransportBar: View {
                     .accessibilityHint(Text("Switch between the score and the original recording at the same place."))
                     .accessibilityIdentifier("originalToggle")
             }
-            .labelStyle(.titleAndIcon)
+            .labelStyle(AdaptiveLabelStyle(compact: hsize == .compact))
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 16) { practiceControls }
                 VStack(alignment: .leading, spacing: 8) { practiceControls }
             }
         }
+        .labelStyle(AdaptiveLabelStyle(compact: hsize == .compact))
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(.bar)
@@ -222,6 +224,14 @@ struct TransportBar: View {
         .fixedSize()
         // hidden button so plain L loops the current bar
         Button("") { model.toggleLoopCurrentBar() }.keyboardShortcut("l", modifiers: []).hidden().frame(width: 0).accessibilityHidden(true)
+    }
+}
+
+/// Icon only in compact width (VoiceOver still reads the title), title and icon otherwise.
+struct AdaptiveLabelStyle: LabelStyle {
+    let compact: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        if compact { Label(configuration).labelStyle(.iconOnly) } else { Label(configuration).labelStyle(.titleAndIcon) }
     }
 }
 
