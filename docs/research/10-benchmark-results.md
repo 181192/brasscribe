@@ -155,6 +155,42 @@ Corrected results (100 ms):
 - Mikkel has a steady ~138 BPM after its intro, so it should be less affected.
 - The penalty scale is tuned on rhythmically simple chorales. Revalidate on URMP and faster material.
 
+## URMP brass (real recordings)
+
+**Set.** `urmp-brass`, built by `eval/brasscribe_eval/urmp.py`: 8 brass-only URMP pieces, 5 129 notes.
+- Pieces: Entertainer, Air on the G String, Surprise, Slavonic Dance, Für Elise, Art of the Fugue, Arioso, Chorale (quintet).
+- Meters: 4/4, 2/4, 3/4, 6/8, 2/2.
+- Performed notes come from the per-track annotations.
+- Notated positions come from pitch-DTW alignment to the score MIDI: 94–99% of notes aligned.
+- File instrument tags in URMP are sometimes wrong (Surprise track 3 is filed as `tpt` but is the trombone), so tracks are matched by number.
+
+**Transcription (mix, 100 ms):**
+
+| Model | onset F1 (100 ms) | strict onset F1 | octave err | s/piece |
+|---|---|---|---|---|
+| Basic Pitch | 0.73 | 0.66 | 4.1% | 3 |
+| **MuScriptor medium** | **0.88** | 0.69 | 1.2% | 34 |
+| Consensus, agreement threshold 0.8 | 0.88 (P 0.89) | — | — | — |
+
+- MuScriptor fails on Air on the G String (0.32 strict), a slow legato piece. It is the only outlier.
+- Consensus at 0.8 ties MuScriptor on F1 with higher precision, so agreement works as a confidence flag.
+
+**Rhythm (reference notes):**
+
+| Beats | position | subdivision | duration |
+|---|---|---|---|
+| Reference beats | **0.95** | 0.96 | 0.54 |
+| Beat This! (raw) | 0.33 | 0.69 | 0.37 |
+| Beat This! + metrical-level selection | 0.45 | **0.83** | 0.45 |
+
+- **The quantizer generalizes.** 95% exact positions with true beats on busier real material validates the penalty tuning.
+- **Performed durations ≠ notated durations** (0.54). Players shorten notes, so notated length must be inferred per voice ("until next onset" with articulation), not measured.
+- **Beat This! picked the half-note level on 5 of 8 pieces.**
+  - `choose_level()` in `quantize.py` doubles the grid when tempo is under 90 BPM and the median IOI is ≤ 0.3 beats.
+  - It fixes 4 of 6 half-level tracks across URMP and chorales with no false doubles.
+  - Air on the G String and the Chorale stay ambiguous; their notated beat is a convention the audio cannot fully determine.
+- **Remaining position errors** are beat insertions/deletions (drift in bar count). The next steps are downbeat-constrained beat cleanup and a UI step to confirm meter and pickup.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.

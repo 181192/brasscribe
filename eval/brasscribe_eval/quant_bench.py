@@ -40,6 +40,7 @@ def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats"
         m = mir_eval.transcription.match_notes(ri, rp, ei, ep, onset_tolerance=LOOSE_TOL, offset_ratio=None)
         pairs = [(ref[i], est[j]) for i, j in m]
 
+    pairs = [(r, e) for r, e in pairs if "quarter" in r]  # a few performed notes have no score counterpart
     q = quantize([e for _, e in pairs], beats)
     by_onset = {(round(x.onset_s, 6), x.pitch): x for x in q}
     est_q = [by_onset[(round(e["onset"], 6), e["pitch"])] for _, e in pairs]
@@ -52,6 +53,7 @@ def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats"
     pos = sum(x.start + shift == rt for rt, x in zip(ref_ticks, est_q)) / n
     sub = sum(x.start % TICKS_PER_BEAT == rt % TICKS_PER_BEAT for rt, x in zip(ref_ticks, est_q)) / n
     dur = sum((x.end - x.start) == int(round(r["dur_quarter"] * TICKS_PER_BEAT)) for (r, _), x in zip(pairs, est_q)) / n
+    ref = [r for r in ref if "quarter" in r]
     span_q = max(r["quarter"] for r in ref) - min(r["quarter"] for r in ref)
     t0, t1 = min(r["onset"] for r in ref), max(r["onset"] for r in ref)
     nb = np.sum((beats >= t0) & (beats <= t1))
@@ -61,7 +63,7 @@ def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats"
 
 def reference_beats(song: Path) -> np.ndarray:
     """Beat times interpolated from the notated positions (upper bound for beat tracking)."""
-    ref = load_notes(song / "reference.json")
+    ref = [r for r in load_notes(song / "reference.json") if "quarter" in r]
     qs = np.array([r["quarter"] for r in ref])
     ts = np.array([r["onset"] for r in ref])
     order = np.argsort(qs)
