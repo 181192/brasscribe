@@ -1,5 +1,5 @@
 {
-  "about": "Brass-band parts mapped to the nearest sampled instrument. 'targets' are built instruments (one SFZ + one SF2 each); 'parts' assign score parts to targets per player desk. Ranges come from music/src/brasscribe_music/instruments.py (sounding pitch, MIDI). EQ stages are RBJ-cookbook biquads applied offline to the built sample copies (see sounds/dsp.py), so every player plays identical audio. 'seat' refers to sounds/seating.json.",
+  "about": "Brass-band parts mapped to the nearest sampled instrument. 'targets' are built instruments (one SFZ + one SF2 each); 'parts' assign score parts to targets per player desk. Ranges come from music/src/brasscribe_music/instruments.py (sounding pitch, MIDI). EQ stages are RBJ-cookbook biquads applied offline to the built sample copies (see sounds/dsp.py), so every player plays identical audio. 'seat' refers to sounds/seating.json. Parts are keyed by score part name (the MusicXML part-name / MIDI track name). Part 'gain_db' is the mix balance, set by comparing per-stem loudness (sounds/checks.py balance) against a contest band's usual weighting (strong basses and euphoniums). 'transposition' (sounding minus written, MusicXML chromatic/diatonic) and 'range' are copied from instruments.py for engines that read written-pitch parts.",
   "eq_reference": "RBJ Audio EQ Cookbook biquads (lowshelf/highshelf/peak with gain_db and q; lowpass/highpass with q), cascaded in list order at 44.1 kHz, applied with scipy.signal.sosfilt (causal, same as a native biquad chain).",
   "targets": {
     "soprano-cornet": {
@@ -26,7 +26,11 @@
           "q": 1.0
         }
       ],
-      "why": "E-flat soprano is a small cornet: keep trumpet brilliance, trim the upper presence a little."
+      "why": "E-flat soprano is a small cornet: keep trumpet brilliance, trim the upper presence a little.",
+      "range": [
+        57,
+        87
+      ]
     },
     "cornet-a": {
       "instrument": "bb-cornet",
@@ -69,7 +73,11 @@
           "q": 0.707
         }
       ],
-      "why": "Cornet: shorter, more conical bore than trumpet; less energy above ~3 kHz and a rounder low-mid. The Iowa trumpet is close-miked and brighter than the VSCO one, so this desk gets an extra 2.6 kHz cut and a lower top."
+      "why": "Cornet: shorter, more conical bore than trumpet; less energy above ~3 kHz and a rounder low-mid. The Iowa trumpet is close-miked and brighter than the VSCO one, so this desk gets an extra 2.6 kHz cut and a lower top.",
+      "range": [
+        52,
+        82
+      ]
     },
     "cornet-b": {
       "instrument": "bb-cornet",
@@ -106,7 +114,11 @@
           "q": 0.707
         }
       ],
-      "why": "Same cornet adaptation from the second trumpet library, so unison desks are not sample clones."
+      "why": "Same cornet adaptation from the second trumpet library, so unison desks are not sample clones.",
+      "range": [
+        52,
+        82
+      ]
     },
     "flugelhorn": {
       "instrument": "flugelhorn",
@@ -137,7 +149,11 @@
           "q": 0.7
         }
       ],
-      "why": "Flugel from horn: similar dark, wide-bore tone; recorded horn is heard off the back of the bell, so lift the 1 kHz region the forward-facing flugel projects."
+      "why": "Flugel from horn: similar dark, wide-bore tone; recorded horn is heard off the back of the bell, so lift the 1 kHz region the forward-facing flugel projects.",
+      "range": [
+        52,
+        82
+      ]
     },
     "tenor-horn": {
       "instrument": "eb-tenor-horn",
@@ -168,7 +184,11 @@
           "q": 0.7
         }
       ],
-      "why": "E-flat tenor horn from F horn: close in register and colour; a small mid lift for the upright bell."
+      "why": "E-flat tenor horn from F horn: close in register and colour; a small mid lift for the upright bell.",
+      "range": [
+        45,
+        75
+      ]
     },
     "baritone": {
       "instrument": "baritone",
@@ -211,7 +231,11 @@
           "q": 0.707
         }
       ],
-      "why": "Baritone from tenor trombone: same register and bore size class, but conical valved tone with less edge."
+      "why": "Baritone from tenor trombone: same register and bore size class, but conical valved tone with less edge.",
+      "range": [
+        40,
+        70
+      ]
     },
     "trombone": {
       "instrument": "tenor-trombone",
@@ -224,7 +248,11 @@
         "instrument": "tenor-trombone"
       },
       "eq": [],
-      "why": "Direct match."
+      "why": "Direct match.",
+      "range": [
+        36,
+        74
+      ]
     },
     "bass-trombone": {
       "instrument": "bass-trombone",
@@ -249,7 +277,11 @@
           "q": 0.707
         }
       ],
-      "why": "Direct match; the close-miked Iowa recording gets a gentle top roll-off to sit with the band."
+      "why": "Direct match; the close-miked Iowa recording gets a gentle top roll-off to sit with the band.",
+      "range": [
+        21,
+        77
+      ]
     },
     "euphonium": {
       "instrument": "euphonium",
@@ -286,7 +318,11 @@
           "q": 0.707
         }
       ],
-      "why": "Euphonium from tenor trombone: tenor-tuba bore, much darker and rounder, strong fundamental."
+      "why": "Euphonium from tenor trombone: tenor-tuba bore, much darker and rounder, strong fundamental.",
+      "range": [
+        34,
+        74
+      ]
     },
     "eb-bass": {
       "instrument": "eb-bass",
@@ -306,7 +342,11 @@
           "q": 0.7
         }
       ],
-      "why": "E-flat bass is a tuba; slight top trim for the upright bell."
+      "why": "E-flat bass is a tuba; slight top trim for the upright bell.",
+      "range": [
+        24,
+        72
+      ]
     },
     "bb-bass": {
       "instrument": "bb-bass",
@@ -337,7 +377,11 @@
           "q": 0.707
         }
       ],
-      "why": "B-flat bass (BBb tuba): larger bore, more low end; the close-miked Iowa tuba is much brighter than tubas in ensemble recordings, so the top is rolled off."
+      "why": "B-flat bass (BBb tuba): larger bore, more low end; the close-miked Iowa tuba is much brighter than tubas in ensemble recordings, so the top is rolled off.",
+      "range": [
+        22,
+        72
+      ]
     }
   },
   "parts": {
@@ -349,7 +393,22 @@
         }
       ],
       "seat": "soprano",
-      "gain_db": -1.0
+      "gain_db": -1.0,
+      "transposition": {
+        "chromatic": 3,
+        "diatonic": 2,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          57,
+          87
+        ],
+        "comfortable": [
+          57,
+          84
+        ]
+      }
     },
     "Solo Cornet": {
       "instrument": "bb-cornet",
@@ -368,7 +427,22 @@
         }
       ],
       "seat": "solo-cornets",
-      "gain_db": 0.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      }
     },
     "Repiano Cornet": {
       "instrument": "bb-cornet",
@@ -378,7 +452,22 @@
         }
       ],
       "seat": "repiano",
-      "gain_db": -1.0
+      "gain_db": -1.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      }
     },
     "2nd Cornet": {
       "instrument": "bb-cornet",
@@ -391,7 +480,22 @@
         }
       ],
       "seat": "second-cornets",
-      "gain_db": -2.0
+      "gain_db": -4.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      }
     },
     "3rd Cornet": {
       "instrument": "bb-cornet",
@@ -404,7 +508,22 @@
         }
       ],
       "seat": "third-cornets",
-      "gain_db": -2.0
+      "gain_db": -4.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      }
     },
     "Flugelhorn": {
       "instrument": "flugelhorn",
@@ -414,7 +533,22 @@
         }
       ],
       "seat": "flugel",
-      "gain_db": -1.0
+      "gain_db": 1.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      }
     },
     "Solo Horn": {
       "instrument": "eb-tenor-horn",
@@ -424,7 +558,22 @@
         }
       ],
       "seat": "solo-horn",
-      "gain_db": -1.0
+      "gain_db": 1.0,
+      "transposition": {
+        "chromatic": -9,
+        "diatonic": -5,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          45,
+          75
+        ],
+        "comfortable": [
+          45,
+          72
+        ]
+      }
     },
     "1st Horn": {
       "instrument": "eb-tenor-horn",
@@ -434,7 +583,22 @@
         }
       ],
       "seat": "first-horn",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -9,
+        "diatonic": -5,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          45,
+          75
+        ],
+        "comfortable": [
+          45,
+          72
+        ]
+      }
     },
     "2nd Horn": {
       "instrument": "eb-tenor-horn",
@@ -444,7 +608,22 @@
         }
       ],
       "seat": "second-horn",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -9,
+        "diatonic": -5,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          45,
+          75
+        ],
+        "comfortable": [
+          45,
+          72
+        ]
+      }
     },
     "1st Baritone": {
       "instrument": "baritone",
@@ -454,7 +633,22 @@
         }
       ],
       "seat": "first-baritone",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -14,
+        "diatonic": -8,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          40,
+          70
+        ],
+        "comfortable": [
+          40,
+          67
+        ]
+      }
     },
     "2nd Baritone": {
       "instrument": "baritone",
@@ -464,7 +658,22 @@
         }
       ],
       "seat": "second-baritone",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -14,
+        "diatonic": -8,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          40,
+          70
+        ],
+        "comfortable": [
+          40,
+          67
+        ]
+      }
     },
     "1st Trombone": {
       "instrument": "tenor-trombone",
@@ -474,7 +683,22 @@
         }
       ],
       "seat": "first-trombone",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -14,
+        "diatonic": -8,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          36,
+          74
+        ],
+        "comfortable": [
+          40,
+          71
+        ]
+      }
     },
     "2nd Trombone": {
       "instrument": "tenor-trombone",
@@ -484,7 +708,22 @@
         }
       ],
       "seat": "second-trombone",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -14,
+        "diatonic": -8,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          36,
+          74
+        ],
+        "comfortable": [
+          40,
+          71
+        ]
+      }
     },
     "Bass Trombone": {
       "instrument": "bass-trombone",
@@ -494,7 +733,22 @@
         }
       ],
       "seat": "bass-trombone",
-      "gain_db": -2.0
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": 0,
+        "diatonic": 0,
+        "written_clef": "bass"
+      },
+      "range": {
+        "pro": [
+          21,
+          77
+        ],
+        "comfortable": [
+          32,
+          65
+        ]
+      }
     },
     "Euphonium": {
       "instrument": "euphonium",
@@ -507,7 +761,22 @@
         }
       ],
       "seat": "euphoniums",
-      "gain_db": 0.0
+      "gain_db": 4.0,
+      "transposition": {
+        "chromatic": -14,
+        "diatonic": -8,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          34,
+          74
+        ],
+        "comfortable": [
+          40,
+          70
+        ]
+      }
     },
     "E♭ Bass": {
       "instrument": "eb-bass",
@@ -520,7 +789,22 @@
         }
       ],
       "seat": "eb-basses",
-      "gain_db": 0.0
+      "gain_db": 3.0,
+      "transposition": {
+        "chromatic": -21,
+        "diatonic": -12,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          24,
+          72
+        ],
+        "comfortable": [
+          26,
+          64
+        ]
+      }
     },
     "B♭ Bass": {
       "instrument": "bb-bass",
@@ -533,7 +817,22 @@
         }
       ],
       "seat": "bb-basses",
-      "gain_db": 0.0
+      "gain_db": 3.0,
+      "transposition": {
+        "chromatic": -26,
+        "diatonic": -15,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          22,
+          72
+        ],
+        "comfortable": [
+          28,
+          58
+        ]
+      }
     },
     "Percussion": {
       "instrument": "drum-kit",
@@ -543,8 +842,23 @@
         }
       ],
       "seat": "percussion",
-      "gain_db": -3.0,
-      "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass."
+      "gain_db": -5.5,
+      "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass.",
+      "transposition": {
+        "chromatic": 0,
+        "diatonic": 0,
+        "written_clef": "percussion"
+      },
+      "range": {
+        "pro": [
+          0,
+          127
+        ],
+        "comfortable": [
+          0,
+          127
+        ]
+      }
     }
   },
   "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback."

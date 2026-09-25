@@ -9,7 +9,8 @@ Pipeline (the native players are expected to reproduce each stage):
   2. Split by MIDI track into score parts; map parts to built instruments (sounds/mapping.json).
   3. Humanize deterministically per player: onset jitter, velocity jitter, a fixed detune
      (pitch bend) and a fixed lag, so unison desks never sum as sample clones.
-  4. Articulation: notes up to 0.25 s use the staccato instrument, longer ones the sustain.
+  4. Articulation: a note uses the staccato instrument only when it is at most 0.3 s long and
+     lasts under 60% of the time to the next onset; everything else uses the sustain.
   5. Per-player sampler render: sfizz_render with the SFZ (reference) or FluidSynth with the SF2.
      Percussion is rendered with MS Basic through FluidSynth in every tier.
   6. Placement (sounds/seating.json): distance delay and 1/r gain, bell directivity shelf,
@@ -54,7 +55,8 @@ RAW = ROOT / "data" / "sounds" / "raw"
 MSBASIC = RAW / "msbasic" / "MS Basic.sf3"
 SFIZZ = Path(os.environ.get("SFIZZ_RENDER", ROOT / "data" / "sounds" / "tools" / "bin" / "sfizz_render"))
 SPEED_OF_SOUND = 343.0
-STAC_MAX_S = 0.25
+STAC_MAX_S = 0.30
+STAC_GATE = 0.6  # note length / time to the next onset below which a short note counts as detached
 TARGET_LUFS = -16.0
 
 # Stereo IRs derived from the OpenAIR downloads. B-format (FuMa W,X,Y,Z) is decoded to two
@@ -166,6 +168,22 @@ def humanize(notes: list[Note], seed: str, player: int, enabled: bool) -> tuple[
         v = int(np.clip(n.velocity + rng.randint(-5, 5), 1, 127))
         out.append(Note(max(0.0, n.start + dt), max(n.start + dt + 0.03, n.end + dt), n.pitch, v))
     return out, detune
+
+
+def detached(notes: list[Note]) -> list[bool]:
+    """Staccato when a note is short AND clearly separated from the next onset in the part.
+
+    Scores without articulation marks export every quaver at full length, so length alone
+    would play running melodic quavers as staccato; the gate ratio keeps them legato.
+    """
+    onsets = sorted({round(n.start, 4) for n in notes})
+    out = []
+    for n in notes:
+        later = [t for t in onsets if t > n.start + 0.01]
+        ioi = (later[0] - n.start) if later else None
+        dur = n.end - n.start
+        out.append(dur <= STAC_MAX_S and ioi is not None and dur / ioi < STAC_GATE)
+    return out
 
 
 def write_midi(path: Path, notes: list[Note], program: int = 0, channel: int = 0, bend_cents: float = 0.0,
@@ -372,9 +390,9 @@ def render(args: argparse.Namespace) -> None:
             render_fluidsynth(MSBASIC, m, w, gain=0.5)
             return job, read_mono(w, n)
         acc = np.zeros(n)
-        stac = [x for x in notes if x.end - x.start <= STAC_MAX_S]
-        sus = [Note(x.start, x.start + (x.end - x.start) * 0.97, x.pitch, x.velocity) for x in notes
-               if x.end - x.start > STAC_MAX_S]
+        short = detached(notes)
+        stac = [x for x, d in zip(notes, short) if d]
+        sus = [Note(x.start, x.start + (x.end - x.start) * 0.97, x.pitch, x.velocity) for x, d in zip(notes, short) if not d]
         for art, ns in (("sus", sus), ("stac", stac)):
             if not ns:
                 continue

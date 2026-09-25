@@ -102,6 +102,10 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
         headers.append(struct.pack("<20sIIIIIBbHH", _name(s.name), pos, pos + n, pos + ls, pos + le,
                                    s.rate, s.root, int(np.clip(s.cents, -99, 99)), 0, 1))
         pos += n + 46
+    if pos % 2:  # keep sm24 an even size: some readers (alphaTab/TinySoundFont) ignore RIFF pad bytes
+        hi_parts.append(b"\0\0")
+        lo_parts.append(b"\0")
+        pos += 1
     headers.append(struct.pack("<20sIIIIIBbHH", _name("EOS"), 0, 0, 0, 0, 0, 0, 0, 0, 0))
     sm24 = b"".join(lo_parts)
 

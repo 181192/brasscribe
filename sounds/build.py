@@ -192,7 +192,8 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 best = min(cands, key=cost)
                 variants = sorted([s for s in samples if s["midi"] == best["midi"] and s["layer"] == best["layer"]],
                                   key=lambda s: s["rr"])
-                vol = DYN_LEVEL_DB[dyn] - DYN_LEVEL_DB[dyns[best["layer"]]]
+                # borrow louder samples attenuated; softer ones play at their own level (SF2 attenuation must be >= 0)
+                vol = min(0.0, DYN_LEVEL_DB[dyn] - DYN_LEVEL_DB[dyns[best["layer"]]])
                 key = (best["file"], round(vol, 2))
                 if regions and regions[-1]["_key"] == key and regions[-1]["layer"] == li and regions[-1]["hikey"] == k - 1:
                     regions[-1]["hikey"] = k
