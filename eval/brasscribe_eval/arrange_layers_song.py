@@ -19,7 +19,7 @@ import numpy as np
 import pretty_midi
 from brasscribe_music.arranger import arrange_layers
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.freetime import mark_fermatas, plan_free_time
+from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
 from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
@@ -66,7 +66,8 @@ def main() -> None:
     ap.add_argument("--beats", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--title", default="Draft")
-    ap.add_argument("--solo-contour", type=Path, help="SwiftF0 contour of the solo stem (swiftf0_contour.py); solo notes end where it does")
+    ap.add_argument("--solo-contour", type=Path,
+                    help="SwiftF0 contour of the solo stem (swiftf0_contour.py); default <layers>/solo-sw.contour.npz if present")
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
@@ -111,6 +112,8 @@ def main() -> None:
              "confidence": {3: 0.98, 2: 0.91}.get(len(c.sources), 0.54)}
             for c in cluster(votes) if "sw" in c.sources]
     solo_line = line(cand, 52, 88, top=True)
+    if args.solo_contour is None and (L / "solo-sw.contour.npz").exists():
+        args.solo_contour = L / "solo-sw.contour.npz"
     if args.solo_contour:
         # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
         ends = contour_offsets(Contour.load(args.solo_contour), [(n["onset"], n["pitch"]) for n in solo_line],
@@ -140,6 +143,8 @@ def main() -> None:
         Voice("drums", VoiceRole.RHYTHM, drums, "drum kit", "drums"),
     ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down,
         free_regions=plan.regions(first_down) if plan else [])
+    for v in comp.voices:
+        clip_to_regions(v.notes, comp.free_regions)
     mark_fermatas(solo, comp.free_regions)
     tonal = solo + bass + lines
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])

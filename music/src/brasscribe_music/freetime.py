@@ -172,6 +172,14 @@ def plan_free_time(beat_times: np.ndarray, onsets: np.ndarray, beats_per_bar: in
     return FreeTimePlan(np.array(out), new_first, spans, notation, label)
 
 
+def clip_to_regions(notes: list[Note], regions: list[FreeRegion]) -> None:
+    """End notes that start inside a free region at its end, so the strict grid resumes on a clean bar."""
+    for r in regions:
+        for n in notes:
+            if r.start <= n.start < r.end < n.end:
+                n.dur = r.end - n.start
+
+
 def mark_fermatas(notes: list[Note], regions: list[FreeRegion]) -> None:
     """Fermata on the last note of a line that starts inside each free region (the cadence before a tempo)."""
     for r in regions:

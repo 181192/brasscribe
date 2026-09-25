@@ -75,3 +75,17 @@ piecewise linear over `beat_times`, and positions in the region are
 proportional to performed time. MusicXML marks the start with the label and a
 tempo, the bar lines inside with dashed bar lines, and the resumption with
 *a tempo*.
+
+Notes that start inside a region end at its `end` at the latest, and the last
+note of the melody that starts inside it carries a `fermata`.
+
+## Modules for free time and durations
+
+- `freetime.py`: `unstable_runs` (detection), `plan_free_time` (synthetic
+  beats, bar rounding, resume downbeat), `clip_to_regions`, `mark_fermatas`.
+  Thresholds: `RATIO_TOL`, `MIN_INTERVALS`, `MIN_SECONDS`, `MIN_CV`,
+  `MIN_STABLE`, `TEMPO_RANGE`, `TARGET_IOI_BEATS`. The quantizer uses only
+  `quantize.FREE_GRIDS` (quarters, 8ths) inside regions.
+- `durations.py`: `contour_offsets` (note ends from a SwiftF0 contour;
+  `SEPARATED_STEM` settings for separated stems) and `written_durations`
+  (`LEGATO_RATIO`, `MAX_HELD_GAP`, `READABLE`, `STACCATO_RATIO`).

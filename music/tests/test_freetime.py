@@ -73,3 +73,34 @@ def test_fermata_on_last_note_of_region():
     from brasscribe_music.score_model import FreeRegion
     mark_fermatas(notes, [FreeRegion(0, 96, 0.0, 4.0, 60.0)])
     assert notes[1].articulations == [Articulation.FERMATA] and not notes[0].articulations and not notes[2].articulations
+
+
+def test_mid_piece_region_keeps_bars_before_and_resumes_on_a_bar_line():
+    t = list(steady(41))  # beats 0..40 at 0.5 s; bars of 4 from beat 0
+    x = t[-1]
+    for ibi in (0.8, 1.3, 2.1, 0.9, 3.4, 1.5):
+        x += ibi
+        t.append(x)
+    t += list(x + 0.5 * np.arange(1, 30))
+    t = np.array(t)
+    plan = plan_free_time(t, t[:60], 4, 0)
+    (a, b, s0, s1, bpm), = plan.spans
+    assert plan.first_downbeat == 0
+    assert a % 4 == 0 and (b - a) % 4 == 0 and a <= 40
+    assert np.allclose(plan.beat_times[:a], t[:a])
+    resume = int(np.searchsorted(t, s1))
+    assert s1 == t[resume] and (resume % 4) == 0  # labelled by the old bar numbering
+    assert np.allclose(plan.beat_times[b:], t[resume:])
+    r, = plan.regions()
+    assert r.start == a * TICKS_PER_BEAT and r.end == b * TICKS_PER_BEAT
+
+
+def test_clip_to_regions_ends_notes_at_the_region_end():
+    from brasscribe_music.freetime import clip_to_regions
+    from brasscribe_music.score_model import FreeRegion
+    notes = [Note(60, 80, 30), Note(62, 96, 24)]
+    region = FreeRegion(0, 96, 0.0, 4.0, 60.0)
+    clip_to_regions(notes, [region])
+    mark_fermatas(notes, [region])
+    assert notes[0].end == 96 and notes[1].dur == 24
+    assert notes[0].articulations == [Articulation.FERMATA]
