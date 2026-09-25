@@ -286,11 +286,11 @@
     "euphonium": {
       "instrument": "euphonium",
       "source": {
-        "library": "iowa-mis",
+        "library": "vsco2ce",
         "instrument": "tenor-trombone"
       },
       "stac_source": {
-        "library": "iowa-mis",
+        "library": "vsco2ce",
         "instrument": "tenor-trombone"
       },
       "eq": [
@@ -304,21 +304,20 @@
           "type": "peak",
           "f": 1800,
           "gain_db": -3.0,
-          "q": 0.8
-        },
-        {
-          "type": "highshelf",
-          "f": 1500,
-          "gain_db": -8.0,
-          "q": 0.7
+          "q": 0.9
         },
         {
           "type": "lowpass",
-          "f": 3500,
+          "f": 1200,
+          "q": 0.707
+        },
+        {
+          "type": "lowpass",
+          "f": 1200,
           "q": 0.707
         }
       ],
-      "why": "Euphonium from tenor trombone: tenor-tuba bore, much darker and rounder, strong fundamental.",
+      "why": "Euphonium from tenor trombone: tenor-tuba bore, much darker with a strong fundamental. Two cascaded 1.2 kHz low-passes (24 dB/oct) bring the harmonic centroid to 2.10 against 2.00 for real baritones (ChoraleBricks held-out songs, sounds/timbre_probe.py); the Iowa trombone stayed at 3.0 even with a 900 Hz 24 dB/oct low-pass.",
       "range": [
         34,
         74
@@ -351,11 +350,11 @@
     "bb-bass": {
       "instrument": "bb-bass",
       "source": {
-        "library": "iowa-mis",
+        "library": "vsco2ce",
         "instrument": "tuba"
       },
       "stac_source": {
-        "library": "iowa-mis",
+        "library": "vsco2ce",
         "instrument": "tuba"
       },
       "eq": [
@@ -367,17 +366,17 @@
         },
         {
           "type": "highshelf",
-          "f": 700,
-          "gain_db": -5.0,
+          "f": 2500,
+          "gain_db": -1.5,
           "q": 0.7
         },
         {
           "type": "lowpass",
-          "f": 1800,
+          "f": 1200,
           "q": 0.707
         }
       ],
-      "why": "B-flat bass (BBb tuba): larger bore, more low end; the close-miked Iowa tuba is much brighter than tubas in ensemble recordings, so the top is rolled off.",
+      "why": "B-flat bass (BBb tuba) from the VSCO tuba: more low end and a 1.2 kHz low-pass than the E-flat bass so the two bass desks differ. Harmonic centroid 2.87 against 4.15 (ChoraleBricks) and 1.81 (URMP) tubas; the Iowa tuba stayed at 4.3 or above even with a 400 Hz 24 dB/oct low-pass.",
       "range": [
         22,
         72
