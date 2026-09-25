@@ -29,6 +29,11 @@ class Arrangement:
     warnings: list[str] = field(default_factory=list)
 
 
+def _readable(inst, pitch: int) -> bool:
+    lo, hi = inst.preferred
+    return lo <= pitch <= hi
+
+
 def _moved(n: Note, pitch: int) -> Note:
     """Copy of a source note at another pitch (timing, confidence and articulations kept)."""
     return replace(n, pitch=pitch, sources=list(n.sources), articulations=list(n.articulations))
@@ -44,7 +49,7 @@ def _phrases(notes: list[Note]) -> list[list[Note]]:
     return out
 
 
-BASS_TARGET = 0.35  # bass lines centre a third of the way up the comfortable range
+BASS_TARGET = 0.35  # bass lines centre a third of the way up the reading range
 
 
 def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], prefer_low: bool = False,
@@ -86,11 +91,11 @@ def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra:
     placed = []
     for phrase in _phrases(notes):
         prev = placed[-1].pitch if placed else None
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.comfortable, inst.pro, prefer_low, prev)
+        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev)
         if k is None:
             # No single octave fits the whole phrase: per note, the octave nearest the previous note.
             for n in phrase:
-                p = _nearest_octave(n.pitch + shift_extra, [inst.comfortable, inst.pro], placed[-1].pitch if placed else None)
+                p = _nearest_octave(n.pitch + shift_extra, [inst.preferred, inst.placement_limit], placed[-1].pitch if placed else None)
                 if p is None:
                     warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
                     continue
@@ -120,7 +125,7 @@ def _voice_slot(pcs: list[int], parts: list[Part], ceiling: int, floor: int, pre
     used: list[int] = []
     upper = ceiling
     for part in parts:
-        lo, hi = part.instrument.comfortable
+        lo, hi = part.instrument.preferred
         hi = min(hi, upper - 1)
         lo = max(lo, floor + 1)
         options = [p for p in range(lo, hi + 1) if p % 12 in pcs]
@@ -153,7 +158,7 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
     for n in arr.parts[eb.name]:
         p = n.pitch - 12
         # Octave below only where that stays comfortable; pedal notes are a player's choice, not a default.
-        low.append(_moved(n, p if bb.instrument.check(p) == "ok" else n.pitch))
+        low.append(_moved(n, p if _readable(bb.instrument, p) else n.pitch))
     arr.parts[bb.name] = low
 
     inner = [p for p in lineup.parts if p.name not in (lead.name, eb.name, bb.name)]
@@ -248,7 +253,7 @@ def _place_smooth(notes: list[Note], part: Part) -> list[Note]:
     Used for lines pulled from a dense texture, where the source hops between
     voices and a single octave shift per phrase would leave large leaps.
     """
-    lo, hi = part.instrument.comfortable
+    lo, hi = part.instrument.preferred
     prev = (lo + hi) // 2
     out = []
     for n in sorted(notes, key=lambda n: n.start):
@@ -277,7 +282,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangeme
     bass = _layer(comp, "bass")
     eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
     arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
-    arr.parts[bb.name] = [_moved(n, n.pitch - 12 if bb.instrument.check(n.pitch - 12) == "ok" else n.pitch)
+    arr.parts[bb.name] = [_moved(n, n.pitch - 12 if _readable(bb.instrument, n.pitch - 12) else n.pitch)
                           for n in arr.parts[eb.name]]
 
     strings = _layer(comp, "strings")
