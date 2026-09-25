@@ -37,7 +37,7 @@ ANALYSIS = ROOT / "data" / "sounds" / "analysis.json"
 MAPPING = HERE / "mapping.json"
 
 # Nominal dynamic of each layer, by number of layers available (softest first).
-LAYER_DYNAMICS = {1: ["mf"], 2: ["mf", "ff"], 3: ["pp", "mf", "ff"], 4: ["p", "mf", "f", "ff"]}
+LAYER_DYNAMICS = {1: ["mf"], 2: ["p", "f"], 3: ["pp", "mf", "ff"], 4: ["p", "mf", "f", "ff"]}
 DYN_VELOCITY = {"pp": 30, "p": 48, "mf": 80, "f": 100, "ff": 116}
 # Loudest 300 ms window RMS of each baked sample, dBFS.
 DYN_LEVEL_DB = {"pp": -30.0, "p": -26.0, "mf": -21.0, "f": -18.5, "ff": -16.0}
@@ -153,7 +153,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
     for old in (out / "samples").glob("*.wav"):
         old.unlink()
     eq = DC_BLOCK + spec["eq"]
-    table = {"target": tid, "instrument": inst.id, "range": [lo, hi], "eq": spec["eq"], "sample_rate": SR,
+    table = {"target": tid, "instrument": inst.id, "range": [lo, hi], "eq": eq, "sample_rate": SR,
              "vel_span_db": VEL_SPAN_DB, "articulations": {}}
     for art, src in (("sus", spec["source"]), ("stac", spec["stac_source"])):
         chosen, derived = pick_notes(notes, src["library"], src["instrument"], art)

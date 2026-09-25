@@ -67,6 +67,12 @@ def _name(s: str) -> bytes:
     return s.encode("ascii", "replace")[:19].ljust(20, b"\0")
 
 
+def _zstr(s: str) -> bytes:
+    """Zero-terminated INFO string padded to an even size (SF2 2.04 section 5)."""
+    b = s.encode("ascii", "replace") + b"\0"
+    return b + b"\0" if len(b) % 2 else b
+
+
 def _chunk(tag: bytes, data: bytes) -> bytes:
     pad = b"\0" if len(data) % 2 else b""
     return tag + struct.pack("<I", len(data)) + data + pad
@@ -137,9 +143,9 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
 
     info = _list(b"INFO", [
         _chunk(b"ifil", struct.pack("<HH", 2, 4)),
-        _chunk(b"isng", b"EMU8000\0"),
-        _chunk(b"INAM", bank_name.encode("ascii", "replace") + b"\0"),
-        _chunk(b"ICMT", b"Built by brasscribe sounds/build.py from CC0 / unrestricted samples; see sounds/manifest.json\0"),
+        _chunk(b"isng", _zstr("EMU8000")),
+        _chunk(b"INAM", _zstr(bank_name)),
+        _chunk(b"ICMT", _zstr("Built by brasscribe sounds/build.py from CC0 / unrestricted samples; see sounds/manifest.json")),
     ])
     sdta = _list(b"sdta", [_chunk(b"smpl", b"".join(hi_parts)), _chunk(b"sm24", sm24)])
     pdta = _list(b"pdta", [

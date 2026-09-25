@@ -11,7 +11,8 @@ Real references, restricted to the same pitch window as the part:
   URMP (trumpet, horn, trombone, tuba separated stems) and ChoraleBricks (trumpet,
   flugelhorn, baritone, French horn, trombone, tuba solo tracks). There is no real cornet,
   tenor horn or euphonium recording in either set; the nearest family member is used and
-  named in the report.
+  named in the report. ChoraleBricks numbers use the odd-index songs only, so the
+  even-index half stays free for fitting any future timbre calibration.
 """
 
 from __future__ import annotations
@@ -110,8 +111,14 @@ def reference_notes() -> dict[str, list[dict]]:
                 for n in csv.DictReader(nf, delimiter=";"):
                     d = note_descriptor(x, float(n["start_sec"]), float(n["end_sec"]), int(n["pitch"]))
                     if d:
-                        refs.setdefault(inst, []).append(dict(d, corpus="ChoraleBricks", source=row["performer"]))
+                        refs.setdefault(inst, []).append(dict(d, corpus="ChoraleBricks", source=row["performer"], song=row["song_id"]))
     return refs
+
+
+def cb_split() -> tuple[set[str], set[str]]:
+    """ChoraleBricks songs split in two: even index reserved for fitting, odd index for reporting."""
+    songs = sorted(p.name for p in CB.iterdir() if p.is_dir())
+    return set(songs[::2]), set(songs[1::2])
 
 
 def summarise(ds: list[dict], lo: int, hi: int) -> dict:
@@ -137,9 +144,13 @@ def main() -> None:
         pitches = [n.pitch for n in p.notes]
         lo, hi = int(np.percentile(pitches, 10)), int(np.percentile(pitches, 90))
         ref = PART_REF[p.name]
+        _, held_out = cb_split()
+        rs = refs.get(ref, [])
         entry = {"pitch_window": [lo, hi], "reference": ref,
-                 "ref": {c: summarise([d for d in refs.get(ref, []) if d["corpus"] == c], lo, hi)
-                         for c in ("URMP", "ChoraleBricks")}, "tiers": {}}
+                 "ref": {"URMP": summarise([d for d in rs if d["corpus"] == "URMP"], lo, hi),
+                         "ChoraleBricks": summarise([d for d in rs if d["corpus"] == "ChoraleBricks"
+                                                     and d["song"] in held_out], lo, hi)},
+                 "tiers": {}}
         for run in args.runs:
             stem = Path(run) / "stems" / f"{p.name.replace(' ', '_').replace('♭', 'b')}.wav"
             if not stem.exists():
