@@ -300,6 +300,8 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         first_downbeat: first_down,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: regions,
+        dynamics: Vec::new(),
+        sections: Vec::new(),
     };
     let arrangement = arrange_layers(&comp);
     let musicxml = write_score(&band_score(&arrangement, &comp));
@@ -363,6 +365,8 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
         first_downbeat: first_down,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
     };
     let arrangement = arrange(&comp);
     let musicxml = write_score(&band_score(&arrangement, &comp));
@@ -450,6 +454,8 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         first_downbeat: 0,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
     })
 }
 

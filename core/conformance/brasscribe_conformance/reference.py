@@ -50,12 +50,12 @@ def run(case: Case, out: Path) -> None:
         if "song" in a:
             synth_layers(a["song"], a["layers"])
         _main(arrange_layers_song, ["--layers", str(a["layers"]), "--beats", str(a["beats"]), "--out", str(out),
-                                    "--title", a["title"],
+                                    "--title", a["title"], "--no-render",
                                     *(["--solo-contour", str(a["contour"])] if "contour" in a else [])])
     elif case.kind == "song":
         _main(arrange_song, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
                              "--bass", str(a["bass"]), "--harmony", *map(str, a["harmony"]), "--out", str(out),
-                             "--title", a["title"]])
+                             "--title", a["title"], "--no-render"])
     elif case.kind == "lead":
         _main(lead_sheet, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
                            "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]])
