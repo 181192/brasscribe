@@ -1,6 +1,64 @@
 {
   "components": {
     "schemas": {
+      "AdapterInfo": {
+        "properties": {
+          "device": {
+            "title": "Device",
+            "type": "string"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "heavy": {
+            "title": "Heavy",
+            "type": "boolean"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelFile"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "name",
+          "fingerprint",
+          "heavy",
+          "device",
+          "models"
+        ],
+        "title": "AdapterInfo",
+        "type": "object"
+      },
       "Artifact": {
         "properties": {
           "bytes": {
@@ -55,6 +113,74 @@
           "bytes"
         ],
         "title": "AudioRef",
+        "type": "object"
+      },
+      "BenchRun": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "string"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Sha"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "cached",
+              "live"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "suites": {
+            "items": {
+              "$ref": "#/components/schemas/SuiteResult"
+            },
+            "title": "Suites",
+            "type": "array"
+          },
+          "target": {
+            "description": "suite or group that was run",
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created",
+          "target",
+          "mode",
+          "passed",
+          "suites"
+        ],
+        "title": "BenchRun",
         "type": "object"
       },
       "Body_createJobFromUpload": {
@@ -129,6 +255,7 @@
               "regressed",
               "improved",
               "missing",
+              "skipped",
               "new"
             ],
             "title": "Status",
@@ -158,6 +285,65 @@
           "status"
         ],
         "title": "Check",
+        "type": "object"
+      },
+      "Comparison": {
+        "properties": {
+          "composition_identical": {
+            "title": "Composition Identical",
+            "type": "boolean"
+          },
+          "extra_files": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "parts/*.musicxml and separation-check.json the reference has: identical?",
+            "title": "Extra Files",
+            "type": "object"
+          },
+          "musicxml_identical": {
+            "title": "Musicxml Identical",
+            "type": "boolean"
+          },
+          "notes_identical": {
+            "title": "Notes Identical",
+            "type": "integer"
+          },
+          "notes_total": {
+            "title": "Notes Total",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PartComparison"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "parts_identical": {
+            "title": "Parts Identical",
+            "type": "integer"
+          },
+          "parts_total": {
+            "title": "Parts Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "composition_identical",
+          "musicxml_identical",
+          "ok",
+          "parts",
+          "parts_identical",
+          "parts_total",
+          "notes_identical",
+          "notes_total"
+        ],
+        "title": "Comparison",
         "type": "object"
       },
       "Composition": {
@@ -215,6 +401,126 @@
           "keys"
         ],
         "title": "Composition",
+        "type": "object"
+      },
+      "Dataset": {
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "cached_outputs": {
+            "description": "model output files present for every item (e.g. muscriptor-medium.mid)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Cached Outputs",
+            "type": "array"
+          },
+          "download": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "how to build the set when it is missing",
+            "title": "Download"
+          },
+          "files": {
+            "title": "Files",
+            "type": "integer"
+          },
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "bytes",
+          "files",
+          "items",
+          "present",
+          "cached_outputs"
+        ],
+        "title": "Dataset",
+        "type": "object"
+      },
+      "FileRef": {
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "media_type": {
+            "title": "Media Type",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "bytes",
+          "media_type",
+          "url"
+        ],
+        "title": "FileRef",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -312,6 +618,18 @@
             "title": "Outputs",
             "type": "array"
           },
+          "previous_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the job this one re-runs, if any",
+            "title": "Previous Run Id"
+          },
           "profile": {
             "title": "Profile",
             "type": "string"
@@ -382,6 +700,7 @@
         "type": "object"
       },
       "JobCreate": {
+        "description": "Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).",
         "properties": {
           "allow_heavy": {
             "default": true,
@@ -390,8 +709,27 @@
             "type": "boolean"
           },
           "audio_id": {
-            "title": "Audio Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Id"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "audio file path; must lie inside the engine's data directory",
+            "title": "Path"
           },
           "profile": {
             "default": "orchestra-with-soloist",
@@ -403,6 +741,17 @@
             "description": "also render an MP3 of the score",
             "title": "Render Audio",
             "type": "boolean"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
           },
           "title": {
             "anyOf": [
@@ -416,9 +765,6 @@
             "title": "Title"
           }
         },
-        "required": [
-          "audio_id"
-        ],
         "title": "JobCreate",
         "type": "object"
       },
@@ -468,6 +814,68 @@
           "beats"
         ],
         "title": "Meter",
+        "type": "object"
+      },
+      "ModelFile": {
+        "properties": {
+          "bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          }
+        },
+        "required": [
+          "name",
+          "present"
+        ],
+        "title": "ModelFile",
         "type": "object"
       },
       "Note": {
@@ -570,6 +978,34 @@
         "title": "PairResponse",
         "type": "object"
       },
+      "PartComparison": {
+        "properties": {
+          "identical": {
+            "title": "Identical",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "integer"
+          },
+          "reference_notes": {
+            "title": "Reference Notes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "notes",
+          "reference_notes",
+          "identical"
+        ],
+        "title": "PartComparison",
+        "type": "object"
+      },
       "ProfileInfo": {
         "properties": {
           "description": {
@@ -605,6 +1041,293 @@
           "stages"
         ],
         "title": "ProfileInfo",
+        "type": "object"
+      },
+      "Reference": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "files"
+        ],
+        "title": "Reference",
+        "type": "object"
+      },
+      "RerunRequest": {
+        "properties": {
+          "allow_heavy": {
+            "default": true,
+            "title": "Allow Heavy",
+            "type": "boolean"
+          },
+          "cold": {
+            "description": "stages or kinds to run even on a cache hit, or 'all'",
+            "items": {
+              "type": "string"
+            },
+            "title": "Cold",
+            "type": "array"
+          }
+        },
+        "title": "RerunRequest",
+        "type": "object"
+      },
+      "Roundtrip": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "musescore": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Musescore"
+          },
+          "notes_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "pitched notes in the arrangement",
+            "title": "Notes In"
+          },
+          "notes_out": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "pitched notes read back from MuseScore's export",
+            "title": "Notes Out"
+          },
+          "part_results": {
+            "items": {
+              "$ref": "#/components/schemas/RoundtripPart"
+            },
+            "title": "Part Results",
+            "type": "array"
+          },
+          "parts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parts"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "Roundtrip",
+        "type": "object"
+      },
+      "RoundtripPart": {
+        "properties": {
+          "match": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null for unpitched parts, which are not compared",
+            "title": "Match"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "integer"
+          },
+          "sound": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sound"
+          }
+        },
+        "required": [
+          "name",
+          "notes"
+        ],
+        "title": "RoundtripPart",
+        "type": "object"
+      },
+      "Source": {
+        "properties": {
+          "dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "capture",
+              "dataset"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "path"
+        ],
+        "title": "Source",
+        "type": "object"
+      },
+      "StageArtifacts": {
+        "properties": {
+          "device": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "status",
+          "files"
+        ],
+        "title": "StageArtifacts",
         "type": "object"
       },
       "StageState": {
@@ -665,6 +1388,107 @@
           "status"
         ],
         "title": "StageState",
+        "type": "object"
+      },
+      "SuiteHistoryEntry": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/Check"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Sha"
+          },
+          "manifest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "history file this entry came from",
+            "title": "Manifest"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "skipped",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "suite": {
+            "title": "Suite",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "time": {
+            "description": "unix seconds",
+            "title": "Time",
+            "type": "number"
+          }
+        },
+        "required": [
+          "time",
+          "run_id",
+          "target",
+          "suite",
+          "status",
+          "metrics",
+          "checks"
+        ],
+        "title": "SuiteHistoryEntry",
         "type": "object"
       },
       "SuiteInfo": {
@@ -732,6 +1556,14 @@
             "title": "Seconds",
             "type": "number"
           },
+          "skipped_parts": {
+            "description": "eval sets (metric prefixes) without data",
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped Parts",
+            "type": "array"
+          },
           "status": {
             "enum": [
               "pass",
@@ -792,6 +1624,82 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationIssue": {
+        "properties": {
+          "bar": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bar"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beat"
+          },
+          "kind": {
+            "enum": [
+              "range",
+              "crossing",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "part": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part"
+          },
+          "severity": {
+            "enum": [
+              "warning",
+              "error"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "tick": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tick"
+          }
+        },
+        "required": [
+          "kind",
+          "severity",
+          "message"
+        ],
+        "title": "ValidationIssue",
         "type": "object"
       },
       "Voice": {
@@ -915,6 +1823,61 @@
         "summary": "Upload Audio",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/v1/conformance": {
+      "get": {
+        "description": "Rust-core conformance results as written (every *.json in BRASSCRIBE_CONFORMANCE_REPORTS), plus `_file`.",
+        "operationId": "listConformanceReports",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Listconformancereports",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Conformance",
+        "tags": [
+          "inspection"
         ]
       }
     },
@@ -1407,6 +2370,101 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/compare": {
+      "get": {
+        "description": "composition.json byte equality and per-part MusicXML note content against a reference or another job.",
+        "operationId": "compareJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "name from listReferences",
+            "in": "query",
+            "name": "reference",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "name from listReferences",
+              "title": "Reference"
+            }
+          },
+          {
+            "description": "another job id",
+            "in": "query",
+            "name": "job",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "another job id",
+              "title": "Job"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare Job",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/composition": {
       "get": {
         "operationId": "getComposition",
@@ -1672,6 +2730,61 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/input": {
+      "get": {
+        "description": "The job's original input audio (for A/B listening).",
+        "operationId": "getJobInput",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "audio/wav": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Input",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/manifest": {
       "get": {
         "operationId": "getJobManifest",
@@ -1908,6 +3021,396 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/rerun": {
+      "post": {
+        "description": "Run a job again from its manifest (same input, profile, title and parameters).",
+        "operationId": "rerunJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RerunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rerun Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/roundtrip": {
+      "get": {
+        "description": "Stored MuseScore round-trip result, or status not_run (start it with runRoundtrip).",
+        "operationId": "getRoundtrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Roundtrip"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Roundtrip",
+        "tags": [
+          "inspection"
+        ]
+      },
+      "post": {
+        "description": "Re-export the job's MusicXML through MuseScore and compare every part's sounding pitches (takes seconds).",
+        "operationId": "runRoundtrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Roundtrip"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Roundtrip",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/stages": {
+      "get": {
+        "description": "Every stage of a run with its output files (stems, layers, MIDI, beats, Composition, MusicXML ...).",
+        "operationId": "listJobStages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StageArtifacts"
+                  },
+                  "title": "Response Listjobstages",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Stages",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/stages/{stage}/files/{name}": {
+      "get": {
+        "operationId": "getStageFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stage",
+            "required": true,
+            "schema": {
+              "title": "Stage",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Stage File",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/validation": {
+      "get": {
+        "description": "Arranger warnings (range problems) for the job's Composition, by part, bar and beat.",
+        "operationId": "getValidation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ValidationIssue"
+                  },
+                  "title": "Response Getvalidation",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Validation",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
     "/v1/pair": {
       "post": {
         "operationId": "pairDevice",
@@ -1949,6 +3452,61 @@
         "summary": "Pair",
         "tags": [
           "session"
+        ]
+      }
+    },
+    "/v1/parity": {
+      "get": {
+        "description": "Model-conversion parity reports as written (every *.json in BRASSCRIBE_PARITY_REPORTS), plus `_file`.",
+        "operationId": "listParityReports",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Listparityreports",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Parity",
+        "tags": [
+          "inspection"
         ]
       }
     },
@@ -2005,6 +3563,285 @@
         ]
       }
     },
+    "/v1/references": {
+      "get": {
+        "description": "Reference outputs under <data>/golden (read only).",
+        "operationId": "listReferences",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "title": "Response Listreferences",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List References",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/references/{name}/files/{file}": {
+      "get": {
+        "operationId": "getReferenceFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file",
+            "required": true,
+            "schema": {
+              "title": "File",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Reference File",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/registry/adapters": {
+      "get": {
+        "description": "Adapters with version, environment fingerprint, device, licence and model weights.",
+        "operationId": "listAdapters",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdapterInfo"
+                  },
+                  "title": "Response Listadapters",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Adapters",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/registry/datasets": {
+      "get": {
+        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.",
+        "operationId": "listDatasets",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Dataset"
+                  },
+                  "title": "Response Listdatasets",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Datasets",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
+    "/v1/sources": {
+      "get": {
+        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).",
+        "operationId": "listSources",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Source"
+                  },
+                  "title": "Response Listsources",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sources",
+        "tags": [
+          "inspection"
+        ]
+      }
+    },
     "/v1/suites": {
       "get": {
         "operationId": "listSuites",
@@ -2058,8 +3895,93 @@
         ]
       }
     },
+    "/v1/suites/history": {
+      "get": {
+        "description": "Every stored suite result, newest first (from `brasscribe bench` and runSuite).",
+        "operationId": "listSuiteHistory",
+        "parameters": [
+          {
+            "description": "only results of this suite",
+            "in": "query",
+            "name": "suite",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "only results of this suite",
+              "title": "Suite"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SuiteHistoryEntry"
+                  },
+                  "title": "Response Listsuitehistory",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suite History",
+        "tags": [
+          "benchmarks"
+        ]
+      }
+    },
     "/v1/suites/{name}/run": {
       "post": {
+        "description": "Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history.",
         "operationId": "runSuite",
         "parameters": [
           {
@@ -2104,11 +4026,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SuiteResult"
-                  },
-                  "title": "Response Runsuite",
-                  "type": "array"
+                  "$ref": "#/components/schemas/BenchRun"
                 }
               }
             },

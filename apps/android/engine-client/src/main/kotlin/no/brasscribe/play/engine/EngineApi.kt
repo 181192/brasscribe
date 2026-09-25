@@ -42,7 +42,11 @@ interface EngineApi {
             "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest",
         )
 
-        /** operationIds deliberately left out: benchmark suites are a Studio feature. */
-        val NOT_USED = setOf("listSuites", "runSuite")
+        /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools. */
+        val NOT_USED = setOf(
+            "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
+            "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
+            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob",
+        )
     }
 }

@@ -231,6 +231,13 @@ object Announcer {
         return p?.let { w.pitch(it, if (s.pitchMode == PitchMode.CONCERT) null else keyFifths) } ?: ""
     }
 
+    /** Short visible label of a pitch: "B♭4" in English, "B4" in bokmål (where B♮ is "H4"). */
+    fun pitchLabel(p: SpelledPitch, lang: Lang): String {
+        if (lang == Lang.NB) return Words(lang).pitch(p, null).replace(" ", "")
+        val acc = when (p.alter) { 1 -> "♯"; -1 -> "♭"; 2 -> "𝄪"; -2 -> "𝄫"; else -> "" }
+        return "${p.step}$acc${p.octave}"
+    }
+
     /** Round half up, never banker's rounding. */
     fun roundHalfUp(x: Double): Double = floor(x + 0.5)
 }

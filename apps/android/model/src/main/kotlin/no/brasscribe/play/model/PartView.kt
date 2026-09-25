@@ -49,9 +49,28 @@ class PartView(
                     TsStop(TsEvent(kind = "bar-rest", bars = count), barInfo(first), tsPart, keyAt(first), totalBars))
             }
             lastBar = maxOf(lastBar, tickMap.barOf(n.end - 1))
-            out +=PartEvent(out.size, bar, n.start, n, noteStop(i, n, bar))
+            out += PartEvent(out.size, bar, n.start, n, noteStop(i, n, bar))
         }
-        return out
+        return markRegionChanges(out)
+    }
+
+    /**
+     * The first event inside a free-time region announces the region ("Ad lib…"); the first event after
+     * it announces the tempo it returns to ("A tempo…"). Everything else in the region stays quiet.
+     */
+    private fun markRegionChanges(events: List<PartEvent>): List<PartEvent> {
+        var prevRegion: TsFreeRegion? = null
+        return events.map { e ->
+            val bar = e.stop.bar ?: return@map e.also { prevRegion = null }
+            val region = bar.freeRegion
+            val newBar = when {
+                region != null -> bar.copy(freeRegion = region.copy(entering = prevRegion == null))
+                prevRegion != null -> bar.copy(tempoBpm = kotlin.math.floor(composition.bpm + 0.5).toInt(), aTempo = true)
+                else -> bar
+            }
+            prevRegion = region
+            e.copy(stop = e.stop.copy(bar = newBar))
+        }
     }
 
     private fun keyAt(bar: Int): Int = instrument.writtenFifths(tickMap.keyAt(maxOf(0, tickMap.barStart(bar))).fifths)
@@ -59,8 +78,7 @@ class PartView(
     private fun barInfo(bar: Int): TsBar {
         val start = maxOf(0, tickMap.barStart(bar))
         val region = composition.freeRegionAt(start)?.let { r ->
-            TsFreeRegion(tickMap.barOf(r.start), tickMap.barOf(maxOf(r.start, r.end - 1)), r.startS, r.endS,
-                entering = tickMap.barOf(r.start) == bar)
+            TsFreeRegion(tickMap.barOf(r.start), tickMap.barOf(maxOf(r.start, r.end - 1)), r.startS, r.endS)
         }
         return TsBar(bar, freeRegion = region)
     }

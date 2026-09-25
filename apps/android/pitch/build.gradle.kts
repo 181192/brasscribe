@@ -27,5 +27,6 @@ val repoRoot = rootProject.extra["repoRoot"] as File
 
 tasks.test {
     systemProperty("brasscribe.swiftf0", File(repoRoot, "models/converted/swift-f0/swift-f0-window.onnx").absolutePath)
+    inputs.files(fileTree(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }).withPropertyName("model")
     systemProperty("brasscribe.pitchFixtures", file("src/test/resources").absolutePath)
 }

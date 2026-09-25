@@ -28,6 +28,14 @@ class EngineSettings(context: Context) {
         get() = prefs.getBoolean("paired", false)
         set(v) = prefs.edit().putBoolean("paired", v).apply()
 
+    /**
+     * Whether the engine may run heavy models on cache misses (and render audio). Off makes a new clip
+     * fail fast at its first heavy stage: useful for checking the connection without loading the machine.
+     */
+    var allowHeavy: Boolean
+        get() = prefs.getBoolean("allow_heavy", true)
+        set(v) = prefs.edit().putBoolean("allow_heavy", v).apply()
+
     var useFixture: Boolean
         get() = prefs.getBoolean("fixture", true)
         set(v) = prefs.edit().putBoolean("fixture", v).apply()

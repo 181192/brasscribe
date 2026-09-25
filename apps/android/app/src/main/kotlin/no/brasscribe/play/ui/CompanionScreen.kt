@@ -35,6 +35,9 @@ fun CompanionScreen(vm: PlayViewModel) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         BigButton(stringResource(R.string.companion_connect), { fixture = false; vm.connect(url, code) }, enabled = url.startsWith("http"))
         state?.let { Text(it, color = LocalPlayTokens.current.text) }
+        var heavy by rememberSaveable { mutableStateOf(settings.allowHeavy) }
+        ToggleRow(stringResource(R.string.companion_allow_heavy), heavy) { heavy = it; settings.allowHeavy = it }
+        Text(stringResource(R.string.companion_allow_heavy_desc), color = LocalPlayTokens.current.textMuted)
         if (vm.container.hasFixtures) {
             ToggleRow(stringResource(R.string.companion_use_fixture), fixture) { fixture = it; vm.useFixture(it) }
             Text(stringResource(R.string.companion_use_fixture_desc), color = LocalPlayTokens.current.textMuted)

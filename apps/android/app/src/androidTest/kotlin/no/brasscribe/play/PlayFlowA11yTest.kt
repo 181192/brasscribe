@@ -97,7 +97,13 @@ class PlayFlowA11yTest {
         assertTrue("uncertain notes are announced", uncertain.isNotEmpty())
         val first = uncertain.first()
         val text = first.config[SemanticsProperties.ContentDescription].first()
-        assertTrue(text, Regex("""(bar \d+, )?beat \d.*: [A-G].* \d, .*note, uncertain""").containsMatchIn(text))
+        // In free time (ad lib.) the position is the performed time, otherwise the beat.
+        assertTrue(text, Regex("""(bar \d+, )?(beat \d|at \d+ (seconds|minutes?)).*: [A-G][^,]* \d, [^,]*note.*, uncertain$""").containsMatchIn(text))
+        // Only the first note of a free-time region announces it.
+        val adLib = rule.onAllNodes(SemanticsMatcher("ad lib entry") { n ->
+            n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains("Ad lib, free time") } == true
+        }).fetchSemanticsNodes().size
+        assertTrue("ad lib entries: $adLib", adLib <= 1)
         assertTrue(first.customAction("Listen to this bar") != null)
         assertTrue(first.customAction("Next uncertain note") != null)
         rule.runOnUiThread { first.customAction("Mark as checked")!!.action() }
@@ -110,7 +116,7 @@ class PlayFlowA11yTest {
         waitFor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "score-view"))
         rule.waitUntil(20_000) {
             rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
-                ?.firstOrNull()?.contains("Bar 1 of 128") == true
+                ?.firstOrNull()?.let { Regex("""Bar 1 of \d+""").containsMatchIn(it) && !it.contains("of 1.") } == true
         }
         val score = rule.onNodeWithTag("score-view").fetchSemanticsNode()
         val summary = score.config[SemanticsProperties.ContentDescription].first()
@@ -144,5 +150,21 @@ class PlayFlowA11yTest {
             rule.onNode(isHeading() and hasText(f)).assertExists()
         }
         rule.onNodeWithText("Needs braille export in the engine.", substring = true).assertExists()
+
+        // Share builds each file (MusicXML, PDF, alphaTab MIDI, talking-score HTML), then opens the chooser.
+        val exports = rule.activity.cacheDir.resolve("exports")
+        for ((i, ext) in listOf(0 to "musicxml", 1 to "pdf", 2 to "mid", 4 to "html")) {
+            rule.onAllNodesWithText("Share")[i].performClick()
+            rule.waitUntil(15_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } }
+            Thread.sleep(1500)
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+                .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+            rule.waitForIdle()
+        }
+        val midi = exports.listFiles()!!.first { it.extension == "mid" }.readBytes()
+        assertEquals("MThd", String(midi, 0, 4))
+        val html = exports.listFiles()!!.first { it.extension == "html" }.readText()
+        assertTrue(html.contains("<h2>Solo Cornet</h2>") && html.contains("<h3>Bar 2</h3>") && html.contains(", uncertain</li>"))
+        rule.onNodeWithText("Exported", substring = true).assertExists()
     }
 }

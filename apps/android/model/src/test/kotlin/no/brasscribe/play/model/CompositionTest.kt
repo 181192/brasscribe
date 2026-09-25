@@ -48,24 +48,32 @@ class CompositionTest {
     }
 
     @Test
-    fun goldenNegativeFirstDownbeat() {
+    fun goldenTickMapFollowsTheBeatList() {
+        // Invariants only: the golden output is re-saved when the engine improves.
         assumeTrue("golden output not present", File(goldenDir, "composition.json").exists())
         val c = CompositionJson.decode(File(goldenDir, "composition.json").readText())
-        assertEquals(-4, c.firstDownbeat)
-        assertEquals(5, c.voices.size)
+        assertTrue(c.voices.isNotEmpty())
         val m = TickMap(c)
-        // Beat index = tick / 24 - 4: tick 96 (bar 2, beat 1) is beat_times[0].
-        assertEquals(c.beatTimes[0], m.secondsAt(96), 1e-9)
-        assertEquals(c.beatTimes[4], m.secondsAt(96 * 2), 1e-9)
-        // The first solo note (tick 84, onset 0.03 s) sits before beat_times[0]: extrapolated, close to its onset.
-        val first = c.voice("solo")!!.notes.first()
-        assertEquals(84, first.start)
-        assertTrue(m.secondsAt(first.start) < c.beatTimes[0])
-        assertEquals(128, m.totalBars)
-        // Every note maps to a time inside the recording span, in order.
-        val melody = c.voice("solo")!!.notes
+        // Tick t sits at beat index t / tpb + first_downbeat of the beat list.
+        for (i in listOf(0, 1, c.beatTimes.size / 2, c.beatTimes.size - 1)) {
+            assertEquals(c.beatTimes[i], m.secondsAt((i - c.firstDownbeat) * c.ticksPerBeat), 1e-9)
+        }
+        // Every melody note maps to a time in order.
+        val melody = c.voices.first { it.role == VoiceRole.MELODY }.notes
         val times = melody.map { m.secondsAt(it.start) }
         assertEquals(times.sorted(), times)
+        c.freeRegions.forEach { r -> assertTrue(r.end > r.start && r.endS > r.startS) }
+    }
+
+    @Test
+    fun negativeFirstDownbeatExtrapolatesBeforeTheFirstBeat() {
+        // The recording starts four beats after tick 0 (the first Mikkel golden output had this shape).
+        val c = tiny().copy(firstDownbeat = -4)
+        val m = TickMap(c)
+        assertEquals(c.beatTimes[0], m.secondsAt(96), 1e-9)
+        assertEquals(c.beatTimes[4], m.secondsAt(192), 1e-9)
+        assertEquals(c.beatTimes[0] - 0.5 * 0.5, m.secondsAt(84), 1e-9)
+        assertEquals(84, m.tickAt(m.secondsAt(84)))
     }
 
     @Test
@@ -100,6 +108,17 @@ class CompositionTest {
         val rest = view.events[4]
         assertEquals("bar-rest", rest.stop.event.kind)
         assertEquals("bar 3: rest, whole bar", view.announce(4, view.events[3], TsSettings(), Lang.EN, KotlinCoreBridge))
+    }
+
+    @Test
+    fun freeTimeRegionIsAnnouncedOnEntryAndExit() {
+        val c = tiny().copy(freeRegions = listOf(FreeRegion(0, 96, 1.0, 3.0, 60.0)))
+        val view = PartView(c, c.voices[0], Instrument.CORNET, "Solo Cornet")
+        val said = view.events.indices.map { i -> view.announce(i, view.events.getOrNull(i - 1), TsSettings(), Lang.EN, KotlinCoreBridge) }
+        assertEquals("Ad lib, free time, bars 1 to 1, about 2 seconds. Solo Cornet. bar 1, no sharps or flats, at 1 seconds: C 5, eighth note, uncertain", said[0])
+        assertEquals("at 1 seconds: D 5, eighth note", said[1])
+        assertTrue(said.drop(1).count { it.contains("Ad lib") } == 0)
+        assertEquals("A tempo, 120 beats per minute. bar 3: rest, whole bar", said[4])
     }
 
     @Test

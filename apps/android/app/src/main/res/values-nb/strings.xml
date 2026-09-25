@@ -219,6 +219,8 @@
     <string name="companion_connecting">Kobler til</string>
     <string name="companion_connected">Koblet til motor %1$s på %2$s, bruker %3$s</string>
     <string name="companion_failed">Kunne ikke koble til: %1$s</string>
+    <string name="companion_allow_heavy">La motoren kjøre tunge modeller</string>
+    <string name="companion_allow_heavy_desc">Av: motoren bruker bare resultater den allerede har, og en ny innspilling stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
     <string name="companion_use_fixture">Bruk den innebygde eksempelmotoren</string>
     <string name="companion_use_fixture_desc">Spiller av en ferdig transkripsjon av Mikkel, så du kan prøve appen uten datamaskin.</string>
 

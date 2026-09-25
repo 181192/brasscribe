@@ -85,6 +85,17 @@ Some inputs come from outside git and are used only when present:
 
 The first run found two real problems, both fixed: an unlabelled empty live region, and part names that alphaTab stores with no-break spaces.
 
+The flow tests need the golden fixtures, so they need a debug build made with `data/` present. The export test shares MusicXML, PDF, MIDI and the talking-score HTML and checks the files. `audio/src/androidTest/.../RealisticSynthTest.kt` renders sfizz offline. For the SFZ case, pass `-Pandroid.testInstrumentationRunnerArguments.sfz=/data/local/tmp/sounds/cornet-a/cornet-a-sus.sfz` after pushing an instrument there.
+
+Checked by hand on the emulator (screenshots in `docs/screenshots/`):
+- the share sheet and "Open with" for WAV and MP4
+- capture of the phone's own playback, with MediaProjection consent and the silence notice
+- the microphone: starts and stops, but emulator input is silent
+- 200% font scale
+- bokmål
+- dark theme
+- the live engine over the LAN URL with the pairing code. With "Let the engine run heavy models" off, a new clip stops at the first heavy stage, and the app shows the engine's error.
+
 The TalkBack acceptance script (`qa/screen-reader-scripts/talkback-android.md`) still needs a person with TalkBack on a device. Automated checks cannot hear speech.
 
 ## Known limits

@@ -156,7 +156,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                                     vm.markChecked(voiceId, e.index, left)
                                 },
                                 next = { nextUncertain(e.index) },
-                                label = e.stop.event.written?.let { "${it.step}${alterSign(it.alter)}${it.octave}" } ?: "–",
+                                label = e.stop.event.written?.let { no.brasscribe.play.model.Announcer.pitchLabel(it, lang) } ?: "–",
                             )
                         }
                     }
@@ -166,7 +166,6 @@ fun ReviewScreen(vm: PlayViewModel) {
     }
 }
 
-private fun alterSign(a: Int) = when (a) { 1 -> "♯"; -1 -> "♭"; 2 -> "𝄪"; -2 -> "𝄫"; else -> "" }
 
 @Composable
 private fun EventChip(

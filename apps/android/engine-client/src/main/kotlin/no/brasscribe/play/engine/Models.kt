@@ -40,13 +40,16 @@ data class AudioRef(
     val bytes: Long,
 )
 
+/** Exactly one of [audioId] (an upload), [sourceId] or [path] (a file inside the engine's data directory). */
 @Serializable
 data class JobCreate(
-    @SerialName("audio_id") val audioId: String,
+    @SerialName("audio_id") val audioId: String? = null,
     val profile: String = Profile.ORCHESTRA_WITH_SOLOIST.id,
     @SerialName("render_audio") val renderAudio: Boolean = true,
     @SerialName("allow_heavy") val allowHeavy: Boolean = true,
     val title: String? = null,
+    @SerialName("source_id") val sourceId: String? = null,
+    val path: String? = null,
 )
 
 @Serializable
@@ -99,6 +102,8 @@ data class Job(
     val progress: Double = 0.0,
     /** Names fetchable under /v1/jobs/{id}/artifacts/{name}. */
     val outputs: List<String> = emptyList(),
+    /** The job this one re-runs, if any. */
+    @SerialName("previous_run_id") val previousRunId: String? = null,
 )
 
 @Serializable

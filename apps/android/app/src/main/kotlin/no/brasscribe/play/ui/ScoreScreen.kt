@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -157,7 +157,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                 Modifier.weight(0.9f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Transport(controller, st.playing, st.bar, st.totalBars)
+                TransportRow(controller, st.playing, st.bar, st.totalBars)
                 SpeedControl(st.speed) { controller.setSpeed(it) }
                 LoopControl(st.totalBars, st.loop, onSet = { a, b ->
                     controller.setLoop(a..b); vm.say(R.string.loop_set_announce, a, b)
@@ -167,7 +167,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     ToggleRow(stringResource(R.string.metronome), st.metronome) { controller.setMetronome(it) }
                     ToggleRow(stringResource(R.string.concert_pitch), st.concertPitch) { controller.setConcertPitch(it) }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { showParts = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.parts)) }
                     OutlinedButton(onClick = { controller.setZoom(st.zoom - 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_out)) }
                     Text(stringResource(R.string.zoom_value, st.zoom))
@@ -181,10 +181,11 @@ fun ScoreScreen(vm: PlayViewModel) {
     if (showParts) PartsDialog(st.parts, st.shown, st.muted, st.soloed, controller) { showParts = false }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Transport(controller: ScoreController, playing: Boolean, bar: Int, total: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Button(onClick = controller::togglePlay, modifier = Modifier.heightIn(min = 56.dp).width(120.dp).semantics { testTag = "play" }) {
+private fun TransportRow(controller: ScoreController, playing: Boolean, bar: Int, total: Int) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = controller::togglePlay, modifier = Modifier.heightIn(min = 56.dp).widthIn(min = 120.dp).semantics { testTag = "play" }) {
             Text(stringResource(if (playing) R.string.pause else R.string.play))
         }
         OutlinedButton(onClick = controller::stop, modifier = Modifier.heightIn(min = 56.dp)) { Text(stringResource(R.string.stop)) }

@@ -31,6 +31,8 @@ val repoRoot = rootProject.extra["repoRoot"] as File
 tasks.test {
     systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
     systemProperty("brasscribe.openapi", file("openapi.json").absolutePath)
+    inputs.file("openapi.json").withPropertyName("openapi")
+    inputs.files(fileTree(File(repoRoot, "data/golden/mikkel-arranged-band"))).withPropertyName("golden")
 }
 
 /**

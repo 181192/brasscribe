@@ -220,6 +220,8 @@
     <string name="companion_connecting">Connecting</string>
     <string name="companion_connected">Connected to engine %1$s on %2$s, using %3$s</string>
     <string name="companion_failed">Could not connect: %1$s</string>
+    <string name="companion_allow_heavy">Let the engine run heavy models</string>
+    <string name="companion_allow_heavy_desc">Off: the engine only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
     <string name="companion_use_fixture">Use the built-in sample engine</string>
     <string name="companion_use_fixture_desc">Replays a finished transcription of Mikkel, for trying the app without a computer.</string>
 

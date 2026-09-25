@@ -20,6 +20,7 @@ import no.brasscribe.play.audio.UnsupportedMediaException
 import no.brasscribe.play.audio.WavFile
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.engine.FixtureEngineApi
+import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.JobStatus
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.ProgressTracker
@@ -256,7 +257,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, container.engineLabel()))
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
-        val created = engine.createJobFromUpload(s.name, bytes, p, s.name.substringBeforeLast('.'))
+        val audio = engine.uploadAudio(s.name, bytes)
+        val created = engine.createJob(
+            JobCreate(audio.audioId, p.id, renderAudio = container.settings.allowHeavy, allowHeavy = container.settings.allowHeavy,
+                title = s.name.substringBeforeLast('.')),
+        )
         engineJobId = created.id
         val tracker = ProgressTracker(created.stages.size.takeIf { it > 0 } ?: stages)
         engine.events(created.id).collect { e ->
