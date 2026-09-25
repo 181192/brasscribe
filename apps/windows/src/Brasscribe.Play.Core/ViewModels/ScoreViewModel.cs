@@ -65,6 +65,11 @@ public sealed partial class ScoreViewModel : ObservableObject
     /// <summary>Lines of the talking-score view for the current part, one per event.</summary>
     public ObservableCollection<string> TalkingLines { get; } = [];
 
+    /// <summary>Index into <see cref="TalkingLines"/> of the cursor position (the text selection).</summary>
+    [ObservableProperty] public partial int CurrentLineIndex { get; set; }
+
+    private readonly List<(int Bar, int Event)> _linePositions = [];
+
     public void Load(string musicXml, Composition? composition)
     {
         MusicXml = musicXml;
@@ -249,6 +254,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         Announcement = text;
         CurrentBar = _nav!.Bar.Number;
         CurrentPartIndex = _nav.PartIndex;
+        CurrentLineIndex = LineIndexOf(_nav.BarIndex, _nav.EventIndex);
         CursorMoved?.Invoke(this, text);
         if (announce) _announcer.Announce(text);
     }
@@ -262,12 +268,32 @@ public sealed partial class ScoreViewModel : ObservableObject
     private void RebuildTalkingLines()
     {
         TalkingLines.Clear();
+        _linePositions.Clear();
         if (Document is null || _nav is null) return;
         int part = SelectedPartIndex >= 0 ? SelectedPartIndex : _nav.PartIndex;
         var walker = new ScoreNavigator(Document, _nav.Settings);
         walker.GoToPart(part);
         walker.FirstBar();
         TalkingLines.Add(walker.Text);
-        while (walker.NextNote() is { Moved: true } r) TalkingLines.Add(r.Text);
+        _linePositions.Add((walker.BarIndex, walker.EventIndex));
+        while (walker.NextNote() is { Moved: true } r)
+        {
+            TalkingLines.Add(r.Text);
+            _linePositions.Add((walker.BarIndex, walker.EventIndex));
+        }
+        CurrentLineIndex = LineIndexOf(_nav.BarIndex, _nav.EventIndex);
+    }
+
+    /// <summary>The last talking-score line at or before a position.</summary>
+    public int LineIndexOf(int bar, int ev)
+    {
+        int best = 0;
+        for (int i = 0; i < _linePositions.Count; i++)
+        {
+            var (b, e) = _linePositions[i];
+            if (b < bar || b == bar && e <= ev) best = i;
+            else break;
+        }
+        return best;
     }
 }
