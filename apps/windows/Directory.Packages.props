@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- Pinned to the last ONNX Runtime release with a DirectML build: the managed API must match the native binary. -->
+    <OnnxRuntimeVersion>1.24.4</OnnxRuntimeVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="AlphaTab" Version="1.8.4" />
+    <PackageVersion Include="AlphaSkia" Version="3.4.135" />
+    <PackageVersion Include="AlphaSkia.Native.Windows" Version="3.4.135" />
+    <PackageVersion Include="NAudio.Core" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="$(OnnxRuntimeVersion)" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="$(OnnxRuntimeVersion)" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.DirectML" Version="$(OnnxRuntimeVersion)" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

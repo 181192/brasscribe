@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <!-- CPU native build of ONNX Runtime (win, linux, osx-arm64). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Resource files of the app, checked for key parity between en-US and nb-NO. -->
+    <None Include="../../src/Brasscribe.Play/Strings/**/*.resw" Link="Strings/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Brasscribe.Play/**/*.xaml" Exclude="../../src/Brasscribe.Play/obj/**;../../src/Brasscribe.Play/bin/**" Link="Xaml/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>
