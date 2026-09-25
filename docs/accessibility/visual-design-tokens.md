@@ -82,7 +82,7 @@ Why "?" and not the obvious alternatives:
 
 **Open questions**
 - Confirm with brass-band players that "?" and a boxed "?" read as "check this note" and not as anything else.
-- MusicXML encoding, agreed with the MusicXML writer: colour on the note, plus a `?` words direction (boxed with `enclosure="rectangle"` below 0.4) at the note's onset in the same part. A `<words>` direction survives MuseScore and other editors, where `<other-technical>` is often dropped. `musicxml_readability.py` counts a coloured note as shape-encoded when such a direction sits at its onset. Still to check: that MuseScore keeps the rectangle enclosure on import.
+- MusicXML encoding, agreed with the MusicXML writer: colour on the note, plus a `?` words direction (boxed with `enclosure="rectangle"` below 0.4) at the note's onset in the same part. A `<words>` direction survives MuseScore and other editors, where `<other-technical>` is often dropped. `musicxml_readability.py` counts a coloured note as shape-encoded when such a direction sits at its onset. The MusicXML writer reports that the rectangle enclosure survives a MuseScore `mscore -o` re-export. That was tested on a test file; the Mikkel output has no note below 0.4 yet. Colour and "?" go on the attack only; tied continuations stay plain.
 
 On Apple, `accessibilityDifferentiateWithoutColor` needs nothing extra, because the "?" marks are always on. When the setting is on, it may make the marks larger.
 
