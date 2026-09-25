@@ -62,8 +62,13 @@ def main() -> None:
     write_musicxml(score, args.out)
     print(f"{args.out}: {len(melody)} melody / {len(bass)} bass notes, {beats_per_bar}/4 at {bpm:.0f} BPM")
     if args.pdf:
-        subprocess.run(["mscore", "-o", str(args.out.with_suffix(".pdf")), str(args.out)], check=True, capture_output=True)
-        print(f"{args.out.with_suffix('.pdf')}")
+        pdf = args.out.with_suffix(".pdf")
+        pdf.unlink(missing_ok=True)
+        # MuseScore 4.7 CLI aborts during shutdown after writing its output; trust the file, not the exit code.
+        subprocess.run(["mscore", "-o", str(pdf), str(args.out)], capture_output=True)
+        if not pdf.exists():
+            raise SystemExit(f"MuseScore did not produce {pdf}")
+        print(pdf)
 
 
 if __name__ == "__main__":
