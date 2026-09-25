@@ -1,0 +1,83 @@
+# Readability: brass-band.musicxml
+
+| part | notes | empty_bar_pct | short_lt16_pct | sixteenth_pct | tuplet_pct | double_dotted | tie_stub_pct | rests_per_bar | short_rest_pct | max_ledger | ledger3_pct | written_low | written_high | out_of_comfort_pct | out_of_extreme | awkward_spelling | leaps_gt_octave | uncertain_pct | colour_only_uncertain |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Soprano Cornet | 0 | 100.0 | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet | tacet |
+| Solo Cornet | 728 | 11.7 | 0.0 | 40.2 | 0.0 | 9 | 1.2 | 0.58 | 7.4 | 3 | 0.1 | G3 | C6 | 0.7 | 0 | 3 | 9 | 31.6 | 230 |
+| Repiano Cornet | 226 | 28.1 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.82 | 0.0 | 3 | 1.3 | F#3 | G4 | 11.9 | 0 | 2 | 0 | 0.0 | 0 |
+| 2nd Cornet | 226 | 28.1 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.82 | 0.0 | 3 | 14.2 | F#3 | F4 | 42.0 | 0 | 0 | 0 | 0.0 | 0 |
+| 3rd Cornet | 226 | 28.1 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.82 | 0.0 | 3 | 16.8 | F#3 | F4 | 50.0 | 0 | 0 | 0 | 0.0 | 0 |
+| Flugelhorn | 282 | 12.5 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.45 | 0.0 | 3 | 0.7 | F#3 | E5 | 5.3 | 0 | 0 | 1 | 0.0 | 0 |
+| Solo Horn | 288 | 10.9 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.42 | 0.0 | 3 | 7.6 | F#3 | D5 | 12.5 | 0 | 2 | 0 | 0.0 | 0 |
+| 1st Horn | 288 | 10.9 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.42 | 0.0 | 3 | 34.4 | F#3 | Ab4 | 47.2 | 0 | 1 | 0 | 0.0 | 0 |
+| 2nd Horn | 288 | 10.9 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.42 | 0.0 | 3 | 47.9 | F#3 | F#4 | 59.4 | 0 | 1 | 0 | 0.0 | 0 |
+| 1st Baritone | 288 | 10.9 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.42 | 0.0 | 3 | 4.9 | F#3 | A4 | 7.6 | 0 | 0 | 0 | 0.0 | 0 |
+| 2nd Baritone | 288 | 10.9 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.42 | 0.0 | 3 | 5.6 | F#3 | A4 | 8.0 | 0 | 0 | 0 | 0.0 | 0 |
+| 1st Trombone | 231 | 28.1 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.78 | 0.0 | 2 | 0.0 | G3 | A4 | 1.7 | 0 | 2 | 0 | 0.0 | 0 |
+| 2nd Trombone | 231 | 28.1 | 0.0 | 0.0 | 0.0 | 0 | 0.0 | 0.78 | 0.0 | 3 | 3.5 | F#3 | A4 | 9.1 | 0 | 0 | 0 | 0.0 | 0 |
+| Bass Trombone | 238 | 46.9 | 0.0 | 10.9 | 0.0 | 7 | 2.9 | 1.1 | 2.2 | 3 | 6.3 | A1 | B3 | 6.3 | 0 | 0 | 13 | 0.0 | 0 |
+| Euphonium | 331 | 30.5 | 0.0 | 27.8 | 0.0 | 5 | 1.8 | 1.76 | 3.1 | 3 | 1.5 | F#3 | B5 | 0.6 | 0 | 0 | 0 | 0.0 | 0 |
+| E♭ Bass | 517 | 18.8 | 0.0 | 10.6 | 0.0 | 6 | 3.7 | 0.1 | 2.9 | 4 | 0.4 | D3 | A5 | 9.1 | 7 | 0 | 17 | 0.0 | 0 |
+| B♭ Bass | 517 | 18.8 | 0.0 | 10.6 | 0.0 | 6 | 3.7 | 0.1 | 2.9 | 3 | 0.2 | F#3 | D5 | 0.0 | 0 | 0 | 13 | 0.0 | 0 |
+| Percussion | 601 | 45.3 | 0.0 | 44.9 | 0.0 | 2 | 0.0 | 0.2 | 0.0 |  |  |  |  |  |  |  |  | 0.0 | 0 |
+
+Score:
+
+- parts: 18
+- tacet_parts: ['Soprano Cornet']
+- pitched_notes: 5193
+- short_lt16_pct: 0.0
+- sixteenth_pct: 10.0
+- tuplet_pct: 0.0
+- tie_stub_pct: 1.2
+- empty_bar_pct_playing_parts: 20.9
+- uncertain_pct: 4.4
+- duplicate_abbreviations: {'Cnt.': ['Solo Cornet', 'Repiano Cornet', '2nd Cornet', '3rd Cornet'], 'Hn.': ['Solo Horn', '1st Horn', '2nd Horn'], 'Bar.': ['1st Baritone', '2nd Baritone'], 'Tbn.': ['1st Trombone', '2nd Trombone']}
+- dynamics markings: 0, rehearsal marks: 0, tempo marks: 1, text directions: 0, time changes: 0, key changes: 0
+
+Flagged bars:
+
+- **Solo Cornet**: 1: double-dotted value; 2: 4 rests, uncertain (colour); 3: uncertain (colour); 5: double-dotted value; 6: tie into 16th; 9: uncertain (colour); 11: uncertain (colour); 14: uncertain (colour); 18: uncertain (colour); 19: uncertain (colour); 20: uncertain (colour); 21: uncertain (colour); 22: uncertain (colour); 24: uncertain (colour); 25: uncertain (colour); 26: uncertain (colour); 28: uncertain (colour); 29: uncertain (colour); 30: uncertain (colour); 31: tie into 16th, uncertain (colour); 33: uncertain (colour); 34: leap 22 semitones; 35: uncertain (colour), leap 19 semitones; 36: double-dotted value, uncertain (colour), leap 14 semitones; 37: uncertain (colour); 38: double-dotted value, uncertain (colour), leap 14 semitones; 39: uncertain (colour); 40: uncertain (colour); 41: uncertain (colour); 42: uncertain (colour); 43: uncertain (colour); 44: uncertain (colour); 45: uncertain (colour); 46: uncertain (colour); 47: uncertain (colour); 48: uncertain (colour); 49: uncertain (colour); 50: uncertain (colour); 51: uncertain (colour); 52: uncertain (colour); 53: uncertain (colour); 54: uncertain (colour); 55: uncertain (colour); 57: uncertain (colour); 58: uncertain (colour); 59: double-dotted value, uncertain (colour); 63: uncertain (colour); 64: leap 14 semitones; 65: double-dotted value; 66: double-dotted value, uncertain (colour); 67: tie into 16th, uncertain (colour); 68: uncertain (colour); 69: tie into 16th, uncertain (colour); 70: uncertain (colour); 71: uncertain (colour); 72: tie into 16th, uncertain (colour); 73: uncertain (colour); 74: double-dotted value, uncertain (colour); 75: uncertain (colour); 76: uncertain (colour); 77: uncertain (colour); 78: tie into 16th, uncertain (colour); 79: uncertain (colour); 80: uncertain (colour); 81: uncertain (colour); 90: tie into 16th; 91: tie into 16th, uncertain (colour); 92: uncertain (colour); 94: uncertain (colour); 95: tie into 16th, uncertain (colour); 96: uncertain (colour); 99: double-dotted value, uncertain (colour); 101: uncertain (colour), awkward spelling E#; 102: uncertain (colour); 104: uncertain (colour); 105: uncertain (colour); 106: uncertain (colour); 107: uncertain (colour); 108: uncertain (colour), awkward spelling E#; 109: uncertain (colour); 110: uncertain (colour); 111: uncertain (colour); 112: uncertain (colour); 113: uncertain (colour); 114: uncertain (colour); 115: uncertain (colour); 116: uncertain (colour); 119: uncertain (colour); 121: uncertain (colour); 122: uncertain (colour); 123: uncertain (colour); 124: uncertain (colour), leap 18 semitones; 125: uncertain (colour), leap 16 semitones; 126: uncertain (colour), leap 18 semitones; 127: uncertain (colour), 3 ledger lines (G3), awkward spelling F##, leap 16 semitones; 128: uncertain (colour)
+- **Repiano Cornet**: 46: awkward spelling E#; 87: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 108: awkward spelling E#
+- **2nd Cornet**: 51: 3 ledger lines (F#3); 52: 3 ledger lines (F#3); 53: 3 ledger lines (F#3); 81: 3 ledger lines (F#3); 82: 3 ledger lines (F#3); 83: 3 ledger lines (F#3); 84: 3 ledger lines (F#3); 85: 3 ledger lines (F#3); 86: 3 ledger lines (F#3); 87: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 94: 3 ledger lines (F#3); 95: 3 ledger lines (F#3); 96: 3 ledger lines (F#3); 112: 3 ledger lines (F#3); 113: 3 ledger lines (F#3); 114: 3 ledger lines (F#3)
+- **3rd Cornet**: 51: 3 ledger lines (F#3); 52: 3 ledger lines (F#3); 53: 3 ledger lines (F#3); 81: 3 ledger lines (F#3); 82: 3 ledger lines (F#3); 83: 3 ledger lines (F#3); 84: 3 ledger lines (F#3); 85: 3 ledger lines (F#3); 86: 3 ledger lines (F#3); 87: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 94: 3 ledger lines (F#3); 95: 3 ledger lines (F#3); 96: 3 ledger lines (F#3); 108: 3 ledger lines (F#3); 111: 3 ledger lines (F#3); 112: 3 ledger lines (F#3); 113: 3 ledger lines (F#3); 114: 3 ledger lines (F#3); 119: 3 ledger lines (F#3)
+- **Flugelhorn**: 4: 3 ledger lines (F#3), leap 13 semitones; 5: 3 ledger lines (F#3)
+- **Solo Horn**: 15: 3 ledger lines (F#3); 19: 3 ledger lines (F#3); 27: 3 ledger lines (F#3); 29: 3 ledger lines (F#3); 31: 3 ledger lines (F#3); 33: 3 ledger lines (F#3); 37: 3 ledger lines (F#3); 39: 3 ledger lines (F#3); 40: 3 ledger lines (F#3); 41: 3 ledger lines (F#3); 47: 3 ledger lines (F#3); 50: awkward spelling E#; 102: 3 ledger lines (F#3); 108: 3 ledger lines (F#3); 112: 3 ledger lines (F#3); 113: 3 ledger lines (F#3), awkward spelling E#; 117: 3 ledger lines (F#3); 118: 3 ledger lines (F#3)
+- **1st Horn**: 3: 3 ledger lines (F#3); 5: 3 ledger lines (F#3); 7: 3 ledger lines (F#3); 11: 3 ledger lines (F#3); 15: 3 ledger lines (F#3); 19: 3 ledger lines (F#3); 20: 3 ledger lines (F#3); 21: 3 ledger lines (F#3); 22: 3 ledger lines (F#3); 23: 3 ledger lines (F#3); 24: 3 ledger lines (F#3); 25: 3 ledger lines (F#3); 26: 3 ledger lines (F#3); 27: 3 ledger lines (F#3); 29: 3 ledger lines (F#3); 31: 3 ledger lines (F#3); 32: 3 ledger lines (F#3); 33: 3 ledger lines (F#3); 35: 3 ledger lines (F#3); 36: 3 ledger lines (F#3); 37: 3 ledger lines (F#3); 38: 3 ledger lines (F#3); 39: 3 ledger lines (F#3); 40: 3 ledger lines (F#3); 41: 3 ledger lines (F#3); 47: 3 ledger lines (F#3); 48: 3 ledger lines (F#3); 49: 3 ledger lines (F#3); 50: 3 ledger lines (F#3); 51: 3 ledger lines (F#3); 53: 3 ledger lines (F#3); 54: 3 ledger lines (F#3); 59: 3 ledger lines (F#3); 60: 3 ledger lines (F#3); 61: 3 ledger lines (F#3); 62: 3 ledger lines (F#3); 63: 3 ledger lines (F#3); 64: 3 ledger lines (F#3); 65: 3 ledger lines (F#3); 66: 3 ledger lines (F#3); 77: 3 ledger lines (F#3); 78: 3 ledger lines (F#3); 79: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 95: 3 ledger lines (F#3); 101: 3 ledger lines (F#3); 102: 3 ledger lines (F#3); 103: 3 ledger lines (F#3); 106: 3 ledger lines (F#3); 108: 3 ledger lines (F#3); 109: 3 ledger lines (F#3); 110: 3 ledger lines (F#3); 112: 3 ledger lines (F#3); 113: 3 ledger lines (F#3), awkward spelling E#; 114: 3 ledger lines (F#3); 117: 3 ledger lines (F#3); 118: 3 ledger lines (F#3); 119: 3 ledger lines (F#3); 123: 3 ledger lines (F#3); 124: 3 ledger lines (F#3); 125: 3 ledger lines (F#3); 126: 3 ledger lines (F#3); 127: 3 ledger lines (F#3)
+- **2nd Horn**: 3: 3 ledger lines (F#3); 5: 3 ledger lines (F#3); 7: 3 ledger lines (F#3); 9: 3 ledger lines (F#3); 11: 3 ledger lines (F#3); 12: 3 ledger lines (F#3); 15: 3 ledger lines (F#3); 16: 3 ledger lines (F#3); 18: 3 ledger lines (F#3); 19: 3 ledger lines (F#3); 20: 3 ledger lines (F#3); 21: 3 ledger lines (F#3); 22: 3 ledger lines (F#3); 23: 3 ledger lines (F#3); 24: 3 ledger lines (F#3); 25: 3 ledger lines (F#3); 26: 3 ledger lines (F#3); 27: 3 ledger lines (F#3); 29: 3 ledger lines (F#3); 30: 3 ledger lines (F#3); 31: 3 ledger lines (F#3); 32: 3 ledger lines (F#3); 33: 3 ledger lines (F#3); 34: 3 ledger lines (F#3); 35: 3 ledger lines (F#3); 36: 3 ledger lines (F#3); 37: 3 ledger lines (F#3); 38: 3 ledger lines (F#3); 39: 3 ledger lines (F#3); 40: 3 ledger lines (F#3); 41: 3 ledger lines (F#3); 47: 3 ledger lines (F#3); 48: 3 ledger lines (F#3); 49: 3 ledger lines (F#3); 50: 3 ledger lines (F#3); 51: 3 ledger lines (F#3); 53: 3 ledger lines (F#3); 54: 3 ledger lines (F#3); 59: 3 ledger lines (F#3); 60: 3 ledger lines (F#3); 61: 3 ledger lines (F#3); 62: 3 ledger lines (F#3); 63: 3 ledger lines (F#3); 64: 3 ledger lines (F#3); 65: 3 ledger lines (F#3); 66: 3 ledger lines (F#3); 67: 3 ledger lines (F#3); 68: 3 ledger lines (F#3); 69: 3 ledger lines (F#3); 70: 3 ledger lines (F#3); 77: 3 ledger lines (F#3); 78: 3 ledger lines (F#3); 79: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 94: 3 ledger lines (F#3); 95: 3 ledger lines (F#3); 101: 3 ledger lines (F#3); 102: 3 ledger lines (F#3); 103: 3 ledger lines (F#3); 104: 3 ledger lines (F#3); 105: 3 ledger lines (F#3); 106: 3 ledger lines (F#3); 108: 3 ledger lines (F#3); 109: 3 ledger lines (F#3); 110: 3 ledger lines (F#3); 111: 3 ledger lines (F#3); 112: 3 ledger lines (F#3); 113: 3 ledger lines (F#3), awkward spelling E#; 114: 3 ledger lines (F#3); 115: 3 ledger lines (F#3); 116: 3 ledger lines (F#3); 117: 3 ledger lines (F#3); 118: 3 ledger lines (F#3); 119: 3 ledger lines (F#3); 123: 3 ledger lines (F#3); 124: 3 ledger lines (F#3); 125: 3 ledger lines (F#3); 126: 3 ledger lines (F#3); 127: 3 ledger lines (F#3)
+- **1st Baritone**: 89: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 101: 3 ledger lines (F#3); 103: 3 ledger lines (F#3); 104: 3 ledger lines (F#3)
+- **2nd Baritone**: 89: 3 ledger lines (F#3); 90: 3 ledger lines (F#3); 91: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 101: 3 ledger lines (F#3); 103: 3 ledger lines (F#3); 104: 3 ledger lines (F#3)
+- **1st Trombone**: 18: awkward spelling E#; 46: awkward spelling E#
+- **2nd Trombone**: 87: 3 ledger lines (F#3); 92: 3 ledger lines (F#3); 93: 3 ledger lines (F#3); 94: 3 ledger lines (F#3); 96: 3 ledger lines (F#3)
+- **Bass Trombone**: 4: tie into 16th; 15: double-dotted value; 20: 3 ledger lines (A1); 21: 3 ledger lines (A1); 22: 3 ledger lines (A1); 23: 3 ledger lines (A1); 24: 3 ledger lines (A1); 25: 3 ledger lines (A1); 26: 3 ledger lines (A1); 27: 3 ledger lines (A1); 28: 3 ledger lines (A1); 30: double-dotted value; 37: leap 17 semitones; 38: double-dotted value; 42: tie into 16th; 44: leap 14 semitones; 46: double-dotted value; 54: leap 14 semitones; 55: leap 13 semitones; 56: tie into 16th; 57: tie into 16th; 59: leap 14 semitones; 76: leap 13 semitones, leap 15 semitones, leap 14 semitones; 80: double-dotted value; 117: tie into 16th; 118: leap 17 semitones; 119: tie into 16th; 121: leap 16 semitones; 122: tie into 16th; 123: double-dotted value, leap 16 semitones; 124: double-dotted value, leap 18 semitones; 126: leap 16 semitones
+- **Euphonium**: 5: 3 ledger lines (F#3); 12: tie into 16th; 14: 3 ledger lines (F#3); 30: double-dotted value; 31: double-dotted value; 56: 4 rests; 77: tie into 16th; 90: double-dotted value; 91: 3 ledger lines (F#3); 96: double-dotted value; 111: 3 ledger lines (F#3); 113: 4 rests; 116: tie into 16th; 119: tie into 16th; 126: tie into 16th; 127: double-dotted value
+- **E♭ Bass**: 2: double-dotted value, tie into 16th; 3: double-dotted value, tie into 16th; 4: tie into 16th, leap 19 semitones, outside range (A5); 5: leap 19 semitones, outside range (A5); 13: tie into 16th; 17: tie into 16th; 28: tie into 16th; 30: double-dotted value; 31: tie into 16th; 34: leap 14 semitones; 42: tie into 16th; 44: leap 14 semitones; 54: leap 14 semitones; 55: leap 13 semitones; 56: tie into 16th; 57: tie into 16th; 59: tie into 16th, leap 14 semitones; 63: tie into 16th; 64: tie into 16th; 70: tie into 16th; 73: tie into 16th; 76: leap 13 semitones, leap 15 semitones, leap 14 semitones; 116: leap 14 semitones; 117: tie into 16th; 118: leap 17 semitones; 119: tie into 16th; 121: leap 16 semitones; 122: tie into 16th, outside range (Ab5); 123: double-dotted value, leap 16 semitones; 124: double-dotted value, leap 18 semitones, outside range (Ab5); 125: double-dotted value, leap 16 semitones; 126: 4 ledger lines (D3), leap 30 semitones, outside range (Ab5); 127: 4 ledger lines (D3)
+- **B♭ Bass**: 2: double-dotted value, tie into 16th; 3: double-dotted value, tie into 16th; 4: tie into 16th, leap 19 semitones; 5: leap 19 semitones; 13: tie into 16th; 17: tie into 16th; 28: tie into 16th; 30: double-dotted value; 31: tie into 16th; 34: leap 14 semitones; 42: tie into 16th; 44: leap 14 semitones; 54: leap 14 semitones; 55: leap 13 semitones; 56: tie into 16th; 57: tie into 16th; 59: tie into 16th; 63: tie into 16th; 64: tie into 16th; 70: tie into 16th; 73: tie into 16th; 76: leap 13 semitones; 116: 3 ledger lines (F#3), leap 14 semitones; 117: tie into 16th; 119: tie into 16th; 121: leap 16 semitones; 122: tie into 16th; 123: double-dotted value, leap 16 semitones; 124: double-dotted value, leap 18 semitones; 125: double-dotted value, leap 16 semitones; 126: leap 18 semitones
+- **Percussion**: 60: double-dotted value; 73: double-dotted value
+
+Threshold violations:
+- Solo Cornet: sixteenth_pct=40.2 > 35.0
+- Solo Cornet: double_dotted=9 > 0
+- Solo Cornet: awkward_spelling=3 > 0
+- Solo Cornet: colour_only_uncertain=230 > 0
+- Repiano Cornet: awkward_spelling=2 > 0
+- 2nd Cornet: ledger3_pct=14.2 > 5.0
+- 3rd Cornet: ledger3_pct=16.8 > 5.0
+- Solo Horn: ledger3_pct=7.6 > 5.0
+- Solo Horn: awkward_spelling=2 > 0
+- 1st Horn: ledger3_pct=34.4 > 5.0
+- 1st Horn: awkward_spelling=1 > 0
+- 2nd Horn: ledger3_pct=47.9 > 5.0
+- 2nd Horn: awkward_spelling=1 > 0
+- 2nd Baritone: ledger3_pct=5.6 > 5.0
+- 1st Trombone: awkward_spelling=2 > 0
+- Bass Trombone: double_dotted=7 > 0
+- Bass Trombone: ledger3_pct=6.3 > 5.0
+- Euphonium: double_dotted=5 > 0
+- E♭ Bass: tie_stub_pct=3.7 > 3.0
+- E♭ Bass: double_dotted=6 > 0
+- E♭ Bass: out_of_extreme=7 > 0
+- B♭ Bass: tie_stub_pct=3.7 > 3.0
+- B♭ Bass: double_dotted=6 > 0
+- Percussion: sixteenth_pct=44.9 > 35.0
+- Percussion: double_dotted=2 > 0
