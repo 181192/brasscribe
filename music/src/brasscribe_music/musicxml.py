@@ -30,6 +30,12 @@ class PartSpec:
 
 
 def _m21_instrument(name: str, band: BandInstrument | None) -> instrument.Instrument:
+    if band is not None and band.clef == "percussion":
+        inst = instrument.UnpitchedPercussion()
+        inst.partName = name
+        inst.instrumentName = band.name
+        inst.partAbbreviation = band.short
+        return inst
     inst = instrument.Instrument()
     inst.partName = name
     if band is None:
@@ -38,8 +44,37 @@ def _m21_instrument(name: str, band: BandInstrument | None) -> instrument.Instru
     inst.partAbbreviation = band.short
     inst.midiProgram = band.gm_program
     generic = band.diatonic + (1 if band.diatonic >= 0 else -1)
-    inst.transposition = interval.intervalFromGenericAndChromatic(generic, band.chromatic)
+    if band.chromatic:
+        inst.transposition = interval.intervalFromGenericAndChromatic(generic, band.chromatic)
     return inst
+
+
+# General MIDI drum number -> (display step+octave on a 5-line percussion staff, notehead).
+DRUM_MAP: dict[int, tuple[str, str]] = {
+    35: ("F4", "normal"), 36: ("F4", "normal"),
+    37: ("C5", "x"), 38: ("C5", "normal"), 40: ("C5", "normal"),
+    41: ("A4", "normal"), 43: ("A4", "normal"), 45: ("D5", "normal"), 47: ("D5", "normal"),
+    48: ("E5", "normal"), 50: ("E5", "normal"),
+    42: ("G5", "x"), 44: ("D4", "x"), 46: ("G5", "circle-x"),
+    49: ("A5", "x"), 52: ("A5", "x"), 55: ("A5", "x"), 57: ("A5", "x"),
+    51: ("F5", "x"), 53: ("F5", "diamond"), 59: ("F5", "x"),
+}
+OTHER_PERCUSSION = ("B5", "x")
+
+
+def _drum_element(pitches: list[int], ql: float):
+    from music21 import percussion
+
+    heads = []
+    for p in sorted(set(pitches)):
+        disp, head = DRUM_MAP.get(p, OTHER_PERCUSSION)
+        u = note.Unpitched(displayName=disp)
+        u.notehead = head
+        heads.append(u)
+    if len(heads) == 1:
+        heads[0].quarterLength = ql
+        return heads[0]
+    return percussion.PercussionChord(heads, quarterLength=ql)
 
 
 def _notatable_end(start: int, end: int) -> int:
@@ -80,7 +115,10 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     score.insert(0, md)
 
     # Spell every note from the whole ensemble at concert pitch (ps13), and pick the key.
-    events = [(pi, ev) for pi, p in enumerate(parts) for ev in _events(p.notes)]
+    def is_drums(p: PartSpec) -> bool:
+        return p.instrument is not None and p.instrument.clef == "percussion"
+
+    events = [(pi, ev) for pi, p in enumerate(parts) if not is_drums(p) for ev in _events(p.notes)]
     flat = [(pi, s, e, p) for pi, (s, e, ps, _) in events for p in ps]
     spelled: dict[tuple[int, int, int], pitch.Pitch] = {}
     fifths = 0
@@ -101,8 +139,11 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     for pi, p in enumerate(parts):
         part = stream.Part()
         part.insert(0, _m21_instrument(p.name, p.instrument))
-        part.insert(0, clef.BassClef() if p.clef == "bass" else clef.TrebleClef())
-        part.insert(0, key.KeySignature(fifths))
+        if is_drums(p):
+            part.insert(0, clef.PercussionClef())
+        else:
+            part.insert(0, clef.BassClef() if p.clef == "bass" else clef.TrebleClef())
+            part.insert(0, key.KeySignature(fifths))
         part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
         if pi == 0:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
@@ -118,8 +159,11 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             if start > cursor:
                 part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(start - cursor) / TICKS_PER_BEAT))
             ql = (end - start) / TICKS_PER_BEAT
-            sp = [spelled.get((pi, tick, m), pitch.Pitch(midi=m)) for m in pitches]
-            el = note.Note(sp[0], quarterLength=ql) if len(sp) == 1 else chord.Chord(sp, quarterLength=ql)
+            if is_drums(p):
+                el = _drum_element(pitches, ql)
+            else:
+                sp = [spelled.get((pi, tick, m), pitch.Pitch(midi=m)) for m in pitches]
+                el = note.Note(sp[0], quarterLength=ql) if len(sp) == 1 else chord.Chord(sp, quarterLength=ql)
             if conf < low_confidence:
                 el.style.color = "#d0021b"  # flag uncertain notes for review
             part.insert(start / TICKS_PER_BEAT, el)

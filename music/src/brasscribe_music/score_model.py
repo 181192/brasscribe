@@ -16,6 +16,15 @@ from pathlib import Path
 from .quantize import TICKS_PER_BEAT
 
 
+def _plain(o):
+    """JSON fallback: numpy scalars become plain numbers, enums their value; anything else is an error."""
+    if hasattr(o, "item") and callable(o.item):
+        return o.item()
+    if isinstance(o, Enum):
+        return o.value
+    raise TypeError(f"not JSON serializable: {type(o).__name__}")
+
+
 class VoiceRole(str, Enum):
     MELODY = "melody"
     COUNTERMELODY = "countermelody"
@@ -45,6 +54,7 @@ class Voice:
     role: VoiceRole
     notes: list[Note] = field(default_factory=list)
     instrument_hint: str | None = None  # what the source instrument seemed to be; never binding
+    layer: str | None = None  # textural layer it came from: solo, strings, brass, keys, bass, drums
 
 
 @dataclass
@@ -86,12 +96,12 @@ class Composition:
         return 60.0 / diffs[len(diffs) // 2]
 
     def to_json(self, path: Path) -> None:
-        path.write_text(json.dumps(asdict(self), indent=1, default=str))
+        path.write_text(json.dumps(asdict(self), indent=1, default=_plain))
 
     @staticmethod
     def from_json(path: Path) -> Composition:
         d = json.loads(path.read_text())
-        voices = [Voice(v["id"], VoiceRole(v["role"]), [Note(**n) for n in v["notes"]], v.get("instrument_hint"))
+        voices = [Voice(v["id"], VoiceRole(v["role"]), [Note(**n) for n in v["notes"]], v.get("instrument_hint"), v.get("layer"))
                   for v in d["voices"]]
         return Composition(d["title"], voices, [Meter(**m) for m in d["meters"]], [KeySig(**k) for k in d["keys"]],
                            d.get("beat_times", []), d.get("first_downbeat", 0), d.get("ticks_per_beat", TICKS_PER_BEAT))

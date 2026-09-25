@@ -59,3 +59,14 @@ def test_instrument_sounds_are_written(tmp_path):
     xml = out.read_text()
     assert "<instrument-sound>brass.tuba</instrument-sound>" in xml
     assert "<instrument-sound>brass.cornet</instrument-sound>" in xml
+
+
+def test_composition_json_round_trip_keeps_numbers(tmp_path):
+    import numpy as np
+    comp = _comp()
+    comp.voices[0].notes[0].start = np.int64(0)
+    comp.first_downbeat = np.int64(3)
+    comp.to_json(tmp_path / "c.json")
+    back = Composition.from_json(tmp_path / "c.json")
+    assert back.first_downbeat == 3 and isinstance(back.voices[0].notes[0].start, int)
+    assert back.end_tick == comp.end_tick

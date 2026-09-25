@@ -105,7 +105,8 @@ def _voice_slot(pcs: list[int], parts: list[Part], ceiling: int, floor: int, pre
         missing = [p for p in options if p % 12 not in {u % 12 for u in used}]
         # When every chord tone is taken, double in another octave rather than at the unison.
         pool = missing or [p for p in options if p not in used] or options
-        target = prev.get(part.name, (lo + hi) // 2)
+        # Close position: start just under the part above; afterwards follow the part's own previous note.
+        target = prev.get(part.name, min(hi, upper - 3) if upper < 200 else (lo + hi) // 2)
         p = min(pool, key=lambda x: (abs(x - target), -x))
         chosen[part.name] = p
         used.append(p)
@@ -157,4 +158,118 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
         for name, p in voicing.items():
             arr.parts[name].append(Note(p, s, end - s, conf, ["arranger"]))
         prev.update(voicing)
+    return arr
+
+
+# ---------------------------------------------------------------------------
+# Layered arrangement: solo feature with band accompaniment.
+#
+# Each source layer maps to the band section that plays that texture:
+#   solo            -> Solo Cornet (the featured part)
+#   strings (line)  -> Euphonium countermelody (top moving line of the strings)
+#   strings + keys  -> sustained pads: Flugelhorn, horns, baritones
+#   orch. brass     -> brass choir: Repiano, 2nd/3rd Cornets, 1st/2nd Trombones
+#   bass            -> E♭ Bass, B♭ Bass (octave below where comfortable),
+#                      Bass Trombone doubling while the brass choir plays
+#   drums           -> Percussion (drum kit, unpitched)
+# The Soprano Cornet is left tacet: the source has no part in its register.
+# ---------------------------------------------------------------------------
+
+PAD_PARTS = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"]
+CHOIR_PARTS = ["Repiano Cornet", "2nd Cornet", "3rd Cornet", "1st Trombone", "2nd Trombone"]
+COUNTER_MIN_MOVE = 2  # a strings note shorter than this many beats counts as melodic movement
+
+
+def _layer(comp: Composition, name: str) -> list[Note]:
+    return [n for v in comp.voices if v.layer == name for n in v.notes]
+
+
+def _voice_layer(arr: Arrangement, slots, part_names: list[str], ceiling_notes: list[Note],
+                 floor_notes: list[Note], default_ceiling: int, conf: float) -> None:
+    parts = [arr.lineup.by_name(n) for n in part_names]
+    parts.sort(key=lambda p: -sum(p.instrument.comfortable))
+    prev: dict[str, int] = {}
+    for p in parts:
+        arr.parts.setdefault(p.name, [])
+    for start, end, pcs in slots:
+        top = _sounding_at(ceiling_notes, start)
+        bot = _sounding_at(floor_notes, start)
+        ceiling = top[0].pitch if top else default_ceiling
+        # Pads may sit below a bass line that climbs into the tenor register.
+        floor = min(bot[0].pitch, 43) if bot else 30
+        voicing = _voice_slot(pcs, parts, ceiling, floor, prev)
+        for name, p in voicing.items():
+            arr.parts[name].append(Note(p, start, end - start, conf, ["arranger"]))
+        prev.update(voicing)
+
+
+def _place_smooth(notes: list[Note], part: Part) -> list[Note]:
+    """Octave per note nearest the previous note (inside the comfortable range).
+
+    Used for lines pulled from a dense texture, where the source hops between
+    voices and a single octave shift per phrase would leave large leaps.
+    """
+    lo, hi = part.instrument.comfortable
+    prev = (lo + hi) // 2
+    out = []
+    for n in sorted(notes, key=lambda n: n.start):
+        opts = [n.pitch % 12 + 12 * k for k in range(11) if lo <= n.pitch % 12 + 12 * k <= hi]
+        if not opts:
+            continue
+        p = min(opts, key=lambda x: abs(x - prev))
+        out.append(Note(p, n.start, n.dur, n.confidence, n.sources, n.onset_s, n.offset_s))
+        prev = p
+    return _hold_small_gaps(out)
+
+
+def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangement:
+    from .harmony import harmony_slots
+    from .instruments import BRASS_BAND
+
+    lineup = lineup or BRASS_BAND
+    arr = Arrangement(lineup)
+    for p in lineup.parts:
+        arr.parts[p.name] = []
+    end = comp.end_tick
+
+    solo = _layer(comp, "solo")
+    arr.parts["Solo Cornet"] = _place_line(solo, lineup.by_name("Solo Cornet"), arr.warnings)
+
+    bass = _layer(comp, "bass")
+    eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
+    arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
+    arr.parts[bb.name] = [Note(n.pitch - 12 if bb.instrument.check(n.pitch - 12) == "ok" else n.pitch,
+                               n.start, n.dur, n.confidence, n.sources) for n in arr.parts[eb.name]]
+
+    strings = _layer(comp, "strings")
+    keys = _layer(comp, "keys")
+    brass = _layer(comp, "brass")
+
+    # Countermelody: the top strings line where it moves (long held tops belong to the pad).
+    top = []
+    for n in sorted(strings, key=lambda n: n.start):
+        if top and n.start - top[-1].start < 6:
+            if n.pitch > top[-1].pitch:
+                top[-1] = n
+            continue
+        top.append(n)
+    counter = [n for n in top if n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat]
+    euph = lineup.by_name("Euphonium")
+    arr.parts[euph.name] = _place_smooth(counter, euph)
+
+    pad_slots = harmony_slots(strings + keys, end)
+    _voice_layer(arr, pad_slots, PAD_PARTS, arr.parts["Solo Cornet"], arr.parts[eb.name], 76, 0.8)
+
+    choir_slots = harmony_slots(brass, end, max_pcs=3)
+    _voice_layer(arr, choir_slots, CHOIR_PARTS, arr.parts["Solo Cornet"], arr.parts[eb.name], 79, 0.8)
+
+    # Bass trombone reinforces the bass line only while the brass choir is playing.
+    btb = lineup.by_name("Bass Trombone")
+    active = [(s, e) for s, e, _ in choir_slots]
+    tutti = [n for n in bass if any(s <= n.start < e for s, e in active)]
+    arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
+
+    drums = _layer(comp, "drums")
+    if drums and "Percussion" in [p.name for p in lineup.parts]:
+        arr.parts["Percussion"] = sorted(drums, key=lambda n: n.start)
     return arr

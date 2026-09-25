@@ -91,6 +91,9 @@ _INSTRUMENTS = [
     Instrument("bb-bass", "B♭ Tuba", "B♭ Bass", -26, -15, "treble", (22, 72), (28, 58),
                frozenset({R.BASS, R.PEDAL}), 58, "bb-tuba-treble", "basses", "brass.tuba"),
 ]
+PERCUSSION = Instrument("drum-kit", "Drum Kit", "Dr.", 0, 0, "percussion", (0, 127), (0, 127),
+                        frozenset({R.RHYTHMIC_SUPPORT}), 0, "drumset", "percussion", "drum.group.set")
+_INSTRUMENTS.append(PERCUSSION)
 INSTRUMENTS: dict[str, Instrument] = {i.id: i for i in _INSTRUMENTS}
 
 
@@ -133,6 +136,7 @@ BRASS_BAND = Lineup("Brass band", [
     _p("Euphonium", "euphonium", 2),
     _p("E♭ Bass", "eb-bass", 2),
     _p("B♭ Bass", "bb-bass", 2),
+    _p("Percussion", "drum-kit"),
 ])
 
 # Reduced ensemble for the first arranger milestone.

@@ -55,7 +55,7 @@ def test_validate_range_reports_written_pitch():
 
 def test_score_order():
     names = [p.name for p in BRASS_BAND.parts]
-    assert names[0] == "Soprano Cornet" and names[-1] == "B♭ Bass"
+    assert names[0] == "Soprano Cornet" and names[-2:] == ["B♭ Bass", "Percussion"]
     assert names.index("Flugelhorn") < names.index("Solo Horn") < names.index("1st Baritone") < names.index("1st Trombone")
 
 

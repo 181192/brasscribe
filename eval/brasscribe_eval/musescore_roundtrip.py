@@ -14,7 +14,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from brasscribe_music.arranger import arrange
+from brasscribe_music.arranger import arrange, arrange_layers
 from brasscribe_music.score_model import Composition
 from music21 import converter
 
@@ -44,12 +44,17 @@ def check(xml: Path, comp_json: Path) -> bool:
     raw = re_xml.read_text()
     sounds = dict(zip([norm(n) for n in re.findall(r"<part-name>([^<]*)</part-name>", raw)],
                       re.findall(r"<instrument-sound>([^<]+)</instrument-sound>", raw)))
-    arr = arrange(Composition.from_json(comp_json))
+    comp = Composition.from_json(comp_json)
+    arr = arrange_layers(comp) if any(v.layer for v in comp.voices) else arrange(comp)
     want = {norm(k): [n.pitch for n in sorted(v, key=lambda n: n.start)] for k, v in arr.parts.items()}
     back = converter.parse(re_xml).toSoundingPitch()
     ok = True
     for p in back.parts:
         name = norm(p.partName)
+        if name == "Percussion":
+            hits = sum(1 for n in p.recurse().notes)
+            print(f"{name:14s} drum kit              events={hits:4d} (unpitched, not compared)")
+            continue
         got = _merge_ties(p)
         same = got == want.get(name)
         ok &= same
