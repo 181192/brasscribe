@@ -147,7 +147,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         bar.events.forEach { e ->
-                            val fr = focus.getOrPut(e.index) { FocusRequester() }
+                            val fr = remember(focus, e.index) { focus.getOrPut(e.index) { FocusRequester() } }
                             EventChip(
                                 e, spoken[e.index], e.index in checked, fr,
                                 listen = { vm.listenToBar(e.bar) },

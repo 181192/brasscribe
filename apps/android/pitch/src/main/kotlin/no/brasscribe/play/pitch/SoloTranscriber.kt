@@ -12,6 +12,8 @@ data class SoloResult(
     val notes: Int,
     val audioSeconds: Double,
     val detectMillis: Long,
+    val resampleMillis: Long = 0,
+    val totalMillis: Long = 0,
 )
 
 /**
@@ -26,8 +28,10 @@ class SoloTranscriber(private val detector: SwiftF0, private val core: CoreBridg
         bpm: Double? = null,
         onProgress: (Double) -> Unit = {},
     ): SoloResult {
+        val start = System.nanoTime()
         onProgress(0.05)
         val mono16k = Resampler.resample(audio, sampleRate, SwiftF0.SAMPLE_RATE)
+        val resampleMs = (System.nanoTime() - start) / 1_000_000
         onProgress(0.2)
         val t0 = System.nanoTime()
         val track = detector.detect(mono16k)
@@ -39,6 +43,7 @@ class SoloTranscriber(private val detector: SwiftF0, private val core: CoreBridg
         val tempo = bpm ?: TempoEstimator.estimate(notes.map { it.onsetS })
         val composition = core.quantizeSolo(notes, tempo, title)
         onProgress(1.0)
-        return SoloResult(composition, tempo, notes.size, mono16k.size / SwiftF0.SAMPLE_RATE.toDouble(), detectMs)
+        return SoloResult(composition, tempo, notes.size, mono16k.size / SwiftF0.SAMPLE_RATE.toDouble(), detectMs, resampleMs,
+            (System.nanoTime() - start) / 1_000_000)
     }
 }

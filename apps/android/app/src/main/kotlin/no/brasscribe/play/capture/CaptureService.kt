@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -124,7 +125,11 @@ class CaptureService : Service() {
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
-        val type = if (device) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        val type = when {
+            device -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            else -> 0 // Android 10 has no microphone service type.
+        }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
     }
 

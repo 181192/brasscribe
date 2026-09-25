@@ -86,14 +86,15 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
     }
 
     /** Parses MusicXML (or any format alphaTab reads) and renders the given tracks (default: the first). */
-    fun load(bytes: ByteArray, tracks: List<Int>? = null) {
+    fun load(bytes: ByteArray, pick: (List<String>) -> Set<Int> = { setOf(0) }) {
         try {
             val s = ScoreLoader.loadScoreFromBytes(Uint8Array(bytes.asUByteArray()), view.settings)
             score = s
             s.tracks.forEach { t -> writtenTransposition[t.index.toInt()] = t.staves[0].displayTranspositionPitch }
-            val shown = (tracks ?: listOf(0)).filter { it < s.tracks.length.toInt() }.toSet().ifEmpty { setOf(0) }
+            val names = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].name.ifBlank { s.tracks[i].shortName } }
+            val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
             _state.value = _state.value.copy(
-                loaded = true, error = null, title = s.title, parts = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].name.ifBlank { s.tracks[i].shortName } },
+                loaded = true, error = null, title = s.title, parts = names,
                 shown = shown, totalBars = s.masterBars.length.toInt(),
             )
             render()

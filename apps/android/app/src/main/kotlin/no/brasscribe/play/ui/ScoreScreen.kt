@@ -57,7 +57,6 @@ import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import no.brasscribe.play.Lineup
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
@@ -72,6 +71,7 @@ fun defaultPart(parts: List<String>): Int = parts.indexOfFirst { it.equals("Solo
 @Composable
 fun ScoreScreen(vm: PlayViewModel) {
     val context = LocalContext.current
+    val res = androidx.compose.ui.platform.LocalResources.current
     val result by vm.result.collectAsState()
     val status by vm.status.collectAsState()
     val options by vm.output.collectAsState()
@@ -86,10 +86,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val t = LocalPlayTokens.current
 
     LaunchedEffect(controller) {
-        controller.load(r.musicXml.toByteArray())
-        val parts = controller.state.value.parts
-        val solo = defaultPart(parts)
-        controller.showParts(if (options.lineup == Lineup.SOLO) setOf(solo) else setOf(solo))
+        // One part first (the full 18-stave score is one tap away in Parts); a key shift re-renders once.
+        controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names)) }
         if (options.keyShift != 0) controller.setKeyShift(options.keyShift)
     }
     DisposableEffect(controller) { onDispose { controller.release() } }
@@ -109,11 +107,11 @@ fun ScoreScreen(vm: PlayViewModel) {
         val cur = st.shown.minOrNull() ?: 0
         val next = Math.floorMod(cur + delta, st.parts.size)
         controller.showParts(setOf(next))
-        vm.status.value = no.brasscribe.play.Status(context.getString(R.string.part_of, st.parts[next], next + 1, st.parts.size))
+        vm.status.value = no.brasscribe.play.Status(res.getString(R.string.part_of, st.parts[next], next + 1, st.parts.size))
     }
     fun moveBar(delta: Int) {
         controller.goToBar(st.bar + delta)
-        vm.status.value = no.brasscribe.play.Status(context.getString(R.string.bar_heading, (st.bar + delta).coerceIn(1, st.totalBars)))
+        vm.status.value = no.brasscribe.play.Status(res.getString(R.string.bar_heading, (st.bar + delta).coerceIn(1, st.totalBars)))
     }
 
     Scaffold(

@@ -150,7 +150,6 @@
     <string name="show_all_parts">Alle stemmer</string>
     <string name="show_one_part">Én stemme</string>
     <string name="concert_pitch">Klingende tone</string>
-    <string name="written_pitch">Skrevet tone</string>
     <string name="play">Spill</string>
     <string name="pause">Pause</string>
     <string name="stop">Stopp</string>
@@ -186,7 +185,6 @@
     <string name="text_view">Tekst</string>
     <string name="notation_view">Noter</string>
     <string name="player_loading">Laster partituret</string>
-    <string name="player_ready">Klar til å spille</string>
     <string name="player_playing">Spiller</string>
     <string name="player_paused">Satt på pause</string>
     <string name="score_error">Partituret kunne ikke vises: %1$s</string>
@@ -196,7 +194,6 @@
     <string name="export">Eksporter</string>
     <string name="export_title">Eksporter</string>
     <string name="export_musicxml_score">MusicXML, fullt partitur</string>
-    <string name="export_musicxml_part">MusicXML, %1$s</string>
     <string name="export_pdf">PDF</string>
     <string name="export_midi">MIDI</string>
     <string name="export_audio">Lyd (MP3)</string>

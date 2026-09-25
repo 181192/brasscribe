@@ -242,6 +242,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+        android.util.Log.i(TAG, "on-device solo: %.1f s audio at %d Hz, %d notes, %.0f bpm, resample %d ms, SwiftF0 %d ms, total %d ms"
+            .format(audio.seconds, audio.sampleRate, solo.notes, solo.bpm, solo.resampleMillis, solo.detectMillis, solo.totalMillis))
         val xml = container.core.toMusicXml(solo.composition, listOf(PartSpec("solo", SOLO_PART_NAME, Instrument.CORNET)))
         return TranscriptionResult(solo.composition, xml, Profile.SOLO, onDevice = true)
     }
@@ -360,10 +362,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         clips.stop()
-        super.onCleared()
     }
 
     companion object {
+        const val TAG = "BrasscribePlay"
         const val SOLO_PART_NAME = "Solo Cornet"
     }
 }

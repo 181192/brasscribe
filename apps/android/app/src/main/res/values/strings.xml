@@ -151,7 +151,6 @@
     <string name="show_all_parts">All parts</string>
     <string name="show_one_part">One part</string>
     <string name="concert_pitch">Concert pitch</string>
-    <string name="written_pitch">Written pitch</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="stop">Stop</string>
@@ -187,7 +186,6 @@
     <string name="text_view">Text</string>
     <string name="notation_view">Notation</string>
     <string name="player_loading">Loading the score</string>
-    <string name="player_ready">Ready to play</string>
     <string name="player_playing">Playing</string>
     <string name="player_paused">Paused</string>
     <string name="score_error">The score could not be shown: %1$s</string>
@@ -197,7 +195,6 @@
     <string name="export">Export</string>
     <string name="export_title">Export</string>
     <string name="export_musicxml_score">MusicXML, full score</string>
-    <string name="export_musicxml_part">MusicXML, %1$s</string>
     <string name="export_pdf">PDF</string>
     <string name="export_midi">MIDI</string>
     <string name="export_audio">Audio (MP3)</string>

@@ -139,6 +139,8 @@ fun RecordScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val t = LocalPlayTokens.current
     val device = kind == CaptureKind.DEVICE
+    val started = stringResource(R.string.record_started)
+    androidx.compose.runtime.LaunchedEffect(state.recording) { if (state.recording) vm.status.value = no.brasscribe.play.Status(started) }
 
     val levelWord = stringResource(
         when {
