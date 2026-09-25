@@ -91,7 +91,8 @@ def test_delete_run(settings, audio):
         assert c.get(f"/v1/jobs/{job['id']}").status_code == 404
         assert sorted(p for p in settings.cache_dir.rglob("*") if p.is_file()) == cache_before
         assert c.delete(f"/v1/runs/{job['id']}").status_code == 404
-        assert c.delete("/v1/runs/x..y").status_code == 404 and c.delete("/v1/runs/..%2Fcache").status_code == 404
+        assert c.delete("/v1/runs/x..y").status_code == 404
+        assert c.delete("/v1/runs/..%2Fcache").status_code in (404, 405) and settings.cache_dir.is_dir()
         # the next run of the same input is served from the cache
         again = run_job(c, audio)
         assert all(s["status"] == "cached" for s in again["stages"])
