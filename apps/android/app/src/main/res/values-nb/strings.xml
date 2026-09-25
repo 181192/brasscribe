@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_target_label">Transkriber med Brasscribe Play</string>
+    <string name="back">Tilbake</string>
+    <string name="cancel">Avbryt</string>
+    <string name="continue_label">Fortsett</string>
+    <string name="close">Lukk</string>
+
+    <!-- Hjem -->
+    <string name="home_tagline">Innspilling inn, partitur for brassband ut.</string>
+    <string name="home_import">Importer lyd eller video</string>
+    <string name="home_record_mic">Spill inn med mikrofonen</string>
+    <string name="home_record_device">Spill inn lyd som spilles på telefonen</string>
+    <string name="home_sample">Åpne eksempelet Mikkel</string>
+    <string name="home_companion">Motor på datamaskinen</string>
+    <string name="home_about">Om appen og lisenser</string>
+    <string name="companion_status_fixture">Bruker den innebygde eksempelmotoren</string>
+    <string name="companion_status_connected">Koblet til %1$s</string>
+    <string name="companion_status_none">Ikke tilkoblet. Transkripsjon for fullt band trenger motoren på datamaskinen din.</string>
+    <string name="imported">Importerte %1$s, %2$s</string>
+    <string name="imported_video">Importerte %1$s, %2$s. Lydsporet brukes.</string>
+    <string name="import_failed">Filen kunne ikke åpnes: %1$s</string>
+    <string name="import_no_audio">Filen har ikke noe lydspor. Importer lyd eller video med lyd.</string>
+    <string name="reading_file">Leser %1$s</string>
+
+    <plurals name="duration_minutes">
+        <item quantity="one">%d minutt</item>
+        <item quantity="other">%d minutter</item>
+    </plurals>
+    <plurals name="duration_seconds">
+        <item quantity="one">%d sekund</item>
+        <item quantity="other">%d sekunder</item>
+    </plurals>
+
+    <!-- Innspilling -->
+    <string name="record_title_mic">Spiller inn fra mikrofonen</string>
+    <string name="record_title_device">Spiller inn lyd fra telefonen</string>
+    <string name="record_started">Innspillingen har startet</string>
+    <string name="record_stopped">Innspillingen er stoppet, %1$s</string>
+    <string name="record_stop">Stopp</string>
+    <string name="record_level">Inngangsnivå</string>
+    <string name="level_silent">stille</string>
+    <string name="level_low">lavt</string>
+    <string name="level_good">bra</string>
+    <string name="level_loud">for høyt</string>
+    <string name="record_permission_needed">Play trenger tilgang til mikrofonen for å spille inn. Du kan gi tilgang i Innstillinger.</string>
+    <string name="record_failed">Innspillingen kunne ikke starte.</string>
+    <string name="device_notice_title">Før du spiller inn</string>
+    <string name="device_notice">Play spiller inn det andre apper spiller av. Noen apper blokkerer dette, og beskyttede (DRM) strømmer blir aldri spilt inn. Da hører Play bare stillhet og sier fra. Lenker lastes ikke ned: spill inn avspillingen eller importer en fil.</string>
+    <string name="device_start">Start innspillingen</string>
+    <string name="device_silent">Ingen lyd kommer gjennom. Appen blokkerer innspilling, eller strømmen er beskyttet. Importer en fil i stedet.</string>
+    <string name="device_consent_denied">Innspillingen ble ikke tillatt.</string>
+    <string name="notif_channel">Innspilling</string>
+    <string name="notif_recording_mic">Spiller inn fra mikrofonen</string>
+    <string name="notif_recording_device">Spiller inn lyd som spilles på telefonen</string>
+
+    <!-- Hva er dette? -->
+    <string name="profile_title">Hva er dette?</string>
+    <string name="profile_hint">Svaret ditt avgjør hvordan Play lytter. Appen gjetter aldri.</string>
+    <string name="profile_solo">Soloinstrument</string>
+    <string name="profile_solo_desc">Ett instrument som spiller alene, for eksempel kornett eller eufonium.</string>
+    <string name="profile_brass_band">Brassband</string>
+    <string name="profile_brass_band_desc">Et messingensemble uten andre instrumenter.</string>
+    <string name="profile_orchestra">Orkester med solist</string>
+    <string name="profile_orchestra_desc">En solist med orkester eller komp. Blir et fullt partitur for brassband.</string>
+    <string name="profile_pop">Pop- eller rockeband</string>
+    <string name="profile_pop_desc">Sang, gitarer, tangenter, bass og trommer.</string>
+    <string name="where_title">Hvor transkripsjonen skal gjøres</string>
+    <string name="where_device">På telefonen, uten nett</string>
+    <string name="where_device_desc">Bare soloinstrument. Ingenting forlater telefonen.</string>
+    <string name="where_companion">På datamaskinen min (motoren)</string>
+    <string name="where_device_unavailable">Modellen for telefonen er ikke installert.</string>
+    <string name="where_companion_missing">Koble til motoren på datamaskinen først.</string>
+
+    <!-- Transkripsjon -->
+    <string name="transcribe_title">Transkriberer</string>
+    <string name="stage_queued">Venter på å starte</string>
+    <string name="stage_upload">Sender innspillingen til datamaskinen</string>
+    <string name="stage_beats">Finner pulsen</string>
+    <string name="stage_stems">Skiller instrumentene fra hverandre</string>
+    <string name="stage_layers">Skiller solisten fra bandet</string>
+    <string name="stage_transcribe">Skriver ned tonene</string>
+    <string name="stage_arrange">Arrangerer for brassband</string>
+    <string name="stage_export">Setter partituret</string>
+    <string name="stage_decode">Leser innspillingen</string>
+    <string name="stage_pitch">Lytter etter tonene</string>
+    <string name="stage_quantize">Plasserer tonene i takter</string>
+    <plurals name="eta_minutes">
+        <item quantity="one">Omtrent %d minutt igjen</item>
+        <item quantity="other">Omtrent %d minutter igjen</item>
+    </plurals>
+    <string name="eta_under_minute">Mindre enn ett minutt igjen</string>
+    <string name="eta_unknown">Regner ut hvor lang tid det tar</string>
+    <string name="progress_percent">%1$d prosent</string>
+    <string name="step_of">Steg %1$d av %2$d</string>
+    <string name="transcribe_cancelled">Transkripsjonen er avbrutt</string>
+    <string name="transcribe_failed">Transkripsjonen mislyktes: %1$s</string>
+    <string name="transcribe_done">Transkripsjonen er klar</string>
+    <string name="transcribe_where_device">På telefonen</string>
+    <string name="transcribe_where_companion">På %1$s</string>
+    <string name="transcribe_progress_label">Framdrift for transkripsjonen</string>
+
+    <!-- Gjennomgang -->
+    <string name="review_title">Kontroller transkripsjonen</string>
+    <string name="review_summary">%1$d toner. %2$d usikre, %3$d svært usikre.</string>
+    <string name="legend_title">Slik vises usikkerhet</string>
+    <string name="legend_confident">Sikker: vanlig note</string>
+    <string name="legend_uncertain">Usikker: blå, med åpen ring</string>
+    <string name="legend_very_uncertain">Svært usikker: oransje, i parentes, med fylt ring</string>
+    <string name="legend_checked">Kontrollert av deg: vanlig note med hake</string>
+    <string name="review_part">Stemme</string>
+    <string name="review_next_uncertain">Neste usikre tone</string>
+    <string name="review_no_uncertain">Ingen usikre toner igjen</string>
+    <string name="action_listen_bar">Lytt til denne takten</string>
+    <string name="action_mark_checked">Merk som kontrollert</string>
+    <string name="checked_left">Kontrollert. %1$d igjen</string>
+    <string name="playing_bar_original">Spiller takt %1$d, originalen</string>
+    <string name="playing_bar_score">Spiller takt %1$d, partituret</string>
+    <string name="listen_unavailable">Det finnes ingen innspilling å spille for denne takten.</string>
+    <string name="stop_listening">Slutt å lytte</string>
+    <string name="bar_heading">Takt %1$d</string>
+    <string name="bar_rest_heading">Takt %1$d til %2$d</string>
+    <string name="review_continue">Velg resultat</string>
+
+    <!-- Resultat -->
+    <string name="output_title">Velg resultat</string>
+    <string name="lineup">Besetning</string>
+    <string name="lineup_full">Fullt band</string>
+    <string name="lineup_minimal">Lite band</string>
+    <string name="lineup_solo">Bare solostemmen</string>
+    <string name="difficulty">Vanskelighetsgrad</string>
+    <string name="difficulty_faithful">Tro mot innspillingen</string>
+    <string name="difficulty_standard">Standard</string>
+    <string name="difficulty_easier">Enklere</string>
+    <string name="difficulty_unsupported">Denne versjonen av motoren skriver partituret slik det ble spilt. Standard og enklere versjon kommer med en senere motor.</string>
+    <string name="key_label">Toneart</string>
+    <string name="key_as_recorded">Som innspilt</string>
+    <string name="key_up">En halvtone opp</string>
+    <string name="key_down">En halvtone ned</string>
+    <plurals name="key_shift">
+        <item quantity="one">%d halvtone</item>
+        <item quantity="other">%d halvtoner</item>
+    </plurals>
+    <string name="output_apply">Vis partituret</string>
+    <string name="arrangement_ready">Arrangementet er klart</string>
+
+    <!-- Partitur og øving -->
+    <string name="score_title">Partitur</string>
+    <string name="score_summary">Partitur for %1$s. %2$s. Takt %3$d av %4$d.</string>
+    <string name="show_all_parts">Alle stemmer</string>
+    <string name="show_one_part">Én stemme</string>
+    <string name="concert_pitch">Klingende tone</string>
+    <string name="written_pitch">Skrevet tone</string>
+    <string name="play">Spill</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stopp</string>
+    <string name="speed">Tempo</string>
+    <string name="speed_value">%1$d prosent</string>
+    <string name="loop">Repetisjon</string>
+    <string name="loop_from">Fra takt</string>
+    <string name="loop_to">Til takt</string>
+    <string name="loop_set">Gjenta takter</string>
+    <string name="loop_clear">Fjern repetisjon</string>
+    <string name="loop_set_announce">Gjentar takt %1$d til %2$d</string>
+    <string name="loop_cleared">Repetisjonen er fjernet</string>
+    <string name="loop_invalid">Skriv takter mellom 1 og %1$d, med fra før til.</string>
+    <string name="count_in">Inntelling</string>
+    <string name="metronome">Metronom</string>
+    <string name="mute_part">Demp %1$s</string>
+    <string name="solo_part">Solo %1$s</string>
+    <string name="parts">Stemmer</string>
+    <string name="zoom_in">Zoom inn</string>
+    <string name="zoom_out">Zoom ut</string>
+    <string name="zoom_value">Zoom %1$d prosent</string>
+    <string name="sound">Lyd</string>
+    <string name="sound_baseline">Standard</string>
+    <string name="sound_realistic">Realistisk</string>
+    <string name="sound_realistic_unavailable">Realistisk lyd er ikke med i denne versjonen av appen.</string>
+    <string name="sound_realistic_test_tone">Ingen lydpakke er installert: realistisk lyd spiller en testtone.</string>
+    <string name="action_next_bar">Neste takt</string>
+    <string name="action_prev_bar">Forrige takt</string>
+    <string name="action_next_part">Neste stemme</string>
+    <string name="action_prev_part">Forrige stemme</string>
+    <string name="action_read_bar">Les takten</string>
+    <string name="action_play_bar">Spill denne takten</string>
+    <string name="text_view">Tekst</string>
+    <string name="notation_view">Noter</string>
+    <string name="player_loading">Laster partituret</string>
+    <string name="player_ready">Klar til å spille</string>
+    <string name="player_playing">Spiller</string>
+    <string name="player_paused">Satt på pause</string>
+    <string name="score_error">Partituret kunne ikke vises: %1$s</string>
+    <string name="part_of">%1$s, %2$d av %3$d</string>
+
+    <!-- Eksport -->
+    <string name="export">Eksporter</string>
+    <string name="export_title">Eksporter</string>
+    <string name="export_musicxml_score">MusicXML, fullt partitur</string>
+    <string name="export_musicxml_part">MusicXML, %1$s</string>
+    <string name="export_pdf">PDF</string>
+    <string name="export_midi">MIDI</string>
+    <string name="export_audio">Lyd (MP3)</string>
+    <string name="export_talking">Talende partitur (tekst)</string>
+    <string name="export_braille">Punktskriftnoter (BRF)</string>
+    <string name="export_braille_unavailable">Krever punktskrifteksport i motoren. Denne versjonen av motoren har det ikke.</string>
+    <string name="export_needs_engine">Krever motoren på datamaskinen.</string>
+    <string name="export_share">Del</string>
+    <string name="export_save">Lagre i Filer</string>
+    <string name="exported">Eksporterte %1$s</string>
+    <string name="export_failed">Eksporten mislyktes: %1$s</string>
+
+    <!-- Motor -->
+    <string name="companion_title">Motor på datamaskinen</string>
+    <string name="companion_explain">Start brasscribe-motoren på datamaskinen med brasscribe serve --host 0.0.0.0, og skriv inn adressen og paringskoden den viser.</string>
+    <string name="companion_address">Adressen til motoren</string>
+    <string name="companion_code">Paringskode</string>
+    <string name="companion_connect">Koble til</string>
+    <string name="companion_connecting">Kobler til</string>
+    <string name="companion_connected">Koblet til motor %1$s på %2$s, bruker %3$s</string>
+    <string name="companion_failed">Kunne ikke koble til: %1$s</string>
+    <string name="companion_use_fixture">Bruk den innebygde eksempelmotoren</string>
+    <string name="companion_use_fixture_desc">Spiller av en ferdig transkripsjon av Mikkel, så du kan prøve appen uten datamaskin.</string>
+
+    <!-- Om -->
+    <string name="about_title">Om appen og lisenser</string>
+    <string name="about_text">Brasscribe Play er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) til noter og avspilling med lydfonten Sonivox (Apache-2.0), sfizz (BSD-2-Clause) til realistisk lyd, Oboe (Apache-2.0) til lyd, og ONNX Runtime (MIT) og SwiftF0 (MIT) til tonehøydegjenkjenning på telefonen. Transkripsjon for fullt band i motoren bruker MuScriptor (CC BY-NC 4.0), som lastes ned med din egen Hugging Face-konto.</string>
+</resources>
