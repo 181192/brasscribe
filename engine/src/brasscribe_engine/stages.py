@@ -80,7 +80,7 @@ def _view(files: dict[str, Path], where: Path) -> Path:
 
 
 def arrange_layered(ctx: StageContext) -> None:
-    names = {k: v for k, v in ctx.inputs.items() if k.endswith(".mid")}
+    names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz"))}
     with tempfile.TemporaryDirectory(dir=ctx.out.parent) as tmp:
         view = _view(names, Path(tmp) / "layers")
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),

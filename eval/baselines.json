@@ -7,21 +7,36 @@
       "metrics": {
         "basic-pitch.onset_f1": 0.468,
         "basic-pitch.onoff_f1": 0.281,
-        "basic-pitch.octave_err_rate": {"value": 0.108, "higher_is_better": false},
-        "basic-pitch.onset100_f1": 0.60,
+        "basic-pitch.octave_err_rate": {
+          "value": 0.108,
+          "higher_is_better": false
+        },
+        "basic-pitch.onset100_f1": 0.6,
         "muscriptor-medium.onset_f1": 0.562,
         "muscriptor-medium.onoff_f1": 0.477,
-        "muscriptor-medium.octave_err_rate": {"value": 0.027, "higher_is_better": false},
+        "muscriptor-medium.octave_err_rate": {
+          "value": 0.027,
+          "higher_is_better": false
+        },
         "muscriptor-medium.onset100_f1": 0.75,
         "muscriptor-large.onset_f1": 0.441,
-        "muscriptor-large.onoff_f1": 0.390,
-        "muscriptor-large.octave_err_rate": {"value": 0.062, "higher_is_better": false},
+        "muscriptor-large.onoff_f1": 0.39,
+        "muscriptor-large.octave_err_rate": {
+          "value": 0.062,
+          "higher_is_better": false
+        },
         "muscriptor-medium-brass.onset_f1": 0.333,
         "muscriptor-medium-brass.onoff_f1": 0.296,
-        "muscriptor-medium-brass.octave_err_rate": {"value": 0.004, "higher_is_better": false},
+        "muscriptor-medium-brass.octave_err_rate": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
         "muscriptor-large-brass.onset_f1": 0.275,
         "muscriptor-large-brass.onoff_f1": 0.251,
-        "muscriptor-large-brass.octave_err_rate": {"value": 0.004, "higher_is_better": false}
+        "muscriptor-large-brass.octave_err_rate": {
+          "value": 0.004,
+          "higher_is_better": false
+        }
       }
     },
     "urmp-transcription": {
@@ -29,10 +44,16 @@
       "metrics": {
         "basic-pitch.onset100_f1": 0.73,
         "basic-pitch.onset_f1": 0.66,
-        "basic-pitch.octave_err_rate": {"value": 0.041, "higher_is_better": false},
+        "basic-pitch.octave_err_rate": {
+          "value": 0.041,
+          "higher_is_better": false
+        },
         "muscriptor-medium.onset100_f1": 0.88,
         "muscriptor-medium.onset_f1": 0.69,
-        "muscriptor-medium.octave_err_rate": {"value": 0.012, "higher_is_better": false}
+        "muscriptor-medium.octave_err_rate": {
+          "value": 0.012,
+          "higher_is_better": false
+        }
       }
     },
     "slakh-transcription": {
@@ -40,7 +61,7 @@
       "metrics": {
         "basic-pitch.onset100_f1": 0.47,
         "muscriptor-medium.onset100_f1": 0.56,
-        "pipeB-sw-muscriptor.onset100_f1": 0.70,
+        "pipeB-sw-muscriptor.onset100_f1": 0.7,
         "pipeB-sw-basicpitch.onset100_f1": 0.56
       }
     },
@@ -54,7 +75,9 @@
         "beat_this.subdivision_acc": 0.92,
         "beat_this.duration_acc": 0.76
       },
-      "open_questions": ["The doc gives Beat This! position as '~0.45' (approximate)."]
+      "open_questions": [
+        "The doc gives Beat This! position as '~0.45' (approximate)."
+      ]
     },
     "quant-urmp": {
       "source": "10-benchmark-results.md: URMP brass, Rhythm (reference notes); Beat This! row with metrical-level selection",
@@ -70,10 +93,18 @@
     "melody": {
       "source": "10-benchmark-results.md: Notation, Melody line (melody_bench), onset F1 at 100 ms",
       "metrics": {
-        "union.slakh": 0.36, "union.urmp": 0.55, "union.chorales": 0.36, "union.mean": 0.42,
-        "muscriptor_supported.slakh": 0.65, "muscriptor_supported.urmp": 0.72,
-        "muscriptor_supported.chorales": 0.90, "muscriptor_supported.mean": 0.76,
-        "agreement.slakh": 0.67, "agreement.urmp": 0.65, "agreement.chorales": 0.80, "agreement.mean": 0.71
+        "union.slakh": 0.36,
+        "union.urmp": 0.55,
+        "union.chorales": 0.36,
+        "union.mean": 0.42,
+        "muscriptor_supported.slakh": 0.65,
+        "muscriptor_supported.urmp": 0.72,
+        "muscriptor_supported.chorales": 0.9,
+        "muscriptor_supported.mean": 0.76,
+        "agreement.slakh": 0.67,
+        "agreement.urmp": 0.65,
+        "agreement.chorales": 0.8,
+        "agreement.mean": 0.71
       }
     },
     "consensus-chorales": {
@@ -81,7 +112,9 @@
       "metrics": {
         "best.onset100_f1": 0.76
       },
-      "open_questions": ["The doc does not state the threshold behind 'weighted vote F1 0.76'; the gate uses the best F1 over thresholds 0.3-0.8."]
+      "open_questions": [
+        "The doc does not state the threshold behind 'weighted vote F1 0.76'; the gate uses the best F1 over thresholds 0.3-0.8."
+      ]
     },
     "consensus-urmp": {
       "source": "10-benchmark-results.md: URMP brass, Transcription: consensus, agreement threshold 0.8",
@@ -94,14 +127,14 @@
       "source": "10-benchmark-results.md: Consensus, Slakh (4 sources): best F1 0.63 at threshold 0.8; threshold 0.7 precision 0.60",
       "metrics": {
         "t0.8.onset100_f1": 0.63,
-        "t0.7.onset100_p": 0.60
+        "t0.7.onset100_p": 0.6
       }
     },
     "solo-vote": {
       "source": "10-benchmark-results.md: Solo line: three-way vote",
       "metrics": {
         "sw.onset100_f1": 0.75,
-        "mus.onset100_f1": 0.50,
+        "mus.onset100_f1": 0.5,
         "bp.onset100_f1": 0.42,
         "vote2.onset100_f1": 0.73,
         "vote2.onset100_p": 0.89,
@@ -116,29 +149,119 @@
     "arrange": {
       "source": "10-benchmark-results.md: Arrangement, ground-truth benchmark",
       "metrics": {
-        "chorales.melody_kept": 1.0, "chorales.bass_kept": 1.0, "chorales.harmony_fidelity": 0.99,
-        "chorales.impossible": {"value": 0, "tolerance": 0, "higher_is_better": false},
-        "chorales.uncomfortable": {"value": 0, "tolerance": 0, "higher_is_better": false},
-        "chorales.crossings": {"value": 0, "tolerance": 0, "higher_is_better": false},
-        "urmp.melody_kept": 1.0, "urmp.bass_kept": 1.0, "urmp.harmony_fidelity": 0.98,
-        "urmp.impossible": {"value": 0, "tolerance": 0, "higher_is_better": false},
-        "urmp.uncomfortable": {"value": 3.8, "tolerance": 0.1, "higher_is_better": false},
-        "urmp.crossings": {"value": 0, "tolerance": 0, "higher_is_better": false}
+        "chorales.melody_kept": 1.0,
+        "chorales.bass_kept": 1.0,
+        "chorales.harmony_fidelity": 0.99,
+        "chorales.impossible": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "chorales.uncomfortable": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "chorales.crossings": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "urmp.melody_kept": 1.0,
+        "urmp.bass_kept": 1.0,
+        "urmp.harmony_fidelity": 0.98,
+        "urmp.impossible": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "urmp.uncomfortable": {
+          "value": 3.8,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "urmp.crossings": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        }
       }
     },
     "mikkel-golden": {
-      "source": "data/golden/mikkel-arranged-band: the layered arrangement of the cached Mikkel layers reproduces it exactly",
+      "source": "data/golden/mikkel-arranged-band: arranging the cached Mikkel layers with the current code reproduces it exactly (fractions, so the gate holds when the golden output is re-saved deliberately)",
       "metrics": {
-        "composition_identical": {"value": 1, "tolerance": 0},
-        "musicxml_identical": {"value": 1, "tolerance": 0},
-        "parts_identical": {"value": 18, "tolerance": 0},
-        "notes_identical": {"value": 6101, "tolerance": 0}
+        "composition_identical": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "musicxml_identical": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "parts_identical_frac": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "notes_identical_frac": {
+          "value": 1,
+          "tolerance": 0
+        }
       }
     },
     "musescore-roundtrip": {
       "source": "10-benchmark-results.md: MuseScore gate; every pitched part must survive the MuseScore re-export",
       "metrics": {
-        "all_match": {"value": 1, "tolerance": 0}
+        "all_match": {
+          "value": 1,
+          "tolerance": 0
+        }
+      }
+    },
+    "durations": {
+      "source": "measured by this suite after the durations-from-audio change; not yet in 10-benchmark-results.md (brasscribe bench durations)",
+      "metrics": {
+        "urmp.performed": 0.604,
+        "urmp.fill8": 0.631,
+        "urmp.audio": 0.654,
+        "urmp.contours.performed": 0.611,
+        "urmp.contours.fill8": 0.629,
+        "urmp.contours.audio": 0.647,
+        "urmp.contours.offset_within_100ms": 0.905,
+        "chorales.performed": 0.883,
+        "chorales.fill8": 0.911,
+        "chorales.audio": 0.929,
+        "chorales.contours.performed": 0.887,
+        "chorales.contours.fill8": 0.907,
+        "chorales.contours.audio": 0.908,
+        "chorales.contours.offset_within_100ms": 0.838
+      }
+    },
+    "freetime": {
+      "source": "measured by this suite after the free-time change; not yet in 10-benchmark-results.md (brasscribe bench freetime)",
+      "metrics": {
+        "grid.position": 0.474,
+        "grid.subdivision": 0.886,
+        "grid.duration": 0.627,
+        "free.position": 0.474,
+        "free.subdivision": 0.886,
+        "free.duration": 0.627,
+        "pieces_with_regions": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "pieces": {
+          "value": 18,
+          "tolerance": 0
+        }
+      }
+    },
+    "readability": {
+      "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement",
+      "metrics": {
+        "passed": {
+          "value": 1,
+          "tolerance": 0
+        }
       }
     }
   }

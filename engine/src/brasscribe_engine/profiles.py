@@ -85,6 +85,11 @@ def layered(title: str, params: dict) -> Pipeline:
             s = _transcribe(layer, tool, suffix, Input("layers", f"{layer}.wav"), "layers")
             st.append(s)
             arrange_inputs[f"{layer}-{suffix}.mid"] = Input(s.name, f"{layer}-{suffix}.mid")
+    # Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.
+    st.append(Stage("contour.solo.swift-f0", "transcribe", {"audio": Input("layers", "solo.wav")}, S.transcribe,
+                    adapter="swift-f0-contour", params={"output": "solo-sw.contour.npz"},
+                    outputs=("solo-sw.contour.npz",), reuse_subdir="layers"))
+    arrange_inputs["solo-sw.contour.npz"] = Input("contour.solo.swift-f0", "solo-sw.contour.npz")
     st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params={"title": title},
                     code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))

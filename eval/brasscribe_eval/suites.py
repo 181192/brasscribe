@@ -238,22 +238,109 @@ def _arrange(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
-def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
-    """Re-arrange the cached Mikkel layers and compare with the golden output (no models run)."""
-    from brasscribe_engine.compare import compare
+def _mikkel_arrangement(data: Path, out: Path) -> Path:
+    """Arrange the cached Mikkel layers (no heavy model runs) into out; returns the MusicXML path.
+
+    The solo contour is light SwiftF0 work: taken from the layers dir when cached,
+    otherwise computed with the SwiftF0 adapter.
+    """
+    import sys
 
     _need(data, "mikkel/repro/layers", "mikkel/repro/mix.beats", "golden/mikkel-arranged-band")
-    comp = json.loads((data / "golden/mikkel-arranged-band/composition.json").read_text())
-    with tempfile.TemporaryDirectory() as tmp:
-        import sys
+    layers = data / "mikkel/repro/layers"
+    view = out / "layers"
+    view.mkdir(parents=True)
+    for f in layers.glob("*.mid"):
+        (view / f.name).symlink_to(f.resolve())
+    contour = layers / "solo-sw.contour.npz"
+    if contour.exists():
+        (view / contour.name).symlink_to(contour.resolve())
+    else:
+        script = ADAPTERS / "swift-f0" / "contour.sh"
+        if not script.exists():
+            raise SkipSuite(f"no cached solo contour and no {script}")
+        subprocess.run([str(script), str(layers / "solo.wav"), str(view / contour.name)], check=True, capture_output=True)
+    title = json.loads((data / "golden/mikkel-arranged-band/composition.json").read_text())["title"]
+    subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
+                    "--layers", str(view), "--beats", str(data / "mikkel/repro/mix.beats"),
+                    "--out", str(out / "score"), "--title", title, "--no-render"], check=True, capture_output=True)
+    return out / "score" / "brass-band.musicxml"
 
-        subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
-                        "--layers", str(data / "mikkel/repro/layers"), "--beats", str(data / "mikkel/repro/mix.beats"),
-                        "--out", tmp, "--title", comp["title"], "--no-render"], check=True, capture_output=True)
-        c = compare(Path(tmp), data / "golden/mikkel-arranged-band")
+
+def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
+    """Re-arrange the cached Mikkel layers and compare with the golden output (no heavy models run)."""
+    from brasscribe_engine.compare import compare
+
+    with tempfile.TemporaryDirectory() as tmp:
+        xml = _mikkel_arrangement(data, Path(tmp))
+        c = compare(xml.parent, data / "golden/mikkel-arranged-band")
     return {"composition_identical": float(c.composition_identical), "musicxml_identical": float(c.musicxml_identical),
             "parts_identical": float(c.parts_identical), "parts_total": float(len(c.parts)),
-            "notes_identical": float(c.notes_identical)}
+            "notes_identical": float(c.notes_identical), "notes_total": float(c.to_dict()["notes_total"]),
+            "parts_identical_frac": c.parts_identical / max(1, len(c.parts)),
+            "notes_identical_frac": c.notes_identical / max(1, c.to_dict()["notes_total"])}
+
+
+def _readability(data: Path, mode: str) -> dict[str, float]:
+    """qa/tools/musicxml_readability.py --check --baseline on a fresh Mikkel arrangement."""
+    import sys
+
+    tool = ROOT / "qa" / "tools" / "musicxml_readability.py"
+    baseline = ROOT / "qa" / "reports" / "mikkel-golden-readability.json"
+    if not tool.exists() or not baseline.exists():
+        raise SkipSuite("qa readability tool or its baseline is missing")
+    with tempfile.TemporaryDirectory() as tmp:
+        xml = _mikkel_arrangement(data, Path(tmp))
+        gate = subprocess.run([sys.executable, str(tool), str(xml), "--check", "--baseline", str(baseline), "--json"],
+                              capture_output=True, text=True)
+    if gate.returncode not in (0, 1):
+        raise RuntimeError(gate.stderr[-1000:])
+    report = json.loads(gate.stdout)
+    agg = report["aggregate"]
+    out = {"passed": float(gate.returncode == 0), "violations": float(len(report.get("violations", [])))}
+    for k in ("short_lt16_pct", "sixteenth_pct", "tuplet_pct", "tie_stub_pct", "empty_bar_pct_playing_parts",
+              "uncertain_pct"):
+        if isinstance(agg.get(k), (int, float)):
+            out[k] = float(agg[k])
+    return out
+
+
+def _durations(data: Path, mode: str) -> dict[str, float]:
+    """duration_bench: written-duration accuracy per rule, reference offsets and SwiftF0-contour offsets."""
+    from .duration_bench import RULES, evaluate
+
+    _need(data, "eval/urmp-brass", "eval/choralebricks-brass4")
+    out: dict[str, float] = {}
+    for label, d in (("urmp", "urmp-brass"), ("chorales", "choralebricks-brass4")):
+        variants = [("", None)]
+        contours = data / "runs" / "contours" / d
+        if contours.is_dir():
+            variants.append((".contours", contours))
+        for suffix, cdir in variants:
+            rows = [evaluate(song, cdir) for song in _songs(data / "eval" / d)]
+            tot = sum(r["n"] for r in rows)
+            for k in RULES:
+                out[f"{label}{suffix}.{k}"] = sum(r[k] * r["n"] for r in rows) / tot
+            out[f"{label}{suffix}.staccato"] = float(sum(r["staccato"] for r in rows))
+            if cdir is not None:
+                out[f"{label}{suffix}.offset_within_100ms"] = sum(r["offset_within_100ms"] * r["n"] for r in rows) / tot
+    return out
+
+
+def _freetime(data: Path, mode: str) -> dict[str, float]:
+    """freetime_bench: strict-passage accuracy with and without free-time regions, and how often they fire."""
+    from .freetime_bench import evaluate
+
+    _need(data, "eval/urmp-brass", "eval/choralebricks-brass4")
+    rows = [evaluate(song) for d in ("urmp-brass", "choralebricks-brass4") for song in _songs(data / "eval" / d)
+            if (song / "beat-this.beats").exists()]
+    out: dict[str, float] = {}
+    for v in ("grid", "free"):
+        for k in ("position", "subdivision", "duration"):
+            out[f"{v}.{k}"] = float(np.mean([r[v][k] for r in rows]))
+    out["pieces_with_regions"] = float(sum(bool(r["regions"]) for r in rows))
+    out["pieces"] = float(len(rows))
+    return out
 
 
 def _musescore(data: Path, mode: str) -> dict[str, float]:
@@ -264,13 +351,11 @@ def _musescore(data: Path, mode: str) -> dict[str, float]:
 
     if not shutil.which("mscore"):
         raise SkipSuite("mscore (MuseScore CLI) not installed")
-    _need(data, "golden/mikkel-arranged-band")
     with tempfile.TemporaryDirectory() as tmp:
-        for f in ("brass-band.musicxml", "composition.json"):
-            shutil.copy(data / "golden/mikkel-arranged-band" / f, Path(tmp) / f)
+        xml = _mikkel_arrangement(data, Path(tmp))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            ok = check(Path(tmp) / "brass-band.musicxml", Path(tmp) / "composition.json")
+            ok = check(xml, xml.parent / "composition.json")
     lines = [ln for ln in buf.getvalue().splitlines() if "sound=" in ln]
     match = sum(ln.rstrip().endswith("OK") for ln in lines)
     return {"all_match": float(ok), "pitched_parts": float(len(lines)), "pitched_parts_match": float(match)}
@@ -312,8 +397,14 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/choralebricks-brass4", "eval/urmp-brass")),
     Suite("mikkel-golden", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
           ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
-    Suite("musescore-roundtrip", "golden MusicXML re-exported by MuseScore keeps every part's pitches", _musescore,
-          ("golden/mikkel-arranged-band",), tools=("mscore",)),
+    Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
+          _readability, ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
+    Suite("durations", "written durations and staccato from performed lengths (duration_bench)", _durations,
+          ("eval/urmp-brass", "eval/choralebricks-brass4")),
+    Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
+          ("eval/urmp-brass", "eval/choralebricks-brass4")),
+    Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
+          _musescore, ("mikkel/repro/layers", "golden/mikkel-arranged-band"), tools=("mscore",)),
 ]}
 
 GROUPS = {
@@ -398,5 +489,6 @@ def format_report(report: dict) -> str:
     counts = {}
     for s in report["suites"]:
         counts[s["status"]] = counts.get(s["status"], 0) + 1
-    lines.append(("PASSED" if report["passed"] else "FAILED") + "  " + ", ".join(f"{v} {k}" for k, v in sorted(counts.items())))
+    verdict = "FAILED" if not report["passed"] else ("PASSED" if counts.get("pass") else "NOTHING GATED (no data)")
+    lines.append(verdict + "  " +", ".join(f"{v} {k}" for k, v in sorted(counts.items())))
     return "\n".join(lines)

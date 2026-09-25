@@ -39,6 +39,8 @@ class Adapter:
     env: tuple[tuple[str, str], ...] = ()  # default environment for run.sh
     scripts: tuple[str, ...] = ("pyproject.toml", "uv.lock", "run.sh")
     licence: str | None = None  # weights licence as recorded in docs/plan/apps-plan.md §7
+    dir: str | None = None  # adapter directory when it differs from the name
+    entry: str = "run.sh"  # script with the <input> <output> contract
 
 
 ADAPTERS: dict[str, Adapter] = {
@@ -56,6 +58,8 @@ ADAPTERS: dict[str, Adapter] = {
         Adapter("basic-pitch", heavy=False, accelerator="coreml-or-onnx", licence="Apache-2.0"),
         Adapter("swift-f0", heavy=False, accelerator="cpu", scripts=("pyproject.toml", "uv.lock", "run.sh", "transcribe.py"),
                 licence="MIT"),
+        Adapter("swift-f0-contour", heavy=False, accelerator="cpu", dir="swift-f0", entry="contour.sh",
+                scripts=("pyproject.toml", "uv.lock", "contour.sh", "contour.py"), licence="MIT"),
     ]
 }
 
@@ -104,22 +108,25 @@ class AdapterRegistry:
             raise KeyError(f"unknown adapter {name!r}")
         return ADAPTERS[name]
 
+    def dir(self, name: str) -> Path:
+        return self.root / (self.get(name).dir or name)
+
     def script(self, name: str) -> Path:
-        return self.root / name / "run.sh"
+        return self.dir(name) / self.get(name).entry
 
     def fingerprint(self, name: str) -> str:
         if name not in self._fingerprints:
             a = self.get(name)
             parts = []
             for rel in a.scripts:
-                p = self.root / name / rel
+                p = self.dir(name) / rel
                 parts.append(f"{rel}:{sha256_bytes(p.read_bytes()) if p.exists() else '-'}")
             parts.extend(f"{k}={v}" for k, v in a.env)
             self._fingerprints[name] = sha256_bytes("\n".join(parts).encode())
         return self._fingerprints[name]
 
     def version(self, name: str) -> str | None:
-        p = self.root / name / "pyproject.toml"
+        p = self.dir(name) / "pyproject.toml"
         if not p.exists():
             return None
         return tomllib.loads(p.read_text()).get("project", {}).get("version")
