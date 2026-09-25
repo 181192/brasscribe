@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Brasscribe.Play.Audio.Windows/Brasscribe.Play.Audio.Windows.csproj" />
+    <Project Path="src/Brasscribe.Play.Controls/Brasscribe.Play.Controls.csproj" />
+    <Project Path="src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
+    <Project Path="src/Brasscribe.Play/Brasscribe.Play.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Brasscribe.Play.Core.Tests/Brasscribe.Play.Core.Tests.csproj" />
+  </Folder>
+</Solution>

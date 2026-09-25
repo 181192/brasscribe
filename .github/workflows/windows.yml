@@ -1,0 +1,88 @@
+name: windows
+
+# Brasscribe Play for Windows: core tests, the WinUI 3 app build and an Axe.Windows accessibility scan.
+on:
+  push:
+    paths:
+      - "apps/windows/**"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "apps/windows/**"
+      - ".github/workflows/windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+    working-directory: apps/windows
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Brasscribe.Play.slnx -p:Platform=x64
+
+      # Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts, native core) skip in CI.
+      - name: Core tests
+        run: >
+          dotnet test tests/Brasscribe.Play.Core.Tests -c $env:CONFIGURATION
+          --logger "trx;LogFileName=core.trx" --results-directory "$env:RUNNER_TEMP/test-results"
+
+      - name: Build app (WinUI 3, unpackaged, x64)
+        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64
+
+      - name: Locate the exe
+        id: exe
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
+          if (-not $exe) { throw "BrasscribePlay.exe was not built" }
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+          Write-Host "Built $($exe.FullName)"
+
+      - name: Smoke test (the app starts and shows its window)
+        run: |
+          $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -PassThru
+          $deadline = (Get-Date).AddSeconds(90)
+          while ($p.MainWindowHandle -eq 0 -and -not $p.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500; $p.Refresh() }
+          if ($p.HasExited) { throw "The app exited with code $($p.ExitCode)" }
+          if ($p.MainWindowHandle -eq 0) { throw "No window after 90 s" }
+          Write-Host "Window: $($p.MainWindowTitle)"
+          Stop-Process -Id $p.Id -Force
+
+      # Axe.Windows rules on the start screen, then on the score screen (the app opens the fixture score).
+      - name: Accessibility scan (Axe.Windows)
+        run: >
+          dotnet run --project tools/AxeScan -c $env:CONFIGURATION --
+          "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/axe"
+          tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-results
+          path: |
+            ${{ runner.temp }}/test-results
+            ${{ runner.temp }}/axe
+          if-no-files-found: ignore
