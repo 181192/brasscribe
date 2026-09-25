@@ -61,6 +61,17 @@ android {
         xmlReport = true
     }
 
+    // One APK per ABI for release (what a phone downloads), plus a universal one. ONNX Runtime and
+    // alphaSkia dominate the native size, so shipping both ABIs in one file would double it.
+    splits {
+        abi {
+            isEnable = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+            reset()
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     packaging {
         jniLibs { useLegacyPackaging = false }
     }
