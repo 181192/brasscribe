@@ -29,14 +29,23 @@ def test_bass_trombone_is_concert_pitch_bass_clef():
     assert btb.written(40) == 40 and btb.clef == "bass"
 
 
-def test_written_ranges_match_band_reading_ranges():
-    # Written comfortable ranges: upper brass from A3 (not the bottom valve note F#3), basses up to D5.
+def test_written_ranges_are_consistent_for_cornet_family():
+    # All treble-clef upper brass share the written amateur range F#3..A5.
+    for iid in ("bb-cornet", "flugelhorn", "eb-soprano-cornet", "eb-tenor-horn"):
+        inst = INSTRUMENTS[iid]
+        lo, hi = inst.comfortable
+        assert (inst.written(lo), inst.written(hi)) == (54, 81), iid
+
+
+def test_reading_ranges_match_band_reading_ranges():
+    # Preferred placement: upper brass from written A3 (not the bottom valve note F#3), basses up to D5.
     want = {"bb-cornet": (57, 81), "flugelhorn": (57, 79), "eb-tenor-horn": (57, 79), "eb-soprano-cornet": (60, 81),
             "baritone": (57, 79), "euphonium": (54, 81), "eb-bass": (54, 74), "bb-bass": (54, 74)}
     for iid, rng in want.items():
         inst = INSTRUMENTS[iid]
-        lo, hi = inst.comfortable
+        lo, hi = inst.preferred
         assert (inst.written(lo), inst.written(hi)) == rng, iid
+        assert inst.comfortable[0] <= lo and hi <= inst.comfortable[1], iid
 
 
 def test_range_checks_and_octave_fit():
@@ -45,7 +54,7 @@ def test_range_checks_and_octave_fit():
     assert cnt.check(81) == "uncomfortable"
     assert cnt.check(90) == "impossible"
     assert cnt.fit_octave(96) == C5
-    assert INSTRUMENTS["eb-bass"].fit_octave(A4) == 45
+    assert INSTRUMENTS["eb-bass"].fit_octave(A4) == 57
 
 
 def test_validate_range_reports_written_pitch():
