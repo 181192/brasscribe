@@ -57,7 +57,7 @@ public final class VerovioToolkit: @unchecked Sendable {
     public func pageWithElement(_ id: String) -> Int { Int(vrvToolkit_getPageWithElement(handle, id)) }
 
     public func timemap() -> [TimemapEntry] {
-        let s = String(cString: vrvToolkit_renderToTimemap(handle, #"{"includeMeasures": true, "includeRests": false}"#))
+        let s = String(cString: vrvToolkit_renderToTimemap(handle, #"{"includeMeasures": true, "includeRests": true}"#))
         return (try? JSONDecoder().decode([TimemapEntry].self, from: Data(s.utf8))) ?? []
     }
 
