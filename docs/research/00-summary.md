@@ -16,6 +16,44 @@ All of this is desk research. No model has been installed or run yet. Every pick
 
 ---
 
+## 0. Architecture decision (2026-09-25, after benchmarks)
+
+This supersedes the desk-research picks below wherever they disagree. Evidence: [10-benchmark-results.md](10-benchmark-results.md).
+
+**Test sets:**
+- ChoraleBricks brass quartets (real audio)
+- URMP brass, 8 pieces (real audio)
+- Slakh trumpet-lead songs (synthetic)
+
+**Decisions:**
+
+| Stage | Decision | Evidence |
+|---|---|---|
+| Input | Swift Core Audio process tap (`capture/`), per-app via bundle ID | Loopback sine test exact; Spotify capture works once the terminal has "System Audio Recording Only" |
+| Routing | **Brass-only input: pipeline A** (no separation). **Full-band input: pipeline B**, BS-RoFormer SW then per-stem transcription | B beats A by +8–12 F1 on Slakh; separation brings nothing for brass-only music |
+| Transcriber (mix / first-stage stems) | **MuScriptor medium**, *no* `--instruments` | Onset F1 at 100 ms: URMP 0.88, chorales 0.75, Slakh-B 0.70. Large is erratic (not a precision issue). Brass conditioning costs −23 F1 |
+| Transcriber (second-stage stems, e.g. Mega-53 trumpet) | **Basic Pitch** | MuScriptor hallucinates on twice-separated audio (precision 0.03) |
+| Bass line | Basic Pitch or MuScriptor on the SW bass stem | Bass recall 0.91–0.96 once the reference octave was fixed |
+| Confidence | MuScriptor + Basic Pitch agreement | Agreement-only notes are 89–92% precise; unconfirmed notes are flagged, never dropped |
+| Instrument labels | Hints only | MuScriptor labelled Mikkel's trumpet "distorted guitar" |
+| Beats | Beat This! + metrical-level selection (`choose_level`) | Within-beat position 0.83 (URMP) and 0.93 (chorales). Bar position still drifts; needs downbeat cleanup plus a user meter check |
+| Quantization | Beat-grid DP with complexity penalties, 24 ticks/beat; gap fill ≤ 8th | 95–99% exact positions with true beats; notated duration 0.61–0.88 |
+| Spelling / key | partitura ps13 at concert pitch plus double-accidental cleanup; K-K key estimate | 99.9% spelling accuracy |
+| Melody | Top line over MuScriptor-supported notes | Melody F1 0.76 mean |
+| Ground truth for notation | ChoraleBricks alignments and URMP score-aligned notes. **Not Slakh** | Slakh MIDI is live-played, and its bass is written an octave above sounding |
+
+**Not adopted:**
+- YourMT3+: never integrated. MuScriptor medium covers its role.
+- SAM-Audio
+- Viterbi melody picker: no gain.
+- MuScriptor-large
+
+**Open:**
+- Downbeat and bar-position robustness
+- Melody where the tune is an inner voice
+- Articulation (staccato) inference
+- Key and chords from audio (S-KEY, consonance-ACE) as a cross-check
+
 ## 1. Headline findings
 
 1. **The multi-instrument AMT landscape changed in mid-2026.**
@@ -52,8 +90,8 @@ All of this is desk research. No model has been installed or run yet. Every pick
 |---|---|---|---|---|
 | Source separation, stage 1 | BS-RoFormer SW (6-stem) via python-audio-separator / MSST | HT-Demucs v4 `htdemucs_ft` / `_6s` | MIT / **undocumented** | claimed (MPS); MLX port lists SW |
 | Source separation, brass sub-stems | MVSep Mega-53 v1 (ckpt in MSST release v1.0.21, 1.37 GB; SW ckpt in audio-separator `model-configs` release — both verified 2026-09-25) (brass, trumpet, trombone, horn, tuba) | SAM-Audio text prompts (experimental; generative, can invent notes) | MIT / **not stated** | unknown (author asks ≥16 GB VRAM) |
-| Multi-instrument AMT | **MuScriptor** medium/large | YourMT3+ (YPTF.MoE+Multi) | MIT / **CC BY-NC 4.0, gated** | claimed (MPS) |
-| Instrument-agnostic stem AMT | MuScriptor (instrument-conditioned) + Basic Pitch, fused | — | Basic Pitch Apache-2.0 | Basic Pitch: CoreML default. **Pin Py 3.10** (arm64+3.12 install broken, #203) |
+| Multi-instrument AMT | **MuScriptor** medium (large rejected, see §0) | YourMT3+ (YPTF.MoE+Multi) | MIT / **CC BY-NC 4.0, gated** | claimed (MPS) |
+| Instrument-agnostic stem AMT | MuScriptor (unconditioned) on first-stage stems; Basic Pitch on second-stage stems | — | Basic Pitch Apache-2.0 | Basic Pitch: CoreML default. **Pin Py 3.10** (arm64+3.12 install broken, #203) |
 | Monophonic f0 (lead / single line) | SwiftF0 → note segmentation | torchcrepe (Viterbi) + CREPE Notes | MIT | ONNX, fine |
 | Bass-register f0 | torchcrepe / RMVPE (reach ~32 Hz) | Basic Pitch (27.5 Hz) | MIT | fine |
 | Vocals → notes | GAME (openvpi 2026) | ROSVOT | MIT | unknown |
