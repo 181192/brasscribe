@@ -182,6 +182,140 @@ pub fn median(v: &[f64]) -> f64 {
     }
 }
 
+/// `np.argsort(v)` with the default (unstable) kind: NumPy's introsort
+/// (median-of-3 quicksort, insertion sort below 16 elements, heapsort when
+/// the recursion gets too deep). The order of equal keys matters downstream.
+pub fn np_argsort<T: PartialOrd + Copy>(v: &[T]) -> Vec<usize> {
+    let num = v.len();
+    let mut t: Vec<usize> = (0..num).collect();
+    if num == 0 {
+        return t;
+    }
+    let lt = |a: usize, b: usize| v[a] < v[b];
+    let msb = |mut n: usize| {
+        let mut d = 0i32;
+        while n > 1 {
+            n >>= 1;
+            d += 1;
+        }
+        d
+    };
+    let (mut pl, mut pr) = (0isize, num as isize - 1);
+    let mut stack: Vec<(isize, isize)> = Vec::new();
+    let mut depth: Vec<i32> = Vec::new();
+    let mut cdepth = msb(num) * 2;
+    loop {
+        if cdepth < 0 {
+            aheapsort(v, &mut t[pl as usize..=pr as usize]);
+        } else {
+            while pr - pl > 15 {
+                let pm = pl + ((pr - pl) >> 1);
+                let (l, m, r) = (pl as usize, pm as usize, pr as usize);
+                if lt(t[m], t[l]) {
+                    t.swap(m, l);
+                }
+                if lt(t[r], t[m]) {
+                    t.swap(r, m);
+                }
+                if lt(t[m], t[l]) {
+                    t.swap(m, l);
+                }
+                let vp = v[t[m]];
+                let mut pi = pl;
+                let mut pj = pr - 1;
+                t.swap(m, pj as usize);
+                loop {
+                    pi += 1;
+                    while v[t[pi as usize]] < vp {
+                        pi += 1;
+                    }
+                    pj -= 1;
+                    while vp < v[t[pj as usize]] {
+                        pj -= 1;
+                    }
+                    if pi >= pj {
+                        break;
+                    }
+                    t.swap(pi as usize, pj as usize);
+                }
+                t.swap(pi as usize, (pr - 1) as usize);
+                if pi - pl < pr - pi {
+                    stack.push((pi + 1, pr));
+                    pr = pi - 1;
+                } else {
+                    stack.push((pl, pi - 1));
+                    pl = pi + 1;
+                }
+                cdepth -= 1;
+                depth.push(cdepth);
+            }
+            let mut pi = pl + 1;
+            while pi <= pr {
+                let vi = t[pi as usize];
+                let vp = v[vi];
+                let mut pj = pi;
+                while pj > pl && vp < v[t[(pj - 1) as usize]] {
+                    t[pj as usize] = t[(pj - 1) as usize];
+                    pj -= 1;
+                }
+                t[pj as usize] = vi;
+                pi += 1;
+            }
+        }
+        match stack.pop() {
+            None => break,
+            Some((l, r)) => {
+                pl = l;
+                pr = r;
+                cdepth = depth.pop().unwrap();
+            }
+        }
+    }
+    t
+}
+
+fn aheapsort<T: PartialOrd + Copy>(v: &[T], a: &mut [usize]) {
+    let mut n = a.len();
+    // one-based indexing as in NumPy
+    let get = |a: &[usize], k: usize| a[k - 1];
+    for l in (1..=n >> 1).rev() {
+        let tmp = get(a, l);
+        let (mut i, mut j) = (l, l << 1);
+        while j <= n {
+            if j < n && v[get(a, j)] < v[get(a, j + 1)] {
+                j += 1;
+            }
+            if v[tmp] < v[get(a, j)] {
+                a[i - 1] = a[j - 1];
+                i = j;
+                j += j;
+            } else {
+                break;
+            }
+        }
+        a[i - 1] = tmp;
+    }
+    while n > 1 {
+        let tmp = a[n - 1];
+        a[n - 1] = a[0];
+        n -= 1;
+        let (mut i, mut j) = (1usize, 2usize);
+        while j <= n {
+            if j < n && v[get(a, j)] < v[get(a, j + 1)] {
+                j += 1;
+            }
+            if v[tmp] < v[get(a, j)] {
+                a[i - 1] = a[j - 1];
+                i = j;
+                j += j;
+            } else {
+                break;
+            }
+        }
+        a[i - 1] = tmp;
+    }
+}
+
 /// Python `repr(float)`.
 pub fn float_repr(x: f64) -> String {
     if x.is_nan() {

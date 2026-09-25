@@ -127,8 +127,9 @@ pub fn spell(onsets_beats: &[f64], pitches: &[i32]) -> Vec<Spelled> {
     order.sort_by(|&a, &b| onsets_beats[a].partial_cmp(&onsets_beats[b]).unwrap());
     let on32: Vec<f32> = order.iter().map(|&i| onsets_beats[i] as f32).collect();
     let ps: Vec<i32> = order.iter().map(|&i| pitches[i]).collect();
-    let mut idx: Vec<usize> = (0..n).collect();
-    idx.sort_by(|&a, &b| ps[a].cmp(&ps[b]));
+    // NumPy's default argsort (unstable) by pitch, then a stable sort by onset:
+    // equal (onset, pitch) notes of different parts keep NumPy's order.
+    let mut idx: Vec<usize> = crate::py::np_argsort(&ps);
     idx.sort_by(|&a, &b| on32[a].partial_cmp(&on32[b]).unwrap());
     let sorted_pitches: Vec<i32> = idx.iter().map(|&k| ps[k]).collect();
     let sp = ps13s1_sorted(&sorted_pitches);
