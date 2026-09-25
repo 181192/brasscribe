@@ -58,7 +58,7 @@ enum class VoiceRole {
 data class Voice(
     val id: String,
     val role: VoiceRole,
-    val notes: List<Note> = emptyList(),
+    val notes: List<Note>,
     /** What the source instrument seemed to be; never binding. */
     @SerialName("instrument_hint") val instrumentHint: String? = null,
     /** Textural layer it came from: solo, strings, brass, keys, bass, drums. */

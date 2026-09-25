@@ -31,7 +31,7 @@ object MusicXmlWriter {
         }
         sb.append("  </part-list>\n")
         parts.forEachIndexed { i, p ->
-            val voice = composition.voice(p.voiceId) ?: Voice(p.voiceId, VoiceRole.MELODY)
+            val voice = composition.voice(p.voiceId) ?: Voice(p.voiceId, VoiceRole.MELODY, emptyList())
             sb.append("""  <part id="P${i + 1}">""").append('\n')
             writePart(sb, composition, map, voice, p.instrument, lastBar, tpb)
             sb.append("  </part>\n")
