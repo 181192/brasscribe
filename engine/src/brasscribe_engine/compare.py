@@ -20,7 +20,8 @@ _SCORE_PART = re.compile(r'<score-part id="([^"]+)">.*?<part-name>([^<]*)</part-
 _NOTE = re.compile(r"<note\b.*?</note>", re.S)
 
 
-def canonical_musicxml(text: str) -> str:
+def stable_ids(text: str) -> str:
+    """Replace music21's random part/instrument ids (P<32 hex>, I<32 hex>) by P1, P2 ..., I1, I2 ... in order."""
     ids: dict[str, str] = {}
 
     def sub(m: re.Match) -> str:
@@ -29,7 +30,11 @@ def canonical_musicxml(text: str) -> str:
             ids[raw] = f"{raw[0]}{sum(1 for k in ids if k[0] == raw[0]) + 1}"
         return f'"{ids[raw]}"'
 
-    return _DATE.sub("<encoding-date/>", _ID.sub(sub, text))
+    return _ID.sub(sub, text)
+
+
+def canonical_musicxml(text: str) -> str:
+    return _DATE.sub("<encoding-date/>", stable_ids(text))
 
 
 def parts(text: str) -> list[tuple[str, str, int]]:

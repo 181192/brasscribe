@@ -79,12 +79,22 @@ def _view(files: dict[str, Path], where: Path) -> Path:
     return where
 
 
+def _stable_musicxml(ctx: StageContext) -> None:
+    """Deterministic part/instrument ids, so an unchanged arrangement has unchanged bytes (and downstream cache hits)."""
+    from .compare import stable_ids
+
+    xml = ctx.out / "brass-band.musicxml"
+    if xml.exists():
+        xml.write_text(stable_ids(xml.read_text()))
+
+
 def arrange_layered(ctx: StageContext) -> None:
     names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz"))}
     with tempfile.TemporaryDirectory(dir=ctx.out.parent) as tmp:
         view = _view(names, Path(tmp) / "layers")
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
                 "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render")
+    _stable_musicxml(ctx)
 
 
 def arrange_band(ctx: StageContext) -> None:
@@ -96,12 +106,14 @@ def arrange_band(ctx: StageContext) -> None:
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
     _python(ctx, "brasscribe_eval.arrange_song", *args)
+    _stable_musicxml(ctx)
 
 
 def arrange_solo(ctx: StageContext) -> None:
     i = ctx.inputs
     _python(ctx, "brasscribe_eval.arrange_solo", "--beats", str(i["beats"]), "--sw", str(i["sw"]), "--mus", str(i["mus"]),
             "--bp", str(i["bp"]), "--out", str(ctx.out), "--title", ctx.params["title"])
+    _stable_musicxml(ctx)
 
 
 def export(ctx: StageContext) -> None:

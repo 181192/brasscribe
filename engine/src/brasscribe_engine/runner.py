@@ -171,6 +171,8 @@ def diff_manifests(old: dict, new: dict) -> dict:
     outs = {k: (old["outputs"].get(k), new["outputs"].get(k)) for k in set(old["outputs"]) | set(new["outputs"])}
     so = {s["stage"]: s.get("outputs_digest") for s in old["stages"]}
     sn = {s["stage"]: s.get("outputs_digest") for s in new["stages"]}
+    renders = (".pdf", ".mp3", ".mid")  # MuseScore renders carry timestamps; reported, not gated
     return {"outputs_identical": sorted(k for k, (a, b) in outs.items() if a == b and a),
-            "outputs_different": sorted(k for k, (a, b) in outs.items() if a != b),
+            "outputs_different": sorted(k for k, (a, b) in outs.items() if a != b and not k.endswith(renders)),
+            "renders_different": sorted(k for k, (a, b) in outs.items() if a != b and k.endswith(renders)),
             "stages_different": sorted(k for k in set(so) | set(sn) if so.get(k) != sn.get(k))}
