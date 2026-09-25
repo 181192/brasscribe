@@ -69,7 +69,7 @@ Known engine gaps. These are engine work that runs in parallel with the apps (se
 | Score view and playback | **alphaTab** (MPL-2.0) | Built-in synth, cursor, loop, speed, per-part mute/solo and part selection. It shows written pitch for B♭/E♭ parts while sounding at concert pitch, and can follow the original recording. It cannot handle transposition changes mid-piece, which we don't generate. |
 | Accessible score | A **talking score**: a structured text view navigable bar by bar and part by part, plus **braille music (BRF)** via music21 | No SVG notation library is screen-reader navigable. |
 | Accessibility target | **WCAG 2.2 AA** plus EN 301 549 | Norwegian law today requires WCAG 2.0 AA for private businesses and 2.1 AA for the public sector. 2.2 is where the law is heading, so build to it now. |
-| Mobile | Tauri 2 mobile UI with native audio modules. **Transcription stays on desktop**; see §6.6 for what runs on the phone | The models plus PyTorch don't run on phones without ports, and some weights can't legally be shipped (§7). |
+| Mobile | Tauri 2 mobile UI with native audio modules. **Transcription stays on desktop**; see §5.6–5.7 for what runs on the phone | The models plus PyTorch don't run on phones without ports, and some weights can't legally be shipped (§7). |
 | Contract between stages | `Composition` JSON (concert pitch, ticks, voices with role and layer, per-note confidence and source models) plus content-addressed artifacts | Already implemented and tested; every UI reads the same thing. |
 
 ---
@@ -169,7 +169,7 @@ pixi.toml        workspace
 - It installs on a clean macOS arm64, Windows 11 and Ubuntu 24.04 machine.
 - A first-run download sets up the environments and models.
 - One Mikkel run and the full chorale benchmark complete with GPU where available.
-- Numbers match `10-benchmark-results.md` within tolerance.
+- Numbers match `10-benchmark-results.md` within ±0.01 F1 (or ±1 percentage point for accuracy figures).
 
 ---
 
@@ -283,7 +283,11 @@ The work is listed in dependency order. Each milestone ends with something runna
   - job DAG with stages: capture/import, separate, transcribe per layer, vote, beats, quantize, spell, compose, arrange, export
   - content-hashed artifact cache, SQLite index, SSE progress, run manifests, profiles
 - Port the benchmarks to engine suites, plus the `brasscribe bench` CLI.
-- **Done when:** `brasscribe run mikkel.wav --profile best-quality` reproduces today's `arranged-band` output; `brasscribe bench chorales` reproduces the table in `10-benchmark-results.md`; CI runs the CPU suites on Linux.
+- **Done when:**
+  - `brasscribe run mikkel.wav --profile best-quality` reproduces the golden output in `data/golden/mikkel-arranged-band/`. That output comes from `eval/brasscribe_eval/song_pipeline.py`; compare per-part note counts and pitch sequences.
+  - `brasscribe bench chorales` reproduces the table in `10-benchmark-results.md`.
+  - The benchmark suites also report a `licence-clean` column.
+  - CI runs the CPU suites on Linux.
 
 ### Shared UI package
 - alphaTab score view:
@@ -332,7 +336,14 @@ See §8. Each item lands with a benchmark and must not regress existing numbers.
 | VSCO 2 CE / Iowa MIS / MS Basic / OpenAIR IRs | CC0 / unrestricted / MIT / CC BY 4.0 | Bundle, with attribution where required. |
 | Datasets (ChoraleBricks CC BY, URMP, Slakh) | Various | Downloaded by the user in Studio; never bundled. |
 
-**Rule:** `licence-clean` is the only profile that may ever be shipped preinstalled or run for anyone other than the user themselves. It needs its own benchmark column, so we know what quality we give up.
+**Rule:** `licence-clean` is the only profile that may ever be shipped preinstalled or run for anyone other than the user themselves.
+
+**What `licence-clean` cannot do today:**
+- It can't isolate a solo instrument from a band or orchestra (no Mega-53). HT-Demucs gives only vocals/drums/bass/other.
+- It has no drum transcription (only MuScriptor transcribes drums), so no percussion part.
+- Its multi-instrument transcription quality is unmeasured. Basic Pitch alone scored 0.47–0.73 onset F1, against MuScriptor's 0.56–0.88.
+
+It currently works for brass-only sources and single-line recordings, not for the Mikkel-style flagship flow. Its benchmark column is part of the "Engine as a service" acceptance criteria, and decision 1 in §9 depends on those numbers.
 
 ---
 
@@ -365,6 +376,7 @@ Ordered by impact on Mikkel and on musicians:
 2. **Own sample recordings.** Record a brass band (about a day per instrument) to get real cornet, tenor horn, baritone and euphonium sounds we own. It is the only route to authentic brass-band playback.
 3. **Mobile priority.** Build mobile after Play desktop, as this plan orders it, or sooner?
 4. **App names.** "Studio" and "Play" are working names.
+5. **What "native mobile" means.** This plan packages the mobile apps with Tauri: a shared web UI in the system webview, with native Swift/Kotlin plugins for audio and ML. Fully native Swift/Kotlin UIs would mean a separate UI per platform and couldn't reuse the web notation library (alphaTab). Confirm the Tauri route is acceptable.
 
 ---
 
@@ -385,7 +397,7 @@ Each role owns folders, which keeps parallel work conflict-free (use git worktre
 | Mobile | mobile targets of `apps/play/`, native plugins, model conversion |
 | Accessibility and QA | Cross-cutting reviewer: axe-core, screen-reader scripts, WCAG checklist sign-off |
 
-Start with **Engine** and **UI components** in parallel. Both depend only on what exists today. Studio and Play start when the engine API and the score view are usable.
+Start with **Engine**, **UI components** and the **Accessibility and QA** reviewer in parallel. Both depend only on what exists today. Studio and Play start when the engine API and the score view are usable.
 
 ### Working rules
 
@@ -399,4 +411,4 @@ Start with **Engine** and **UI components** in parallel. Both depend only on wha
 
 ### Kickoff prompt (paste into the new session)
 
-> Read `docs/plan/apps-plan.md`, `docs/research/00-summary.md` §0 and `docs/research/10-benchmark-results.md`. Build the "Engine as a service" and "Shared UI package" milestones in parallel. Use one teammate per role in §10, working in separate git worktrees and owning the listed folders. Keep the existing benchmarks green; reproduce the Mikkel `arranged-band` output through the new engine as the acceptance test. Report back with what runs, the measured numbers, and any decision from §9 you need from me.
+> Read `docs/plan/apps-plan.md`, `docs/research/00-summary.md` §0 and `docs/research/10-benchmark-results.md`. Build the "Engine as a service" and "Shared UI package" milestones in parallel with three teammates: Engine, UI components, and Accessibility and QA (roles in §10), each in its own git worktree, owning the listed folders. Keep the existing benchmarks green; reproduce `data/golden/mikkel-arranged-band/` through the new engine as the acceptance test (`eval/brasscribe_eval/song_pipeline.py` is the current reference implementation). Report back with what runs, the measured numbers, and any decision from §9 you need from me.

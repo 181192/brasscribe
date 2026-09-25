@@ -32,14 +32,15 @@ This supersedes the desk-research picks below wherever they disagree. Evidence: 
 | Input | Swift Core Audio process tap (`capture/`), per-app via bundle ID | Loopback sine test exact; Spotify capture works once the terminal has "System Audio Recording Only" |
 | Routing | **Brass-only input: pipeline A** (no separation). **Full-band input: pipeline B**, BS-RoFormer SW then per-stem transcription | B beats A by +8–12 F1 on Slakh; separation brings nothing for brass-only music |
 | Transcriber (mix / first-stage stems) | **MuScriptor medium**, *no* `--instruments` | Onset F1 at 100 ms: URMP 0.88, chorales 0.75, Slakh-B 0.70. Large is erratic (not a precision issue). Brass conditioning costs −23 F1 |
-| Transcriber (second-stage stems, e.g. Mega-53 trumpet) | **Basic Pitch** | MuScriptor hallucinates on twice-separated audio (precision 0.03) |
+| Transcriber (separated solo stems, e.g. Mega-53 trumpet) | **SwiftF0 is the spine**, confirmed by MuScriptor or Basic Pitch | On Mega-53 solo stems (10 chorales + 2 Slakh), SwiftF0 alone scores F1 0.75, MuScriptor 0.50 (0.00 on 3 chorales, 0.06 on Slakh) and Basic Pitch 0.42. MuScriptor is unreliable on separated stems whether first- or second-stage. |
 | Bass line | Basic Pitch or MuScriptor on the SW bass stem | Bass recall 0.91–0.96 once the reference octave was fixed |
-| Confidence | MuScriptor + Basic Pitch agreement | Agreement-only notes are 89–92% precise; unconfirmed notes are flagged, never dropped |
+| Confidence | **On mixes:** MuScriptor + Basic Pitch agreement (89–92% precise on chorales and URMP). **On separated solo stems:** SwiftF0 plus one other model (91–99% precise). MuScriptor + Basic Pitch without SwiftF0 is only 36% precise there | Unconfirmed notes are flagged with colour and shape. On solo stems, notes without SwiftF0 are dropped (2–5% precise alone). |
 | Instrument labels | Hints only | MuScriptor labelled Mikkel's trumpet "distorted guitar" |
 | Beats | Beat This! + metrical-level selection (`choose_level`) | Within-beat position 0.83 (URMP) and 0.93 (chorales). Bar position still drifts; needs downbeat cleanup plus a user meter check |
 | Quantization | Beat-grid DP with complexity penalties, 24 ticks/beat; gap fill ≤ 8th | 95–99% exact positions with true beats; notated duration 0.61–0.88 |
 | Spelling / key | partitura ps13 at concert pitch plus double-accidental cleanup; K-K key estimate | 99.9% spelling accuracy |
 | Melody | Top line over MuScriptor-supported notes | Melody F1 0.76 mean |
+| Arrangement for orchestra + soloist | **Layered solo-with-band**: solo, bass and drums from Mega-53; the orchestra as residual (mix minus those), split by behaviour into chordal hits (brass choir) and lines/pads; mapped to band sections (`arranger.arrange_layers`) | Mega-53's strings stems are near-silent on Mikkel. A melody/bass/chords reduction discards most of an orchestral texture (see `docs/songs/mikkel.md`) |
 | Ground truth for notation | ChoraleBricks alignments and URMP score-aligned notes. **Not Slakh** | Slakh MIDI is live-played, and its bass is written an octave above sounding |
 
 **Not adopted:**
@@ -49,6 +50,8 @@ This supersedes the desk-research picks below wherever they disagree. Evidence: 
 - MuScriptor-large
 
 **Open:**
+- Bass, orchestra-residual and drum layers are still transcribed with MuScriptor on Mega-53 or residual audio. Given MuScriptor's collapse on separated solo stems, this path is untested against ground truth.
+- Free-time (rubato) passages are forced onto a beat grid (Mikkel intro, beat gaps of 1–6 s).
 - Downbeat and bar-position robustness
 - Melody where the tune is an inner voice
 - Articulation (staccato) inference

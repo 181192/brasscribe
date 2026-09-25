@@ -1,5 +1,35 @@
 # 10 — Benchmark results
 
+## Reproducing these numbers
+
+Run from `eval/` with `uv run python -W ignore -m <module> ...`. Eval sets live in `data/eval/`; they are built by `brasscribe_eval.choralebricks`, `.urmp` and `.slakh` from the downloaded datasets.
+
+**From committed commands:**
+
+| Result | Command |
+|---|---|
+| Transcription per model (chorales, URMP, Slakh) | `brasscribe_eval.bench <eval_dir> <adapter run.sh> --name <label>` |
+| Pipeline B (separate → transcribe) | `bench ... ../ml/pipelines/separate_transcribe.sh` |
+| Consensus sweeps | `brasscribe_eval.consensus_bench <eval_dir> label=file.mid[:split] ...` |
+| Rhythm / quantization | `brasscribe_eval.quant_bench <eval_dir> [--beats reference] [--source file.mid]` |
+| Melody line | `brasscribe_eval.melody_bench` |
+| Solo three-way vote | `brasscribe_eval.solo_vote_bench` (needs `data/mega53-out-bench`, made with `ml/adapters/mega53/run.sh` on each mix) |
+| Arrangement on ground truth | `brasscribe_eval.arrange_bench <eval_dir>` |
+| MuseScore round trip | `brasscribe_eval.musescore_roundtrip <musicxml> <composition.json>` |
+| Mikkel end to end | `brasscribe_eval.song_pipeline data/mikkel/mikkel.wav --out <dir>`. The golden output is in `data/golden/mikkel-arranged-band/`. A fresh run reproduced all 18 parts note for note. Upstream orchestra-hit detection varied slightly between runs (2 184 vs 2 212 notes), and the harmony reduction absorbed it |
+
+**One-off measurements.** These were made with inline scripts during research and not committed. Treat them as findings to re-derive, not as regression baselines:
+- pitch-spelling accuracy (ps13 99.9%)
+- gap-fill duration variants
+- harmony-reduction fidelity (0.98 / 0.96)
+- float16 vs float32
+- ChoraleBricks tuba intonation statistics
+- Slakh bass octave check (pYIN)
+- onset-offset analysis (trumpet +55 ms)
+- Mega-53 melody-extraction table
+- Viterbi melody sweep
+- Mikkel stem energy tables
+
 ## Setup
 
 - **Eval set: `choralebricks-brass4`.** Built by `eval/brasscribe_eval/choralebricks.py`.
