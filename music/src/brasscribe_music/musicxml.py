@@ -19,6 +19,8 @@ from music21 import bar as m21bar
 from .instruments import Instrument as BandInstrument
 
 from .quantize import TICKS_PER_BEAT, QNote
+from .rhythm_spelling import SINGLE as _SINGLE
+from .rhythm_spelling import TRIPLET as _TRIPLET
 from .rhythm_spelling import pieces as _pieces
 from .spelling import key_of, spell
 
@@ -93,6 +95,29 @@ def _notatable_end(start: int, end: int) -> int:
     return min(cands, key=lambda c: (abs(c - end), c))
 
 
+def _clean_span(a: int, b: int) -> bool:
+    """[a, b) splits into plain, dotted or triplet values within each beat (no 2-tick fragments, which
+    music21 can only write as nested tuplets that MuseScore rejects)."""
+    return b > a and all((y - x) in _SINGLE | _TRIPLET for x, y in _pieces(a, b, TICKS_PER_BEAT))
+
+
+def _clean_end(start: int, end: int, nxt: int | None) -> int:
+    """The end nearest `end` for which the note and the rest after it are both clean spans.
+
+    Onsets on a 16th grid and ends on a triplet grid (or the reverse) inside one beat
+    leave fragments such as 2 ticks.
+    """
+    def ok(e: int) -> bool:
+        return _clean_span(start, e) and (nxt is None or e == nxt or _clean_span(e, nxt))
+
+    if ok(end):
+        return end
+    hi = nxt if nxt is not None else end + TICKS_PER_BEAT
+    cands = sorted({e for g in (6, 8) for e in range(g * (start // g + 1), hi + 1, g)} | ({nxt} if nxt else set()),
+                   key=lambda e: (abs(e - end), -e))
+    return next((e for e in cands if ok(e)), end)
+
+
 def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float, set[str]]]:
     """Group by start tick into (start, end, pitches, min confidence, articulations); make the line non-overlapping."""
     groups: dict[int, list[QNote]] = {}
@@ -104,8 +129,10 @@ def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float, set[st
         g = groups[s]
         end = min(q.end for q in g)
         end = _notatable_end(s, end)
-        if i + 1 < len(starts):
-            end = min(end, starts[i + 1])
+        nxt = starts[i + 1] if i + 1 < len(starts) else None
+        if nxt is not None:
+            end = min(end, nxt)
+        end = _clean_end(s, end, nxt)
         arts = {str(getattr(a, "value", a)) for q in g for a in q.articulations}
         out.append((s, max(end, s + 1), sorted({q.pitch for q in g}), min(q.confidence for q in g), arts))
     return out
