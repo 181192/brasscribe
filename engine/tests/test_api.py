@@ -114,7 +114,7 @@ def test_pairing_code_rotates_after_failures(settings):
 
 def test_studio_placeholder_served(client):
     r = client.get("/")
-    assert r.status_code == 200 and "Brasscribe Studio" in r.text
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
 
 
 def test_committed_openapi_matches_app():

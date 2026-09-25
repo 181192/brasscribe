@@ -401,6 +401,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_stage_file(job_id: str, stage: str, name: str):
         job = job_or_404(job_id)
+        if stage not in job.stages:
+            raise HTTPException(404, f"no stage {stage} in job {job_id}")
         p = safe_file(jobs.run_dir(job.id) / "stages" / stage, name)
         return FileResponse(p, media_type=media_type(name), filename=p.name)
 
@@ -419,6 +421,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
              dependencies=[Depends(auth)], response_class=FileResponse,
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_reference_file(name: str, file: str):
+        if "/" in name or name in ("", ".", "..") or not (settings.golden_dir / name).is_dir():
+            raise HTTPException(404, f"no reference {name}")
         p = safe_file(settings.golden_dir / name, file)
         return FileResponse(p, media_type=media_type(file), filename=p.name)
 
@@ -433,7 +437,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         if bool(reference) == bool(job):
             raise HTTPException(422, "give exactly one of reference, job")
         other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
-        if reference and not inspection.inside(settings.golden_dir, other):
+        if reference and ("/" in reference or reference in (".", "..") or not other.is_dir()):
             raise HTTPException(404, f"no reference {reference}")
         for d in (this, other):
             if not (d / "composition.json").exists() or not (d / "brass-band.musicxml").exists():
