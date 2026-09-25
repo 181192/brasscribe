@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.arranger import arrange
-from brasscribe_music.musicxml import build_band_score, write_musicxml
+from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
@@ -99,7 +99,7 @@ def main() -> None:
         rows.append(r)
         print(f"{song.name[:34]:34s} " + " ".join(f"{k}={v:.2f}" if isinstance(v, float) else f"{k}={v}" for k, v in r.items()))
         if args.export and args.export in song.name:
-            out = write_musicxml(build_band_score(arr, comp), song / "arranged.musicxml")
+            out = write_musicxml(build_band_score(arr, comp), song / "arranged.musicxml", band_sounds(arr))
             comp.to_json(song / "composition.json")
             print("wrote", out)
     keys = ["melody_kept", "bass_kept", "harmony_fidelity", "impossible", "uncomfortable", "crossings"]

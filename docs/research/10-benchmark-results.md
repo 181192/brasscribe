@@ -270,12 +270,26 @@ Corrected results (100 ms):
 - B♭ Bass pedal notes are no longer used by default.
 - URMP's 23/24-beat MIDI durations produced 64th rests and 12:11 tuplets that MuseScore rejects. Tiny gaps are now held, and ends are snapped to notatable positions.
 
-**End-to-end Mikkel:** `data/mikkel/arranged/brass-band.{musicxml,pdf}`, from `arrange_song.py`.
+**MuseScore gate (`eval/brasscribe_eval/musescore_roundtrip.py`).**
+- The check re-exports through the MuseScore CLI, re-imports, collapses ties and compares sounding pitch per part.
+- Mikkel: **all 8 parts match** the arranger's concert pitches.
+- MuseScore assigns brass.cornet / flugelhorn / alto-horn / trombone / euphonium / tuba.
+
+Two issues it caught:
+1. music21 writes no `<instrument-sound>`, so MuseScore read "E♭ Bass" as a *vocal* bass. The export post-pass now writes the sound IDs, and the basses are named "E♭/B♭ Tuba" internally (part names stay "E♭ Bass").
+2. music21's `stripTies` misses mid-bar `continue` ties. That was a comparison artifact, not a file bug.
+
+**What the arranger metrics do and don't show.**
+- Melody kept, bass kept and zero crossings are guaranteed by construction: lines are only octave-shifted and the voicer cannot cross parts.
+- Harmony fidelity is partly guaranteed, since the pitch classes come from the source.
+- These numbers prove that range, transposition and export logic are sound and don't regress. They say nothing about musical quality. The rendered scores are the evidence for that, and they show block chords and doubling.
+
+**End-to-end Mikkel:** `data/mikkel/arranged/brass-band.{musicxml,pdf,mp3}`, from `arrange_song.py`. The MP3 is MuseScore's playback, for comparison with `mikkel.wav`.
 
 Visible limits:
 - Inner parts are block chords, one per beat. No rhythmic figuration or countermelody yet.
 - Trombone and euphonium still double often.
-- The bass is empty through the first ~29 bars; the bass stem has nothing there.
+- The bass is empty through the first ~29 bars. Verified: the SW bass stem's RMS is 0.0000 until 70 s, and `bass-medium.mid` has no notes before 50 s.
 - The melody contains many red, unconfirmed 16th runs, probably orchestral figuration rather than trumpet.
 - Percussion is deferred; drum transcription exists but no kit part is written yet.
 

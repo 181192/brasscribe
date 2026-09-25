@@ -16,8 +16,9 @@ from pathlib import Path
 import numpy as np
 from brasscribe_music.arranger import arrange
 from brasscribe_music.harmony import harmony_slots, slots_to_notes
-from brasscribe_music.musicxml import build_band_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, choose_level, fill_gaps, quantize
+from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
+from brasscribe_music.spelling import key_of
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 from .consensus import consensus
@@ -51,6 +52,10 @@ def main() -> None:
     if len(times) != len(b):
         beats_per_bar *= 2
         first_down *= 2
+    # Tick 0 is the downbeat at or before the earliest note, so nothing precedes bar 1.
+    earliest = float(BeatMap(times).to_beats(np.array([all_onsets.min()]))[0])
+    while first_down > earliest + 1e-6:
+        first_down -= beats_per_bar
     pickup = first_down * TICKS_PER_BEAT
 
     sources = {"mus": load_notes(args.melody)}
@@ -67,14 +72,17 @@ def main() -> None:
            if 40 <= n["pitch"] <= 84 and (round(n["onset"], 2), n["pitch"]) not in mel_keys]
     acc_q = to_notes(quantize(acc, times, auto_level=False), pickup, "accompaniment")
     end = max(n.end for n in melody + bass + acc_q)
-    harm = slots_to_notes(harmony_slots([n for n in acc_q if n.start >= 0], end), confidence=0.8)
+    harm = slots_to_notes(harmony_slots(acc_q, end), confidence=0.8)
 
     comp = Composition(args.title, [Voice("melody", VoiceRole.MELODY, melody), Voice("bass", VoiceRole.BASS, bass),
                                     Voice("harmony", VoiceRole.HARMONY, harm)],
                        [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down)
+    tonal = melody + bass + harm
+    _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
+    comp.keys = [KeySig(0, fifths)]
     comp.to_json(args.out / "composition.json")
     arr = arrange(comp)
-    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml")
+    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     pdf = xml.with_suffix(".pdf")
     pdf.unlink(missing_ok=True)
     subprocess.run(["mscore", "-o", str(pdf), str(xml)], capture_output=True)

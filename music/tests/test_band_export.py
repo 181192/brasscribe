@@ -1,7 +1,7 @@
 from music21 import converter
 
 from brasscribe_music.arranger import arrange
-from brasscribe_music.musicxml import build_band_score, write_musicxml
+from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 F_MAJOR_TUNE = [65, 67, 69, 70, 72, 70, 69, 67, 65]  # F G A Bb C Bb A G F (concert)
@@ -19,7 +19,7 @@ def test_round_trip_sounding_pitch_and_written_keys(tmp_path):
     comp = _comp()
     arr = arrange(comp)
     score = build_band_score(arr, comp)
-    out = write_musicxml(score, tmp_path / "band.musicxml")
+    out = write_musicxml(score, tmp_path / "band.musicxml", band_sounds(arr))
     back = converter.parse(out)
 
     names = [p.partName for p in back.parts]
@@ -50,3 +50,12 @@ def test_arranger_keeps_melody_and_bass_and_respects_ranges():
     for part in arr.lineup.parts:
         for n in arr.parts[part.name]:
             assert part.instrument.check(n.pitch) != "impossible", (part.name, n.pitch)
+
+
+def test_instrument_sounds_are_written(tmp_path):
+    comp = _comp()
+    arr = arrange(comp)
+    out = write_musicxml(build_band_score(arr, comp), tmp_path / "band.musicxml", band_sounds(arr))
+    xml = out.read_text()
+    assert "<instrument-sound>brass.tuba</instrument-sound>" in xml
+    assert "<instrument-sound>brass.cornet</instrument-sound>" in xml

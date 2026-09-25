@@ -39,6 +39,7 @@ class Instrument:
     gm_program: int  # 0-based General MIDI program for playback
     musescore_id: str
     section: str
+    sound: str = ""  # MusicXML <instrument-sound> id (MuseScore sound library naming)
 
     def written(self, sounding: int) -> int:
         return sounding - self.chromatic
@@ -70,25 +71,25 @@ class Instrument:
 R = Role
 _INSTRUMENTS = [
     Instrument("eb-soprano-cornet", "Soprano Cornet in E♭", "Sop. Cnt.", 3, 2, "treble", (57, 87), (57, 84),
-               frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets"),
+               frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano"),
     Instrument("bb-cornet", "Cornet in B♭", "Cnt.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets"),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet"),
     Instrument("flugelhorn", "Flugelhorn in B♭", "Flug.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns"),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn"),
     Instrument("eb-tenor-horn", "Tenor Horn in E♭", "Hn.", -9, -5, "treble", (45, 75), (45, 72),
-               frozenset({R.COUNTERMELODY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.MELODY, R.SOLO}), 60, "eb-alto-horn", "horns"),
+               frozenset({R.COUNTERMELODY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.MELODY, R.SOLO}), 60, "eb-alto-horn", "horns", "brass.alto-horn"),
     Instrument("baritone", "Baritone in B♭", "Bar.", -14, -8, "treble", (40, 70), (40, 67),
-               frozenset({R.INNER_HARMONY, R.COUNTERMELODY, R.RHYTHMIC_SUPPORT}), 58, "baritone-horn-treble", "baritones"),
+               frozenset({R.INNER_HARMONY, R.COUNTERMELODY, R.RHYTHMIC_SUPPORT}), 58, "baritone-horn-treble", "baritones", "brass.baritone-horn"),
     Instrument("tenor-trombone", "Trombone in B♭", "Tbn.", -14, -8, "treble", (36, 74), (40, 71),
-               frozenset({R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.COUNTERMELODY, R.MELODY}), 57, "trombone-treble", "trombones"),
+               frozenset({R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.COUNTERMELODY, R.MELODY}), 57, "trombone-treble", "trombones", "brass.trombone"),
     Instrument("bass-trombone", "Bass Trombone", "B. Tbn.", 0, 0, "bass", (21, 77), (32, 65),
-               frozenset({R.BASS, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT}), 57, "bass-trombone", "trombones"),
+               frozenset({R.BASS, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT}), 57, "bass-trombone", "trombones", "brass.trombone.bass"),
     Instrument("euphonium", "Euphonium in B♭", "Euph.", -14, -8, "treble", (34, 74), (40, 70),
-               frozenset({R.COUNTERMELODY, R.MELODY, R.SOLO, R.INNER_HARMONY, R.BASS}), 58, "euphonium-treble", "euphoniums"),
-    Instrument("eb-bass", "Bass in E♭", "E♭ Bass", -21, -12, "treble", (24, 72), (26, 64),
-               frozenset({R.BASS, R.PEDAL, R.RHYTHMIC_SUPPORT}), 58, "eb-tuba-treble", "basses"),
-    Instrument("bb-bass", "Bass in B♭", "B♭ Bass", -26, -15, "treble", (22, 72), (28, 58),
-               frozenset({R.BASS, R.PEDAL}), 58, "bb-tuba-treble", "basses"),
+               frozenset({R.COUNTERMELODY, R.MELODY, R.SOLO, R.INNER_HARMONY, R.BASS}), 58, "euphonium-treble", "euphoniums", "brass.euphonium"),
+    Instrument("eb-bass", "E♭ Tuba", "E♭ Bass", -21, -12, "treble", (24, 72), (26, 64),
+               frozenset({R.BASS, R.PEDAL, R.RHYTHMIC_SUPPORT}), 58, "eb-tuba-treble", "basses", "brass.tuba"),
+    Instrument("bb-bass", "B♭ Tuba", "B♭ Bass", -26, -15, "treble", (22, 72), (28, 58),
+               frozenset({R.BASS, R.PEDAL}), 58, "bb-tuba-treble", "basses", "brass.tuba"),
 ]
 INSTRUMENTS: dict[str, Instrument] = {i.id: i for i in _INSTRUMENTS}
 

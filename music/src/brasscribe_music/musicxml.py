@@ -7,6 +7,8 @@ part is a single voice. Real voice separation belongs to a later stage.
 
 from __future__ import annotations
 
+import warnings
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -69,7 +71,7 @@ def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float]]:
 
 
 def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
-                pickup_ticks: int = 0, low_confidence: float = 0.6) -> stream.Score:
+                pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None) -> stream.Score:
     score = stream.Score()
     score.metadata = None
     from music21 import metadata
@@ -89,6 +91,8 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         for (pi, s, _, p), (step, alter, octave) in zip(flat, spell(on, du, ps)):
             spelled[(pi, s, p)] = pitch.Pitch(step=step, octave=octave, accidental=alter if alter else None)
         _, fifths = key_of(on, du, ps)
+    if key_fifths is not None:
+        fifths = key_fifths
 
     # Every part must span the same whole bars; MuseScore mis-handles ragged part lengths.
     bar = beats_per_bar * TICKS_PER_BEAT
@@ -103,11 +107,13 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         if pi == 0:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
         cursor = 0
+        dropped = 0
         for start, end, pitches, conf in _events(p.notes):
             tick = start
             start -= pickup_ticks
             end -= pickup_ticks
             if start < 0:
+                dropped += 1
                 continue
             if start > cursor:
                 part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(start - cursor) / TICKS_PER_BEAT))
@@ -120,18 +126,49 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             cursor = end
         if cursor < total:
             part.insert(cursor / TICKS_PER_BEAT, note.Rest(quarterLength=(total - cursor) / TICKS_PER_BEAT))
+        if dropped:
+            warnings.warn(f"{p.name}: {dropped} note(s) before the first bar were not written")
         score.insert(0, part)
     score = score.makeNotation()
     score.atSoundingPitch = True
     return score
 
 
-def write_musicxml(score: stream.Score, path: Path) -> Path:
-    """Write written-pitch MusicXML: transposing parts are converted exactly once, here."""
+def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | None = None) -> Path:
+    """Write written-pitch MusicXML: transposing parts are converted exactly once, here.
+
+    `sounds` maps part name -> <instrument-sound> id. music21 does not write that
+    element, and without it MuseScore guesses from the part name (it reads
+    "E♭ Bass" as a bass voice).
+    """
     written = score.toWrittenPitch(inPlace=False) if any(
         (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
     written.write("musicxml", fp=str(path))
+    if sounds:
+        _add_instrument_sounds(path, sounds)
     return path
+
+
+def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
+    import xml.etree.ElementTree as ET
+
+    raw = path.read_text(encoding="utf-8")
+    head, sep, _ = raw.partition("<score-partwise")
+    tree = ET.ElementTree(ET.fromstring(raw[len(head):]))
+    root = tree.getroot()
+    for sp in root.iter("score-part"):
+        name = (sp.findtext("part-name") or "").strip()
+        sound = sounds.get(name)
+        if not sound:
+            continue
+        for si in sp.iter("score-instrument"):
+            if si.find("instrument-sound") is None:
+                el = ET.Element("instrument-sound")
+                el.text = sound
+                # Schema order: instrument-name, instrument-abbreviation?, instrument-sound?
+                idx = 1 + (si.find("instrument-abbreviation") is not None)
+                si.insert(idx, el)
+    path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
 
 
 def build_band_score(arrangement, comp) -> stream.Score:
@@ -142,4 +179,9 @@ def build_band_score(arrangement, comp) -> stream.Score:
                  for n in arrangement.parts.get(part.name, [])]
         specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument))
     meter0 = comp.meters[0].beats if comp.meters else 4
-    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7)
+    fifths = comp.keys[0].fifths if comp.keys else None
+    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths)
+
+
+def band_sounds(arrangement) -> dict[str, str]:
+    return {p.name: p.instrument.sound for p in arrangement.lineup.parts if p.instrument.sound}
