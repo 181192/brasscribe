@@ -1,0 +1,70 @@
+"""Draft lead sheet: melody + bass lines -> quantized MusicXML (+ PDF via MuseScore).
+
+Melody is the top line of the melody source within a pitch window; bass is the
+bottom line of the bass source. Beats come from Beat This! (time, beat-in-bar).
+"""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+from collections import Counter
+from pathlib import Path
+
+import numpy as np
+from brasscribe_music.musicxml import PartSpec, build_score, write_musicxml
+from brasscribe_music.quantize import TICKS_PER_BEAT, quantize
+
+from .score import load_notes
+
+
+def line(notes: list[dict], lo: int, hi: int, top: bool, min_dur: float = 0.06) -> list[dict]:
+    """Extract a monophonic line: highest (or lowest) note among overlapping candidates."""
+    cand = sorted((n for n in notes if lo <= n["pitch"] <= hi and n["offset"] - n["onset"] >= min_dur),
+                  key=lambda n: n["onset"])
+    out: list[dict] = []
+    for n in cand:
+        if out and n["onset"] - out[-1]["onset"] < 0.05:
+            better = n["pitch"] > out[-1]["pitch"] if top else n["pitch"] < out[-1]["pitch"]
+            if better:
+                out[-1] = n
+            continue
+        out.append(n)
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--beats", type=Path, required=True)
+    ap.add_argument("--melody", type=Path, required=True)
+    ap.add_argument("--bass", type=Path, required=True)
+    ap.add_argument("--out", type=Path, required=True, help="output .musicxml")
+    ap.add_argument("--title", default="Draft")
+    ap.add_argument("--melody-range", default="52,86", help="MIDI lo,hi (default E3..D6, trumpet)")
+    ap.add_argument("--bass-range", default="28,55")
+    ap.add_argument("--pdf", action="store_true")
+    args = ap.parse_args()
+
+    b = np.loadtxt(args.beats)
+    times, pos = b[:, 0], b[:, 1].astype(int)
+    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
+    bpm = 60 / np.median(np.diff(times))
+    first_down = int(np.argmax(pos == 1))
+    pickup = first_down * TICKS_PER_BEAT
+
+    mlo, mhi = map(int, args.melody_range.split(","))
+    blo, bhi = map(int, args.bass_range.split(","))
+    melody = quantize(line(load_notes(args.melody), mlo, mhi, top=True), times, monophonic=True)
+    bass = quantize(line(load_notes(args.bass), blo, bhi, top=False), times, monophonic=True)
+
+    score = build_score([PartSpec("Melody", melody), PartSpec("Bass", bass, clef="bass")],
+                        beats_per_bar=int(beats_per_bar), bpm=float(bpm), title=args.title, pickup_ticks=pickup)
+    write_musicxml(score, args.out)
+    print(f"{args.out}: {len(melody)} melody / {len(bass)} bass notes, {beats_per_bar}/4 at {bpm:.0f} BPM")
+    if args.pdf:
+        subprocess.run(["mscore", "-o", str(args.out.with_suffix(".pdf")), str(args.out)], check=True, capture_output=True)
+        print(f"{args.out.with_suffix('.pdf')}")
+
+
+if __name__ == "__main__":
+    main()
