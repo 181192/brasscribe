@@ -243,6 +243,42 @@ Corrected results (100 ms):
 - Revisit with material where the tune is an inner voice.
 - In the score, melody notes Basic Pitch did not confirm keep confidence 0.6 and are **coloured red** as "unconfirmed". This is the first piece of the confidence display.
 
+## Arrangement (Milestone 7, minimal band)
+
+**Pipeline:**
+- `music/src/brasscribe_music/score_model.py`: the canonical Composition (concert pitch, ticks, voices tagged by role, confidence and sources). It is the only thing the arranger reads.
+- `arranger.py`: melody → Solo Cornet (octave chosen per phrase); bass → E♭ Bass (lowest comfortable octave) with B♭ Bass an octave lower where comfortable; inner parts voiced greedily per harmony slot.
+- `harmony.py`: dense accompaniment → per-beat pitch-class sets.
+- `musicxml.build_band_score`: transposing parts, converted to written pitch once at export.
+- Durations are snapped to notatable ticks (16th or triplet-8th positions).
+
+**Tests (`music/tests/test_band_export.py`):**
+- Export → re-import → sounding pitch equals the arranger's concert pitches in every part.
+- In concert F, B♭ parts read G major and E♭ parts D major.
+
+**Ground-truth benchmark (`eval/brasscribe_eval/arrange_bench.py`, no audio):**
+
+| Set | melody kept | bass kept | harmony fidelity | impossible | uncomfortable / piece | crossings |
+|---|---|---|---|---|---|---|
+| Chorales (10) | 1.00 | 1.00 | 0.99 | 0 | 0 | 0 |
+| URMP brass (8) | 1.00 | 1.00 | 0.98 | 0 | 3.8 | 0 |
+| Chorales, inner voices replaced by reduced harmonic rhythm | — | — | 0.98 | — | — | — |
+| URMP, same | — | — | 0.96 | — | — | — |
+
+**Fixes found by looking at rendered scores:**
+- Centring the bass octave squeezed five inner parts into an octave, forcing unisons. Basses now take their lowest comfortable octave.
+- B♭ Bass pedal notes are no longer used by default.
+- URMP's 23/24-beat MIDI durations produced 64th rests and 12:11 tuplets that MuseScore rejects. Tiny gaps are now held, and ends are snapped to notatable positions.
+
+**End-to-end Mikkel:** `data/mikkel/arranged/brass-band.{musicxml,pdf}`, from `arrange_song.py`.
+
+Visible limits:
+- Inner parts are block chords, one per beat. No rhythmic figuration or countermelody yet.
+- Trombone and euphonium still double often.
+- The bass is empty through the first ~29 bars; the bass stem has nothing there.
+- The melody contains many red, unconfirmed 16th runs, probably orchestral figuration rather than trumpet.
+- Percussion is deferred; drum transcription exists but no kit part is written yet.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.
