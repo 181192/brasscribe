@@ -42,3 +42,13 @@ def test_triple_dotted_rest_and_long_spans():
 
 def test_three_four_has_no_middle():
     assert _check(24, 72, bar=72) == [(24, 72)]
+
+
+def test_mixed_grid_ends_are_moved_to_clean_spans():
+    from brasscribe_music.musicxml import _clean_end, _clean_span
+    # A triplet quarter from the beat, next onset a 16th later than the triplet grid allows: 16 + 2 would be left.
+    e = _clean_end(0, 16, 18)
+    assert _clean_span(0, e) and (e == 18 or _clean_span(e, 18))
+    # The report case: a triplet-quarter note followed by a 26-tick rest.
+    e = _clean_end(0, 16, 42)
+    assert _clean_span(0, e) and _clean_span(e, 42)
