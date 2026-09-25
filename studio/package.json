@@ -1,0 +1,29 @@
+{
+  "name": "brasscribe-studio",
+  "version": "0.1.0",
+  "description": "Brasscribe Studio: browser workbench served by the engine",
+  "scripts": {
+    "gen:api": "openapi-typescript ../engine/openapi.json -o src/api/schema.d.ts",
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@coderline/alphatab": "^1.8.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.4",
+    "esbuild": "^0.28.2",
+    "happy-dom": "^20.14.5",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2"
+  },
+  "private": true,
+  "type": "module"
+}
