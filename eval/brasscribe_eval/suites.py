@@ -41,6 +41,7 @@ class Suite:
     requires: tuple[str, ...] = ()
     cpu: bool = True
     tools: tuple[str, ...] = field(default=())
+    ci: bool = False  # gates in CI on the redistributable data built by ci_data (ChoraleBricks + our outputs)
 
 
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
@@ -69,6 +70,19 @@ def _need(data: Path, *rels: str) -> None:
     missing = [r for r in rels if not (data / r).exists()]
     if missing:
         raise SkipSuite(f"missing data: {', '.join(missing)}")
+
+
+SETS = {"chorales": "choralebricks-brass4", "urmp": "urmp-brass"}
+SKIPPED = "__skipped__"  # metric key listing eval-set labels whose data was absent
+
+
+def _present(data: Path, out: dict, labels: tuple[str, ...] = ("chorales", "urmp")) -> list[tuple[str, str]]:
+    """(label, eval set) pairs whose data exists; absent ones are recorded as skipped parts of the suite."""
+    have = [(lb, SETS[lb]) for lb in labels if (data / "eval" / SETS[lb]).is_dir()]
+    if not have:
+        raise SkipSuite(f"missing data: {', '.join('eval/' + SETS[lb] for lb in labels)}")
+    out[SKIPPED] = [lb for lb in labels if lb not in dict(have)]
+    return have
 
 
 def _songs(d: Path) -> list[Path]:
@@ -252,9 +266,8 @@ def _solo_vote(data: Path, mode: str) -> dict[str, float]:
 def _arrange(data: Path, mode: str) -> dict[str, float]:
     from .arrange_bench import composition_from_reference, evaluate
 
-    _need(data, "eval/choralebricks-brass4", "eval/urmp-brass")
-    out = {}
-    for label, d in (("chorales", "choralebricks-brass4"), ("urmp", "urmp-brass")):
+    out: dict = {}
+    for label, d in _present(data, out):
         rows = [evaluate(composition_from_reference(s, s.name))[0] for s in _songs(data / "eval" / d)]
         for k in ("melody_kept", "bass_kept", "harmony_fidelity", "impossible", "uncomfortable", "crossings"):
             out[f"{label}.{k}"] = _mean(rows, k)
@@ -273,8 +286,10 @@ def _mikkel_arrangement(data: Path, out: Path) -> Path:
     layers = data / "mikkel/repro/layers"
     view = out / "layers"
     view.mkdir(parents=True)
-    for f in layers.glob("*.mid"):
-        (view / f.name).symlink_to(f.resolve())
+    # MIDI of every layer plus the layer audio (energy gate, separation check, dynamics, rehearsal marks).
+    for f in [*layers.glob("*.mid"), *(layers / f"{n}.wav" for n in ("solo", "bass", "drums", "orchestra"))]:
+        if f.exists():
+            (view / f.name).symlink_to(f.resolve())
     contour = layers / "solo-sw.contour.npz"
     if contour.exists():
         (view / contour.name).symlink_to(contour.resolve())
@@ -332,9 +347,8 @@ def _durations(data: Path, mode: str) -> dict[str, float]:
     """duration_bench: written-duration accuracy per rule, reference offsets and SwiftF0-contour offsets."""
     from .duration_bench import RULES, evaluate
 
-    _need(data, "eval/urmp-brass", "eval/choralebricks-brass4")
-    out: dict[str, float] = {}
-    for label, d in (("urmp", "urmp-brass"), ("chorales", "choralebricks-brass4")):
+    out: dict = {}
+    for label, d in _present(data, out):
         variants = [("", None)]
         contours = data / "runs" / "contours" / d
         if contours.is_dir():
@@ -351,18 +365,30 @@ def _durations(data: Path, mode: str) -> dict[str, float]:
 
 
 def _freetime(data: Path, mode: str) -> dict[str, float]:
-    """freetime_bench: strict-passage accuracy with and without free-time regions, and how often they fire."""
+    """freetime_bench: strict-passage accuracy with and without free-time regions, and how often they fire.
+
+    Reported per eval set, and over all pieces when every set is present."""
     from .freetime_bench import evaluate
 
-    _need(data, "eval/urmp-brass", "eval/choralebricks-brass4")
-    rows = [evaluate(song) for d in ("urmp-brass", "choralebricks-brass4") for song in _songs(data / "eval" / d)
-            if (song / "beat-this.beats").exists()]
-    out: dict[str, float] = {}
-    for v in ("grid", "free"):
-        for k in ("position", "subdivision", "duration"):
-            out[f"{v}.{k}"] = float(np.mean([r[v][k] for r in rows]))
-    out["pieces_with_regions"] = float(sum(bool(r["regions"]) for r in rows))
-    out["pieces"] = float(len(rows))
+    out: dict = {}
+    every = []
+    for label, d in _present(data, out):
+        rows = [evaluate(song) for song in _songs(data / "eval" / d) if (song / "beat-this.beats").exists()]
+        every += rows
+        for prefix, rs in ((label, rows),):
+            for v in ("grid", "free"):
+                for k in ("position", "subdivision", "duration"):
+                    out[f"{prefix}.{v}.{k}"] = float(np.mean([r[v][k] for r in rs]))
+            out[f"{prefix}.pieces_with_regions"] = float(sum(bool(r["regions"]) for r in rs))
+            out[f"{prefix}.pieces"] = float(len(rs))
+    if not out[SKIPPED]:
+        for v in ("grid", "free"):
+            for k in ("position", "subdivision", "duration"):
+                out[f"{v}.{k}"] = float(np.mean([r[v][k] for r in every]))
+        out["pieces_with_regions"] = float(sum(bool(r["regions"]) for r in every))
+        out["pieces"] = float(len(every))
+    else:
+        out[SKIPPED] = out[SKIPPED] + ["grid", "free", "pieces_with_regions", "pieces"]
     return out
 
 
@@ -391,7 +417,7 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("chorales-transcription", "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
           _transcription("choralebricks-brass4", {m: _CHORALE_KEYS for m in [
               "basic-pitch", "muscriptor-medium", "muscriptor-large", "muscriptor-medium-brass", "muscriptor-large-brass"]}),
-          ("eval/choralebricks-brass4",)),
+          ("eval/choralebricks-brass4",), ci=True),
     Suite("urmp-transcription", "transcription per model on URMP brass (cached MIDI)",
           _transcription("urmp-brass", {m: ["onset_f1", "onset100_f1", "octave_err_rate"] for m in ["basic-pitch", "muscriptor-medium"]}),
           ("eval/urmp-brass",)),
@@ -400,13 +426,13 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
               "basic-pitch", "muscriptor-medium", "pipeB-sw-muscriptor", "pipeB-sw-basicpitch"]}),
           ("eval/slakh-trumpet",)),
     Suite("quant-chorales", "beat grid + quantizer vs notated positions, chorales", _quant("choralebricks-brass4"),
-          ("eval/choralebricks-brass4",)),
+          ("eval/choralebricks-brass4",), ci=True),
     Suite("quant-urmp", "beat grid + quantizer vs notated positions, URMP", _quant("urmp-brass"), ("eval/urmp-brass",)),
     Suite("melody", "melody top line from MuScriptor/Basic Pitch consensus", _melody,
           ("eval/slakh-trumpet", "eval/urmp-brass", "eval/choralebricks-brass4")),
     Suite("consensus-chorales", "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
           _consensus("choralebricks-brass4", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)],
-                     [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",)),
+                     [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",), ci=True),
     Suite("consensus-urmp", "MuScriptor + Basic Pitch consensus on URMP brass",
           _consensus("urmp-brass", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)], [0.8]),
           ("eval/urmp-brass",)),
@@ -417,21 +443,22 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("solo-vote", "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)", _solo_vote,
           ("mega53-out-bench", "eval/choralebricks-brass4", "eval/slakh-trumpet")),
     Suite("arrange", "minimal-band arranger on ground-truth scores (no audio)", _arrange,
-          ("eval/choralebricks-brass4", "eval/urmp-brass")),
+          ("eval/choralebricks-brass4", "eval/urmp-brass"), ci=True),
     Suite("mikkel-golden", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
           ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
     Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
           _readability, ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
     Suite("durations", "written durations and staccato from performed lengths (duration_bench)", _durations,
-          ("eval/urmp-brass", "eval/choralebricks-brass4")),
+          ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
-          ("eval/urmp-brass", "eval/choralebricks-brass4")),
+          ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", "golden/mikkel-arranged-band"), tools=("mscore",)),
 ]}
 
 GROUPS = {
     "cpu": [n for n, s in SUITES.items() if s.cpu],
+    "ci": [n for n, s in SUITES.items() if s.ci],
     "all": list(SUITES),
 }
 
@@ -443,7 +470,9 @@ def run_suite(name: str, mode: str = "cached", data: Path | None = None) -> dict
     t0 = time.time()
     try:
         metrics = suite.fn(Path(data or DATA), mode)
-        return {"suite": name, "status": "ran", "metrics": metrics, "seconds": round(time.time() - t0, 2)}
+        skipped = metrics.pop(SKIPPED, [])
+        return {"suite": name, "status": "ran", "metrics": metrics, "skipped_parts": skipped,
+                "seconds": round(time.time() - t0, 2)}
     except SkipSuite as e:
         return {"suite": name, "status": "skipped", "reason": str(e), "metrics": {}, "seconds": round(time.time() - t0, 2)}
     except Exception as e:  # noqa: BLE001 - a broken suite is a failure, not a crash of the whole run
@@ -478,7 +507,9 @@ def gate(results: list[dict], baselines: dict | None = None, allow_improved: boo
                 tol = spec.get("tolerance", default_tol)
                 higher = spec.get("higher_is_better", True)
                 v = r["metrics"].get(metric)
-                if v is None:
+                if v is None and (metric.split(".")[0] in r.get("skipped_parts", []) or metric in r.get("skipped_parts", [])):
+                    status = "skipped"
+                elif v is None:
                     status = "missing"
                 else:
                     d = v - spec["value"]
@@ -503,9 +534,13 @@ def format_report(report: dict) -> str:
         head = f"{s['suite']:22s} {s['status'].upper():8s} {s['seconds']:6.1f}s"
         if s.get("reason"):
             head += f"  ({s['reason']})"
+        if s.get("skipped_parts"):
+            head += f"  (no data for: {', '.join(s['skipped_parts'])})"
         lines.append(head)
         for c in s["checks"]:
             if c["status"] != "pass" or True:
+                if c["status"] == "skipped":
+                    continue
                 mark = {"pass": " ", "improved": "+", "regressed": "!", "missing": "?"}.get(c["status"], " ")
                 val = "-" if c["value"] is None else f"{c['value']:.3f}"
                 lines.append(f"   {mark} {c['metric']:38s} {val:>7s}  baseline {c['baseline']:.3f} ±{c['tolerance']}  {c['status']}")

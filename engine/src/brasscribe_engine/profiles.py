@@ -44,8 +44,9 @@ def _transcribe(layer: str, tool: str, suffix: str, src: Input, reuse_subdir: st
 
 
 def _export(arrange: str, audio: bool) -> Stage:
-    return Stage("export", "export", {"musicxml": Input(arrange, "brass-band.musicxml")}, S.export,
-                 params={"audio": audio}, code=(THIS,), outputs=("export.json",))
+    code = (THIS, S.PART_STYLE) if S.PART_STYLE.exists() else (THIS,)
+    return Stage("export", "export", {"score": Input(arrange)}, S.export, params={"audio": audio}, code=code,
+                 outputs=("export.json",))
 
 
 def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
@@ -55,6 +56,9 @@ def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
         "brass-band.pdf": ("export", "brass-band.pdf"),
         "brass-band.mid": ("export", "brass-band.mid"),
         "brass-band.mp3": ("export", "brass-band.mp3"),
+        "separation-check.json": (arrange, "separation-check.json"),
+        "parts/": (arrange, "parts/"),  # a trailing slash copies every file under that directory
+        "parts-pdf/": ("export", "parts/"),
     }
 
 
@@ -90,6 +94,9 @@ def layered(title: str, params: dict) -> Pipeline:
                     adapter="swift-f0-contour", params={"output": "solo-sw.contour.npz"},
                     outputs=("solo-sw.contour.npz",), reuse_subdir="layers"))
     arrange_inputs["solo-sw.contour.npz"] = Input("contour.solo.swift-f0", "solo-sw.contour.npz")
+    # Layer audio: energy gate, separation check, dynamics and rehearsal marks read it.
+    for layer in LAYER_TOOLS:
+        arrange_inputs[f"{layer}.wav"] = Input("layers", f"{layer}.wav")
     st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params={"title": title},
                     code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))

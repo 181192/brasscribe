@@ -11,18 +11,28 @@ recording's strings, keys and orchestral brass apart reliably:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from collections import Counter
 from pathlib import Path
 
 import numpy as np
 import pretty_midi
+import soundfile as sf
 from brasscribe_music.arranger import arrange_layers
+from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time
+from brasscribe_music.beats import clean_beats_gated
+from brasscribe_music.keys import key_plan
+from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.parts import STYLE as PART_STYLE
+from brasscribe_music.parts import split_parts
+from brasscribe_music.structure import bar_features, letters, section_starts
+from brasscribe_music.separation import check_stem
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
-from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from brasscribe_music.dynamics import layer_dynamics
+from brasscribe_music.score_model import Dynamic, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
@@ -48,10 +58,13 @@ def split_orchestra(notes: list[Note]) -> tuple[list[Note], list[Note]]:
     return hits, [n for n in notes if id(n) not in hit_ids]
 
 
+PART_HOLD_WITHIN = TICKS_PER_BEAT // 2  # detached notes are written as (staccato) 8ths in band parts, not 16ths and rests
+
+
 def written_line(qnotes, times: np.ndarray, pickup: int, source: str) -> list[Note]:
     """One voice with written durations from its performed lengths (held vs detached, staccato)."""
     out = []
-    for q, w in apply_written(qnotes, BeatMap(times)):
+    for q, w in apply_written(qnotes, BeatMap(times), hold_within=PART_HOLD_WITHIN, min_detached=PART_HOLD_WITHIN):
         n = to_notes([q], pickup, source)[0]
         n.performed_dur = int(round(w.performed))
         if w.staccato:
@@ -66,10 +79,13 @@ def main() -> None:
     ap.add_argument("--beats", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--title", default="Draft")
-    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF/MP3 export")
+    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF/MP3 export of the score and parts")
     ap.add_argument("--solo-contour", type=Path,
                     help="SwiftF0 contour of the solo stem (swiftf0_contour.py); default <layers>/solo-sw.contour.npz if present")
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
+    ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
+    ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
+    ap.add_argument("--single-key", action="store_true", help="one key signature for the whole piece")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
@@ -79,20 +95,49 @@ def main() -> None:
     bass_raw = pitched(L / "bass-mus.mid")
     orch_raw = pitched(L / "orchestra-mus.mid")
     drum_raw = drums_of(L / "drums-mus.mid")
+    if not args.no_gate:
+        # Drop notes a layer's transcriber found where that layer is (nearly) silent: bleed and residue.
+        for name, raw in (("bass", bass_raw), ("orchestra", orch_raw), ("drums", drum_raw)):
+            if (L / f"{name}.wav").exists():
+                y, sr = sf.read(L / f"{name}.wav", dtype="float32")
+                kept, dropped = gate(raw, Envelope.of(y, sr))
+                raw[:] = kept
+                print(f"gate {name}: dropped {dropped}")
+
+    # Does the solo stem contain the soloist? The layers sum to the mix (the orchestra is the residual).
+    layer_wavs = [L / f"{n}.wav" for n in ("solo", "bass", "drums", "orchestra")]
+    if all(f.exists() for f in layer_wavs):
+        audio = [sf.read(f, dtype="float32") for f in layer_wavs]
+        n_min = min(len(y) for y, _ in audio)
+        check = check_stem(audio[0][0][:n_min], sum(y[:n_min] for y, _ in audio), audio[0][1])
+        print(check.summary())
+        (args.out / "separation-check.json").write_text(json.dumps(
+            {"stem_minus_mix_db": check.stem_minus_mix_db, "failed": check.failed, "quiet_windows": check.quiet_windows}))
+        del audio
 
     b = np.loadtxt(args.beats)
     pos = b[:, 1].astype(int)
     beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
-    first_down = int(np.argmax(pos == 1))
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
-    times = choose_level(b[:, 0], onsets)
-    doubled = len(times) != len(b)
+    down = pos == 1
+    raw_times = b[:, 0]
+    if not args.no_beat_cleanup:
+        # Restore missed and remove inserted beats (outside free time); the bar phase follows
+        # the majority of the tracker's downbeat labels.
+        cb = clean_beats_gated(raw_times, down, int(beats_per_bar), skip=unstable_runs(raw_times), onsets=onsets)
+        raw_times, down = cb.times, cb.downbeat
+        print(f"beats: {'cleaned' if cb.applied else 'kept as tracked'}, +{cb.inserted} restored, -{cb.removed} removed")
+        first_down = cb.phase(int(beats_per_bar))
+    else:
+        first_down = int(np.argmax(down))
+    times = choose_level(raw_times, onsets)
+    doubled = len(times) != len(raw_times)
     if doubled:
         beats_per_bar *= 2
         first_down *= 2
     plan = None
     if not args.no_free_time:
-        plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else pos == 1,
+        plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else down,
                               tempo=args.free_tempo, tempo_onsets=np.array([n["onset"] for n in pitched(L / "solo-sw.mid")]))
         times, first_down = plan.beat_times, plan.first_downbeat
     coarse = plan.beat_ranges if plan else None
@@ -150,6 +195,28 @@ def main() -> None:
     tonal = solo + bass + lines
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
     comp.keys = [KeySig(0, fifths)]
+    if not args.single_key:
+        # Key changes where the music modulates (a change must pay for itself over several bars).
+        comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass).keys
+    # Dynamics per layer from its own loudness, per bar.
+    bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
+    bm = BeatMap(np.array(comp.beat_times))
+    n_bars = comp.end_tick // bar_ticks + 1
+    edges = bm.to_seconds(np.arange(n_bars + 1) * beats_per_bar + first_down)
+    bars = [(k * bar_ticks, float(edges[k]), float(edges[k + 1])) for k in range(n_bars)]
+    envs = {}
+    for wav in ("solo", "orchestra", "bass", "drums"):
+        if (L / f"{wav}.wav").exists():
+            y, sr = sf.read(L / f"{wav}.wav", dtype="float32")
+            envs[wav] = Envelope.of(y, sr)
+    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")):
+        if wav in envs:
+            comp.dynamics += [Dynamic(t, layer, m) for t, m in layer_dynamics(envs[wav], bars)]
+    # Rehearsal letters where the layers' energy changes, and where free time ends.
+    if envs:
+        starts = section_starts(bar_features(list(envs.values()), bars), [r.end // bar_ticks for r in comp.free_regions])
+        comp.sections = [Section(b * bar_ticks, lab) for b, lab in zip(starts, letters(len(starts)))]
+        print("rehearsal marks at bars", [(s.label, s.tick // bar_ticks + 1) for s in comp.sections])
     comp.to_json(args.out / "composition.json")
 
     arr = arrange_layers(comp)
@@ -158,10 +225,21 @@ def main() -> None:
         f = xml.with_suffix(f".{ext}")
         f.unlink(missing_ok=True)
         subprocess.run(["mscore", "-o", str(f), str(xml)], capture_output=True)
+    # Individual parts (mscore -P crashes): one MusicXML per part, rendered one by one.
+    for f in split_parts(xml, args.out / "parts"):
+        if args.no_render:
+            continue
+        pdf = f.with_suffix(".pdf")
+        pdf.unlink(missing_ok=True)
+        subprocess.run(["mscore", "-S", str(PART_STYLE), "-o", str(pdf), str(f)], capture_output=True)
+        if not pdf.exists():
+            print(f"(no pdf for {f.name})")
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
-    print(f"key fifths {fifths}; warnings {len(arr.warnings)}")
+    print("dynamics:", {layer: [m for d in comp.dynamics if d.layer == layer for m in [d.mark]] for layer in ("solo", "strings", "bass", "drums")})
+    print(f"key fifths {fifths}; keys {[(k.tick // (int(beats_per_bar) * TICKS_PER_BEAT) + 1, k.fifths, k.mode) for k in comp.keys]}; "
+          f"warnings {len(arr.warnings)}")
     for r in comp.free_regions:
         print(f"free time {r.start_s:.2f}-{r.end_s:.2f} s -> ticks {r.start}-{r.end} at {r.tempo_bpm:.1f} BPM ({r.notation.value})")
     print(xml, "pdf" if xml.with_suffix(".pdf").exists() else "(no pdf)", "mp3" if xml.with_suffix(".mp3").exists() else "(no mp3)")

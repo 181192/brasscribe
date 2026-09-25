@@ -61,6 +61,7 @@ class Comparison:
     composition_identical: bool
     musicxml_identical: bool
     parts: list[PartDiff] = field(default_factory=list)
+    extra_files: dict[str, bool] = field(default_factory=dict)  # other score outputs the reference has: identical?
 
     @property
     def parts_identical(self) -> int:
@@ -72,7 +73,7 @@ class Comparison:
 
     @property
     def ok(self) -> bool:
-        return self.composition_identical and self.musicxml_identical
+        return self.composition_identical and self.musicxml_identical and all(self.extra_files.values())
 
     def to_dict(self) -> dict:
         return {**asdict(self), "ok": self.ok, "parts_identical": self.parts_identical, "parts_total": len(self.parts),
@@ -83,6 +84,8 @@ class Comparison:
                  f"MusicXML          {'identical' if self.musicxml_identical else 'DIFFERENT'} (ids and date canonicalised)"]
         for p in self.parts:
             lines.append(f"  {p.name:18s} notes={p.notes:5d} ref={p.reference_notes:5d} {'OK' if p.identical else 'DIFF'}")
+        for name, same in self.extra_files.items():
+            lines.append(f"{name:40s} {'identical' if same else 'DIFFERENT'}")
         lines.append(f"parts identical {self.parts_identical}/{len(self.parts)}, notes in identical parts "
                      f"{self.notes_identical}/{sum(p.reference_notes for p in self.parts)}")
         return "\n".join(lines)
@@ -101,4 +104,12 @@ def compare(candidate: Path, reference: Path) -> Comparison:
         diffs.append(PartDiff(name, other[2] if other else 0, n, bool(other and other[0] == name and other[1] == body)))
     for name, _, n in pa[len(pb):]:
         diffs.append(PartDiff(name, n, 0, False))
-    return Comparison(comp_same, xml_same, diffs)
+    extra = {}
+    ref_parts = sorted((reference / "parts").glob("*.musicxml")) if (reference / "parts").is_dir() else []
+    for f in ref_parts:
+        mine = candidate / "parts" / f.name
+        extra[f"parts/{f.name}"] = mine.exists() and canonical_musicxml(mine.read_text()) == canonical_musicxml(f.read_text())
+    if (reference / "separation-check.json").exists():
+        mine = candidate / "separation-check.json"
+        extra["separation-check.json"] = mine.exists() and mine.read_bytes() == (reference / "separation-check.json").read_bytes()
+    return Comparison(comp_same, xml_same, diffs, extra)

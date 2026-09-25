@@ -104,7 +104,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     def outputs_of(job: Job) -> list[str]:
         d = jobs.run_dir(job.id) / "outputs"
-        return sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file()) if d.is_dir() else []
 
     def job_model(job: Job) -> m.Job:
         stages = list(job.stages.values())
@@ -116,13 +116,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
-        if name == "manifest.json":
-            p = jobs.run_dir(job.id) / "manifest.json"
-        else:
-            p = jobs.run_dir(job.id) / "outputs" / name
-        if "/" in name or ".." in name or not p.is_file():
+        root = jobs.run_dir(job.id) if name == "manifest.json" else jobs.run_dir(job.id) / "outputs"
+        p = (root / name).resolve()
+        if not inspection.inside(root, p) or not p.is_file():
             raise HTTPException(404, f"{name} not available for job {job_id} (status {job.status})")
-        return FileResponse(p, media_type=MEDIA.get(name, "application/octet-stream"), filename=name)
+        return FileResponse(p, media_type=media_type(name), filename=p.name)
 
     # ------------------------------------------------------------ session
 
@@ -290,7 +288,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         return [m.Artifact(name=n, bytes=(d / n).stat().st_size, media_type=MEDIA.get(n, "application/octet-stream"),
                            url=f"/v1/jobs/{job.id}/artifacts/{n}") for n in outputs_of(job)]
 
-    @app.get("/v1/jobs/{job_id}/artifacts/{name}", operation_id="getJobArtifact", tags=["results"],
+    @app.get("/v1/jobs/{job_id}/artifacts/{name:path}", operation_id="getJobArtifact", tags=["results"],
              dependencies=[Depends(auth)], response_class=FileResponse,
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_artifact(job_id: str, name: str):

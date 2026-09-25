@@ -120,3 +120,14 @@ def test_studio_placeholder_served(client):
 def test_committed_openapi_matches_app():
     committed = (ENGINE / "openapi.json").read_text()
     assert committed == openapi.render(), "engine/openapi.json is stale: run `pixi run openapi`"
+
+
+def test_serve_banner_lists_lan_url_and_pairing_code(settings):
+    from brasscribe_engine.cli import serve_banner
+
+    app = create_app(settings)
+    url, lines = serve_banner(app, "0.0.0.0", 8765)
+    assert url == "http://127.0.0.1:8765/"
+    assert any(line.startswith("LAN URL: ") for line in lines)
+    assert any(app.state.pairing.code in line for line in lines)
+    assert serve_banner(app, "127.0.0.1", 8765)[1] == ["brasscribe engine on http://127.0.0.1:8765/"]

@@ -1,9 +1,11 @@
-"""Model adapters: subprocesses behind the `run.sh <input> <output>` contract.
+"""Model adapters: subprocesses behind the `<input> <output>` contract.
 
 Each adapter lives in `<adapters_dir>/<name>/` with its own environment (uv
 project, or the pixi environment of the same name when
-BRASSCRIBE_ADAPTER_RUNNER=pixi). The engine never imports model code; it only
-runs `run.sh` and records what ran:
+BRASSCRIBE_ADAPTER_RUNNER=pixi). The engine never imports model code; it runs
+`<adapters_dir>/run_adapter.py <name> <input> <output>` with its own Python (the
+same runner every run.sh delegates to, so it works on Windows too; an adapter
+dir without the runner falls back to run.sh) and records what ran:
 
   fingerprint  digest of the adapter's pyproject, lockfile and scripts
   version      the adapter project version
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 import os
 import platform
+import sys
 import shutil
 import subprocess
 import time
@@ -121,6 +124,9 @@ class AdapterRegistry:
             for rel in a.scripts:
                 p = self.dir(name) / rel
                 parts.append(f"{rel}:{sha256_bytes(p.read_bytes()) if p.exists() else '-'}")
+            runner = self.root / "run_adapter.py"
+            if runner.exists():
+                parts.append(f"run_adapter.py:{sha256_bytes(runner.read_bytes())}")
             parts.extend(f"{k}={v}" for k, v in a.env)
             self._fingerprints[name] = sha256_bytes("\n".join(parts).encode())
         return self._fingerprints[name]
@@ -177,14 +183,18 @@ class AdapterRegistry:
         a = self.get(name)
         if a.heavy and not allow_heavy:
             raise HeavyRunRefused(f"{name} would run on {src.name}, but heavy runs are disabled (cache miss)")
-        script = self.script(name)
-        if not script.exists():
-            raise AdapterError(f"adapter script not found: {script}")
+        runner = self.root / "run_adapter.py"
+        if runner.exists():
+            cmd = [sys.executable, str(runner), name, str(src), str(dst)]
+        elif self.script(name).exists():
+            cmd = [str(self.script(name)), str(src), str(dst)]
+        else:
+            raise AdapterError(f"no run_adapter.py or {self.script(name)}")
         full_env = {**os.environ, **dict(a.env), **(env or {})}
         t0 = time.time()
 
         def call():
-            proc = subprocess.run([str(script), str(src), str(dst)], env=full_env, capture_output=True, text=True)
+            proc = subprocess.run(cmd, env=full_env, capture_output=True, text=True)
             if proc.returncode != 0:
                 raise AdapterError(f"{name} failed ({proc.returncode}): {(proc.stderr or proc.stdout)[-2000:]}")
 
