@@ -9,6 +9,8 @@ shutdown after writing, so the files are checked, not the exit code.
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import subprocess
 from pathlib import Path
@@ -38,7 +40,7 @@ def main() -> None:
     cut.write("musicxml", fp=str(tmp))
     for old in args.out.parent.glob(f"{args.out.stem}*{args.out.suffix}"):
         old.unlink()
-    subprocess.run(["mscore", "-o", str(args.out), str(tmp)], capture_output=True)
+    musescore.convert(tmp, args.out)
     made = sorted(args.out.parent.glob(f"{args.out.stem}*{args.out.suffix}"))
     if not made:
         raise SystemExit("MuseScore wrote nothing")

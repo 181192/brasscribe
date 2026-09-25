@@ -8,6 +8,8 @@ harmonic rhythm. Beats come from Beat This!; tick 0 is the first downbeat.
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import subprocess
 from collections import Counter
@@ -87,7 +89,7 @@ def main() -> None:
     pdf = xml.with_suffix(".pdf")
     if not args.no_render:
         pdf.unlink(missing_ok=True)
-        subprocess.run(["mscore", "-o", str(pdf), str(xml)], capture_output=True)
+        musescore.convert(xml, pdf)
     print(f"{len(melody)} melody / {len(bass)} bass / {len(harm)} harmony notes, {len(arr.warnings)} warnings")
     print(xml, pdf if pdf.exists() else "(no PDF)")
 

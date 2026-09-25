@@ -128,7 +128,9 @@ def roundtrip(outputs: Path) -> dict:
     """MuseScore round trip of a run's MusicXML (brasscribe_eval.musescore_roundtrip), run in a temp copy."""
     from brasscribe_eval.musescore_roundtrip import check
 
-    mscore = shutil.which("mscore")
+    from brasscribe_music import musescore
+
+    mscore = musescore.binary()
     if not mscore:
         return {"status": "not_run", "musescore": None, "detail": "mscore (MuseScore CLI) not installed"}
     with tempfile.TemporaryDirectory() as tmp:

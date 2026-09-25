@@ -129,22 +129,20 @@ def export(ctx: StageContext) -> None:
     score = ctx.inputs["score"]
     xml = score / "brass-band.musicxml"
     formats = ["pdf", "mid"] + (["mp3"] if ctx.params.get("audio", True) else [])
-    mscore = shutil.which("mscore")
+    from brasscribe_music import musescore
+
+    mscore = musescore.binary()
     written = []
-    for ext in formats if mscore else []:
-        dst = ctx.out / f"brass-band.{ext}"
-        subprocess.run([mscore, "-o", str(dst), str(xml)], capture_output=True)
-        if not dst.exists():
-            raise StageFailed(ctx.stage.name, f"MuseScore did not write {dst.name}")
-        written.append(dst.name)
-    for part in sorted((score / "parts").glob("*.musicxml")) if mscore else []:
-        dst = ctx.out / "parts" / part.with_suffix(".pdf").name
-        dst.parent.mkdir(exist_ok=True)
-        style = ["-S", str(PART_STYLE)] if PART_STYLE.exists() else []
-        subprocess.run([mscore, *style, "-o", str(dst), str(part)], capture_output=True)
-        if not dst.exists():
-            raise StageFailed(ctx.stage.name, f"MuseScore did not write parts/{dst.name}")
-        written.append(f"parts/{dst.name}")
+    if mscore:
+        dsts = [ctx.out / f"brass-band.{ext}" for ext in formats]
+        parts = sorted((score / "parts").glob("*.musicxml"))
+        part_dsts = [ctx.out / "parts" / part.with_suffix(".pdf").name for part in parts]
+        missing = musescore.convert_many([(xml, dsts)])
+        missing += musescore.convert_many(list(zip(parts, part_dsts)),
+                                          style=PART_STYLE if PART_STYLE.exists() else None)
+        if missing:
+            raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
+        written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
     if not mscore:
         ctx.log("mscore not found: PDF, MIDI and MP3 skipped")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,

@@ -51,6 +51,14 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from dsp import SR, apply_eq  # noqa: E402
+
+# Shared MuseScore launcher (batched, one instance at a time); stdlib-only, loaded by path.
+import importlib.util  # noqa: E402
+
+_ms_spec = importlib.util.spec_from_file_location(
+    "brasscribe_musescore", Path(__file__).resolve().parents[1] / "music/src/brasscribe_music/musescore.py")
+musescore = importlib.util.module_from_spec(_ms_spec)
+_ms_spec.loader.exec_module(musescore)
 from humanize import TPB, Performance, ScoreNote, humanize  # noqa: E402
 
 BUILT = ROOT / "data" / "sounds" / "built"
@@ -107,7 +115,7 @@ def to_midi(score: Path, work: Path) -> Path:
     if score.suffix.lower() in (".mid", ".midi"):
         return score
     out = work / (score.stem + ".mid")
-    subprocess.run(["mscore", "-o", str(out), str(score)], capture_output=True)  # exits non-zero after writing
+    musescore.convert(score, out)
     if not out.exists():
         raise SystemExit(f"MuseScore did not write {out}")
     return out
