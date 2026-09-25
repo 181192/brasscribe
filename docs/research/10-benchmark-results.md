@@ -207,6 +207,42 @@ Corrected results (100 ms):
   - Air on the G String and the Chorale stay ambiguous; their notated beat is a convention the audio cannot fully determine.
 - **Remaining position errors** are beat insertions/deletions (drift in bar count). The next steps are downbeat-constrained beat cleanup and a UI step to confirm meter and pickup.
 
+## Notation: spelling, durations, melody line
+
+**Pitch spelling (`music/src/brasscribe_music/spelling.py`).**
+- partitura's ps13s1 runs on the whole ensemble at concert pitch.
+- Ground truth is `pitch_written_name` in the ChoraleBricks alignments. `pitch_name` there is naive MIDI naming, not the score's spelling.
+- Accuracy: **99.9%** (2 errors in 1 887), against 99.1% for naive sharp naming.
+- ps13 emits double flats in dense chromatic runs, so they are rewritten to single accidentals.
+- The key comes from partitura's Krumhansl–Kessler estimate on the same notes.
+
+**Notated durations (`quantize.fill_gaps`).**
+- Each note in a voice is held until the next onset when the gap is ≤ an 8th.
+- Scored against the notated length (±1/24 tolerance; URMP score MIDI stores a quarter as 23/24).
+
+| Variant | URMP brass | Chorales |
+|---|---|---|
+| Performed length, snapped | 0.58 | 0.85 |
+| **Fill gaps ≤ 8th** (adopted) | **0.61** | **0.88** |
+| Fill gaps ≤ beat | 0.61 | 0.88 |
+
+- The dominant remaining error on URMP is 899 notes where the score has an 8th plus an 8th rest and we write a quarter (staccato themes in Surprise and Slavonic).
+- That is a notation choice audio cannot settle. It should become staccato marks when the performed length is under half the written one.
+
+**Melody line (`eval/brasscribe_eval/melody_bench.py`).**
+- Cases: Slakh trumpet, URMP track 1, chorale soprano. Metric: onset F1 at 100 ms.
+
+| Candidates → top line | Slakh | URMP | Chorales | mean |
+|---|---|---|---|---|
+| Union of MuScriptor + Basic Pitch | 0.36 | 0.55 | 0.36 | 0.42 |
+| **MuScriptor-supported** (confidence ≥ 0.5) | 0.65 | **0.72** | **0.90** | **0.76** |
+| Agreement only | **0.67** | 0.65 | 0.80 | 0.71 |
+
+- Basic Pitch's false positives (mostly upper harmonics) sit above the melody. The top line must only see notes MuScriptor supports.
+- A Viterbi picker (salience minus leap penalty) never beat the top line in a parameter sweep. In these sets the melody is almost always the top voice, so there is nothing for it to win. It was removed.
+- Revisit with material where the tune is an inner voice.
+- In the score, melody notes Basic Pitch did not confirm keep confidence 0.6 and are **coloured red** as "unconfirmed". This is the first piece of the confidence display.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.

@@ -13,8 +13,9 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.musicxml import PartSpec, build_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, quantize
+from brasscribe_music.quantize import TICKS_PER_BEAT, fill_gaps, quantize
 
+from .consensus import consensus
 from .score import load_notes
 
 
@@ -36,7 +37,8 @@ def line(notes: list[dict], lo: int, hi: int, top: bool, min_dur: float = 0.06) 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--beats", type=Path, required=True)
-    ap.add_argument("--melody", type=Path, required=True)
+    ap.add_argument("--melody", type=Path, required=True, help="primary melody source (MuScriptor)")
+    ap.add_argument("--melody-support", type=Path, help="second opinion (Basic Pitch); unconfirmed notes are flagged")
     ap.add_argument("--bass", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True, help="output .musicxml")
     ap.add_argument("--title", default="Draft")
@@ -54,11 +56,17 @@ def main() -> None:
 
     mlo, mhi = map(int, args.melody_range.split(","))
     blo, bhi = map(int, args.bass_range.split(","))
-    melody = quantize(line(load_notes(args.melody), mlo, mhi, top=True), times, monophonic=True)
-    bass = quantize(line(load_notes(args.bass), blo, bhi, top=False), times, monophonic=True)
+    # Melody = top line over MuScriptor-supported notes (best on melody_bench); notes the
+    # second model did not confirm keep confidence 0.6 and are flagged in the score.
+    sources = {"mus": load_notes(args.melody)}
+    if args.melody_support:
+        sources["bp"] = load_notes(args.melody_support)
+    cand, _ = consensus(sources, {"mus": 0.6, "bp": 0.4}, 0.5)
+    melody = fill_gaps(quantize(line(cand, mlo, mhi, top=True), times, monophonic=True), TICKS_PER_BEAT // 2)
+    bass = fill_gaps(quantize(line(load_notes(args.bass), blo, bhi, top=False), times, monophonic=True), TICKS_PER_BEAT // 2)
 
     score = build_score([PartSpec("Melody", melody), PartSpec("Bass", bass, clef="bass")],
-                        beats_per_bar=int(beats_per_bar), bpm=float(bpm), title=args.title, pickup_ticks=pickup)
+                        beats_per_bar=int(beats_per_bar), bpm=float(bpm), title=args.title, pickup_ticks=pickup, low_confidence=0.7)
     write_musicxml(score, args.out)
     print(f"{args.out}: {len(melody)} melody / {len(bass)} bass notes, {beats_per_bar}/4 at {bpm:.0f} BPM")
     if args.pdf:

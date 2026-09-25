@@ -125,3 +125,26 @@ def _monophonize(notes: list[QNote]) -> list[QNote]:
             kept[-1].end = q.start
         kept.append(q)
     return kept
+
+
+def fill_gaps(notes: list[QNote], max_gap_ticks: int = TICKS_PER_BEAT, min_ratio: float = 0.0) -> list[QNote]:
+    """Infer notated durations in one voice: hold each note until the next onset.
+
+    Players release notes early (staccato, breathing), so performed lengths
+    under-read the written value. A gap up to `max_gap_ticks`, or one that is
+    small relative to the note (gap <= min_ratio * duration), is absorbed;
+    longer gaps stay as rests.
+    """
+    out = sorted(notes, key=lambda q: q.start)
+    starts = sorted({q.start for q in out})
+    nxt = {s: n for s, n in zip(starts, starts[1:])}
+    for q in out:
+        n = nxt.get(q.start)
+        if n is None:
+            continue
+        gap = n - q.end
+        if 0 < gap <= max(max_gap_ticks, min_ratio * (q.end - q.start)):
+            q.end = n
+        elif gap < 0:
+            q.end = n
+    return out

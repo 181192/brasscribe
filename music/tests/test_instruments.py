@@ -57,3 +57,11 @@ def test_score_order():
     names = [p.name for p in BRASS_BAND.parts]
     assert names[0] == "Soprano Cornet" and names[-1] == "B♭ Bass"
     assert names.index("Flugelhorn") < names.index("Solo Horn") < names.index("1st Baritone") < names.index("1st Trombone")
+
+
+def test_double_accidentals_are_simplified():
+    from brasscribe_music.spelling import _simplify
+    assert _simplify("E", -2, 4, 62) == ("D", 0, 4)
+    assert _simplify("F", 2, 4, 67) == ("G", 0, 4)
+    assert _simplify("G", 2, 4, 69) == ("A", 0, 4)
+    assert _simplify("C", -2, 5, 70) == ("B", -1, 4)
