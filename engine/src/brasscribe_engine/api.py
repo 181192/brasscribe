@@ -25,7 +25,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, profiles
+from . import __version__, history, inspection, profiles
 from . import schemas as m
 from .adapters import host_device
 from .config import Settings
@@ -43,6 +43,13 @@ MEDIA = {
     "brass-band.mp3": "audio/mpeg",
     "manifest.json": "application/json",
 }
+SUFFIX_MEDIA = {".json": "application/json", ".musicxml": MEDIA["brass-band.musicxml"], ".pdf": "application/pdf",
+                ".mid": "audio/midi", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac",
+                ".beats": "text/plain"}
+
+
+def media_type(name: str) -> str:
+    return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
 
 
 @dataclass
@@ -104,7 +111,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         done = sum(s["status"] in ("cached", "imported", "ran", "skipped") for s in stages)
         return m.Job(id=job.id, profile=job.profile, title=job.title, audio_id=job.audio_id, status=job.status,
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
-                     progress=round(done / len(stages), 4) if stages else 0.0,
+                     progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
 
     def output_file(job_id: str, name: str) -> FileResponse:
@@ -177,15 +184,45 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         d = json.loads(meta.read_text())
         return settings.uploads_dir / d["path"], d
 
+    def job_input(body: m.JobCreate) -> tuple[Path, str]:
+        given = [x for x in (body.audio_id, body.source_id, body.path) if x]
+        if len(given) != 1:
+            raise HTTPException(422, "give exactly one of audio_id, source_id, path")
+        if body.audio_id:
+            path, meta = audio_path(body.audio_id)
+            return path, meta["filename"]
+        if body.source_id:
+            p = inspection.resolve_source(settings, body.source_id)
+            if not p:
+                raise HTTPException(404, f"no source {body.source_id}")
+            return p, p.parent.name + ".wav" if p.name == "mix.wav" else p.name
+        p = Path(body.path)
+        p = p if p.is_absolute() else settings.data_dir / p
+        if not inspection.inside(settings.data_dir, p) or not p.is_file():
+            raise HTTPException(404, "path must be an existing file inside the data directory")
+        return p, p.name
+
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
               dependencies=[Depends(auth)])
     def create_job(body: m.JobCreate) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
-        path, meta = audio_path(body.audio_id)
-        title = body.title or profiles.default_title(body.profile, Path(meta["filename"]))
+        path, filename = job_input(body)
+        title = body.title or profiles.default_title(body.profile, Path(filename))
         job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title,
                           params={"audio": body.render_audio}, allow_heavy=body.allow_heavy)
+        return job_model(job)
+
+    @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
+              dependencies=[Depends(auth)])
+    def rerun_job(job_id: str, body: m.RerunRequest | None = None) -> m.Job:
+        """Run a job again from its manifest (same input, profile, title and parameters)."""
+        old = job_or_404(job_id)
+        body = body or m.RerunRequest()
+        if not old.audio_path.exists():
+            raise HTTPException(409, f"input {old.audio_path} no longer exists")
+        job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
+                          allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id)
         return job_model(job)
 
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
@@ -299,15 +336,184 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         return [m.SuiteInfo(name=s.name, description=s.description, cpu=s.cpu, requires=list(s.requires))
                 for s in suites.SUITES.values()]
 
-    @app.post("/v1/suites/{name}/run", response_model=list[m.SuiteResult], operation_id="runSuite", tags=["benchmarks"],
+    @app.post("/v1/suites/{name}/run", response_model=m.BenchRun, operation_id="runSuite", tags=["benchmarks"],
               dependencies=[Depends(auth)])
-    def run_suite(name: str, mode: str = Query("cached", pattern="^(cached|live)$")) -> list[m.SuiteResult]:
+    def run_suite(name: str, mode: str = Query("cached", pattern="^(cached|live)$")) -> m.BenchRun:
+        """Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history."""
         from brasscribe_eval import suites
 
         if name not in suites.SUITES and name not in suites.GROUPS:
             raise HTTPException(404, f"no suite {name}")
         report = suites.gate(suites.run_many(name, mode=mode, data=settings.data_dir))
-        return [m.SuiteResult(**r) for r in report["suites"]]
+        return m.BenchRun(**history.save(settings, report, name, mode))
+
+    @app.get("/v1/suites/history", response_model=list[m.SuiteHistoryEntry], operation_id="listSuiteHistory",
+             tags=["benchmarks"], dependencies=[Depends(auth)])
+    def suite_history(suite: str | None = Query(None, description="only results of this suite"),
+                      limit: int = Query(1000, ge=1, le=10000)) -> list[m.SuiteHistoryEntry]:
+        """Every stored suite result, newest first (from `brasscribe bench` and runSuite)."""
+        return [m.SuiteHistoryEntry(**r) for r in history.entries(settings, suite, limit)]
+
+    # ------------------------------------------------------------ inspection
+
+    def file_ref(path: Path, name: str, url: str, sha256: str | None = None) -> m.FileRef:
+        return m.FileRef(name=name, bytes=path.stat().st_size if path.exists() else 0, media_type=media_type(name),
+                         url=url, sha256=sha256)
+
+    def safe_file(root: Path, rel: str) -> Path:
+        p = (root / rel).resolve()
+        if not inspection.inside(root, p) or p == root.resolve() or not p.is_file():
+            raise HTTPException(404, f"{rel} not found")
+        return p
+
+    @app.get("/v1/jobs/{job_id}/input", operation_id="getJobInput", tags=["inspection"], dependencies=[Depends(auth)],
+             response_class=FileResponse, responses={200: {"content": {"audio/wav": {}}}})
+    def get_input(job_id: str):
+        """The job's original input audio (for A/B listening)."""
+        job = job_or_404(job_id)
+        if not job.audio_path.is_file():
+            raise HTTPException(404, "input audio no longer exists")
+        return FileResponse(job.audio_path, media_type=media_type(job.audio_path.name), filename=job.audio_path.name)
+
+    @app.get("/v1/jobs/{job_id}/stages", response_model=list[m.StageArtifacts], operation_id="listJobStages",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def list_stages(job_id: str) -> list[m.StageArtifacts]:
+        """Every stage of a run with its output files (stems, layers, MIDI, beats, Composition, MusicXML ...)."""
+        job = job_or_404(job_id)
+        run_dir = jobs.run_dir(job.id)
+        mpath = run_dir / "manifest.json"
+        recorded = {s["stage"]: s for s in json.loads(mpath.read_text()).get("stages", [])} if mpath.exists() else {}
+        out = []
+        for name, st in job.stages.items():
+            rec = recorded.get(name, {})
+            d = run_dir / "stages" / name
+            files = rec.get("outputs")
+            if files is None:
+                files = {p.relative_to(d).as_posix(): None for p in sorted(d.rglob("*")) if p.is_file()} if d.is_dir() else {}
+            out.append(m.StageArtifacts(
+                stage=name, kind=st.get("kind"), status=st["status"], key=rec.get("key"), seconds=st.get("seconds"),
+                device=st.get("device"),
+                files=[file_ref(d / f, f, f"/v1/jobs/{job.id}/stages/{name}/files/{f}", h) for f, h in files.items()]))
+        return out
+
+    @app.get("/v1/jobs/{job_id}/stages/{stage}/files/{name:path}", operation_id="getStageFile", tags=["inspection"],
+             dependencies=[Depends(auth)], response_class=FileResponse,
+             responses={200: {"content": {"application/octet-stream": {}}}})
+    def get_stage_file(job_id: str, stage: str, name: str):
+        job = job_or_404(job_id)
+        p = safe_file(jobs.run_dir(job.id) / "stages" / stage, name)
+        return FileResponse(p, media_type=media_type(name), filename=p.name)
+
+    @app.get("/v1/references", response_model=list[m.Reference], operation_id="listReferences", tags=["inspection"],
+             dependencies=[Depends(auth)])
+    def list_references() -> list[m.Reference]:
+        """Reference outputs under <data>/golden (read only)."""
+        root = settings.golden_dir
+        out = []
+        for d in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+            out.append(m.Reference(name=d.name, files=[
+                file_ref(f, f.name, f"/v1/references/{d.name}/files/{f.name}") for f in sorted(d.iterdir()) if f.is_file()]))
+        return out
+
+    @app.get("/v1/references/{name}/files/{file}", operation_id="getReferenceFile", tags=["inspection"],
+             dependencies=[Depends(auth)], response_class=FileResponse,
+             responses={200: {"content": {"application/octet-stream": {}}}})
+    def get_reference_file(name: str, file: str):
+        p = safe_file(settings.golden_dir / name, file)
+        return FileResponse(p, media_type=media_type(file), filename=p.name)
+
+    @app.get("/v1/jobs/{job_id}/compare", response_model=m.Comparison, operation_id="compareJob", tags=["inspection"],
+             dependencies=[Depends(auth)])
+    def compare_job(job_id: str, reference: str | None = Query(None, description="name from listReferences"),
+                    job: str | None = Query(None, description="another job id")) -> m.Comparison:
+        """composition.json byte equality and per-part MusicXML note content against a reference or another job."""
+        from .compare import compare
+
+        this = jobs.run_dir(job_or_404(job_id).id) / "outputs"
+        if bool(reference) == bool(job):
+            raise HTTPException(422, "give exactly one of reference, job")
+        other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
+        if reference and not inspection.inside(settings.golden_dir, other):
+            raise HTTPException(404, f"no reference {reference}")
+        for d in (this, other):
+            if not (d / "composition.json").exists() or not (d / "brass-band.musicxml").exists():
+                raise HTTPException(404, f"no score output in {d.name}")
+        return m.Comparison(**compare(this, other).to_dict())
+
+    def roundtrip_file(job_id: str) -> Path:
+        return jobs.run_dir(job_or_404(job_id).id) / "roundtrip.json"
+
+    @app.get("/v1/jobs/{job_id}/roundtrip", response_model=m.Roundtrip, operation_id="getRoundtrip",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def get_roundtrip(job_id: str) -> m.Roundtrip:
+        """Stored MuseScore round-trip result, or status not_run (start it with runRoundtrip)."""
+        p = roundtrip_file(job_id)
+        return m.Roundtrip(**json.loads(p.read_text())) if p.exists() else m.Roundtrip(status="not_run")
+
+    @app.post("/v1/jobs/{job_id}/roundtrip", response_model=m.Roundtrip, operation_id="runRoundtrip",
+              tags=["inspection"], dependencies=[Depends(auth)])
+    def run_roundtrip(job_id: str) -> m.Roundtrip:
+        """Re-export the job's MusicXML through MuseScore and compare every part's sounding pitches (takes seconds)."""
+        outputs = jobs.run_dir(job_or_404(job_id).id) / "outputs"
+        if not (outputs / "brass-band.musicxml").exists():
+            raise HTTPException(404, "job has no MusicXML output")
+        r = inspection.roundtrip(outputs)
+        if r["status"] != "not_run":
+            roundtrip_file(job_id).write_text(json.dumps(r, indent=1))
+        return m.Roundtrip(**r)
+
+    @app.get("/v1/jobs/{job_id}/validation", response_model=list[m.ValidationIssue], operation_id="getValidation",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def get_validation(job_id: str) -> list[m.ValidationIssue]:
+        """Arranger warnings (range problems) for the job's Composition, by part, bar and beat."""
+        run_dir = jobs.run_dir(job_or_404(job_id).id)
+        comp = run_dir / "outputs" / "composition.json"
+        if not comp.exists():
+            raise HTTPException(404, "job has no Composition output")
+        cached = run_dir / "validation.json"
+        if cached.exists() and cached.stat().st_mtime >= comp.stat().st_mtime:
+            issues = json.loads(cached.read_text())
+        else:
+            issues = inspection.validation(comp)
+            cached.write_text(json.dumps(issues, indent=1))
+        return [m.ValidationIssue(**i) for i in issues]
+
+    @app.get("/v1/sources", response_model=list[m.Source], operation_id="listSources", tags=["inspection"],
+             dependencies=[Depends(auth)])
+    def list_sources() -> list[m.Source]:
+        """Recordings that can start a job without an upload: captures and eval-set items (createJob source_id)."""
+        return [m.Source(**x) for x in inspection.sources(settings)]
+
+    @app.get("/v1/registry/adapters", response_model=list[m.AdapterInfo], operation_id="listAdapters",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def list_adapters() -> list[m.AdapterInfo]:
+        """Adapters with version, environment fingerprint, device, licence and model weights."""
+        from .adapters import ADAPTERS, AdapterRegistry
+        from .hashing import HashIndex
+
+        hashes = HashIndex(settings.cache_dir / "file-hashes.json")
+        reg = AdapterRegistry(settings.adapters_dir, settings.models_dir, hashes, settings.gpu_lock)
+        out = [m.AdapterInfo(**reg.describe(n)) for n in ADAPTERS]
+        hashes.save()
+        return out
+
+    @app.get("/v1/registry/datasets", response_model=list[m.Dataset], operation_id="listDatasets", tags=["inspection"],
+             dependencies=[Depends(auth)])
+    def list_datasets() -> list[m.Dataset]:
+        """Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set."""
+        return [m.Dataset(**d) for d in inspection.datasets(settings)]
+
+    @app.get("/v1/parity", response_model=list[m.Manifest], operation_id="listParityReports", tags=["inspection"],
+             dependencies=[Depends(auth)])
+    def list_parity() -> list[dict]:
+        """Model-conversion parity reports as written (every *.json in BRASSCRIBE_PARITY_REPORTS), plus `_file`."""
+        return history.reports(settings.parity_reports_dir)
+
+    @app.get("/v1/conformance", response_model=list[m.Manifest], operation_id="listConformanceReports",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def list_conformance() -> list[dict]:
+        """Rust-core conformance results as written (every *.json in BRASSCRIBE_CONFORMANCE_REPORTS), plus `_file`."""
+        return history.reports(settings.conformance_reports_dir)
 
     if STATIC.is_dir():
         app.mount("/", StaticFiles(directory=STATIC, html=True), name="studio")

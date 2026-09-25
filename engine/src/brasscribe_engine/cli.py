@@ -65,9 +65,14 @@ def cmd_bench(args) -> int:
         for name, st in suites.SUITES.items():
             print(f"{name:24s} {'cpu' if st.cpu else 'gpu'}  {st.description}")
         return 0
-    results = suites.run_many(args.suite, mode=args.mode, data=config.load().data_dir)
+    from . import history
+
+    s = config.load()
+    results = suites.run_many(args.suite, mode=args.mode, data=s.data_dir)
     report = suites.gate(results, allow_improved=args.allow_improved, require_data=args.require_data)
     print(suites.format_report(report))
+    if not args.no_history:
+        history.save(s, report, args.suite, args.mode)
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=1))
     return 0 if report["passed"] else 1
@@ -140,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--json", type=Path)
     b.add_argument("--allow-improved", action="store_true", help="do not fail on improvements beyond the tolerance")
     b.add_argument("--require-data", action="store_true", help="fail when a suite is skipped for missing data")
+    b.add_argument("--no-history", action="store_true", help="do not store the result under <data>/bench/history")
     b.set_defaults(fn=cmd_bench)
 
     for name, browser in (("serve", False), ("studio", True)):

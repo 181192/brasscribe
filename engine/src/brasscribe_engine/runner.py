@@ -75,7 +75,7 @@ def _session(settings: Settings) -> tuple[ArtifactCache, AdapterRegistry]:
 def run(settings: Settings, audio: Path, profile: str, *, title: str | None = None, params: dict | None = None,
         out: Path | None = None, reuse: Path | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
         run_id: str | None = None, emit: Callable[[dict], None] | None = None,
-        cancel: threading.Event | None = None) -> dict:
+        cancel: threading.Event | None = None, previous_run_id: str | None = None) -> dict:
     audio = Path(audio).resolve()
     if not audio.exists():
         raise FileNotFoundError(audio)
@@ -106,6 +106,8 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         "input": {"path": str(audio), "sha256": cache.hashes.file(audio), "bytes": audio.stat().st_size},
         "git": git_state(), "host": host_info(), "status": "running", "stages": [], "outputs": {},
     }
+    if previous_run_id:
+        manifest["previous_run_id"] = previous_run_id
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
     on_event({"type": "job", "status": "running", "profile": profile, "stages": [s.name for s in pipeline.stages]})
     ex = Executor(cache, adapters, on_event, reuse_dir=reuse, allow_heavy=allow_heavy, cold=cold, cancel=cancel)

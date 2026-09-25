@@ -42,7 +42,11 @@ class AudioRef(BaseModel):
 
 
 class JobCreate(BaseModel):
-    audio_id: str
+    """Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory)."""
+
+    audio_id: str | None = None
+    source_id: str | None = None
+    path: str | None = Field(None, description="audio file path; must lie inside the engine's data directory")
     profile: str = "orchestra-with-soloist"
     title: str | None = None
     render_audio: bool = Field(True, description="also render an MP3 of the score")
@@ -68,6 +72,7 @@ class Job(BaseModel):
     finished: float | None = None
     error: str | None = None
     progress: float = Field(0.0, description="share of stages finished, 0..1")
+    previous_run_id: str | None = Field(None, description="the job this one re-runs, if any")
     stages: list[StageState]
     outputs: list[str] = Field(default_factory=list, description="names fetchable under /v1/jobs/{id}/artifacts/{name}")
 
@@ -172,6 +177,148 @@ class SuiteResult(BaseModel):
     seconds: float = 0.0
     metrics: dict[str, float] = Field(default_factory=dict)
     checks: list[Check] = Field(default_factory=list)
+
+
+class BenchRun(BaseModel):
+    id: str
+    created: str
+    target: str = Field(description="suite or group that was run")
+    mode: Literal["cached", "live"]
+    passed: bool
+    git_sha: str | None = None
+    device: str | None = None
+    suites: list[SuiteResult]
+
+
+class SuiteHistoryEntry(BaseModel):
+    time: float = Field(description="unix seconds")
+    run_id: str
+    target: str
+    suite: str
+    status: Literal["pass", "fail", "skipped", "error"]
+    reason: str | None = None
+    metrics: dict[str, float]
+    checks: list[Check]
+    manifest: str | None = Field(None, description="history file this entry came from")
+    git_sha: str | None = None
+    device: str | None = None
+
+
+class RerunRequest(BaseModel):
+    allow_heavy: bool = True
+    cold: list[str] = Field(default_factory=list, description="stages or kinds to run even on a cache hit, or 'all'")
+
+
+# ---------------------------------------------------------------- inspection
+
+
+class FileRef(BaseModel):
+    name: str
+    bytes: int
+    media_type: str
+    url: str
+    sha256: str | None = None
+
+
+class StageArtifacts(BaseModel):
+    stage: str
+    kind: str | None = None
+    status: str
+    key: str | None = None
+    seconds: float | None = None
+    device: str | None = None
+    files: list[FileRef]
+
+
+class Reference(BaseModel):
+    name: str
+    files: list[FileRef]
+
+
+class PartComparison(BaseModel):
+    name: str
+    notes: int
+    reference_notes: int
+    identical: bool
+
+
+class Comparison(BaseModel):
+    composition_identical: bool
+    musicxml_identical: bool
+    ok: bool
+    parts: list[PartComparison]
+    parts_identical: int
+    parts_total: int
+    notes_identical: int
+    notes_total: int
+
+
+class RoundtripPart(BaseModel):
+    name: str
+    sound: str | None = None
+    notes: int
+    match: bool | None = Field(None, description="null for unpitched parts, which are not compared")
+
+
+class Roundtrip(BaseModel):
+    status: Literal["pass", "fail", "not_run"]
+    musescore: str | None = None
+    parts: int | None = None
+    notes_in: int | None = Field(None, description="pitched notes in the arrangement")
+    notes_out: int | None = Field(None, description="pitched notes read back from MuseScore's export")
+    detail: str | None = None
+    part_results: list[RoundtripPart] = Field(default_factory=list)
+
+
+class ValidationIssue(BaseModel):
+    part: str | None = None
+    bar: int | None = None
+    beat: float | None = None
+    tick: int | None = None
+    kind: Literal["range", "crossing", "other"]
+    severity: Literal["warning", "error"]
+    message: str
+
+
+class ModelFile(BaseModel):
+    name: str
+    sha256: str | None = None
+    revision: str | None = None
+    bytes: int | None = None
+    licence: str | None = None
+    present: bool
+
+
+class AdapterInfo(BaseModel):
+    name: str
+    version: str | None = None
+    fingerprint: str
+    heavy: bool
+    device: str
+    licence: str | None = None
+    models: list[ModelFile]
+
+
+class Dataset(BaseModel):
+    name: str
+    path: str
+    licence: str | None = None
+    source_url: str | None = None
+    bytes: int
+    files: int
+    items: int
+    present: bool
+    cached_outputs: list[str] = Field(description="model output files present for every item (e.g. muscriptor-medium.mid)")
+    download: str | None = Field(None, description="how to build the set when it is missing")
+
+
+class Source(BaseModel):
+    kind: Literal["capture", "dataset"]
+    id: str
+    name: str
+    path: str
+    dataset: str | None = None
+    duration_s: float | None = None
 
 
 Manifest = dict[str, Any]

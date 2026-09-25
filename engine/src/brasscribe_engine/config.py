@@ -9,6 +9,8 @@ environments) or an installed package.
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
     BRASSCRIBE_GPU_LOCK     machine-wide mutex for heavy model runs (default: /tmp/brasscribe-gpu.lock)
     BRASSCRIBE_TOKEN        shared token for LAN clients (default: generated per server start)
+    BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/models/convert/reports)
+    BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
 """
 
 from __future__ import annotations
@@ -59,6 +61,20 @@ class Settings:
     @property
     def golden_dir(self) -> Path:
         return self.data_dir / "golden"
+
+    @property
+    def bench_history_dir(self) -> Path:
+        return self.data_dir / "bench" / "history"
+
+    @property
+    def parity_reports_dir(self) -> Path:
+        """Model-conversion parity reports (JSON), written by models/convert."""
+        return _env_path("BRASSCRIBE_PARITY_REPORTS", REPO_ROOT / "models" / "convert" / "reports")
+
+    @property
+    def conformance_reports_dir(self) -> Path:
+        """Rust-core conformance results (JSON), written by the core conformance suite."""
+        return _env_path("BRASSCRIBE_CONFORMANCE_REPORTS", self.data_dir / "runs" / "core-conformance")
 
     def ensure(self) -> Settings:
         for d in (self.cache_dir, self.runs_dir, self.uploads_dir):

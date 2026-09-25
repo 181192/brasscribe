@@ -38,20 +38,24 @@ class Adapter:
     torch_checkpoints: tuple[str, ...] = ()  # files in ~/.cache/torch/hub/checkpoints
     env: tuple[tuple[str, str], ...] = ()  # default environment for run.sh
     scripts: tuple[str, ...] = ("pyproject.toml", "uv.lock", "run.sh")
+    licence: str | None = None  # weights licence as recorded in docs/plan/apps-plan.md §7
 
 
 ADAPTERS: dict[str, Adapter] = {
     a.name: a
     for a in [
-        Adapter("beat-this", heavy=True, accelerator="torch", torch_checkpoints=("beat_this-final0.ckpt",)),
+        Adapter("beat-this", heavy=True, accelerator="torch", torch_checkpoints=("beat_this-final0.ckpt",),
+                licence="MIT"),
         Adapter("mega53", heavy=True, accelerator="torch",
                 model_files=("mega53/mvsep_mega_model_bs_roformer_53_stems_v1.ckpt", "mega53/mvsep_mega_model_bs_roformer_53_stems.yaml"),
-                scripts=("pyproject.toml", "uv.lock", "run.sh", "setup.sh")),
-        Adapter("separator", heavy=True, accelerator="torch", model_files=("separator/BS-Roformer-SW.ckpt", "separator/BS-Roformer-SW.yaml")),
+                scripts=("pyproject.toml", "uv.lock", "run.sh", "setup.sh"), licence="not stated"),
+        Adapter("separator", heavy=True, accelerator="torch", model_files=("separator/BS-Roformer-SW.ckpt", "separator/BS-Roformer-SW.yaml"),
+                licence="not stated"),
         Adapter("muscriptor", heavy=True, accelerator="torch", hub_models=("MuScriptor/muscriptor-medium",),
-                env=(("MUSCRIPTOR_MODEL", "medium"),)),
-        Adapter("basic-pitch", heavy=False, accelerator="coreml-or-onnx"),
-        Adapter("swift-f0", heavy=False, accelerator="cpu", scripts=("pyproject.toml", "uv.lock", "run.sh", "transcribe.py")),
+                env=(("MUSCRIPTOR_MODEL", "medium"),), licence="CC BY-NC 4.0"),
+        Adapter("basic-pitch", heavy=False, accelerator="coreml-or-onnx", licence="Apache-2.0"),
+        Adapter("swift-f0", heavy=False, accelerator="cpu", scripts=("pyproject.toml", "uv.lock", "run.sh", "transcribe.py"),
+                licence="MIT"),
     ]
 }
 
@@ -125,21 +129,24 @@ class AdapterRegistry:
         out = []
         for rel in a.model_files:
             p = self.models_dir / rel
-            out.append({"name": rel, "sha256": self.hashes.file(p) if p.exists() else None})
+            out.append({"name": rel, "sha256": self.hashes.file(p) if p.exists() else None, "present": p.exists(),
+                        "bytes": p.stat().st_size if p.exists() else None, "licence": a.licence})
         hub = Path(os.environ.get("HF_HUB_CACHE", Path.home() / ".cache" / "huggingface" / "hub"))
         for repo in a.hub_models:
             ref = hub / f"models--{repo.replace('/', '--')}" / "refs" / "main"
-            out.append({"name": repo, "revision": ref.read_text().strip() if ref.exists() else None})
+            out.append({"name": repo, "revision": ref.read_text().strip() if ref.exists() else None,
+                        "present": ref.exists(), "licence": a.licence})
         ckpts = Path.home() / ".cache" / "torch" / "hub" / "checkpoints"
         for f in a.torch_checkpoints:
             p = ckpts / f
-            out.append({"name": f, "sha256": self.hashes.file(p) if p.exists() else None})
+            out.append({"name": f, "sha256": self.hashes.file(p) if p.exists() else None, "present": p.exists(),
+                        "bytes": p.stat().st_size if p.exists() else None, "licence": a.licence})
         return out
 
     def describe(self, name: str) -> dict:
         a = self.get(name)
         return {"name": name, "version": self.version(name), "fingerprint": self.fingerprint(name),
-                "heavy": a.heavy, "device": adapter_device(a), "models": self.models(name)}
+                "heavy": a.heavy, "device": adapter_device(a), "licence": a.licence, "models": self.models(name)}
 
     @contextmanager
     def gpu_mutex(self, poll: float = 5.0):

@@ -30,6 +30,8 @@ class Job:
     audio_path: Path
     params: dict
     allow_heavy: bool = True
+    cold: set[str] = field(default_factory=set)
+    previous_run_id: str | None = None
     status: str = "queued"
     created: float = field(default_factory=time.time)
     started: float | None = None
@@ -72,10 +74,11 @@ class JobManager:
         self.lock = threading.Lock()
 
     def submit(self, audio: Path, profile: str, *, audio_id: str | None = None, title: str | None = None,
-               params: dict | None = None, allow_heavy: bool = True) -> Job:
+               params: dict | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
+               previous_run_id: str | None = None) -> Job:
         pipeline = profiles.build(profile, audio, title, params)
         job = Job(runner.new_run_id(profile), profile, pipeline.stage("arrange").params.get("title"), audio_id,
-                  Path(audio), dict(params or {}), allow_heavy)
+                  Path(audio), dict(params or {}), allow_heavy, set(cold or ()), previous_run_id)
         for s in pipeline.stages:
             job.stages[s.name] = {"name": s.name, "kind": s.kind, "status": "pending"}
         with self.lock:
@@ -91,7 +94,8 @@ class JobManager:
         job.status, job.started = "running", time.time()
         try:
             runner.run(self.settings, job.audio_path, job.profile, title=job.title, params=job.params,
-                       allow_heavy=job.allow_heavy, run_id=job.id, emit=job.add_event, cancel=job.cancel)
+                       allow_heavy=job.allow_heavy, cold=job.cold, run_id=job.id, emit=job.add_event,
+                       cancel=job.cancel, previous_run_id=job.previous_run_id)
         except Exception as e:  # noqa: BLE001 - reported as a failed job
             job.add_event({"type": "job", "status": "failed", "error": f"{type(e).__name__}: {e}"})
 
@@ -125,7 +129,8 @@ class JobManager:
             return None
         m = json.loads(mpath.read_text())
         job = Job(m["run_id"], m["profile"], m.get("title"), None, Path(m["input"]["path"]), m.get("params", {}),
-                  m.get("options", {}).get("allow_heavy", True), status=m.get("status", "unknown"),
+                  m.get("options", {}).get("allow_heavy", True), set(m.get("options", {}).get("cold", [])),
+                  m.get("previous_run_id"), status=m.get("status", "unknown"),
                   created=mpath.stat().st_ctime, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
