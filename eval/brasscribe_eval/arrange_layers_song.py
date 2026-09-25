@@ -17,10 +17,13 @@ from pathlib import Path
 
 import numpy as np
 import pretty_midi
+import soundfile as sf
 from brasscribe_music.arranger import arrange_layers
+from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.parts import split_parts
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
 from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
@@ -48,10 +51,13 @@ def split_orchestra(notes: list[Note]) -> tuple[list[Note], list[Note]]:
     return hits, [n for n in notes if id(n) not in hit_ids]
 
 
+PART_HOLD_WITHIN = TICKS_PER_BEAT // 2  # detached notes are written as (staccato) 8ths in band parts, not 16ths and rests
+
+
 def written_line(qnotes, times: np.ndarray, pickup: int, source: str) -> list[Note]:
     """One voice with written durations from its performed lengths (held vs detached, staccato)."""
     out = []
-    for q, w in apply_written(qnotes, BeatMap(times)):
+    for q, w in apply_written(qnotes, BeatMap(times), hold_within=PART_HOLD_WITHIN, min_detached=PART_HOLD_WITHIN):
         n = to_notes([q], pickup, source)[0]
         n.performed_dur = int(round(w.performed))
         if w.staccato:
@@ -69,6 +75,7 @@ def main() -> None:
     ap.add_argument("--solo-contour", type=Path,
                     help="SwiftF0 contour of the solo stem (swiftf0_contour.py); default <layers>/solo-sw.contour.npz if present")
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
+    ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
@@ -78,6 +85,14 @@ def main() -> None:
     bass_raw = pitched(L / "bass-mus.mid")
     orch_raw = pitched(L / "orchestra-mus.mid")
     drum_raw = drums_of(L / "drums-mus.mid")
+    if not args.no_gate:
+        # Drop notes a layer's transcriber found where that layer is (nearly) silent: bleed and residue.
+        for name, raw in (("bass", bass_raw), ("orchestra", orch_raw), ("drums", drum_raw)):
+            if (L / f"{name}.wav").exists():
+                y, sr = sf.read(L / f"{name}.wav", dtype="float32")
+                kept, dropped = gate(raw, Envelope.of(y, sr))
+                raw[:] = kept
+                print(f"gate {name}: dropped {dropped}")
 
     b = np.loadtxt(args.beats)
     pos = b[:, 1].astype(int)
@@ -157,6 +172,13 @@ def main() -> None:
         f = xml.with_suffix(f".{ext}")
         f.unlink(missing_ok=True)
         subprocess.run(["mscore", "-o", str(f), str(xml)], capture_output=True)
+    # Individual parts (mscore -P crashes): one MusicXML per part, rendered one by one.
+    for f in split_parts(xml, args.out / "parts"):
+        pdf = f.with_suffix(".pdf")
+        pdf.unlink(missing_ok=True)
+        subprocess.run(["mscore", "-o", str(pdf), str(f)], capture_output=True)
+        if not pdf.exists():
+            print(f"(no pdf for {f.name})")
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)

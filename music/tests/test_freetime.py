@@ -98,9 +98,11 @@ def test_mid_piece_region_keeps_bars_before_and_resumes_on_a_bar_line():
 def test_clip_to_regions_ends_notes_at_the_region_end():
     from brasscribe_music.freetime import clip_to_regions
     from brasscribe_music.score_model import FreeRegion
-    notes = [Note(60, 80, 30), Note(62, 96, 24)]
+    notes = [Note(60, 0, 6), Note(62, 60, 40), Note(64, 88, 20), Note(65, 96, 24)]
     region = FreeRegion(0, 96, 0.0, 4.0, 60.0)
     clip_to_regions(notes, [region])
     mark_fermatas(notes, [region])
-    assert notes[0].end == 96 and notes[1].dur == 24
-    assert notes[0].articulations == [Articulation.FERMATA]
+    assert notes[0].dur == 12  # at least an 8th in free time
+    assert notes[2].end == 96 and notes[3].dur == 24
+    # The fermata goes on the last note of a beat or longer, not on the short one before a tempo.
+    assert notes[1].articulations == [Articulation.FERMATA] and not notes[2].articulations
