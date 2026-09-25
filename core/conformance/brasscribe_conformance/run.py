@@ -3,16 +3,19 @@
     uv run python -m brasscribe_conformance.run [--only SUBSTR] [--work DIR] [--skip-python] [--musescore]
 
 For every case the Python reference writes to <work>/<case>/py and the Rust
-CLI (`brasscribe-core`) to <work>/<case>/rs; Compositions are compared exactly
-(parsed JSON, floats bit-equal; byte identity reported too) and MusicXML is
-compared after canonicalisation (see canon.py). The Mikkel case is also
-compared against the golden output. With --musescore the Rust MusicXML of
-every band case is round-tripped through MuseScore.
+CLI (`brasscribe-core`) to <work>/<case>/rust. Every file the reference wrote
+is compared: JSON exactly (parsed, floats bit-equal; byte identity reported
+too), MusicXML after canonicalisation (see canon.py), including the split
+parts. The Mikkel case is also compared file by file against the golden
+output in data/golden/mikkel-arranged-band. With --musescore every Rust score
+and lead sheet is round-tripped through MuseScore in one batched launch.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import subprocess
 import sys
@@ -25,6 +28,7 @@ from .cases import REPO, Case, all_cases, synth_layers
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
            "bench": ["composition.json", "brass-band.musicxml"], "lead": ["lead.musicxml"], "quant": ["quant.json"]}
+IGNORED = {".pdf", ".mp3", ".mid", ".wav"}
 
 
 def rust_bin() -> Path:
@@ -50,6 +54,16 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
     if case.kind == "quant":
         return [b, "quantize", "--reference", str(a["reference"]), "--beats", str(a["beats"]), "--out", str(out / "quant.json")]
     raise ValueError(case.kind)
+
+
+def outputs_of(ref_dir: Path, kind: str) -> list[str]:
+    """Every symbolic file the reference wrote (relative paths), scores and parts included."""
+    names = set(OUTPUTS[kind])
+    if ref_dir.exists():
+        for p in ref_dir.rglob("*"):
+            if p.is_file() and p.suffix not in IGNORED and ".mscore." not in p.name:
+                names.add(str(p.relative_to(ref_dir)))
+    return sorted(names)
 
 
 def from_composition(binary: Path, py: Path, rs: Path) -> list[tuple[str, bool, str]]:
@@ -86,24 +100,33 @@ def compare(ref_dir: Path, rs_dir: Path, names: list[str]) -> list[tuple[str, bo
     return rows
 
 
-def musescore_roundtrip(xml: Path, comp_json: Path) -> dict:
-    """Re-export the Rust MusicXML with MuseScore and compare every part's sounding pitches
-    with the reference arrangement of the same composition (eval's musescore_roundtrip)."""
-    import contextlib
-    import io
-
+def musescore_batch(items: list[tuple[str, Path, Path | None]]) -> dict[str, dict]:
+    """Round-trip (case id, musicxml, composition or None) through MuseScore in ONE launch, then
+    compare each band score's sounding pitches with the reference arrangement of its composition."""
     sys.path.insert(0, str(REPO / "eval"))
     from brasscribe_eval import musescore_roundtrip as mr  # noqa: PLC0415
+    from brasscribe_music import musescore  # noqa: PLC0415
 
-    out = xml.with_name(xml.stem + ".mscore.musicxml")
-    buf = io.StringIO()
-    try:
-        # MuseScore 4.7 aborts on shutdown after writing: the check trusts the file, not the exit code.
-        with contextlib.redirect_stdout(buf):
-            same = mr.check(xml, comp_json)
-    except SystemExit:
-        same = False
-    return {"written": out.exists() and out.stat().st_size > 0, "pitches_match": bool(same)}
+    jobs = []
+    for _, xml, _ in items:
+        out = xml.with_name(xml.stem + ".mscore.musicxml")
+        out.unlink(missing_ok=True)
+        jobs.append((xml, out))
+    musescore.convert_many(jobs)  # one launch; success is judged by the output files
+    # The check below must not launch MuseScore again: the re-exports exist already.
+    mr.musescore.convert = lambda src, out, **kw: Path(out).exists()
+    res = {}
+    for (cid, xml, comp), (_, out) in zip(items, jobs):
+        written = out.exists() and out.stat().st_size > 0
+        match = written
+        if written and comp is not None:
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    match = bool(mr.check(xml, comp))
+            except SystemExit:
+                match = False
+        res[cid] = {"written": written, "pitches_match": match}
+    return res
 
 
 def main() -> None:
@@ -118,6 +141,7 @@ def main() -> None:
     cases = all_cases(args.work, args.only)
     binary = None if args.skip_rust else rust_bin()
     results = []
+    ms_items: list[tuple[str, Path, Path | None]] = []
     for case in cases:
         d = args.work / case.id
         py, rs = d / "py", d / "rust"
@@ -134,38 +158,42 @@ def main() -> None:
         t0 = time.time()
         p = subprocess.run(rust_cmd(binary, case, rs), capture_output=True, text=True)
         t_rs = time.time() - t0
-        rows = compare(py, rs, OUTPUTS[case.kind]) if p.returncode == 0 else [("rust", False, p.stderr[-2000:])]
-        if case.kind in ("layers", "song", "bench"):
+        names = outputs_of(py, case.kind)
+        rows = compare(py, rs, names) if p.returncode == 0 else [("rust", False, p.stderr[-2000:])]
+        if case.kind in ("layers", "song", "bench") and p.returncode == 0:
             rows += from_composition(binary, py, rs)
+        if case.golden is not None and p.returncode == 0:
+            gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists()]
+            rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
         ok = all(r[1] for r in rows)
         entry = {"case": case.id, "ok": ok, "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
-                 "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows]}
-        if case.golden is not None and p.returncode == 0:
-            # Informational: the golden set is re-saved deliberately, so it may lag the reference.
-            entry["golden"] = {n: compare(case.golden, rs, [n])[0][1] for n in OUTPUTS[case.kind]}
+                 "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows],
+                 "paths": {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}}
         if args.musescore and p.returncode == 0 and case.kind in ("layers", "song", "bench"):
-            entry["musescore"] = musescore_roundtrip(rs / "brass-band.musicxml", rs / "composition.json")
+            ms_items.append((case.id, rs / "brass-band.musicxml", rs / "composition.json"))
         elif args.musescore and p.returncode == 0 and case.kind == "lead":
-            out = rs / "lead.mscore.musicxml"
-            from brasscribe_music import musescore
-
-            written = musescore.convert(rs / "lead.musicxml", out) and out.stat().st_size > 0
-            entry["musescore"] = {"written": written, "pitches_match": written}
-        entry["paths"] = {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}
+            ms_items.append((case.id, rs / "lead.musicxml", None))
         results.append(entry)
         mark = "OK  " if ok else "DIFF"
-        print(f"{mark} {case.id:70s} py {t_py:6.2f}s rs {t_rs:6.3f}s" + (
-            f" mscore={'ok' if entry['musescore']['written'] and entry['musescore']['pitches_match'] else entry['musescore']}"
-            if "musescore" in entry else "") + (
-            f" golden={entry['golden']}" if "golden" in entry else ""), flush=True)
+        print(f"{mark} {case.id:70s} py {t_py:6.2f}s rs {t_rs:6.3f}s files {sum(r[1] for r in rows)}/{len(rows)}", flush=True)
         for n, s, det in rows:
             if not s:
                 print(f"     {n}: {det[:1500]}")
+    if ms_items:
+        ms = musescore_batch(ms_items)
+        for r in results:
+            if r["case"] in ms:
+                r["musescore"] = ms[r["case"]]
+                if not (ms[r["case"]]["written"] and ms[r["case"]]["pitches_match"]):
+                    print(f"MSCORE {r['case']}: {ms[r['case']]}")
     if results:
         files = [c for r in results for c in r["checks"]]
         n_ok = sum(r["ok"] for r in results)
         print(f"\ncases identical: {n_ok}/{len(results)}; files identical: {sum(c['ok'] for c in files)}/{len(files)}")
-        if "musescore" in results[0] or any("musescore" in r for r in results):
+        gold = [c for r in results for c in r["checks"] if c["file"].startswith("golden:")]
+        if gold:
+            print(f"golden files identical: {sum(c['ok'] for c in gold)}/{len(gold)}")
+        if ms_items:
             ms = [r["musescore"] for r in results if "musescore" in r]
             print(f"musescore round trip: file written {sum(m['written'] for m in ms)}/{len(ms)}, "
                   f"sounding pitches match {sum(m['pitches_match'] for m in ms)}/{len(ms)}")
@@ -188,13 +216,14 @@ def write_report(work: Path, results: list[dict]) -> Path:
         failed = [c for c in r["checks"] if not c["ok"]]
         missing = any(c["detail"].startswith("missing") for c in failed)
         row = {"set": s, "item": item, "stage": stage, "status": "pass" if r["ok"] else ("missing" if missing else "fail"),
-               "diffs": len(failed), "py": r["paths"]["py"], "rust": r["paths"]["rust"]}
+               "diffs": len(failed), "files": len(r["checks"]), "py": r["paths"]["py"], "rust": r["paths"]["rust"]}
         if failed:
             row["detail"] = "; ".join(f"{c['file']}: {c['detail'][:300]}" for c in failed)
         if "musescore" in r:
             row["musescore"] = r["musescore"]
-        if "golden" in r:
-            row["golden"] = r["golden"]
+        gold = [c for c in r["checks"] if c["file"].startswith("golden:")]
+        if gold:
+            row["golden"] = {c["file"][7:]: c["ok"] for c in gold}
         rows.append(row)
     out = work / "report.json"
     out.write_text(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "git_sha": sha, "core_version": version,

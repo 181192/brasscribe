@@ -214,23 +214,41 @@ pub fn plan_free_time(
     FreeTimePlan { beat_times: out, first_downbeat: new_first, spans, notation: if tempo.is_some() { "tempo" } else { "proportional" }, label }
 }
 
-/// End notes that start inside a free region at its end, so the strict grid resumes on a clean bar.
+/// No value shorter than an 8th in proportional notation.
+pub const FREE_MIN_DUR: i64 = TICKS_PER_BEAT / 2;
+/// A fermata sits on a note of a beat or longer.
+pub const FERMATA_MIN_DUR: i64 = TICKS_PER_BEAT;
+
+/// Tidy notes that start inside a free region: they end at the region's end at
+/// the latest, so the strict grid resumes on a clean bar, and are at least an
+/// 8th long where the next onset allows.
 pub fn clip_to_regions(notes: &mut [Note], regions: &[FreeRegion]) {
+    let mut starts: Vec<i64> = notes.iter().map(|n| n.start).collect();
+    starts.sort();
+    starts.dedup();
+    let nxt = |s: i64| -> Option<i64> { starts.get(starts.partition_point(|&x| x <= s)).copied() };
     for r in regions {
         for n in notes.iter_mut() {
-            if r.start <= n.start && n.start < r.end && r.end < n.end() {
+            if !(r.start <= n.start && n.start < r.end) {
+                continue;
+            }
+            let room = nxt(n.start).unwrap_or(r.end).min(r.end) - n.start;
+            if n.dur < FREE_MIN_DUR {
+                n.dur = FREE_MIN_DUR.min(room);
+            }
+            if n.end() > r.end {
                 n.dur = r.end - n.start;
             }
         }
     }
 }
 
-/// Fermata on the last note of a line that starts inside each free region.
+/// Fermata on the last held note (a beat or longer) of a line inside each free region.
 pub fn mark_fermatas(notes: &mut [Note], regions: &[FreeRegion]) {
     for r in regions {
         let mut last: Option<usize> = None;
         for (i, n) in notes.iter().enumerate() {
-            if r.start <= n.start && n.start < r.end && last.map_or(true, |l| n.start > notes[l].start) {
+            if r.start <= n.start && n.start < r.end && n.dur >= FERMATA_MIN_DUR && last.map_or(true, |l| n.start > notes[l].start) {
                 last = Some(i);
             }
         }

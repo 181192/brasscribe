@@ -18,6 +18,7 @@ use std::process::ExitCode;
 
 use brasscribe_core::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
+use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::MidiFile;
 use brasscribe_core::model::Composition;
 use brasscribe_core::musicxml::{band_score, write_score};
@@ -137,7 +138,62 @@ fn contour(p: &Path) -> R<Contour> {
 
 fn out_band(dir: &Path, r: &pipeline::BandResult) -> R<()> {
     write(&dir.join("composition.json"), &r.composition.to_json_string())?;
-    write(&dir.join("brass-band.musicxml"), &stamp(r.musicxml.clone()))
+    if let Some(s) = &r.separation_check {
+        write(&dir.join("separation-check.json"), s)?;
+    }
+    write(&dir.join("brass-band.musicxml"), &stamp(r.musicxml.clone()))?;
+    for (name, xml) in &r.parts {
+        write(&dir.join("parts").join(name), &stamp(xml.clone()))?;
+    }
+    Ok(())
+}
+
+fn wav_if(p: &Path) -> R<Option<Audio>> {
+    if !p.exists() {
+        return Ok(None);
+    }
+    read_wav(&read(p)?).map(Some).map_err(|e| format!("{}: {e}", p.display()))
+}
+
+/// WAV (PCM 16/24/32-bit or float32) as float32 samples scaled like libsndfile.
+fn read_wav(b: &[u8]) -> R<Audio> {
+    if b.len() < 12 || &b[0..4] != b"RIFF" || &b[8..12] != b"WAVE" {
+        return Err("not a RIFF/WAVE file".into());
+    }
+    let u16le = |i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
+    let u32le = |i: usize| u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
+    let mut i = 12;
+    let (mut fmt, mut channels, mut rate, mut bits) = (0u16, 0usize, 0u32, 0u16);
+    let mut data: Option<&[u8]> = None;
+    while i + 8 <= b.len() {
+        let id = &b[i..i + 4];
+        let len = u32le(i + 4) as usize;
+        let body = &b[i + 8..(i + 8 + len).min(b.len())];
+        if id == b"fmt " {
+            fmt = u16le(i + 8);
+            channels = u16le(i + 10) as usize;
+            rate = u32le(i + 12);
+            bits = u16le(i + 22);
+            if fmt == 0xFFFE && len >= 26 {
+                fmt = u16le(i + 32); // sub-format GUID starts with the format code
+            }
+        } else if id == b"data" {
+            data = Some(body);
+        }
+        i += 8 + len + (len & 1);
+    }
+    let data = data.ok_or("no data chunk")?;
+    let samples: Vec<f32> = match (fmt, bits) {
+        (1, 16) => data.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]]) as f32 * (1.0 / 32768.0)).collect(),
+        (1, 24) => data
+            .chunks_exact(3)
+            .map(|c| (((c[2] as i32) << 24) | ((c[1] as i32) << 16) | ((c[0] as i32) << 8)) as f32 * (1.0 / 2147483648.0))
+            .collect(),
+        (1, 32) => data.chunks_exact(4).map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f32 * (1.0 / 2147483648.0)).collect(),
+        (3, 32) => data.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect(),
+        other => return Err(format!("unsupported WAV format {other:?}")),
+    };
+    Ok(Audio { samples, channels: channels.max(1), sample_rate: rate })
 }
 
 fn run(cmd: &str, a: &Args) -> R<()> {
@@ -152,12 +208,19 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 bass: midi(&l.join("bass-mus.mid"))?,
                 orchestra: midi(&l.join("orchestra-mus.mid"))?,
                 drums: midi(&l.join("drums-mus.mid"))?,
+                solo_audio: wav_if(&l.join("solo.wav"))?,
+                bass_audio: wav_if(&l.join("bass.wav"))?,
+                drums_audio: wav_if(&l.join("drums.wav"))?,
+                orchestra_audio: wav_if(&l.join("orchestra.wav"))?,
             };
             let contour_path = a.opt("solo-contour").map(PathBuf::from).or_else(|| Some(l.join("solo-sw.contour.npz")).filter(|p| p.exists()));
             let opts = LayersOptions {
                 solo_contour: contour_path.map(|p| contour(&p)).transpose()?,
                 no_free_time: a.has("no-free-time"),
                 free_tempo: a.opt("free-tempo").map(|s| s.parse::<f64>().map_err(|e| e.to_string())).transpose()?,
+                no_gate: a.has("no-gate"),
+                no_beat_cleanup: a.has("no-beat-cleanup"),
+                single_key: a.has("single-key"),
             };
             let r = pipeline::arrange_layers_song(&layers, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)

@@ -21,7 +21,7 @@
 use std::collections::{BTreeSet, HashMap};
 
 use crate::harmony::{harmony_slots, Slot};
-use crate::instruments::{brass_band, minimal_band, Lineup, Part, RangeCheck};
+use crate::instruments::{brass_band, minimal_band, Lineup, Part};
 use crate::model::{Composition, Note, VoiceRole};
 
 /// A rest of two beats or more starts a new phrase.
@@ -76,22 +76,27 @@ fn phrases(notes: &[Note]) -> Vec<Vec<Note>> {
     out
 }
 
-/// Octave shift that puts the most notes in [lo, hi] and none outside the pro range.
+/// Bass lines centre a third of the way up the reading range.
+pub const BASS_TARGET: f64 = 0.35;
+
+/// Octave shift that puts the most notes in [lo, hi] and none outside `limit`.
 ///
-/// Ties go to the octave nearest the middle of the range, or the lowest one for
-/// bass lines.
-fn best_shift(pitches: &[i32], lo: i32, hi: i32, pro: (i32, i32), prefer_low: bool) -> Option<i32> {
+/// Ties go to the octave nearest the middle of the range (a third of the way
+/// up for bass lines) and nearest the previous phrase's last note, so the line
+/// stays continuous.
+fn best_shift(pitches: &[i32], lo: i32, hi: i32, limit: (i32, i32), prefer_low: bool, prev: Option<i32>) -> Option<i32> {
+    let target = if prefer_low { lo as f64 + BASS_TARGET * (hi - lo) as f64 } else { (lo + hi) as f64 / 2.0 };
     let mut best = None;
     let mut score: Option<(usize, f64)> = None;
     for k in -4..=4 {
         let shifted: Vec<i32> = pitches.iter().map(|p| p + 12 * k).collect();
-        if shifted.iter().any(|&p| !(pro.0 <= p && p <= pro.1)) {
+        if shifted.iter().any(|&p| !(limit.0 <= p && p <= limit.1)) {
             continue;
         }
         let inside = shifted.iter().filter(|&&p| lo <= p && p <= hi).count();
         let mean = shifted.iter().map(|&p| p as i64).sum::<i64>() as f64 / shifted.len() as f64;
-        let second = if prefer_low { -mean } else { -(mean - (lo + hi) as f64 / 2.0).abs() };
-        let cand = (inside, second);
+        let jump = prev.map(|q| (shifted[0] - q).abs() as f64).unwrap_or(0.0);
+        let cand = (inside, -((mean - target).abs() + jump));
         let better = match score {
             None => true,
             Some(s) => cand.0 > s.0 || (cand.0 == s.0 && cand.1 > s.1),
@@ -104,21 +109,43 @@ fn best_shift(pitches: &[i32], lo: i32, hi: i32, pro: (i32, i32), prefer_low: bo
     best
 }
 
+/// The octave of `pitch` inside the first range that has one, nearest `prev` (or the range middle).
+fn nearest_octave(pitch: i32, ranges: &[(i32, i32)], prev: Option<i32>) -> Option<i32> {
+    for &(lo, hi) in ranges {
+        let opts: Vec<i32> = (0..11).map(|k| pitch.rem_euclid(12) + 12 * k).filter(|&x| lo <= x && x <= hi).collect();
+        if !opts.is_empty() {
+            let r = prev.map(|p| p as f64).unwrap_or((lo + hi) as f64 / 2.0);
+            let mut best = opts[0];
+            for &x in &opts[1..] {
+                let (dx, db) = ((x as f64 - r).abs(), (best as f64 - r).abs());
+                if dx < db || (dx == db && x < best) {
+                    best = x;
+                }
+            }
+            return Some(best);
+        }
+    }
+    None
+}
+
 fn place_line(notes: &[Note], part: &Part, warnings: &mut Vec<String>, shift_extra: i32, prefer_low: bool) -> Vec<Note> {
     let inst = part.instrument;
-    let mut placed = Vec::new();
+    let (lo, hi) = inst.preferred();
+    let mut placed: Vec<Note> = Vec::new();
     for phrase in phrases(notes) {
+        let prev = placed.last().map(|n| n.pitch);
         let ps: Vec<i32> = phrase.iter().map(|n| n.pitch + shift_extra).collect();
-        match best_shift(&ps, inst.comfortable.0, inst.comfortable.1, inst.pro, prefer_low) {
+        match best_shift(&ps, lo, hi, inst.placement_limit(), prefer_low, prev) {
             None => {
-                // No single octave fits the whole phrase: fall back to per-note octave fitting.
+                // No single octave fits the whole phrase: per note, the octave nearest the previous note.
                 for n in &phrase {
-                    let p = inst.fit_octave(n.pitch + shift_extra);
-                    if inst.check(p) == RangeCheck::Impossible {
-                        warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start));
-                        continue;
+                    let last = placed.last().map(|n| n.pitch);
+                    match nearest_octave(n.pitch + shift_extra, &[inst.preferred(), inst.placement_limit()], last) {
+                        None => {
+                            warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start));
+                        }
+                        Some(p) => placed.push(renote(n, p)),
                     }
-                    placed.push(renote(n, p));
                 }
                 warnings.push(format!("{}: phrase at tick {} needed per-note octave fitting", part.name, phrase[0].start));
             }
@@ -130,6 +157,29 @@ fn place_line(notes: &[Note], part: &Part, warnings: &mut Vec<String>, shift_ext
         }
     }
     hold_small_gaps(placed)
+}
+
+/// Inside the instrument's preferred (reading) range.
+fn readable(inst: &crate::instruments::Instrument, pitch: i32) -> bool {
+    let (lo, hi) = inst.preferred();
+    lo <= pitch && pitch <= hi
+}
+
+/// Which source layer a band part plays in the layered arrangement (for its dynamics).
+pub fn layer_of_part(name: &str) -> Option<&'static str> {
+    if name == "Solo Cornet" {
+        Some("solo")
+    } else if PAD_PARTS.contains(&name) || name == "Euphonium" {
+        Some("strings")
+    } else if CHOIR_PARTS.contains(&name) {
+        Some("brass")
+    } else if ["E♭ Bass", "B♭ Bass", "Bass Trombone"].contains(&name) {
+        Some("bass")
+    } else if name == "Percussion" {
+        Some("drums")
+    } else {
+        None
+    }
 }
 
 /// Copy of a source note at another pitch (timing, confidence and articulations kept).
@@ -158,7 +208,7 @@ fn voice_slot(pcs: &[i32], parts: &[&Part], ceiling: i32, floor: i32, prev: &Has
     let mut used: Vec<i32> = Vec::new();
     let mut upper = ceiling;
     for part in parts {
-        let (lo, hi) = part.instrument.comfortable;
+        let (lo, hi) = part.instrument.preferred();
         let hi = hi.min(upper - 1);
         let lo = lo.max(floor + 1);
         let options: Vec<i32> = (lo..=hi).filter(|p| pcs.contains(&p.rem_euclid(12))).collect();
@@ -220,8 +270,8 @@ pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
         .iter()
         .map(|n| {
             let p = n.pitch - 12;
-            // Octave below only where that stays comfortable.
-            renote(n, if bb.instrument.check(p) == RangeCheck::Ok { p } else { n.pitch })
+            // Octave below only where that stays readable.
+            renote(n, if readable(bb.instrument, p) { p } else { n.pitch })
         })
         .collect();
     arr.set(bb.name, low);
@@ -301,7 +351,7 @@ fn voice_layer(arr: &mut Arrangement, slots: &[Slot], part_names: &[&str], ceili
 /// Used for lines pulled from a dense texture, where the source hops between
 /// voices and a single octave shift per phrase would leave large leaps.
 fn place_smooth(notes: &[Note], part: &Part) -> Vec<Note> {
-    let (lo, hi) = part.instrument.comfortable;
+    let (lo, hi) = part.instrument.preferred();
     let mut prev = (lo + hi).div_euclid(2);
     let mut out = Vec::new();
     let mut sorted: Vec<&Note> = notes.iter().collect();
@@ -342,7 +392,7 @@ pub fn arrange_layers_with(comp: &Composition, lineup: Lineup) -> Arrangement {
         .part_notes(eb.name)
         .iter()
         .map(|n| {
-            renote(n, if bb.instrument.check(n.pitch - 12) == RangeCheck::Ok { n.pitch - 12 } else { n.pitch })
+            renote(n, if readable(bb.instrument, n.pitch - 12) { n.pitch - 12 } else { n.pitch })
         })
         .collect();
     arr.set(bb.name, low);

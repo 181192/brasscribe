@@ -11,6 +11,41 @@ pub fn dumps(v: &Value) -> String {
     out
 }
 
+/// `json.dumps(obj)` without indentation (", " and ": " separators).
+pub fn dumps_compact(v: &Value) -> String {
+    let mut out = String::new();
+    compact(v, &mut out);
+    out
+}
+
+fn compact(v: &Value, out: &mut String) {
+    match v {
+        Value::Array(a) => {
+            out.push('[');
+            for (i, x) in a.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(", ");
+                }
+                compact(x, out);
+            }
+            out.push(']');
+        }
+        Value::Object(m) => {
+            out.push('{');
+            for (i, (k, x)) in m.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(", ");
+                }
+                write_str(k, out);
+                out.push_str(": ");
+                compact(x, out);
+            }
+            out.push('}');
+        }
+        other => write(other, 0, out),
+    }
+}
+
 fn write(v: &Value, level: usize, out: &mut String) {
     match v {
         Value::Null => out.push_str("null"),
