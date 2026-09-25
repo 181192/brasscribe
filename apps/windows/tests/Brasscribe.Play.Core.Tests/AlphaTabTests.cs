@@ -1,0 +1,136 @@
+using System.Diagnostics;
+using AlphaTab.Core.EcmaScript;
+using AlphaTab.Importer;
+using Brasscribe.Play.Core.Playback;
+using Brasscribe.Play.Core.Review;
+using Brasscribe.Play.Core.TalkingScore;
+using Xunit.Abstractions;
+
+namespace Brasscribe.Play.Core.Tests;
+
+/// <summary>
+/// alphaTab .NET run headless: MusicXML import, transposition display, SVG rendering, MIDI and the
+/// synth pulled through <see cref="BufferedSynthOutput"/> without an audio device.
+/// </summary>
+public class AlphaTabTests(ITestOutputHelper log)
+{
+    private static byte[] Fixture() => File.ReadAllBytes(TestPaths.Fixture("two-parts.musicxml"));
+
+    [Fact]
+    public void Imports_transposing_parts_and_generates_midi()
+    {
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(Fixture());
+        Assert.Equal(3, player.Tracks.Count);
+        Assert.Equal(5, player.BarCount);
+        Assert.Equal("Solo Cornet", player.Tracks[0].Name);
+        Assert.Equal(-2, player.Tracks[0].DisplayTransposition);
+        Assert.True(player.Tracks[2].IsPercussion);
+        var midi = player.ExportMidi();
+        Assert.Equal("MThd"u8.ToArray(), midi[..4]);
+        Assert.Equal((0.0, 3840.0), player.BarTicks(0));
+    }
+
+    [Fact]
+    public void Loop_speed_and_mixer_state()
+    {
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(Fixture());
+        player.SetLoop(3, 1);
+        Assert.Equal((1, 3), player.Loop);
+        player.SetLoop(null, null);
+        Assert.Null(player.Loop);
+        player.Speed = 2.0;
+        Assert.Equal(1.5, player.Speed);
+        player.Speed = 0.1;
+        Assert.Equal(0.25, player.Speed);
+        player.SetMute(1, true);
+        player.SetSolo(0, true);
+        Assert.True(player.IsMuted(1));
+        Assert.True(player.IsSolo(0));
+        player.Metronome = true;
+        player.CountIn = true;
+        Assert.True(player.Metronome && player.CountIn);
+    }
+
+    [Fact]
+    public void Renders_svg_and_styles_uncertain_notes()
+    {
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(Fixture());
+        var ts = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")));
+        int styled = ScoreStyler.ApplyUncertainty(player.Score!, ts, UncertaintyPalette.Light);
+        Assert.Equal(1, styled);
+
+        var output = new ScoreRenderService("svg").Render(player.Score!, [0], 1000);
+        Assert.NotEmpty(output.Partials);
+        Assert.True(output.TotalHeight > 0);
+        var svg = string.Concat(output.Partials.Select(p => p.Result as string));
+        Assert.Contains("<svg", svg);
+        Assert.Contains("#0063A6", svg, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(output.Bounds?.FindMasterBarByIndex(0));
+    }
+
+    [Fact]
+    public void Golden_brass_band_score_imports_and_renders()
+    {
+        var path = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
+        if (path is null) return; // data/ is not present in CI
+        var sw = Stopwatch.StartNew();
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(File.ReadAllBytes(path));
+        long load = sw.ElapsedMilliseconds;
+        Assert.Equal(18, player.Tracks.Count);
+        Assert.Equal(128, player.BarCount);
+        var solo = player.Tracks.Single(t => t.Name == "Solo Cornet");
+        Assert.Equal(-2, solo.DisplayTransposition);
+        Assert.Equal(3, player.Tracks.Single(t => t.Name == "Soprano Cornet").DisplayTransposition);
+        Assert.True(player.Tracks.Single(t => t.Name == "Percussion").IsPercussion);
+
+        sw.Restart();
+        var part = new ScoreRenderService("svg").Render(player.Score!, [solo.Index], 1200);
+        long renderPart = sw.ElapsedMilliseconds;
+        sw.Restart();
+        var full = new ScoreRenderService("svg").Render(player.Score!, player.Tracks.Select(t => t.Index).ToList(), 1600);
+        long renderFull = sw.ElapsedMilliseconds;
+        Assert.NotEmpty(part.Partials);
+        Assert.NotEmpty(full.Partials);
+        log.WriteLine($"golden: load+midi {load} ms, solo part svg {renderPart} ms ({part.TotalWidth:0}x{part.TotalHeight:0}), " +
+                      $"full score svg {renderFull} ms ({full.TotalWidth:0}x{full.TotalHeight:0}), midi {player.ExportMidi().Length} bytes");
+    }
+
+    [Fact]
+    public void Synth_plays_through_the_buffered_output()
+    {
+        var sf = TestPaths.RepoFile(Environment.GetEnvironmentVariable("BRASSCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2");
+        if (sf is null) return; // SoundFonts are downloads or build outputs, not in the repo
+        var output = new BufferedSynthOutput();
+        using var player = new AlphaTabScorePlayer(output);
+        player.LoadSoundFont(File.ReadAllBytes(sf));
+        player.LoadScore(Fixture());
+        Assert.True(player.IsReady, player.LoadError?.Message);
+
+        player.Play();
+        var buffer = new float[2 * 1024];
+        double sumSquares = 0;
+        long n = 0;
+        for (int i = 0; i < 44100 * 2 / 1024; i++) // about two seconds of audio
+        {
+            output.Read(buffer);
+            foreach (var s in buffer) sumSquares += s * s;
+            n += buffer.Length;
+        }
+        double rms = Math.Sqrt(sumSquares / n);
+        log.WriteLine($"synth rms over 2 s: {rms:0.0000}, position {player.Position}");
+        Assert.True(rms > 0.001, $"synth output is silent (rms {rms})");
+        Assert.True(player.Position.Seconds > 1.0, $"position did not advance: {player.Position}");
+        Assert.True(player.Position.BarIndex >= 0);
+    }
+
+    [Fact]
+    public void Score_loader_accepts_bytes()
+    {
+        var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(Fixture()), new AlphaTab.Settings());
+        Assert.Equal("Test tune", score.Title.Replace('\u00A0', ' ')); // alphaTab stores spaces as no-break spaces
+    }
+}

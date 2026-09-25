@@ -8,6 +8,8 @@
     <PackageVersion Include="AlphaTab" Version="1.8.4" />
     <PackageVersion Include="AlphaSkia" Version="3.4.135" />
     <PackageVersion Include="AlphaSkia.Native.Windows" Version="3.4.135" />
+    <PackageVersion Include="AlphaSkia.Native.MacOs" Version="3.4.135" />
+    <PackageVersion Include="AlphaSkia.Native.Linux" Version="3.4.135" />
     <PackageVersion Include="NAudio.Core" Version="2.2.1" />
     <PackageVersion Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="$(OnnxRuntimeVersion)" />

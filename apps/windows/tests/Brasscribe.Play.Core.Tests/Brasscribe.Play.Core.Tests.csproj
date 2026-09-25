@@ -11,6 +11,10 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <!-- CPU native build of ONNX Runtime (win, linux, osx-arm64). -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <!-- alphaTab measures text through AlphaSkia even for SVG output. -->
+    <PackageReference Include="AlphaSkia.Native.Windows" />
+    <PackageReference Include="AlphaSkia.Native.MacOs" />
+    <PackageReference Include="AlphaSkia.Native.Linux" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
