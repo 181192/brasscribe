@@ -44,7 +44,7 @@ fun TalkingScoreList(vm: PlayViewModel, r: TranscriptionResult) {
     val checkedMap by vm.checked.collectAsState()
     val voice = r.composition.voices.firstOrNull { it.role == VoiceRole.MELODY } ?: r.composition.voices.first()
     val lang = currentLang()
-    val view = remember(r, checkedMap) { partViewFor(r.composition, voice.id, checkedMap[voice.id].orEmpty()) }
+    val view = remember(r, checkedMap) { partViewFor(r.composition, voice.id, checkedMap[voice.id].orEmpty(), vm.container.core) }
     val spoken = remember(view, lang) { announcements(view, lang, vm.container.core) }
     val state = rememberLazyListState()
     val scope = rememberCoroutineScope()

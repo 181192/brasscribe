@@ -89,7 +89,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     LaunchedEffect(controller) {
         // One part first (the full 18-stave score is one tap away in Parts); a key shift re-renders once.
         controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names)) }
-        if (options.keyShift != 0) controller.setKeyShift(options.keyShift)
+        (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) { onDispose { controller.release() } }
 
@@ -132,7 +132,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (textView) {
-                    TalkingScoreList(vm, r)
+                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
                     AndroidView(
                         factory = { controller.view },

@@ -84,6 +84,7 @@
     <string name="stage_export">Setter partituret</string>
     <string name="stage_decode">Leser innspillingen</string>
     <string name="stage_pitch">Lytter etter tonene</string>
+    <string name="stage_confirm">Kontrollerer tonene med en modell til</string>
     <string name="stage_quantize">Plasserer tonene i takter</string>
     <plurals name="eta_minutes">
         <item quantity="one">Omtrent %d minutt igjen</item>
@@ -203,7 +204,7 @@
     <string name="export_audio">Lyd (MP3)</string>
     <string name="export_talking">Talende partitur (tekst)</string>
     <string name="export_braille">Punktskriftnoter (BRF)</string>
-    <string name="export_braille_unavailable">Krever punktskrifteksport i motoren. Denne versjonen av motoren har det ikke.</string>
+    <string name="export_braille_unavailable">Punktskriftnoter lages av motoren på datamaskinen. Transkriber der for å få dem.</string>
     <string name="export_needs_engine">Krever motoren på datamaskinen.</string>
     <string name="export_share">Del</string>
     <string name="export_save">Lagre i Filer</string>

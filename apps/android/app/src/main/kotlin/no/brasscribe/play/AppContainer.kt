@@ -9,6 +9,10 @@ import no.brasscribe.play.engine.FixtureSource
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.model.CoreBridge
 import no.brasscribe.play.model.KotlinCoreBridge
+import no.brasscribe.play.core.RustCoreBridge
+import no.brasscribe.play.pitch.BasicPitch
+import no.brasscribe.play.pitch.BeatThis
+import no.brasscribe.play.pitch.SoloPipeline
 import no.brasscribe.play.pitch.SwiftF0
 
 /** Companion engine settings, kept in SharedPreferences. */
@@ -53,8 +57,8 @@ class EngineSettings(context: Context) {
 class AppContainer(private val context: Context) {
     val settings = EngineSettings(context)
 
-    /** The Rust core replaces this once its UniFFI bindings ship (see README, "CoreBridge"). */
-    val core: CoreBridge = KotlinCoreBridge
+    /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
+    val core: CoreBridge = RustCoreBridge.load() ?: KotlinCoreBridge
 
     /** Golden Mikkel output packaged in debug builds (assets/fixtures). */
     val fixtureSource: FixtureSource? = runCatching {
@@ -87,11 +91,27 @@ class AppContainer(private val context: Context) {
     /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */
     val hasPitchModel: Boolean by lazy { runCatching { context.assets.open(MODEL_ASSET).close() }.isSuccess }
 
-    fun openPitchModel(): SwiftF0 = SwiftF0(context.assets.open(MODEL_ASSET).use { it.readBytes() }, threads = 2)
+    fun openPitchModel(): SwiftF0 = SwiftF0(asset(MODEL_ASSET)!!, threads = 2)
+
+    private fun asset(name: String): ByteArray? = runCatching { context.assets.open(name).use { it.readBytes() } }.getOrNull()
+
+    /** SwiftF0 plus Basic Pitch and Beat This! small when their models are bundled. */
+    class OpenPipeline(val pipeline: SoloPipeline, private val models: List<AutoCloseable>) : AutoCloseable {
+        override fun close() = models.forEach { it.close() }
+    }
+
+    fun openSoloPipeline(): OpenPipeline {
+        val sw = openPitchModel()
+        val bp = asset(BASIC_PITCH_ASSET)?.let { BasicPitch(it) }
+        val bt = asset(BEAT_THIS_ASSET)?.let { BeatThis(it) }
+        return OpenPipeline(SoloPipeline(sw, bp, bt, core), listOfNotNull(sw, bp, bt))
+    }
 
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"
 
     companion object {
         const val MODEL_ASSET = "models/swift-f0-window.onnx"
+        const val BASIC_PITCH_ASSET = "models/nmp-b1.onnx"
+        const val BEAT_THIS_ASSET = "models/beat-this-small0.onnx"
     }
 }

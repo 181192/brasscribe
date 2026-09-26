@@ -44,10 +44,12 @@ fun OutputScreen(vm: PlayViewModel) {
     val result by vm.result.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val t = LocalPlayTokens.current
-    // The engine API has no arrangement options yet: the full band is what it writes, and on-device
-    // results are a single part.
-    val single = result?.onDevice == true
-    val lineups = if (single) listOf(Lineup.SOLO) else listOf(Lineup.FULL, Lineup.SOLO)
+    // Lineup, difficulty and key are arranged by the Rust core (on-device results) or by the engine
+    // (a new job with the options); without either only the display-only choices remain.
+    val r = result
+    val canArrange = r != null && ((r.onDevice && vm.container.core.name.startsWith("rust")) || (!r.onDevice && r.audioId != null))
+    val lineups = if (canArrange) listOf(Lineup.FULL, Lineup.MINIMAL, Lineup.SOLO) else listOf(Lineup.FULL, Lineup.SOLO)
+    val busy by vm.busy.collectAsState()
 
     PlayScaffold(title = stringResource(R.string.output_title), onBack = vm::back, status = status) {
         Heading(stringResource(R.string.output_title))
@@ -74,12 +76,13 @@ fun OutputScreen(vm: PlayViewModel) {
         Column(Modifier.selectableGroup().semantics { collectionInfo = CollectionInfo(3, 1) }) {
             Difficulty.entries.forEachIndexed { i, d ->
                 // Only "faithful" exists in this engine version; the others are shown, disabled, with the reason.
-                RadioRow(stringResource(d.label), null, options.difficulty == d, d == Difficulty.FAITHFUL, i, 3) {
+                RadioRow(stringResource(d.label), null, options.difficulty == d, canArrange || d == Difficulty.FAITHFUL, i, 3) {
                     vm.output.update { it.copy(difficulty = d) }
                 }
             }
         }
-        Text(stringResource(R.string.difficulty_unsupported), color = t.textMuted)
+        if (!canArrange) Text(stringResource(R.string.difficulty_unsupported), color = t.textMuted)
+        if (busy) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
         SubHeading(stringResource(R.string.key_label))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = { vm.output.update { it.copy(keyShift = (it.keyShift - 1).coerceAtLeast(-6)) } }, modifier = Modifier.heightIn(min = 48.dp)) {
@@ -93,9 +96,6 @@ fun OutputScreen(vm: PlayViewModel) {
                 Text(stringResource(R.string.key_up))
             }
         }
-        BigButton(stringResource(R.string.output_apply), {
-            vm.say(R.string.arrangement_ready)
-            vm.navigate(Screen.SCORE)
-        })
+        BigButton(stringResource(R.string.output_apply), { vm.applyOutput { vm.navigate(Screen.SCORE) } }, enabled = !busy)
     }
 }

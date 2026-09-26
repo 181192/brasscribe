@@ -64,7 +64,7 @@ import java.util.Locale
 fun currentLang(): Lang = if (Locale.getDefault().language in setOf("nb", "no", "nn")) Lang.NB else Lang.EN
 
 /** Name and instrument for a Composition voice: the melody reads as the B-flat solo cornet part. */
-fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>): PartView {
+fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>, core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge): PartView {
     val v = c.voice(voiceId) ?: c.voices.first()
     val names = mapOf(
         "solo" to ("Solo Cornet" to "Solokornett"), "bass" to ("Bass" to "Bass"), "strings" to ("Strings" to "Strykere"),
@@ -72,7 +72,7 @@ fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>): PartView {
     )
     val (en, nb) = names[v.id] ?: (v.id.replaceFirstChar { it.uppercase() } to v.id)
     val instrument = if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT
-    return PartView(c, v, instrument, en, nb, checked)
+    return PartView(c, v, instrument, en, nb, checked, core)
 }
 
 /** Screen-reader text of every event, each spoken in the context of the one before (spec §4). */
@@ -94,7 +94,7 @@ fun ReviewScreen(vm: PlayViewModel) {
     var voiceId by rememberSaveable { mutableStateOf(voices.firstOrNull { it.role == VoiceRole.MELODY }?.id ?: voices.first().id) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
-    val view = remember(r, voiceId, checked) { partViewFor(r.composition, voiceId, checked) }
+    val view = remember(r, voiceId, checked) { partViewFor(r.composition, voiceId, checked, vm.container.core) }
     val spoken = remember(view, lang) { announcements(view, lang, vm.container.core) }
     val notes = view.events.filter { it.note != null }
     val uncertain = notes.count { it.uncertainty == Uncertainty.UNCERTAIN && it.index !in checked }
@@ -127,7 +127,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                     SubHeading(stringResource(R.string.review_part))
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         voices.forEach { v ->
-                            val name = partViewFor(r.composition, v.id, emptySet()).let { if (lang == Lang.NB) it.partNameNb else it.partName }
+                            val name = partViewFor(r.composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName }
                             FilterChip(selected = v.id == voiceId, onClick = { voiceId = v.id }, label = { Text(name) })
                         }
                     }
