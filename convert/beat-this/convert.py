@@ -6,7 +6,8 @@ downbeat logits; chunking, aggregation and peak picking stay in the host code, a
 
 - ONNX: time axis dynamic (upstream runs 1500-frame chunks, and one shorter chunk for
   pieces under 30 s), plus a fixed 1500-frame copy for the CoreML execution provider.
-- Core ML: fixed 1500-frame chunk, fp32 and fp16.
+- Core ML: fixed 1500-frame chunk, fp32 and fp16; for small0 also a flexible 16..1500-frame
+  build (`-dyn-`) so pieces under 30 s run unpadded.
 
   uv run python convert.py [small0|final0 ...]
 """
@@ -68,6 +69,33 @@ class Logits(torch.nn.Module):
         return beat, downbeat
 
 
+def export_dynamic(name: str) -> None:
+    """Core ML with a flexible time axis (16..1500 frames), so short pieces run unpadded.
+
+    torch.jit.trace loses the shape relations (outputs become data-dependent '[?, ?]' and
+    Core ML refuses to plan them), so this goes through torch.export with a dynamic dim.
+    """
+    import coremltools as ct
+    from common.coreml_ops import register_aliases
+    register_aliases()
+    model = Logits(load_model(name, "cpu")).eval()
+    frames = torch.export.Dim("frames", min=16, max=CHUNK)
+    ep = torch.export.export(model, (torch.randn(1, 1000, N_MELS),), dynamic_shapes={"spect": {1: frames}})
+    ep = ep.run_decompositions({})
+    graph = ep.graph_module.graph
+    for node in list(graph.nodes):  # coremltools has no lowering for no-op alias nodes
+        if node.op == "call_function" and "alias" in str(node.target):
+            node.replace_all_uses_with(node.args[0])
+            graph.erase_node(node)
+    ep.graph_module.recompile()
+    for precision in ("fp32", "fp16"):
+        ml = ct.convert(ep, convert_to="mlprogram", minimum_deployment_target=ct.target.macOS15,
+                        compute_precision=ct.precision.FLOAT32 if precision == "fp32" else ct.precision.FLOAT16)
+        path = OUT / f"beat-this-{name}-dyn-{precision}.mlpackage"
+        ml.save(str(path))
+        print("wrote", path)
+
+
 def checkpoint_path(name: str) -> Path:
     load_checkpoint(name)  # downloads into the torch hub cache on first use
     return Path(torch.hub.get_dir()) / "checkpoints" / f"beat_this-{name}.ckpt"
@@ -110,3 +138,4 @@ def export(name: str) -> None:
 if __name__ == "__main__":
     for n in sys.argv[1:] or ["small0", "final0"]:
         export(n)
+    export_dynamic("small0")
