@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Studio: run</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  /* Studio workbench density: 14 px body, 32 px controls, radius-xs/sm, mono for identifiers. */
+  body { font-size: 0.875rem; line-height: 1.43; }
+  .desktop { font-size: 0.875rem; }
+  .s-head { height: 52px; display: flex; align-items: center; gap: var(--bc-space-6); padding: 0 var(--bc-space-5); box-shadow: inset 0 -1px 0 var(--bc-border); background: var(--bc-surface); flex: none; }
+  .s-brand { display: flex; align-items: center; gap: 8px; color: var(--bc-brass); }
+  .s-brand span.w { font-family: var(--bc-font-display); font-size: 1.25rem; color: var(--bc-text); }
+  .s-brand em { color: var(--bc-brass-text); }
+  .s-nav { display: flex; gap: 2px; }
+  .s-nav a { padding: 6px 10px; border-radius: var(--bc-radius-xs); color: var(--bc-text-muted); text-decoration: none; font-weight: 500; }
+  .s-nav a.on { color: var(--bc-text); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border); font-weight: 600; }
+  .s-status { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--bc-text-muted); font-size: 0.8125rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bc-success); }
+  .mono { font-family: var(--bc-font-mono); font-size: 0.8125rem; }
+  .s-main { padding: var(--bc-space-5) var(--bc-space-6); display: flex; flex-direction: column; gap: var(--bc-space-4); overflow: hidden; flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border-radius: 999px; font-weight: 600; font-size: 0.8125rem; box-shadow: inset 0 0 0 1px currentColor; color: var(--bc-success); }
+  .pill .i { width: 16px; height: 16px; }
+  .meta { display: flex; gap: var(--bc-space-5); align-items: center; color: var(--bc-text-muted); flex-wrap: wrap; }
+  .meta b { color: var(--bc-text); font-weight: 500; }
+  .sbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--bc-radius-xs); background: var(--bc-secondary); color: var(--bc-on-secondary); font-weight: 600; font-size: 0.8125rem; border: 0; }
+  .sbtn.ghost { background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+  .sbtn.danger { background: transparent; color: var(--bc-error); }
+  .sbtn .i { width: 16px; height: 16px; }
+  .graph { display: flex; align-items: center; gap: 6px; }
+  .node { flex: 1; min-width: 0; padding: 8px 10px; border-radius: var(--bc-radius-sm); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+  .node.cache { box-shadow: none; background-image: linear-gradient(var(--bc-surface-raised), var(--bc-surface-raised)); outline: 1px dashed var(--bc-border-strong); outline-offset: -1px; }
+  .node.ran { box-shadow: inset 0 0 0 2px var(--bc-success); }
+  .node .n { font-family: var(--bc-font-mono); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node .m { font-size: 0.75rem; color: var(--bc-text-muted); }
+  .arrow { display: grid; place-items: center; color: var(--bc-text-muted); }
+  .stack-col { display: flex; flex-direction: column; gap: 6px; flex: 1.6; min-width: 0; }
+  .tabs { display: flex; gap: var(--bc-space-5); box-shadow: inset 0 -1px 0 var(--bc-border); }
+  .tabs span { padding: 8px 0; color: var(--bc-text-muted); font-weight: 500; }
+  .tabs span.on { color: var(--bc-text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--bc-text); }
+  .insp { display: grid; grid-template-columns: 1fr 360px; gap: var(--bc-space-4); min-height: 0; align-items: start; }
+  .panel td:first-child { white-space: nowrap; }
+  .panel { background: var(--bc-surface-raised); border-radius: var(--bc-radius-sm); box-shadow: inset 0 0 0 1px var(--bc-border); padding: var(--bc-space-3) var(--bc-space-4); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
+  th, td { text-align: left; padding: 6px 4px; box-shadow: inset 0 -1px 0 var(--bc-border); }
+  th { color: var(--bc-text-muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .legend-sm { display: flex; gap: var(--bc-space-4); color: var(--bc-text-muted); font-size: 0.8125rem; }
+</style>
+</head>
+<body>
+<div class="phone"></div>
+<div class="desktop">
+  <header class="s-head">
+    <span class="s-brand"><span data-mark="22"></span><span class="w">Brasscribe <em>Studio</em></span></span>
+    <nav class="s-nav" aria-label="Studio"><a class="on">Runs</a><a>Score viewer</a><a>Compare</a><a>Benchmarks</a><a>Conversion parity</a><a>Core conformance</a><a>Datasets and models</a></nav>
+    <span class="s-status"><span class="dot"></span>Engine 0.1.0 · MPS · <span class="mono">localhost:8765</span></span>
+  </header>
+  <main class="s-main">
+    <div style="display:flex; align-items:flex-start; gap: var(--bc-space-4)">
+      <div style="flex:1">
+        <p class="caption"><i data-i="back" class="sm"></i> All runs</p>
+        <h1 class="title-1" style="font-size: 1.5rem; margin-top: 4px">Mikkel · soloist with band</h1>
+        <div class="meta" style="margin-top: 6px"><span class="pill"><i data-i="mark-checked"></i>Succeeded</span><span class="mono">20260926-012820-orchestra-with-soloist-ee6ee8</span><span>profile <b>orchestra-with-soloist</b></span><span>git <b class="mono">2068d0e</b></span><span>12 stages · 11 from cache · <b>44.7 s</b></span></div>
+      </div>
+      <div style="display:flex; gap: 6px">
+        <button class="sbtn"><i data-i="file"></i>MusicXML</button>
+        <button class="sbtn"><i data-i="file"></i>PDF</button>
+        <button class="sbtn"><i data-i="file"></i>MIDI</button>
+        <button class="sbtn ghost">Compare…</button>
+        <button class="sbtn ghost"><i data-i="retry"></i>Re-run</button>
+        <button class="sbtn danger"><i data-i="delete"></i>Delete</button>
+      </div>
+    </div>
+
+    <section aria-label="Stages">
+      <div style="display:flex; justify-content: space-between; margin-bottom: 6px"><h2 class="headline" style="font-size: 0.9375rem">Stages</h2><span class="legend-sm"><span>solid: ran</span><span>dashed: from cache</span><span>thick: running or failed</span></span></div>
+      <div class="graph">
+        <div class="node cache"><div class="n">beats</div><div class="m">cache · 51 ms · mps</div></div><span class="arrow">→</span>
+        <div class="node cache"><div class="n">stems</div><div class="m">cache · 110 ms · mps</div></div><span class="arrow">→</span>
+        <div class="node cache"><div class="n">layers</div><div class="m">cache · 51 ms</div></div><span class="arrow">→</span>
+        <div class="stack-col">
+          <div class="node cache"><div class="n">transcribe.solo.muscriptor</div><div class="m">cache · 23 ms · mps</div></div>
+          <div class="node cache"><div class="n">transcribe.solo.swift-f0</div><div class="m">cache · 21 ms · cpu</div></div>
+          <div class="node cache"><div class="n">transcribe.orchestra.muscriptor</div><div class="m">cache · 94 ms · mps</div></div>
+        </div><span class="arrow">→</span>
+        <div class="node ran"><div class="n">arrange</div><div class="m">ran · 44.1 s · cpu</div></div><span class="arrow">→</span>
+        <div class="node cache"><div class="n">export</div><div class="m">cache · 24 ms</div></div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist"><span class="on">Score</span><span>Audio</span><span>Stems</span><span>Piano roll</span><span>Beats</span><span>Voices</span><span>MusicXML</span><span>Manifest</span></div>
+    <div class="insp">
+      <div class="panel score" data-score="studio" style="padding: 0 var(--bc-space-2)"></div>
+      <div class="panel">
+        <h3 class="headline" style="font-size: 0.875rem; margin-bottom: 6px">Notes by source</h3>
+        <table>
+          <thead><tr><th>Model</th><th class="num">Notes</th><th class="num">Uncertain</th></tr></thead>
+          <tbody>
+            <tr><td><span class="sw" style="background: var(--bc-model-1)"></span>MuScriptor</td><td class="num">412</td><td class="num">38</td></tr>
+            <tr><td><span class="sw" style="background: repeating-linear-gradient(45deg, var(--bc-model-2) 0 3px, transparent 3px 5px); box-shadow: inset 0 0 0 1px var(--bc-model-2)"></span>Basic Pitch</td><td class="num">61</td><td class="num">12</td></tr>
+            <tr><td><span class="sw" style="background: repeating-linear-gradient(90deg, var(--bc-model-3) 0 2px, transparent 2px 4px); box-shadow: inset 0 0 0 1px var(--bc-model-3)"></span>SwiftF0</td><td class="num">216</td><td class="num">164</td></tr>
+          </tbody>
+        </table>
+        <h3 class="headline" style="font-size: 0.875rem; margin: var(--bc-space-4) 0 6px">Validator</h3>
+        <table><tbody>
+          <tr><td><span class="q vu">?</span> Range</td><td>Solo Cornet bar 31: C6 above the easier range</td></tr>
+          <tr><td><span class="q u">?</span> Crossing</td><td>Baritone above Euphonium, bars 40–41</td></tr>
+          <tr><td style="color: var(--bc-success)">✓ MuseScore</td><td>Round trip opens and re-exports</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

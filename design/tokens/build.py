@@ -668,6 +668,12 @@ def web_outputs() -> dict[str, str | bytes]:
     out: dict[str, str | bytes] = {"web/brasscribe.css": "\n".join(C), "web/fonts.css": "\n".join(F), "web/studio-compat.css": "\n".join(S)}
     for f in ("InstrumentSerif-Regular.ttf", "InstrumentSerif-Italic.ttf", "OFL.txt"):
         out[f"web/fonts/{f}"] = (BRAND / "fonts" / f).read_bytes()
+    js = [f"// {HEADER}", "// Path data on the Material Symbols 960 grid (viewBox \"0 -960 960 960\"), keyed by action.",
+          "globalThis.BrasscribeIcons = {"]
+    for a in ICONS:
+        js.append(f'  "{a}": "{icon_source(a, "material")[1]}",')
+    js += ["};", ""]
+    out["web/icons.js"] = "\n".join(js)
     for a in ICONS:
         _, d = icon_source(a, "material")
         out[f"web/icons/{a}.svg"] = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" '

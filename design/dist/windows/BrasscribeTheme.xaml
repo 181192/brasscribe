@@ -354,6 +354,7 @@
     <x:String x:Key="BcIconSettings">&#xE713;</x:String>
     <x:String x:Key="BcIconHelp">&#xE897;</x:String>
     <x:String x:Key="BcIconBack">&#xE72B;</x:String>
+    <x:String x:Key="BcIconOpen">&#xE76C;</x:String>
     <x:String x:Key="BcIconClose">&#xE711;</x:String>
     <x:String x:Key="BcIconMore">&#xE712;</x:String>
     <x:String x:Key="BcIconRetry">&#xE72C;</x:String>

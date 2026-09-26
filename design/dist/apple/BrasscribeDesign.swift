@@ -213,6 +213,7 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
     case settings
     case help
     case back
+    case open
     case close
     case more
     case retry
@@ -259,6 +260,7 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .settings: "gearshape"
         case .help: "questionmark.circle"
         case .back: "chevron.backward"
+        case .open: "chevron.right"
         case .close: "xmark"
         case .more: "ellipsis.circle"
         case .retry: "arrow.clockwise"

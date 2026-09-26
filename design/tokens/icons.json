@@ -33,6 +33,7 @@
     "settings":        {"en": "Settings",             "nb": "Innstillinger",         "apple": "gearshape",               "material": "settings",            "windows": {"glyph": "E713", "name": "Settings"}},
     "help":            {"en": "Help",                 "nb": "Hjelp",                 "apple": "questionmark.circle",     "material": "help",                "windows": {"glyph": "E897", "name": "Help"}},
     "back":            {"en": "Back",                 "nb": "Tilbake",               "apple": "chevron.backward",        "material": "arrow_back",          "windows": {"glyph": "E72B", "name": "Back"}},
+    "open":            {"en": "Open",                 "nb": "Åpne",                  "apple": "chevron.right",           "material": "chevron_right",       "windows": {"glyph": "E76C", "name": "ChevronRight"}},
     "close":           {"en": "Close",                "nb": "Lukk",                  "apple": "xmark",                   "material": "close",               "windows": {"glyph": "E711", "name": "Cancel"}},
     "more":            {"en": "More",                 "nb": "Mer",                   "apple": "ellipsis.circle",         "material": "more_horiz",          "windows": {"glyph": "E712", "name": "More"}},
     "retry":           {"en": "Try again",            "nb": "Prøv igjen",            "apple": "arrow.clockwise",         "material": "refresh",             "windows": {"glyph": "E72C", "name": "Refresh"}},

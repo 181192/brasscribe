@@ -39,6 +39,7 @@ enum class BrasscribeIcon(val drawable: String, val material: String) {
     SETTINGS("ic_bc_settings", "settings"),
     HELP("ic_bc_help", "help"),
     BACK("ic_bc_back", "arrow_back"),
+    OPEN("ic_bc_open", "chevron_right"),
     CLOSE("ic_bc_close", "close"),
     MORE("ic_bc_more", "more_horiz"),
     RETRY("ic_bc_retry", "refresh"),

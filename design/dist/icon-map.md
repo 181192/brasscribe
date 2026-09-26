@@ -38,6 +38,7 @@ Custom glyphs live in `design/brand/icons/custom/`.
 | settings | Settings | Innstillinger | `gearshape` | `settings` | `Settings` U+E713 |
 | help | Help | Hjelp | `questionmark.circle` | `help` | `Help` U+E897 |
 | back | Back | Tilbake | `chevron.backward` | `arrow_back` | `Back` U+E72B |
+| open | Open | Åpne | `chevron.right` | `chevron_right` | `ChevronRight` U+E76C |
 | close | Close | Lukk | `xmark` | `close` | `Cancel` U+E711 |
 | more | More | Mer | `ellipsis.circle` | `more_horiz` | `More` U+E712 |
 | retry | Try again | Prøv igjen | `arrow.clockwise` | `refresh` | `Refresh` U+E72C |

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: transcribing</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .hero-mark { color: var(--bc-brass); }
+  .meta-row { display: flex; justify-content: space-between; margin-top: var(--bc-space-2); }
+  .steps .dot .i { width: 16px; height: 16px; }
+  .desk-card { padding: var(--bc-space-10); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar"><span class="back"><i data-i="back"></i>Home</span><span class="ttl">Mikkel</span><span style="width:72px"></span></div>
+  <div class="content" style="padding-top: var(--bc-space-8)">
+    <span class="hero-mark" data-mark="40"></span>
+    <p class="eyebrow" style="margin-top: var(--bc-space-6)">Step 4 of 6</p>
+    <h1 class="display" style="font-size: 2.25rem">Writing down the notes</h1>
+    <div style="margin-top: var(--bc-space-6)">
+      <div class="bar" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Transcribing"><span style="width: 62%"></span></div>
+      <div class="meta-row"><span class="callout num">62 percent</span><span class="callout">About 2 minutes left</span></div>
+    </div>
+    <ol class="steps" style="margin-top: var(--bc-space-6)">
+      <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Getting the recording ready</span></li>
+      <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Finding the beat</span></li>
+      <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Separating the soloist from the band</span></li>
+      <li class="now"><span class="dot"></span><span class="label">Writing down the notes</span></li>
+      <li class="todo"><span class="dot"></span><span class="label">Arranging for brass band</span></li>
+      <li class="todo"><span class="dot"></span><span class="label">Engraving the score</span></li>
+    </ol>
+    <div class="notice" style="margin-top: auto; margin-bottom: var(--bc-space-2)"><i data-i="computer" class="sm"></i><span>On Kalli's MacBook. You can leave this screen; we'll tell you when the score is ready.</span></div>
+  </div>
+  <div class="bottom"><button class="btn outline block">Cancel</button></div>
+  <div class="homebar"></div>
+</div>
+
+<div class="desktop">
+  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel</span><span class="sp"></span></div>
+  <div class="shell">
+    <nav class="sidebar" aria-label="Library">
+      <div class="brandline" style="padding: 0 var(--bc-space-3) var(--bc-space-4); color: var(--bc-brass)"><span data-mark="24"></span><span style="font-family: var(--bc-font-display); font-size: 1.375rem; color: var(--bc-text)">Brasscribe <em style="color: var(--bc-brass-text)">Play</em></span></div>
+      <div class="side-item"><i data-i="import-file" class="sm"></i>New score</div>
+      <div class="side-head">Your scores</div>
+      <div class="side-item on"><i data-i="score" class="sm"></i><span style="flex:1">Mikkel</span><span class="caption num">62%</span></div>
+      <div class="side-item"><i data-i="score" class="sm"></i>Abide with Me</div>
+      <div class="side-item"><i data-i="score" class="sm"></i>Deep Harmony</div>
+    </nav>
+    <main class="main">
+      <div class="pane" style="max-width: 640px; padding-top: 96px">
+        <span class="hero-mark" data-mark="44"></span>
+        <p class="eyebrow" style="margin-top: var(--bc-space-6)">Step 4 of 6 · Soloist with orchestra or band</p>
+        <h1 class="display" style="font-size: 3rem">Writing down the notes</h1>
+        <div style="margin-top: var(--bc-space-8)">
+          <div class="bar" role="progressbar" aria-valuenow="62" aria-label="Transcribing"><span style="width: 62%"></span></div>
+          <div class="meta-row"><span class="callout num">62 percent</span><span class="callout">About 2 minutes left</span></div>
+        </div>
+        <ol class="steps" style="margin-top: var(--bc-space-8)">
+          <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Getting the recording ready</span></li>
+          <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Finding the beat</span></li>
+          <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label">Separating the soloist from the band</span></li>
+          <li class="now"><span class="dot"></span><span class="label">Writing down the notes</span></li>
+          <li class="todo"><span class="dot"></span><span class="label">Arranging for brass band</span></li>
+          <li class="todo"><span class="dot"></span><span class="label">Engraving the score</span></li>
+        </ol>
+        <div style="display:flex; align-items:center; gap: var(--bc-space-3); margin-top: var(--bc-space-10)">
+          <span class="caption" style="flex:1; display:flex; gap:6px; align-items:center"><i data-i="computer" class="sm"></i>On this Mac. Nothing goes online.</span>
+          <button class="btn outline">Cancel</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
