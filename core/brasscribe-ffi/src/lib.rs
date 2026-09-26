@@ -10,6 +10,7 @@
 
 use brasscribe_core::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
+use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::{MidiFile, RawNote};
 use brasscribe_core::model::Composition;
 use brasscribe_core::musicxml::{band_score, write_score};
@@ -17,6 +18,8 @@ use brasscribe_core::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
 use brasscribe_core::quantize::{choose_level, fill_gaps, quantize};
 
 pub mod c_api;
+pub mod humanize;
+pub mod talking;
 
 uniffi::setup_scaffolding!();
 
@@ -111,8 +114,108 @@ fn midi(b: &[u8]) -> Result<MidiFile, CoreError> {
     MidiFile::parse(b).map_err(invalid)
 }
 
-/// Solo-with-band arrangement from layer transcriptions and a beat table
-/// (`time position` per line, position 1 = downbeat).
+/// WAV file bytes of the separated stems (PCM 16/24/32-bit or float32). Each is
+/// optional; the energy gate, separation check, dynamics and rehearsal marks
+/// use whichever are given.
+#[derive(Debug, Clone, Default, uniffi::Record)]
+pub struct LayerStems {
+    pub solo: Option<Vec<u8>>,
+    pub bass: Option<Vec<u8>>,
+    pub drums: Option<Vec<u8>>,
+    pub orchestra: Option<Vec<u8>>,
+}
+
+/// Options of the solo-with-band arrangement (defaults: everything on).
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct LayersSongOptions {
+    /// SwiftF0 contour of the solo stem: where sustained solo notes really end.
+    pub solo_contour: Option<SoloContour>,
+    /// Detect free-time (ad lib.) passages.
+    pub free_time: bool,
+    /// Notate free-time passages at this BPM instead of estimating one.
+    pub free_tempo: Option<f64>,
+    /// Drop layer notes where the layer's stem is silent.
+    pub gate: bool,
+    /// Clean up the tracked beats (tempo agreement, downbeat phase).
+    pub beat_cleanup: bool,
+    /// Allow key changes (otherwise one key for the whole piece).
+    pub key_changes: bool,
+}
+
+impl Default for LayersSongOptions {
+    fn default() -> Self {
+        LayersSongOptions { solo_contour: None, free_time: true, free_tempo: None, gate: true, beat_cleanup: true, key_changes: true }
+    }
+}
+
+/// One part of the band as its own MusicXML file.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct PartScore {
+    pub file_name: String,
+    pub musicxml: String,
+}
+
+/// Everything the band arrangement writes.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct BandOutput {
+    pub composition_json: String,
+    pub musicxml: String,
+    pub parts: Vec<PartScore>,
+    /// `separation-check.json` text, when stems were given.
+    pub separation_check_json: Option<String>,
+}
+
+fn stem(b: &Option<Vec<u8>>) -> Result<Option<Audio>, CoreError> {
+    b.as_ref().map(|b| Audio::from_wav(b).map_err(invalid)).transpose()
+}
+
+pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str, title: &str, o: LayersSongOptions) -> Result<BandOutput, CoreError> {
+    let l = Layers {
+        solo_sw: midi(&layers.solo_swiftf0)?,
+        solo_mus: midi(&layers.solo_muscriptor)?,
+        solo_bp: midi(&layers.solo_basic_pitch)?,
+        bass: midi(&layers.bass)?,
+        orchestra: midi(&layers.orchestra)?,
+        drums: midi(&layers.drums)?,
+        solo_audio: stem(&stems.solo)?,
+        bass_audio: stem(&stems.bass)?,
+        drums_audio: stem(&stems.drums)?,
+        orchestra_audio: stem(&stems.orchestra)?,
+    };
+    let beats = Beats::parse(beats_text).map_err(invalid)?;
+    let opts = LayersOptions {
+        solo_contour: o.solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db)),
+        no_free_time: !o.free_time,
+        free_tempo: o.free_tempo,
+        no_gate: !o.gate,
+        no_beat_cleanup: !o.beat_cleanup,
+        single_key: !o.key_changes,
+    };
+    let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
+    Ok(BandOutput {
+        composition_json: r.composition.to_json_string(),
+        musicxml: r.musicxml,
+        parts: r.parts.into_iter().map(|(file_name, musicxml)| PartScore { file_name, musicxml }).collect(),
+        separation_check_json: r.separation_check,
+    })
+}
+
+/// Solo-with-band arrangement from layer transcriptions, the stems' audio and
+/// a beat table (`time position` per line, position 1 = downbeat): the score,
+/// every part, the Composition and the separation check.
+#[uniffi::export]
+pub fn arrange_layers_band(layers: LayerMidi, stems: LayerStems, beats_text: String, title: String, options: LayersSongOptions) -> Result<BandOutput, CoreError> {
+    band_impl(&layers, &stems, &beats_text, &title, options)
+}
+
+/// Default options of [`arrange_layers_band`].
+#[uniffi::export]
+pub fn layers_song_defaults() -> LayersSongOptions {
+    LayersSongOptions::default()
+}
+
+/// Solo-with-band arrangement from layer transcriptions and a beat table,
+/// without stems (no energy gate, dynamics or rehearsal marks).
 #[uniffi::export]
 pub fn arrange_layers_song(
     layers: LayerMidi,
@@ -122,22 +225,9 @@ pub fn arrange_layers_song(
     free_time: bool,
     free_tempo: Option<f64>,
 ) -> Result<SongOutput, CoreError> {
-    let l = Layers {
-        solo_sw: midi(&layers.solo_swiftf0)?,
-        solo_mus: midi(&layers.solo_muscriptor)?,
-        solo_bp: midi(&layers.solo_basic_pitch)?,
-        bass: midi(&layers.bass)?,
-        orchestra: midi(&layers.orchestra)?,
-        drums: midi(&layers.drums)?,
-    };
-    let beats = Beats::parse(&beats_text).map_err(invalid)?;
-    let opts = LayersOptions {
-        solo_contour: solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db)),
-        no_free_time: !free_time,
-        free_tempo,
-    };
-    let r = pipeline::arrange_layers_song(&l, &beats, &title, &opts).map_err(failed)?;
-    Ok(SongOutput { composition_json: r.composition.to_json_string(), musicxml: r.musicxml })
+    let o = LayersSongOptions { solo_contour, free_time, free_tempo, ..Default::default() };
+    let r = band_impl(&layers, &LayerStems::default(), &beats_text, &title, o)?;
+    Ok(SongOutput { composition_json: r.composition_json, musicxml: r.musicxml })
 }
 
 /// Minimal-band arrangement from melody, optional melody support, bass and harmony transcriptions.
