@@ -14,6 +14,7 @@ import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, loading, panel, pill, table, tabs } from "../ui/dom";
+import { icon } from "../ui/icons";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
 const TAB_FOR_KIND: Record<string, string> = {
@@ -41,12 +42,19 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   const graph = h("bs-stage-graph", {}) as StageGraph;
   const stageInfo = h("div", {});
   const inspector = h("section", { "aria-labelledby": "inspector-h" }, h("h2", { id: "inspector-h" }, t("run.inspector")), loading());
+  const actions = h("div", { class: "actions" });
   clear(root,
-    h("p", { class: "small" }, h("a", { href: "#/runs" }, t("run.back"))),
-    heading, header,
-    h("section", { "aria-labelledby": "graph-h" }, h("h2", { id: "graph-h" }, t("run.stages")),
-      h("p", { class: "hint" }, t("run.stagesHint")),
-      graph, stageInfo),
+    h("div", { class: "run-head" },
+      h("div", { class: "run-title" },
+        h("p", {}, h("a", { class: "back-link", href: "#/runs" }, icon("back"), t("run.back"))),
+        heading, header),
+      actions),
+    h("section", { "aria-labelledby": "graph-h" },
+      h("div", { class: "graph-head" }, h("h2", { id: "graph-h" }, t("run.stages")),
+        h("p", { class: "graph-legend" }, h("span", {}, t("run.legend.ran")), h("span", {}, t("run.legend.cache")), h("span", {}, t("run.legend.thick")))),
+      graph,
+      h("p", { class: "hint" }, t("run.stagesChoose")),
+      stageInfo),
     inspector);
 
   let stop: (() => void) | null = null;
@@ -59,21 +67,33 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     heading.textContent = job.title || job.id;
     const tot = view ? totals(view) : null;
     clear(header,
-      h("p", { class: "row" }, pill(job.status), h("span", { class: "mono small" }, job.id), h("span", {}, t("run.profile", { p: job.profile })),
-        m?.git ? h("span", { class: "small" }, `git ${fmt.hash(m.git.sha)}${m.git.dirty ? t("run.dirty") : ""}`) : null),
-      tot ? h("p", {},
-        h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }), " ",
-        t("run.progress", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) }),
-        m?.devices?.length ? t("run.devices", { d: m.devices.join(", ") }) : "") : null,
+      h("p", { class: "meta" }, pill(job.status), h("span", { class: "mono" }, job.id), h("span", {}, t("run.profile", { p: "" }), h("b", {}, job.profile)),
+        m?.git ? h("span", {}, "git ", h("b", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7)), m.git.dirty ? t("run.dirty") : "") : null),
+      tot ? h("p", { class: "meta" },
+        TERMINAL.has(job.status) ? null : h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }),
+        h("span", {}, t("run.progress", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) }),
+          m?.devices?.length ? t("run.devices", { d: m.devices.join(", ") }) : "")) : null,
       job.error ? h("pre", { class: "notice notice-error small", role: "alert", style: "white-space:pre-wrap;overflow-wrap:anywhere" }, job.error) : null,
-      h("div", { class: "row" },
-        !TERMINAL.has(job.status) ? h("button", { type: "button", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, t("run.cancel")) : null,
-        job.outputs?.includes("brass-band.musicxml") ? h("a", { class: "button", href: api.musicxmlUrl(job.id), download: "" }, "MusicXML") : null,
-        job.outputs?.includes("brass-band.pdf") ? h("a", { class: "button", href: api.pdfUrl(job.id) }, "PDF") : null,
-        job.outputs?.includes("brass-band.mid") ? h("a", { class: "button", href: api.midiUrl(job.id), download: "" }, "MIDI") : null,
-        h("a", { class: "button", href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare")),
-        job.previous_run_id ? h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun")) : null,
-        TERMINAL.has(job.status) ? deleteButton(job.id) : null));
+      job.previous_run_id ? h("p", { class: "small" }, h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun"))) : null);
+    clear(actions,
+      !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, icon("close"), t("run.cancel")) : null,
+      job.outputs?.includes("brass-band.musicxml") ? h("a", { class: "button", href: api.musicxmlUrl(job.id), download: "" }, icon("file"), "MusicXML") : null,
+      job.outputs?.includes("brass-band.pdf") ? h("a", { class: "button", href: api.pdfUrl(job.id) }, icon("file"), "PDF") : null,
+      job.outputs?.includes("brass-band.mid") ? h("a", { class: "button", href: api.midiUrl(job.id), download: "" }, icon("file"), "MIDI") : null,
+      h("a", { class: "button ghost", href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare")),
+      TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async (e: Event) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.disabled = true;
+        try {
+          const j = await api.rerun(job.id, { allow_heavy: false, cold: [] });
+          announce(t("manifest.rerunStarted", { id: j.id }));
+          location.hash = `#/runs/${encodeURIComponent(j.id)}`;
+        } catch (x) {
+          b.disabled = false;
+          clear(header, errorNotice(x));
+        }
+      } }, icon("retry"), t("manifest.rerunBtn")) : null,
+      TERMINAL.has(job.status) ? deleteButton(job.id) : null);
   };
 
   const showStage = (name: string) => {
@@ -444,9 +464,9 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
 /** "Delete run" with an inline confirmation (no browser dialog). */
 function deleteButton(id: string): HTMLElement {
   const box = h("span", { class: "row" });
-  const start = (): HTMLButtonElement => h("button", { type: "button", onclick: ask }, t("run.delete"));
+  const start = (): HTMLButtonElement => h("button", { type: "button", class: "danger", onclick: ask }, icon("delete"), t("run.delete"));
   function ask(): void {
-    const yes = h("button", { type: "button", class: "danger", onclick: async () => {
+    const yes = h("button", { type: "button", class: "danger confirm", onclick: async () => {
       try {
         await api.deleteRun(id);
         announce(t("run.deleted", { id }));
@@ -455,7 +475,7 @@ function deleteButton(id: string): HTMLElement {
         clear(box, errorNotice(e));
       }
     } }, t("run.deleteYes"));
-    const no = h("button", { type: "button", onclick: () => {
+    const no = h("button", { type: "button", class: "ghost", onclick: () => {
       const b = start();
       clear(box, b);
       b.focus();

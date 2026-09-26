@@ -41,7 +41,7 @@ export interface TsEvent {
   dynamic?: string | null;
   confidence?: number | null;
   /** Marked uncertain without a confidence value (e.g. a coloured MusicXML note). */
-  uncertain?: boolean;
+  uncertain?: boolean | "very";
   sources?: string[];
   checked?: boolean;
   time_s?: number | null;
@@ -282,7 +282,8 @@ function modifiers(e: TsEvent, bar: TsBar | undefined, s: Settings, lang: Lang, 
           ? `${pct}, ${lang === "nb" ? (srcs.length > 1 ? "kilder" : "kilde") : srcs.length > 1 ? "sources" : "source"} ${srcs.join(lang === "nb" ? " og " : " and ")}`
           : pct);
       }
-    } else if (e.uncertain) out.push(lang === "nb" ? "usikker" : "uncertain");
+    } else if (e.uncertain === "very") out.push(lang === "nb" ? "svært usikker" : "very uncertain");
+    else if (e.uncertain) out.push(lang === "nb" ? "usikker" : "uncertain");
   }
   return out;
 }

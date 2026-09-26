@@ -1,6 +1,7 @@
 // Small DOM helpers shared by the views.
 import { ApiError, MissingEndpoint } from "../api/client";
 import { locale, t } from "../i18n";
+import { icon } from "./icons";
 
 type Child = Node | string | number | null | undefined | false | Child[];
 type Attrs = Record<string, string | number | boolean | null | undefined | EventListener>;
@@ -107,15 +108,17 @@ export const fmt = {
   },
 };
 
-/** A status pill: text always carries the meaning; colour and icon repeat it. */
+/** A status pill: text always carries the meaning; the icon and colour repeat it. */
 export function pill(status: string): HTMLElement {
-  const icon: Record<string, string> = {
-    pass: "✓", succeeded: "✓", ran: "✓", ok: "✓", cached: "↺", imported: "↺", identical: "✓",
-    fail: "✕", failed: "✕", regressed: "✕", error: "✕", different: "≠",
-    running: "▶", started: "▶", queued: "…", pending: "…", skipped: "–", cancelled: "–", missing: "?", not_run: "–",
-    improved: "↑", new: "+", warning: "!",
+  const icons: Record<string, string> = {
+    pass: "mark-checked", succeeded: "mark-checked", ran: "done", ok: "done", identical: "mark-checked", improved: "done",
+    fail: "error", failed: "error", regressed: "error", error: "error", different: "info", warning: "error",
+    running: "play", started: "play", cached: "retry", imported: "retry", missing: "help", cancelled: "close",
   };
-  return h("span", { class: `pill pill-${status}` }, h("span", { "aria-hidden": "true" }, icon[status] ?? "•"), " ", t(`status.${status}`) === `status.${status}` ? status.replace("_", " ") : t(`status.${status}`));
+  const glyph: Record<string, string> = { queued: "…", pending: "…", skipped: "–", not_run: "–", new: "+" };
+  const label = t(`status.${status}`) === `status.${status}` ? status.replace("_", " ") : t(`status.${status}`);
+  const mark = icons[status] ? icon(icons[status]) : h("span", { "aria-hidden": "true" }, glyph[status] ?? "•");
+  return h("span", { class: `pill pill-${status}` }, mark, label);
 }
 
 /** A table with a caption; rows are arrays of cells. */
