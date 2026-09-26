@@ -193,9 +193,14 @@ struct Segmented<Value: Hashable>: View {
     let label: String
     @Binding var selection: Value
     let options: [(value: Value, title: String)]
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// At the largest text sizes the segments stack, one per row, so none wraps or squeezes.
+    private var stacked: Bool { typeSize >= .accessibility1 }
 
     var body: some View {
-        HStack(spacing: 2) {
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(spacing: 2))
+        layout {
             ForEach(Array(options.enumerated()), id: \.offset) { _, o in
                 let on = o.value == selection
                 Button { selection = o.value } label: {
@@ -203,7 +208,7 @@ struct Segmented<Value: Hashable>: View {
                         .font(on ? Font.Brasscribe.label : Font.Brasscribe.body)
                         .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
                         .padding(.horizontal, Space.s3)
-                        .frame(minHeight: 40)
+                        .frame(maxWidth: stacked ? .infinity : nil, minHeight: 44, alignment: .leading)
                         .background {
                             if on {
                                 RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Brasscribe.surfaceRaised)
@@ -218,7 +223,7 @@ struct Segmented<Value: Hashable>: View {
         }
         .padding(2)
         .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
-        .fixedSize()
+        .fixedSize(horizontal: !stacked, vertical: true)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(label))
     }

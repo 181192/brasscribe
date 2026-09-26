@@ -19,7 +19,7 @@ struct TalkingScoreView: View {
         NavigationStack {
             List {
                 Picker(selection: $partID) {
-                    ForEach(model.score.parts) { p in Text(p.name).tag(p.id) }
+                    ForEach(model.score.parts) { p in Text(p.displayName).tag(p.id) }
                 } label: { Text("Part") }
                 ForEach(model.score.measures.indices, id: \.self) { i in
                     HStack(alignment: .top) {
@@ -139,7 +139,7 @@ struct ExportView: View {
 
     // MARK: what
 
-    private var myLabel: String { myPart.map { String(localized: "\($0.name) (you)") } ?? String(localized: "My part") }
+    private var myLabel: String { myPart.map { String(localized: "My part (\($0.displayName))") } ?? String(localized: "My part") }
 
     @ViewBuilder private var what: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -378,14 +378,14 @@ struct ExportView: View {
             let parts: [Part?] = scope == .conductor ? [nil] : partsInScope.map { Optional($0) }
             var out: [URL] = []
             func name(_ part: Part?, _ ext: String) -> URL {
-                dir.appending(path: part.map { "\(title) – \($0.name).\(ext)" } ?? "\(title).\(ext)")
+                dir.appending(path: part.map { "\(title) – \($0.displayName).\(ext)" } ?? "\(title).\(ext)")
             }
             for f in Format.allCases where kinds.contains(f) && unavailable(f) == nil {
                 switch f {
                 case .pdf:
                     for p in parts {
                         let data = try await Task.detached {
-                            try PDFMaker.pdf(musicXML: xml, parts: p.map { [$0.id] }, title: title, subtitle: p?.name, marks: marks)
+                            try PDFMaker.pdf(musicXML: xml, parts: p.map { [$0.id] }, title: title, subtitle: p?.displayName, marks: marks)
                         }.value
                         let u = name(p, "pdf"); try data.write(to: u); out.append(u)
                     }

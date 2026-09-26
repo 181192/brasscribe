@@ -72,7 +72,7 @@ struct NotationView: View {
         }
         .accessibilityRotor(Text("Parts")) {
             ForEach(Array(model.displayedParts.enumerated()), id: \.offset) { k, p in
-                AccessibilityRotorEntry(Text(p.name), id: "\(model.currentBar)-\(k)", in: rotorNS)
+                AccessibilityRotorEntry(Text(p.displayName), id: "\(model.currentBar)-\(k)", in: rotorNS)
             }
         }
         .accessibilityRotor(Text("Uncertain notes")) {
@@ -186,7 +186,7 @@ private struct PageView: View {
                         ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)
                         if level == .veryUncertain {
                             let box = CGRect(x: center.x - size * 0.45, y: center.y - size * 0.62, width: size * 0.9, height: size * 1.24)
-                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1, size / 11))
+                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
                         }
                     }
                 }

@@ -113,7 +113,7 @@ final class PracticeModel {
     func relayout() {
         let xml: String
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }
-        if renderer == nil { renderer = ScoreRenderer(musicXML: xml) }
+        if renderer == nil { renderer = ScoreRenderer(musicXML: PartNames.localized(xml)) }
         guard let r = renderer else { loadError = String(localized: "The notation engine could not start."); return }
         let layout = ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
                                           height: max(600, viewWidth * 1.3))

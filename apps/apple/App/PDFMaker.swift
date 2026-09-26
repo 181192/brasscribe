@@ -15,7 +15,7 @@ enum PDFMaker {
     ///   - parts: part ids to include (nil = the conductor's score)
     ///   - marks: keep the "?" marks and note colours, with the legend in the footer
     static func pdf(musicXML: String, parts: Set<String>?, title: String, subtitle: String?, marks: Bool) throws -> Data {
-        let xml = marks ? musicXML : ScoreRenderer.removingUncertainty(musicXML)
+        let xml = PartNames.localized(marks ? musicXML : ScoreRenderer.removingUncertainty(musicXML))
         guard let r = ScoreRenderer(musicXML: xml, keepQuestionMarks: marks) else { throw Failure.engraving }
         let top: CGFloat = 36, header: CGFloat = 56, footer: CGFloat = 40
         let zoom: CGFloat = parts?.count == 1 ? 0.9 : 0.6

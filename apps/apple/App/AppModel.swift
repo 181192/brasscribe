@@ -249,7 +249,36 @@ final class AppModel {
 
     /// Arrange a piece again on this device for another band, difficulty or key, and open it.
     /// The engine's PDF and braille no longer match, so those are made on this device too.
-    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice) throws {
+    /// "Change note…": move one uncertain note by `delta` semitones in the recording's notes
+    /// (it is then certain) and arrange the parts again. A score without the recording's
+    /// notes (an imported MusicXML) has the written note changed instead.
+    func changeNote(_ piece: Piece, item: ReviewItem, note: ScoreNote, delta: Int, fifths: Int) throws {
+        guard case .pitched(let written) = note.kind else { return }
+        if var comp = piece.loadComposition(), let concert = note.midiPitch {
+            let t = Int((Double(item.tick) * Double(comp.ticksPerBeat) / Double(Score.ticksPerQuarter)).rounded())
+            let pc = ((concert % 12) + 12) % 12
+            var changed = false
+            for v in comp.voices.indices {
+                for n in comp.voices[v].notes.indices {
+                    let c = comp.voices[v].notes[n]
+                    guard c.start == t, ((c.pitch % 12) + 12) % 12 == pc, c.confidence < 1 else { continue }
+                    comp.voices[v].notes[n].pitch += delta
+                    comp.voices[v].notes[n].confidence = 1
+                    changed = true
+                }
+            }
+            if changed {
+                try JSONEncoder().encode(comp).write(to: piece.compositionURL)
+                try rearrange(piece, composition: comp, output: piece.output ?? OutputChoice(), open: false)
+                return
+            }
+        }
+        let edited = try MusicXMLNoteEditor.replacingPitch(in: piece.musicXML(), partID: item.partID, noteIndex: item.noteIndex,
+                                                          with: SpelledPitch.spelling(midi: written.midi + delta, fifths: fifths))
+        try piece.saveMusicXML(edited)
+    }
+
+    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws {
         guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths) else {
             throw TranscriptionError.artifactUnavailable(.musicXML)
         }
@@ -264,7 +293,7 @@ final class AppModel {
         }
         try p.save()
         refresh()
-        open(p)
+        if andOpen { open(p) }
     }
 
     func delete(_ p: Piece) {

@@ -12,6 +12,7 @@ struct SourceView: View {
     @State private var profile: SourceProfile?
     @State private var output = OutputChoice()
     @State private var duration: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private var wide: Bool {
         #if os(macOS)
@@ -89,15 +90,30 @@ struct SourceView: View {
         .accessibilityIdentifier("profile-\(p.rawValue)")
     }
 
+    /// Where the listening happens, and a way to change it. At large text sizes the
+    /// Change button moves under the text, so the text never squeezes into a column.
     private var whereItRuns: some View {
-        HStack(spacing: Space.s3) {
-            IconWell(systemName: BrasscribeIcon.computer.systemName)
-            Text(app.whereItRuns(for: profile))
-                .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: Space.s2)
-            Button { app.showSettings = true } label: { Text("Change") }.buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+        let text = Text(app.whereItRuns(for: profile))
+            .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
+            .fixedSize(horizontal: false, vertical: true)
+        let change = Button { app.showSettings = true } label: { Text("Change") }
+            .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+        return Group {
+            if typeSize >= .xxxLarge {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    HStack(spacing: Space.s3) { IconWell(systemName: BrasscribeIcon.computer.systemName); text }
+                    change
+                }
+            } else {
+                HStack(spacing: Space.s3) {
+                    IconWell(systemName: BrasscribeIcon.computer.systemName)
+                    text
+                    Spacer(minLength: Space.s2)
+                    change
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .card()
     }
 

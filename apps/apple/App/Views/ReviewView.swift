@@ -16,6 +16,13 @@ struct ReviewView: View {
     @State private var currentID: String?
     @State private var confirmLeave = false
     @State private var showAll = false
+    @State private var filter: Filter = .mine
+    @State private var changing: ReviewItem?
+    @State private var changeFailed = false
+    @State private var snippetVersion = 0
+
+    /// Triage: your own part first (very unsure first), then the other parts, then all.
+    enum Filter: Hashable { case mine, others, all }
     @AccessibilityFocusState private var headingFocused: Bool
 
     private var wide: Bool {
@@ -26,7 +33,29 @@ struct ReviewView: View {
         #endif
     }
 
-    private var remaining: [ReviewItem] { items.filter { !checked.contains($0.id) } }
+    /// Every note still to check, in every part.
+    private var allRemaining: [ReviewItem] { items.filter { !checked.contains($0.id) } }
+
+    private var myPartID: String? { model?.myPart }
+
+    /// The notes still to check under the chosen filter. In your part the very unsure come first.
+    private var remaining: [ReviewItem] {
+        switch filter {
+        case .mine:
+            return allRemaining.filter { $0.partID == myPartID }
+                .sorted { ($0.level == .veryUncertain ? 0 : 1, $0.bar, $0.tick) < ($1.level == .veryUncertain ? 0 : 1, $1.bar, $1.tick) }
+        case .others: return allRemaining.filter { $0.partID != myPartID }
+        case .all: return allRemaining
+        }
+    }
+
+    private func count(_ f: Filter) -> Int {
+        switch f {
+        case .mine: return allRemaining.filter { $0.partID == myPartID }.count
+        case .others: return allRemaining.filter { $0.partID != myPartID }.count
+        case .all: return allRemaining.count
+        }
+    }
     private var current: ReviewItem? {
         if let currentID, let i = items.first(where: { $0.id == currentID }), !checked.contains(i.id) { return i }
         return remaining.first { !skipped.contains($0.id) } ?? remaining.first
@@ -58,9 +87,9 @@ struct ReviewView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
-                    if remaining.isEmpty { finish() } else { confirmLeave = true }
+                    if allRemaining.isEmpty { finish() } else { confirmLeave = true }
                 } label: {
-                    Text(remaining.isEmpty ? String(localized: "Continue") : String(localized: "Finish later (\(remaining.count) left)"))
+                    Text(allRemaining.isEmpty ? String(localized: "Continue") : String(localized: "Finish later (\(allRemaining.count) left)"))
                 }
                 .accessibilityIdentifier("openScore")
             }
@@ -69,9 +98,9 @@ struct ReviewView: View {
             Button(String(localized: "Finish later")) { finish() }
             Button(String(localized: "Keep checking"), role: .cancel) {}
         } message: {
-            Text(remaining.count == 1
+            Text(allRemaining.count == 1
                  ? String(localized: "1 note keeps its ? mark. You can check it any time from the score: tap “Check them”.")
-                 : String(localized: "\(remaining.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”."))
+                 : String(localized: "\(allRemaining.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”."))
         }
         .task {
             guard model == nil, let m = try? PracticeModel(piece: piece) else { return }
@@ -79,9 +108,16 @@ struct ReviewView: View {
             model = m
             items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
             checked = piece.loadChecked()
+            if count(.mine) == 0 { filter = .all }
             headingFocused = true
         }
         .onDisappear { model?.stopAll() }
+        .sheet(item: $changing) { c in
+            ChangeNoteSheet(current: pitchName(c, model!), options: changeOptions(c)) { delta in change(c, by: delta) }
+        }
+        .alert(String(localized: "The note couldn't be changed"), isPresented: $changeFailed) {
+            Button("OK") {}
+        } message: { Text("The score is as it was. Try again, or keep the note and fix it later.") }
         .onKeyPress(.space) { if let c = current, let model { listen(c, model) }; return .handled }
         .onKeyPress("k") { if let c = current { keep(c) }; return .handled }
         .onKeyPress(.downArrow) { move(1); return .handled }
@@ -93,12 +129,18 @@ struct ReviewView: View {
     @ViewBuilder private func detail(_ model: PracticeModel) -> some View {
         VStack(alignment: .leading, spacing: Space.s5) {
             VStack(alignment: .leading, spacing: Space.s2) {
-                DisplayTitle(text: remaining.isEmpty ? String(localized: "Every note is checked")
-                             : remaining.count == 1 ? String(localized: "Check 1 note") : String(localized: "Check \(remaining.count) notes"))
+                DisplayTitle(text: headline)
                     .accessibilityFocused($headingFocused)
-                Text(remaining.isEmpty ? String(localized: "Next, choose how the score should be.")
-                     : String(localized: "Brasscribe wasn't sure about these. Listen, then keep each one or skip it."))
+                Text(subline(model))
                     .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !allRemaining.isEmpty {
+                    Segmented(label: String(localized: "Which notes"), selection: $filter,
+                              options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                                        (Filter.others, String(localized: "Other parts (\(count(.others)))")),
+                                        (Filter.all, String(localized: "All parts (\(count(.all)))"))])
+                    .accessibilityIdentifier("reviewFilter")
+                }
                 if !items.isEmpty && !wide { UncertaintyLegend().font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted) }
             }
 
@@ -120,6 +162,22 @@ struct ReviewView: View {
         }
     }
 
+    private var headline: String {
+        if allRemaining.isEmpty { return String(localized: "Every note is checked") }
+        if filter == .mine, count(.mine) > 0 { return String(localized: "Check your part first") }
+        return remaining.count == 1 ? String(localized: "Check 1 note") : String(localized: "Check \(remaining.count) notes")
+    }
+
+    private func subline(_ model: PracticeModel) -> String {
+        if allRemaining.isEmpty { return String(localized: "Next, choose how the score should be.") }
+        if filter == .mine, let id = myPartID, let part = model.score.part(id: id), count(.mine) > 0 {
+            let n = count(.mine), v = remaining.filter { $0.level == .veryUncertain }.count
+            let notes = n == 1 ? String(localized: "1 note in \(part.displayName)") : String(localized: "\(n) notes in \(part.displayName)")
+            return v == 0 ? notes + "." : notes + ", " + (v == 1 ? String(localized: "1 very unsure, first.") : String(localized: "\(v) very unsure, first."))
+        }
+        return String(localized: "Brasscribe wasn't sure about these. Listen, then keep, change or skip each one.")
+    }
+
     private func noteCard(_ c: ReviewItem, _ model: PracticeModel) -> some View {
         VStack(alignment: .leading, spacing: Space.s4) {
             HStack(alignment: .firstTextBaseline) {
@@ -129,9 +187,11 @@ struct ReviewView: View {
                     Text("\(i + 1) of \(remaining.count)").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted).monospacedDigit()
                 }
             }
+            BarSnippet(piece: piece, partID: c.partID, bar: c.bar, tick: c.tick)
+                .id(snippetVersion)
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                 UncertainMark(level: c.level)
-                Text("\(Text(noteText(c, model)).foregroundStyle(Color.Brasscribe.text)) \(Text(c.level == .veryUncertain ? String(localized: "Very uncertain.") : String(localized: "Uncertain.")).foregroundStyle(Color.Brasscribe.textMuted))")
+                Text("\(Text(noteText(c, model) + ".").foregroundStyle(Color.Brasscribe.text)) \(Text(c.level == .veryUncertain ? String(localized: "Very uncertain.") : String(localized: "Uncertain.")).foregroundStyle(Color.Brasscribe.textMuted))")
                     .font(Font.Brasscribe.body)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -150,10 +210,9 @@ struct ReviewView: View {
         Button { listen(c, model) } label: { Label("Listen to bar", systemImage: BrasscribeIcon.listenBar.systemName) }
             .buttonStyle(SecondaryButtonStyle(fullWidth: !wide, minHeight: 48))
             .accessibilityHint(model.hasOriginal ? Text("Plays this bar from the recording, again and again.") : Text("Plays this bar from the score, again and again."))
-        if model.hasOriginal {
-            Button { model.listen(toBar: c.bar, original: false) } label: { Label("Hear the score", systemImage: BrasscribeIcon.score.systemName) }
-                .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide, minHeight: 48))
-        }
+        Button { changing = c } label: { Text("Change note…") }
+            .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide, minHeight: 48))
+            .accessibilityIdentifier("changeNote")
     }
 
     private func wideActions(_ c: ReviewItem, _ model: PracticeModel) -> some View {
@@ -162,7 +221,7 @@ struct ReviewView: View {
             Divider().overlay(Color.Brasscribe.border)
             HStack(spacing: Space.s3) {
                 Spacer()
-                Button { confirmLeave = true } label: { Text("Finish later (\(remaining.count) left)") }.buttonStyle(.plainText)
+                Button { confirmLeave = true } label: { Text("Finish later (\(allRemaining.count) left)") }.buttonStyle(.plainText)
                 Button { skip(c) } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
                     .buttonStyle(SecondaryButtonStyle(minHeight: 48))
                 Button { keep(c) } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
@@ -266,10 +325,44 @@ struct ReviewView: View {
 
     private var partsWithItems: [String] {
         var seen = Set<String>()
-        return items.map(\.partName).filter { seen.insert($0).inserted }
+        let names = items.map(\.partName).filter { seen.insert($0).inserted }
+        let mine = items.first { $0.partID == myPartID }?.partName
+        return (mine.map { [$0] } ?? []) + names.filter { $0 != mine }
     }
 
     // MARK: actions
+
+    /// A semitone and an octave either way, named as written on the part.
+    private func changeOptions(_ c: ReviewItem) -> [(delta: Int, title: String)] {
+        guard let model, let n = note(c, model), case .pitched(let p) = n.kind,
+              let part = model.score.part(id: c.partID) else { return [] }
+        let fifths = part.measureFifths.indices.contains(n.measureIndex) ? part.measureFifths[n.measureIndex] : part.writtenFifths
+        func name(_ d: Int) -> String { NoteWords.pitch(SpelledPitch.spelling(midi: p.midi + d, fifths: fifths)) }
+        return [(1, String(localized: "\(name(1)), a semitone higher")), (-1, String(localized: "\(name(-1)), a semitone lower")),
+                (12, String(localized: "\(name(12)), an octave higher")), (-12, String(localized: "\(name(-12)), an octave lower"))]
+    }
+
+    private func change(_ c: ReviewItem, by delta: Int) {
+        guard let model, let n = note(c, model), let part = model.score.part(id: c.partID) else { return }
+        let fifths = part.measureFifths.indices.contains(n.measureIndex) ? part.measureFifths[n.measureIndex] : part.writtenFifths
+        model.stopAll()
+        do {
+            try app.changeNote(piece, item: c, note: n, delta: delta, fifths: fifths)
+            checked.insert(c.id)
+            BarSnippet.forget(piece)
+            snippetVersion += 1
+            let m = try PracticeModel(piece: piece)
+            m.start()
+            self.model = m
+            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
+            advance(from: c)
+            piece.saveChecked(checked, remaining: allRemaining.count)
+            app.refresh()
+            AccessibilityNotifier.announce(String(localized: "Changed. The parts are arranged again."))
+        } catch {
+            changeFailed = true
+        }
+    }
 
     private func listen(_ c: ReviewItem, _ model: PracticeModel) {
         model.listen(toBar: c.bar, original: model.hasOriginal)
@@ -278,9 +371,9 @@ struct ReviewView: View {
     private func keep(_ c: ReviewItem) {
         checked.insert(c.id)
         advance(from: c)
-        piece.saveChecked(checked, remaining: remaining.count)
+        piece.saveChecked(checked, remaining: allRemaining.count)
         app.refresh()
-        if remaining.isEmpty { AccessibilityNotifier.announce(String(localized: "Every note is checked.")) }
+        if allRemaining.isEmpty { AccessibilityNotifier.announce(String(localized: "Every note is checked.")) }
     }
 
     private func skip(_ c: ReviewItem) {
@@ -290,6 +383,7 @@ struct ReviewView: View {
 
     private func advance(from c: ReviewItem) {
         model?.stop()
+        if remaining.isEmpty, !allRemaining.isEmpty { filter = .all }
         let rest = remaining
         guard !rest.isEmpty else { currentID = nil; return }
         let after = items.drop { $0.id != c.id }.dropFirst().first { !checked.contains($0.id) && !skipped.contains($0.id) }
@@ -306,7 +400,7 @@ struct ReviewView: View {
     /// Back to the score if Review was opened from it, otherwise on to the score options.
     private func finish() {
         model?.stopAll()
-        piece.saveChecked(checked, remaining: remaining.count)
+        piece.saveChecked(checked, remaining: allRemaining.count)
         app.refresh()
         if app.path.count >= 2, case .score = app.path[app.path.count - 2] {
             app.path.removeLast()
@@ -474,28 +568,41 @@ struct OutputView: View {
     private var key: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("Key").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
-            HStack(spacing: Space.s3) {
-                Button { semitones = max(-6, semitones - 1) } label: { Image(systemName: "minus").frame(width: 48, height: 48) }
-                    .buttonStyle(SecondaryButtonStyle(minHeight: 48))
-                    .accessibilityLabel(Text("Lower"))
-                    .disabled(recordedFifths == nil || semitones <= -6)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(keyName).font(Font.Brasscribe.headline)
-                    Text(keyDetail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                }
-                .padding(.horizontal, Space.s4)
-                .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong))
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("keyPicker")
-                .accessibilityAdjustableAction { d in
-                    if d == .increment { semitones = min(6, semitones + 1) } else if d == .decrement { semitones = max(-6, semitones - 1) }
-                }
-                Button { semitones = min(6, semitones + 1) } label: { Image(systemName: "plus").frame(width: 48, height: 48) }
-                    .buttonStyle(SecondaryButtonStyle(minHeight: 48))
-                    .accessibilityLabel(Text("Higher"))
-                    .disabled(recordedFifths == nil || semitones >= 6)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.s3) { lowerButton; keyBox; higherButton }
+                VStack(alignment: .leading, spacing: Space.s3) { keyBox; HStack(spacing: Space.s3) { lowerButton; higherButton } }
             }
+        }
+    }
+
+    private var lowerButton: some View {
+        Button { semitones = max(-6, semitones - 1) } label: { Label("Lower", systemImage: "minus") }
+            .buttonStyle(SecondaryButtonStyle(minHeight: 48))
+            .help(Text("One semitone lower"))
+            .disabled(recordedFifths == nil || semitones <= -6)
+    }
+
+    private var higherButton: some View {
+        Button { semitones = min(6, semitones + 1) } label: { Label("Higher", systemImage: "plus") }
+            .buttonStyle(SecondaryButtonStyle(minHeight: 48))
+            .help(Text("One semitone higher"))
+            .disabled(recordedFifths == nil || semitones >= 6)
+    }
+
+    private var keyBox: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(keyName).font(Font.Brasscribe.headline)
+            Text(keyDetail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, Space.s4)
+        .padding(.vertical, Space.s2)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("keyPicker")
+        .accessibilityAdjustableAction { d in
+            if d == .increment { semitones = min(6, semitones + 1) } else if d == .decrement { semitones = max(-6, semitones - 1) }
         }
     }
 
@@ -509,17 +616,26 @@ struct OutputView: View {
 
     private var keyName: String {
         guard let f = targetFifths else { return String(localized: "As recorded") }
-        return KeyNames.name(fifths: f)
+        return String(localized: "\(KeyNames.name(fifths: f)) (concert)")
+    }
+
+    /// The same key as a B♭ and an E♭ player read it on their part.
+    private var writtenKeys: String? {
+        guard let f = targetFifths else { return nil }
+        func wrap(_ x: Int) -> Int { var v = x; while v > 6 { v -= 12 }; while v < -6 { v += 12 }; return v }
+        return String(localized: "\(KeyNames.name(fifths: wrap(f + 2))) for B♭ · \(KeyNames.name(fifths: wrap(f + 3))) for E♭ instruments")
     }
 
     private var keyDetail: String {
+        let change: String
         switch semitones {
-        case 0: return String(localized: "As recorded · concert pitch")
-        case 1: return String(localized: "1 semitone up")
-        case -1: return String(localized: "1 semitone down")
-        case let s where s > 0: return String(localized: "\(s) semitones up")
-        default: return String(localized: "\(-semitones) semitones down")
+        case 0: change = String(localized: "As recorded")
+        case 1: change = String(localized: "1 semitone up")
+        case -1: change = String(localized: "1 semitone down")
+        case let s where s > 0: change = String(localized: "\(s) semitones up")
+        default: change = String(localized: "\(-semitones) semitones down")
         }
+        return [writtenKeys, change].compactMap { $0 }.joined(separator: " · ")
     }
 
     static func semitones(from: Int, to: Int) -> Int {

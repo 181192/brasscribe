@@ -242,7 +242,7 @@ struct ScoreToolbar: View {
     private var parts: some View {
         Picker(selection: $model.shownPart) {
             Text("All parts").tag(String?.none)
-            ForEach(model.score.parts) { p in Text(p.name).tag(String?.some(p.id)) }
+            ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
         } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
         .pickerStyle(.menu)
         .labelsHidden()
@@ -599,7 +599,7 @@ struct PartsPanel: View {
                 SectionLabel(String(localized: "Sound"))
                 VStack(alignment: .leading, spacing: Space.s3) {
                     Picker(selection: $model.myPart) {
-                        ForEach(model.score.parts) { p in Text(p.name).tag(String?.some(p.id)) }
+                        ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
                     } label: { Text("My part") }
                     .pickerStyle(.menu)
                     .tint(Color.Brasscribe.text)
@@ -625,7 +625,7 @@ struct PartsPanel: View {
         return HStack(spacing: Space.s2) {
             Rectangle().fill(mine ? Color.Brasscribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
-                Text(p.name).font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                Text(p.displayName).font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
                 if mine { Text("your part").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -633,12 +633,12 @@ struct PartsPanel: View {
                 Label("Mute", systemImage: BrasscribeIcon.mute.systemName)
             }
             .toggleStyle(SmallToggleStyle())
-            .accessibilityLabel(Text("Mute \(p.name)"))
+            .accessibilityLabel(Text("Mute \(p.displayName)"))
             Toggle(isOn: Binding(get: { model.isSoloed(p.id) }, set: { model.setSoloed(p.id, $0) })) {
                 Label("Only this", systemImage: BrasscribeIcon.solo.systemName)
             }
             .toggleStyle(SmallToggleStyle())
-            .accessibilityLabel(Text("Only \(p.name)"))
+            .accessibilityLabel(Text("Only \(p.displayName)"))
             .help(Text("Only this: hear this part alone."))
         }
         .padding(.vertical, 2)

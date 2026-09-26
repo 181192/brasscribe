@@ -32,7 +32,7 @@ struct PitchCorrectionView: View {
                     Form {
                         Section("Part") {
                             Picker("Part", selection: $partID) {
-                                ForEach(score.parts) { part in Text(part.name).tag(Optional(part.id)) }
+                                ForEach(score.parts) { part in Text(part.displayName).tag(Optional(part.id)) }
                             }
                         }
                         if let part = score.parts.first(where: { $0.id == partID }) {
