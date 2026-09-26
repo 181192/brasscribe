@@ -1,7 +1,7 @@
 # Visual design tokens: colour, shape, contrast, motion, zoom
 
 - **Source of truth:** [design/tokens/tokens.json](../../design/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tokens/build.py` and keeps its existing shape for tools that read it.
-- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 67 pairs per theme) exit 1 on any contrast failure and run in CI.
+- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 68 pairs per theme) exit 1 on any contrast failure and run in CI.
 - **Generated reports:** [qa/reports/contrast-tokens.md](../../qa/reports/contrast-tokens.md) and [qa/reports/contrast-design-tokens.md](../../qa/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
 
 ## 1. Palette
@@ -21,7 +21,7 @@
 | cursor | `#6B3FA0` | `#C9A7F0` | `#FF80FF` | Playback cursor line |
 | focus | `#0050B3` | `#8AB4F8` | `#FFFF00` | Keyboard focus ring |
 | error | `#B3261E` | `#F2B8B5` | `#FF8080` | Error text |
-| cursor-tint | `#EAE4ED` | `#302A34` | none (`#000000`) | Band behind the bar under the cursor (design tokens only) |
+| cursor-tint | `#DED5E6` | `#37303D` | none (`#000000`) | The 20% cursor tint on the current bar (design tokens only) |
 | selection-tint / selection-edge | `#E8E5DE` / `#1B1A17` | `#2C2A26` / `#EDEBE6` | none / `#FFFFFF` | Selected bar range before it becomes a loop (design tokens only) |
 
 The neutrals are warm (paper and ink rather than pure grey) for the Brasscribe look; the score hues are unchanged. Tints never stack: inside an ad lib passage the loop tint replaces the ad lib tint, and the ad lib text and dashed bar lines remain.
@@ -44,7 +44,7 @@ The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which 
 | focus / surface | 6.65 | 8.17 | 19.56 | 3 |
 | error / bg | 6.26 | 10.96 | 8.65 | 4.5 |
 
-All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 201 pairs, all pass.
+All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 204 pairs, all pass.
 
 ### Colour-vision simulation (CIEDE2000, from the generated report)
 
@@ -75,7 +75,7 @@ What this means:
 | Checked by user | normal | – | – | normal |
 | Free time (*ad lib*) | normal | `adlib-tint` band plus the text "ad lib." at the start, "a tempo" at the end, dashed bar lines | "Ad lib, free time…" | `<words>ad lib.</words>`, dashed `<bar-style>` |
 | Loop range | – | tint band plus bracket-shaped edge markers at both ends, labelled "Loop 12–16" | "Loop set, bars 12 to 16" | – |
-| Playback cursor | – | 3 px full-staff-height line (`cursor`) plus the `cursor-tint` band on the current bar | position in the status region | – |
+| Playback cursor | – | 3 px full-staff-height line (`cursor`) plus a 20% tint of the current bar | position in the status region | – |
 | Focus (score) | – | 2 px `focus` outline plus a 2 px gap around the focused note or bar | the announcement | – |
 | Active part | – | part name in bold plus a leading bar marker, not only highlight colour | "Part: Solo Cornet" | – |
 

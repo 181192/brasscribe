@@ -615,8 +615,11 @@ def web_outputs() -> dict[str, str | bytes]:
         if k.startswith("$"):
             continue
         sh = v["$value"]
+        def shadow_color(c: dict) -> str:
+            h = c["hex"]
+            return f"rgb({int(h[1:3], 16)} {int(h[3:5], 16)} {int(h[5:7], 16)} / {fmt(c.get('alpha', 1))})"
         val = "none" if not sh else ", ".join(
-            f"{fmt(s['offsetX']['value'])}px {fmt(s['offsetY']['value'])}px {fmt(s['blur']['value'])}px {fmt(s['spread']['value'])}px {s['color']}" for s in sh)
+            f"{fmt(s['offsetX']['value'])}px {fmt(s['offsetY']['value'])}px {fmt(s['blur']['value'])}px {fmt(s['spread']['value'])}px {shadow_color(s['color'])}" for s in sh)
         C.append(f"  --bc-elevation-{k}: {val};")
     for k, v in TOKENS["motion"]["duration"].items():
         C.append(f"  --bc-duration-{k}: {v['$value']['value']}ms;")

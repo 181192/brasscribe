@@ -138,7 +138,7 @@ public extension Color {
         public static let loopEdge = Color("Brasscribe/loopEdge", bundle: BrasscribeDesign.bundle)
         /// Playback cursor: a 3 px full-staff-height line.
         public static let cursor = Color("Brasscribe/cursor", bundle: BrasscribeDesign.bundle)
-        /// Tint of the bar under the playback cursor (cursor at 12% on paper in light, 16% in dark).
+        /// Tint of the bar under the playback cursor: the cursor colour at 20% over the paper.
         public static let cursorTint = Color("Brasscribe/cursorTint", bundle: BrasscribeDesign.bundle)
         /// Band behind a selected bar range (before it becomes a loop).
         public static let selectionTint = Color("Brasscribe/selectionTint", bundle: BrasscribeDesign.bundle)

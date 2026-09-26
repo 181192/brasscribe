@@ -83,7 +83,7 @@ data class BrasscribeColors(
     val loopEdge: Color,
     /** Playback cursor: a 3 px full-staff-height line. */
     val cursor: Color,
-    /** Tint of the bar under the playback cursor (cursor at 12% on paper in light, 16% in dark). */
+    /** Tint of the bar under the playback cursor: the cursor colour at 20% over the paper. */
     val cursorTint: Color,
     /** Band behind a selected bar range (before it becomes a loop). */
     val selectionTint: Color,
@@ -128,7 +128,7 @@ val BrasscribeLightColors = BrasscribeColors(
     loopTint = Color(0xFFFFF3D6),
     loopEdge = Color(0xFF8A5A00),
     cursor = Color(0xFF6B3FA0),
-    cursorTint = Color(0xFFEAE4ED),
+    cursorTint = Color(0xFFDED5E6),
     selectionTint = Color(0xFFE8E5DE),
     selectionEdge = Color(0xFF1B1A17),
     model1 = Color(0xFF0072B2),
@@ -166,7 +166,7 @@ val BrasscribeDarkColors = BrasscribeColors(
     loopTint = Color(0xFF33290F),
     loopEdge = Color(0xFFE0B65C),
     cursor = Color(0xFFC9A7F0),
-    cursorTint = Color(0xFF302A34),
+    cursorTint = Color(0xFF37303D),
     selectionTint = Color(0xFF2C2A26),
     selectionEdge = Color(0xFFEDEBE6),
     model1 = Color(0xFF56B4E9),

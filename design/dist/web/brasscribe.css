@@ -30,7 +30,7 @@
   --bc-loop-tint: #FFF3D6;
   --bc-loop-edge: #8A5A00;
   --bc-cursor: #6B3FA0;
-  --bc-cursor-tint: #EAE4ED;
+  --bc-cursor-tint: #DED5E6;
   --bc-selection-tint: #E8E5DE;
   --bc-selection-edge: #1B1A17;
   --bc-model-1: #0072B2;
@@ -88,9 +88,9 @@
   --bc-radius-xl: 24px;
   --bc-radius-full: 9999px;
   --bc-elevation-0: none;
-  --bc-elevation-1: 0px 1px 2px 0px #1B1A170F;
-  --bc-elevation-2: 0px 4px 16px 0px #1B1A171A;
-  --bc-elevation-3: 0px 12px 32px 0px #1B1A1729;
+  --bc-elevation-1: 0px 1px 2px 0px rgb(27 26 23 / 0.06);
+  --bc-elevation-2: 0px 4px 16px 0px rgb(27 26 23 / 0.1);
+  --bc-elevation-3: 0px 12px 32px 0px rgb(27 26 23 / 0.16);
   --bc-duration-instant: 0ms;
   --bc-duration-fast: 120ms;
   --bc-duration-base: 200ms;
@@ -139,7 +139,7 @@
     --bc-loop-tint: #33290F;
     --bc-loop-edge: #E0B65C;
     --bc-cursor: #C9A7F0;
-    --bc-cursor-tint: #302A34;
+    --bc-cursor-tint: #37303D;
     --bc-selection-tint: #2C2A26;
     --bc-selection-edge: #EDEBE6;
     --bc-model-1: #56B4E9;
@@ -180,7 +180,7 @@
   --bc-loop-tint: #33290F;
   --bc-loop-edge: #E0B65C;
   --bc-cursor: #C9A7F0;
-  --bc-cursor-tint: #302A34;
+  --bc-cursor-tint: #37303D;
   --bc-selection-tint: #2C2A26;
   --bc-selection-edge: #EDEBE6;
   --bc-model-1: #56B4E9;

@@ -27,12 +27,12 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 uv run design/tokens/build.py            # regenerate design/dist and docs/accessibility/design-tokens.json
 uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tokens
-uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 67 pairs x 3 themes, exit 1 on failure
+uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 68 pairs x 3 themes, exit 1 on failure
 uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
 
-**Contrast:** all 201 pairs pass. See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
+**Contrast:** all 204 pairs pass. See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
 - `docs/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.
@@ -40,7 +40,7 @@ node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/n
 
 ### Using the tokens per platform
 
-The app teams copy (or link) from `design/dist/`. The generator never edits `apps/`.
+Each app copies (or links) from `design/dist/`. The generator never edits `apps/`.
 
 | Platform | Copy | Use |
 |---|---|---|
@@ -51,7 +51,7 @@ The app teams copy (or link) from `design/dist/`. The generator never edits `app
 
 ## Implementation checklist
 
-These are the changes each app team needs to make. The ones marked **(drift)** are places where the app today differs from the agreed accessibility spec.
+These are the changes each app needs. The ones marked **(drift)** are places where the app today differs from the agreed accessibility spec.
 
 ### All apps
 - [ ] Replace the hand-copied colours with the generated tokens (Apple `Color.Brasscribe.*`, Android `BrasscribeTheme`, Windows `BrasscribeTheme.xaml`).

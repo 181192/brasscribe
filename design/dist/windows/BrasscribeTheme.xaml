@@ -34,7 +34,7 @@
             <Color x:Key="BcLoopTintColor">#FFFFF3D6</Color>
             <Color x:Key="BcLoopEdgeColor">#FF8A5A00</Color>
             <Color x:Key="BcCursorColor">#FF6B3FA0</Color>
-            <Color x:Key="BcCursorTintColor">#FFEAE4ED</Color>
+            <Color x:Key="BcCursorTintColor">#FFDED5E6</Color>
             <Color x:Key="BcSelectionTintColor">#FFE8E5DE</Color>
             <Color x:Key="BcSelectionEdgeColor">#FF1B1A17</Color>
             <Color x:Key="BcModel1Color">#FF0072B2</Color>
@@ -104,7 +104,7 @@
             <Color x:Key="BcLoopTintColor">#FF33290F</Color>
             <Color x:Key="BcLoopEdgeColor">#FFE0B65C</Color>
             <Color x:Key="BcCursorColor">#FFC9A7F0</Color>
-            <Color x:Key="BcCursorTintColor">#FF302A34</Color>
+            <Color x:Key="BcCursorTintColor">#FF37303D</Color>
             <Color x:Key="BcSelectionTintColor">#FF2C2A26</Color>
             <Color x:Key="BcSelectionEdgeColor">#FFEDEBE6</Color>
             <Color x:Key="BcModel1Color">#FF56B4E9</Color>
