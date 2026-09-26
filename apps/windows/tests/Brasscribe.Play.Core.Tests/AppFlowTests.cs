@@ -164,7 +164,7 @@ public class AppFlowTests
         Assert.Equal("Finish later (1 left)", main.Review.FinishLaterText);
         Assert.True(main.HasLibrary);
         Assert.Equal("Test tune", main.LibraryItems[0].Title);
-        Assert.Contains("1 notes to check", main.LibraryItems[0].Subtitle);
+        Assert.Contains("1 note to check", main.LibraryItems[0].Subtitle);
 
         // Keeping the last note goes on to "How should the score be?"; unchanged, it just shows the score.
         main.Review.KeepCommand.Execute(null);
@@ -280,6 +280,10 @@ public class AppFlowTests
         await main.Output.ShowScoreCommand.ExecuteAsync(main.Score.Composition);
         await Until(() => engine.Requests.Count(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs") == 2);
         await Until(() => main.Screen is Screen.Score or Screen.Review && !main.Transcription.IsRunning);
+        // The re-arranged score has its note to check again, then goes straight to the score.
+        Assert.Equal(Screen.Review, main.Screen);
+        main.Review.KeepCommand.Execute(null);
+        Assert.Equal(Screen.Score, main.Screen);
 
         var second = engine.Requests.Last(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!;
         Assert.Contains("\"audio_id\":\"a1\"", second);

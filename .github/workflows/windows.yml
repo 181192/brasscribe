@@ -100,6 +100,7 @@ jobs:
 
       # Every screen in light and dark, named like design/mockups/png (e.g. score-desktop-light.png).
       - name: Screenshots
+        if: always() && steps.exe.outputs.path != ''
         run: >
           ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}"
           -Score tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml

@@ -98,6 +98,7 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Transcription.Completed += (_, r) =>
         {
+            bool rearranged = _result is not null && r.AudioId is not null && r.AudioId == _result.AudioId;
             _result = r;
             Output.HasEngineJob = r.AudioId is not null;
             Output.Applied = r.Options ?? ArrangementOptions.Default;
@@ -109,7 +110,7 @@ public sealed partial class MainViewModel : ObservableObject
             Score.Load(r.MusicXml, r.Composition);
             _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
                 Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId).Id;
-            OpenReviewOrScore();
+            OpenReviewOrScore(rearranged);
         };
         Transcription.PropertyChanged += (_, e) =>
         {
@@ -213,11 +214,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool _chooseOutputNext;
 
-    private void OpenReviewOrScore()
+    /// <summary>
+    /// A new score: check the notes, then "How should the score be?". A score arranged again with new
+    /// choices: its notes to check, then straight to the score (the choice was just made).
+    /// </summary>
+    private void OpenReviewOrScore(bool rearranged)
     {
         Review.Load();
-        _chooseOutputNext = Review.Items.Count > 0;
-        Screen = Review.Items.Count > 0 ? Screen.Review : Screen.ChooseOutput;
+        _chooseOutputNext = !rearranged && Review.Items.Count > 0;
+        Screen = Review.Items.Count > 0 ? Screen.Review : rearranged ? Screen.Score : Screen.ChooseOutput;
     }
 
     /// <summary>"How should the score be?" from the score's View menu.</summary>
@@ -246,7 +251,7 @@ public sealed partial class MainViewModel : ObservableObject
         string lineup = _s[e.Parts <= 1 ? "Library_OnePart" : e.Parts <= 6 ? "Library_SmallBand" : "Library_FullBand"];
         string when = e.Updated.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
             : e.Updated.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
-        string check = e.NotesToCheck > 0 ? " · " + _s.Format("Library_ToCheck", e.NotesToCheck) : "";
+        string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
         return _s.Format("Library_Subtitle", lineup, e.Bars, when) + check;
     }
 

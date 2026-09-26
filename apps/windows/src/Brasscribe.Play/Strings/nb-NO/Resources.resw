@@ -591,6 +591,9 @@
   <data name="Library_ToCheck" xml:space="preserve">
     <value>{0} toner å sjekke</value>
   </data>
+  <data name="Library_ToCheckOne" xml:space="preserve">
+    <value>{0} tone å sjekke</value>
+  </data>
   <data name="Library_Today" xml:space="preserve">
     <value>I dag</value>
   </data>

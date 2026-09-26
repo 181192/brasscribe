@@ -107,16 +107,22 @@ public sealed partial class ReviewPage : Page, IScreenPage
         }
     }
 
+    /// <summary>K keeps and Space listens, only while single-key shortcuts are on (WCAG 2.1.4) and no text box or list item has focus.</summary>
+    private bool SingleKeysAllowed(bool space) =>
+        Main.Settings.SingleKeyShortcuts
+        && FocusManager.GetFocusedElement(XamlRoot) is not (TextBox or SelectorItem)
+        && !(space && FocusManager.GetFocusedElement(XamlRoot) is ButtonBase);
+
     private void OnKeepKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (FocusManager.GetFocusedElement(XamlRoot) is TextBox) return;
+        if (!SingleKeysAllowed(space: false)) return;
         args.Handled = true;
         ViewModel.KeepCommand.Execute(null);
     }
 
     private void OnListenKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (FocusManager.GetFocusedElement(XamlRoot) is TextBox or ButtonBase) return;
+        if (!SingleKeysAllowed(space: true)) return;
         args.Handled = true;
         ViewModel.ListenCommand.Execute(null);
     }

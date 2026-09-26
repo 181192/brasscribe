@@ -44,7 +44,9 @@
                     <TextBlock x:Name="BackLabel" Style="{StaticResource LabelStyle}" />
                 </StackPanel>
             </Button>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <!-- The drag region is only the empty middle, so the buttons keep their clicks. -->
+            <Border x:Name="DragRegion" Grid.Column="1" Grid.ColumnSpan="2" Background="Transparent" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" IsHitTestVisible="False">
                 <TextBlock x:Name="PageTitle" Style="{StaticResource LabelStyle}" FontSize="15" VerticalAlignment="Center" />
                 <TextBlock x:Name="PageSubtitle" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
             </StackPanel>

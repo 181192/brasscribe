@@ -591,6 +591,9 @@
   <data name="Library_ToCheck" xml:space="preserve">
     <value>{0} notes to check</value>
   </data>
+  <data name="Library_ToCheckOne" xml:space="preserve">
+    <value>{0} note to check</value>
+  </data>
   <data name="Library_Today" xml:space="preserve">
     <value>Today</value>
   </data>

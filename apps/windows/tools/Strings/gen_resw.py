@@ -264,6 +264,7 @@ code = {
     "Library_FullBand": ("Full band", "Fullt band"),
     "Library_Today": ("Today", "I dag"),
     "Library_Subtitle": ("{0} · {1} bars · {2}", "{0} · {1} takter · {2}"),
+    "Library_ToCheckOne": ("{0} note to check", "{0} tone å sjekke"),
     "Library_ToCheck": ("{0} notes to check", "{0} toner å sjekke"),
     "Start_Imported": ("Opened {0}, {1}", "Åpnet {0}, {1}"),
     "Start_RecordingName": ("Recording", "Opptak"),

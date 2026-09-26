@@ -200,8 +200,8 @@
                                     <ToggleButton Grid.Column="3" Style="{StaticResource MixerToggleStyle}" IsChecked="{x:Bind IsSolo, Mode=TwoWay}"
                                                   AutomationProperties.Name="{x:Bind SoloLabel}" ToolTipService.ToolTip="{x:Bind SoloLabel}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <PathIcon Width="12" Height="12"
-                                                      Data="{Binding Source={StaticResource BcIconPathSolo}, Converter={StaticResource PathData}}" />
+                                            <Viewbox Width="12" Height="12"><PathIcon Width="20" Height="20"
+                                                      Data="{Binding Source={StaticResource BcIconPathSolo}, Converter={StaticResource PathData}}" /></Viewbox>
                                             <TextBlock x:Uid="MixerSoloLabel" />
                                         </StackPanel>
                                     </ToggleButton>
@@ -301,13 +301,13 @@
                     </StackPanel>
                     <ToggleButton x:Uid="CountInToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.CountIn, Mode=TwoWay}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <PathIcon Width="16" Height="16" Data="{Binding Source={StaticResource BcIconPathCountIn}, Converter={StaticResource PathData}}" />
+                            <Viewbox Width="16" Height="16"><PathIcon Width="20" Height="20" Data="{Binding Source={StaticResource BcIconPathCountIn}, Converter={StaticResource PathData}}" /></Viewbox>
                             <TextBlock x:Uid="CountInLabel" />
                         </StackPanel>
                     </ToggleButton>
                     <ToggleButton x:Uid="MetronomeToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.Metronome, Mode=TwoWay}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <PathIcon Width="16" Height="16" Data="{Binding Source={StaticResource BcIconPathMetronome}, Converter={StaticResource PathData}}" />
+                            <Viewbox Width="16" Height="16"><PathIcon Width="20" Height="20" Data="{Binding Source={StaticResource BcIconPathMetronome}, Converter={StaticResource PathData}}" /></Viewbox>
                             <TextBlock x:Uid="MetronomeLabel" />
                         </StackPanel>
                     </ToggleButton>
