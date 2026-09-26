@@ -26,7 +26,7 @@ EVAL_SRC = Path(brasscribe_eval.__file__).resolve().parent
 THIS = Path(__file__).resolve()
 PART_STYLE = MUSIC_SRC / "parts.mss"  # MuseScore style for rendering individual parts
 EXPORT_CODE = (THIS, THIS.with_name("braille.py"), THIS.with_name("talking_score.py"))
-SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS) + ((PART_STYLE,) if PART_STYLE.exists() else ())
+SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS, THIS.with_name("compare.py")) + ((PART_STYLE,) if PART_STYLE.exists() else ())
 
 
 def _python(ctx: StageContext, module: str, *args: str) -> None:
