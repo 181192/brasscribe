@@ -144,7 +144,7 @@ struct SourceView: View {
         .padding(.horizontal, wide ? Space.s8 : Space.s5)
         .padding(.vertical, Space.s3)
         .readingColumn()
-        .background(Color.Brasscribe.bg.opacity(0.95))
+        .background(Color.Brasscribe.bg)
     }
 
     static func duration(of url: URL) async -> String? {

@@ -39,12 +39,15 @@ struct HomeView: View {
         .pageBackground()
         .navigationTitle(Text("Home"))
         .toolbar(removing: .title)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .refreshable { await app.refreshComputerScores() }
         .task { await app.refreshComputerScores() }
         .toolbar {
             #if os(iOS)
             if !wide {
-                ToolbarItem(placement: .topBarLeading) { Lockup(product: false) }
+                ToolbarItem(placement: .topBarLeading) { Lockup(product: false).fixedSize() }
             }
             #endif
             ToolbarItemGroup(placement: .primaryAction) {

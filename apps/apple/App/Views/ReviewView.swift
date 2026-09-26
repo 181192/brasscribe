@@ -78,6 +78,9 @@ struct ReviewView: View {
         }
         .pageBackground()
         .navigationTitle(Text("\(piece.title) · Check the notes"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             if !allOpen.isEmpty {
                 ToolbarItem(placement: .cancellationAction) {
@@ -245,7 +248,7 @@ struct ReviewView: View {
         }
         .padding(.horizontal, wide ? Space.s8 : Space.s5)
         .padding(.vertical, Space.s3)
-        .background(Color.Brasscribe.bg.opacity(0.97))
+        .background(Color.Brasscribe.bg)
     }
 
     private var allChecked: some View {

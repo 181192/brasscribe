@@ -44,7 +44,8 @@ shoot_sim() {   # device prefix screen appearance
   xcrun simctl install "$dev" "$app"
   SIMCTL_CHILD_BRASSCRIBE_FIXTURES="$FIXTURES" SIMCTL_CHILD_BRASSCRIBE_SOUNDFONT="$SF" SIMCTL_CHILD_BRASSCRIBE_COMPANION="http://127.0.0.1:1" \
     xcrun simctl launch "$dev" no.brasscribe.play -reset -skip-first-run -screen "$screen" -appearance "$look" >/dev/null
-  sleep "$WAIT"
+  # the score screens engrave first
+  case "$screen" in score|part|export) sleep $((WAIT + 14)) ;; *) sleep "$WAIT" ;; esac
   xcrun simctl io "$dev" screenshot "$OUT/$name-$screen-$look.png" >/dev/null 2>&1 && echo "$name-$screen-$look.png"
 }
 
