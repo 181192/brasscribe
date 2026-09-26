@@ -23,13 +23,13 @@
     <h1 class="display" style="margin-top: var(--bc-space-5); font-size: 2.25rem">Nothing was heard</h1>
     <p style="margin-top: var(--bc-space-3); font-size: 1.0625rem">The recording is silent. This usually means one of these:</p>
     <ul style="margin: var(--bc-space-3) 0 0; padding-left: 1.2em; color: var(--bc-text-muted); display:flex; flex-direction:column; gap: 6px">
-      <li>The music app blocks recording. Protected (DRM) streams always do.</li>
+      <li>The music app blocks recording. Streaming apps usually do.</li>
       <li>Nothing was playing while you recorded.</li>
     </ul>
     <div class="notice" style="margin-top: var(--bc-space-6)"><i data-i="info" class="sm"></i><span>A file you own, or a recording with the microphone, always works.</span></div>
   </div>
   <div class="bottom stack">
-    <button class="btn primary block"><i data-i="import-file" class="sm"></i>Import a file instead</button>
+    <button class="btn primary block"><i data-i="import-file" class="sm"></i>Open a recording instead</button>
     <button class="btn secondary block"><i data-i="record-mic" class="sm"></i>Record with the microphone</button>
   </div>
   <div class="homebar"></div>
@@ -44,14 +44,17 @@
       <p style="margin-top: var(--bc-space-3); font-size: 1.0625rem" class="muted">Your recording is safe. Full-band scores are made on your computer, and it isn't answering.</p>
       <ol class="fix">
         <li>Check that the computer is on and on the same Wi-Fi.</li>
-        <li>Open Brasscribe on the computer, or run <code>brasscribe serve</code>.</li>
+        <li>Open Brasscribe on the computer.</li>
         <li>Choose <b>Try again</b>.</li>
       </ol>
-      <div style="display:flex; gap: var(--bc-space-3); margin-top: var(--bc-space-8)">
+      <div style="display:flex; justify-content: flex-end; gap: var(--bc-space-3); margin-top: var(--bc-space-8)">
+        <button class="btn secondary">Make a solo score on this Mac</button>
         <button class="btn primary"><i data-i="retry" class="sm"></i>Try again</button>
-        <button class="btn secondary">Make a solo score on this device</button>
       </div>
-      <p class="caption" style="margin-top: var(--bc-space-4)">Error code C-2 (for help from the band's tech person)</p>
+      <details class="tech" open>
+        <summary>Details for the band's tech person</summary>
+        <p class="muted" style="margin-top: var(--bc-space-2)">Error C-2: no answer from 192.168.1.20:8765. On the computer, run <code>brasscribe serve --host 0.0.0.0</code> and check that the firewall allows port 8765.</p>
+      </details>
     </div>
   </main>
 </div>

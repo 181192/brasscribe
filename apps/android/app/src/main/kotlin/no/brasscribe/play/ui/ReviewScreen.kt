@@ -90,11 +90,13 @@ fun ReviewScreen(vm: PlayViewModel) {
     val checkedMap by vm.checked.collectAsState()
     val playingBar by vm.clipPlaying.collectAsState()
     val r = result ?: return
-    val voices = r.composition.voices.filter { it.notes.isNotEmpty() }
+    // Review checks a transcription; an opened score has nothing to check against.
+    val composition = r.composition ?: return
+    val voices = composition.voices.filter { it.notes.isNotEmpty() }
     var voiceId by rememberSaveable { mutableStateOf(voices.firstOrNull { it.role == VoiceRole.MELODY }?.id ?: voices.first().id) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
-    val view = remember(r, voiceId, checked) { partViewFor(r.composition, voiceId, checked, vm.container.core) }
+    val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }
     val spoken = remember(view, lang) { announcements(view, lang, vm.container.core) }
     val notes = view.events.filter { it.note != null }
     val uncertain = notes.count { it.uncertainty == Uncertainty.UNCERTAIN && it.index !in checked }
@@ -127,7 +129,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                     SubHeading(stringResource(R.string.review_part))
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         voices.forEach { v ->
-                            val name = partViewFor(r.composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName }
+                            val name = partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName }
                             FilterChip(selected = v.id == voiceId, onClick = { voiceId = v.id }, label = { Text(name) })
                         }
                     }

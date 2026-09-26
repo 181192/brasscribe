@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.unit.dp
@@ -136,9 +138,37 @@ class PlayFlowA11yTest {
         onView(isRoot()).perform(ViewActions.closeSoftKeyboard())
     }
 
+    /** Full screen on a music stand: the score alone, with only the transport left. */
     @Test
-    fun exportsEveryFormatIncludingBraille() {
+    fun fullScreenLeavesOnlyTheScoreAndTheTransport() {
         rule.onNodeWithText("Open the Mikkel sample").performClick()
+        rule.onNodeWithText("Orchestra with soloist").performClick()
+        rule.onNodeWithText("Continue").performClick()
+        waitFor(isHeading() and hasText("Check the transcription"), 60_000)
+        rule.onNodeWithText("Choose output").performClick()
+        rule.onNodeWithText("Show the score").performClick()
+        waitFor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "score-view"))
+
+        rule.onNodeWithTag("performance").performScrollTo().performClick()
+        rule.waitForIdle()
+
+        // The score and the transport stay; every other control goes.
+        rule.onNodeWithTag("score-view").assertExists()
+        rule.onNodeWithTag("play").assertExists().assertHeightIsAtLeast(48.dp)
+        rule.onNodeWithTag("performance-exit").assertExists().assertHeightIsAtLeast(48.dp)
+        for (gone in listOf("Export", "Parts", "Zoom in", "Set loop", "Metronome", "Count-in", "Text")) {
+            rule.onAllNodesWithText(gone).assertCountEquals(0)
+        }
+        rule.onRoot().tryPerformAccessibilityChecks()
+
+        rule.onNodeWithTag("performance-exit").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Export").assertExists()
+        rule.onNodeWithTag("score-view").assertExists()
+    }
+
+    @Test
+    fun exportsEveryFormatIncludingBraille() {        rule.onNodeWithText("Open the Mikkel sample").performClick()
         rule.onNodeWithText("Orchestra with soloist").performClick()
         rule.onNodeWithText("Continue").performClick()
         waitFor(isHeading() and hasText("Check the transcription"), 60_000)

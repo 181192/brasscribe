@@ -33,10 +33,11 @@ import no.brasscribe.play.model.SoloTake
 import no.brasscribe.play.model.TempoEstimator
 import no.brasscribe.play.playback.ClipPlayer
 import java.io.File
+import java.util.zip.ZipInputStream
 
 enum class Screen { HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT }
 
-enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SAMPLE }
+enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SAMPLE, SCORE }
 
 /** What the user brought in. [file] holds the bytes sent to the engine; [audio] is decoded mono PCM. */
 data class Source(
@@ -78,7 +79,8 @@ data class TranscribeState(
 
 /** A finished transcription. [musicXml] is what the score view renders; [jobId] is set for engine results. */
 data class TranscriptionResult(
-    val composition: Composition,
+    /** Null for a score that was opened, not transcribed: there is no recording behind it. */
+    val composition: Composition?,
     val musicXml: String,
     val profile: Profile,
     val onDevice: Boolean,
@@ -91,6 +93,10 @@ data class TranscriptionResult(
     /** Semitones the arrangement itself is transposed by (the rest of a key shift is display-only in alphaTab). */
     val appliedTranspose: Int = 0,
 )
+
+/** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
+fun TranscriptionResult.compositionJsonFor(core: no.brasscribe.play.model.CoreBridge): String? =
+    compositionJson ?: composition?.let { runCatching { core.encodeComposition(it) }.getOrNull() }
 
 enum class Lineup(@StringRes val label: Int) { FULL(R.string.lineup_full), MINIMAL(R.string.lineup_minimal), SOLO(R.string.lineup_solo) }
 enum class Difficulty(@StringRes val label: Int) { FAITHFUL(R.string.difficulty_faithful), STANDARD(R.string.difficulty_standard), EASIER(R.string.difficulty_easier) }
@@ -151,9 +157,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     fun importUri(uri: Uri) {
         val ctx = getApplication<Application>()
-        val name = ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
-        } ?: uri.lastPathSegment ?: "recording"
+        val name = displayName(uri, "recording")
+        if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return }
         busy.value = true
         say(R.string.reading_file, name)
         viewModelScope.launch {
@@ -181,6 +186,57 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         setSource(Source("Mikkel", SourceKind.SAMPLE, 246.0))
         profile.value = null
         navigate(Screen.PROFILE)
+    }
+
+    private fun displayName(uri: Uri, fallback: String): String =
+        getApplication<Application>().contentResolver
+            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            ?: uri.lastPathSegment ?: fallback
+
+    fun openScoreUri(uri: Uri) = openScore(uri, displayName(uri, "score"))
+
+    /**
+     * Opens a MusicXML score with no transcription behind it: straight to the score, so Play is also
+     * a reader for parts that were written elsewhere. `.mxl` is a zip whose container names the root file.
+     */
+    private fun openScore(uri: Uri, name: String) {
+        val ctx = getApplication<Application>()
+        busy.value = true
+        say(R.string.reading_file, name)
+        viewModelScope.launch {
+            try {
+                val xml = withContext(Dispatchers.IO) {
+                    val bytes = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                    if (name.endsWith(".mxl", ignoreCase = true)) unzipScore(bytes) else bytes.decodeToString()
+                }
+                require(xml.contains("score-partwise") || xml.contains("score-timewise")) { "not MusicXML" }
+                setSource(Source(name, SourceKind.SCORE, 0.0))
+                result.value = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = true)
+                say(R.string.opened_score, name)
+                navigate(Screen.SCORE)
+            } catch (e: Exception) {
+                say(R.string.import_failed, e.message ?: e.javaClass.simpleName)
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    /** The root score of a compressed MusicXML container, or the first .xml that is not the container. */
+    private fun unzipScore(bytes: ByteArray): String {
+        val entries = HashMap<String, ByteArray>()
+        ZipInputStream(bytes.inputStream()).use { zip ->
+            while (true) {
+                val e = zip.nextEntry ?: break
+                if (!e.isDirectory) entries[e.name] = zip.readBytes()
+            }
+        }
+        val root = entries["META-INF/container.xml"]?.decodeToString()
+            ?.let { Regex("""full-path\s*=\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
+        val chosen = root?.let { entries[it] }
+            ?: entries.entries.firstOrNull { it.key.endsWith(".xml", true) && !it.key.startsWith("META-INF") }?.value
+        return requireNotNull(chosen) { "no score in the container" }.decodeToString()
     }
 
     fun recorded(audio: PcmAudio, kind: SourceKind) {
@@ -321,7 +377,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val core = opts.toCore()
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
         val job = engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
-            allowHeavy = container.settings.allowHeavy, title = r.composition.title, lineup = core.lineup,
+            allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = core.lineup,
             difficulty = core.difficulty, transpose = core.transpose))
         engine.events(job.id).collect { }
         val final = engine.job(job.id)
@@ -381,7 +437,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     /** Plays the recording's bar, then the score's bar, looped, until [stopListening]. */
     fun listenToBar(bar: Int) {
         val r = result.value ?: return
-        val map = TickMap(r.composition)
+        val map = TickMap(r.composition ?: return)
         val original = source.value?.audio?.let { a ->
             val span = map.barSeconds(bar)
             a.slice(span.start, span.endInclusive)
@@ -406,7 +462,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             }.getOrNull()
         }?.also { renderedScoreAudio = it } ?: return null
         // The rendered score starts at bar 1 and runs at the score's tempo.
-        val secondsPerTick = 60.0 / r.composition.bpm / r.composition.ticksPerBeat
+        val comp = r.composition ?: return null
+        val secondsPerTick = 60.0 / comp.bpm / comp.ticksPerBeat
         val from = maxOf(0, map.barStart(bar)) * secondsPerTick
         val to = map.barEnd(bar) * secondsPerTick
         return rendered.slice(from, to)
@@ -453,5 +510,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         const val TAG = "BrasscribePlay"
         const val SOLO_PART_NAME = "Solo Cornet"
+        /** Opened as a score, never sent through a transcription profile. */
+        val SCORE_EXTENSIONS = setOf("musicxml", "mxl", "xml")
     }
 }

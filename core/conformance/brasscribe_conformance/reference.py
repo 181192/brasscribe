@@ -46,6 +46,19 @@ def _main(mod, argv: list[str]) -> None:
 def run(case: Case, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     a = case.args
+    if case.kind == "meter":
+        from brasscribe_music.beats import meter_of
+
+        b = np.loadtxt(a["beats"], ndmin=2)
+        pos = b[:, 1].astype(int)
+        notes = json.loads(Path(a["notes"]).read_text())
+        m = meter_of(b[:, 0], pos == 1, np.array([n["onset"] for n in notes]),
+                     np.array([n["offset"] - n["onset"] for n in notes]), positions=pos)
+        (out / "meter.json").write_text(json.dumps({
+            "beats_per_bar": int(m.beats_per_bar), "first_downbeat": int(m.first_downbeat), "from_labels": bool(m.from_labels),
+            "compound": bool(m.compound), "strength": float(m.strength),
+            "times": None if m.times is None else [float(x) for x in m.times]}))
+        return
     if case.kind == "layers":
         if "song" in a:
             synth_layers(a["song"], a["layers"])
