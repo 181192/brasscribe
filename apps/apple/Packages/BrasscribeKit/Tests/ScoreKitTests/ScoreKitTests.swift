@@ -263,3 +263,36 @@ struct Reference: Decodable {
         try MusicXMLParser.parse(Data("<score-timewise></score-timewise>".utf8))
     }
 }
+
+/// Below 0.4 a note is "very uncertain" (boxed "?"), 0.4–0.7 "uncertain" ("?"), and the
+/// talking score says which.
+@Test func uncertaintyHasTwoLevels() throws {
+    let comp = try Composition.decode(Data("""
+    {"title":"t","voices":[{"id":"solo","name":"solo","role":"melody","notes":[
+      {"pitch":60,"start":0,"dur":24,"confidence":0.3},
+      {"pitch":62,"start":24,"dur":24,"confidence":0.6},
+      {"pitch":64,"start":48,"dur":48,"confidence":0.9}]}],
+     "meters":[{"tick":0,"beats":4,"beat_unit":4}],"keys":[{"tick":0,"fifths":0,"mode":"major"}],
+     "beat_times":[0,1,2,3],"first_downbeat":0,"ticks_per_beat":24}
+    """.utf8))
+    let xml = """
+    <score-partwise><part-list><score-part id="P1"><part-name>Solo</part-name></score-part></part-list>
+    <part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>half</type></note>
+    </measure></part></score-partwise>
+    """
+    let score = try MusicXMLParser.parse(Data(xml.utf8))
+    let idx = UncertaintyIndex(composition: comp)
+    let notes = score.parts[0].notes
+    #expect(notes.map(idx.level) == [.veryUncertain, .uncertain, nil])
+    let en = TalkingScore(score: score, language: .english, pitchMode: .written, uncertainty: idx)
+        .events(part: score.parts[0], measureIndex: 0)
+    #expect(en[0].hasSuffix("very uncertain"))
+    #expect(en[1].hasSuffix(", uncertain"))
+    #expect(!en[2].contains("uncertain"))
+    let nb = TalkingScore(score: score, language: .norwegian, pitchMode: .written, uncertainty: idx)
+        .events(part: score.parts[0], measureIndex: 0)
+    #expect(nb[0].hasSuffix("svært usikker"))
+}

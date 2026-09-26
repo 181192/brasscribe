@@ -30,3 +30,28 @@ func goldenDir() -> URL? {
         try tk.renderToSVG(page: 1).write(toFile: out, atomically: true, encoding: .utf8)
     }
 }
+
+/// One mark per note: Verovio's ink "?" is removed, and the note colour gives the level
+/// (the app draws the boxed "?" for very uncertain notes).
+@Test func uncertainNotesKeepTheirLevelAndLoseTheInkQuestionMark() throws {
+    let xml = """
+    <?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>C</part-name></score-part></part-list>
+    <part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <direction placement="above"><direction-type><words enclosure="rectangle">?</words></direction-type></direction>
+    <note color="#B04A00"><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <direction placement="above"><direction-type><words>?</words></direction-type></direction>
+    <note color="#0063A6"><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><type>quarter</type></note>
+    <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><type>half</type></note>
+    </measure></part></score-partwise>
+    """
+    #expect(!ScoreRenderer.removingQuestionMarks(xml).contains(">?</words>"))
+    let r = try #require(ScoreRenderer(musicXML: xml))
+    #expect(r.apply(.init()))
+    let page = try #require(r.page(1))
+    #expect(Set(r.uncertainLevels.values) == [.uncertain, .veryUncertain])
+    #expect(r.uncertainLevels.count == 2)
+    #expect(page.svg.ids(ofClass: "dir").isEmpty, "no ink question mark left")
+    // five lines, four staff spaces of 7.2 px at zoom 1 (Verovio scale 40)
+    let lines = try #require(page.staffLines.values.first)
+    #expect(abs(lines.height - 28.8) < 2, "\(lines)")
+}

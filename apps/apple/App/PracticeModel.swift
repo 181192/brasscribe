@@ -14,6 +14,8 @@ final class PracticeModel {
     let score: Score
     let composition: Composition?
     let uncertainty: UncertaintyIndex
+    /// Free-time (ad lib) passages as 0-based bar ranges.
+    let freeTimeBars: [ClosedRange<Int>]
     private(set) var renderer: ScoreRenderer?
     private(set) var engine: PlaybackEngine?
     private(set) var pages: [ScoreRenderer.Page] = []
@@ -59,9 +61,16 @@ final class PracticeModel {
 
     init(piece: Piece) throws {
         self.piece = piece
-        score = try piece.loadScore()
+        let parsed = try piece.loadScore()
+        score = parsed
         composition = piece.loadComposition()
         uncertainty = composition.map(UncertaintyIndex.init) ?? .empty
+        let q = Double(Score.ticksPerQuarter)
+        freeTimeBars = (composition?.freeTimeBeats ?? []).map { r in
+            let a = parsed.measureIndex(atTick: Int(r.lowerBound * q))
+            let b = parsed.measureIndex(atTick: max(0, Int(r.upperBound * q) - 1))
+            return a...max(a, b)
+        }
         loopTo = min(3, score.measures.count - 1)
         video = piece.videoURL.map { AVPlayer(url: $0) }
         video?.isMuted = true
