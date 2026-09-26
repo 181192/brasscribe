@@ -23,7 +23,7 @@ from brasscribe_music.arranger import arrange_layers
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.beats import clean_beats_gated, downbeat_rate, meter_of
+from brasscribe_music.beats import clean_beats_gated
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
 from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
 from brasscribe_music.keys import key_plan, semitones_to
@@ -124,25 +124,13 @@ def main() -> None:
             {"stem_minus_mix_db": check.stem_minus_mix_db, "failed": check.failed, "quiet_windows": check.quiet_windows}))
         del audio
 
-    b = np.loadtxt(args.beats, ndmin=2)
+    b = np.loadtxt(args.beats)
     pos = b[:, 1].astype(int)
+    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
     down = pos == 1
     raw_times = b[:, 0]
-    # The tracker's bars, unless its downbeat labels are implausible (small0 on one instrument labels
-    # most beats as downbeats): then the meter and bar phase come from the labels' periodicity and the
-    # solo's note accents, and the beat grid is fitted to the tracked phase.
-    solo_notes = pitched(L / "solo-sw.mid") or pitched(L / "solo-mus.mid")
-    meter = meter_of(raw_times, down, np.array([n["onset"] for n in solo_notes]),
-                     np.array([n["offset"] - n["onset"] for n in solo_notes]), positions=pos)
-    beats_per_bar = meter.beats_per_bar
-    if not meter.from_labels:
-        raw_times = meter.times
-        down = (np.arange(len(raw_times)) - meter.first_downbeat) % beats_per_bar == 0
-        first_down = meter.first_downbeat
-        print(f"meter inferred: {beats_per_bar} beats per bar{' (compound)' if meter.compound else ''}, "
-              f"downbeat labels on {downbeat_rate(pos == 1):.0%} of beats")
-    elif not args.no_beat_cleanup:
+    if not args.no_beat_cleanup:
         # Restore missed and remove inserted beats (outside free time); the bar phase follows
         # the majority of the tracker's downbeat labels.
         cb = clean_beats_gated(raw_times, down, int(beats_per_bar), skip=unstable_runs(raw_times), onsets=onsets)
