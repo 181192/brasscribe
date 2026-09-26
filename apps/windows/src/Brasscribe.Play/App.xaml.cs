@@ -19,11 +19,21 @@ public partial class App : Application
     public App()
     {
         var settings = new JsonSettingsStore();
-        string language = settings.Get("Language", "system");
+        string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+        // --theme light|dark: a fixed theme for screenshots; otherwise Windows decides.
+        if (Option("--theme") is { } theme) RequestedTheme = theme == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
         InitializeComponent();
         Settings = settings;
+    }
+
+    /// <summary>The value after a command-line switch ("--show score" gives "score").</summary>
+    private static string? Option(string name)
+    {
+        var args = Environment.GetCommandLineArgs();
+        int i = Array.IndexOf(args, name);
+        return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
     }
 
     /// <summary>Strings for code-behind; view models receive <see cref="IStrings"/> through their constructors.</summary>
@@ -91,6 +101,18 @@ public partial class App : Application
             original.Dispose();
         };
         _window.Activate();
+
+        // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
+        if (Option("--show") is { } scene)
+        {
+            if (PreviewScenes.Show(main, scene, Option("--score")) && scene == "export")
+                _window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+                {
+                    await Task.Delay(1500);
+                    await _window.ShowExportAsync();
+                });
+            return;
+        }
 
         // "Open with" and the command line: open the file directly.
         var cli = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(File.Exists);

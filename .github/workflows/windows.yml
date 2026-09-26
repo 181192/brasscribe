@@ -6,11 +6,13 @@ on:
     paths:
       - "apps/windows/**"
       - "core/**"
+      - "design/**"
       - ".github/workflows/windows.yml"
   pull_request:
     paths:
       - "apps/windows/**"
       - "core/**"
+      - "design/**"
       - ".github/workflows/windows.yml"
   workflow_dispatch:
 
@@ -95,6 +97,21 @@ jobs:
           dotnet run --project tools/AxeScan -c $env:CONFIGURATION --
           "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/axe"
           tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+
+      # Every screen in light and dark, named like design/mockups/png (e.g. score-desktop-light.png).
+      - name: Screenshots
+        run: >
+          ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}"
+          -Score tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+          -Out "$env:RUNNER_TEMP/screenshots"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: ignore
 
       - name: Upload results
         if: always()

@@ -201,6 +201,33 @@ public class AppFlowTests
         Assert.Equal(Screen.Start, main.Screen);
     }
 
+    [Theory]
+    [InlineData("first-run", Screen.FirstRun)]
+    [InlineData("home", Screen.Start)]
+    [InlineData("what-is-this", Screen.SourceKind)]
+    [InlineData("transcribing", Screen.Transcribing)]
+    [InlineData("error", Screen.Error)]
+    [InlineData("review", Screen.Review)]
+    [InlineData("choose-output", Screen.ChooseOutput)]
+    [InlineData("score", Screen.Score)]
+    [InlineData("part", Screen.Score)]
+    [InlineData("export", Screen.Score)]
+    public void Screenshot_scenes_show_their_screen(string scene, Screen expected)
+    {
+        var (main, _) = Build(Engine(""), firstRun: true);
+        Assert.True(PreviewScenes.Show(main, scene, TestPaths.Fixture("two-parts.musicxml")));
+        Assert.Equal(expected, main.Screen);
+        if (scene == "part") Assert.True(main.Score.IsPartView);
+        if (scene == "transcribing")
+        {
+            Assert.Equal("Writing down the notes", main.Transcription.StepHeading);
+            Assert.Equal("STEP 4 OF 6 · SOLOIST WITH ORCHESTRA OR BAND", main.Transcription.Overline);
+            Assert.Equal("62%", Screens.Percent(62, "en-US"));
+            Assert.Equal("62\u00A0%", Screens.Percent(62, "nb-NO"));
+        }
+        Assert.All(PreviewScenes.Names, n => Assert.Contains(n, PreviewScenes.Names));
+    }
+
     [Fact]
     public async Task Finish_later_asks_first_and_check_them_comes_back()
     {

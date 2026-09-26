@@ -131,6 +131,16 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         Overline = _s.Format("Transcribe_Overline", index + 1, Steps.Count, _kindLabel).ToUpperInvariant();
     }
 
+    /// <summary>Shows a run at one step without an engine (the screenshot scenes).</summary>
+    public void ShowProgress(string title, string profile, string kindLabel, string step, double percent, TimeSpan? left)
+    {
+        Title = title;
+        ResetSteps(profile, kindLabel);
+        SetStep(step);
+        Percent = percent;
+        EtaText = left is { } l ? EtaPhrase(l) : _s["Transcribe_Eta_Unknown"];
+    }
+
     partial void OnPercentChanged(double value) => PercentText = Screens.Percent(value, _s.Language);
 
     /// <summary>Uploads the source and transcribes it with the chosen profile and arrangement options.</summary>
