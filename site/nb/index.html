@@ -93,6 +93,94 @@
     </div>
   </section>
 
+  <section id="prosessen" aria-labelledby="process-title">
+    <div class="wrap">
+      <p class="overline">Bak kulissene</p>
+      <h2 id="process-title">Fra lyd til partitur <em>i seks steg.</em></h2>
+      <p class="lead">Mellom opptaket og partituret går Brasscribe gjennom de samme stegene hver gang. Lydmodeller lytter, og vanlige musikkregler skriver ned tonene. Hvert steg kan kontrolleres mot ekte opptak.</p>
+      <ol class="grid-3 cards">
+        <li class="card">
+          <h3>Velg hvordan det skal lyttes</h3>
+          <p>Svaret ditt på «Hva er dette?» bestemmer veien. En solist eller et rent brassband høres som det er. Et fullt band deles først opp i lag.</p>
+          <p class="tech">Pop og rock: BS-RoFormer deler opptaket i seks spor (vokal, gitar, piano, annet, bass, trommer). Solist med orkester: Mega-53 henter ut solisten, bassen og trommene, og orkesteret er det som blir igjen.</p>
+        </li>
+        <li class="card">
+          <h3>Finn pulsen</h3>
+          <p>En pulsdetektor merker hvert slag og første slag i hver takt. Brasscribe velger det nivået en musiker ville telt, rydder bort feil slag og leser taktarten ut fra taktene.</p>
+          <p class="tech">Beat This! finner slag og taktstreker. Der tempoet er ustødig over flere slag, skrives partiet som <i>ad lib.</i> med stiplede taktstreker i stedet for å tvinges inn i et rutenett.</p>
+        </li>
+        <li class="card">
+          <h3>Hør tonene</h3>
+          <p>Flere transkribenter lytter til hvert lag hver for seg, og hver av dem skriver ned tonene den hører. Toner der laget er stille, blir fjernet.</p>
+          <p class="tech">MuScriptor (flere instrumenter), Basic Pitch (flerstemt) og SwiftF0 (tonehøyde for én stemme). Tonehøydekurven fra SwiftF0 viser også hvor en lang tone egentlig slutter.</p>
+        </li>
+        <li class="card">
+          <h3>Bli enige om tonene</h3>
+          <p>En tone transkribentene er enige om, er nesten alltid riktig. En tone bare én av dem hørte, er ofte feil. Hvor enige de er, blir tonens sikkerhet, og sikkerheten avgjør spørsmålstegnene <span class="q uncertain" aria-hidden="true">?</span>.</p>
+          <p class="tech">Tonene matches på starttid og tonehøyde. På en solo gir tre av tre 0,98 og to av tre 0,91. Under 0,7 får tonen ?, under 0,4 ? i boks.</p>
+        </li>
+        <li class="card">
+          <h3>Skriv det ned</h3>
+          <p>Spilt musikk ligger aldri helt på slaget. Brasscribe flytter hver tone til den nærmeste rytmen en musiker kan lese, holder rytmene enkle der det er ærlig, og gir hver tone riktig navn i tonearten.</p>
+          <p class="tech">24 tikk per slag og dynamisk programmering som straffer kompliserte rytmer. Notert og spilt lengde holdes adskilt (staccato under halvparten). Tonenavn med ps13 i konsertstemning, toneart med Krumhansl–Kessler-profiler.</p>
+        </li>
+        <li class="card">
+          <h3>Arranger og sett noter</h3>
+          <p>Tonene fordeles på stemmene i bandet, hver i sitt register og notert for B♭ eller E♭. Dynamikken kommer fra hvor sterkt hvert lag spiller, takt for takt, med øvingsbokstaver ved hver del.</p>
+          <p class="tech">Stemmene fordeles etter rolle (melodi, bass, harmoni, rytme), register og stemmeføring. Resultatet lagres som MusicXML, PDF, MIDI, lyd, punktskrift og talende partitur.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="theory-title">
+    <div class="wrap reading">
+      <p class="overline">Tankene bak</p>
+      <h2 id="theory-title">Derfor virker det <em>slik.</em></h2>
+
+      <h3>Ingen modell kjenner et brassband</h3>
+      <p>Alle åpne modeller for transkribering og lydseparasjon stopper ved trompet, trombone, tuba og valthorn. Ingen kjenner kornett, althorn, baryton eller eufonium, og ingen kan skille tre kornetter som spiller tett harmoni. Modellene svarer derfor bare på hvilke toner som klinger når. Hvilken stemme som spiller hver tone, avgjør musikkregler vi har skrevet selv: register, rolle i satsen og god stemmeføring.</p>
+
+      <h3>Flere meninger slår én</h3>
+      <p>Hver transkribent gjør andre feil enn de andre. Når to av dem hører den samme tonen hver for seg, er den riktig omtrent ni av ti ganger. Sikkerheten regnes ut som 1 − (1 − p₁)(1 − p₂)…, der p er hvor ofte hver modell har truffet på testopptakene våre. Derfor kan Brasscribe fortelle deg hvilke toner du bør sjekke, i stedet for å late som alle er sikre.</p>
+
+      <h3>Del opp bare når det hjelper</h3>
+      <p>Å dele opptaket i lag hjelper når en trompet skal høres gjennom gitarer og trommer. I et rent brassopptak er det ingenting å dele, og oppdelingen gir bare støy. Vi målte begge veiene og bruker hver der den vinner.</p>
+
+      <h3>Modellene lytter, reglene skriver</h3>
+      <p>Bare lyttingen bruker maskinlæring. Puls, rytme, tonenavn, toneart, stemmer og oppsett følger faste regler: De samme tonene gir alltid det samme partituret, byte for byte, på alle plattformer. Språkmodeller lager aldri toner, fordi de ikke hører tonehøyde pålitelig.</p>
+
+      <h3>Slik vet vi det</h3>
+      <p>Hvert valg over er avgjort med målinger på opptak der de riktige tonene er kjent, og hver endring kontrolleres mot de samme opptakene før den slippes.</p>
+      <div class="table-scroll">
+        <table>
+          <caption>Målte resultater</caption>
+          <thead>
+            <tr><th scope="col">Hva</th><th scope="col">Resultat</th><th scope="col">Testet på</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Toner funnet (onset-F1, 100 ms)</th><td>0,88 kammerbrass, 0,75 brasskvartetter</td><td>URMP, ChoraleBricks (ekte opptak)</td></tr>
+            <tr><th scope="row">Toner modellene er enige om</th><td>89–92 % riktige i miks, 91–99 % på én stemme</td><td>ChoraleBricks, URMP, separerte solostemmer</td></tr>
+            <tr><th scope="row">Dele opp et fullt band først</th><td>+8 til +12 F1-poeng</td><td>Slakh-låter med trompet</td></tr>
+            <tr><th scope="row">Toner på riktig plass i takten</th><td>95–99 % med riktig puls</td><td>ChoraleBricks, URMP</td></tr>
+            <tr><th scope="row">Tonenavn (kryss og b)</th><td>99,9 % riktige</td><td>ChoraleBricks, URMP</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Detaljer for teknikeren i bandet</summary>
+        <p>Motoren kjører hvert opptak som en graf av steg (puls, lydspor, transkribering, arrangement, eksport). Hvert steg mellomlagres etter en hash av inndata, innstillinger og kode, så når du endrer toneart eller band, kjøres bare arrangementet på nytt. Hver lydmodell kjører i sitt eget isolerte Python-miljø bak en filbasert kontrakt: lyd inn, MIDI eller JSON ut.</p>
+        <p>Musikkreglene er skrevet én gang i Python som referanse og portert til Rust for appene på iPhone, iPad, Mac, Android og Windows. En samsvarstest sjekker at Rust-versjonen gir identiske partiturer, MusicXML og talende partiturer. En solo lages helt på telefonen. De tunge modellene for separasjon og transkribering kjører på din egen datamaskin.</p>
+        <p>Forskningsnotatene, målingene og kildekoden ligger i <a href="https://github.com/181192/brasscribe">kodelageret</a>.</p>
+      </details>
+
+      <div class="note">
+        <p><strong>Dette klarer det ikke ennå.</strong> En melodi som ligger i en mellomstemme, er vanskelig å finne. Lange partier i fritt tempo kan fortsatt bli presset inn i en puls. Staccato gjettes ut fra tonelengden, ikke fra hvordan tonen settes an. Det er nettopp derfor spørsmålstegnene finnes.</p>
+      </div>
+    </div>
+  </section>
+
   <section>
     <div class="wrap hero-grid">
       <div>

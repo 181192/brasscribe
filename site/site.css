@@ -111,6 +111,7 @@ section + section { border-top: 1px solid var(--bc-border); }
 }
 .card h3 { margin-top: 0; }
 .card p:last-child { margin-bottom: 0; }
+.card .tech { font-size: var(--bc-type-callout-size); color: var(--bc-text-muted); border-top: 1px solid var(--bc-border); padding-top: var(--bc-space-3); }
 ol.cards > .card { counter-increment: step; }
 ol.cards > .card::before {
   content: counter(step);
