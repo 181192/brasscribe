@@ -70,7 +70,7 @@ fun ExportScreen(vm: PlayViewModel) {
     var pendingSave by remember { mutableStateOf<List<ExportFile>>(emptyList()) }
     // What: the player's own part first (the part on screen), every part, or the conductor's score.
     val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
-    val shown = vm.scoreController?.state?.value?.shown
+    val shown = vm.scoreController?.state?.collectAsState()?.value?.shown
     val myPart = shown?.singleOrNull() ?: defaultPart(partNames)
     val manyParts = partNames.size > 1
     var what by rememberSaveable { mutableStateOf(if (manyParts) ExportScope.MY_PART else ExportScope.CONDUCTOR) }
