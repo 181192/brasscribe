@@ -261,7 +261,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     }
     let separation_check = separation(layers);
 
-    let mut bpb = beats.beats_per_bar()?;
+    // Most common gap between labelled downbeats (1 when there are none).
+    let label_bpb = beats.beats_per_bar().ok();
+    let mut bpb = label_bpb.unwrap_or(1);
     let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
     let mut down: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
     let mut raw_times = beats.times.clone();
@@ -277,10 +279,35 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         first_down = down.iter().position(|&d| d).unwrap_or(0) as i64;
     }
     let mut times = choose_level(&raw_times, &onsets);
-    let doubled = times.len() != raw_times.len();
+    let mut doubled = times.len() != raw_times.len();
     if doubled {
         bpb *= 2;
         first_down *= 2;
+    }
+    if label_bpb.is_none_or(|g| g < 2) {
+        // The tracker's downbeat labels give no bars (one instrument labelled a
+        // downbeat on most beats): infer the meter and bar phase on the final
+        // grid from the labels' periodicity and the solo's note accents, unless
+        // the evidence is too weak (then the grid's own bars stay).
+        let solo_notes = if solo_sw.is_empty() { layers.solo_mus.pitched() } else { solo_sw.clone() };
+        let grid_pos = crate::beats::labels_on(&times, &beats.times, &beats.positions, 0);
+        let grid_down: Vec<bool> = grid_pos.iter().map(|&p| p == 1).collect();
+        let m = crate::beats::solo_meter(
+            &times,
+            &grid_down,
+            &grid_pos,
+            bpb,
+            first_down,
+            &solo_notes.iter().map(|n| n.onset).collect::<Vec<_>>(),
+            &solo_notes.iter().map(|n| n.offset - n.onset).collect::<Vec<_>>(),
+        );
+        if !m.from_labels {
+            times = m.times.clone().unwrap_or(times);
+            bpb = m.beats_per_bar;
+            first_down = m.first_downbeat;
+            down = (0..times.len() as i64).map(|i| (i - first_down).rem_euclid(bpb) == 0).collect();
+            doubled = false; // the labels are replaced by the inferred bars
+        }
     }
     let mut plan: Option<FreeTimePlan> = None;
     if !opts.no_free_time {

@@ -10,6 +10,7 @@
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
 //! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
+//! brasscribe-core meter --beats FILE --notes JSON --out FILE     (beats per bar and bar phase; notes [{onset, offset}])
 //! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
 //! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
@@ -236,6 +237,18 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         "normalize" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
             write(Path::new(&a.one("out")?), &comp.to_json_string())
+        }
+        "meter" => {
+            let b = beats(Path::new(&a.one("beats")?))?;
+            let notes: Value = serde_json::from_slice(&read(Path::new(&a.one("notes")?))?).map_err(|e| e.to_string())?;
+            let notes = notes.as_array().cloned().unwrap_or_default();
+            let on: Vec<f64> = notes.iter().map(|n| n["onset"].as_f64().unwrap_or(0.0)).collect();
+            let du: Vec<f64> = notes.iter().map(|n| n["offset"].as_f64().unwrap_or(0.0) - n["onset"].as_f64().unwrap_or(0.0)).collect();
+            let down: Vec<bool> = b.positions.iter().map(|&p| p == 1).collect();
+            let m = brasscribe_core::beats::meter_of(&b.times, &down, &on, &du, Some(&b.positions));
+            let v = json!({"beats_per_bar": m.beats_per_bar, "first_downbeat": m.first_downbeat, "from_labels": m.from_labels,
+                           "compound": m.compound, "strength": m.strength, "times": m.times});
+            write(Path::new(&a.one("out")?), &brasscribe_core::pyjson::dumps_compact(&v))
         }
         "humanize" => {
             use brasscribe_core::humanize::{humanize, Performance, ScoreNote, Timing};

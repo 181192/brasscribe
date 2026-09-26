@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: finish checking later</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .alert { position: absolute; left: 36px; right: 36px; top: 270px; padding: var(--bc-space-6) var(--bc-space-5) var(--bc-space-5); }
+  .desk-alert { position: absolute; left: 50%; top: 220px; transform: translateX(-50%); width: 480px; padding: var(--bc-space-8); }
+  .desktop { position: relative; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar"><span class="back"><i data-i="back"></i>Mikkel</span><span></span><span class="btn plain compact">Finish later (9 left)</span></div>
+  <div class="content" style="padding-top: var(--bc-space-2)">
+    <h1 class="display" style="font-size: 2.25rem">Check 9 notes</h1>
+    <div class="card" style="margin-top: var(--bc-space-4); padding: var(--bc-space-4)"><div data-score="reviewBarPhone" style="height: 150px"></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="dialog alert" role="alertdialog" aria-labelledby="fl-t" aria-describedby="fl-d">
+    <h2 class="title-2" id="fl-t">Finish checking later?</h2>
+    <p id="fl-d" style="margin-top: var(--bc-space-2); color: var(--bc-text-muted)">9 notes keep their ? marks. You can check them any time from the score: tap “Check them”.</p>
+    <div class="stack" style="margin-top: var(--bc-space-5)">
+      <button class="btn primary block">Finish later</button>
+      <button class="btn secondary block">Keep checking</button>
+    </div>
+  </div>
+</div>
+<div class="desktop">
+  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel · Check the notes</span><span class="sp"></span></div>
+  <div class="paper" data-score="reviewBar" style="padding: 40px 280px 0"></div>
+  <div class="scrim" style="top: 52px"></div>
+  <div class="dialog desk-alert" role="alertdialog" aria-labelledby="fl-dt">
+    <h2 class="title-2" id="fl-dt">Finish checking later?</h2>
+    <p style="margin-top: var(--bc-space-2); color: var(--bc-text-muted)">9 notes keep their ? marks. You can check them any time from the score with “Check them”.</p>
+    <div style="display:flex; justify-content:flex-end; gap: var(--bc-space-3); margin-top: var(--bc-space-6)">
+      <button class="btn secondary">Keep checking</button>
+      <button class="btn primary">Finish later</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

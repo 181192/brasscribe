@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import no.brasscribe.play.TranscriptionResult
+import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.model.CoreBridge
 import no.brasscribe.play.model.Lang
@@ -38,13 +39,13 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
     }
 
     suspend fun build(r: TranscriptionResult, format: ExportFormat, engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang): ExportFile {
-        val base = r.composition.title.ifBlank { "score" }.replace(Regex("[^\\p{L}\\p{N} ._-]"), "").trim().ifBlank { "score" }
+        val base = r.composition?.title.orEmpty().ifBlank { "score" }.replace(Regex("[^\\p{L}\\p{N} ._-]"), "").trim().ifBlank { "score" }
         val bytes: ByteArray = when (format) {
             ExportFormat.MUSICXML -> r.musicXml.toByteArray()
             ExportFormat.PDF -> engine!!.pdf(r.jobId!!)
             ExportFormat.AUDIO -> engine!!.renderedAudio(r.jobId!!)
             ExportFormat.MIDI -> midi?.invoke() ?: engine!!.midi(r.jobId!!)
-            ExportFormat.TALKING_SCORE -> (coreTalkingScore(r, lang) ?: talkingScoreHtml(r.composition.title, parts, lang)).toByteArray()
+            ExportFormat.TALKING_SCORE -> (coreTalkingScore(r, lang) ?: talkingScoreHtml(r.composition?.title.orEmpty(), parts, lang)).toByteArray()
             ExportFormat.BRAILLE -> engine!!.braille(r.jobId!!)
         }
         val f = File(dir, "$base.${format.extension}")
@@ -54,7 +55,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
 
     /** Every part of the arranged score, from the core's talking score; null without the core. */
     private fun coreTalkingScore(r: TranscriptionResult, lang: Lang): String? =
-        runCatching { core.talkingScore(r.musicXml, r.compositionJson ?: core.encodeComposition(r.composition))?.use { it.toHtml(lang, null) } }.getOrNull()
+        runCatching { core.talkingScore(r.musicXml, r.compositionJsonFor(core))?.use { it.toHtml(lang, null) } }.getOrNull()
 
     /** The talking-score text export: a heading per part and bar, one line per event (spec §6). */
     fun talkingScoreHtml(title: String, parts: List<PartView>, lang: Lang): String = buildString {

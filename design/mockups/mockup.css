@@ -49,10 +49,11 @@ p { margin: 0; }
 .btn.plain { background: transparent; color: var(--bc-text); padding: 0 var(--bc-space-3); }
 .btn.danger { background: transparent; color: var(--bc-error); }
 .btn.block { width: 100%; }
-.btn.compact { min-height: 40px; padding: 0 var(--bc-space-4); font-size: 0.9375rem; }
+.btn.compact { min-height: 44px; padding: 0 var(--bc-space-4); font-size: 0.9375rem; }
+.btn.touch48 { min-height: 48px; }
 .btn:focus-visible, .focus-ring { outline: var(--bc-score-focus-width) solid var(--bc-focus); outline-offset: var(--bc-score-focus-gap); }
 .icon-btn {
-  width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--bc-radius-full);
+  width: 48px; height: 48px; display: inline-grid; place-items: center; border-radius: var(--bc-radius-full);
   background: transparent; border: 0; color: var(--bc-text); cursor: pointer;
 }
 .icon-btn.filled { background: var(--bc-secondary); }
@@ -73,14 +74,17 @@ p { margin: 0; }
 
 /* ---------- chips and toggles ---------- */
 .chip {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px 0 12px;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px 0 12px;
   border-radius: var(--bc-radius-sm); background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong);
   font-size: 0.9375rem; font-weight: 600; white-space: nowrap; color: var(--bc-text);
 }
-.chip.on { background: var(--bc-primary); color: var(--bc-on-primary); box-shadow: none; }
+/* On/off toggles: "on" is a tonal fill, a 1.5 px ink edge and a check mark. Ink fill is reserved for the one primary. */
+.chip.on { background: var(--bc-secondary); color: var(--bc-text); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+.chip.on::before { content: "✓"; font-weight: 700; margin-right: -2px; }
+.player .chip { min-height: 48px; }
 .chip .val { font-variant-numeric: tabular-nums; font-weight: 500; }
 .seg { display: inline-flex; background: var(--bc-secondary); border-radius: var(--bc-radius-sm); padding: 3px; gap: 2px; }
-.seg span { padding: 6px 12px; border-radius: 6px; font-size: 0.9375rem; font-weight: 600; color: var(--bc-text-muted); }
+.seg span { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 6px; font-size: 0.9375rem; font-weight: 600; color: var(--bc-text-muted); }
 .seg span.on { background: var(--bc-surface-raised); color: var(--bc-text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), inset 0 0 0 1px var(--bc-border-strong); }
 
 /* ---------- chooser ("What is this?") ---------- */
@@ -193,3 +197,17 @@ p { margin: 0; }
 .notice { display: flex; gap: var(--bc-space-3); align-items: flex-start; padding: var(--bc-space-3) var(--bc-space-4); border-radius: var(--bc-radius-md); background: var(--bc-surface); box-shadow: inset 0 0 0 1px var(--bc-border); font-size: 0.9375rem; }
 .notice.ok .i { color: var(--bc-success); }
 .notice.err .i { color: var(--bc-error); }
+
+/* ---------- labelled mixer toggles (Mute / Only this) ---------- */
+.tg { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 10px 0 8px; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; box-shadow: inset 0 0 0 1px var(--bc-border-strong); color: var(--bc-text); white-space: nowrap; }
+.tg .i { width: 16px; height: 16px; }
+.tg.on { background: var(--bc-secondary); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+.tg.on::before { content: "✓"; font-weight: 700; }
+
+/* ---------- status line (score view) ---------- */
+.status-line { display: flex; align-items: center; gap: var(--bc-space-2); font-size: 0.9375rem; }
+.status-line a { color: var(--bc-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- disclosure ---------- */
+details.tech { margin-top: var(--bc-space-5); border-radius: var(--bc-radius-md); box-shadow: inset 0 0 0 1px var(--bc-border); padding: var(--bc-space-3) var(--bc-space-4); font-size: 0.9375rem; }
+details.tech summary { font-weight: 600; cursor: pointer; min-height: 28px; }
