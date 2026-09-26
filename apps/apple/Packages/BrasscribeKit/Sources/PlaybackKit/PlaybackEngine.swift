@@ -38,7 +38,14 @@ public final class PlaybackEngine {
 
     // Nodes
     let environment = AVAudioEnvironmentNode()
-    var samplers: [Section: AVAudioUnitSampler] = [:]
+    var samplers: [String: AVAudioUnitSampler] = [:]
+
+    func samplerKey(_ part: Part) -> String {
+        soundBank.perPart[part.name] != nil ? "part:\(part.id)" : "section:\(part.section.rawValue)"
+    }
+
+    /// The sampler playing a part.
+    public func sampler(for part: Part) -> AVAudioUnitSampler? { samplers[samplerKey(part)] }
     let metronome = AVAudioUnitSampler()
     let player = AVAudioPlayerNode()
     let timePitch = AVAudioUnitTimePitch()
@@ -75,17 +82,23 @@ public final class PlaybackEngine {
 
         let mono = AVAudioFormat(standardFormatWithSampleRate: out.outputFormat(forBus: 0).sampleRate > 0
                                  ? out.outputFormat(forBus: 0).sampleRate : 44100, channels: 1)
-        for part in score.parts where samplers[part.section] == nil {
+        // One sampler per section with General MIDI sounds; one per part when the part has
+        // its own brass-band instrument (realistic tier), placed at its seat.
+        for part in score.parts {
+            let key = samplerKey(part)
+            if samplers[key] != nil { continue }
             let s = AVAudioUnitSampler()
             engine.attach(s)
             engine.connect(s, to: environment, format: mono)
+            let own = soundBank.perPart[part.name]
             let seat = part.section.defaultSeat
-            let az = seat.azimuth * .pi / 180
-            s.position = AVAudio3DPoint(x: Float(seat.distance * sin(az)), y: 0, z: Float(-seat.distance * cos(az)))
+            let az = (own?.azimuth ?? seat.azimuth) * .pi / 180
+            let dist = own?.distance ?? seat.distance
+            s.position = AVAudio3DPoint(x: Float(dist * sin(az)), y: 0, z: Float(-dist * cos(az)))
             s.renderingAlgorithm = .HRTFHQ
             s.reverbBlend = 0.35
-            samplers[part.section] = s
-            if soundBank.load(into: s, section: part.section, program: part.midiProgram) { loadedInstruments += 1 }
+            samplers[key] = s
+            if soundBank.load(into: s, part: part) { loadedInstruments += 1 }
         }
         engine.attach(metronome)
         engine.connect(metronome, to: out, format: nil)
@@ -124,7 +137,7 @@ public final class PlaybackEngine {
         let tracks = sequencer.tracks
         let offset = max(0, tracks.count - (score.parts.count + 1))
         for (i, part) in score.parts.enumerated() where offset + i < tracks.count {
-            tracks[offset + i].destinationAudioUnit = samplers[part.section]
+            tracks[offset + i].destinationAudioUnit = samplers[samplerKey(part)]
             partTracks[part.id] = tracks[offset + i]
         }
         if offset > 0 { for t in tracks[..<offset] { t.isMuted = true } }
@@ -356,8 +369,8 @@ public final class PlaybackEngine {
     }
 
     private func applyTranspose() {
-        for (section, s) in samplers where section != .percussion {
-            s.globalTuning = Float(transposeSemitones * 100)
+        for part in score.parts where !part.isPercussion {
+            sampler(for: part)?.globalTuning = Float(transposeSemitones * 100)
         }
     }
 
@@ -368,7 +381,7 @@ public final class PlaybackEngine {
 
     /// Place a section (azimuth in degrees, negative = left of the conductor; distance in m).
     public func place(_ section: Section, azimuth: Double, distance: Double) {
-        guard let s = samplers[section] else { return }
+        guard let s = samplers["section:\(section.rawValue)"] else { return }
         let az = azimuth * .pi / 180
         s.position = AVAudio3DPoint(x: Float(distance * sin(az)), y: 0, z: Float(-distance * cos(az)))
     }

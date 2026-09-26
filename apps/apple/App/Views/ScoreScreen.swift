@@ -150,7 +150,7 @@ struct TransportBar: View {
                         Text(model.positionDescription).font(.headline).monospacedDigit().fixedSize()
                     }
                     Text(model.hearOriginal ? String(localized: "Original recording") : String(localized: "Score"))
-                        .font(.caption)
+                        .font(.caption.weight(.semibold))
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("position")
@@ -176,7 +176,7 @@ struct TransportBar: View {
         .labelStyle(AdaptiveLabelStyle(compact: hsize == .compact))
         .padding(.horizontal)
         .padding(.vertical, 10)
-        .background(.bar)
+        .background(.background)   // opaque, so text contrast does not depend on the score behind it
     }
 
     @ViewBuilder var practiceControls: some View {

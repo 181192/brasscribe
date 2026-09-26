@@ -33,6 +33,11 @@ final class PlayUITests: XCTestCase {
         app.launchArguments = ["-reset", "-open-demo-score"]
         app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
         if let sf = soundFont() { app.launchEnvironment["BRASSCRIBE_SOUNDFONT"] = sf }
+        // the realistic brass-band tier, when sounds/ and its built instruments are present
+        let root = URL(fileURLWithPath: dir).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        if FileManager.default.fileExists(atPath: root.appending(path: "sounds/mapping.json").path) {
+            app.launchEnvironment["BRASSCRIBE_SOUNDS"] = root.path
+        }
         app.launch()
     }
 

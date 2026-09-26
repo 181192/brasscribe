@@ -99,8 +99,7 @@ func goldenDir() -> URL? {
     @Test func transposeRetunesPitchedSamplers() throws {
         let e = try engine()
         e.transposeSemitones = -2
-        let perc = e.samplers[.percussion]
-        #expect(perc?.globalTuning == 0)
-        #expect(e.samplers[.cornets]?.globalTuning == -200)
+        #expect(e.sampler(for: score.parts.last!)?.globalTuning == 0)
+        #expect(e.sampler(for: score.parts[1])?.globalTuning == -200)
     }
 }

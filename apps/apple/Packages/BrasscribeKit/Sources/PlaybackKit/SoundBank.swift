@@ -11,14 +11,17 @@ import ScoreKit
 public struct SoundBank: Sendable, Equatable {
     public var general: URL?
     public var perSection: [Section: URL]
+    /// Realistic tier, by score part name (see `BandSounds`).
+    public var perPart: [String: PartSound]
 
-    public init(general: URL?, perSection: [Section: URL] = [:]) {
-        self.general = general; self.perSection = perSection
+    public init(general: URL?, perSection: [Section: URL] = [:], perPart: [String: PartSound] = [:]) {
+        self.general = general; self.perSection = perSection; self.perPart = perPart
     }
 
     public static let none = SoundBank(general: nil)
 
     public var description: String {
+        if !perPart.isEmpty { return "brass-band samples: \(Set(perPart.values.map(\.target)).count) instruments" }
         if !perSection.isEmpty { return "sections: \(perSection.count) SF2" }
         return general?.lastPathComponent ?? "built-in tone"
     }
@@ -26,6 +29,12 @@ public struct SoundBank: Sendable, Equatable {
     /// Finds a sound font: `BRASSCRIBE_SOUNDFONT`, then Application Support/Brasscribe/SoundFonts,
     /// then the app bundle, then the macOS system DLS.
     public static func locate(bundle: Bundle = .main) -> SoundBank {
+        var bank = locateGeneral(bundle: bundle)
+        bank.perPart = BandSounds.locate()
+        return bank
+    }
+
+    static func locateGeneral(bundle: Bundle) -> SoundBank {
         let fm = FileManager.default
         if let env = ProcessInfo.processInfo.environment["BRASSCRIBE_SOUNDFONT"], fm.fileExists(atPath: env) {
             return SoundBank(general: URL(fileURLWithPath: env))
@@ -46,6 +55,19 @@ public struct SoundBank: Sendable, Equatable {
 
     /// Load the instrument for `section` (GM `program`, 1-based) into a sampler.
     /// Returns false when the sampler keeps its default tone.
+    @discardableResult
+    func load(into sampler: AVAudioUnitSampler, part: Part) -> Bool {
+        if let ps = perPart[part.name] {
+            do {
+                try sampler.loadSoundBankInstrument(at: ps.soundFont, program: 0,
+                                                    bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB), bankLSB: 0)
+                sampler.overallGain = Float(ps.gainDB)
+                return true
+            } catch { /* fall back to the general bank */ }
+        }
+        return load(into: sampler, section: part.section, program: part.midiProgram)
+    }
+
     @discardableResult
     func load(into sampler: AVAudioUnitSampler, section: Section, program: Int?) -> Bool {
         do {
