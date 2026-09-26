@@ -10,6 +10,7 @@ import "./components/stems";
 import type { ScoreElement } from "./components/score";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
 import { clear, h } from "./ui/dom";
+import { lockup } from "./ui/icons";
 import { benchView } from "./views/bench";
 import { compareView } from "./views/compare";
 import { conformanceView } from "./views/conformance";
@@ -59,7 +60,10 @@ let health: { version: string; device: string } | null | undefined;
 
 function renderStatus(): void {
   const el = document.getElementById("engine-status")!;
-  el.textContent = health === undefined ? t("app.connecting") : health ? t("app.engine", health) : t("app.engineDown");
+  el.classList.toggle("up", !!health);
+  el.classList.toggle("down", health === null);
+  if (health) clear(el, t("app.engine", { version: health.version, device: health.device.toUpperCase() }), " · ", h("span", { class: "mono" }, location.host));
+  else el.textContent = health === undefined ? t("app.connecting") : t("app.engineDown");
 }
 
 async function engineStatus(): Promise<void> {
@@ -178,6 +182,7 @@ onLangChange(() => {
   shortcutsDialog();
   route(true);
 });
+document.getElementById("brand")!.replaceChildren(lockup());
 translateChrome();
 shortcutsDialog();
 engineStatus();

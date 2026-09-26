@@ -4,14 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Brasscribe Studio</title>
-<link rel="stylesheet" href="assets/studio.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="assets/studio-style.css">
 <script src="assets/alphatab/alphaTab.min.js"></script>
 <script type="module" src="assets/studio.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main" data-i18n="app.skip">Skip to main content</a>
 <header class="app-header">
-  <a class="brand" href="#/runs">Brasscribe Studio</a>
+  <a class="brand" href="#/runs" id="brand" aria-label="Brasscribe Studio">Brasscribe Studio</a>
   <nav class="app-nav" aria-label="Studio" data-i18n-label="app.nav">
     <ul>
       <li><a href="#/runs" data-route="runs" data-i18n="nav.runs">Runs</a></li>
@@ -23,13 +26,15 @@
       <li><a href="#/registry" data-route="registry" data-i18n="nav.registry">Datasets and models</a></li>
     </ul>
   </nav>
+  <div class="header-end">
   <p class="engine-status" id="engine-status" data-i18n="app.connecting">Connecting to the engine…</p>
-  <label class="lang-switch"><span data-i18n="app.language">Language</span>
+  <label class="lang-switch"><span class="visually-hidden" data-i18n="app.language">Language</span>
     <select id="lang-select">
       <option value="en" lang="en">English</option>
       <option value="nb" lang="nb">Norsk bokmål</option>
     </select>
   </label>
+  </div>
 </header>
 <main id="main" tabindex="-1">
   <noscript><p>Studio needs JavaScript. The engine's HTTP API is described at <a href="/docs">/docs</a>.</p></noscript>

@@ -4,7 +4,7 @@
 import { api, fetchText } from "../api/client";
 import type { Composition, Job, Reference } from "../api/types";
 import { PianoRoll, type RollLayer, type RollNote } from "../components/pianoroll";
-import type { NoteMark } from "../components/score";
+import { tokenColour, type NoteMark } from "../components/score";
 import { lang, t } from "../i18n";
 import { tickTime } from "../lib/beats";
 import { diffCompositions, type ChangeKind, type CompositionDiff } from "../lib/diff";
@@ -86,13 +86,14 @@ export function compareView(root: HTMLElement, q: URLSearchParams): void {
 
 const KINDS: ChangeKind[] = ["same", "added", "removed", "moved", "octave"];
 
-// Colours for marks on the white score paper (light-theme tokens) and the notehead that repeats them.
-const MARK: Record<MarkKind, NoteMark> = {
-  removed: { colour: "#B3261E", head: "x" },
-  added: { colour: "#1D6B2C", head: "diamond" },
-  octave: { colour: "#B04A00", head: "triangle" },
-  moved: { colour: "#6B3FA0", head: "square" },
+// Each kind of change has a token colour and its own notehead (shape repeats the colour).
+const MARK_TOKEN: Record<MarkKind, { token: string; head: NoteMark["head"] }> = {
+  removed: { token: "error", head: "x" },
+  added: { token: "success", head: "diamond" },
+  octave: { token: "model-2", head: "triangle" },
+  moved: { token: "model-4", head: "square" },
 };
+const mark = (k: MarkKind): NoteMark => ({ colour: tokenColour(MARK_TOKEN[k].token), head: MARK_TOKEN[k].head });
 
 function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<ReturnType<typeof api.compare>> | Error | null, tolerance: number): HTMLElement[] {
   const tt = d.totals;
@@ -188,8 +189,8 @@ function notation(a: Side, b: Side, tolerance: number): HTMLElement {
   const firstDiff = names.find((n) => diffParts(a.xml!.parts.find((p) => p.name === n), b.xml!.parts.find((p) => p.name === n), tolerance).bars.length) ?? names[0];
   const partSel = h("select", { id: "cmp-part" }, names.map((n) => h("option", { value: n, selected: n === firstDiff }, partLabel(n))));
   const status = h("p", { role: "status", class: "hint", id: "cmp-notation-status" });
-  const scoreA = h("bs-score", {});
-  const scoreB = h("bs-score", {});
+  const scoreA = h("bs-score", { "data-play": "secondary" });
+  const scoreB = h("bs-score", { "data-play": "secondary" });
   const prev = h("button", { type: "button" }, t("cmp.prevDiff"));
   const next = h("button", { type: "button" }, t("cmp.nextDiff"));
   let bars: number[] = [];
@@ -220,14 +221,14 @@ function notation(a: Side, b: Side, tolerance: number): HTMLElement {
     prev.disabled = next.disabled = !bars.length;
     scoreA.tracks = [ia];
     scoreB.tracks = [ib];
-    scoreA.decorate = (track, i) => (track === ia && pd.a[i] ? MARK[pd.a[i]!] : null);
-    scoreB.decorate = (track, i) => (track === ib && pd.b[i] ? MARK[pd.b[i]!] : null);
+    scoreA.decorate = (track, i) => (track === ia && pd.a[i] ? mark(pd.a[i]!) : null);
+    scoreB.decorate = (track, i) => (track === ib && pd.b[i] ? mark(pd.b[i]!) : null);
     await Promise.all([scoreA.load(a.xmlText!, a.label), scoreB.load(b.xmlText!, b.label)]);
   };
   partSel.addEventListener("change", () => void load());
   const legend = h("ul", { class: "legend" },
     (["removed", "added", "octave", "moved"] as MarkKind[]).map((k) => h("li", {},
-      h("span", { class: "sw", "aria-hidden": "true", style: `background:${MARK[k].colour};border-color:${MARK[k].colour}` }), t(`cmp.legend.${k}`))));
+      h("span", { class: "sw", "aria-hidden": "true", style: `background:var(--bc-${MARK_TOKEN[k].token});border-color:var(--bc-${MARK_TOKEN[k].token})` }), t(`cmp.legend.${k}`))));
   queueMicrotask(() => void load());
   return h("section", { "aria-labelledby": "cmp-notation-h", class: "stack" },
     h("h2", { id: "cmp-notation-h" }, t("cmp.notation")),

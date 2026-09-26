@@ -9,6 +9,8 @@ export interface XmlNote {
   sounding: number; // concert MIDI pitch
   color?: string;
   parenthesised: boolean;
+  /** Uncertainty the engine marked: "u" (a "?" above), "vu" (a boxed "?", confidence below 0.4). */
+  level?: "u" | "vu";
 }
 
 export interface XmlPart {
@@ -24,7 +26,12 @@ export interface XmlScore {
   title: string;
   parts: XmlPart[];
   bars: number;
+  /** Free-time passages as bar-index ranges [from, to], from "ad lib." … "a tempo" words. */
+  adlib: [number, number][];
 }
+
+// The engine's colour for "very uncertain" notes (design tokens, light theme).
+const VERY_UNCERTAIN = "#b04a00";
 
 const STEP: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
@@ -45,6 +52,7 @@ export function parseMusicXml(xml: string): XmlScore {
     names.set(sp.getAttribute("id") ?? "", text(sp, "part-name") ?? "");
   }
   const parts: XmlPart[] = [];
+  const adlib: [number, number][] = [];
   let maxBars = 0;
   for (const p of Array.from(root.querySelectorAll(":scope > part"))) {
     const id = p.getAttribute("id") ?? "";
@@ -61,8 +69,22 @@ export function parseMusicXml(xml: string): XmlScore {
       let pos = 0; // divisions from bar start
       let lastOnset = 0;
       let maxPos = 0;
+      // A "?" words direction marks the next note's onset; a rectangle enclosure means very uncertain.
+      let qMark: "u" | "vu" | null = null;
       for (const el of Array.from(m.children)) {
         switch (el.nodeName) {
+          case "direction": {
+            for (const w of Array.from(el.querySelectorAll("direction-type > words"))) {
+              const txt = (w.textContent ?? "").trim().toLowerCase();
+              if (txt === "?") qMark = w.getAttribute("enclosure") === "rectangle" ? "vu" : "u";
+              if (parts.length === 0 && txt.startsWith("ad lib")) adlib.push([barIndex, measures.length - 1]);
+              if (parts.length === 0 && txt.startsWith("a tempo") && adlib.length) {
+                const last = adlib[adlib.length - 1];
+                last[1] = Math.max(last[0], barIndex - 1);
+              }
+            }
+            break;
+          }
           case "attributes": {
             const d = text(el, "divisions");
             if (d) divisions = Number(d) || divisions;
@@ -97,6 +119,9 @@ export function parseMusicXml(xml: string): XmlScore {
               12 * (Number(text(pitch, "octave")) + 1) + STEP[text(pitch, "step") ?? "C"] + Number(text(pitch, "alter") ?? 0);
             const q = onsetDiv / divisions;
             const nh = el.querySelector(":scope > notehead");
+            const color = el.getAttribute("color") ?? nh?.getAttribute("color") ?? undefined;
+            const level: XmlNote["level"] = color?.toLowerCase() === VERY_UNCERTAIN || (color && qMark === "vu") ? "vu" : color || qMark ? "u" : undefined;
+            if (!chord) qMark = null;
             notes.push({
               bar,
               barIndex,
@@ -104,8 +129,9 @@ export function parseMusicXml(xml: string): XmlScore {
               onset: barStart + q,
               written,
               sounding: written + transpose,
-              color: el.getAttribute("color") ?? nh?.getAttribute("color") ?? undefined,
+              color,
               parenthesised: nh?.getAttribute("parentheses") === "yes",
+              level,
             });
             break;
           }
@@ -117,7 +143,7 @@ export function parseMusicXml(xml: string): XmlScore {
     maxBars = Math.max(maxBars, measures.length);
     parts.push({ id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), notes, bars: measures.length });
   }
-  return { title, parts, bars: maxBars };
+  return { title, parts, bars: maxBars, adlib };
 }
 
 /** Count sounding notes per part, the same way the engine's golden comparison does. */
