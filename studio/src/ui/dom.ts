@@ -99,6 +99,16 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
     h("p", {}, retry));
 }
 
+/**
+ * A file chooser with localised text: the native input (visually hidden but
+ * focusable) plus a styled "Choose a file…" label and the chosen file's name.
+ */
+export function filePicker(input: HTMLInputElement): HTMLElement {
+  const name = h("span", { class: "file-name", "aria-live": "polite" }, t("file.none"));
+  input.addEventListener("change", () => (name.textContent = input.files?.[0]?.name ?? t("file.none")));
+  return h("span", { class: "file-pick" }, input, h("label", { class: "button ghost", for: input.id }, t("file.choose")), name);
+}
+
 export function loading(label?: string): HTMLElement {
   return h("p", { class: "loading", role: "status" }, label ?? t("common.loading"));
 }

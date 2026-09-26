@@ -2,7 +2,7 @@
 import { api, MissingEndpoint } from "../api/client";
 import type { Job, ProfileInfo, Source } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, loading, pill, table } from "../ui/dom";
+import { announce, clear, errorNotice, filePicker, fmt, h, loading, pill, table } from "../ui/dom";
 
 export function runLink(j: Job): HTMLAnchorElement {
   return h("a", { href: `#/runs/${encodeURIComponent(j.id)}` }, j.title || j.id);
@@ -83,7 +83,7 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
   const form = h("form", { class: "stack", "aria-describedby": "run-error" },
     h("fieldset", {}, h("legend", {}, t("runs.source")),
       h("div", { class: "row" }, kind("file", t("runs.file"), true), kind("source", t("runs.sourceItem"))),
-      h("div", { class: "row" }, h("label", { for: "run-file" }, t("runs.file")), file),
+      h("div", { class: "row" }, h("label", { for: "run-file" }, t("runs.file")), filePicker(file)),
       h("div", { class: "row" }, h("label", { for: "run-source" }, t("runs.sourceItem")), sourceSel),
       haveSources ? null : errorNotice(sources)),
     h("div", { class: "row" }, h("label", { for: "run-profile" }, t("runs.profile")), profile),

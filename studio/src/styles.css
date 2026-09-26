@@ -295,3 +295,4 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 .file-pick input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .file-pick:has(input:focus-visible) .button { outline: var(--bc-score-focus-width) solid var(--bc-focus); outline-offset: var(--bc-score-focus-gap); }
 .file-pick .file-name { color: var(--bc-text-muted); font-size: 0.8125rem; }
+.file-pick:has(input:disabled) .button { opacity: 0.55; pointer-events: none; }

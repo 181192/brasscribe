@@ -1,7 +1,7 @@
 // The only module that talks to the engine. Views call these functions and
 // never build URLs themselves.
 import type {
-  AdapterInfo, AudioRef, BenchRun, Comparison, Composition, ConformanceReport, DatasetInfo, Health, Job, JobCreate,
+  AdapterInfo, AudioRef, BenchRun, Comparison, Composition, ConformanceReport, ConformanceRun, DatasetInfo, Health, Job, JobCreate,
   JobEvent, Manifest, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
   SuiteRun, ValidationIssue,
 } from "./types";
@@ -128,8 +128,9 @@ export const api = {
     fd.append("file", file);
     return send<AudioRef>("POST", "/v1/audio", fd);
   },
-  createJob: (body: JobCreate) =>
-    send<Job>("POST", "/v1/jobs", body),
+  // Fields the engine defaults (difficulty, muscriptor, lineup…) may be left out.
+  createJob: (body: Omit<JobCreate, "difficulty" | "muscriptor"> & Partial<Pick<JobCreate, "difficulty" | "muscriptor">>) =>
+    send<Job>("POST", "/v1/jobs", body as JobCreate),
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),
   runSuite: (name: string, mode: "cached" | "live" = "cached") =>
@@ -157,6 +158,8 @@ export const api = {
   parity: () => get<ParityReport[]>("/v1/parity", "GET /v1/parity"),
   // The summary report only: the full dump of every case's files is far too large for a page.
   conformance: () => get<ConformanceReport[]>("/v1/conformance", "GET /v1/conformance", 20),
+  conformanceRun: () => get<ConformanceRun>("/v1/conformance/run", "GET /v1/conformance/run"),
+  startConformanceRun: () => send<ConformanceRun>("POST", "/v1/conformance/run", undefined, "POST /v1/conformance/run"),
   sources: () => get<Source[]>("/v1/sources", "GET /v1/sources"),
 };
 

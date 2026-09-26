@@ -30,11 +30,37 @@ export interface paths {
         };
         /**
          * List Conformance
-         * @description Rust-core conformance results as written (every *.json in BRASSCRIBE_CONFORMANCE_REPORTS), plus `_file`.
+         * @description Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
+         *
+         *     An empty list means no report yet (run `brasscribe_conformance.run`, or runConformance).
          */
         get: operations["listConformanceReports"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conformance/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conformance Run
+         * @description State of the latest conformance run started by this server, with the last lines of its log.
+         */
+        get: operations["getConformanceRun"];
+        put?: never;
+        /**
+         * Run Conformance
+         * @description Start the Rust-core conformance suite in the background (no MuseScore); poll getConformanceRun.
+         */
+        post: operations["runConformance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -157,6 +183,26 @@ export interface paths {
         };
         /** Get Audio */
         get: operations["getRenderedAudio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{job_id}/braille": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Braille
+         * @description Braille music (BRF) of the score or of one part, transcribed by music21.
+         */
+        get: operations["getBraille"];
         put?: never;
         post?: never;
         delete?: never;
@@ -380,6 +426,26 @@ export interface paths {
         };
         /** Get Stage File */
         get: operations["getStageFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{job_id}/talking-score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Talking Score
+         * @description Talking score of the whole score or one part, rendered from the job's talking-score.json.
+         */
+        get: operations["getTalkingScore"];
         put?: never;
         post?: never;
         delete?: never;
@@ -706,8 +772,18 @@ export interface components {
         };
         /** Body_createJobFromUpload */
         Body_createJobFromUpload: {
+            /**
+             * Difficulty
+             * @default faithful
+             * @enum {string}
+             */
+            difficulty: "faithful" | "standard" | "easier";
             /** File */
             file: string;
+            /** Key */
+            key?: string | null;
+            /** Lineup */
+            lineup?: ("full" | "minimal") | null;
             /**
              * Profile
              * @default orchestra-with-soloist
@@ -720,6 +796,8 @@ export interface components {
             render_audio: boolean;
             /** Title */
             title?: string | null;
+            /** Transpose */
+            transpose?: number | null;
         };
         /** Body_uploadAudio */
         Body_uploadAudio: {
@@ -798,6 +876,40 @@ export interface components {
             voices: components["schemas"]["Voice"][];
         } & {
             [key: string]: unknown;
+        };
+        /** ConformanceRun */
+        ConformanceRun: {
+            /**
+             * Available
+             * @description core/conformance exists in this checkout
+             */
+            available: boolean;
+            /** Command */
+            command?: string[];
+            /**
+             * Exit Code
+             * @description 0: every case identical; 1: some case differs
+             */
+            exit_code?: number | null;
+            /** Finished */
+            finished?: number | null;
+            /**
+             * Log
+             * @description log file of the run
+             */
+            log?: string | null;
+            /**
+             * Log Tail
+             * @description last lines of the log
+             */
+            log_tail?: string | null;
+            /** Started */
+            started?: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "idle" | "running" | "succeeded" | "failed";
         };
         /** Dataset */
         Dataset: {
@@ -920,6 +1032,29 @@ export interface components {
             /** Audio Id */
             audio_id?: string | null;
             /**
+             * Difficulty
+             * @description faithful keeps every transcribed note; standard and easier simplify rhythms and ranges
+             * @default faithful
+             * @enum {string}
+             */
+            difficulty: "faithful" | "standard" | "easier";
+            /**
+             * Key
+             * @description target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it
+             */
+            key?: string | null;
+            /**
+             * Lineup
+             * @description full: the 18-part brass band; minimal: the 8-part minimal band; default: the profile's (minimal for solo, full otherwise)
+             */
+            lineup?: ("full" | "minimal") | null;
+            /**
+             * Muscriptor
+             * @description solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device
+             * @default true
+             */
+            muscriptor: boolean;
+            /**
              * Path
              * @description audio file path; must lie inside the engine's data directory
              */
@@ -939,6 +1074,11 @@ export interface components {
             source_id?: string | null;
             /** Title */
             title?: string | null;
+            /**
+             * Transpose
+             * @description transpose the arrangement by this many semitones (instead of key)
+             */
+            transpose?: number | null;
         };
         /** KeySig */
         KeySig: {
@@ -1351,7 +1491,10 @@ export interface operations {
     };
     listConformanceReports: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description every JSON file of the run (large: each case's outputs), not only the summary reports */
+                all?: boolean;
+            };
             header?: {
                 authorization?: string | null;
             };
@@ -1379,6 +1522,82 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    getConformanceRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConformanceRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    runConformance: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConformanceRun"];
+                };
+            };
+            /** @description a run is already in progress */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description core/conformance is not in this checkout */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1656,6 +1875,42 @@ export interface operations {
                 };
                 content: {
                     "audio/mpeg": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getBraille: {
+        parameters: {
+            query?: {
+                /** @description part number (1-based, score order) or name, e.g. 2 or Solo Cornet; omit for the score */
+                part?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Braille music in North American Braille ASCII (.brf, 40 cells per line, 25 lines per page) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
                 };
             };
             /** @description Validation Error */
@@ -2135,6 +2390,49 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getTalkingScore: {
+        parameters: {
+            query?: {
+                format?: string;
+                lang?: string;
+                /** @description part number (1-based) or name; omit for all parts */
+                part?: string | null;
+                /** @description default: written for one part, concert for the score */
+                pitch_mode?: string | null;
+                verbosity?: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Talking score (docs/accessibility/talking-score-spec.md): HTML with a heading per part and bar, plain text, or the TalkingScore JSON */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                    "text/html": string;
+                    "text/plain": string;
                 };
             };
             /** @description Validation Error */
