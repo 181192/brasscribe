@@ -5,9 +5,11 @@ import SwiftUI
 /// Score, parts and practice: notation with cursor, transport, mixer, loop, speed,
 /// count-in, metronome, transpose, play-along and original-vs-score with synced video.
 struct ScoreScreen: View {
+    @Environment(AppModel.self) private var app
     let piece: Piece
     @State private var model: PracticeModel?
     @State private var error: String?
+    @State private var editingPitches = false
 
     var body: some View {
         Group {
@@ -19,7 +21,25 @@ struct ScoreScreen: View {
                 ProgressView()
             }
         }
-        .navigationTitle(piece.title)
+        .navigationTitle(app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { editingPitches = true } label: { Label("Correct notes", systemImage: "pencil.and.outline") }
+                    .accessibilityIdentifier("correctNotes")
+            }
+        }
+        .sheet(isPresented: $editingPitches) {
+            PitchCorrectionView(piece: piece) {
+                app.refresh()
+                model?.stopAll()
+                do {
+                    let refreshed = try PracticeModel(piece: piece)
+                    refreshed.start()
+                    model = refreshed
+                    error = nil
+                } catch { error = error.localizedDescription }
+            }
+        }
         .task {
             guard model == nil else { return }
             do {

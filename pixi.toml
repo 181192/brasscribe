@@ -13,6 +13,10 @@ platforms = [
 ]
 requires-pixi = ">=0.80"
 
+# UTF-8 file and console I/O on Windows too (MusicXML, braille and talking-score text use ♭, ⠼, å).
+[activation.env]
+PYTHONUTF8 = "1"
+
 # Plain platforms: every environment except the CUDA ones.
 [feature.host]
 platforms = ["osx-arm64-macos14", "linux-64", "linux-aarch64", "win-64"]
@@ -48,6 +52,7 @@ pandas = "==3.0.6"
 [feature.engine.tasks]
 engine = "brasscribe"
 serve = "brasscribe serve"
+serve-lan = "brasscribe serve --lan"
 studio = "brasscribe studio"
 openapi = "python -m brasscribe_engine.openapi engine/openapi.json"
 

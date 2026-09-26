@@ -21,8 +21,16 @@ public enum ScoreLanguage: String, Sendable, CaseIterable {
 /// arranged note inherits it when a source note sounds the same pitch class at the same
 /// time; everything else is treated as certain. The talking score says "uncertain" only
 /// for inherited low confidence.
+public enum UncertaintyLevel: Sendable, Equatable {
+    /// Confidence 0.4–0.7: a "?" above the note.
+    case uncertain
+    /// Confidence below 0.4: a boxed "?" above the note.
+    case veryUncertain
+}
+
 public struct UncertaintyIndex: Sendable {
     public static let threshold = 0.7
+    public static let veryThreshold = 0.4
     /// (composition tick, pitch class) -> lowest confidence at that onset
     let byOnset: [Int: [Int: Double]]
     let ticksPerBeat: Int
@@ -51,6 +59,13 @@ public struct UncertaintyIndex: Sendable {
     public func isUncertain(_ note: ScoreNote) -> Bool {
         guard let p = note.midiPitch, case .pitched = note.kind else { return false }
         return confidence(startTick: note.startTick, concertPitch: p) < Self.threshold
+    }
+
+    public func level(_ note: ScoreNote) -> UncertaintyLevel? {
+        guard let p = note.midiPitch, case .pitched = note.kind else { return nil }
+        let c = confidence(startTick: note.startTick, concertPitch: p)
+        if c < Self.veryThreshold { return .veryUncertain }
+        return c < Self.threshold ? .uncertain : nil
     }
 
     public var isEmpty: Bool { byOnset.isEmpty }
@@ -194,7 +209,9 @@ public struct TalkingScore: Sendable {
             var s = "\(beatLabel(beat)): \(pitches), \(durationName(type: head.type, dots: head.dots, ticks: head.durTicks))"
             if head.tieStop { s += nb ? ", bundet fra forrige" : ", tied from previous" }
             if let dyn = part.dynamics[tick] { s += ", \(dynamicName(dyn))" }
-            if ns.contains(where: uncertainty.isUncertain) { s += nb ? ", usikker" : ", uncertain" }
+            let levels = ns.compactMap(uncertainty.level)
+            if levels.contains(.veryUncertain) { s += nb ? ", svært usikker" : ", very uncertain" }
+            else if !levels.isEmpty { s += nb ? ", usikker" : ", uncertain" }
             return s
         }
     }

@@ -182,6 +182,10 @@ fun ReviewScreen(vm: PlayViewModel) {
                     current, partName, todo.indexOf(current) + 1, todo.size, spoken[current.index], lang, playingBar == current.bar,
                     listen = { vm.listenToBar(current.bar) }, stop = vm::stopListening,
                     keep = { keep(current) }, next = { advance(current.index) },
+                    correct = { delta ->
+                        val note = current.note
+                        if (note != null && vm.correctNote(voiceId, note.start, note.pitch, delta)) vm.say(R.string.note_saved)
+                    },
                     neighbours = bars.firstOrNull { it.number == current.bar }?.events.orEmpty(), checked = checked,
                 )
             }
@@ -268,6 +272,7 @@ private fun noteLine(e: PartEvent, lang: Lang): String {
 private fun NoteCard(
     e: PartEvent, partName: String, position: Int, total: Int, spoken: String, lang: Lang, playing: Boolean,
     listen: () -> Unit, stop: () -> Unit, keep: () -> Unit, next: () -> Unit,
+    correct: (Int) -> Unit,
     neighbours: List<PartEvent>, checked: Set<Int>,
 ) {
     val c = BrasscribeTheme.colors
@@ -303,6 +308,10 @@ private fun NoteCard(
                     stringResource(R.string.review_note_and_level, noteLine(e, lang), level),
                     style = MaterialTheme.typography.bodyLarge,
                 )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                OutlineButton(stringResource(R.string.pitch_down), { correct(-1) }, fill = false)
+                OutlineButton(stringResource(R.string.pitch_up), { correct(1) }, fill = false)
             }
             if (playing) OutlineButton(stringResource(R.string.stop_listening), stop, icon = R.drawable.ic_bc_stop)
             else SecondaryButton(stringResource(R.string.listen), listen, icon = R.drawable.ic_bc_listen_bar)

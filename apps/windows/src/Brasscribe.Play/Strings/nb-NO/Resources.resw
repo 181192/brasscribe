@@ -150,6 +150,9 @@
   <data name="DifficultyStandard.Content" xml:space="preserve">
     <value>Litt enklere</value>
   </data>
+  <data name="DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Datamaskiner som kjører Brasscribe på dette nettverket</value>
+  </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
     <value>{0} min {1} s</value>
   </data>
@@ -344,6 +347,12 @@
   </data>
   <data name="Export_TalkingScore_For" xml:space="preserve">
     <value>Tekst en skjermleser kan lese opp</value>
+  </data>
+  <data name="FindEnginesButton.Content" xml:space="preserve">
+    <value>Finn på dette nettverket</value>
+  </data>
+  <data name="FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Se etter datamaskiner som kjører Brasscribe på samme nettverk</value>
   </data>
   <data name="FinishLater_Confirm" xml:space="preserve">
     <value>Fortsett senere</value>
@@ -756,6 +765,36 @@
   <data name="PartPageNote.Text" xml:space="preserve">
     <value>Skrevet ned av Brasscribe. Sjekk tonene merket ? før øvelsen.</value>
   </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="PitchDownButton.Content" xml:space="preserve">
+    <value>Senk en halvtone</value>
+  </data>
+  <data name="PitchDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Senk tonen en halvtone</value>
+  </data>
+  <data name="PitchUpButton.Content" xml:space="preserve">
+    <value>Hev en halvtone</value>
+  </data>
+  <data name="PitchUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hev tonen en halvtone</value>
+  </data>
+  <data name="PitchSaveNote.Text" xml:space="preserve">
+    <value>Endringer i toner lagres i partituret med én gang.</value>
+  </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Alle stemmer, eller én stemme som side (P)</value>
   </data>
@@ -1131,11 +1170,26 @@
   <data name="Settings_CoreVersion" xml:space="preserve">
     <value>Arrangør på denne PC-en: {0}</value>
   </data>
+  <data name="Settings_Engine_Chosen" xml:space="preserve">
+    <value>Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.</value>
+  </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
     <value>Koblet til Brasscribe {0} på datamaskinen ({1})</value>
   </data>
+  <data name="Settings_Engine_FoundMany" xml:space="preserve">
+    <value>Fant {0} datamaskiner som kjører Brasscribe. Velg én.</value>
+  </data>
+  <data name="Settings_Engine_FoundOne" xml:space="preserve">
+    <value>Fant {0}. Velg den for å bruke den.</value>
+  </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
     <value>Datamaskinen ber om en paringskode. Skriv inn de seks sifrene den viser.</value>
+  </data>
+  <data name="Settings_Engine_NoneFound" xml:space="preserve">
+    <value>Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.</value>
+  </data>
+  <data name="Settings_Engine_Searching" xml:space="preserve">
+    <value>Ser etter Brasscribe på nettverket …</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Neste eller forrige takt</value>

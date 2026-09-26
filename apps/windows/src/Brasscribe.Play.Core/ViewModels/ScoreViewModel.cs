@@ -39,6 +39,7 @@ public sealed partial class ScoreViewModel : ObservableObject
     public TalkingScoreDocument? Document { get; private set; }
     public Composition? Composition { get; private set; }
     public string? MusicXml { get; private set; }
+    public Action<string>? PersistEditedMusicXml { get; set; }
     public ScoreNavigator? Navigator => _nav;
 
     public ObservableCollection<ScorePartItem> Parts { get; } = [];
@@ -146,6 +147,22 @@ public sealed partial class ScoreViewModel : ObservableObject
         UpdateUncertain();
         Sync(_nav.Text, announce: false);
         RebuildTalkingLines();
+    }
+
+    public bool CorrectPitch(int partIndex, int barIndex, int eventIndex, int semitones)
+    {
+        if (MusicXml is null || Document is null || partIndex < 0 || partIndex >= Document.Parts.Count) return false;
+        var part = Document.Parts[partIndex];
+        if (barIndex < 0 || barIndex >= part.Bars.Count || eventIndex < 0 || eventIndex >= part.Bars[barIndex].Events.Count) return false;
+        var ev = part.Bars[barIndex].Events[eventIndex];
+        if (ev.Written is not { } written || ev.MusicXmlNoteIndex < 0) return false;
+        int midi = Announcer.Midi(written) + semitones;
+        if (midi is < 0 or > 127) return false;
+        string edited = MusicXmlNoteEditor.ReplacePitch(MusicXml, part.Id, ev.MusicXmlNoteIndex, midi, part.Bars[barIndex].KeyFifths);
+        Player.Player.Pause();
+        PersistEditedMusicXml?.Invoke(edited);
+        Load(edited, Composition);
+        return true;
     }
 
     private TalkingScoreSettings Settings() => new(Language, ConcertPitch ? PitchMode.Concert : PitchMode.Written, Verbosity);

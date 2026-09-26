@@ -49,6 +49,10 @@ public sealed partial class MainViewModel : ObservableObject
         Review = new ReviewViewModel(score, announcer, strings);
         Error = new ErrorViewModel(strings);
         Library = library;
+        Score.PersistEditedMusicXml = xml =>
+        {
+            if (_libraryId is { } id) Library?.SaveMusicXml(id, xml);
+        };
         RefreshLibrary();
         if (library is not null) library.Changed += (_, _) => RefreshLibrary();
         Screen = settings.FirstRunDone ? Screen.Start : Screen.FirstRun;
@@ -165,6 +169,25 @@ public sealed partial class MainViewModel : ObservableObject
 
     private (SourceAudio Source, SourceKindOption Kind)? _lastChoice;
     private string? _libraryId;
+
+    public bool RenameCurrentScore(string title)
+    {
+        string cleaned = title.Trim();
+        if (cleaned.Length == 0 || _libraryId is not { } id || Library is null || Score.MusicXml is null) return false;
+        try
+        {
+            Library.Rename(id, cleaned);
+            var entry = Library.Entries.FirstOrDefault(e => e.Id == id);
+            if (entry is null) return false;
+            Score.Load(File.ReadAllText(entry.MusicXmlPath), Score.Composition);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Xml.XmlException or FormatException)
+        {
+            _announcer.Announce(_s.Format("Score_RenameFailed", cleaned), AnnouncementKind.Important);
+            return false;
+        }
+    }
 
     /// <summary>First run: "Get started" goes Home and the screen is not shown again.</summary>
     [RelayCommand]

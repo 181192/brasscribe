@@ -3,6 +3,7 @@
     x:Class="Brasscribe.Play.Dialogs.SettingsDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:engine="using:Brasscribe.Play.Core.Engine"
     x:Uid="SettingsDialog"
     DefaultButton="Close">
     <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
@@ -25,6 +26,18 @@
             </ComboBox>
 
             <TextBlock x:Uid="SettingsEngineHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <Button x:Uid="FindEnginesButton" Click="OnFindEngines" />
+            <ListView x:Uid="DiscoveredEnginesList" ItemsSource="{x:Bind ViewModel.DiscoveredEngines}" SelectionMode="None"
+                      IsItemClickEnabled="True" ItemClick="OnEngineClicked">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="engine:DiscoveredEngine">
+                        <StackPanel Padding="0,6">
+                            <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind Name}" />
+                            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Address}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
             <TextBox x:Uid="EngineAddressBox" Text="{x:Bind ViewModel.EngineAddress, Mode=TwoWay}" InputScope="Url" />
             <TextBox x:Uid="PairingCodeBox" Text="{x:Bind ViewModel.PairingCode, Mode=TwoWay}" InputScope="Number" />
             <Button x:Uid="ConnectButton" Style="{StaticResource ActionButtonStyle}" Click="OnConnect" />

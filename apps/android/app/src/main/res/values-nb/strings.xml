@@ -42,6 +42,11 @@
     <string name="home_sample_desc">«Mikkel», kornettsolo med band</string>
     <string name="home_links_tip">Lenker kan ikke lastes ned. Spill inn det som spilles, eller åpne en fil du har.</string>
     <string name="home_your_scores">Partiturene dine</string>
+    <string name="edit_title">Endre navn</string>
+    <string name="save">Lagre</string>
+    <string name="pitch_down">Senk en halvtone</string>
+    <string name="pitch_up">Hev en halvtone</string>
+    <string name="note_saved">Toneendringen er lagret</string>
     <plurals name="notes_to_check">
         <item quantity="one">%d tone å sjekke</item>
         <item quantity="other">%d toner å sjekke</item>
@@ -338,6 +343,8 @@
     <string name="companion_title">Brasscribe på datamaskinen</string>
     <string name="companion_explain">Åpne Brasscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_address">Adressen til datamaskinen</string>
+    <string name="companion_searching">Ser etter Brasscribe på nettverket … Du kan også skrive inn adressen nedenfor.</string>
+    <string name="companion_chosen">Valgt</string>
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>

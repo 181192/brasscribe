@@ -156,6 +156,20 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
         score.ListenToBarCommand.Execute(null);
     }
 
+    [RelayCommand]
+    private void LowerPitch() => CorrectPitch(-1);
+
+    [RelayCommand]
+    private void RaisePitch() => CorrectPitch(1);
+
+    private void CorrectPitch(int semitones)
+    {
+        if (Current is not { } selected || !score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, semitones)) return;
+        int sourceNoteIndex = selected.Event.MusicXmlNoteIndex;
+        Load();
+        Select(Items.FirstOrDefault(x => x.Part == selected.Part && x.Event.MusicXmlNoteIndex == sourceNoteIndex));
+    }
+
     /// <summary>"Finish later (9 left)": asks first while notes are left; with none left it finishes.</summary>
     [RelayCommand]
     private void FinishLater()

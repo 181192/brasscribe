@@ -1,0 +1,103 @@
+name: android
+
+# Brasscribe Play for Android. Checks: unit tests, lint and a debug build (Kotlin fallback core,
+# stub audio tier). With `release`: the Rust core and sfizz are built in and an unsigned release
+# APK is uploaded as dist-android.
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "apps/android/**"
+      - "core/android/**"
+      - "design/**"
+      - "docs/accessibility/talking-score-vectors.json"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths: *paths
+  workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Build the full release APK for download instead of running checks
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: apps/android
+
+jobs:
+  build:
+    name: ${{ inputs.release && 'release build' || 'test and lint' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Pinned in build.gradle.kts; installing up front keeps AGP from downloading them mid-build.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools ndk;28.2.13676358 cmake;3.31.6
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests, lint and debug APK
+        if: ${{ !inputs.release }}
+        run: ./gradlew testDebugUnitTest lint assembleDebug --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release && failure() }}
+        with:
+          name: android-test-and-lint-reports
+          path: |
+            apps/android/**/build/reports
+            apps/android/**/build/test-results
+          if-no-files-found: ignore
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: ${{ inputs.release }}
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        if: ${{ inputs.release }}
+        with:
+          workspaces: core
+
+      - name: Build the Rust core and fetch sfizz
+        if: ${{ inputs.release }}
+        run: |
+          cargo install cargo-ndk --locked
+          ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358" scripts/build-core.sh
+          scripts/fetch-sfizz.sh
+
+      - name: Release APK (unsigned)
+        if: ${{ inputs.release }}
+        run: |
+          ./gradlew assembleRelease --stacktrace
+          mkdir -p "$RUNNER_TEMP/out"
+          cp app/build/outputs/apk/release/*.apk "$RUNNER_TEMP/out/brasscribe-play-android-unsigned.apk"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.release }}
+        with:
+          name: dist-android
+          path: ${{ runner.temp }}/out/*.apk
+          if-no-files-found: error
+

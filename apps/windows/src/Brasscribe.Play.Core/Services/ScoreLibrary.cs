@@ -76,6 +76,25 @@ public sealed class ScoreLibrary
         Save();
     }
 
+    public void SaveMusicXml(string id, string musicXml)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0) return;
+        WriteAtomically(_entries[i].MusicXmlPath, musicXml);
+        _entries[i] = _entries[i] with { Updated = DateTimeOffset.Now };
+        Save();
+    }
+
+    public void Rename(string id, string title)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0) return;
+        var entry = _entries[i];
+        WriteAtomically(entry.MusicXmlPath, MusicXmlNoteEditor.ReplaceTitle(File.ReadAllText(entry.MusicXmlPath), title));
+        _entries[i] = entry with { Title = title, Updated = DateTimeOffset.Now };
+        Save();
+    }
+
     public void Remove(string id)
     {
         if (_entries.RemoveAll(e => e.Id == id) > 0) Save();
@@ -109,6 +128,13 @@ public sealed class ScoreLibrary
         File.WriteAllText(tmp, JsonSerializer.Serialize(_entries, LibraryJsonContext.Default.ListLibraryEntry));
         File.Move(tmp, IndexPath, overwrite: true);
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static void WriteAtomically(string path, string contents)
+    {
+        string tmp = path + ".tmp";
+        File.WriteAllText(tmp, contents);
+        File.Move(tmp, path, overwrite: true);
     }
 
     private static string Safe(string id) => string.Concat(id.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_'));

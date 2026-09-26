@@ -96,6 +96,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
             raise HTTPException(401, "pair first: POST /v1/pair with the engine's pairing code", {"WWW-Authenticate": "Bearer"})
 
     jobs: JobManager = app.state.jobs
+    from .conformance import ConformanceRunner
+
+    conformance_runner = app.state.conformance = ConformanceRunner(settings.conformance_reports_dir)
 
     def job_or_404(job_id: str) -> Job:
         job = jobs.get(job_id)
@@ -601,9 +604,31 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     @app.get("/v1/conformance", response_model=list[m.Manifest], operation_id="listConformanceReports",
              tags=["inspection"], dependencies=[Depends(auth)])
-    def list_conformance() -> list[dict]:
-        """Rust-core conformance results as written (every *.json in BRASSCRIBE_CONFORMANCE_REPORTS), plus `_file`."""
-        return history.reports(settings.conformance_reports_dir)
+    def list_conformance(all: bool = Query(False, description="every JSON file of the run (large: each case's "
+                                                                  "outputs), not only the summary reports")) -> list[dict]:
+        """Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
+
+        An empty list means no report yet (run `brasscribe_conformance.run`, or runConformance)."""
+        root = settings.conformance_reports_dir
+        return history.reports(root) if all else history.reports(root, "report.json")
+
+    @app.post("/v1/conformance/run", response_model=m.ConformanceRun, status_code=202, operation_id="runConformance",
+              tags=["inspection"], dependencies=[Depends(auth)],
+              responses={409: {"description": "a run is already in progress"},
+                         503: {"description": "core/conformance is not in this checkout"}})
+    def run_conformance() -> m.ConformanceRun:
+        """Start the Rust-core conformance suite in the background (no MuseScore); poll getConformanceRun."""
+        if not conformance_runner.available:
+            raise HTTPException(503, "core/conformance is not in this checkout")
+        if not conformance_runner.start():
+            raise HTTPException(409, "a conformance run is already in progress")
+        return m.ConformanceRun(**conformance_runner.snapshot())
+
+    @app.get("/v1/conformance/run", response_model=m.ConformanceRun, operation_id="getConformanceRun",
+             tags=["inspection"], dependencies=[Depends(auth)])
+    def get_conformance_run() -> m.ConformanceRun:
+        """State of the latest conformance run started by this server, with the last lines of its log."""
+        return m.ConformanceRun(**conformance_runner.snapshot())
 
     if STATIC.is_dir():
         app.mount("/", StaticFiles(directory=STATIC, html=True), name="studio")

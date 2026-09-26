@@ -106,3 +106,42 @@ def test_delete_active_run_is_refused(settings):
         jobs.jobs["20990101-000000-test-abcdef"] = Job("20990101-000000-test-abcdef", "test", None, None,
                                                         settings.data_dir / "x.wav", {}, status="running")
         assert c.delete("/v1/runs/20990101-000000-test-abcdef").status_code == 409
+
+
+def test_conformance_default_is_only_the_summary(settings, monkeypatch, tmp_path):
+    root = tmp_path / "core-conformance"
+    (root / "case1" / "py").mkdir(parents=True)
+    (root / "case1" / "py" / "composition.json").write_text(json.dumps({"big": [0] * 1000}))
+    monkeypatch.setenv("BRASSCRIBE_CONFORMANCE_REPORTS", str(root))
+    with TestClient(create_app(settings)) as c:
+        assert c.get("/v1/conformance").json() == []  # no report yet
+        (root / "report.json").write_text(json.dumps({"git_sha": "abc", "sets": []}))
+        assert c.get("/v1/conformance").json() == [{"git_sha": "abc", "sets": [], "_file": "report.json"}]
+        assert len(c.get("/v1/conformance", params={"all": True}).json()) == 2
+
+
+def test_conformance_run_lifecycle(settings, monkeypatch, tmp_path):
+    import time
+
+    from brasscribe_engine import conformance
+
+    project = tmp_path / "proj"
+    (project / "brasscribe_conformance").mkdir(parents=True)
+    (project / "brasscribe_conformance" / "run.py").write_text("")
+    with TestClient(create_app(settings)) as c:
+        runner = c.app.state.conformance
+        runner.project = project
+        monkeypatch.setattr(conformance.ConformanceRunner, "command",
+                            lambda self: ["python3", "-c", "import time; print('case OK'); time.sleep(0.5)"])
+        assert c.get("/v1/conformance/run").json()["status"] == "idle"
+        r = c.post("/v1/conformance/run")
+        assert r.status_code == 202 and r.json()["status"] == "running"
+        assert c.post("/v1/conformance/run").status_code == 409
+        for _ in range(100):
+            s = c.get("/v1/conformance/run").json()
+            if s["status"] != "running":
+                break
+            time.sleep(0.05)
+        assert s["status"] == "succeeded" and s["exit_code"] == 0 and "case OK" in s["log_tail"]
+        runner.project = tmp_path / "nowhere"
+        assert c.post("/v1/conformance/run").status_code == 503
