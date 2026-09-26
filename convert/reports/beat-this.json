@@ -72,6 +72,14 @@
   "checkpoint/beat_this-final0.ckpt": {
    "size_bytes": 81058141,
    "sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331"
+  },
+  "beat-this-small0-dyn-fp16.mlpackage": {
+   "size_bytes": 4758348,
+   "sha256": "203072e1aebf7366b9cdbcaace48452ac5ff42c7e7ef822fea65c2466172b37d"
+  },
+  "beat-this-small0-dyn-fp32.mlpackage": {
+   "size_bytes": 8925423,
+   "sha256": "f90381f98682a066e54d31898acbab16d75bfae596af2c852f4de1258c1d6c3f"
   }
  },
  "parity": {
@@ -1064,6 +1072,204 @@
     "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
     "mikkel/full": 1.0
    }
+  },
+  "small0/coreml-dyn-fp32-CPU_ONLY": {
+   "beat_f1": {
+    "n_ref": 2485,
+    "n_est": 2485,
+    "matched": 2485,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde",
+    "n_clips": 19
+   },
+   "downbeat_f1": {
+    "n_ref": 1017,
+    "n_est": 1017,
+    "matched": 1017,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde",
+    "n_clips": 19
+   },
+   "per_clip_beat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 1.0,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 1.0,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 1.0,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 1.0,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/full": 1.0
+   },
+   "per_clip_downbeat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 1.0,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 1.0,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 1.0,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 1.0,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/full": 1.0
+   }
+  },
+  "small0/coreml-dyn-fp32-CPU_AND_GPU": {
+   "beat_f1": {
+    "n_ref": 2485,
+    "n_est": 2485,
+    "matched": 2485,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde",
+    "n_clips": 19
+   },
+   "downbeat_f1": {
+    "n_ref": 1017,
+    "n_est": 1017,
+    "matched": 1017,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde",
+    "n_clips": 19
+   },
+   "per_clip_beat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 1.0,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 1.0,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 1.0,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 1.0,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/full": 1.0
+   },
+   "per_clip_downbeat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 1.0,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 1.0,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 1.0,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 1.0,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/full": 1.0
+   }
+  },
+  "small0/coreml-dyn-fp16-CPU_AND_GPU": {
+   "beat_f1": {
+    "n_ref": 2485,
+    "n_est": 2482,
+    "matched": 2468,
+    "p": 0.9943593875906527,
+    "r": 0.993158953722334,
+    "f1": 0.9937588081336822,
+    "min_f1": 0.9834087481146305,
+    "min_clip": "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn",
+    "n_clips": 19
+   },
+   "downbeat_f1": {
+    "n_ref": 1017,
+    "n_est": 1023,
+    "matched": 1011,
+    "p": 0.9882697947214076,
+    "r": 0.9941002949852508,
+    "f1": 0.9911764705882352,
+    "min_f1": 0.9666666666666666,
+    "min_clip": "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden",
+    "n_clips": 19
+   },
+   "per_clip_beat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 0.9953,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 1.0,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 1.0,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 0.9883,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 0.9834,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 0.9945,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 0.9878,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/full": 0.9936
+   },
+   "per_clip_downbeat_f1": {
+    "choralebricks-brass4/Anonymous_AusMeinesHerzensGrunde": 1.0,
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "choralebricks-brass4/Crueger_AufAufMeinHerzMitFreuden": 0.9667,
+    "choralebricks-brass4/Drese_JesuGehVoran": 1.0,
+    "choralebricks-brass4/Gesius_BefiehlDuDeineWege": 1.0,
+    "choralebricks-brass4/Gesius_DuFriedensfuerstHerrJesuChrist": 1.0,
+    "choralebricks-brass4/Jan_DuGrosserSchmerzensmann": 1.0,
+    "choralebricks-brass4/Telemann_DerLiebenSonneLichtUndPracht": 0.9846,
+    "choralebricks-brass4/Vulpius_ChristusDerIstMeinLeben": 1.0,
+    "choralebricks-brass4/Vulpius_DieHelleSonnLeuchtJetztHerfuer": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/07_GString_tpt_tbn": 0.9842,
+    "urmp-brass/15_Surprise_tpt_tpt_tbn": 1.0,
+    "urmp-brass/31_Slavonic_tpt_tpt_hn_tbn": 0.9808,
+    "urmp-brass/33_Elise_tpt_tpt_hn_tbn": 1.0,
+    "urmp-brass/34_Fugue_tpt_tpt_hn_tbn": 0.9948,
+    "urmp-brass/42_Arioso_tpt_tpt_hn_tbn_tba": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 0.975,
+    "mikkel/full": 0.9905
+   }
   }
  },
  "benchmarks": {
@@ -1071,14 +1277,14 @@
    "checkpoint": "small0",
    "backend": "torch-cpu",
    "audio_s": 60.0,
-   "load_s": 0.035861542099155486,
-   "median_s": 0.7521237919572741,
-   "min_s": 0.74445833300706,
+   "load_s": 0.031808707979507744,
+   "median_s": 0.5501002499368042,
+   "min_s": 0.5480658339802176,
    "runs": 3,
-   "rtf": 0.012535396532621234,
-   "peak_rss_mb": 508.5,
-   "baseline_rss_mb": 262.265625,
-   "model_rss_mb": 246.234375,
+   "rtf": 0.009168337498946737,
+   "peak_rss_mb": 492.171875,
+   "baseline_rss_mb": 261.390625,
+   "model_rss_mb": 230.78125,
    "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"
   },
   "small0/onnx-ort-cpu": {
@@ -1314,6 +1520,48 @@
    "baseline_rss_mb": 296.21875,
    "model_rss_mb": 303.625,
    "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"
+  },
+  "small0/coreml-dyn-fp32-CPU_ONLY": {
+   "checkpoint": "small0",
+   "backend": "coreml-dyn-fp32-CPU_ONLY",
+   "audio_s": 60.0,
+   "load_s": 2.013515958096832,
+   "median_s": 2.609367375029251,
+   "min_s": 2.608934666030109,
+   "runs": 3,
+   "rtf": 0.043489456250487515,
+   "peak_rss_mb": 10007.859375,
+   "baseline_rss_mb": 295.71875,
+   "model_rss_mb": 9712.140625,
+   "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"
+  },
+  "small0/coreml-dyn-fp32-CPU_AND_GPU": {
+   "checkpoint": "small0",
+   "backend": "coreml-dyn-fp32-CPU_AND_GPU",
+   "audio_s": 60.0,
+   "load_s": 1.3925787910120562,
+   "median_s": 2.689247624948621,
+   "min_s": 2.607742291991599,
+   "runs": 3,
+   "rtf": 0.04482079374914368,
+   "peak_rss_mb": 9904.421875,
+   "baseline_rss_mb": 295.296875,
+   "model_rss_mb": 9609.125,
+   "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"
+  },
+  "small0/coreml-dyn-fp16-CPU_AND_GPU": {
+   "checkpoint": "small0",
+   "backend": "coreml-dyn-fp16-CPU_AND_GPU",
+   "audio_s": 60.0,
+   "load_s": 1.9136172500438988,
+   "median_s": 2.9960576669545844,
+   "min_s": 2.958913915907033,
+   "runs": 3,
+   "rtf": 0.04993429444924307,
+   "peak_rss_mb": 8745.015625,
+   "baseline_rss_mb": 295.8125,
+   "model_rss_mb": 8449.203125,
+   "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"
   }
  },
  "coreml_compute_plan": {
@@ -1381,10 +1629,13 @@
   "final0/onnx1500-ort-coreml": true,
   "final0/coreml-fp32-ALL": true,
   "final0/coreml-fp16-ALL": true,
-  "final0/coreml-fp16-CPU_AND_NE": true
+  "final0/coreml-fp16-CPU_AND_NE": true,
+  "small0/coreml-dyn-fp32-CPU_ONLY": true,
+  "small0/coreml-dyn-fp32-CPU_AND_GPU": true,
+  "small0/coreml-dyn-fp16-CPU_AND_GPU": true
  },
  "pass_all": true,
- "limitation": "fixed 1500-frame models (Core ML, static ONNX on the CoreML EP) zero-pad pieces under 30 s, which upstream runs as one shorter chunk; the two such eval clips (Vulpius_*) deviate. The dynamic ONNX is exact for any length.",
+ "limitation": "fixed 1500-frame models zero-pad pieces under 30 s, which upstream runs as one shorter chunk; the two such eval clips (Vulpius_*) deviate. The dynamic ONNX and the flexible Core ML build (-dyn-, 16..1500 frames, CPU/GPU only: the Neural Engine rejects flexible shapes) run them unpadded.",
  "frontend": "log-mel (torchaudio MelSpectrogram, 22.05 kHz, n_fft 1024, hop 441, 128 slaney mels, log1p(1000x)) runs outside the exported graph and must be ported per platform",
  "versions": {
   "python": "3.12.14",

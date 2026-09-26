@@ -8,7 +8,7 @@
   "pipeline": "TranscriptionModel.transcribe_to_midi, greedy, prelude forcing, detect_tempo=False"
  },
  "graph_boundary": "conditioning (log-mel + projection + class embeddings) on the host; transformer as prefill and decode-with-past ONNX graphs; greedy loop on the host",
- "metric": "exact token agreement per 5 s chunk and note F1 (50 ms onsets) of the MIDI vs PyTorch",
+ "metric": "gate: exact token agreement on every 5 s chunk; also note F1 (50 ms onsets) of the MIDI vs PyTorch",
  "clips": [
   "choralebricks-brass4/Bach_IchStehAnDeinerKrippe [0.0s +30.0s]",
   "urmp-brass/05_Entertainer_tpt_tpt [0.0s +30.0s]",
@@ -21,6 +21,18 @@
   },
   "muscriptor-medium-prefill.onnx": {
    "size_bytes": 1220024749
+  },
+  "muscriptor-medium-q1.onnx": {
+   "size_bytes": 1214201785
+  },
+  "muscriptor-medium-q64.onnx": {
+   "size_bytes": 1214202488
+  },
+  "muscriptor-medium-kv-fp32.mlpackage": {
+   "size_bytes": 1214616499
+  },
+  "muscriptor-medium-kv-fp16.mlpackage": {
+   "size_bytes": 607554386
   }
  },
  "parity": {
@@ -68,6 +80,246 @@
      "first_divergence": null
     }
    }
+  },
+  "static-ort-cpu": {
+   "note_f1": {
+    "n_ref": 1057,
+    "n_est": 1057,
+    "matched": 1057,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+    "n_clips": 4
+   },
+   "per_clip_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/excerpt-60s": 1.0
+   },
+   "tokens": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 738,
+     "first_divergence": null
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 634,
+     "first_divergence": null
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 965,
+     "first_divergence": null
+    },
+    "mikkel/excerpt-60s": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 2178,
+     "first_divergence": null
+    }
+   }
+  },
+  "static-ort-coreml": {
+   "note_f1": {
+    "n_ref": 1057,
+    "n_est": 1057,
+    "matched": 1057,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+    "n_clips": 4
+   },
+   "per_clip_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/excerpt-60s": 1.0
+   },
+   "tokens": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 738,
+     "first_divergence": null
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 634,
+     "first_divergence": null
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 965,
+     "first_divergence": null
+    },
+    "mikkel/excerpt-60s": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 2178,
+     "first_divergence": null
+    }
+   }
+  },
+  "coreml-fp16-ALL": {
+   "note_f1": {
+    "n_ref": 1057,
+    "n_est": 1057,
+    "matched": 1056,
+    "p": 0.9990539262062441,
+    "r": 0.9990539262062441,
+    "f1": 0.9990539262062441,
+    "min_f1": 0.9977324263038548,
+    "min_clip": "mikkel/excerpt-60s",
+    "n_clips": 4
+   },
+   "per_clip_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/excerpt-60s": 0.9977
+   },
+   "tokens": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 738,
+     "first_divergence": null
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 634,
+     "first_divergence": null
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "chunks": 6,
+     "identical_chunks": 5,
+     "tokens_ref": 965,
+     "first_divergence": [
+      3,
+      115
+     ]
+    },
+    "mikkel/excerpt-60s": {
+     "chunks": 6,
+     "identical_chunks": 4,
+     "tokens_ref": 2178,
+     "first_divergence": [
+      2,
+      264
+     ]
+    }
+   }
+  },
+  "coreml-fp16-CPU_AND_GPU": {
+   "note_f1": {
+    "n_ref": 1057,
+    "n_est": 1057,
+    "matched": 1056,
+    "p": 0.9990539262062441,
+    "r": 0.9990539262062441,
+    "f1": 0.9990539262062441,
+    "min_f1": 0.9977324263038548,
+    "min_clip": "mikkel/excerpt-60s",
+    "n_clips": 4
+   },
+   "per_clip_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/excerpt-60s": 0.9977
+   },
+   "tokens": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 738,
+     "first_divergence": null
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 634,
+     "first_divergence": null
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "chunks": 6,
+     "identical_chunks": 5,
+     "tokens_ref": 965,
+     "first_divergence": [
+      3,
+      115
+     ]
+    },
+    "mikkel/excerpt-60s": {
+     "chunks": 6,
+     "identical_chunks": 4,
+     "tokens_ref": 2178,
+     "first_divergence": [
+      2,
+      264
+     ]
+    }
+   }
+  },
+  "coreml-fp32-ALL": {
+   "note_f1": {
+    "n_ref": 1057,
+    "n_est": 1057,
+    "matched": 1057,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+    "n_clips": 4
+   },
+   "per_clip_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+    "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+    "mikkel/excerpt-60s": 1.0
+   },
+   "tokens": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "chunks": 6,
+     "identical_chunks": 5,
+     "tokens_ref": 738,
+     "first_divergence": [
+      0,
+      44
+     ]
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 634,
+     "first_divergence": null
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 965,
+     "first_divergence": null
+    },
+    "mikkel/excerpt-60s": {
+     "chunks": 6,
+     "identical_chunks": 6,
+     "tokens_ref": 2178,
+     "first_divergence": null
+    }
+   }
   }
  },
  "benchmarks": {
@@ -75,41 +327,127 @@
    "backend": "torch-cpu",
    "size": "medium",
    "audio_s": 30.0,
-   "load_s": 1.212832959019579,
-   "median_s": 33.959578415961005,
+   "load_s": 1.8576478329487145,
+   "median_s": 42.10755762504414,
    "runs": 1,
-   "rtf": 1.1319859471987002,
+   "rtf": 1.403585254168138,
    "tokens": 2178,
-   "ms_per_token": 15.592092936621214,
-   "peak_rss_mb": 2551.203125,
-   "baseline_rss_mb": 187.09375,
-   "model_rss_mb": 2364.109375,
+   "ms_per_token": 19.333130222701623,
+   "peak_rss_mb": 2550.921875,
+   "baseline_rss_mb": 187.921875,
+   "model_rss_mb": 2363.0,
    "note": "single cold run incl. conditioning and detokenisation"
   },
   "onnx-ort-cpu": {
    "backend": "onnx-ort-cpu",
    "size": "medium",
    "audio_s": 30.0,
-   "load_s": 2.5703070840099826,
-   "median_s": 50.90743195905816,
+   "load_s": 2.433278333977796,
+   "median_s": 48.41348991706036,
    "runs": 1,
-   "rtf": 1.696914398635272,
+   "rtf": 1.6137829972353452,
    "tokens": 2178,
-   "ms_per_token": 23.37347656522413,
-   "peak_rss_mb": 4062.109375,
+   "ms_per_token": 22.22841593988079,
+   "peak_rss_mb": 5078.71875,
+   "baseline_rss_mb": 187.796875,
+   "model_rss_mb": 4890.921875,
+   "note": "single cold run incl. conditioning and detokenisation"
+  },
+  "static-ort-cpu": {
+   "backend": "static-ort-cpu",
+   "size": "medium",
+   "audio_s": 30.0,
+   "load_s": 3.1198959589237347,
+   "median_s": 86.47482983302325,
+   "runs": 1,
+   "rtf": 2.8824943277674415,
+   "tokens": 2178,
+   "ms_per_token": 39.70377861938625,
+   "peak_rss_mb": 6094.640625,
    "baseline_rss_mb": 187.4375,
-   "model_rss_mb": 3874.671875,
+   "model_rss_mb": 5907.203125,
+   "note": "single cold run incl. conditioning and detokenisation"
+  },
+  "static-ort-coreml": {
+   "backend": "static-ort-coreml",
+   "size": "medium",
+   "audio_s": 30.0,
+   "load_s": 31.32223300007172,
+   "median_s": 121.85690720903222,
+   "runs": 1,
+   "rtf": 4.061896906967741,
+   "tokens": 2178,
+   "ms_per_token": 55.94899320892205,
+   "peak_rss_mb": 7494.796875,
+   "baseline_rss_mb": 187.140625,
+   "model_rss_mb": 7307.65625,
+   "note": "single cold run incl. conditioning and detokenisation",
+   "coreml_ep": {
+    "partitions": 25,
+    "nodes_total": 805,
+    "nodes_on_coreml": 685
+   }
+  },
+  "coreml-fp16-ALL": {
+   "backend": "coreml-fp16-ALL",
+   "size": "medium",
+   "audio_s": 30.0,
+   "load_s": 4.600205833092332,
+   "median_s": 21.243125209002756,
+   "runs": 1,
+   "rtf": 0.7081041736334251,
+   "tokens": 2178,
+   "ms_per_token": 9.753501014234507,
+   "peak_rss_mb": 3610.390625,
+   "baseline_rss_mb": 187.546875,
+   "model_rss_mb": 3422.84375,
+   "note": "single cold run incl. conditioning and detokenisation"
+  },
+  "coreml-fp16-CPU_AND_GPU": {
+   "backend": "coreml-fp16-CPU_AND_GPU",
+   "size": "medium",
+   "audio_s": 30.0,
+   "load_s": 3.418642916949466,
+   "median_s": 12.104439415968955,
+   "runs": 1,
+   "rtf": 0.4034813138656318,
+   "tokens": 2178,
+   "ms_per_token": 5.55759385489851,
+   "peak_rss_mb": 2725.296875,
+   "baseline_rss_mb": 187.203125,
+   "model_rss_mb": 2538.09375,
+   "note": "single cold run incl. conditioning and detokenisation"
+  },
+  "coreml-fp32-ALL": {
+   "backend": "coreml-fp32-ALL",
+   "size": "medium",
+   "audio_s": 30.0,
+   "load_s": 5.346860624966212,
+   "median_s": 497.91991879208945,
+   "runs": 1,
+   "rtf": 16.597330626402982,
+   "tokens": 2178,
+   "ms_per_token": 228.61336950968294,
+   "peak_rss_mb": 5065.09375,
+   "baseline_rss_mb": 187.671875,
+   "model_rss_mb": 4877.421875,
    "note": "single cold run incl. conditioning and detokenisation"
   }
  },
  "blocked": {
-  "onnx-ort-coreml": "CoreML EP fails to build the prefill graph (dynamic sequence axes: 'unbounded dimension', then 'Failed to build the model execution plan', error -7). Needs static-shape graphs (fixed prefix/past lengths with a padded, masked KV cache).",
-  "coreml / mlx-swift": "not attempted. Core ML needs the same static-shape KV-cache rewrite (or coremltools stateful models). MLX Swift has no port of this model: the transformer, the log-mel conditioner, the MT3 detokeniser and the prelude-forcing loop would have to be reimplemented in Swift and the safetensors weights mapped; none of that exists yet."
+  "onnx-ort-coreml": "the dynamic graphs: CoreML EP cannot build them ('unbounded dimension', error -7). Superseded by the static-shape graphs (static-ort-coreml).",
+  "coreml Neural Engine": "the stateful model has flexible query/cache lengths, which the Neural Engine does not run; it runs on GPU/CPU. A Neural Engine build would need fixed Q and E per function.",
+  "mlx-swift": "not attempted: no Swift port of the model, log-mel conditioner, MT3 detokeniser and prelude-forcing loop exists; the Core ML stateful model is the Apple path instead."
  },
  "pass": {
-  "onnx-ort-cpu": true
+  "onnx-ort-cpu": true,
+  "static-ort-cpu": true,
+  "static-ort-coreml": true,
+  "coreml-fp16-ALL": false,
+  "coreml-fp16-CPU_AND_GPU": false,
+  "coreml-fp32-ALL": false
  },
- "pass_all": true,
+ "pass_all": false,
  "versions": {
   "python": "3.12.14",
   "macos": "26.6.2",
@@ -120,5 +458,10 @@
   "onnx": "1.23.0",
   "mir_eval": "0.8.2"
  },
- "command": "cd convert/muscriptor && uv run python convert.py medium && uv run python parity.py medium"
+ "command": "cd convert/muscriptor && uv run python convert.py medium && uv run python convert_static.py medium && uv run python parity.py medium",
+ "kv_cache": {
+  "lmax": 2560,
+  "coreml_state_dtype": "float16 (Core ML states must be fp16, also in the fp32 build)",
+  "divergence": "Core ML fp16: chunks diverge at token 115 and 264 (2 clips); fp32 compute with the fp16 cache: one chunk at token 44. Divergence is argmax flips from reduced precision; the rest of the chunk follows a different but valid path"
+ }
 }

@@ -17,12 +17,12 @@ never committed; only the small JSON reports under `convert/reports/` are.
 | `common/parity.py` | Clip lists, note/event matching (mir_eval, 50 ms onsets, offsets ignored), pooled F1, SDR, isolated-process benchmarks (latency, peak RSS, CoreML EP node coverage), Core ML compute plans, report writing |
 | `common/separation.py` | Separator parity: stem SDR, then SwiftF0 and Basic Pitch note F1 on converted vs reference stems |
 | `common/coreml_ops.py` | coremltools torch-frontend fixes: op-name aliases (`greater_equal`, ...) and scalar casts of folded length-1 arrays |
-| `swift-f0/` | Upstream ONNX -> static-shape ONNX (onnxsim) -> onnx2torch -> Core ML fp32/fp16 (30.3 s window and 2 s streaming window) |
+| `swift-f0/` | Upstream ONNX -> static-shape ONNX (onnxsim) -> onnx2torch -> Core ML fp32/fp16 (30.3 s window and 2 s streaming window); `mixed.py`: three chained Core ML models (fp32 front/head, fp16 trunk for the Neural Engine) |
 | `basic-pitch/` | Parity of the upstream Core ML/TFLite/ONNX exports vs the TF SavedModel; batch-1 ONNX (explicit Conv pads, for the CoreML EP) and batch-1 Core ML fp32/fp16 |
-| `beat-this/` | `small0` and `final0`: dynamic ONNX, fixed 1500-frame ONNX, Core ML fp32/fp16 (network only; log-mel on the host) |
+| `beat-this/` | `small0` and `final0`: dynamic ONNX, fixed 1500-frame ONNX, Core ML fp32/fp16; small0 also flexible-length Core ML (`-dyn-`, 16..1500 frames) (network only; log-mel on the host) |
 | `demucs/` | HT-Demucs core (STFT/iSTFT on the host) -> ONNX, Core ML fp32/fp16 |
 | `roformer/` | BS-RoFormer SW and Mega-53 core (STFT, complex mask, iSTFT on the host) -> ONNX fp32/fp16, Core ML fp16 |
-| `muscriptor/` | MuScriptor transformer as ONNX prefill + decode-with-past graphs, greedy decode on the host |
+| `muscriptor/` | MuScriptor transformer as ONNX prefill + decode-with-past graphs; `convert_static.py`: fixed 2560-position KV cache as a stateful Core ML model and static-shape ONNX step graphs (Q=1, Q=64); greedy decode on the host |
 | `summarize.py` | Markdown table from `reports/*.json` |
 | `reports/*.json` | One machine-readable parity report per model |
 
@@ -61,7 +61,9 @@ Regenerate with `python3 convert/summarize.py`. Latency = wall time for the audi
 | SwiftF0 | Core ML fp32 (ALL -> GPU) | 1.2 MB | 1.0000 | 9 ms / 30 s | 393 MB | pass |
 | SwiftF0 | Core ML fp16 (ALL -> GPU) | 0.6 MB | 0.9899 | 6 ms / 30 s | 395 MB | pass |
 | SwiftF0 | Core ML fp16 CPU_AND_NE | 0.6 MB | 0.3703 | 21 ms / 30 s | 496 MB | **fail** |
-| SwiftF0 | streaming 2 s window, fp32 / fp16 | | 1.0000 / 0.9872 | | | pass |
+| SwiftF0 | mixed: fp32 front/head (GPU) + fp16 trunk on the Neural Engine | 0.8 MB | 0.9986 | 19 ms / 30 s | 502 MB | pass |
+| SwiftF0 | mixed, all on GPU | 0.8 MB | 0.9992 | 7 ms / 30 s | 399 MB | pass |
+| SwiftF0 | streaming 2 s window, fp32 / fp16 / mixed (NE) | | 1.0000 / 0.9872 / 1.0000 | | | pass |
 | Basic Pitch | upstream TFLite (LiteRT CPU) | 0.2 MB | 1.0000 | 0.72 s / 30 s | 719 MB | pass |
 | Basic Pitch | upstream / batch-1 ONNX, ORT CPU | 0.2 MB | 1.0000 | 0.15 s / 30 s | 585 MB | pass |
 | Basic Pitch | batch-1 ONNX, ORT CoreML EP | 0.2 MB | 1.0000 | 0.17 s / 30 s | 617 MB | pass |
@@ -72,6 +74,8 @@ Regenerate with `python3 convert/summarize.py`. Latency = wall time for the audi
 | Beat This small0 | Core ML fp32 (ALL -> GPU) | 78 MB | 0.9988 / 0.9946 | 0.08 s / 60 s | 501 MB | pass |
 | Beat This small0 | Core ML fp16 (ALL -> GPU) | 39 MB | 0.9980 / 0.9941 | 0.05 s / 60 s | 497 MB | pass |
 | Beat This small0 | Core ML fp16 CPU_AND_NE (all ops on ANE) | 39 MB | 0.9976 / 0.9941 | 0.33 s / 60 s | 465 MB | pass |
+| Beat This small0 | Core ML flexible length fp32 (CPU / GPU) | 8 MB | 1.0000 / 1.0000 | 2.6 s / 60 s | 9.9 GB | pass |
+| Beat This small0 | Core ML flexible length fp16 (GPU) | 4 MB | 0.9938 / 0.9912 | 3.0 s / 60 s | 8.7 GB | pass |
 | Beat This final0 | Core ML fp16 (ALL) | 39 MB | 0.9979 / 0.9916 | 0.06 s / 60 s | 597 MB | pass |
 | HT-Demucs | ONNX core, ORT CPU | 166 MB | 1.0000 / 0.9996, SDR >= 49 dB | 3.7 s / 30 s | 4.3 GB | pass |
 | HT-Demucs | ONNX core, ORT CoreML EP (1434/1459 nodes) | 166 MB | 1.0000 / 1.0000, SDR >= 80 dB | 1.6 s / 30 s | 2.4 GB | pass |
@@ -86,39 +90,59 @@ Regenerate with `python3 convert/summarize.py`. Latency = wall time for the audi
 | Mega-53 | Core ML fp16 (ALL -> GPU) | 1.3 GB | 1.0000 / 0.9993, SDR >= 34 dB | 14.7 s / 30 s | 21.5 GB | pass |
 | Mega-53 | ONNX fp16 core (exported, 1.3 GB) | 1.3 GB | — | — | — | not run |
 | MuScriptor medium | ONNX prefill + decode-with-past, ORT CPU | 2 x 1.2 GB | 1.0000; 24/24 chunks token-identical | 51 s / 30 s (23 ms/token) | 4.1 GB | pass |
-| MuScriptor medium | same, ORT CoreML EP | | — | — | — | **blocked** |
+| MuScriptor medium | static KV-cache ONNX (Q=1/Q=64), ORT CPU | 2 x 1.2 GB | 24/24 chunks token-identical | 87 s / 30 s (40 ms/token) | 6.1 GB | pass |
+| MuScriptor medium | static KV-cache ONNX, ORT CoreML EP (685/805 nodes) | 2 x 1.2 GB | 24/24 token-identical | 122 s / 30 s (56 ms/token) | 7.5 GB | pass |
+| MuScriptor medium | Core ML stateful fp16 (CPU_AND_GPU) | 579 MB | 21/24 token-identical; note F1 0.9991 | 12 s / 30 s (5.6 ms/token) | 2.7 GB | **fail** (token gate) |
+| MuScriptor medium | Core ML stateful fp16 (ALL) | 579 MB | 21/24; note F1 0.9991 | 21 s / 30 s | 3.6 GB | **fail** (token gate) |
+| MuScriptor medium | Core ML stateful fp32 compute, fp16 cache (ALL) | 1.1 GB | 23/24; note F1 1.0000 | 498 s / 30 s | 5.1 GB | **fail** (token gate) |
 
 Separator F1 columns are SwiftF0 / Basic Pitch; Beat This columns are beat / downbeat.
 PyTorch CPU reference timings: Beat This small0 0.75 s / 60 s, HT-Demucs 8.4 s / 30 s,
-BS-RoFormer SW 63 s / 30 s, Mega-53 104 s / 30 s (14.7 GB), MuScriptor medium 34 s / 30 s
-(16 ms/token, 2.6 GB). Mega-53 Core ML load takes 55 s (first compile).
+BS-RoFormer SW 63 s / 30 s, Mega-53 104 s / 30 s (14.7 GB), MuScriptor medium 34–42 s / 30 s
+(16–19 ms/token, 2.6 GB). Mega-53 Core ML load takes 55 s (first compile).
 
 ## What fails and why
 
 - **fp16 on the Neural Engine for SwiftF0 and HT-Demucs.** The ANE runs fp16 end to end; the
   SwiftF0 matmul-DFT spectrogram and the HT-Demucs normalisation lose too much precision
   (SwiftF0 voicing collapses; Demucs stems drop to single-digit dB SDR). The same fp16 models
-  pass on the GPU (`ALL` plans every op on the GPU). Use fp32 or GPU for these; a mixed-precision
-  build (fp32 spectrogram/normalisation ops) is the likely fix, untested.
+  pass on the GPU (`ALL` plans every op on the GPU). Marking the spectrogram ops fp32 inside one
+  model does not help: Core ML still places them on the Neural Engine, which computes in fp16
+  (measured F1 0.43). For SwiftF0, cutting the graph into three models (fp32 front and read-out
+  on the GPU, fp16 conv trunk on the Neural Engine, `swift-f0/mixed.py`) passes at 0.9986.
+  HT-Demucs was not split.
 - **Basic Pitch fp16 Core ML.** fp16 shifts onset/frame activations near the 0.5/0.3
   thresholds on every compute unit (F1 ~0.82). Use the upstream Core ML model (fp32) or the
   fp32 batch-1 build; both are exact.
 - **Beat This fixed-length models on pieces under 30 s.** Upstream runs such pieces as one
   shorter chunk; the fixed 1500-frame Core ML model zero-pads, which changes attention context.
-  The two such eval clips deviate (pooled F1 still >= 0.99). The dynamic ONNX is exact.
+  The two such eval clips deviate (pooled F1 still >= 0.99). The dynamic ONNX and the
+  flexible-length Core ML build are exact. The flexible build needs torch.export (jit.trace loses
+  the shape relations and Core ML rejects the data-dependent output shapes); it does not load on
+  the Neural Engine or with `ALL`, only CPU_ONLY/CPU_AND_GPU, and is ~30x slower than the fixed
+  build with ~10 GB peak memory. Use it only for the one short chunk and the fixed model for
+  full 1500-frame chunks.
 - **BS-RoFormer SW on the ORT CoreML EP.** The process was killed by the OS (out of memory)
   while the EP compiled/ran the 13.4 s chunk. Core ML directly (coremltools) runs it on the
   GPU at ~10x the PyTorch CPU speed.
 - **Mega-53 ONNX fp16** was exported but not run: fp32 on ORT CPU already peaks at 25 GB
   on this 48 GB machine, and fp16 on CPU needs more (see next point).
-- **MuScriptor on the CoreML EP.** The EP cannot build the dynamic-length prefill graph
-  ("unbounded dimension", then error -7 building the execution plan). Needs static-shape graphs:
-  a fixed-size KV cache with a length mask. On CPU the ONNX graphs are exact (identical tokens on
-  every chunk) but 1.5x slower than PyTorch CPU.
-- **MuScriptor on Core ML / MLX Swift: not attempted.** Core ML needs the same static KV-cache
-  rewrite (or a coremltools stateful model). MLX Swift has no port of this model: the transformer,
-  log-mel conditioner, MT3 detokeniser and prelude-forcing loop would have to be written in Swift
-  and the safetensors weights mapped.
+- **MuScriptor, dynamic graphs on the CoreML EP.** The EP cannot build them ("unbounded
+  dimension", error -7). The static KV-cache graphs (`convert_static.py`, cache of 2560 positions
+  with an additive length mask, host-side cache) fix this: token-identical on all 24 chunks on
+  ORT CPU and the CoreML EP, but slower than PyTorch CPU (the full cache is passed in and
+  attended over on every step).
+- **MuScriptor on Core ML (stateful KV cache).** Runs, and fp16 on the GPU is 3.5x faster than
+  PyTorch CPU, but fails the token-identity gate: 3 of 24 chunks diverge after token 115 or 264
+  (argmax flips from fp16), note F1 still 0.9991. Core ML states must be fp16, so even the fp32
+  build keeps an fp16 cache; it diverges on 1 chunk (token 44) and is very slow (fp32 on GPU).
+  The in-place cache update needs its slice position derived from input shapes, so query and
+  cache lengths are flexible, which keeps it off the Neural Engine. Getting token identity would
+  need an fp32 cache (not possible as Core ML state) or fp32 attention over a cache passed as
+  input (the ORT route, slow).
+- **MuScriptor on MLX Swift: not attempted.** No Swift port of the transformer, log-mel
+  conditioner, MT3 detokeniser or prelude-forcing loop exists; the stateful Core ML model is the
+  Apple path.
 - **ONNX fp16 on CPU** is emulated by ORT: slower and larger in memory than fp32 on CPU, and its
   stems drift (SW SDR min 6.7 dB) although transcriptions still agree. fp16 ONNX is for GPU EPs
   (DirectML/CUDA/WebGPU), not verified here.

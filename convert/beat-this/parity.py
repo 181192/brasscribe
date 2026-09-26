@@ -6,6 +6,7 @@ postprocessor stay upstream code. The output is beat and downbeat times, so pari
 event F1 at a 50 ms window (mir_eval.util.match_events), reported for beats and downbeats.
 
   uv run python parity.py                    # -> convert/reports/beat-this.json
+  uv run python parity.py only <checkpoint> <backend> ...   # update those rows in the report
   uv run python parity.py bench <checkpoint> <backend> [seconds]
 """
 
@@ -28,7 +29,8 @@ import convert as C  # noqa: E402
 
 UNITS = ["CPU_ONLY", "CPU_AND_GPU", "CPU_AND_NE", "ALL"]
 BACKENDS = {
-    "small0": ["onnx-ort-cpu", "onnx1500-ort-coreml"] + [f"coreml-{p}-{u}" for p in ("fp32", "fp16") for u in UNITS],
+    "small0": ["onnx-ort-cpu", "onnx1500-ort-coreml"] + [f"coreml-{p}-{u}" for p in ("fp32", "fp16") for u in UNITS]
+              + [f"coreml-dyn-{p}-{u}" for p in ("fp32", "fp16") for u in ("CPU_ONLY", "CPU_AND_GPU")],
     "final0": ["onnx-ort-cpu", "onnx1500-ort-coreml", "coreml-fp32-ALL", "coreml-fp16-ALL", "coreml-fp16-CPU_AND_NE"],
 }
 
@@ -74,6 +76,16 @@ def make_tracker(ckpt: str, backend: str) -> File2Beats:
             return sess.run(["beat", "downbeat"], {"spect": x})
         if static:
             run = _pad_crop(run)
+    elif backend.startswith("coreml-dyn-"):
+        import coremltools as ct
+        _, _, precision, units = backend.split("-", 3)
+        ml = ct.models.MLModel(str(C.OUT / f"beat-this-{ckpt}-dyn-{precision}.mlpackage"),
+                               compute_units=getattr(ct.ComputeUnit, units))
+        names = [o.name for o in ml.get_spec().description.output]  # (beat, downbeat) in export order
+
+        def run(x):
+            out = ml.predict({"spect": x})
+            return out[names[0]], out[names[1]]
     else:
         import coremltools as ct
         _, precision, units = backend.split("-", 2)
@@ -114,10 +126,11 @@ def bench(ckpt: str, backend: str, seconds: float) -> dict:
             "note": "latency includes resampling and the log-mel frontend (torch), as upstream runs it"}
 
 
-def main() -> None:
+def main(only: dict[str, list[str]] | None = None) -> None:
+    """Full run, or with `only` ({checkpoint: [backends]}) update those rows of the existing report."""
     cl = clips()
     report_parity, benches, plans, gate = {}, {}, {}, {}
-    for ckpt, backends in BACKENDS.items():
+    for ckpt, backends in (only or BACKENDS).items():
         ref_tracker = make_tracker(ckpt, "torch-cpu")
         ref = {c.name: track(ref_tracker, c) for c in cl}
         for backend in backends:
@@ -138,9 +151,24 @@ def main() -> None:
             key = f"{ckpt}/{backend}"
             benches[key] = P.run_isolated([sys.executable, "-W", "ignore", __file__, "bench", ckpt, backend, "60"])
             print("bench", key, json.dumps(benches[key]), flush=True)
-        for p in ("fp32", "fp16"):
+        for p in ("fp32", "fp16") if not only else ():
             for u in UNITS:
                 plans[f"{ckpt}-{p}-{u}"] = P.coreml_compute_plan(C.OUT / f"beat-this-{ckpt}-{p}.mlpackage", u)
+    if only:
+        path = P.REPORTS / "beat-this.json"
+        report = json.loads(path.read_text())
+        for key in ("parity", "benchmarks", "pass"):
+            report[key].update({"parity": report_parity, "benchmarks": benches, "pass": gate}[key])
+        report["pass_all"] = all(report["pass"].values())
+        report["artifacts"].update({f.name: {"size_bytes": P.size_bytes(f), "sha256": P.sha256(f)}
+                                    for f in sorted(C.OUT.iterdir()) if "-dyn-" in f.name})
+        report["limitation"] = ("fixed 1500-frame models zero-pad pieces under 30 s, which upstream runs as one shorter "
+                                "chunk; the two such eval clips (Vulpius_*) deviate. The dynamic ONNX and the flexible "
+                                "Core ML build (-dyn-, 16..1500 frames, CPU/GPU only: the Neural Engine rejects "
+                                "flexible shapes) run them unpadded.")
+        path.write_text(json.dumps(report, indent=1) + "\n")
+        print("updated", path)
+        return
     artifacts = {f.name: {"size_bytes": P.size_bytes(f), "sha256": P.sha256(f)}
                  for f in sorted(C.OUT.iterdir()) if f.suffix in (".onnx", ".mlpackage")}
     for ckpt in BACKENDS:
@@ -171,5 +199,7 @@ def main() -> None:
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "bench":
         print(json.dumps(bench(sys.argv[2], sys.argv[3], float(sys.argv[4]) if len(sys.argv) > 4 else 60.0)))
+    elif len(sys.argv) > 2 and sys.argv[1] == "only":
+        main({sys.argv[2]: sys.argv[3:]})
     else:
         main()
