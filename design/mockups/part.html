@@ -29,29 +29,37 @@
     <div data-score="partPhone1"></div>
     <div data-score="partPhone2"></div>
     <div data-score="partPhone3"></div>
-    <p class="caption" style="padding: var(--bc-space-2) var(--bc-space-2) 0; display:flex; gap: 6px; align-items:center"><i data-i="info" class="sm"></i>Bars 1–2 are in free time (ad lib.). Rhythms there are approximate.</p>
+    <p class="caption" style="padding: var(--bc-space-2) var(--bc-space-2) 0; display:flex; gap: 6px; align-items:center"><i data-i="info" class="sm"></i>Bars 1–2 have no steady beat (ad lib.). Their rhythms are approximate.</p>
   </div>
-  <div class="player mini">
-    <button class="play" aria-label="Play"><i data-i="play"></i></button>
-    <div class="pos" style="flex:1"><b>Bar 4</b> <span>of 64</span><br><span>Your part is muted</span></div>
-    <span class="chip on"><i data-i="play-along" class="sm"></i>Play along</span>
+  <div class="player" style="margin: 0 var(--bc-space-5) var(--bc-space-2); padding: var(--bc-space-3)">
+    <div class="transport">
+      <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+      <button class="play" aria-label="Play"><i data-i="play"></i></button>
+      <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+      <div class="pos" style="margin-left: var(--bc-space-2); flex:1"><b>Bar 4</b> <span>of 64</span></div>
+    </div>
+    <div class="chips" style="display:grid; grid-template-columns: auto auto; gap: var(--bc-space-2); margin-top: var(--bc-space-3); justify-content: start">
+      <span class="chip"><i data-i="speed" class="sm"></i>Speed <span class="val">100%</span></span>
+      <span class="chip"><i data-i="loop" class="sm"></i>Repeat</span>
+      <span class="chip on" style="grid-column: span 2"><i data-i="play-along" class="sm"></i>Mute my part</span>
+    </div>
   </div>
   <div class="homebar"></div>
 </div>
 
 <div class="desktop">
   <div class="titlebar">
-    <span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel</span><span class="sp"></span>
+    <span class="lights"><i></i><i></i><i></i></span><button class="btn plain compact"><i data-i="back" class="sm"></i>Full score</button><span class="wt">Mikkel</span><span class="sp"></span>
     <span class="menu-btn"><i data-i="parts" class="sm"></i>Solo Cornet</span>
     <span class="zoom"><button class="icon-btn" aria-label="Zoom out"><i data-i="zoom-out" class="sm"></i></button><span>125%</span><button class="icon-btn" aria-label="Zoom in"><i data-i="zoom-in" class="sm"></i></button></span>
-    <button class="btn outline compact"><i data-i="export" class="sm"></i>Export part</button>
+    <button class="btn outline compact"><i data-i="export" class="sm"></i>Share or print</button>
   </div>
   <main class="main" style="background: var(--bc-surface)">
     <div class="sheet-paper">
       <div class="ptitle">
         <p class="eyebrow">Solo Cornet in B♭</p>
         <h1 class="display" style="font-size: 2.5rem">Mikkel</h1>
-        <p class="callout">Transcribed with Brasscribe · check the marked notes before the rehearsal</p>
+        <p class="callout">Written down by Brasscribe. Check the notes marked ? before the rehearsal.</p>
       </div>
       <div data-score="part1" style="margin-top: var(--bc-space-6)"></div>
       <div data-score="part2"></div>
@@ -67,10 +75,10 @@
     <div class="pos" style="min-width: 150px"><b>Bar 4, beat 3</b><br><span>of 64 · paused</span></div>
     <span style="flex:1"></span>
     <span class="chip"><i data-i="speed" class="sm"></i>Speed <span class="val">100%</span></span>
-    <span class="chip"><i data-i="loop" class="sm"></i>Loop</span>
+    <span class="chip"><i data-i="loop" class="sm"></i>Repeat</span>
     <span class="chip"><i data-i="count-in" class="sm"></i>Count-in</span>
     <span class="chip"><i data-i="metronome" class="sm"></i>Metronome</span>
-    <span class="chip on"><i data-i="play-along" class="sm"></i>Play along: my part muted</span>
+    <span class="chip on"><i data-i="play-along" class="sm"></i>Mute my part</span>
   </div>
 </div>
 </body>

@@ -49,7 +49,7 @@
         { name: "Solo Cornet", bars: solo }, { name: "Flugelhorn", bars: flugel }, { name: "Solo Horn", bars: horn },
         { name: "Baritone", bars: bari }, { name: "Euphonium", bars: euph }, { name: "E♭ Bass", bars: bass },
       ],
-      loop: { from: 3, to: 4, label: "Loop 12–13" }, cursor: { bar: 4, frac: 0.42 },
+      loop: { from: 3, to: 4, label: "Repeat 12–13" }, cursor: { bar: 4, frac: 0.42 },
       label: "Score, bars 9 to 16. Loop set, bars 12 to 13.",
     },
     // Phone score view: three staves, four bars.

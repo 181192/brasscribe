@@ -6,39 +6,42 @@ Custom glyphs live in `design/brand/icons/custom/`.
 
 | Action | English | Norsk (bokmål) | Apple (SF Symbols) | Android and Studio (Material Symbols Rounded) | Windows (Segoe Fluent Icons) |
 |---|---|---|---|---|---|
-| play | Play | Spill | `play.fill` | `play_arrow` | `Play` U+E768 |
+| play | Play | Spill av | `play.fill` | `play_arrow` | `Play` U+E768 |
 | pause | Pause | Pause | `pause.fill` | `pause` | `Pause` U+E769 |
 | stop | Stop | Stopp | `stop.fill` | `stop` | `Stop` U+E71A |
 | previous-bar | Previous bar | Forrige takt | `backward.end.fill` | `skip_previous` | `Previous` U+E892 |
 | next-bar | Next bar | Neste takt | `forward.end.fill` | `skip_next` | `Next` U+E893 |
-| loop | Loop | Gjenta | `repeat` | `repeat` | `RepeatAll` U+E8EE |
+| loop | Repeat bars | Gjenta takter | `repeat` | `repeat` | `RepeatAll` U+E8EE |
 | speed | Speed | Tempo | `gauge.with.dots.needle.33percent` | `speed` | `SpeedHigh` U+EC4A |
 | count-in | Count-in | Inntelling | `1.circle` | `counter_1` | custom `count-in` (PathIcon) |
 | metronome | Metronome | Metronom | `metronome` | custom `metronome` | custom `metronome` (PathIcon) |
-| mute | Mute | Demp | `speaker.slash` | `volume_off` | `Mute` U+E74F |
-| solo | Solo | Solo | `headphones` | `headphones` | `Headphone` U+E7F6 |
+| mute | Mute | Lyd av | `speaker.slash` | `volume_off` | `Mute` U+E74F |
+| solo | Only this | Bare denne | `scope` | `center_focus_strong` | custom `only-this` (PathIcon) |
 | parts | Parts | Stemmer | `music.note.list` | `queue_music` | `List` U+EA37 |
-| play-along | Play along | Spill med | `music.mic` | `mic` | `Microphone` U+E720 |
+| play-along | Mute my part | Lyd av min stemme | `headphones` | `headphones` | `Headphone` U+E7F6 |
 | original | Original recording | Originalopptaket | `waveform` | `graphic_eq` | `Equalizer` U+E9E9 |
-| import-file | Import audio or video | Importer lyd eller video | `square.and.arrow.down` | `download` | `Import` U+E8B5 |
+| import-file | Open a recording | Åpne et opptak | `square.and.arrow.down` | `download` | `Import` U+E8B5 |
 | record-mic | Record with the microphone | Spill inn med mikrofonen | `mic` | `mic` | `Microphone` U+E720 |
 | record-device | Record sound playing on this device | Spill inn lyd som spilles her | `speaker.wave.2` | `volume_up` | `Volume` U+E767 |
 | record | Record | Spill inn | `record.circle` | `radio_button_checked` | `Record` U+E7C8 |
-| export | Export | Eksporter | `square.and.arrow.up` | `ios_share` | `Share` U+E72D |
+| export | Share or print | Del eller skriv ut | `square.and.arrow.up` | `ios_share` | `Share` U+E72D |
 | listen-bar | Listen to this bar | Lytt til denne takten | `ear` | `hearing` | `Ear` U+F270 |
-| mark-checked | Mark as checked | Merk som kontrollert | `checkmark.circle` | `check_circle` | `Completed` U+E930 |
+| mark-checked | Keep | Behold | `checkmark.circle` | `check_circle` | `Completed` U+E930 |
 | next-uncertain | Next uncertain note | Neste usikre tone | `questionmark.square` | custom `uncertain` | custom `uncertain` (PathIcon) |
-| talking-score | Talking score | Talende partitur | `text.bubble` | `record_voice_over` | `Speech` U+EFA9 |
+| talking-score | Read aloud | Les opp | `text.bubble` | `record_voice_over` | `Speech` U+EFA9 |
 | zoom-in | Zoom in | Zoom inn | `plus.magnifyingglass` | `zoom_in` | `ZoomIn` U+E8A3 |
 | zoom-out | Zoom out | Zoom ut | `minus.magnifyingglass` | `zoom_out` | `ZoomOut` U+E71F |
 | transpose | Key | Toneart | `arrow.up.arrow.down` | `swap_vert` | `Sort` U+E8CB |
-| video | Video | Video | `film` | `movie` | `Video` U+E714 |
+| video | Show video | Vis video | `film` | `movie` | `Video` U+E714 |
 | picture-in-picture | Picture in picture | Bilde i bilde | `pip.enter` | `picture_in_picture` | `MiniExpand` U+E93A |
 | computer | Brasscribe on your computer | Brasscribe på datamaskinen | `desktopcomputer` | `computer` | `PC1` U+E977 |
 | settings | Settings | Innstillinger | `gearshape` | `settings` | `Settings` U+E713 |
 | help | Help | Hjelp | `questionmark.circle` | `help` | `Help` U+E897 |
 | back | Back | Tilbake | `chevron.backward` | `arrow_back` | `Back` U+E72B |
 | open | Open | Åpne | `chevron.right` | `chevron_right` | `ChevronRight` U+E76C |
+| print | Print | Skriv ut | `printer` | `print` | `Print` U+E749 |
+| skip | Skip | Hopp over | `forward` | `fast_forward` | `FastForward` U+EB9D |
+| choose | Choose | Velg | `chevron.down` | `expand_more` | `ChevronDown` U+E70D |
 | close | Close | Lukk | `xmark` | `close` | `Cancel` U+E711 |
 | more | More | Mer | `ellipsis.circle` | `more_horiz` | `More` U+E712 |
 | retry | Try again | Prøv igjen | `arrow.clockwise` | `refresh` | `Refresh` U+E72C |
