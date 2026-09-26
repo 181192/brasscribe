@@ -118,7 +118,7 @@ public extension Color {
         public static let warning = Color("Brasscribe/warning", bundle: BrasscribeDesign.bundle)
         /// Error text and the error icon. Always with a sentence that says what to do.
         public static let error = Color("Brasscribe/error", bundle: BrasscribeDesign.bundle)
-        /// Keyboard focus ring: 2 px, with a 2 px gap on the background.
+        /// Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow.
         public static let focus = Color("Brasscribe/focus", bundle: BrasscribeDesign.bundle)
         /// Dimmed backdrop behind a sheet or dialog (40% alpha).
         public static let scrim = Color("Brasscribe/scrim", bundle: BrasscribeDesign.bundle)
@@ -130,7 +130,7 @@ public extension Color {
         public static let uncertain = Color("Brasscribe/uncertain", bundle: BrasscribeDesign.bundle)
         /// Notes with confidence below 0.4. Always with a boxed "?" above the note.
         public static let veryUncertain = Color("Brasscribe/veryUncertain", bundle: BrasscribeDesign.bundle)
-        /// Band behind free-time (ad lib) bars. High contrast: none, outline instead.
+        /// Neutral band behind free-time (ad lib) bars; the italic "ad lib." and dashed bar lines carry the meaning. Not blue, so it never reads as uncertain. High contrast: none, outline instead.
         public static let adlibTint = Color("Brasscribe/adlibTint", bundle: BrasscribeDesign.bundle)
         /// Band behind the loop range. High contrast: none, outline instead.
         public static let loopTint = Color("Brasscribe/loopTint", bundle: BrasscribeDesign.bundle)
@@ -214,6 +214,9 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
     case help
     case back
     case open
+    case print
+    case skip
+    case choose
     case close
     case more
     case retry
@@ -238,9 +241,9 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .countIn: "1.circle"
         case .metronome: "metronome"
         case .mute: "speaker.slash"
-        case .solo: "headphones"
+        case .solo: "scope"
         case .parts: "music.note.list"
-        case .playAlong: "music.mic"
+        case .playAlong: "headphones"
         case .original: "waveform"
         case .importFile: "square.and.arrow.down"
         case .recordMic: "mic"
@@ -261,6 +264,9 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .help: "questionmark.circle"
         case .back: "chevron.backward"
         case .open: "chevron.right"
+        case .print: "printer"
+        case .skip: "forward"
+        case .choose: "chevron.down"
         case .close: "xmark"
         case .more: "ellipsis.circle"
         case .retry: "arrow.clockwise"

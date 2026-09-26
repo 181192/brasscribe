@@ -10,11 +10,11 @@
       "staff": "#57534B",
       "uncertain": "#0063A6",
       "very-uncertain": "#B04A00",
-      "adlib-tint": "#EEF3F8",
+      "adlib-tint": "#EFECE5",
       "loop-tint": "#FFF3D6",
       "loop-edge": "#8A5A00",
       "cursor": "#6B3FA0",
-      "focus": "#0050B3",
+      "focus": "#1B1A17",
       "error": "#B3261E"
     },
     "dark": {
@@ -26,11 +26,11 @@
       "staff": "#A6A29A",
       "uncertain": "#56B4E9",
       "very-uncertain": "#F0A04B",
-      "adlib-tint": "#1B2530",
-      "loop-tint": "#33290F",
+      "adlib-tint": "#221F1B",
+      "loop-tint": "#2B2412",
       "loop-edge": "#E0B65C",
       "cursor": "#C9A7F0",
-      "focus": "#8AB4F8",
+      "focus": "#EDEBE6",
       "error": "#F2B8B5"
     },
     "high-contrast": {
@@ -46,7 +46,7 @@
       "loop-tint": "#000000",
       "loop-edge": "#FFFF00",
       "cursor": "#FF80FF",
-      "focus": "#FFFF00",
+      "focus": "#FFFFFF",
       "error": "#FF8080"
     }
   },
@@ -86,7 +86,9 @@
     ["uncertain", "very-uncertain"],
     ["cursor", "uncertain"],
     ["cursor", "very-uncertain"],
-    ["cursor", "ink"]
+    ["cursor", "ink"],
+    ["focus", "uncertain"],
+    ["focus", "very-uncertain"]
   ],
   "legacy": {
     "$comment": "Colour used by the current engine output for SwiftF0-only notes; checked for reference.",

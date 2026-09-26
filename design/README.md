@@ -3,7 +3,7 @@
 This folder is the single source for how Brasscribe Play and Studio look, sound and behave.
 - [`system.md`](system.md): components, patterns, layout, navigation and the screen map
 - [`brand/brand.md`](brand/brand.md): name, mark, icon, typeface, voice and copy rules
-- [`mockups/png/`](mockups/png/): the key screens (phone and desktop, light and dark, one in Norwegian, and Studio)
+- [`mockups/png/`](mockups/png/): the key screens (phone and desktop, light and dark, two screens in Norwegian, and Studio)
 
 ![Home, What is this?, review and score](mockups/png/home-desktop-light.png)
 
@@ -65,6 +65,21 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Transcribing shows the plain-language steps, the percentage and the time left, and Cancel. Announce at most every 10% or 10 s.
 - [ ] Check reduced motion, 200% text and high contrast against the mockups.
 
+**From the usability review** (`reviews/usability-review.md`; the specs in `system.md` and `brand/brand.md` are updated):
+- [ ] Take the new tokens: `focus` is now ink / paper / white (it was blue, like `uncertain`), `adlib-tint` is a neutral warm grey (it was pale blue), dark `secondary` is one step lighter and the dark `loop-tint` lighter in weight.
+- [ ] Mixer: labelled **Mute** / **Only this** toggles (nb **Lyd av** / **Bare denne**), never M/S, Solo or Demp. Icons from `icons.json` (`mute`, `solo`).
+- [ ] Every on/off toggle (Count-in, Metronome, Mute my part, Mute, Only this): **on = tonal fill + 1.5 px ink edge + ✓**. Ink fill is only for the one primary.
+- [ ] Phone player: practice chips in **two rows** (Speed · Repeat · Count-in / Metronome · Mute my part) or a **Practice ▾** sheet. Nothing clips or scrolls behind a fade.
+- [ ] Part view: the same player as the score view. Play is the only primary; **Mute my part** (headphones) is on by default; Speed and Repeat are there. Desktop gets a **Full score** back button.
+- [ ] Review: **Finish later (N left)** with the confirm dialog (`mockups/png/finish-later-*`), **Skip** on phone, "Written G, minim" + "it could also be an A", the list sorted by part then bar with "+ N more".
+- [ ] Score view: the status line **"N notes marked ? · Check them"** (re-opens Review); "?" marks are tappable (44 pt).
+- [ ] Share or print: title **Share or print**, default **Solo Cornet (you) + PDF** (1 file), **Print** as the primary, the same scope labels everywhere (Solo Cornet (you) / Every part / Conductor's score), a **Show ? marks** switch, a legend in the PDF footer. No ✕ when there's a Cancel.
+- [ ] The new **How should the score be?** screen (`mockups/png/choose-output-*`): Which band? / How hard? (with the tip) / Key, primary **Show the score**.
+- [ ] Touch targets ≥ 44 pt everywhere, **48 pt** for the player and the review buttons; previous/next bar get a visible 48 pt hit area.
+- [ ] Errors: commands, addresses and codes only inside **Details for the band's tech person** (collapsed). The desktop primary is bottom right.
+- [ ] Cancel while transcribing confirms: "Stop making this score? The recording stays in Your scores."
+- [ ] Copy: apply the glossary in `brand/brand.md` (Open a recording, Repeat bars / Stop repeating, Spill av, Behold, Read aloud / Les opp, Show video, As written for B♭ / Concert pitch, Laying out the pages, "62%" / "62 %", no "we", no "DRM", no "Transcribed").
+
 ### Apple (`apps/apple`)
 - [ ] `FlowViews.swift`: change "Uncertain notes are marked with an open diamond and an orange colour." to the "?" legend. **(drift)**
 - [ ] `NotationView.swift`: draw the "?" / boxed "?" instead of the open diamond. **(drift)**
@@ -77,20 +92,22 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] `strings.xml` and `values-nb`: `legend_uncertain` and `legend_very_uncertain` (rings and brackets) become the "?" legend. **(drift)**
 - [ ] `NoteGlyph.kt`: draw the "?" mark instead of the rings. **(drift)**
 - [ ] Theme: switch from `PlayTheme` to `BrasscribeTheme` (not dynamic colour). The primary purple `#6B3FA0` is the score **cursor** colour and must not be used for buttons. **(drift)**
-- [ ] Home: one filled button instead of three.
-- [ ] nb: use "Gjenta" consistently (not "Repetisjon"), and "På datamaskinen din" (not "motoren").
+- [ ] Home: one filled button (**Open a recording**) instead of three; add the streaming tip and a Help button beside Settings.
+- [ ] nb: use "Gjenta" / "Slutt å gjenta" consistently (not "Repetisjon"), "Spill av" (not "Spill"), "Lyd av" (not "Demp"), and "På datamaskinen din" (not "motoren").
 - [ ] Use the adaptive icon with the monochrome layer.
 
 ### Windows (`apps/windows`)
 - [ ] Merge `BrasscribeTheme.xaml`, and retire the colour keys in `Themes/Tokens.xaml`.
 - [ ] Use `NavigationView` with the library, and a `Frame` for the flow steps.
 - [ ] Replace the `Assets/` logos with `dist/icons/windows/Assets/*`, including the unplated target sizes.
-- [ ] Use `FontIcon` glyphs from `BcIcon*`, and `PathIcon` for the custom metronome and count-in glyphs.
+- [ ] Use `FontIcon` glyphs from `BcIcon*`, and `PathIcon` (`BcIconPath*`) for the custom metronome, count-in and only-this glyphs.
+- [ ] Mixer toggles are 40 epx tall on touch.
 
 ### Studio (`studio/`)
 - [ ] Load `brasscribe.css` and then `studio-compat.css`, and delete the colour blocks in `styles.css`.
 - [ ] Put the lockup in the header, the favicon set in place, and the page title in the display face.
 - [ ] Map the piano-roll colours onto `model-1` to `model-4`, and keep the patterns.
+- [ ] Validator issues (range, crossing) use the warning icon, not the "?" glyphs, which mean uncertain notes in Play.
 
 ## Open questions
 

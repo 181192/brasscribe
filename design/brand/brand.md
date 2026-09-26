@@ -60,7 +60,7 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 
 1. **Say what happens, in the musician's words.** Use bar, part, beat, cornet, "the band". Say "Writing down the notes", not "Transcribing (stage 4: pitch estimation)".
 2. **One idea per sentence, and no more than two sentences before a choice.**
-3. **Start with the verb** on buttons: Import, Record, Continue, Keep, Try again, Share. The label says what happens, and the accessible name contains the visible label.
+3. **Start with the verb** on buttons: Open, Record, Continue, Keep, Try again, Print, Share. The label says what happens, and the accessible name contains the visible label.
 4. **Be honest about uncertainty.** Say "Brasscribe wasn't sure about these". Never write "AI", "magic", "smart", "powered by" or model names. Model names belong in Studio.
 5. **Every error says what to do next.** The title says what went wrong, the body gives one or two reasons, and the buttons offer the way out. Never blame the user, and never show a code without a sentence.
 6. **Refer to shape and text, never colour alone** (WCAG 1.3.3). Write "notes marked ?", not "the blue notes".
@@ -74,14 +74,34 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | The finished notation | score | partitur | sheet, transcription (in Play) |
 | One player's music | part | stemme | track, voice, stem |
 | A measure | bar | takt | measure |
-| Make notation from audio | write down the notes / make a score | skrive ned tonene / lage partitur | transcribe, infer |
-| Repeat a passage | Loop | Gjenta | Repetisjon, A–B |
-| Playback speed | Speed 75% | Tempo 75 % | rate |
-| Before playing | Count-in | Inntelling | pre-roll |
-| Doubtful note | uncertain / very uncertain | usikker / svært usikker | low confidence |
-| Confirm a note | Keep | Behold | accept, approve |
+| Make notation from audio | write down the notes / make a score | skrive ned tonene / lage partitur | transcribe, transcribed, infer |
+| The last making step | Laying out the pages | Setter opp sidene | engraving |
+| Open a file (home primary) | Open a recording | Åpne et opptak | import, import audio or video |
+| Repeat a passage | Repeat bars [12] to [13] · off: **Stop repeating** · chip: Repeat | Gjenta takt [12] til [13] · off: **Slutt å gjenta** · chip: Gjenta | Loop, Repetisjon, A–B |
+| Playback speed | Speed 75% | Tempo 75 % (space before %) | rate |
+| Before playing | Count-in (tip: "One bar of clicks before the music starts.") | Inntelling («Én takt med klikk før musikken starter.») | pre-roll |
+| Start playback (button) | Play | Spill av | Spill (also a noun, and sits beside "Spill inn") |
+| Silence one part | Mute | Lyd av | M, Demp (the physical mute in the bell) |
+| Hear one part alone | Only this | Bare denne | S, Solo (collides with Solo Cornet, Solo Horn) |
+| Play along | Mute my part (headphones icon) | Lyd av min stemme | Play along (with a microphone icon: reads as "records you") |
+| Which audio plays | Hear: Band / Recording | Hør: Band / Opptak | Score / Original |
+| Doubtful note | uncertain / very uncertain · "notes marked ?" | usikker / svært usikker · «toner merket ?» | low confidence, "the blue notes" |
+| Confirm a note | Keep | Behold | accept, approve, Merk som kontrollert |
+| Leave the review | Finish later (9 left) | Fortsett senere (9 igjen) | Done, Ferdig (they silently abandon notes) |
+| Note name in review | Written G, minim (en-GB) · G, half note (en-US) | Notert G, halvnote | bare "G" (written or concert?) |
+| Free time | no steady beat (ad lib.) | ingen fast puls (ad lib.) | free time, rubato |
 | The desktop helper | Brasscribe on your computer | Brasscribe på datamaskinen | companion engine, motor, server |
-| Transposed view | Written pitch / Concert pitch | Notert tone / Klingende tone | transposing score |
+| Transposed view | As written for B♭ / Concert pitch (phone: As written / Concert) | Notert for B♭ / Klingende | Written pitch, transposing score |
+| Talking score (toolbar) | Read aloud (format name in Share or print stays "Talking score") | Les opp | Talking score in the toolbar |
+| Video | Show video | Vis video | Video |
+| Output (hand the score over) | Share or print ("Export" only in the desktop menu bar) | Del eller skriv ut | Export, Eksporter |
+| Export scope | Solo Cornet (you) / Every part / Conductor's score | Solokornett (deg) / Alle stemmer / Dirigentpartitur | My part, All parts, Full score |
+| Choose output | How should the score be? · Which band? · How hard? (Easier / As played) · Key | Hvordan skal partituret bli? · Hvilket band? · Hvor vanskelig? (Enklere / Som spilt) · Toneart | lineup, difficulty, faithful |
+| Where it runs | Made on this Mac. Nothing goes online. | Lages på denne Macen. Ingenting sendes til nettet. | Transcribed on this Mac |
+| Streaming blocked | Streaming apps usually block recording. | Strømmeapper stopper som regel opptak. | DRM, protected stream |
+| Technical details | Details for the band's tech person | Detaljer for den tekniske i bandet | commands in body text |
+
+The voice never says "we": write "Brasscribe will tell you when the score is ready."
 
 ### Before and after (from the current apps)
 
@@ -98,3 +118,8 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | Apple, silent capture | "Nothing was heard. Either nothing was playing, recording permission was refused, or the app plays protected (DRM) audio, which the system does not let anyone record." | Title "Nothing was heard", then two short reasons as a list, then [Import a file instead] [Record with the microphone]. See `mockups/png/error-phone-light.png`. |
 | Android home | Three filled purple buttons (Import, Record, Record this phone) | One primary button (Import audio or video). The other ways in become list rows. See `mockups/png/home-phone-light.png`. |
 | Apple, output | "Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them." | "Your computer arranges the score with these choices." If the computer is too old, say so once, with "Update Brasscribe on your computer". |
+| Score, mixer | "M" / "S" toggles | Labelled **Mute** / **Only this** · **Lyd av** / **Bare denne** |
+| Review | "Done" / "Done checking" | **Finish later (9 left)**, with a confirm step and a way back from the score ("9 notes marked ? · Check them") |
+| Export | "Export" · All parts + PDF + MusicXML = 12 files, no Print | **Share or print** · Solo Cornet (you) + PDF = 1 file, **Print** as the primary |
+| Transcribing | "Engraving the score" · "62 percent" · "we'll tell you" | "Laying out the pages" · "62%" · "Brasscribe will tell you" |
+| What is this? | "The soloist becomes the solo part; the rest becomes brass band." | "You get the solo part, plus the accompaniment arranged for brass band." + "Not sure? Choose Brass band. You can change it later." |
