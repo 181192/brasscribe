@@ -75,7 +75,7 @@ func writePNG(_ img: CGImage, _ path: String) {
 
 /// Page 1 of the Mikkel full score as Verovio 6.3 renders it.
 @Test func verovioPage() throws {
-    let url = try #require(Bundle.module.url(forResource: "Resources/verovio-page", withExtension: "svg"))
+    let url = try #require(Bundle.module.url(forResource: "verovio-page", withExtension: "svg"))
     let t0 = Date()
     let doc = try SVGDocument(data: Data(contentsOf: url))
     let parse = Date().timeIntervalSince(t0)

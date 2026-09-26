@@ -64,8 +64,8 @@ func goldenDir() -> URL? {
     #expect(r.composition?.voices.count == 5)
     #expect(try MusicXMLParser.parse(r.musicXML).parts.count == 18)
     #expect(r.available.isSuperset(of: [.musicXML, .pdf, .composition, .audio]))
-    await #expect(throws: TranscriptionError.artifactUnavailable(.brailleBRF)) {
-        try await svc.artifact(.brailleBRF, jobID: r.jobID)
+    for kind in ArtifactKind.allCases where !r.available.contains(kind) {
+        await #expect(throws: TranscriptionError.artifactUnavailable(kind)) { try await svc.artifact(kind, jobID: r.jobID) }
     }
 }
 

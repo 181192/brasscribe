@@ -21,6 +21,6 @@ let package = Package(
         .testTarget(name: "ScoreKitTests", dependencies: ["ScoreKit"], resources: [.process("Resources")]),
         .testTarget(name: "TranscriptionKitTests", dependencies: ["TranscriptionKit"]),
         .testTarget(name: "PlaybackKitTests", dependencies: ["PlaybackKit"]),
-        .testTarget(name: "SVGRenderTests", dependencies: ["SVGRender"], resources: [.copy("Resources")]),
+        .testTarget(name: "SVGRenderTests", dependencies: ["SVGRender"], resources: [.process("Resources")]),
     ]
 )
