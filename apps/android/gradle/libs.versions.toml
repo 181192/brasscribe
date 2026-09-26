@@ -11,6 +11,8 @@ navigation = "2.10.2"
 coreKtx = "1.19.1"
 appcompat = "1.8.0"
 alphaTab = "1.8.4"
+# alphaTab 1.8.4 pulls alphaSkia 3.4.135, whose 64-bit libraries are 4 KB aligned; 3.5.147 is 16 KB aligned.
+alphaSkia = "3.5.147"
 oboe = "1.11.0"
 onnxruntime = "1.30.0"
 junit = "4.13.2"
@@ -51,6 +53,7 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 
 alphatab = { module = "net.alphatab:alphaTab", version.ref = "alphaTab" }
+alphaskia-android = { module = "net.alphatab:alphaSkia-android", version.ref = "alphaSkia" }
 oboe = { module = "com.google.oboe:oboe", version.ref = "oboe" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
 onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
