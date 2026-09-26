@@ -160,7 +160,8 @@ private struct PageView: View {
                     }
                     ForEach(Array((page.staves[mid] ?? []).enumerated()), id: \.offset) { k, staffID in
                         if let sf = doc.frames[staffID], model.displayedParts.indices.contains(k) {
-                            StaffElement(model: model, bar: bar, partIndex: k, frame: sf.union(CGRect(x: mf.minX, y: sf.minY, width: mf.width, height: sf.height)),
+                            StaffElement(model: model, bar: bar, part: model.displayedParts[k], partIndex: k,
+                                         frame: sf.union(CGRect(x: mf.minX, y: sf.minY, width: mf.width, height: sf.height)),
                                          rotorNS: rotorNS)
                         }
                     }
@@ -175,12 +176,13 @@ private struct PageView: View {
 private struct StaffElement: View {
     @Bindable var model: PracticeModel
     let bar: Int
+    // The part itself, not an index: picking one part shrinks displayedParts while these views are still alive.
+    let part: Part
     let partIndex: Int
     let frame: CGRect
     let rotorNS: Namespace.ID
 
     var body: some View {
-        let part = model.displayedParts[partIndex]
         Rectangle()
             .fill(Color.clear)
             .contentShape(Rectangle())

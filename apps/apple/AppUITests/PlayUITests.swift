@@ -202,6 +202,30 @@ final class PlayUITests: XCTestCase {
         XCTAssertEqual(position.value as? String, "2")
     }
 
+    /// Picking one part shrinks displayedParts while the staff views of the other parts are
+    /// still on screen; indexing that array from a staff view crashed the app.
+    func testShowOnePartThenAllParts() throws {
+        XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
+        let staves = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'"))
+        XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 60))
+        XCTAssertGreaterThan(staves.count, 1, "the full score shows every part")
+
+        let picker = app.descendants(matching: .any)["partPicker"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10))
+        picker.tap()
+        app.descendants(matching: .any)["Solo Cornet"].firstMatch.tap()
+
+        let solo = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-' AND label CONTAINS 'Solo Cornet'")).firstMatch
+        XCTAssertTrue(solo.waitForExistence(timeout: 30), "the solo cornet alone should still engrave")
+        XCTAssertEqual(app.state, .runningForeground)
+
+        picker.tap()
+        app.descendants(matching: .any)["All parts"].firstMatch.tap()
+        XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 30))
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
     /// Xcode's accessibility audit on the score screen. Issues are recorded, not fatal,
     /// so the report lists them all; the test fails only on missing labels or
     /// unreachable elements.
