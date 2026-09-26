@@ -58,7 +58,11 @@ func testVideo() -> URL? {
 @Test(.enabled(if: testVideo() != nil)) @MainActor func videoImportExtractsAudio() async throws {
     let app = AppModel()
     await app.accept(url: try #require(testVideo()))
-    let src = try #require(app.pending, "\(String(describing: app.alert))")
+    let pending = app.path.compactMap { route -> PendingSource? in
+        guard case .source(let source) = route else { return nil }
+        return source
+    }.last
+    let src = try #require(pending, "\(String(describing: app.path.last))")
     #expect(src.videoURL != nil)
     #expect(src.audioURL.pathExtension == "m4a")
     let f = try AVAudioFile(forReading: src.audioURL)

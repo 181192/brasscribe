@@ -150,6 +150,9 @@
   <data name="DifficultyStandard.Content" xml:space="preserve">
     <value>Litt enklere</value>
   </data>
+  <data name="DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Datamaskiner som kjører Brasscribe på dette nettverket</value>
+  </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
     <value>{0} min {1} s</value>
   </data>
@@ -344,6 +347,12 @@
   </data>
   <data name="Export_TalkingScore_For" xml:space="preserve">
     <value>Tekst en skjermleser kan lese opp</value>
+  </data>
+  <data name="FindEnginesButton.Content" xml:space="preserve">
+    <value>Finn på dette nettverket</value>
+  </data>
+  <data name="FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Se etter datamaskiner som kjører Brasscribe på samme nettverk</value>
   </data>
   <data name="FinishLater_Confirm" xml:space="preserve">
     <value>Fortsett senere</value>
@@ -756,6 +765,99 @@
   <data name="PartPageNote.Text" xml:space="preserve">
     <value>Skrevet ned av Brasscribe. Sjekk tonene merket ? før øvelsen.</value>
   </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Valg for partituret</value>
+  </data>
+  <data name="ScoreOptions_EditTitle" xml:space="preserve">
+    <value>Endre navn</value>
+  </data>
+  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
+    <value>Sjekk tonene</value>
+  </data>
+  <data name="ScoreOptions_Delete" xml:space="preserve">
+    <value>Slett</value>
+  </data>
+  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
+    <value>Slette «{0}»?</value>
+  </data>
+  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
+    <value>Partituret fjernes fra denne PC-en.</value>
+  </data>
+  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
+    <value>Partituret fjernes fra datamaskinen din.</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · På datamaskinen din</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Slettet {0}</value>
+  </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Kunne ikke slette {0}. Er datamaskinen på?</value>
+  </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Endre tone</value>
+  </data>
+  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
+    <value>Endre tone …</value>
+  </data>
+  <data name="ReviewHowSure.Text" xml:space="preserve">
+    <value>Hvor sikker Brasscribe er</value>
+  </data>
+  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hvor sikker Brasscribe er</value>
+  </data>
+  <data name="ReviewHeardHeading.Text" xml:space="preserve">
+    <value>Hva hver transkriberer hørte</value>
+  </data>
+  <data name="Review_WordUncertain" xml:space="preserve">
+    <value>Usikker</value>
+  </data>
+  <data name="Review_WordVeryUncertain" xml:space="preserve">
+    <value>Svært usikker</value>
+  </data>
+  <data name="Review_LevelAlternative" xml:space="preserve">
+    <value>{0}: det kan også være {1}.</value>
+  </data>
+  <data name="Review_HeardSame" xml:space="preserve">
+    <value>Samme, {0}</value>
+  </data>
+  <data name="Review_HeardNothing" xml:space="preserve">
+    <value>Ingen tone</value>
+  </data>
+  <data name="Review_Changed" xml:space="preserve">
+    <value>Endret til {0}</value>
+  </data>
+  <data name="ChangeNote_Title" xml:space="preserve">
+    <value>Endre tone</value>
+  </data>
+  <data name="ChangeNote_Down" xml:space="preserve">
+    <value>En halvtone ned</value>
+  </data>
+  <data name="ChangeNote_Up" xml:space="preserve">
+    <value>En halvtone opp</value>
+  </data>
+  <data name="ChangeNote_Heard" xml:space="preserve">
+    <value>Hva hver transkriberer hørte</value>
+  </data>
+  <data name="ChangeNote_Save" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Alle stemmer, eller én stemme som side (P)</value>
   </data>
@@ -1131,11 +1233,26 @@
   <data name="Settings_CoreVersion" xml:space="preserve">
     <value>Arrangør på denne PC-en: {0}</value>
   </data>
+  <data name="Settings_Engine_Chosen" xml:space="preserve">
+    <value>Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.</value>
+  </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
     <value>Koblet til Brasscribe {0} på datamaskinen ({1})</value>
   </data>
+  <data name="Settings_Engine_FoundMany" xml:space="preserve">
+    <value>Fant {0} datamaskiner som kjører Brasscribe. Velg én.</value>
+  </data>
+  <data name="Settings_Engine_FoundOne" xml:space="preserve">
+    <value>Fant {0}. Velg den for å bruke den.</value>
+  </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
     <value>Datamaskinen ber om en paringskode. Skriv inn de seks sifrene den viser.</value>
+  </data>
+  <data name="Settings_Engine_NoneFound" xml:space="preserve">
+    <value>Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.</value>
+  </data>
+  <data name="Settings_Engine_Searching" xml:space="preserve">
+    <value>Ser etter Brasscribe på nettverket …</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Neste eller forrige takt</value>

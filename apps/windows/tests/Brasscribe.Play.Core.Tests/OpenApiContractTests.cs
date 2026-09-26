@@ -29,6 +29,11 @@ public class OpenApiContractTests
         ["Note"] = typeof(Note),
         ["Meter"] = typeof(Meter),
         ["KeySig"] = typeof(KeySig),
+        ["Evidence"] = typeof(Evidence),
+        ["NoteEvidence"] = typeof(NoteEvidence),
+        ["ModelHeard"] = typeof(ModelHeard),
+        ["ModelInfo"] = typeof(ModelInfo),
+        ["RunUpdate"] = typeof(RunUpdate),
     };
 
     private static JsonElement Spec() => JsonDocument.Parse(File.ReadAllText(TestPaths.Fixture("openapi.json"))).RootElement;
@@ -80,6 +85,10 @@ public class OpenApiContractTests
     [InlineData("/v1/jobs/{job_id}/pdf", "get")]
     [InlineData("/v1/jobs/{job_id}/midi", "get")]
     [InlineData("/v1/jobs/{job_id}/audio", "get")]
+    [InlineData("/v1/jobs", "get")]
+    [InlineData("/v1/jobs/{job_id}/evidence", "get")]
+    [InlineData("/v1/runs/{job_id}", "patch")]
+    [InlineData("/v1/runs/{job_id}", "delete")]
     public void Every_endpoint_the_client_calls_exists(string path, string method) =>
         Assert.True(Spec().GetProperty("paths").GetProperty(path).TryGetProperty(method, out _));
 }

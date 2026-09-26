@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brasscribe Play: a score for your band, from any recording</title>
+  <meta name="description" content="Play it, record it or open a file. Brasscribe writes down the parts for your brass band, marks the notes it wasn't sure about, and lets you practise with the band.">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:title" content="Brasscribe Play">
+  <meta property="og:description" content="A score for your band, from any recording.">
+  <meta property="og:image" content="assets/shots/score-desktop-light.png">
+  <link rel="alternate" hreflang="en" href="./">
+  <link rel="alternate" hreflang="nb" href="nb/">
+  <link rel="alternate" hreflang="x-default" href="./">
+  <script src="lang.js"></script>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/brasscribe.css">
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <img class="logo-light" src="assets/logo/lockup-play.svg" alt="Brasscribe Play, home" width="180" height="32">
+      <img class="logo-dark" src="assets/logo/lockup-play-on-dark.svg" alt="Brasscribe Play, home" width="180" height="32">
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="./" aria-current="page">Home</a>
+      <a href="guide/">User guide</a>
+      <a href="guide/#computer">Your computer</a>
+      <a href="https://github.com/181192/brasscribe">Source</a>
+      <a class="lang-switch" href="nb/" hreflang="nb" lang="nb" data-lang-switch>Norsk</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <img class="mark" src="assets/logo/mark-brass.svg" alt="" width="56" height="56">
+        <h1>A score for your band, from <em>any recording.</em></h1>
+        <p class="lead">Play it, record a rehearsal or open a file you have. Brasscribe writes down the parts for your brass band, shows you the notes it wasn't sure about, and lets you practise along with the band.</p>
+        <div class="actions">
+          <a class="button primary" href="guide/#get-started">Get started</a>
+          <a class="button secondary" href="guide/">Read the user guide</a>
+        </div>
+        <p class="platforms-label" id="platforms">Runs on</p>
+        <ul class="platforms" aria-labelledby="platforms">
+          <li>iPhone and iPad</li>
+          <li>Mac</li>
+          <li>Android</li>
+          <li>Windows</li>
+        </ul>
+      </div>
+      <div class="phones">
+        <picture>
+          <source srcset="assets/shots/home-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/home-phone-light.png" alt="The home screen, with Open a recording, Record and Your scores." width="390" height="844">
+        </picture>
+        <picture>
+          <source srcset="assets/shots/score-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/score-phone-light.png" alt="A brass band score on a phone, with the player below it." width="390" height="844" loading="lazy">
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="overline">How it works</p>
+      <h2>Three questions, then <em>the score.</em></h2>
+      <p class="lead">Brasscribe asks one thing at a time and never guesses. Nothing changes until you press a button.</p>
+      <ol class="grid-3 cards">
+        <li class="card">
+          <h3>What is this?</h3>
+          <p>A brass band, one instrument, a soloist with an orchestra, or pop and rock. Your answer decides how Brasscribe listens.</p>
+        </li>
+        <li class="card">
+          <h3>Check the notes</h3>
+          <p>Notes Brasscribe wasn't sure about are marked with a question mark <span class="q uncertain" aria-hidden="true">?</span>. Listen to the bar and keep the note, one note at a time.</p>
+        </li>
+        <li class="card">
+          <h3>How should the score be?</h3>
+          <p>Full brass band or a small band, as played or a bit easier, and the key you want. You can change it later. Nothing is lost.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="process" aria-labelledby="process-title">
+    <div class="wrap">
+      <p class="overline">Under the hood</p>
+      <h2 id="process-title">From sound to score, <em>in six steps.</em></h2>
+      <p class="lead">Between the recording and the score, Brasscribe runs a fixed chain of steps. Audio models listen, and plain music rules write the notes down. Every step can be checked against real recordings.</p>
+      <ol class="grid-3 cards">
+        <li class="card">
+          <h3>Choose how to listen</h3>
+          <p>Your answer to “What is this?” picks the path. A solo or an all-brass band is heard as it is. For a full band, the recording is first split into separate layers.</p>
+          <p class="tech">Pop and rock: BS-RoFormer splits six stems (vocals, guitar, piano, other, bass, drums). Soloist with orchestra: Mega-53 pulls out the solo, bass and drums, and the orchestra is what is left.</p>
+        </li>
+        <li class="card">
+          <h3>Find the beat</h3>
+          <p>A beat tracker marks every beat and the first beat of each bar. Brasscribe picks the level a musician would count, cleans up stray beats and reads the time signature from the bars.</p>
+          <p class="tech">Beat This! for beats and downbeats. Where the tempo is unsteady for several beats, the passage is written as <i>ad lib.</i> with dashed bar lines instead of being forced onto a grid.</p>
+        </li>
+        <li class="card">
+          <h3>Hear the notes</h3>
+          <p>Several transcribers listen to each layer on their own and each writes down the notes it hears. Notes where the layer is silent are dropped.</p>
+          <p class="tech">MuScriptor (multi-instrument), Basic Pitch (polyphonic) and SwiftF0 (pitch tracking for a single line). SwiftF0’s pitch curve also tells where a held note really ends.</p>
+        </li>
+        <li class="card">
+          <h3>Agree on the notes</h3>
+          <p>A note the transcribers agree on is almost always right. A note only one of them heard is often wrong. The level of agreement becomes the note’s confidence, and the confidence decides the <span class="q uncertain" aria-hidden="true">?</span> marks.</p>
+          <p class="tech">Notes are matched by onset time and pitch. On a solo, all three agreeing gives 0.98 and two gives 0.91. Below 0.7 the note gets a ?, below 0.4 a boxed ?.</p>
+        </li>
+        <li class="card">
+          <h3>Write it down</h3>
+          <p>Played music is never exactly on the beat. Brasscribe moves each note to the nearest rhythm a player would read, keeps rhythms simple where that is honest, and names every note in the right key.</p>
+          <p class="tech">24 ticks per beat, dynamic programming that penalises complex rhythms, written vs played length (staccato when under half). ps13 pitch spelling at concert pitch; key from Krumhansl–Kessler profiles.</p>
+        </li>
+        <li class="card">
+          <h3>Arrange and engrave</h3>
+          <p>The notes are shared out over the band’s parts, each in its range and written for B♭ or E♭. Dynamics come from how loud each layer is, bar by bar, with rehearsal marks at the sections.</p>
+          <p class="tech">Parts are assigned by role (tune, bass, harmony, rhythm), range and voice leading. Output as MusicXML, PDF, MIDI, audio, braille and a talking score.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="theory-title">
+    <div class="wrap reading">
+      <p class="overline">The thinking behind it</p>
+      <h2 id="theory-title">Why it works <em>this way.</em></h2>
+
+      <h3>No model knows a brass band</h3>
+      <p>Every open transcription and separation model stops at trumpet, trombone, tuba and horn. None knows a cornet, a tenor horn, a baritone or a euphonium, and none can pull three cornets playing in close harmony apart. So the models only answer “which notes sound when”. Which part plays each note is decided by music rules we wrote: range, role in the texture, and smooth voice leading.</p>
+
+      <h3>Several opinions beat one</h3>
+      <p>Each transcriber makes different mistakes. When two of them hear the same note independently, it is right about 9 times in 10. Confidence is worked out as 1 − (1 − p₁)(1 − p₂)…, where p is how often each model has been right on our test recordings. That is why Brasscribe can tell you which notes to check, instead of pretending every note is certain.</p>
+
+      <h3>Separate only when it helps</h3>
+      <p>Splitting a recording into layers helps when a trumpet has to be heard over guitars and drums. On an all-brass recording there is nothing to split, and splitting only adds noise. We measured both paths and kept each where it wins.</p>
+
+      <h3>Audio models listen, rules write</h3>
+      <p>Only the listening uses machine learning. Beat grids, rhythm, note names, keys, parts and layout are deterministic: the same notes always give the same score, byte for byte, on every platform. Language models are never used to produce notes; they cannot hear pitch reliably.</p>
+
+      <h3>How we know</h3>
+      <p>Every choice above was settled by measurement on recordings with known correct notes, and every change is checked against the same recordings before it ships.</p>
+      <div class="table-scroll">
+        <table>
+          <caption>Measured results</caption>
+          <thead>
+            <tr><th scope="col">What</th><th scope="col">Result</th><th scope="col">Tested on</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Notes found (onset F1, 100 ms)</th><td>0.88 chamber brass, 0.75 brass quartets</td><td>URMP, ChoraleBricks (real recordings)</td></tr>
+            <tr><th scope="row">Notes the models agree on</th><td>89–92% correct on mixes, 91–99% on a solo line</td><td>ChoraleBricks, URMP, separated solos</td></tr>
+            <tr><th scope="row">Splitting a full band first</th><td>+8 to +12 F1 points</td><td>Slakh songs with trumpet lead</td></tr>
+            <tr><th scope="row">Notes on the right beat position</th><td>95–99% with a correct beat grid</td><td>ChoraleBricks, URMP</td></tr>
+            <tr><th scope="row">Note names (sharps and flats)</th><td>99.9% correct</td><td>ChoraleBricks, URMP</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Details for the band’s tech person</summary>
+        <p>The engine runs each recording as a graph of stages (beats, stems, transcription, arrangement, export). Every stage is cached by the hash of its inputs, settings and code, so changing the key or the band only re-runs the arrangement. Each audio model runs in its own isolated Python environment behind a file-based contract: audio in, MIDI or JSON out.</p>
+        <p>The music rules are written once in Python as the reference and ported to Rust for the apps on iPhone, iPad, Mac, Android and Windows. A conformance suite checks that the Rust port gives identical scores, MusicXML and talking scores. A solo runs entirely on the phone; the heavy separation and transcription models run on your own computer.</p>
+        <p>The research notes, benchmarks and source are in the <a href="https://github.com/181192/brasscribe">repository</a>.</p>
+      </details>
+
+      <div class="note">
+        <p><strong>What it can’t do yet.</strong> A melody hidden in an inner voice is hard to find. Long free-time passages can still be pushed onto a beat. Staccato is guessed from note length, not from the sound of the attack. That is exactly what the ? marks are for.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap hero-grid">
+      <div>
+        <p class="overline">Practise with the band</p>
+        <h2>Mute your part and <em>play along.</em></h2>
+        <p>Every part plays back with real brass sounds. Mute your own part and play it yourself, or hear one part alone.</p>
+        <ul>
+          <li><strong>Speed:</strong> slow it down to 50% and bring it back up as you learn it.</li>
+          <li><strong>Repeat bars</strong> 12 to 13 until the hard passage sits.</li>
+          <li><strong>Count-in</strong> and <strong>metronome</strong> when you want them.</li>
+          <li><strong>Hear the recording</strong> from the same bar to check what the band really played.</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <picture>
+          <source srcset="assets/shots/part-desktop-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/part-desktop-light.png" alt="One part shown large on a computer, with the player and practice controls below." width="1440" height="900" loading="lazy">
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="overline">Made for bands</p>
+      <h2>Everything a section leader <em>would want.</em></h2>
+      <ul class="grid-3 cards">
+        <li class="card">
+          <h3>Written for your instrument</h3>
+          <p>See every part as written for B♭ or E♭, or switch to concert pitch. Cornets, horns, baritones, euphoniums, trombones and basses.</p>
+        </li>
+        <li class="card">
+          <h3>Honest about doubt</h3>
+          <p>A question mark <span class="q uncertain" aria-hidden="true">?</span> means Brasscribe wasn't sure. One in a box <span class="q very-uncertain" aria-hidden="true"><span class="qbox">?</span></span> means very unsure. The marks stay in what you share until you've checked them.</p>
+        </li>
+        <li class="card">
+          <h3>Share or print</h3>
+          <p>Print your own part, a PDF for every player, or the conductor's score. Also audio to practise with, MusicXML for MuseScore, Sibelius or Dorico, and MIDI.</p>
+        </li>
+        <li class="card">
+          <h3>Record what's playing</h3>
+          <p>Record the rehearsal with the microphone, or record the sound of another app. Or just open an audio or video file.</p>
+        </li>
+        <li class="card">
+          <h3>For every musician</h3>
+          <p>Works with VoiceOver, TalkBack and Narrator. Hear any bar read aloud as a talking score, or share it as braille music. Full keyboard control on a computer.</p>
+        </li>
+        <li class="card">
+          <h3>Stays with you</h3>
+          <p>Recordings stay on your phone and your own computer. Nothing is sent to the internet. In English and Norwegian.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap hero-grid">
+      <div>
+        <p class="overline">Where it runs</p>
+        <h2>Your phone, and <em>your computer.</em></h2>
+        <p>Solos are made right on your phone. For a full brass band, Brasscribe on your computer does the heavy work and sends the score back to the phone over your home Wi-Fi.</p>
+        <p>Open the app's settings and your computer shows up by itself. Type the six-digit code it shows, and you're connected.</p>
+        <div class="actions">
+          <a class="button outline" href="guide/#computer">How to connect your computer</a>
+        </div>
+      </div>
+      <div class="phones">
+        <picture>
+          <source srcset="assets/shots/what-is-this-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/what-is-this-phone-light.png" alt="What is this? with four choices, and where the score will be made." width="390" height="844" loading="lazy">
+        </picture>
+        <picture>
+          <source srcset="assets/shots/transcribing-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/transcribing-phone-light.png" alt="Making the score: the current step, the percentage and the time left." width="390" height="844" loading="lazy">
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap reading">
+      <h2>Try it with <em>your band.</em></h2>
+      <p class="lead">Brasscribe Play is in early testing. The user guide shows how to install it and connect your computer.</p>
+      <div class="actions">
+        <a class="button primary" href="guide/#get-started">Get started</a>
+        <a class="button outline" href="https://github.com/181192/brasscribe">See the source code</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Brasscribe Play and Brasscribe Studio</span>
+    <span>Notation engraved with Verovio (LGPL-3.0). Display type: Instrument Serif (OFL).</span>
+  </div>
+</footer>
+</body>
+</html>

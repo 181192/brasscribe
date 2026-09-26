@@ -3,55 +3,30 @@ import ScoreKit
 import SVGRender
 import SwiftUI
 
-/// Colour-blind-safe palette (Okabe–Ito) with contrast ≥ 3:1 against the page in both
-/// appearances; high contrast switches to pure ink.
-struct NotationPalette {
-    let ink: CGColor
-    let paper: Color
-    let cursor: CGColor
-    let cursorBox: Color
-    let uncertain: CGColor
-    let uncertainMark: Color
-
-    static func make(dark: Bool, highContrast: Bool) -> NotationPalette {
-        if dark {
-            return NotationPalette(ink: CGColor(gray: 1, alpha: 1), paper: Color(white: highContrast ? 0 : 0.1),
-                                   cursor: CGColor(srgbRed: 0.34, green: 0.71, blue: 0.91, alpha: 1), cursorBox: Color(red: 0.34, green: 0.71, blue: 0.91),
-                                   uncertain: CGColor(srgbRed: 1, green: 0.62, blue: 0.29, alpha: 1), uncertainMark: Color(red: 1, green: 0.62, blue: 0.29))
-        }
-        return NotationPalette(ink: CGColor(gray: 0, alpha: 1), paper: .white,
-                               cursor: CGColor(srgbRed: 0, green: 0.447, blue: 0.698, alpha: 1), cursorBox: Color(red: 0, green: 0.447, blue: 0.698),
-                               uncertain: CGColor(srgbRed: 0.835, green: 0.369, blue: 0, alpha: 1), uncertainMark: Color(red: 0.835, green: 0.369, blue: 0))
-    }
-}
-
-/// The engraved score, drawn natively from Verovio's SVG, with one accessibility element
-/// per part per bar (label = talking-score description), rotors for bars, parts and
-/// uncertain notes, and custom actions to play or loop a bar.
+/// The engraved score, drawn natively from Verovio's SVG with the score tokens, with one
+/// accessibility element per part per bar (label = talking-score description), rotors for
+/// bars, parts and uncertain notes, and custom actions to play or loop a bar.
 struct NotationView: View {
     @Bindable var model: PracticeModel
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
 
     var body: some View {
-        let palette = NotationPalette.make(dark: scheme == .dark, highContrast: contrast == .increased)
         GeometryReader { geo in
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: BrasscribeDesign.Space.s3) {
                         ForEach(model.pages, id: \.number) { page in
-                            PageView(model: model, page: page, palette: palette, rotorNS: rotorNS)
+                            PageView(model: model, page: page, rotorNS: rotorNS)
                                 .id("page-\(page.number)")
                         }
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, BrasscribeDesign.Space.s2)
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
                 }
-                .background(palette.paper)
+                .background(Color.Brasscribe.bg)
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
@@ -69,14 +44,15 @@ struct NotationView: View {
                     let page = model.pageNumber(forBar: bar)
                     guard page != lastScrolledBar else { return }
                     lastScrolledBar = page
-                    let id = "page-\(page)"
-                    if reduceMotion { proxy.scrollTo(id, anchor: .top) } else { withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(id, anchor: .top) } }
+                    withAnimation(BrasscribeDesign.Motion.animation(BrasscribeDesign.Motion.slow, reduceMotion: reduceMotion)) {
+                        proxy.scrollTo("page-\(page)", anchor: .top)
+                    }
                 }
             }
         }
         .overlay {
             if model.pages.isEmpty {
-                ProgressView(String(localized: "Engraving the score…"))
+                ProgressView(String(localized: "Laying out the pages…"))
             }
         }
         .accessibilityElement(children: .contain)
@@ -115,49 +91,110 @@ struct NotationView: View {
     }
 }
 
+/// One engraved page, drawn in a single Canvas in this order:
+/// 1. the bar band: the loop tint, else the cursor-bar tint, else the ad lib tint (tints
+///    never stack; in high contrast there are no tints, only outlines);
+/// 2. the notation in ink, with uncertain notes in their colour;
+/// 3. the loop brackets and the "Loop 12–13" label;
+/// 4. a "?" above each uncertain note, boxed when very uncertain, in the note's colour;
+/// 5. the 3 pt playback cursor across the whole system.
 private struct PageView: View {
     @Bindable var model: PracticeModel
     let page: ScoreRenderer.Page
-    let palette: NotationPalette
     let rotorNS: Namespace.ID
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         let doc = page.svg
         let barIndex: [String: Int] = Dictionary(uniqueKeysWithValues: (model.renderer?.measureIDs ?? []).enumerated().map { ($1, $0) })
-        let uncertainIDs = model.renderer?.uncertainNoteIDs ?? []
+        let levels = model.renderer?.uncertainLevels ?? [:]
         let sounding = model.soundingNotes
         let current = model.currentBar
+        let loop: ClosedRange<Int>? = model.looping ? min(model.loopFrom, model.loopTo)...max(model.loopFrom, model.loopTo) : nil
+        let adLib = model.freeTimeBars
+        let highContrast = contrast == .increased
+        let loopLabel = loop.map { l in
+            l.count == 1 ? String(localized: "Loop \(l.lowerBound + 1)") : String(localized: "Loop \(l.lowerBound + 1)–\(l.upperBound + 1)")
+        }
         ZStack(alignment: .topLeading) {
-            Canvas(opaque: false, rendersAsynchronously: false) { ctx, size in
+            Canvas(opaque: false, rendersAsynchronously: false) { ctx, _ in
+                var bars: [(bar: Int, rect: CGRect)] = []
+                for mid in page.measureIDs {
+                    guard let bar = barIndex[mid], let r = Self.band(mid, doc: doc, page: page) else { continue }
+                    bars.append((bar, r))
+                    let inLoop = loop?.contains(bar) == true
+                    let inAdLib = adLib.contains { $0.contains(bar) }
+                    if highContrast {
+                        if !inLoop, bar == current || inAdLib {
+                            ctx.stroke(Path(r), with: .color(.Brasscribe.staff),
+                                       style: StrokeStyle(lineWidth: 1, dash: bar == current ? [] : [4, 3]))
+                        }
+                    } else if inLoop {
+                        ctx.fill(Path(r), with: .color(.Brasscribe.loopTint))
+                    } else if bar == current {
+                        ctx.fill(Path(r), with: .color(.Brasscribe.cursorTint))
+                    } else if inAdLib {
+                        ctx.fill(Path(r), with: .color(.Brasscribe.adlibTint))
+                    }
+                }
+
+                let env = ctx.environment
+                let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
+                let uncertain = Color.Brasscribe.uncertain.resolve(in: env).cgColor
+                let very = Color.Brasscribe.veryUncertain.resolve(in: env).cgColor
                 var highlight: [String: CGColor] = [:]
-                for id in uncertainIDs { highlight[id] = palette.uncertain }
-                for id in sounding { highlight[id] = palette.cursor }
-                ctx.withCGContext { cg in doc.draw(in: cg, ink: palette.ink, highlight: highlight, keepDocumentColors: false) }
+                for (id, level) in levels { highlight[id] = level == .veryUncertain ? very : uncertain }
+                ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, highlight: highlight, keepDocumentColors: false) }
+
+                if let l = loop {
+                    let arm: CGFloat = 6
+                    for (bar, r) in bars where bar == l.lowerBound || bar == l.upperBound {
+                        var p = Path()
+                        if bar == l.lowerBound {
+                            p.move(to: CGPoint(x: r.minX + arm, y: r.minY)); p.addLine(to: CGPoint(x: r.minX, y: r.minY))
+                            p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.addLine(to: CGPoint(x: r.minX + arm, y: r.maxY))
+                            if let loopLabel {
+                                ctx.draw(Text(loopLabel).font(.caption.weight(.semibold)).foregroundStyle(Color.Brasscribe.loopEdge),
+                                         at: CGPoint(x: r.minX + 2, y: r.minY - 16), anchor: .bottomLeading)
+                            }
+                        }
+                        if bar == l.upperBound {
+                            p.move(to: CGPoint(x: r.maxX - arm, y: r.minY)); p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+                            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY)); p.addLine(to: CGPoint(x: r.maxX - arm, y: r.maxY))
+                        }
+                        ctx.stroke(p, with: .color(.Brasscribe.loopEdge), lineWidth: BrasscribeDesign.Score.loopEdgeWidth)
+                    }
+                }
+
+                for (staffID, notes) in page.notesByStaff {
+                    guard let lines = page.staffLines[staffID] ?? doc.frames[staffID] else { continue }
+                    let space = max(3, lines.height / 4)
+                    let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
+                    for id in notes {
+                        guard let level = levels[id], let f = doc.frames[id] else { continue }
+                        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                        let bottom = min(lines.minY, f.minY) - space * 0.5
+                        let center = CGPoint(x: f.midX, y: bottom - size * 0.6)
+                        ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)
+                        if level == .veryUncertain {
+                            let box = CGRect(x: center.x - size * 0.45, y: center.y - size * 0.62, width: size * 0.9, height: size * 1.24)
+                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1, size / 11))
+                        }
+                    }
+                }
+
+                if let (_, r) = bars.first(where: { $0.bar == current }) {
+                    let xs = sounding.compactMap { doc.frames[$0]?.midX }.filter { $0 >= r.minX && $0 <= r.maxX }
+                    let x = xs.min() ?? r.minX + 6
+                    let w = BrasscribeDesign.Score.cursorWidth
+                    ctx.fill(Path(CGRect(x: x - w / 2, y: r.minY - 4, width: w, height: r.height + 8)), with: .color(.Brasscribe.cursor))
+                }
             }
             .frame(width: doc.size.width, height: doc.size.height)
             .accessibilityHidden(true)
 
-            // Uncertainty shape: an open diamond above each flagged note (colour is never the only cue).
-            ForEach(page.notesByStaff.values.flatMap { $0 }.filter { uncertainIDs.contains($0) }, id: \.self) { id in
-                if let f = doc.frames[id] {
-                    Diamond().stroke(palette.uncertainMark, lineWidth: 1.5)
-                        .frame(width: 7, height: 7)
-                        .position(x: f.midX, y: f.minY - 7)
-                        .accessibilityHidden(true)
-                }
-            }
-
             ForEach(page.measureIDs, id: \.self) { mid in
                 if let bar = barIndex[mid], let mf = doc.frames[mid] {
-                    // cursor: outlined box around the current bar (shape plus colour)
-                    if bar == current {
-                        RoundedRectangle(cornerRadius: 3)
-                            .stroke(palette.cursorBox, lineWidth: 2.5)
-                            .background(RoundedRectangle(cornerRadius: 3).fill(palette.cursorBox.opacity(0.08)))
-                            .frame(width: mf.width + 6, height: mf.height + 6)
-                            .position(x: mf.midX, y: mf.midY)
-                            .accessibilityHidden(true)
-                    }
                     ForEach(Array((page.staves[mid] ?? []).enumerated()), id: \.offset) { k, staffID in
                         if let sf = doc.frames[staffID], model.displayedParts.indices.contains(k) {
                             StaffElement(model: model, bar: bar, part: model.displayedParts[k], partIndex: k,
@@ -169,7 +206,18 @@ private struct PageView: View {
             }
         }
         .frame(width: doc.size.width, height: doc.size.height)
-        .background(palette.paper)
+        .background(Color.Brasscribe.bg)
+    }
+
+    /// The band behind one bar: the bar's width, from the top staff line of the system to
+    /// the bottom one.
+    static func band(_ measureID: String, doc: SVGDocument, page: ScoreRenderer.Page) -> CGRect? {
+        guard let mf = doc.frames[measureID] else { return nil }
+        let staves = (page.staves[measureID] ?? []).compactMap { page.staffLines[$0] }
+        guard let top = staves.map(\.minY).min(), let bottom = staves.map(\.maxY).max() else { return nil }
+        let minX = max(mf.minX, staves.map(\.minX).min() ?? mf.minX)
+        let maxX = min(mf.maxX, staves.map(\.maxX).max() ?? mf.maxX)
+        return CGRect(x: minX, y: top, width: max(0, maxX - minX), height: bottom - top)
     }
 }
 
@@ -199,17 +247,5 @@ private struct StaffElement: View {
             .accessibilityAction(named: Text("Listen to the original")) { model.listen(toBar: bar, original: true) }
             .accessibilityRotorEntry(id: "\(bar)-\(partIndex)", in: rotorNS)
             .accessibilityIdentifier("staff-\(bar)-\(partIndex)")
-    }
-}
-
-struct Diamond: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: r.midX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.midY))
-        p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
-        p.addLine(to: CGPoint(x: r.minX, y: r.midY))
-        p.closeSubpath()
-        return p
     }
 }

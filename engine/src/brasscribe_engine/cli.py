@@ -2,8 +2,8 @@
 
     brasscribe run <audio> [--profile P] [--out DIR] [--reuse DIR] [--no-heavy] [--cold STAGES] [--check-golden DIR]
     brasscribe bench <suite|group> [--mode cached|live] [--json FILE] [--allow-improved] [--require-data]
-    brasscribe serve [--host H] [--port N] [--lan]
-    brasscribe studio [--port N] [--lan] [--no-browser]   (opens the default browser)
+    brasscribe serve [--host H] [--port N] [--lan] [--no-advertise]
+    brasscribe studio [--port N] [--lan] [--no-advertise] [--no-browser]   (opens the default browser)
     brasscribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
     brasscribe compare <candidate dir> <reference dir>
     brasscribe profiles | suites
@@ -132,6 +132,8 @@ def cmd_serve(args, open_browser: bool = False) -> int:
 
     from .api import create_app
 
+    from .discovery import advertise
+
     host = "0.0.0.0" if args.lan else args.host
     app = create_app()
     url, lines = serve_banner(app, host, args.port)
@@ -141,7 +143,12 @@ def cmd_serve(args, open_browser: bool = False) -> int:
         import webbrowser
 
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    uvicorn.run(app, host=host, port=args.port, log_level="warning")
+    on_lan = host not in ("127.0.0.1", "localhost", "::1") and not args.no_advertise
+    addresses = (lan_addresses() if host in ("0.0.0.0", "::") else [host]) if on_lan else []
+    with advertise(args.port, addresses) as name:
+        if name:
+            print(f"Advertised on the LAN as \"{name}\" (_brasscribe._tcp)", flush=True)
+        uvicorn.run(app, host=host, port=args.port, log_level="warning")
     return 0
 
 
@@ -207,6 +214,8 @@ def main(argv: list[str] | None = None) -> int:
         sv.add_argument("--port", type=int, default=8765)
         sv.add_argument("--lan", action="store_true",
                         help="listen on all interfaces and print the LAN URL and pairing code for the Play apps")
+        sv.add_argument("--no-advertise", action="store_true",
+                        help="do not announce the engine over Bonjour/mDNS (_brasscribe._tcp) when on the LAN")
         if browser:
             sv.add_argument("--no-browser", action="store_true")
             sv.set_defaults(fn=lambda a: cmd_serve(a, open_browser=not a.no_browser))

@@ -148,6 +148,46 @@ class JobManager:
             self.jobs.pop(job_id, None)
         return "deleted"
 
+    def rename(self, job_id: str, title: str) -> str:
+        """Retitle a finished run in its manifest, Composition and MusicXML. Returns "renamed", "unknown" or "active"."""
+        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+            return "unknown"
+        job = self.get(job_id)
+        if job is None:
+            return "unknown"
+        if job.status not in TERMINAL:
+            return "active"
+        from xml.sax.saxutils import escape
+
+        d = self.run_dir(job_id)
+        mpath = d / "manifest.json"
+        if mpath.exists():
+            m = json.loads(mpath.read_text())
+            m["title"] = title
+            _write(mpath, json.dumps(m, indent=2))
+        comp = d / "outputs" / "composition.json"
+        if comp.exists():
+            c = json.loads(comp.read_text())
+            c["title"] = title
+            _write(comp, json.dumps(c))
+        xml = d / "outputs" / "brass-band.musicxml"
+        if xml.exists():
+            import re
+
+            text = xml.read_text()
+            tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
+            work = f"<work><work-title>{escape(title)}</work-title></work>"
+            if tag.search(text):
+                text = tag.sub(lambda mt: mt.group(1) + escape(title) + mt.group(2), text, count=1)
+            elif re.search(r"<score-partwise\b[^>]*/>", text):
+                text = re.sub(r"<score-partwise\b([^>]*)/>", lambda mt: f"<score-partwise{mt.group(1)}>{work}</score-partwise>",
+                              text, count=1)
+            else:
+                text = re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
+            _write(xml, text)
+        job.title = title
+        return "renamed"
+
     def run_dir(self, job_id: str) -> Path:
         return self.settings.runs_dir / job_id
 
@@ -170,3 +210,9 @@ class JobManager:
             job.status = "failed"
             job.error = job.error or "interrupted"
         return job
+
+
+def _write(path: Path, text: str) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)

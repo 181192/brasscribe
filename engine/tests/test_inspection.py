@@ -31,6 +31,33 @@ def test_stages_input_and_rerun(settings, audio):
         assert cmp["composition_identical"] is True
 
 
+def test_evidence_compares_transcribers_at_uncertain_notes(settings, audio):
+    import pretty_midi
+
+    with TestClient(create_app(settings)) as c:
+        job = run_job(c, audio)
+        run_dir = settings.runs_dir / job["id"]
+        comp = json.loads((run_dir / "outputs" / "composition.json").read_text())
+        comp["voices"] = [{"id": "melody", "role": "melody", "notes": [
+            {"pitch": 67, "start": 0, "dur": 24, "confidence": 0.5, "sources": ["melody"], "onset_s": 1.0},
+            {"pitch": 69, "start": 24, "dur": 24, "confidence": 0.9, "sources": ["melody"], "onset_s": 2.0}]}]
+        (run_dir / "outputs" / "composition.json").write_text(json.dumps(comp))
+        for stage, name, pitches in (("transcribe.mix.swift-f0", "mix-sw.mid", [67]),
+                                     ("transcribe.mix.basic-pitch", "mix-bp.mid", [48, 69])):
+            pm = pretty_midi.PrettyMIDI()
+            inst = pretty_midi.Instrument(0)
+            inst.notes = [pretty_midi.Note(80, p, 1.02, 1.5) for p in pitches]
+            pm.instruments.append(inst)
+            pm.write(str(run_dir / "stages" / stage / name))
+        e = c.get(f"/v1/jobs/{job['id']}/evidence").json()
+        assert [m["model"] for m in e["models"]] == ["basic-pitch", "swift-f0"]
+        note = e["notes"][0]
+        assert len(e["notes"]) == 1 and note["confidence"] == 0.5 and note["voice"] == "melody"
+        heard = {m["model"]: (m["pitch"], m["agrees"]) for m in note["models"]}
+        assert heard == {"swift-f0": (67, True), "basic-pitch": (69, False)}
+        assert c.get("/v1/jobs/nope/evidence").status_code == 404
+
+
 def test_references_and_compare(settings, audio):
     ref = settings.golden_dir / "demo"
     ref.mkdir(parents=True)
@@ -78,6 +105,18 @@ def test_registry_history_and_reports(settings, monkeypatch, tmp_path):
         assert h[0]["suite"] == "arrange" and h[0]["metrics"] == {"x": 1.0} and h[0]["time"] > 0
         assert c.get("/v1/parity").json() == [{"model": "swift-f0", "f1": 0.99, "_file": "swift-f0-coreml.json"}]
         assert c.get("/v1/conformance").json() == []
+
+
+def test_rename_run_updates_title_everywhere(settings, audio):
+    with TestClient(create_app(settings)) as c:
+        job = run_job(c, audio)
+        r = c.patch(f"/v1/runs/{job['id']}", json={"title": "Rehearsal & run"})
+        assert r.status_code == 200 and r.json()["title"] == "Rehearsal & run"
+        assert c.get(f"/v1/jobs/{job['id']}").json()["title"] == "Rehearsal & run"
+        assert c.get(f"/v1/jobs/{job['id']}/composition").json()["title"] == "Rehearsal & run"
+        assert "<work-title>Rehearsal &amp; run</work-title>" in c.get(f"/v1/jobs/{job['id']}/musicxml").text
+        assert c.patch(f"/v1/runs/{job['id']}", json={"title": "   "}).status_code == 422
+        assert c.patch("/v1/runs/nope", json={"title": "x"}).status_code == 404
 
 
 def test_delete_run(settings, audio):

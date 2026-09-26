@@ -117,6 +117,15 @@ class FixtureEngineApi(
 
     override suspend fun manifest(jobId: String): String = """{"run":"$jobId","fixture":"data/golden/mikkel-arranged-band"}"""
 
+    override suspend fun evidence(jobId: String): Evidence = Evidence.EMPTY
+
+    override suspend fun renameRun(jobId: String, title: String): Job =
+        job(jobId).copy(title = title).also { jobs[jobId] = it }
+
+    override suspend fun deleteRun(jobId: String) {
+        jobs.remove(jobId) ?: throw EngineException(404, "no run $jobId")
+    }
+
     private fun file(name: String): ByteArray = source.read(name) ?: throw EngineException(404, "fixture file $name is missing")
     private fun now() = System.currentTimeMillis() / 1000.0
 

@@ -34,6 +34,15 @@ interface EngineApi {
     suspend fun artifact(jobId: String, name: String): ByteArray
     suspend fun manifest(jobId: String): String
 
+    /** Per uncertain note: its confidence and what each transcriber heard. */
+    suspend fun evidence(jobId: String): Evidence
+
+    /** Rename a finished score on the computer. */
+    suspend fun renameRun(jobId: String, title: String): Job
+
+    /** Remove a finished score from the computer. */
+    suspend fun deleteRun(jobId: String)
+
     /** Braille music (BRF, North American Braille ASCII, 40 cells x 25 lines, CRLF); [part] = 1-based index or name, null = score. */
     suspend fun braille(jobId: String, part: String? = null): ByteArray
 
@@ -47,13 +56,14 @@ interface EngineApi {
             "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
             "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
+            "getJobEvidence", "updateRun", "deleteRun",
         )
 
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools. */
         val NOT_USED = setOf(
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
-            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "deleteRun",
+            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob",
         )
     }
 }

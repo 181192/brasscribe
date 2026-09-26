@@ -5,11 +5,20 @@ import SwiftUI
 /// Score, parts and practice: notation with cursor, transport, mixer, loop, speed,
 /// count-in, metronome, transpose, play-along and original-vs-score with synced video.
 struct ScoreScreen: View {
+    @Environment(AppModel.self) private var app
     let piece: Piece
     @State private var model: PracticeModel?
     @State private var error: String?
 
     var body: some View {
+        screenContent
+            .navigationTitle(currentTitle)
+            .toolbar { editToolbar }
+            .task { loadModel() }
+            .onDisappear { model?.stopAll() }
+    }
+
+    @ViewBuilder private var screenContent: some View {
         Group {
             if let model {
                 PracticeView(model: model)
@@ -19,16 +28,30 @@ struct ScoreScreen: View {
                 ProgressView()
             }
         }
-        .navigationTitle(piece.title)
-        .task {
-            guard model == nil else { return }
-            do {
-                let m = try PracticeModel(piece: piece)
-                m.start()
-                model = m
-            } catch { self.error = error.localizedDescription }
+    }
+
+    private var currentTitle: String {
+        app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title
+    }
+
+    private var editToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button { model?.stopAll(); app.path.append(.review(piece)) } label: {
+                Label("Check the notes", systemImage: BrasscribeIcon.nextUncertain.systemName)
+            }
+            .accessibilityIdentifier("checkNotes")
         }
-        .onDisappear { model?.stopAll() }
+    }
+
+    private func loadModel() {
+        guard model == nil else { return }
+        do {
+            let loaded = try PracticeModel(piece: piece)
+            loaded.start()
+            model = loaded
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 }
 

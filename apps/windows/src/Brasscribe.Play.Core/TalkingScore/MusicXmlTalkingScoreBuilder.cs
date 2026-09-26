@@ -57,6 +57,7 @@ public static class MusicXmlTalkingScoreBuilder
             var time = new TsTime(4, 4);
             double partQuarter = 0;
             int tupletCount = 0;
+            int musicXmlNoteIndex = 0;
             var pendingTies = new List<(TsEvent Event, int Midi, int Bar)>();
             var chains = new Dictionary<TsEvent, ChainInfo>(ReferenceEqualityComparer.Instance);
             ChainInfo ChainHead(TsEvent e) => chains.TryGetValue(e, out var ci) ? ci : chains[e] = new ChainInfo(e);
@@ -109,6 +110,9 @@ public static class MusicXmlTalkingScoreBuilder
                             long dur = (long?)el.Element("duration") ?? 0;
                             bool chord = el.Element("chord") is not null;
                             bool grace = el.Element("grace") is not null;
+                            bool cue = el.Element("cue") is not null;
+                            int noteIndex = musicXmlNoteIndex;
+                            if (!grace && !cue) musicXmlNoteIndex++;
                             string voice = (string?)el.Element("voice") ?? "1";
                             if (chord && last is not null)
                             {
@@ -118,7 +122,7 @@ public static class MusicXmlTalkingScoreBuilder
                             long start = offset;
                             if (!grace) offset += dur;
                             measureLength = Math.Max(measureLength, offset);
-                            if (grace || voice != "1")
+                            if (grace || cue || voice != "1")
                             {
                                 if (voice != "1") last = null;
                                 continue;
@@ -126,6 +130,7 @@ public static class MusicXmlTalkingScoreBuilder
 
                             var ev = ReadNote(el, start, dur, divisions, time, part, ref tupletCount);
                             if (ev is null) continue;
+                            ev.MusicXmlNoteIndex = noteIndex;
                             if (pendingDynamic is not null && ev.Kind != EventKind.Rest && ev.Kind != EventKind.BarRest)
                             {
                                 ev.Dynamic = pendingDynamic;
@@ -136,8 +141,11 @@ public static class MusicXmlTalkingScoreBuilder
                             if (ev.Concert is { } concert)
                             {
                                 int midi = Announcer.Midi(concert);
-                                if (matcher?.Match(absQuarter, midi) is { } hit)
+                                if (matcher?.Match(absQuarter, midi) is { } match)
                                 {
+                                    var hit = match.Note;
+                                    ev.CompositionVoiceId = match.VoiceId;
+                                    ev.CompositionNoteStart = hit.Start;
                                     ev.Confidence = hit.Confidence;
                                     ev.Sources = [.. hit.Sources];
                                     if (hit.OnsetS is { } on) ev.TimeS = on;
@@ -384,21 +392,25 @@ public static class MusicXmlTalkingScoreBuilder
     /// </summary>
     private sealed class CompositionMatcher
     {
-        private readonly Dictionary<long, List<Note>> _byOnset = [];
+        public sealed record MatchedNote(string VoiceId, Note Note);
+        private readonly Dictionary<long, List<MatchedNote>> _byOnset = [];
         private readonly int _tpb;
 
         public CompositionMatcher(Composition c)
         {
             _tpb = c.TicksPerBeat;
-            foreach (var n in c.Voices.Where(v => v.Layer != "drums" && v.Role != VoiceRole.Rhythm).SelectMany(v => v.Notes))
+            foreach (var voice in c.Voices.Where(v => v.Layer != "drums" && v.Role != VoiceRole.Rhythm))
             {
-                long key = n.Start;
-                if (!_byOnset.TryGetValue(key, out var list)) _byOnset[key] = list = [];
-                list.Add(n);
+                foreach (var note in voice.Notes)
+                {
+                    long key = note.Start;
+                    if (!_byOnset.TryGetValue(key, out var list)) _byOnset[key] = list = [];
+                    list.Add(new MatchedNote(voice.Id, note));
+                }
             }
         }
 
-        public Note? Match(double quarter, int midi)
+        public MatchedNote? Match(double quarter, int midi)
         {
             long tick = (long)Math.Round(quarter * _tpb);
             for (long d = 0; d <= 1; d++)
@@ -406,9 +418,9 @@ public static class MusicXmlTalkingScoreBuilder
                 foreach (long t in d == 0 ? [tick] : new[] { tick - 1, tick + 1 })
                 {
                     if (!_byOnset.TryGetValue(t, out var list)) continue;
-                    var exact = list.FirstOrDefault(n => n.Pitch == midi);
+                    var exact = list.FirstOrDefault(n => n.Note.Pitch == midi);
                     if (exact is not null) return exact;
-                    var pc = list.FirstOrDefault(n => ((n.Pitch - midi) % 12 + 12) % 12 == 0);
+                    var pc = list.FirstOrDefault(n => ((n.Note.Pitch - midi) % 12 + 12) % 12 == 0);
                     if (pc is not null) return pc;
                 }
             }

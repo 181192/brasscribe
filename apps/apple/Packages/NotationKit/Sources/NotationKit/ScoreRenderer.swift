@@ -35,6 +35,8 @@ public final class ScoreRenderer: @unchecked Sendable {
         public let staves: [String: [String]]
         /// Note ids per staff id.
         public let notesByStaff: [String: [String]]
+        /// The five staff lines per staff id (the staff's own frame also covers its notes).
+        public let staffLines: [String: CGRect]
     }
 
     public let musicXML: String
@@ -43,20 +45,42 @@ public final class ScoreRenderer: @unchecked Sendable {
     public private(set) var timemap: [TimemapEntry] = []
     /// Measure ids in score order; index = 0-based bar index.
     public private(set) var measureIDs: [String] = []
-    /// Notes the arranger flagged as uncertain (document colour), by id.
-    public private(set) var uncertainNoteIDs: Set<String> = []
+    /// Notes the arranger flagged as uncertain (document colour), by id, with their level.
+    public private(set) var uncertainLevels: [String: UncertaintyLevel] = [:]
+    public var uncertainNoteIDs: Set<String> { Set(uncertainLevels.keys) }
     public private(set) var lastLoadSeconds: Double = 0
 
     private let toolkit: VerovioToolkit
     private var pages: [Int: Page] = [:]
     private let lock = NSLock()
 
-    public static let uncertaintyColor = "#D0021B"
+    /// Very uncertain notes are written in this colour (confidence below 0.4); any other
+    /// note colour means uncertain (0.4–0.7, and the older single-level red).
+    public static let veryUncertainColor = (red: 0xB0, green: 0x4A, blue: 0x00)
 
     public init?(musicXML: String, resourcePath: String? = VerovioToolkit.defaultResourcePath()) {
         guard let tk = VerovioToolkit(resourcePath: resourcePath) else { return nil }
         toolkit = tk
-        self.musicXML = musicXML
+        self.musicXML = Self.removingQuestionMarks(musicXML)
+    }
+
+    /// The MusicXML carries a "?" words direction at each uncertain attack. The app draws
+    /// that mark itself, in the note's colour and boxed when very uncertain, so Verovio's
+    /// ink copy is removed to keep one mark per note.
+    public static func removingQuestionMarks(_ xml: String) -> String {
+        guard xml.contains(">?</words>") else { return xml }
+        let pattern = #"<direction\b[^>]*>(?:(?!</direction>)[\s\S])*?<words\b[^>]*>\?</words>(?:(?!</direction>)[\s\S])*?</direction>\s*"#
+        guard let re = try? NSRegularExpression(pattern: pattern) else { return xml }
+        return re.stringByReplacingMatches(in: xml, range: NSRange(xml.startIndex..., in: xml), withTemplate: "")
+    }
+
+    /// The level a document note colour stands for.
+    public static func level(of color: CGColor) -> UncertaintyLevel {
+        guard let c = color.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil)?.components,
+              c.count >= 3 else { return .uncertain }
+        let v = veryUncertainColor
+        let d = abs(c[0] * 255 - CGFloat(v.red)) + abs(c[1] * 255 - CGFloat(v.green)) + abs(c[2] * 255 - CGFloat(v.blue))
+        return d < 40 ? .veryUncertain : .uncertain
     }
 
     /// (Re)engrave for a layout. Returns false if Verovio could not read the score.
@@ -84,7 +108,7 @@ public final class ScoreRenderer: @unchecked Sendable {
         measureIDs = timemap.compactMap(\.measureOn)
         var seen = Set<String>()
         measureIDs = measureIDs.filter { seen.insert($0).inserted }
-        uncertainNoteIDs = []
+        uncertainLevels = [:]
         lastLoadSeconds = Date().timeIntervalSince(t0)
         return true
     }
@@ -96,7 +120,12 @@ public final class ScoreRenderer: @unchecked Sendable {
         var staves: [String: [String]] = [:]
         var notes: [String: [String]] = [:]
         var seenStaff = Set<String>(), seenNote = Set<String>()
+        var lines: [String: CGRect] = [:]
         for op in doc.ops {
+            if let last = op.owners.last, let path = op.path {
+                let id = doc.ids[Int(last)]
+                if doc.classes[id] == "staff" { lines[id] = (lines[id] ?? .null).union(path.boundingBoxOfPath) }
+            }
             var measure: String?, staff: String?
             for o in op.owners {
                 let id = doc.ids[Int(o)]
@@ -105,18 +134,52 @@ public final class ScoreRenderer: @unchecked Sendable {
                 case "staff": staff = id
                 case "note":
                     if let staff, seenNote.insert(id).inserted { notes[staff, default: []].append(id) }
-                    if op.color != nil { uncertainNoteIDs.insert(id) }
+                    if let c = op.color, uncertainLevels[id] == nil { uncertainLevels[id] = Self.level(of: c) }
                 default: break
                 }
             }
             if let measure, let staff, seenStaff.insert(staff).inserted { staves[measure, default: []].append(staff) }
         }
-        let p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes)
+        let p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes, staffLines: lines)
         pages[n] = p
         return p
     }
 
     public func renderAllPages() -> [Page] { (1...max(1, pageCount)).compactMap(page) }
+
+    /// One part's bars `first...last` (1-based printed order) on a single strip, for Check the notes.
+    public static func snippet(musicXML: String, partID: String, bars: ClosedRange<Int>, width: CGFloat, pitch: PitchMode = .written,
+                               resourcePath: String? = VerovioToolkit.defaultResourcePath()) -> Page? {
+        guard let tk = VerovioToolkit(resourcePath: resourcePath) else { return nil }
+        let scale = 40
+        tk.setOptions([
+            "pageWidth": max(500, Int(width * 100 / CGFloat(scale))), "pageHeight": 60000, "adjustPageHeight": true, "scale": scale,
+            "pageMarginLeft": 20, "pageMarginRight": 20, "pageMarginTop": 20, "pageMarginBottom": 20,
+            "breaks": "none", "font": "Leipzig", "svgHtml5": false, "header": "none", "footer": "none",
+            "transposeToSoundingPitch": pitch == .concert,
+        ])
+        let xml = MusicXMLFilter.keepingParts([partID], in: removingQuestionMarks(musicXML))
+        guard tk.loadData(xml) else { return nil }
+        tk.select(["measureRange": "\(bars.lowerBound)-\(bars.upperBound)"])
+        tk.redoLayout()
+        guard let doc = try? SVGDocument(svg: tk.renderToSVG(page: 1)) else { return nil }
+        var notes: [String: [String]] = [:]
+        var lines: [String: CGRect] = [:]
+        for op in doc.ops {
+            var staff: String?
+            for o in op.owners {
+                let id = doc.ids[Int(o)]
+                switch doc.classes[id] {
+                case "staff":
+                    staff = id
+                    if let path = op.path, o == op.owners.last { lines[id] = (lines[id] ?? .null).union(path.boundingBoxOfPath) }
+                case "note": if let staff, !(notes[staff] ?? []).contains(id) { notes[staff, default: []].append(id) }
+                default: break
+                }
+            }
+        }
+        return Page(number: 1, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: [:], notesByStaff: notes, staffLines: lines)
+    }
 
     /// Page holding a measure id.
     public func pageNumber(forMeasure id: String) -> Int {

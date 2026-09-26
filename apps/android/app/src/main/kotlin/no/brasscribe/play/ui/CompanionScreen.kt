@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,12 @@ fun CompanionScreen(vm: PlayViewModel) {
     var fixture by rememberSaveable { mutableStateOf(vm.container.usingFixture) }
     var details by rememberSaveable { mutableStateOf(false) }
     var heavy by rememberSaveable { mutableStateOf(settings.allowHeavy) }
+    val discovery = vm.container.discovery
+    val found by discovery.engines.collectAsState()
+    DisposableEffect(discovery) {
+        discovery.start()
+        onDispose { discovery.stop() }
+    }
 
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = stringResource(R.string.settings), status = status,
@@ -43,6 +50,18 @@ fun CompanionScreen(vm: PlayViewModel) {
     ) {
         ScreenTitle(stringResource(R.string.companion_title))
         Lead(stringResource(R.string.companion_explain))
+        if (found.isEmpty()) {
+            Text(stringResource(R.string.companion_searching), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+        } else {
+            RowGroup {
+                found.forEachIndexed { i, engine ->
+                    if (i > 0) RowDivider()
+                    val address = engine.url.removePrefix("http://")
+                    ListRow(engine.name, { url = engine.url }, subtitle = address, chevron = false,
+                        trailing = if (url == engine.url) ({ Text(stringResource(R.string.companion_chosen), color = c.textMuted) }) else null)
+                }
+            }
+        }
         OutlinedTextField(code, { code = it.trim() }, label = { Text(stringResource(R.string.companion_code)) }, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         OutlinedTextField(url, { url = it.trim() }, label = { Text(stringResource(R.string.companion_address)) }, singleLine = true,

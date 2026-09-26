@@ -18,8 +18,11 @@ public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, E
 /// Owns the child view models and the engine client; the WinUI shell binds <see cref="Screen"/> to
 /// its navigation and moves keyboard focus to each screen's heading.
 /// </summary>
-/// <summary>A row of "Your scores".</summary>
-public sealed record LibraryItem(string Id, string Title, string Subtitle);
+/// <summary>A row of "Your scores": a score on this PC, or a finished score on the paired computer.</summary>
+public sealed record LibraryItem(string Id, string Title, string Subtitle, bool OnComputer = false, string? JobId = null)
+{
+    public bool OnThisPc => !OnComputer;
+}
 
 public sealed partial class MainViewModel : ObservableObject
 {
@@ -49,6 +52,14 @@ public sealed partial class MainViewModel : ObservableObject
         Review = new ReviewViewModel(score, announcer, strings);
         Error = new ErrorViewModel(strings);
         Library = library;
+        Score.PersistEditedScore = (xml, compositionJson) =>
+        {
+            if (_libraryId is { } id) Library?.SaveMusicXml(id, xml, compositionJson);
+        };
+        Score.PersistEvidence = evidence =>
+        {
+            if (_libraryId is { } id) Library?.SaveEvidence(id, evidence);
+        };
         RefreshLibrary();
         if (library is not null) library.Changed += (_, _) => RefreshLibrary();
         Screen = settings.FirstRunDone ? Screen.Start : Screen.FirstRun;
@@ -107,9 +118,10 @@ public sealed partial class MainViewModel : ObservableObject
                 ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
                 : null;
             Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
+            Score.Evidence = r.Evidence;
             Score.Load(r.MusicXml, r.Composition);
             _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
-                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId).Id;
+                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence).Id;
             OpenReviewOrScore(rearranged);
         };
         Transcription.PropertyChanged += (_, e) =>
@@ -166,6 +178,27 @@ public sealed partial class MainViewModel : ObservableObject
     private (SourceAudio Source, SourceKindOption Kind)? _lastChoice;
     private string? _libraryId;
 
+    public bool RenameCurrentScore(string title)
+    {
+        string cleaned = title.Trim();
+        if (cleaned.Length == 0 || _libraryId is not { } id || Library is null || Score.MusicXml is null) return false;
+        try
+        {
+            Library.Rename(id, cleaned);
+            if (Score.Composition is { } composition) composition.Title = cleaned;
+            var entry = Library.Entries.FirstOrDefault(e => e.Id == id);
+            if (entry is null) return false;
+            Score.Load(File.ReadAllText(entry.MusicXmlPath), Score.Composition);
+            if (entry.JobId is { } jobId) _ = RenameOnComputerAsync(jobId, cleaned);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Xml.XmlException or FormatException)
+        {
+            _announcer.Announce(_s.Format("Score_RenameFailed", cleaned), AnnouncementKind.Important);
+            return false;
+        }
+    }
+
     /// <summary>First run: "Get started" goes Home and the screen is not shown again.</summary>
     [RelayCommand]
     private void GetStarted()
@@ -186,6 +219,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenLibraryItem(LibraryItem? item)
     {
+        if (item is { OnComputer: true }) { _ = OpenLibraryItemAsync(item); return; }
         if (item is null || Library?.Entries.FirstOrDefault(e => e.Id == item.Id) is not { } entry) return;
         try
         {
@@ -195,6 +229,7 @@ public sealed partial class MainViewModel : ObservableObject
             _libraryId = entry.Id;
             Output.HasEngineJob = false;
             Output.LayerSource = null;
+            Score.Evidence = Library.LoadEvidence(entry);
             Score.Load(xml, composition);
             Screen = Screen.Score;
         }
@@ -237,22 +272,157 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>"Your scores" has entries (else Home shows the empty state).</summary>
     [ObservableProperty] public partial bool HasLibrary { get; set; }
 
+    private IReadOnlyList<Job> _computerJobs = [];
+
+    /// <summary>Fetches the computer's finished scores; keeps this PC's list when the computer can't be reached.</summary>
+    public async Task RefreshComputerScoresAsync()
+    {
+        try
+        {
+            _computerJobs = await Engine.ListJobsAsync();
+        }
+        catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
+                                   or System.Text.Json.JsonException)
+        {
+            _computerJobs = [];
+        }
+        RefreshLibrary();
+    }
+
+    /// <summary>Opens any row: a computer score is downloaded into the library first. <paramref name="review"/> goes to "Check the notes".</summary>
+    public async Task OpenLibraryItemAsync(LibraryItem item, bool review = false)
+    {
+        if (item.OnComputer && item.JobId is { } jobId)
+        {
+            try
+            {
+                var job = await Engine.GetJobAsync(jobId);
+                var composition = await Engine.GetCompositionAsync(jobId);
+                string xml;
+                await using (var stream = await Engine.DownloadAsync(jobId, JobDownload.MusicXml))
+                using (var reader = new StreamReader(stream))
+                    xml = await reader.ReadToEndAsync();
+                Evidence? evidence = null;
+                try { evidence = await Engine.GetEvidenceAsync(jobId); }
+                catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
+                _result = null;
+                Output.HasEngineJob = false;
+                Output.LayerSource = null;
+                Score.Evidence = evidence;
+                Score.Load(xml, composition);
+                _libraryId = Library?.AddMade(job.Title ?? item.Title, xml, composition, Score.Parts.Count, Score.Player.BarCount,
+                    Score.UncertainLeft, jobId, evidence).Id;
+                Screen = Screen.Score;
+            }
+            catch (Exception e) when (e is EngineException or HttpRequestException or IOException or FormatException
+                                       or System.Xml.XmlException or System.Text.Json.JsonException or Bridge.CoreBridgeException)
+            {
+                Start.ErrorText = _s.Format("Start_Error_Score", item.Title);
+                _announcer.Announce(Start.ErrorText, AnnouncementKind.Important);
+                return;
+            }
+        }
+        else OpenLibraryItem(item);
+        if (review && Screen == Screen.Score) CheckNotes();
+    }
+
+    /// <summary>"Edit title" on any row; a score from the computer is renamed there too.</summary>
+    public async Task<bool> RenameLibraryItemAsync(LibraryItem item, string title)
+    {
+        string cleaned = title.Trim();
+        if (cleaned.Length == 0) return false;
+        if (item.OnComputer)
+        {
+            if (item.JobId is not { } jobId || !await RenameOnComputerAsync(jobId, cleaned)) return false;
+            await RefreshComputerScoresAsync();
+            return true;
+        }
+        if (_libraryId == item.Id) return RenameCurrentScore(cleaned);
+        if (Library?.Entries.FirstOrDefault(e => e.Id == item.Id) is not { } entry) return false;
+        try
+        {
+            Library.Rename(item.Id, cleaned);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Xml.XmlException or FormatException)
+        {
+            _announcer.Announce(_s.Format("Score_RenameFailed", cleaned), AnnouncementKind.Important);
+            return false;
+        }
+        if (entry.JobId is { } job) _ = RenameOnComputerAsync(job, cleaned);
+        return true;
+    }
+
+    /// <summary>"Delete" on any row: this PC's copy, or the run on the computer.</summary>
+    public async Task<bool> DeleteLibraryItemAsync(LibraryItem item)
+    {
+        if (item.OnComputer)
+        {
+            try
+            {
+                if (item.JobId is { } jobId) await Engine.DeleteRunAsync(jobId);
+            }
+            catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
+            {
+                _announcer.Announce(_s.Format("Library_DeleteFailed", item.Title), AnnouncementKind.Important);
+                return false;
+            }
+            await RefreshComputerScoresAsync();
+        }
+        else
+        {
+            Library?.Remove(item.Id);
+            if (_libraryId == item.Id)
+            {
+                _libraryId = null;
+                if (Screen is Screen.Score or Screen.Review or Screen.ChooseOutput) Screen = Screen.Start;
+            }
+        }
+        _announcer.Announce(_s.Format("Library_Deleted", item.Title));
+        return true;
+    }
+
+    private async Task<bool> RenameOnComputerAsync(string jobId, string title)
+    {
+        try
+        {
+            await Engine.RenameRunAsync(jobId, title);
+            return true;
+        }
+        catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
+        {
+            return false;
+        }
+    }
+
     private void RefreshLibrary()
     {
         LibraryItems.Clear();
-        HasLibrary = Library is { Entries.Count: > 0 };
-        if (Library is null) return;
-        foreach (var e in Library.Entries.Take(20))
-            LibraryItems.Add(new LibraryItem(e.Id, e.Title, LibrarySubtitle(e)));
+        var rows = new List<(DateTimeOffset When, LibraryItem Item)>();
+        if (Library is not null)
+            rows.AddRange(Library.Entries.Select(e => (e.Updated, new LibraryItem(e.Id, e.Title, LibrarySubtitle(e)))));
+        // The computer's finished runs not already here; re-runs of one recording collapse to the latest.
+        var downloaded = Library?.Entries.Select(e => e.JobId).OfType<string>().ToHashSet() ?? [];
+        var seenAudio = new HashSet<string>();
+        foreach (var j in _computerJobs.OrderByDescending(j => j.Created))
+        {
+            if (j.Status != JobStatus.Succeeded || !(j.Outputs ?? []).Any(o => o.EndsWith(".musicxml", StringComparison.OrdinalIgnoreCase))) continue;
+            if (j.AudioId is { } audio && !seenAudio.Add(audio)) continue;
+            if (downloaded.Contains(j.Id)) continue;
+            var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(j.Created * 1000)).ToLocalTime();
+            rows.Add((when, new LibraryItem("job:" + j.Id, j.Title ?? j.Id, _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
+        }
+        foreach (var (_, item) in rows.OrderByDescending(r => r.When).Take(20)) LibraryItems.Add(item);
+        HasLibrary = LibraryItems.Count > 0;
     }
+
+    private string WhenText(DateTimeOffset when) => when.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
+        : when.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
 
     private string LibrarySubtitle(LibraryEntry e)
     {
         string lineup = _s[e.Parts <= 1 ? "Library_OnePart" : e.Parts <= 6 ? "Library_SmallBand" : "Library_FullBand"];
-        string when = e.Updated.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
-            : e.Updated.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
         string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
-        return _s.Format("Library_Subtitle", lineup, e.Bars, when) + check;
+        return _s.Format("Library_Subtitle", lineup, e.Bars, WhenText(e.Updated)) + check;
     }
 
     public IEngineClient Engine => _engine ??= _engineFactory(Settings.EngineUri, Settings.EngineToken);
@@ -272,6 +442,7 @@ public sealed partial class MainViewModel : ObservableObject
             _result = null;
             Output.HasEngineJob = false;
             Output.LayerSource = null;
+            Score.Evidence = null;
             Score.Load(xml, null);
             _libraryId = Library?.AddOpened(path, Score.Title is { Length: > 0 } t ? t : Path.GetFileNameWithoutExtension(path),
                 Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft).Id;

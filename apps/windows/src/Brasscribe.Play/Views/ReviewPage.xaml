@@ -92,16 +92,61 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Spacing="4">
                         <TextBlock Style="{StaticResource BcTitle2TextBlockStyle}" Foreground="{ThemeResource BcTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
-                        <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{x:Bind ViewModel.ListenCommand}" VerticalAlignment="Top">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
-                            <TextBlock x:Uid="ReviewListenLabel" />
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Top">
+                        <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{x:Bind ViewModel.ListenCommand}" HorizontalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
+                                <TextBlock x:Uid="ReviewListenLabel" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ChangeNoteButton" x:Uid="ReviewChangeNoteButton" Style="{StaticResource SecondaryButtonStyle}"
+                                Click="OnChangeNote" HorizontalAlignment="Stretch" IsEnabled="{x:Bind ViewModel.HasCurrent, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource BcIconTranspose}" FontSize="16" />
+                                <TextBlock x:Uid="ReviewChangeNoteLabel" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
+                <!-- How sure Brasscribe is, and what each transcriber heard at this note. -->
+                <Border Style="{StaticResource CardStyle}" Padding="16" Visibility="{x:Bind ViewModel.HasEvidence, Mode=OneWay}">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <TextBlock x:Uid="ReviewHowSure" Style="{StaticResource HeadlineStyle}" />
+                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource HeadlineStyle}" Text="{x:Bind ViewModel.ConfidenceText, Mode=OneWay}" />
+                        </Grid>
+                        <ProgressBar x:Uid="ReviewConfidence" Maximum="100" Value="{x:Bind ViewModel.ConfidencePercent, Mode=OneWay}"
+                                     Foreground="{ThemeResource BcTextBrush}" Background="{ThemeResource BcBorderBrush}" MinHeight="4"
+                                     AutomationProperties.ItemStatus="{x:Bind ViewModel.ConfidenceText, Mode=OneWay}" />
+                        <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,4" />
+                        <TextBlock x:Uid="ReviewHeardHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Heard}" IsTabStop="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:EvidenceRow">
+                                    <Grid ColumnSpacing="12" MinHeight="32" AutomationProperties.Name="{x:Bind AccessibleName}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                                  Visibility="{x:Bind Agrees}" AutomationProperties.AccessibilityView="Raw" />
+                                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                                  Visibility="{x:Bind Differs}" AutomationProperties.AccessibilityView="Raw" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Name}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{x:Bind Heard}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center"
+                                                   Visibility="{x:Bind Agrees}" />
+                                        <TextBlock Grid.Column="2" Text="{x:Bind Heard}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center"
+                                                   FontWeight="SemiBold" Visibility="{x:Bind Differs}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
                 <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,16" />
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>

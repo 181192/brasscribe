@@ -140,8 +140,14 @@ fn contour_offsets_and_written_durations_match_reference() {
     for (i, c) in load("durations").iter().enumerate() {
         let contour = Contour::from_hz(f64s(&c["t"]), &f64s(&c["hz"]), f64s(&c["db"]));
         let want_midi: Vec<Option<f64>> = c["midi"].as_array().unwrap().iter().map(|x| x.as_f64()).collect();
-        let got_midi: Vec<Option<f64>> = contour.midi.iter().map(|&x| if x.is_nan() { None } else { Some(x) }).collect();
-        assert_eq!(got_midi, want_midi, "hz -> midi case {i}");
+        assert_eq!(contour.midi.len(), want_midi.len(), "hz -> midi length case {i}");
+        // log2 is not correctly rounded, so glibc and the MSVC CRT can differ from Apple's libm by an ulp.
+        for (j, (&got, want)) in contour.midi.iter().zip(&want_midi).enumerate() {
+            match want {
+                None => assert!(got.is_nan(), "hz -> midi case {i}[{j}]: {got} != NaN"),
+                Some(w) => assert!((got - w).abs() <= 1e-9, "hz -> midi case {i}[{j}]: {got} != {w}"),
+            }
+        }
         let notes: Vec<(f64, i32)> = c["notes"].as_array().unwrap().iter().map(|n| (n[0].as_f64().unwrap(), n[1].as_i64().unwrap() as i32)).collect();
         let settings = if c["separated"].as_bool().unwrap() { SEPARATED_STEM } else { ContourSettings::default() };
         assert_eq!(contour_offsets(&contour, &notes, settings), f64s(&c["ends"]), "contour offsets case {i}");

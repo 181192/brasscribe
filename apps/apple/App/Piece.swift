@@ -16,6 +16,9 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var remoteArtifacts: [ArtifactKind]
     /// Folder with engine outputs when the piece came from the fixture service.
     var fixtureDirectory: String?
+    /// Summary for the library: number of bars, and uncertain notes still to check.
+    var bars: Int?
+    var toCheck: Int?
 
     static var libraryURL: URL {
         let base = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
@@ -29,10 +32,17 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var originalURL: URL? { originalFile.map { folder.appending(path: $0) } }
     var videoURL: URL? { videoFile.map { folder.appending(path: $0) } }
     var metaURL: URL { folder.appending(path: "piece.json") }
+    var evidenceURL: URL { folder.appending(path: "evidence.json") }
 
     func loadScore() throws -> Score { try MusicXMLParser.parse(url: scoreURL) }
     func loadComposition() -> Composition? { try? Composition.decode(Data(contentsOf: compositionURL)) }
+    func loadEvidence() -> NoteEvidence? { try? JSONDecoder().decode(NoteEvidence.self, from: Data(contentsOf: evidenceURL)) }
+    func saveEvidence(_ e: NoteEvidence) { try? JSONEncoder().encode(e).write(to: evidenceURL, options: .atomic) }
     func musicXML() throws -> String { try String(contentsOf: scoreURL, encoding: .utf8) }
+
+    func saveMusicXML(_ xml: String) throws {
+        try Data(xml.utf8).write(to: scoreURL, options: .atomic)
+    }
 
     func save() throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -60,6 +70,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try fm.createDirectory(at: p.folder, withIntermediateDirectories: true)
         try result.musicXML.write(to: p.scoreURL)
         if let c = result.composition { try JSONEncoder().encode(c).write(to: p.compositionURL) }
+        if let e = result.evidence { p.saveEvidence(e) }
         if let original {
             let name = "original." + (original.pathExtension.isEmpty ? "wav" : original.pathExtension)
             try? fm.removeItem(at: p.folder.appending(path: name))
@@ -71,11 +82,49 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
             try fm.copyItem(at: video, to: p.folder.appending(path: name))
             p.videoFile = name
         }
+        if let score = try? MusicXMLParser.parse(result.musicXML) {
+            p.bars = score.measures.count
+            p.toCheck = ReviewList.items(score: score, uncertainty: result.composition.map(UncertaintyIndex.init) ?? .empty).count
+        }
         try p.save()
         return p
     }
 
     func delete() { try? FileManager.default.removeItem(at: folder) }
+
+    // Identity is the id; the summary fields change as notes are checked.
+    static func == (a: Piece, b: Piece) -> Bool { a.id == b.id }
+    func hash(into h: inout Hasher) { h.combine(id) }
+
+    // MARK: checked notes
+
+    var checkedURL: URL { folder.appending(path: "checked.json") }
+
+    /// Review items the musician kept.
+    func loadChecked() -> Set<String> {
+        (try? JSONDecoder().decode(Set<String>.self, from: Data(contentsOf: checkedURL))) ?? []
+    }
+
+    func saveChecked(_ ids: Set<String>, remaining: Int) {
+        try? JSONEncoder().encode(ids).write(to: checkedURL)
+        var p = self
+        p.toCheck = remaining
+        try? p.save()
+    }
+
+    /// "Brass band · 64 bars · Today · 3 notes to check"
+    var summary: String {
+        var bits: [String] = []
+        if let profile { bits.append(profile.shortTitle) }
+        if let bars { bits.append(String(localized: "\(bars) bars")) }
+        bits.append(created.formatted(.relative(presentation: .named, unitsStyle: .wide)).capitalizedFirst)
+        if let toCheck, toCheck > 0 { bits.append(toCheck == 1 ? String(localized: "1 note to check") : String(localized: "\(toCheck) notes to check")) }
+        return bits.joined(separator: " · ")
+    }
+}
+
+extension String {
+    var capitalizedFirst: String { prefix(1).uppercased(with: .current) + dropFirst() }
 }
 
 extension Composition {

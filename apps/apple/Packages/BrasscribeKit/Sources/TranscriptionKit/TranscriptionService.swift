@@ -92,8 +92,10 @@ public struct TranscriptionResult: Sendable {
     public var composition: Composition?
     public var musicXML: Data
     public var available: Set<ArtifactKind>
-    public init(jobID: String, composition: Composition?, musicXML: Data, available: Set<ArtifactKind>) {
+    public var evidence: NoteEvidence?
+    public init(jobID: String, composition: Composition?, musicXML: Data, available: Set<ArtifactKind>, evidence: NoteEvidence? = nil) {
         self.jobID = jobID; self.composition = composition; self.musicXML = musicXML; self.available = available
+        self.evidence = evidence
     }
 }
 
