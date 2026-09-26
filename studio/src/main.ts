@@ -1,4 +1,4 @@
-// Studio entry: hash router, engine status, global keyboard shortcuts.
+// Studio entry: hash router, language, engine status, global keyboard shortcuts.
 import { api } from "./api/client";
 // Custom elements register themselves on import.
 import "./components/audio";
@@ -8,6 +8,7 @@ import "./components/score";
 import "./components/stagegraph";
 import "./components/stems";
 import type { ScoreElement } from "./components/score";
+import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
 import { clear, h } from "./ui/dom";
 import { benchView } from "./views/bench";
 import { compareView } from "./views/compare";
@@ -18,16 +19,16 @@ import { runView } from "./views/run";
 import { runsView } from "./views/runs";
 import { viewerView } from "./views/viewer";
 
-type Route = { name: string; title: string; render: (root: HTMLElement, args: string[], q: URLSearchParams) => void | (() => void) };
+type Route = { name: string; title: () => string; render: (root: HTMLElement, args: string[], q: URLSearchParams) => void | (() => void) };
 
 const routes: Route[] = [
-  { name: "runs", title: "Runs", render: (r, a, q) => (a[0] ? runView(r, decodeURIComponent(a[0]), a[1], q) : runsView(r)) },
-  { name: "viewer", title: "Score viewer", render: (r, _a, q) => viewerView(r, q) },
-  { name: "compare", title: "Compare runs", render: (r, _a, q) => compareView(r, q) },
-  { name: "bench", title: "Benchmarks", render: (r) => benchView(r) },
-  { name: "parity", title: "Conversion parity", render: (r) => parityView(r) },
-  { name: "conformance", title: "Core conformance", render: (r) => conformanceView(r) },
-  { name: "registry", title: "Datasets and models", render: (r) => registryView(r) },
+  { name: "runs", title: () => t("nav.runs"), render: (r, a, q) => (a[0] ? runView(r, decodeURIComponent(a[0]), a[1], q) : runsView(r)) },
+  { name: "viewer", title: () => t("nav.viewer"), render: (r, _a, q) => viewerView(r, q) },
+  { name: "compare", title: () => t("title.compare"), render: (r, _a, q) => compareView(r, q) },
+  { name: "bench", title: () => t("nav.bench"), render: (r) => benchView(r) },
+  { name: "parity", title: () => t("nav.parity"), render: (r) => parityView(r) },
+  { name: "conformance", title: () => t("nav.conformance"), render: (r) => conformanceView(r) },
+  { name: "registry", title: () => t("nav.registry"), render: (r) => registryView(r) },
 ];
 
 let cleanup: (() => void) | void;
@@ -44,7 +45,7 @@ function route(initial = false): void {
   }
   if (typeof cleanup === "function") cleanup();
   clear(main);
-  document.title = `${r.title} – Brasscribe Studio`;
+  document.title = `${r.title()} – Brasscribe Studio`;
   cleanup = r.render(main, args, new URLSearchParams(query));
   // Move focus to the new view so keyboard and screen-reader users start there.
   const heading = main.querySelector("h1");
@@ -54,63 +55,99 @@ function route(initial = false): void {
   }
 }
 
-async function engineStatus(): Promise<void> {
+let health: { version: string; device: string } | null | undefined;
+
+function renderStatus(): void {
   const el = document.getElementById("engine-status")!;
-  try {
-    const hlt = await api.health();
-    el.textContent = `Engine ${hlt.version} · accelerator ${hlt.device}`;
-  } catch {
-    el.textContent = "Engine not reachable";
-  }
+  el.textContent = health === undefined ? t("app.connecting") : health ? t("app.engine", health) : t("app.engineDown");
 }
 
+async function engineStatus(): Promise<void> {
+  try {
+    health = await api.health();
+  } catch {
+    health = null;
+  }
+  renderStatus();
+}
+
+/** Static page chrome: header, nav, footer, and the lang attribute. */
+function translateChrome(): void {
+  document.documentElement.lang = lang();
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-i18n]"))) el.textContent = t(el.dataset.i18n!);
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-i18n-label]"))) el.setAttribute("aria-label", t(el.dataset.i18nLabel!));
+  const kbd = (k: string) => `\u0001${k}\u0002`;
+  const link = (href: string, label: string) => `\u0003${href}\u0004${label}\u0005`;
+  const raw = t("app.footer", { f1: kbd("F1"), q: kbd("?"), docs: link("/docs", "/docs"), openapi: link("/openapi.json", "openapi.json"), alphatab: link("https://alphatab.net", "alphaTab") });
+  const footer = document.getElementById("footer-text")!;
+  footer.replaceChildren();
+  for (const part of raw.split(/(\u0001[^\u0002]*\u0002|\u0003[^\u0005]*\u0005)/)) {
+    if (part.startsWith("\u0001")) footer.append(h("kbd", {}, part.slice(1, -1)));
+    else if (part.startsWith("\u0003")) {
+      const [href, label] = part.slice(1, -1).split("\u0004");
+      footer.append(h("a", { href }, label));
+    } else if (part) footer.append(part);
+  }
+  renderStatus();
+  const sel = document.getElementById("lang-select") as HTMLSelectElement;
+  sel.value = lang();
+}
+
+let dialog: HTMLDialogElement | null = null;
+
 function shortcutsDialog(): HTMLDialogElement {
+  dialog?.remove();
   const row = (keys: string, what: string) => h("tr", {}, h("td", {}, keys.split(" / ").map((k, i) => [i ? " / " : "", h("kbd", {}, k)])), h("td", {}, what));
   const dlg = h("dialog", { id: "shortcuts", "aria-labelledby": "shortcuts-h" },
-    h("h2", { id: "shortcuts-h" }, "Keyboard shortcuts"),
-    h("h3", {}, "Anywhere"),
+    h("h2", { id: "shortcuts-h" }, t("shortcuts.title")),
+    h("h3", {}, t("shortcuts.anywhere")),
     h("table", {}, h("tbody", {},
-      row("Ctrl/⌘+O", "Open a MusicXML file in the score viewer"),
-      row("Ctrl/⌘+Shift+Space", "Play or pause the score on this page"),
-      row("Ctrl/⌘+G", "Go to bar"),
-      row("F1 / ?", "This list"),
-      row("Esc", "Close this list, or leave the score"))),
-    h("h3", {}, "While the score has focus"),
+      row("Ctrl/⌘+O", t("shortcuts.open")),
+      row("Ctrl/⌘+Shift+Space", t("shortcuts.playPause")),
+      row("Ctrl/⌘+G", t("shortcuts.goToBar")),
+      row("Alt+T", t("shortcuts.talking")),
+      row("F1 / ?", t("shortcuts.thisList")),
+      row("Esc", t("shortcuts.close")))),
+    h("h3", {}, t("shortcuts.inScore")),
     h("table", {}, h("tbody", {},
-      row("Space", "Play or pause"),
-      row("Alt+↓ / Alt+↑", "Next or previous bar (Ctrl+↓/↑ also works)"),
-      row("→ / ←", "Forward or back one beat"),
-      row("Ctrl+Shift+↓ / Ctrl+Shift+↑", "Next or previous part"),
-      row("Home / End", "First or last bar"),
-      row("P", "Play the current bar"),
-      row("R / W", "Read the current bar"),
-      row("[ / ]", "Loop start or end at the current bar"),
-      row("L", "Loop on or off"),
-      row("- / = / 0", "Speed down 5%, up 5%, reset"),
-      row("M / S", "Mute or solo the current part"),
-      row("Ctrl+- / Ctrl+= / Ctrl+0", "Zoom out, in, reset"),
-      row("Tab / Shift+Tab / Esc", "Leave the score"))),
-    h("p", { class: "hint" }, "Single-letter keys only work while the score has focus, so they never fire in text fields."),
-    h("form", { method: "dialog" }, h("button", { type: "submit", class: "primary" }, "Close")));
+      row("Space", t("shortcuts.s.play")),
+      row("→ / ←", t("shortcuts.s.note")),
+      row("Ctrl+→ / Ctrl+←", t("shortcuts.s.beat")),
+      row("Alt+↓ / Alt+↑", t("shortcuts.s.bar")),
+      row("Ctrl+Shift+↓ / Ctrl+Shift+↑", t("shortcuts.s.part")),
+      row("Home / End", t("shortcuts.s.home")),
+      row("U / Shift+U", t("shortcuts.s.uncertain")),
+      row("P", t("shortcuts.s.playBar")),
+      row("R", t("shortcuts.s.read")),
+      row("W", t("shortcuts.s.where")),
+      row("[ / ]", t("shortcuts.s.loop")),
+      row("L", t("shortcuts.s.loopToggle")),
+      row("- / = / 0", t("shortcuts.s.speed")),
+      row("M / S", t("shortcuts.s.mute")),
+      row("Ctrl+- / Ctrl+= / Ctrl+0", t("shortcuts.s.zoom")),
+      row("Tab / Shift+Tab / Esc", t("shortcuts.s.leave")))),
+    h("p", { class: "hint" }, t("shortcuts.hint")),
+    h("form", { method: "dialog" }, h("button", { type: "submit", class: "primary" }, t("shortcuts.closeBtn"))));
   document.body.append(dlg);
+  dialog = dlg;
   return dlg;
 }
 
 function typing(e: KeyboardEvent): boolean {
-  const t = e.target as HTMLElement | null;
-  return !!t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName));
+  const el = e.target as HTMLElement | null;
+  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
 }
 
 function pageScore(): ScoreElement | null {
   return document.querySelector<ScoreElement>("#main bs-score");
 }
 
-function globalKeys(dlg: HTMLDialogElement): void {
+function globalKeys(): void {
   document.addEventListener("keydown", (e) => {
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === "F1" || (e.key === "?" && !typing(e) && !mod)) {
       e.preventDefault();
-      if (!dlg.open) dlg.showModal();
+      if (dialog && !dialog.open) dialog.showModal();
     } else if (mod && !e.shiftKey && (e.key === "o" || e.key === "O")) {
       e.preventDefault();
       if (!location.hash.startsWith("#/viewer")) location.hash = "#/viewer";
@@ -125,11 +162,25 @@ function globalKeys(dlg: HTMLDialogElement): void {
         input.focus();
         input.select();
       }
+    } else if (e.altKey && !mod && e.code === "KeyT") {
+      const s = pageScore();
+      if (s) {
+        e.preventDefault();
+        s.showTalking();
+      }
     }
   });
 }
 
+document.getElementById("lang-select")!.addEventListener("change", (e) => setLang((e.target as HTMLSelectElement).value as Lang));
+onLangChange(() => {
+  translateChrome();
+  shortcutsDialog();
+  route(true);
+});
+translateChrome();
+shortcutsDialog();
 engineStatus();
-globalKeys(shortcutsDialog());
+globalKeys();
 window.addEventListener("hashchange", () => route());
 route(true);

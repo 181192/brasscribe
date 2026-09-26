@@ -7,6 +7,7 @@ from brasscribe_music.score_model import (Articulation, Composition, FreeNotatio
                                           Voice, VoiceRole)
 
 GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
+GOLDEN_V1 = GOLDEN.parents[1] / "mikkel-arranged-band.v1" / "composition.json"  # written before free time and durations
 
 
 def _comp() -> Composition:
@@ -48,11 +49,18 @@ def test_bpm_ignores_free_regions():
 
 
 @pytest.mark.skipif(not GOLDEN.exists(), reason="golden output not available")
-def test_golden_composition_loads_and_rewrites_losslessly(tmp_path):
-    c = Composition.from_json(GOLDEN)
+def test_golden_composition_rewrites_byte_identical(tmp_path):
+    p = tmp_path / "g.json"
+    Composition.from_json(GOLDEN).to_json(p)
+    assert p.read_bytes() == GOLDEN.read_bytes()
+
+
+@pytest.mark.skipif(not GOLDEN_V1.exists(), reason="pre-free-time golden output not available")
+def test_legacy_composition_loads_and_rewrites_losslessly(tmp_path):
+    c = Composition.from_json(GOLDEN_V1)
     p = tmp_path / "g.json"
     c.to_json(p)
-    old, new = json.loads(GOLDEN.read_text()), json.loads(p.read_text())
+    old, new = json.loads(GOLDEN_V1.read_text()), json.loads(p.read_text())
     assert new.pop("free_regions") == [] and new.pop("dynamics") == [] and new.pop("sections") == []
     for v in new["voices"]:
         for n in v["notes"]:

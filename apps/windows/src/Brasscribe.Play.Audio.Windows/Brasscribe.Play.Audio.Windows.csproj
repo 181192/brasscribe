@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Windows audio: WASAPI capture (microphone, system loopback, per-app process loopback), Media Foundation decoding, WASAPI output. -->
+  <PropertyGroup>
+    <TargetFramework>$(BrasscribeWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(BrasscribeWindowsMinVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Brasscribe.Play.Audio.Windows</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio.Core" />
+    <PackageReference Include="NAudio.Wasapi" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Brasscribe.Play.Core\Brasscribe.Play.Core.csproj" />
+  </ItemGroup>
+</Project>

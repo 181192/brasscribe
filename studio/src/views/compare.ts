@@ -1,58 +1,66 @@
 // Compare two runs (or a run and a reference such as data/golden): note-level
-// diff, a piano-roll overlay and metric deltas.
+// diff, both scores side by side with the differing notes marked, a
+// piano-roll overlay and metric deltas.
 import { api, fetchText } from "../api/client";
 import type { Composition, Job, Reference } from "../api/types";
 import { PianoRoll, type RollLayer, type RollNote } from "../components/pianoroll";
+import type { NoteMark } from "../components/score";
+import { lang, t } from "../i18n";
 import { tickTime } from "../lib/beats";
 import { diffCompositions, type ChangeKind, type CompositionDiff } from "../lib/diff";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
+import { partNameNb } from "../lib/talkingxml";
 import { pitchName } from "../lib/validate";
-import { clear, errorNotice, fmt, h, loading, pill, table } from "../ui/dom";
+import { diffParts, type MarkKind } from "../lib/xmldiff";
+import { announce, clear, errorNotice, fmt, h, loading, pill, table } from "../ui/dom";
 
 interface Side {
   key: string;
   label: string;
   composition: Composition;
+  xmlText: string | null;
   xml: XmlScore | null;
 }
 
 async function loadSide(key: string, jobs: Job[]): Promise<Side> {
+  const parse = (x: string | null) => {
+    try {
+      return x ? parseMusicXml(x) : null;
+    } catch {
+      return null;
+    }
+  };
   if (key.startsWith("ref:")) {
     const name = key.slice(4);
     const [c, x] = await Promise.all([
-      fetchText(api.referenceFileUrl(name, "composition.json")).then((t) => JSON.parse(t) as Composition),
-      fetchText(api.referenceFileUrl(name, "brass-band.musicxml")).then(parseMusicXml).catch(() => null),
+      fetchText(api.referenceFileUrl(name, "composition.json")).then((s) => JSON.parse(s) as Composition),
+      fetchText(api.referenceFileUrl(name, "brass-band.musicxml")).catch(() => null),
     ]);
-    return { key, label: `reference ${name}`, composition: c, xml: x };
+    return { key, label: t("cmp.reference", { name }), composition: c, xmlText: x, xml: parse(x) };
   }
   const job = jobs.find((j) => j.id === key);
-  const [c, x] = await Promise.all([
-    api.composition(key),
-    fetchText(api.musicxmlUrl(key)).then(parseMusicXml).catch(() => null),
-  ]);
-  return { key, label: job?.title ? `${job.title} (${key})` : key, composition: c, xml: x };
+  const [c, x] = await Promise.all([api.composition(key), fetchText(api.musicxmlUrl(key)).catch(() => null)]);
+  return { key, label: job?.title ? `${job.title} (${key})` : key, composition: c, xmlText: x, xml: parse(x) };
 }
 
 export function compareView(root: HTMLElement, q: URLSearchParams): void {
   const form = h("div", {}, loading());
   const out = h("div", {});
-  clear(root, h("h1", {}, "Compare runs"),
-    h("p", {}, "Pick a base (A) and another run or a reference (B). Notes are matched voice by voice: identical, octave shift, moved (same pitch within a beat) or added and removed."),
-    form, out);
+  clear(root, h("h1", {}, t("title.compare")), h("p", {}, t("cmp.intro")), form, out);
 
   Promise.all([api.jobs(), api.references().catch(() => [] as Reference[])]).then(([jobs, refs]) => {
     const done = jobs.filter((j) => j.outputs?.includes("composition.json"));
     const opts = (sel: string | null) => [
-      h("optgroup", { label: "Runs" }, done.map((j) => h("option", { value: j.id, selected: j.id === sel }, `${j.title ?? j.id} · ${j.id}`))),
-      h("optgroup", { label: "References" }, refs.map((r) => h("option", { value: `ref:${r.name}`, selected: `ref:${r.name}` === sel }, r.name))),
+      h("optgroup", { label: t("cmp.runs") }, done.map((j) => h("option", { value: j.id, selected: j.id === sel }, `${j.title ?? j.id} · ${j.id}`))),
+      h("optgroup", { label: t("cmp.refs") }, refs.map((r) => h("option", { value: `ref:${r.name}`, selected: `ref:${r.name}` === sel }, r.name))),
     ];
     const a = h("select", { id: "cmp-a" }, opts(q.get("a") ?? done[0]?.id ?? null));
     const b = h("select", { id: "cmp-b" }, opts(q.get("b") ?? (refs[0] ? `ref:${refs[0].name}` : done[1]?.id ?? null)));
     const tol = h("input", { type: "number", id: "cmp-tol", min: 0, max: 4, step: 0.25, value: 1 });
     const f = h("form", { class: "row" },
-      h("label", { for: "cmp-a" }, "A (base)"), a, h("label", { for: "cmp-b" }, "B"), b,
-      h("label", { for: "cmp-tol" }, "Moved within (beats)"), tol,
-      h("button", { type: "submit", class: "primary" }, "Compare"));
+      h("label", { for: "cmp-a" }, t("cmp.a")), a, h("label", { for: "cmp-b" }, t("cmp.b")), b,
+      h("label", { for: "cmp-tol" }, t("cmp.tol")), tol,
+      h("button", { type: "submit", class: "primary" }, t("cmp.go")));
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       history.replaceState(null, "", `#/compare?a=${encodeURIComponent(a.value)}&b=${encodeURIComponent(b.value)}`);
@@ -60,14 +68,14 @@ export function compareView(root: HTMLElement, q: URLSearchParams): void {
     });
     clear(form, f);
     const run = async (ka: string, kb: string, tolerance: number) => {
-      clear(out, loading("Loading both runs…"));
+      clear(out, loading(t("cmp.loading")));
       try {
         const [sa, sb] = await Promise.all([loadSide(ka, jobs), loadSide(kb, jobs)]);
         const diff = diffCompositions(sa.composition, sb.composition, tolerance);
         const engine = !ka.startsWith("ref:")
           ? await api.compare(ka, kb.startsWith("ref:") ? { reference: kb.slice(4) } : { job: kb }).catch((x) => x as Error)
           : null;
-        clear(out, renderDiff(sa, sb, diff, engine));
+        clear(out, renderDiff(sa, sb, diff, engine, tolerance));
       } catch (x) {
         clear(out, errorNotice(x));
       }
@@ -78,21 +86,33 @@ export function compareView(root: HTMLElement, q: URLSearchParams): void {
 
 const KINDS: ChangeKind[] = ["same", "added", "removed", "moved", "octave"];
 
-function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<ReturnType<typeof api.compare>> | Error | null): HTMLElement[] {
-  const t = d.totals;
-  const changed = t.added + t.removed + t.moved + t.octave;
+// Colours for marks on the white score paper (light-theme tokens) and the notehead that repeats them.
+const MARK: Record<MarkKind, NoteMark> = {
+  removed: { colour: "#B3261E", head: "x" },
+  added: { colour: "#1D6B2C", head: "diamond" },
+  octave: { colour: "#B04A00", head: "triangle" },
+  moved: { colour: "#6B3FA0", head: "square" },
+};
+
+function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<ReturnType<typeof api.compare>> | Error | null, tolerance: number): HTMLElement[] {
+  const tt = d.totals;
+  const changed = tt.added + tt.removed + tt.moved + tt.octave;
   const out: HTMLElement[] = [
-    h("h2", {}, "Summary"),
-    h("p", { class: "row" }, pill(changed ? "different" : "identical"),
-      `A: ${a.label}`, h("span", { "aria-hidden": "true" }, "·"), `B: ${b.label}`),
-    h("p", {}, `${t.same} notes identical, ${t.added} added, ${t.removed} removed, ${t.moved} moved, ${t.octave} octave shifts.`),
+    h("h2", {}, t("cmp.summary")),
+    h("p", { class: "row" }, pill(changed ? "different" : "identical"), t("cmp.scoreA", { label: a.label }), h("span", { "aria-hidden": "true" }, "·"), t("cmp.scoreB", { label: b.label })),
+    h("p", {}, t("cmp.totals", tt)),
   ];
   if (engine instanceof Error) out.push(errorNotice(engine));
   else if (engine) {
-    out.push(h("p", {}, `Engine check: composition.json ${engine.composition_identical ? "identical" : "different"}, MusicXML ${engine.musicxml_identical ? "identical" : "different"}; ${engine.parts_identical}/${engine.parts_total} parts identical.`));
+    out.push(h("p", {}, t("cmp.engine", {
+      comp: engine.composition_identical ? t("mx.identical") : t("mx.different"), xml: engine.musicxml_identical ? t("mx.identical") : t("mx.different"),
+      pi: engine.parts_identical, pt: engine.parts_total,
+    })));
   }
-  out.push(table("Note diff per voice", ["Voice", ...KINDS.map((k) => k[0].toUpperCase() + k.slice(1))],
+  out.push(table(t("cmp.perVoice"), [t("cmp.col.voice"), t("cmp.col.same"), t("cmp.col.added"), t("cmp.col.removed"), t("cmp.col.moved"), t("cmp.col.octave")],
     d.voices.map((v) => [v.voice, ...KINDS.map((k) => h("span", { class: `diff-${k}` }, String(v.counts[k])))])));
+
+  if (a.xml && b.xml && a.xmlText && b.xmlText) out.push(notation(a, b, tolerance));
 
   // Metric deltas.
   const vm = (c: Composition, id: string) => {
@@ -101,7 +121,7 @@ function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<Return
     return { notes: n.length, conf: n.length ? n.reduce((s, x) => s + (x.confidence ?? 1), 0) / n.length : null, dur: n.length ? n.reduce((s, x) => s + x.dur, 0) / n.length / (c.ticks_per_beat ?? 24) : null };
   };
   const ids = d.voices.map((v) => v.voice);
-  out.push(table("Metric deltas (B − A)", ["Voice", "Notes A", "Notes B", "Δ notes", "Mean confidence Δ", "Mean length Δ (beats)"],
+  out.push(table(t("cmp.deltas"), [t("cmp.col.voice"), t("cmp.col.notesA"), t("cmp.col.notesB"), t("cmp.col.dNotes"), t("cmp.col.dConf"), t("cmp.col.dLen")],
     ids.map((id) => {
       const x = vm(a.composition, id);
       const y = vm(b.composition, id);
@@ -111,17 +131,17 @@ function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<Return
     })));
   if (a.xml && b.xml) {
     const names = [...new Set([...a.xml.parts.map((p) => p.name), ...b.xml.parts.map((p) => p.name)])];
-    out.push(table("Score parts (MusicXML)", ["Part", "Notes A", "Notes B", "Δ", "Uncertain A", "Uncertain B"],
+    out.push(table(t("cmp.parts"), [t("cmp.col.part"), t("cmp.col.notesA"), t("cmp.col.notesB"), t("cmp.col.delta"), t("cmp.col.uncA"), t("cmp.col.uncB")],
       names.map((n) => {
         const pa = a.xml!.parts.find((p) => p.name === n);
         const pb = b.xml!.parts.find((p) => p.name === n);
         const na = pa?.notes.length ?? 0;
         const nb = pb?.notes.length ?? 0;
-        return [n, String(na), String(nb), fmt.signed(nb - na, 0), String(pa?.notes.filter((x) => x.color).length ?? 0), String(pb?.notes.filter((x) => x.color).length ?? 0)];
+        return [partLabel(n), String(na), String(nb), fmt.signed(nb - na, 0), String(pa?.notes.filter((x) => x.color).length ?? 0), String(pb?.notes.filter((x) => x.color).length ?? 0)];
       })));
   }
 
-  // Overlay: A as filled blocks, B as outlines, changed notes marked.
+  // Piano-roll overlay: A as filled blocks, B as outlines, changed notes marked.
   const voiceSel = h("select", { id: "cmp-voice" }, ids.map((id) => h("option", { value: id }, id)));
   const holder = h("div", {});
   const showOverlay = () => {
@@ -138,22 +158,83 @@ function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<Return
       if (ch.b) lb.push(toRoll(b.composition, ch.b, mark === "removed" ? undefined : mark));
     }
     const layers: RollLayer[] = [
-      { id: "a", label: `A: ${a.label}`, colour: "m1", style: "block", notes: la },
-      { id: "b", label: `B: ${b.label}`, colour: "m2", style: "outline", notes: lb },
+      { id: "a", label: t("cmp.scoreA", { label: a.label }), colour: "m1", style: "block", notes: la },
+      { id: "b", label: t("cmp.scoreB", { label: b.label }), colour: "m2", style: "outline", notes: lb },
     ];
     const roll = h("bs-pianoroll", {}) as PianoRoll;
     roll.data = layers;
     const list = v.changes.filter((c) => c.kind !== "same");
     const fmtNote = (n?: { pitch: number; start: number; dur: number }) => (n ? `${pitchName(n.pitch)} @${n.start} (${n.dur})` : "–");
     clear(holder, roll,
-      table(`Changes in ${v.voice}`, ["Kind", "A: pitch @tick (length)", "B: pitch @tick (length)"],
-        list.slice(0, 400).map((c) => [h("span", { class: `diff-${c.kind}` }, c.kind), fmtNote(c.a), fmtNote(c.b)])),
-      list.length > 400 ? h("p", { class: "hint" }, `First 400 of ${list.length} changes shown.`) : null);
+      table(t("cmp.changes", { voice: v.voice }), [t("cmp.col.kind"), t("cmp.col.aNote"), t("cmp.col.bNote")],
+        list.slice(0, 400).map((c) => [h("span", { class: `diff-${c.kind}` }, t(`cmp.kind.${c.kind}`)), fmtNote(c.a), fmtNote(c.b)])),
+      list.length > 400 ? h("p", { class: "hint" }, t("cmp.firstChanges", { n: 400, total: list.length })) : null);
   };
   voiceSel.addEventListener("change", showOverlay);
-  out.push(h("h2", {}, "Overlay"),
-    h("p", { class: "hint" }, "A is drawn filled, B outlined. Marks: + added, − removed, ↔ moved, 8 octave."),
-    h("div", { class: "row" }, h("label", { for: "cmp-voice" }, "Voice"), voiceSel), holder);
+  out.push(h("h2", {}, t("cmp.overlay")),
+    h("p", { class: "hint" }, t("cmp.overlayHint")),
+    h("div", { class: "row" }, h("label", { for: "cmp-voice" }, t("cmp.voice")), voiceSel), holder);
   queueMicrotask(showOverlay);
   return out;
+}
+
+function partLabel(name: string): string {
+  return lang() === "nb" ? partNameNb(name) ?? name : name;
+}
+
+/** Both scores for one part, stacked, with differing notes coloured and given another notehead. */
+function notation(a: Side, b: Side, tolerance: number): HTMLElement {
+  const names = a.xml!.parts.map((p) => p.name).filter((n) => b.xml!.parts.some((p) => p.name === n));
+  const firstDiff = names.find((n) => diffParts(a.xml!.parts.find((p) => p.name === n), b.xml!.parts.find((p) => p.name === n), tolerance).bars.length) ?? names[0];
+  const partSel = h("select", { id: "cmp-part" }, names.map((n) => h("option", { value: n, selected: n === firstDiff }, partLabel(n))));
+  const status = h("p", { role: "status", class: "hint", id: "cmp-notation-status" });
+  const scoreA = h("bs-score", {});
+  const scoreB = h("bs-score", {});
+  const prev = h("button", { type: "button" }, t("cmp.prevDiff"));
+  const next = h("button", { type: "button" }, t("cmp.nextDiff"));
+  let bars: number[] = [];
+  let perBar = new Map<number, { a: number; b: number }>();
+  let at = -1;
+  const go = (i: number) => {
+    if (!bars.length) return;
+    at = (i + bars.length) % bars.length;
+    const bar = bars[at];
+    scoreA.goBar(bar, false);
+    scoreB.goBar(bar, false);
+    const c = perBar.get(bar) ?? { a: 0, b: 0 };
+    const msg = t("cmp.atBar", { n: bar + 1, a: c.a, b: c.b });
+    status.textContent = msg;
+    announce(msg);
+  };
+  prev.addEventListener("click", () => go(at - 1));
+  next.addEventListener("click", () => go(at + 1));
+  const load = async () => {
+    const name = partSel.value;
+    const ia = a.xml!.parts.findIndex((p) => p.name === name);
+    const ib = b.xml!.parts.findIndex((p) => p.name === name);
+    const pd = diffParts(a.xml!.parts[ia], b.xml!.parts[ib], tolerance);
+    bars = pd.bars;
+    perBar = pd.perBar;
+    at = -1;
+    status.textContent = bars.length ? t("cmp.diffBars", { n: bars.length, part: partLabel(name) }) : t("cmp.noDiff", { part: partLabel(name) });
+    prev.disabled = next.disabled = !bars.length;
+    scoreA.tracks = [ia];
+    scoreB.tracks = [ib];
+    scoreA.decorate = (track, i) => (track === ia && pd.a[i] ? MARK[pd.a[i]!] : null);
+    scoreB.decorate = (track, i) => (track === ib && pd.b[i] ? MARK[pd.b[i]!] : null);
+    await Promise.all([scoreA.load(a.xmlText!, a.label), scoreB.load(b.xmlText!, b.label)]);
+  };
+  partSel.addEventListener("change", () => void load());
+  const legend = h("ul", { class: "legend" },
+    (["removed", "added", "octave", "moved"] as MarkKind[]).map((k) => h("li", {},
+      h("span", { class: "sw", "aria-hidden": "true", style: `background:${MARK[k].colour};border-color:${MARK[k].colour}` }), t(`cmp.legend.${k}`))));
+  queueMicrotask(() => void load());
+  return h("section", { "aria-labelledby": "cmp-notation-h", class: "stack" },
+    h("h2", { id: "cmp-notation-h" }, t("cmp.notation")),
+    h("p", { class: "hint" }, t("cmp.notationHint")),
+    legend,
+    h("div", { class: "row" }, h("label", { for: "cmp-part" }, t("cmp.part")), partSel, prev, next),
+    status,
+    h("h3", {}, t("cmp.scoreA", { label: a.label })), scoreA,
+    h("h3", {}, t("cmp.scoreB", { label: b.label })), scoreB);
 }

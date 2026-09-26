@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { crc32 } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +13,12 @@ mkdirSync(shots, { recursive: true });
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
+// Runs a test created; removed afterwards even when the test fails.
+const createdRuns: string[] = [];
+test.afterAll(async ({ request }) => {
+  for (const id of createdRuns.splice(0)) await request.delete(`/v1/runs/${id}`);
+});
+
 async function axe(page: Page, label: string): Promise<void> {
   const res = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   const bad = res.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
@@ -23,6 +29,44 @@ async function axe(page: Page, label: string): Promise<void> {
 
 async function shot(page: Page, name: string, fullPage = true): Promise<void> {
   await page.screenshot({ path: join(shots, `${name}.png`), fullPage });
+}
+
+/** A zip archive with the files stored uncompressed (enough for .mxl). */
+function zipStored(files: [string, Buffer][]): Buffer {
+  const locals: Buffer[] = [];
+  const central: Buffer[] = [];
+  let offset = 0;
+  for (const [name, data] of files) {
+    const n = Buffer.from(name);
+    const crc = crc32(data);
+    const head = Buffer.alloc(30);
+    head.writeUInt32LE(0x04034b50, 0);
+    head.writeUInt16LE(20, 4);
+    head.writeUInt32LE(crc, 14);
+    head.writeUInt32LE(data.length, 18);
+    head.writeUInt32LE(data.length, 22);
+    head.writeUInt16LE(n.length, 26);
+    locals.push(head, n, data);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0);
+    c.writeUInt16LE(20, 4);
+    c.writeUInt16LE(20, 6);
+    c.writeUInt32LE(crc, 16);
+    c.writeUInt32LE(data.length, 20);
+    c.writeUInt32LE(data.length, 24);
+    c.writeUInt16LE(n.length, 28);
+    c.writeUInt32LE(offset, 42);
+    central.push(c, n);
+    offset += 30 + n.length + data.length;
+  }
+  const cd = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(cd.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
 }
 
 interface JobLite {
@@ -128,9 +172,13 @@ test("inspector tabs render and pass axe", async ({ page }) => {
     if (tab === "stems") await expect(panel.getByRole("img", { name: /Energy over time.*for / })).toBeVisible({ timeout: 180_000 });
     if (tab === "musicxml") {
       await expect(panel.getByText(/parts identical/)).toBeVisible({ timeout: 60_000 });
-      await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
-      await expect(panel.getByText(/read back by MuseScore/)).toBeVisible({ timeout: 180_000 });
-      console.log(`round trip: ${await panel.getByText(/read back by MuseScore/).textContent()}`);
+      // Running the round trip launches MuseScore on the desktop, so only on request; the stored result shows otherwise.
+      await expect(panel.getByRole("button", { name: /Run the round trip|Run again/ })).toBeVisible({ timeout: 60_000 });
+      if (process.env.STUDIO_E2E_MUSESCORE) {
+        await panel.getByRole("button", { name: /Run the round trip|Run again/ }).click();
+        await expect(panel.getByText(/read back by MuseScore/)).toBeVisible({ timeout: 180_000 });
+        console.log(`round trip: ${await panel.getByText(/read back by MuseScore/).textContent()}`);
+      }
     }
     await page.waitForTimeout(500);
     await shot(page, `run-${tab}`);
@@ -229,13 +277,11 @@ test("score viewer opens compressed MusicXML (.mxl)", async ({ page }, info) => 
   test.skip(!existsSync(src), "data/golden is not available");
   const mxl = info.outputPath("golden.mxl");
   mkdirSync(dirname(mxl), { recursive: true });
-  // MuseScore 4 aborts on shutdown after writing: check the file, not the exit code.
-  try {
-    execFileSync("mscore", ["-o", mxl, src], { stdio: "ignore", timeout: 120_000 });
-  } catch {
-    /* see above */
-  }
-  test.skip(!existsSync(mxl), "mscore could not write .mxl");
+  // Build the .mxl here (a zip with META-INF/container.xml) instead of launching MuseScore.
+  writeFileSync(mxl, zipStored([
+    ["META-INF/container.xml", Buffer.from('<?xml version="1.0" encoding="UTF-8"?><container><rootfiles><rootfile full-path="score.musicxml"/></rootfiles></container>')],
+    ["score.musicxml", readFileSync(src)],
+  ]));
   await page.goto("/#/viewer");
   await page.setInputFiles("#open-musicxml", mxl);
   await waitRendered(page);
@@ -271,6 +317,7 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   await panel.getByRole("button", { name: "Re-run" }).click();
   await page.waitForURL((u) => !u.hash.includes(run.id) && u.hash.startsWith("#/runs/"), { timeout: 30_000 });
   const id = decodeURIComponent(page.url().split("#/runs/")[1].split("/")[0]);
+  createdRuns.push(id);
   await expect(page.locator(".pill-succeeded, .pill-failed").first()).toBeVisible({ timeout: 540_000 });
   const job = await (await page.request.get(`/v1/jobs/${id}`)).json();
   const stages = job.stages.map((s: { name: string; status: string; seconds?: number; device?: string }) =>
@@ -287,4 +334,107 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   await expect(engine).toBeVisible();
   console.log(await engine.textContent());
   await shot(page, "compare-rerun");
+
+  // Clean up: remove the run this test created (the cache stays).
+  const del = await page.request.delete(`/v1/runs/${id}`);
+  expect(del.status()).toBe(204);
+  createdRuns.splice(createdRuns.indexOf(id), 1);
+  expect((await page.request.get(`/v1/jobs/${id}`)).status()).toBe(404);
+});
+
+test("both scores side by side with the differences marked", async ({ page }) => {
+  // A Mikkel run that differs from data/golden (an older arrangement), else skip.
+  const jobs = (await (await page.request.get("/v1/jobs")).json()) as JobLite[];
+  let other: JobLite | undefined;
+  for (const j of jobs.filter((x) => /mikkel/i.test(x.title ?? "") && x.status === "succeeded" && x.outputs?.includes("brass-band.musicxml"))) {
+    const c = await page.request.get(`/v1/jobs/${j.id}/compare?reference=mikkel-arranged-band`);
+    if (c.ok() && !(await c.json()).ok) {
+      other = j;
+      break;
+    }
+  }
+  test.skip(!other, "no Mikkel run that differs from data/golden");
+  await page.goto(`/#/compare?a=${other!.id}&b=ref:mikkel-arranged-band`);
+  await page.waitForFunction(() => {
+    const s = document.querySelectorAll("#main bs-score");
+    return s.length === 2 && Array.from(s).every((x) => (x as unknown as { rendered: boolean }).rendered);
+  }, undefined, { timeout: 120_000 });
+  const status = page.locator("#cmp-notation-status");
+  await expect(status).toContainText(/bars differ in/);
+  console.log(`notation: ${await status.textContent()}`);
+  await page.getByRole("button", { name: "Next difference" }).click();
+  await expect(status).toContainText(/Bar \d+: \d+ changed in A, \d+ in B\./);
+  console.log(`notation: ${await status.textContent()}`);
+  const marked = await page.evaluate(() => Array.from(document.querySelectorAll("#main bs-score")).map((s) => {
+    const api = (s as unknown as { api: { score: { tracks: { staves: { bars: { voices: { beats: { notes: { style?: { noteHead?: number } }[] }[] }[] }[] }[] }[] } } }).api;
+    return api.score.tracks.flatMap((tr) => tr.staves[0].bars.flatMap((b) => b.voices.flatMap((v) => v.beats.flatMap((be) => be.notes)))).filter((n) => n.style?.noteHead !== undefined).length;
+  }));
+  console.log(`notes with a changed notehead: A ${marked[0]}, B ${marked[1]}`);
+  expect(marked[0] + marked[1]).toBeGreaterThan(0);
+  await page.waitForTimeout(800);
+  const views = page.locator("#main bs-score .score-view");
+  await views.nth(0).screenshot({ path: join(shots, "compare-notation-a.png") });
+  await views.nth(1).screenshot({ path: join(shots, "compare-notation-b.png") });
+  await axe(page, "compare with notation");
+});
+
+async function said(page: Page): Promise<string> {
+  return page.evaluate(() => (document.querySelector("#main bs-score") as unknown as { lastAnnouncement: string }).lastAnnouncement);
+}
+
+test("talking score in the viewer, in English and Norwegian", async ({ page }) => {
+  test.skip(!existsSync(join(golden, "brass-band.musicxml")), "data/golden is not available");
+  await page.goto("/#/viewer");
+  await page.locator("#lang-select").selectOption("en");
+  await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+  await waitRendered(page);
+  const view = page.locator(".score-view");
+  await view.focus();
+  // Bar navigation, then note by note through the Solo Cornet part.
+  await page.keyboard.press("Alt+ArrowDown");
+  const bar = await said(page);
+  await page.keyboard.press("ArrowRight");
+  const note = await said(page);
+  await page.keyboard.press("u");
+  const unc = await said(page);
+  await page.keyboard.press("w");
+  const where = await said(page);
+  await page.keyboard.press("Control+Shift+ArrowDown");
+  const part = await said(page);
+  console.log(`talking score (en):\n  ${[bar, note, unc, where, part].join("\n  ")}`);
+  expect(bar).toMatch(/^bar 2(, [^:]+)?: /);
+  expect(note).toMatch(/^(bar \d+, )?beat \d/);
+  expect(unc).toMatch(/uncertain/);
+  expect(where).toMatch(/ of \d+, /);
+  expect(part).toMatch(/^Repiano Cornet\. bar \d+, key /);
+  // The announcements go to the live region.
+  await expect(page.locator("#announcer")).toHaveText(part);
+  // Alt+T opens the text form with the current line marked.
+  await page.keyboard.press("Alt+t");
+  await expect(page.locator(".talk-text [aria-current=true]")).toBeVisible();
+  await shot(page, "viewer-talking", false);
+  await axe(page, "viewer talking score");
+
+  // Norwegian: the whole UI and the talking score switch.
+  await page.locator("#lang-select").selectOption("nb");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Notevisning");
+  await expect(page.locator("html")).toHaveAttribute("lang", "nb");
+  await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+  await waitRendered(page);
+  await page.locator(".score-view").focus();
+  await page.keyboard.press("Alt+ArrowDown");
+  const nbBar = await said(page);
+  await page.keyboard.press("u");
+  const nbUnc = await said(page);
+  console.log(`talking score (nb):\n  ${nbBar}\n  ${nbUnc}`);
+  expect(nbBar).toMatch(/^takt 2(, [^:]+)?: /);
+  expect(nbUnc).toMatch(/usikker/);
+  await shot(page, "viewer-nb", false);
+  await axe(page, "viewer (nb)");
+  await page.goto("/#/runs");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kjøringer");
+  await expect(page.getByRole("button", { name: "Start kjøring" })).toBeVisible();
+  await shot(page, "runs-nb");
+  await axe(page, "runs (nb)");
+  await page.locator("#lang-select").selectOption("en");
 });

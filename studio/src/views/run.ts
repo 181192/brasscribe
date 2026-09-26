@@ -12,6 +12,7 @@ import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
+import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, loading, panel, pill, table, tabs } from "../ui/dom";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
@@ -35,16 +36,16 @@ interface Ctx {
 }
 
 export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSearchParams): () => void {
-  const heading = h("h1", {}, "Run");
+  const heading = h("h1", {}, t("run.title"));
   const header = h("div", {}, loading());
   const graph = h("bs-stage-graph", {}) as StageGraph;
   const stageInfo = h("div", {});
-  const inspector = h("section", { "aria-labelledby": "inspector-h" }, h("h2", { id: "inspector-h" }, "Inspector"), loading());
+  const inspector = h("section", { "aria-labelledby": "inspector-h" }, h("h2", { id: "inspector-h" }, t("run.inspector")), loading());
   clear(root,
-    h("p", { class: "small" }, h("a", { href: "#/runs" }, "← All runs")),
+    h("p", { class: "small" }, h("a", { href: "#/runs" }, t("run.back"))),
     heading, header,
-    h("section", { "aria-labelledby": "graph-h" }, h("h2", { id: "graph-h" }, "Stages"),
-      h("p", { class: "hint" }, "Solid border: ran. Dashed: taken from the cache. Thick: running or failed. Choose a stage to inspect it."),
+    h("section", { "aria-labelledby": "graph-h" }, h("h2", { id: "graph-h" }, t("run.stages")),
+      h("p", { class: "hint" }, t("run.stagesHint")),
       graph, stageInfo),
     inspector);
 
@@ -56,40 +57,41 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
 
   const renderHeader = (job: Job, m: Manifest | null) => {
     heading.textContent = job.title || job.id;
-    const t = view ? totals(view) : null;
+    const tot = view ? totals(view) : null;
     clear(header,
-      h("p", { class: "row" }, pill(job.status), h("span", { class: "mono small" }, job.id), h("span", {}, `profile ${job.profile}`),
-        m?.git ? h("span", { class: "small" }, `git ${fmt.hash(m.git.sha)}${m.git.dirty ? " (dirty)" : ""}`) : null),
-      t ? h("p", {},
-        h("progress", { class: "progress", max: t.total, value: t.done, "aria-label": "Stages finished" }), " ",
-        `${t.done} of ${t.total} stages finished, ${t.cached} from the cache, ${fmt.seconds(t.seconds)} stage time`,
-        m?.devices?.length ? `, devices ${m.devices.join(", ")}` : "") : null,
+      h("p", { class: "row" }, pill(job.status), h("span", { class: "mono small" }, job.id), h("span", {}, t("run.profile", { p: job.profile })),
+        m?.git ? h("span", { class: "small" }, `git ${fmt.hash(m.git.sha)}${m.git.dirty ? t("run.dirty") : ""}`) : null),
+      tot ? h("p", {},
+        h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }), " ",
+        t("run.progress", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) }),
+        m?.devices?.length ? t("run.devices", { d: m.devices.join(", ") }) : "") : null,
       job.error ? h("pre", { class: "notice notice-error small", role: "alert", style: "white-space:pre-wrap;overflow-wrap:anywhere" }, job.error) : null,
       h("div", { class: "row" },
-        !TERMINAL.has(job.status) ? h("button", { type: "button", onclick: async () => { await api.cancel(job.id); announce("Cancel requested"); } }, "Cancel run") : null,
+        !TERMINAL.has(job.status) ? h("button", { type: "button", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, t("run.cancel")) : null,
         job.outputs?.includes("brass-band.musicxml") ? h("a", { class: "button", href: api.musicxmlUrl(job.id), download: "" }, "MusicXML") : null,
         job.outputs?.includes("brass-band.pdf") ? h("a", { class: "button", href: api.pdfUrl(job.id) }, "PDF") : null,
         job.outputs?.includes("brass-band.mid") ? h("a", { class: "button", href: api.midiUrl(job.id), download: "" }, "MIDI") : null,
-        h("a", { class: "button", href: `#/compare?a=${encodeURIComponent(job.id)}` }, "Compare…"),
-        job.previous_run_id ? h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, "Compare with the run it re-ran") : null));
+        h("a", { class: "button", href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare")),
+        job.previous_run_id ? h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun")) : null,
+        TERMINAL.has(job.status) ? deleteButton(job.id) : null));
   };
 
   const showStage = (name: string) => {
     graph.select(name);
     const s = view?.stages.find((x) => x.name === name);
     const files = Array.isArray(stages) ? stages.find((x) => x.stage === name) : undefined;
-    clear(stageInfo, h("div", { class: "card", role: "region", "aria-label": `Stage ${name}` },
-      h("h3", {}, `Stage ${name}`),
+    clear(stageInfo, h("div", { class: "card", role: "region", "aria-label": t("run.stage", { name }) },
+      h("h3", {}, t("run.stage", { name })),
       h("dl", { class: "kv" },
-        h("dt", {}, "Status"), h("dd", {}, pill(s?.status ?? files?.status ?? "unknown")),
-        h("dt", {}, "Kind"), h("dd", {}, s?.kind ?? files?.kind ?? "–"),
-        h("dt", {}, "Time"), h("dd", {}, fmt.seconds(s?.seconds ?? files?.seconds)),
-        h("dt", {}, "Device"), h("dd", {}, s?.device ?? files?.device ?? "–"),
-        h("dt", {}, "Cache key"), h("dd", { class: "mono" }, fmt.hash(files?.key))),
+        h("dt", {}, t("run.kv.status")), h("dd", {}, pill(s?.status ?? files?.status ?? "unknown")),
+        h("dt", {}, t("run.kv.kind")), h("dd", {}, s?.kind ?? files?.kind ?? "–"),
+        h("dt", {}, t("run.kv.time")), h("dd", {}, fmt.seconds(s?.seconds ?? files?.seconds)),
+        h("dt", {}, t("run.kv.device")), h("dd", {}, s?.device ?? files?.device ?? "–"),
+        h("dt", {}, t("run.kv.key")), h("dd", { class: "mono" }, fmt.hash(files?.key))),
       files ? fileTable(files.files) : Array.isArray(stages) ? null : errorNotice(stages)));
     const kind = s?.kind ?? files?.kind ?? name.split(".")[0];
-    const t = TAB_FOR_KIND[kind];
-    if (t && selectTab) selectTab(t);
+    const tab = TAB_FOR_KIND[kind];
+    if (tab && selectTab) selectTab(tab);
   };
   graph.addEventListener("select", (e) => showStage((e as CustomEvent<string>).detail));
 
@@ -105,7 +107,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         view = reduce(view!, e);
         graph.update(view);
         if (e.type === "job" && e.status && TERMINAL.has(e.status)) {
-          announce(`Run ${e.status}`);
+          announce(t("run.ended", { status: t(`status.${e.status}`) }));
           stop?.();
           void start(); // reload outputs and the inspector
         } else renderHeader({ ...job, status: view.status as Job["status"] }, m);
@@ -119,27 +121,27 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     ctx.composition.catch(() => undefined);
     ctx.musicxml.catch(() => undefined);
     const items = [
-      { id: "score", label: "Score", render: (p: HTMLElement) => scoreTab(p, ctx) },
-      { id: "audio", label: "Audio", render: (p: HTMLElement) => audioTab(p, ctx) },
-      { id: "stems", label: "Stems", render: (p: HTMLElement) => stemsTab(p, ctx) },
-      { id: "roll", label: "Piano roll", render: (p: HTMLElement) => rollTab(p, ctx) },
-      { id: "beats", label: "Beats", render: (p: HTMLElement) => beatsTab(p, ctx) },
-      { id: "voices", label: "Voices", render: (p: HTMLElement) => voicesTab(p, ctx) },
-      { id: "musicxml", label: "MusicXML", render: (p: HTMLElement) => musicxmlTab(p, ctx) },
-      { id: "manifest", label: "Manifest", render: (p: HTMLElement) => manifestTab(p, ctx, m) },
+      { id: "score", label: t("tab.score"), render: (p: HTMLElement) => scoreTab(p, ctx) },
+      { id: "audio", label: t("tab.audio"), render: (p: HTMLElement) => audioTab(p, ctx) },
+      { id: "stems", label: t("tab.stems"), render: (p: HTMLElement) => stemsTab(p, ctx) },
+      { id: "roll", label: t("tab.roll"), render: (p: HTMLElement) => rollTab(p, ctx) },
+      { id: "beats", label: t("tab.beats"), render: (p: HTMLElement) => beatsTab(p, ctx) },
+      { id: "voices", label: t("tab.voices"), render: (p: HTMLElement) => voicesTab(p, ctx) },
+      { id: "musicxml", label: t("tab.musicxml"), render: (p: HTMLElement) => musicxmlTab(p, ctx) },
+      { id: "manifest", label: t("tab.manifest"), render: (p: HTMLElement) => manifestTab(p, ctx, m) },
     ];
-    tabsEl = tabs("Inspector views", items, tab ?? "score", (t) => {
-      history.replaceState(null, "", `#/runs/${encodeURIComponent(id)}/${t}`);
+    tabsEl = tabs(t("run.inspectorViews"), items, tab ?? "score", (sel) => {
+      history.replaceState(null, "", `#/runs/${encodeURIComponent(id)}/${sel}`);
     });
-    selectTab = (t) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${t}"]`)?.click();
-    clear(inspector, h("h2", { id: "inspector-h" }, "Inspector"), tabsEl);
+    selectTab = (sel) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${sel}"]`)?.click();
+    clear(inspector, h("h2", { id: "inspector-h" }, t("run.inspector")), tabsEl);
   };
   start().catch((e) => clear(header, errorNotice(e)));
   return () => stop?.();
 }
 
 function fileTable(files: FileRef[]): HTMLElement {
-  return table("Files", ["File", "Size", "SHA-256"], files.map((f) => [
+  return table(t("run.files"), [t("run.col.file"), t("run.col.size"), t("run.col.sha")], files.map((f) => [
     h("a", { href: f.url }, f.name), fmt.bytes(f.bytes), h("span", { class: "mono small" }, fmt.hash(f.sha256)),
   ]));
 }
@@ -153,13 +155,13 @@ function stageFiles(ctx: Ctx, pred: (s: StageFiles) => boolean): { stage: StageF
 
 function scoreTab(p: HTMLElement, ctx: Ctx): void {
   const score = h("bs-score", {}) as ScoreElement;
-  const status = h("p", { class: "hint", role: "status" }, "Loading the score…");
-  const warnings = h("section", { "aria-labelledby": "warn-h" }, h("h3", { id: "warn-h" }, "Validator warnings"), loading());
+  const status = h("p", { class: "hint", role: "status" }, t("score.loading"));
+  const warnings = h("section", { "aria-labelledby": "warn-h" }, h("h3", { id: "warn-h" }, t("warn.title")), loading());
   clear(p, status, score, warnings);
   ctx.musicxml.then(async (xml) => {
     const t0 = performance.now();
     await score.load(xml, ctx.job.title ?? ctx.id);
-    status.textContent = `${score.bars.length} bars, ${score.api?.score?.tracks.length ?? 0} parts, rendered in ${Math.round(performance.now() - t0)} ms.`;
+    status.textContent = t("score.rendered", { bars: score.bars.length, parts: score.api?.score?.tracks.length ?? 0, ms: Math.round(performance.now() - t0) });
     renderWarnings(warnings, ctx, parseMusicXml(xml), score);
   }).catch((e) => clear(p, errorNotice(e)));
 }
@@ -168,28 +170,28 @@ async function renderWarnings(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: S
   const engine = await api.validation(ctx.id).catch((e) => e as Error);
   const local = validateScore(xml);
   const rows = [
-    ...(Array.isArray(engine) ? engine.map((w) => ({ ...w, source: "arranger" })) : []),
-    ...local.filter((w) => w.kind === "crossing" || !Array.isArray(engine)).map((w) => ({ ...w, source: "Studio check" })),
+    ...(Array.isArray(engine) ? engine.map((w) => ({ ...w, source: t("warn.arranger") })) : []),
+    ...local.filter((w) => w.kind === "crossing" || !Array.isArray(engine)).map((w) => ({ ...w, source: t("warn.studio") })),
   ];
   const counts = (k: string) => rows.filter((r) => r.kind === k).length;
-  const go = (bar: number | null | undefined) => h("button", { type: "button", onclick: () => { score.goBar((bar ?? 1) - 1); score.focusScore(); } }, `Bar ${bar ?? "?"}`);
-  clear(el, h("h3", { id: "warn-h" }, "Validator warnings"),
+  const go = (bar: number | null | undefined) => h("button", { type: "button", onclick: () => { score.goBar((bar ?? 1) - 1); score.focusScore(); } }, t("warn.barBtn", { n: bar ?? "?" }));
+  clear(el, h("h3", { id: "warn-h" }, t("warn.title")),
     Array.isArray(engine) ? null : errorNotice(engine),
-    h("p", {}, `${rows.length} warnings: ${counts("range")} range, ${counts("crossing")} crossing, ${counts("other")} other. `,
-      h("span", { class: "hint" }, "Range warnings come from the arranger; voice crossing between adjacent parts of a section is checked by Studio on the MusicXML.")),
-    table("Validator warnings", ["Bar", "Beat", "Part", "Kind", "Severity", "Message", "Source"],
+    h("p", {}, t("warn.summary", { n: rows.length, range: counts("range"), crossing: counts("crossing"), other: counts("other") }),
+      h("span", { class: "hint" }, t("warn.hint"))),
+    table(t("warn.title"), [t("warn.col.bar"), t("warn.col.beat"), t("warn.col.part"), t("warn.col.kind"), t("warn.col.severity"), t("warn.col.message"), t("warn.col.source")],
       rows.slice(0, 300).map((r) => [go(r.bar), r.beat ? String(Math.round(r.beat * 100) / 100) : "–", r.part ?? "–", r.kind, pill(r.severity === "error" ? "error" : "warning"), r.message, r.source]),
       { hideCaption: true }),
-    rows.length > 300 ? h("p", { class: "hint" }, `First 300 of ${rows.length} shown.`) : null);
+    rows.length > 300 ? h("p", { class: "hint" }, t("warn.first", { n: 300, total: rows.length })) : null);
 }
 
 function audioTab(p: HTMLElement, ctx: Ctx): void {
   const sources: AudioSource[] = [];
-  if (ctx.job.outputs?.includes("brass-band.mp3")) sources.push({ label: "rendered score (MP3)", url: api.renderedAudioUrl(ctx.id) });
+  if (ctx.job.outputs?.includes("brass-band.mp3")) sources.push({ label: t("audio.rendered"), url: api.renderedAudioUrl(ctx.id) });
   for (const { stage, file } of stageFiles(ctx, (s) => s.kind === "layers" || s.kind === "stems" || s.kind === "separate")) {
     if (AUDIO.test(file.name)) sources.push({ label: `${stage.stage}/${file.name}`, url: file.url });
   }
-  const original: AudioSource = { label: "original recording", url: api.inputAudioUrl(ctx.id) };
+  const original: AudioSource = { label: t("audio.original"), url: api.inputAudioUrl(ctx.id) };
   const sel = h("select", { id: "audio-a" }, sources.map((s, i) => h("option", { value: String(i) }, s.label)));
   const holder = h("div", {});
   const show = () => {
@@ -198,9 +200,9 @@ function audioTab(p: HTMLElement, ctx: Ctx): void {
   };
   sel.addEventListener("change", show);
   clear(p,
-    h("p", {}, "Compare a stage's audio (A) with the original recording (B). Switching keeps the position."),
+    h("p", {}, t("audio.intro")),
     Array.isArray(ctx.stages) ? null : errorNotice(ctx.stages),
-    sources.length ? h("div", { class: "row" }, h("label", { for: "audio-a" }, "Source A"), sel) : null,
+    sources.length ? h("div", { class: "row" }, h("label", { for: "audio-a" }, t("audio.sourceA")), sel) : null,
     holder);
   show();
 }
@@ -215,7 +217,7 @@ function stemsTab(p: HTMLElement, ctx: Ctx): void {
     .map(({ stage, file }) => ({ name: file.name, url: file.url, bytes: file.bytes, group: stage.stage }))
     .sort((a, b) => Number(b.group === "layers") - Number(a.group === "layers"));
   if (!stems.length) {
-    clear(p, h("p", {}, "This run has no stem or layer audio."));
+    clear(p, h("p", {}, t("stems.none")));
     return;
   }
   const mixer = h("bs-stems", {}) as StemsMixer;
@@ -242,7 +244,7 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     const g = sel.value;
     clear(holder, loading());
     const layers: RollLayer[] = comp.voices.filter((v) => layerGroup(v.layer ?? v.id) === g).map((v) => ({
-      id: v.id, label: `final: ${v.id} (${v.role})`, colour: "ink", style: "block" as const,
+      id: v.id, label: t("roll.final", { id: v.id, role: v.role }), colour: "ink", style: "block" as const,
       notes: v.notes.map((n) => ({
         pitch: n.pitch,
         start: n.onset_s ?? tickTime(comp, n.start),
@@ -267,9 +269,9 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   };
   sel.addEventListener("change", show);
   clear(p,
-    h("p", {}, "Final voices (filled by confidence) against the raw output of each transcription model for the same layer."),
+    h("p", {}, t("roll.intro")),
     Array.isArray(ctx.stages) ? null : errorNotice(ctx.stages),
-    h("div", { class: "row" }, h("label", { for: "roll-group" }, "Layer"), sel),
+    h("div", { class: "row" }, h("label", { for: "roll-group" }, t("roll.layer")), sel),
     holder);
   void show();
 }
@@ -284,7 +286,7 @@ async function beatsTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const beatFile = stageFiles(ctx, (s) => s.kind === "beats").find(({ file }) => file.name.endsWith(".beats"));
   if (beatFile) {
     try {
-      rows.push({ label: "Beat tracker (mix.beats)", beats: parseBeats(await fetchText(beatFile.file.url)) });
+      rows.push({ label: t("beats.tracker"), beats: parseBeats(await fetchText(beatFile.file.url)) });
     } catch {
       /* shown as missing below */
     }
@@ -292,13 +294,13 @@ async function beatsTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   let free: ReturnType<typeof compositionFreeTime> = [];
   try {
     const comp = await ctx.composition;
-    rows.push({ label: "Score beat grid (Composition)", beats: compositionBeats(comp) });
+    rows.push({ label: t("beats.grid"), beats: compositionBeats(comp) });
     free = compositionFreeTime(comp);
   } catch {
     /* no composition yet */
   }
   if (!rows.length) {
-    clear(p, h("p", {}, "No beat data for this run."));
+    clear(p, h("p", {}, t("beats.none")));
     return;
   }
   const v = h("bs-beats", {}) as BeatView;
@@ -311,9 +313,9 @@ async function voicesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     const roles = [...new Set(c.voices.map((v) => v.role))];
     const layers = [...new Set(c.voices.map((v) => v.layer ?? "–"))];
     return [
-      h("p", {}, `${c.title} · ${c.voices.length} voices · ${c.voices.reduce((a, v) => a + v.notes.length, 0)} notes · `,
-        `metre ${c.meters.map((m) => `${m.beats}/${m.beat_unit ?? 4}`).join(", ") || "–"} · key ${c.keys.map((k) => `${k.fifths >= 0 ? "+" : ""}${k.fifths} ${k.mode ?? ""}`).join(", ") || "–"}`),
-      table("Voices", ["Voice", "Role", "Layer", "Instrument hint", "Notes", "Range", "Mean confidence", "Uncertain (< 0.7)", "Sources"],
+      h("p", {}, t("voices.summary", { title: c.title, voices: c.voices.length, notes: c.voices.reduce((a, v) => a + v.notes.length, 0),
+        metre: c.meters.map((m) => `${m.beats}/${m.beat_unit ?? 4}`).join(", ") || "–", key: c.keys.map((k) => `${k.fifths >= 0 ? "+" : ""}${k.fifths} ${k.mode ?? ""}`).join(", ") || "–" })),
+      table(t("voices.title"), [t("voices.col.voice"), t("voices.col.role"), t("voices.col.layer"), t("voices.col.hint"), t("voices.col.notes"), t("voices.col.range"), t("voices.col.conf"), t("voices.col.uncertain"), t("voices.col.sources")],
         c.voices.map((v) => {
           const ps = v.notes.map((n) => n.pitch);
           const conf = v.notes.map((n) => n.confidence ?? 1);
@@ -323,7 +325,7 @@ async function voicesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
             conf.length ? fmt.num(conf.reduce((a, b) => a + b, 0) / conf.length, 2) : "–",
             String(conf.filter((x) => x < 0.7).length), srcs.join(", ") || "–"];
         })),
-      table("Voices by role and layer", ["Role", ...layers], roles.map((r) => [
+      table(t("voices.byRole"), [t("voices.col.role"), ...layers], roles.map((r) => [
         r, ...layers.map((l) => c.voices.filter((v) => v.role === r && (v.layer ?? "–") === l).map((v) => `${v.id} (${v.notes.length})`).join(", ") || "–"),
       ])),
     ];
@@ -331,25 +333,25 @@ async function voicesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
 }
 
 async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
-  const rt = h("section", { "aria-labelledby": "rt-h" }, h("h3", { id: "rt-h" }, "MuseScore round trip"), loading());
-  const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, "Parts"), loading());
-  const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, "Against a reference"), loading());
+  const rt = h("section", { "aria-labelledby": "rt-h" }, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading());
+  const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, t("mx.partsTitle")), loading());
+  const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, t("mx.reference")), loading());
   clear(p, rt, golden, parts);
 
   const renderRt = async (run = false) => {
-    clear(rt, h("h3", { id: "rt-h" }, "MuseScore round trip"), loading(run ? "Running MuseScore…" : undefined));
+    clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading(run ? t("mx.running") : undefined));
     try {
       const r = run ? await api.runRoundtrip(ctx.id) : await api.roundtrip(ctx.id);
-      clear(rt, h("h3", { id: "rt-h" }, "MuseScore round trip"),
-        h("p", { class: "row" }, pill(r.status), r.notes_in != null ? `${r.notes_in} notes written, ${r.notes_out ?? "?"} read back by MuseScore` : "",
-          r.parts != null ? ` · ${r.parts} parts` : ""),
+      clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")),
+        h("p", { class: "row" }, pill(r.status), r.notes_in != null ? t("mx.readBack", { a: r.notes_in, b: r.notes_out ?? "?" }) : "",
+          r.parts != null ? t("mx.parts", { n: r.parts }) : ""),
         r.detail ? h("p", { class: "small" }, r.detail) : null,
-        r.part_results?.length ? table("Round trip per part", ["Part", "Notes", "Sound", "Match"],
+        r.part_results?.length ? table(t("mx.rtPerPart"), [t("mx.col.part"), t("mx.col.notes"), t("mx.col.sound"), t("mx.col.match")],
           r.part_results.map((x) => [x.name, String(x.notes), x.sound ?? "–", x.match == null ? "–" : pill(x.match ? "pass" : "fail")])) : null,
-        h("button", { type: "button", onclick: () => renderRt(true) }, r.status === "not_run" ? "Run the round trip" : "Run again"));
-      if (run) announce(`Round trip ${r.status}`);
+        h("button", { type: "button", onclick: () => renderRt(true) }, r.status === "not_run" ? t("mx.run") : t("mx.again")));
+      if (run) announce(t("mx.rtDone", { status: t(`status.${r.status}`) }));
     } catch (e) {
-      clear(rt, h("h3", { id: "rt-h" }, "MuseScore round trip"), errorNotice(e));
+      clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")), errorNotice(e));
     }
   };
   void renderRt();
@@ -359,61 +361,61 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     const out = h("div", {}, loading());
     const sel = h("select", { id: "gold-ref", onchange: () => { const r = (refs as Reference[]).find((x) => x.name === sel.value); if (r) void renderGolden(r); } },
       (refs as Reference[]).map((r) => h("option", { value: r.name, selected: r.name === ref.name }, r.name)));
-    clear(golden, h("h3", { id: "gold-h" }, "Against a reference"), h("div", { class: "row" }, h("label", { for: "gold-ref" }, "Reference"), sel,
-      h("a", { href: `#/compare?a=${encodeURIComponent(ctx.id)}&b=${encodeURIComponent(`ref:${ref.name}`)}` }, "Note-level diff")), out);
+    clear(golden, h("h3", { id: "gold-h" }, t("mx.reference")), h("div", { class: "row" }, h("label", { for: "gold-ref" }, t("mx.referenceLabel")), sel,
+      h("a", { href: `#/compare?a=${encodeURIComponent(ctx.id)}&b=${encodeURIComponent(`ref:${ref.name}`)}` }, t("mx.noteDiff"))), out);
     try {
       const c = await api.compare(ctx.id, { reference: ref.name });
       clear(out,
         h("p", { class: "row" }, pill(c.ok ? "identical" : "different"),
-          `composition.json ${c.composition_identical ? "identical" : "different"}; MusicXML ${c.musicxml_identical ? "identical" : "different"} (ids and date canonicalised); `,
-          `${c.parts_identical}/${c.parts_total} parts identical, ${c.notes_identical}/${c.notes_total} notes in identical parts`),
-        table("Parts against the reference", ["Part", "Notes", "Reference notes", "Identical"],
+          t("mx.compareSummary", { comp: c.composition_identical ? t("mx.identical") : t("mx.different"), xml: c.musicxml_identical ? t("mx.identical") : t("mx.different"),
+            pi: c.parts_identical, pt: c.parts_total, ni: c.notes_identical, nt: c.notes_total })),
+        table(t("mx.partsVsRef"), [t("mx.col.part"), t("mx.col.notes"), t("mx.col.refNotes"), t("mx.col.identical")],
           c.parts.map((x) => [x.name, String(x.notes), String(x.reference_notes), pill(x.identical ? "identical" : "different")])));
     } catch (e) {
       clear(out, errorNotice(e));
     }
   };
   if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
-  else clear(golden, h("h3", { id: "gold-h" }, "Against a reference"), Array.isArray(refs) ? h("p", {}, "No references in the data directory.") : errorNotice(refs));
+  else clear(golden, h("h3", { id: "gold-h" }, t("mx.reference")), Array.isArray(refs) ? h("p", {}, t("mx.noRefs")) : errorNotice(refs));
 
   try {
     const xml = parseMusicXml(await ctx.musicxml);
-    clear(parts, h("h3", { id: "parts-h" }, "Parts"),
-      h("p", {}, `${xml.parts.length} parts, ${xml.bars} bars. `, h("a", { href: api.musicxmlUrl(ctx.id), download: "" }, "Download MusicXML"), " · ",
-        h("a", { href: `#/viewer?src=${encodeURIComponent(`/v1/jobs/${ctx.id}/musicxml`)}&name=${encodeURIComponent(ctx.job.title ?? ctx.id)}` }, "Open in the score viewer")),
-      table("Parts", ["Part", "Transposition", "Bars", "Notes", "Uncertain (coloured)", "Written range"],
+    clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")),
+      h("p", {}, t("mx.partsSummary", { parts: xml.parts.length, bars: xml.bars }), h("a", { href: api.musicxmlUrl(ctx.id), download: "" }, t("mx.download")), " · ",
+        h("a", { href: `#/viewer?src=${encodeURIComponent(`/v1/jobs/${ctx.id}/musicxml`)}&name=${encodeURIComponent(ctx.job.title ?? ctx.id)}` }, t("mx.openViewer"))),
+      table(t("mx.partsTitle"), [t("mx.col.part"), t("mx.col.transpose"), t("mx.col.bars"), t("mx.col.notes"), t("mx.col.uncertain"), t("mx.col.range")],
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
-          return [pt.name, pt.transpose ? `${pt.transpose > 0 ? "+" : ""}${pt.transpose} semitones` : "concert", String(pt.bars), String(pt.notes.length),
-            String(pt.notes.filter((n) => n.color).length), pt.percussion ? "unpitched" : w.length ? `${pitchName(Math.min(...w))}–${pitchName(Math.max(...w))}` : "–"];
+          return [pt.name, pt.transpose ? t("mx.semitones", { n: `${pt.transpose > 0 ? "+" : ""}${pt.transpose}` }) : t("mx.concert"), String(pt.bars), String(pt.notes.length),
+            String(pt.notes.filter((n) => n.color).length), pt.percussion ? t("mx.unpitched") : w.length ? `${pitchName(Math.min(...w))}–${pitchName(Math.max(...w))}` : "–"];
         })));
   } catch (e) {
-    clear(parts, h("h3", { id: "parts-h" }, "Parts"), errorNotice(e));
+    clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")), errorNotice(e));
   }
 }
 
 function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
   if (!m) {
-    clear(p, h("p", {}, "This run has no manifest yet."));
+    clear(p, h("p", {}, t("manifest.none")));
     return;
   }
   const stageNames = (m.stages ?? []).map((s) => s.stage);
   const heavy = h("input", { type: "checkbox", id: "rerun-heavy", checked: false });
-  const cold = h("fieldset", {}, h("legend", {}, "Run these stages even on a cache hit"),
+  const cold = h("fieldset", {}, h("legend", {}, t("manifest.cold")),
     h("div", { class: "row" }, stageNames.map((s) => h("label", {}, h("input", { type: "checkbox", name: "cold", value: s }), h("span", { class: "mono small" }, s)))));
   const result = h("div", { "aria-live": "polite" });
   const form = h("form", { class: "stack card" },
-    h("h3", {}, "Re-run from this manifest"),
-    h("p", { class: "hint" }, "Uses the same input, profile and parameters. Stages whose inputs are unchanged come from the cache unless ticked below."),
-    h("label", {}, heavy, "Allow heavy models on cache misses"), cold,
-    h("button", { type: "submit", class: "primary" }, "Re-run"), result);
+    h("h3", {}, t("manifest.rerun")),
+    h("p", { class: "hint" }, t("manifest.rerunHint")),
+    h("label", {}, heavy, t("runs.allowHeavy")), cold,
+    h("button", { type: "submit", class: "primary" }, t("manifest.rerunBtn")), result);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const picked = Array.from(form.querySelectorAll<HTMLInputElement>("input[name=cold]:checked")).map((x) => x.value);
-    clear(result, loading("Starting…"));
+    clear(result, loading(t("manifest.starting")));
     try {
       const job = await api.rerun(ctx.id, { allow_heavy: heavy.checked, cold: picked });
-      announce(`Re-run ${job.id} started`);
+      announce(t("manifest.rerunStarted", { id: job.id }));
       location.hash = `#/runs/${encodeURIComponent(job.id)}`;
     } catch (x) {
       clear(result, errorNotice(x));
@@ -422,19 +424,45 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
   const kv = (label: string, v: unknown) => [h("dt", {}, label), h("dd", { class: typeof v === "string" && v.length > 30 ? "mono small" : "" }, v === undefined || v === null ? "–" : typeof v === "object" ? JSON.stringify(v) : String(v))];
   clear(p,
     h("dl", { class: "kv" },
-      kv("Run", m.run_id), kv("Profile", `${m.profile} (${m.pipeline ?? "?"})`), kv("Status", m.status),
-      kv("Input", m.input ? `${m.input.path} (${fmt.bytes(m.input.bytes)}, sha256 ${fmt.hash(m.input.sha256)})` : undefined),
-      kv("Git", m.git ? `${m.git.sha}${m.git.branch ? ` on ${m.git.branch}` : ""}${m.git.dirty ? ", dirty" : ""}` : undefined),
-      kv("Host", m.host), kv("Parameters", m.params), kv("Options", m.options),
-      kv("Devices", m.devices?.join(", ")), kv("Time", fmt.seconds(m.seconds))),
-    table("Stages in the manifest", ["Stage", "Status", "Time", "Adapter", "Device", "Models", "Cache key", "Provenance"],
+      kv(t("manifest.kv.run"), m.run_id), kv(t("manifest.kv.profile"), `${m.profile} (${m.pipeline ?? "?"})`), kv(t("manifest.kv.status"), m.status),
+      kv(t("manifest.kv.input"), m.input ? `${m.input.path} (${fmt.bytes(m.input.bytes)}, sha256 ${fmt.hash(m.input.sha256)})` : undefined),
+      kv(t("manifest.kv.git"), m.git ? `${m.git.sha}${m.git.branch ? ` on ${m.git.branch}` : ""}${m.git.dirty ? ", dirty" : ""}` : undefined),
+      kv(t("manifest.kv.host"), m.host), kv(t("manifest.kv.params"), m.params), kv(t("manifest.kv.options"), m.options),
+      kv(t("manifest.kv.devices"), m.devices?.join(", ")), kv(t("manifest.kv.time"), fmt.seconds(m.seconds))),
+    table(t("manifest.stages"), [t("manifest.col.stage"), t("manifest.col.status"), t("manifest.col.time"), t("manifest.col.adapter"), t("manifest.col.device"), t("manifest.col.models"), t("manifest.col.key"), t("manifest.col.provenance")],
       (m.stages ?? []).map((s) => [
         h("span", { class: "mono small" }, s.stage), pill(s.status), fmt.seconds(s.seconds),
         s.adapter ? `${s.adapter.name} ${s.adapter.version ?? ""}` : "–", s.adapter?.device ?? "–",
         s.adapter?.models?.length ? h("ul", { style: "margin:0;padding-left:1rem" }, s.adapter.models.map((x) => h("li", { class: "small" }, `${x.name} `, h("span", { class: "mono" }, fmt.hash(x.sha256))))) : "–",
         h("span", { class: "mono small" }, fmt.hash(s.key)),
-        s.provenance ? JSON.stringify(s.provenance) : s.matches_cache === false ? "differs from cache" : "–",
+        s.provenance ? JSON.stringify(s.provenance) : s.matches_cache === false ? t("manifest.differs") : "–",
       ])),
     form,
-    h("details", {}, h("summary", {}, "Manifest JSON"), h("pre", { class: "json", tabindex: 0 }, JSON.stringify(m, null, 1))));
+    h("details", {}, h("summary", {}, t("manifest.json")), h("pre", { class: "json", tabindex: 0 }, JSON.stringify(m, null, 1))));
+}
+
+/** "Delete run" with an inline confirmation (no browser dialog). */
+function deleteButton(id: string): HTMLElement {
+  const box = h("span", { class: "row" });
+  const start = (): HTMLButtonElement => h("button", { type: "button", onclick: ask }, t("run.delete"));
+  function ask(): void {
+    const yes = h("button", { type: "button", class: "danger", onclick: async () => {
+      try {
+        await api.deleteRun(id);
+        announce(t("run.deleted", { id }));
+        location.hash = "#/runs";
+      } catch (e) {
+        clear(box, errorNotice(e));
+      }
+    } }, t("run.deleteYes"));
+    const no = h("button", { type: "button", onclick: () => {
+      const b = start();
+      clear(box, b);
+      b.focus();
+    } }, t("run.deleteNo"));
+    clear(box, h("span", { role: "alert" }, t("run.deleteConfirm")), yes, no);
+    yes.focus();
+  }
+  box.append(start());
+  return box;
 }

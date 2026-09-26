@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.22)
+project(brasscribe_audio CXX C)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Oboe comes from the com.google.oboe:oboe AAR through prefab.
+find_package(oboe REQUIRED CONFIG)
+
+set(SFIZZ_SOURCE_DIR "" CACHE PATH "sfizz checkout (git clone --recursive); empty builds the stub")
+
+add_library(brasscribe_audio SHARED recorder.cpp jni_audio.cpp)
+target_link_libraries(brasscribe_audio PRIVATE oboe::oboe log)
+target_link_options(brasscribe_audio PRIVATE -Wl,--gc-sections -Wl,-z,max-page-size=16384)
+
+if(SFIZZ_SOURCE_DIR AND EXISTS "${SFIZZ_SOURCE_DIR}/CMakeLists.txt")
+  set(SFIZZ_JACK OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_RENDER OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_SHARED OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_USE_SNDFILE OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_TESTS OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_BENCHMARKS OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_DEMOS OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_DEVTOOLS OFF CACHE BOOL "" FORCE)
+  set(ENABLE_LTO OFF CACHE BOOL "" FORCE)
+  set(SFIZZ_GIT_SUBMODULE_CHECK OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${SFIZZ_SOURCE_DIR}" sfizz EXCLUDE_FROM_ALL)
+  target_sources(brasscribe_audio PRIVATE sfizz_player.cpp)
+  target_link_libraries(brasscribe_audio PRIVATE sfizz::static)
+  target_compile_definitions(brasscribe_audio PRIVATE BRASSCRIBE_SFIZZ=1)
+  message(STATUS "brasscribe_audio: sfizz from ${SFIZZ_SOURCE_DIR}")
+else()
+  target_sources(brasscribe_audio PRIVATE sfizz_stub.cpp)
+  message(STATUS "brasscribe_audio: sfizz not configured, realistic tier is a stub")
+endif()

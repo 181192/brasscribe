@@ -2,6 +2,7 @@
 // pipeline order. Each node is a toggle button that selects the stage for
 // the inspector; status is text plus border style, never colour alone.
 import type { RunView, StageView } from "../lib/events";
+import { t } from "../i18n";
 import { clear, fmt, h } from "../ui/dom";
 
 const ORDER = ["beats", "stems", "separate", "layers", "transcribe", "vote", "arrange", "export"];
@@ -36,7 +37,7 @@ export class StageGraph extends HTMLElement {
     if (!v) return;
     const focused = (document.activeElement as HTMLElement | null)?.dataset?.stage;
     const cols = columns(v.stages);
-    const list = h("ol", { class: "stage-graph", "aria-label": "Pipeline stages in order" },
+    const list = h("ol", { class: "stage-graph", "aria-label": t("run.stagesList") },
       cols.map((col, i) => [
         i ? h("li", { class: "stage-arrow", "aria-hidden": "true" }, "→") : null,
         h("li", {}, h("ol", { class: "stage-col", style: "list-style:none;padding:0;margin:0" }, col.map((s) => h("li", {}, this.node(s))))),
@@ -47,7 +48,7 @@ export class StageGraph extends HTMLElement {
 
   private node(s: StageView): HTMLButtonElement {
     const meta = [
-      s.status === "started" ? "running" : s.status === "cached" ? "cache hit" : s.status === "imported" ? "imported (cache hit)" : s.status,
+      s.status === "cached" ? t("run.cacheHit") : s.status === "imported" ? t("run.importedHit") : t(`status.${s.status}`),
       s.seconds !== undefined && s.seconds !== null ? fmt.seconds(s.seconds) : null,
       s.device ?? null,
     ].filter(Boolean).join(" · ");

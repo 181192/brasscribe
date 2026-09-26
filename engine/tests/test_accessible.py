@@ -1,0 +1,151 @@
+"""Braille (BRF) export, arrangement options and the braille / talking-score API."""
+
+import json
+import shutil
+
+import pytest
+from fastapi.testclient import TestClient
+
+from brasscribe_engine import braille, profiles
+from brasscribe_engine.api import create_app
+
+from .test_api import wait
+from .test_talking_score import SMALL
+
+
+def _scale_xml() -> str:
+    def notes(pitches):
+        return "".join(f"<note><pitch><step>{s}</step><octave>{o}</octave></pitch><duration>1</duration><voice>1</voice>"
+                       f"<type>quarter</type></note>" for s, o in pitches)
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><work><work-title>Scale — test</work-title></work>
+<part-list><score-part id="P1"><part-name>E♭ Bass</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>1</divisions><key><fifths>0</fifths></key>
+<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+{notes([("C", 4), ("D", 4), ("E", 4), ("F", 4)])}</measure>
+<measure number="2">{notes([("G", 4), ("A", 4), ("B", 4), ("C", 5)])}</measure></part></score-partwise>"""
+
+
+def test_brf_ascii_table():
+    assert len(braille.BRF_ASCII) == 64 and len(set(braille.BRF_ASCII)) == 64
+    # dots 1456 = quarter C, dots 3456 = number sign, dot 6 = capital, all six dots = "="
+    assert braille.unicode_to_brf("⠹⠼⠠⠿⠀") == "?#,= "
+    assert braille.brf_to_unicode("?#,= ") == "⠹⠼⠠⠿⠀"
+    with pytest.raises(ValueError):
+        braille.unicode_to_brf("x")
+
+
+def test_two_bars_of_a_scale(tmp_path):
+    p = tmp_path / "scale.musicxml"
+    p.write_text(_scale_xml())
+    r = braille.translate(p)
+    # 4/4, bar 1: octave-4 mark, quarter C D E F; bar 2: quarter G A B C (no octave mark needed for the step to C5)
+    assert "⠼⠙⠲" in r.unicode
+    assert "⠐⠹⠱⠫⠻⠀⠳⠪⠺⠹" in r.unicode
+    assert '"?:$] \\[W?' in r.brf
+    assert r.brf.isascii() and all(len(line) <= braille.LINE_CELLS for line in r.brf.split("\r\n"))
+    assert ",TITLE3 ,SCALE" in r.brf and "TEST" in r.brf and "MUSICXML" not in r.brf  # ASCII title, no file name
+    back = braille.brf_to_unicode(r.brf).split("\n")
+    assert [ln.rstrip("⠀") for ln in back if ln] == [ln.rstrip("⠀") for ln in r.unicode.split("\n")]
+
+
+def test_pagination_breaks_every_25_lines():
+    brf = braille.paginate("\n".join(f"#{i}" for i in range(30)))
+    pages = brf.split("\f")
+    assert len(pages) == 2 and pages[0].count("\r\n") == 25 and pages[1].count("\r\n") == 5
+
+
+def test_arrangement_options_only_non_defaults():
+    assert profiles.arrangement_options({"lineup": "full", "difficulty": "faithful", "key": None}) == {}
+    assert profiles.arrangement_options({"lineup": "minimal", "transpose": "-2"}) == {"lineup": "minimal", "transpose": -2}
+    assert profiles.arrangement_options({"transpose": 0}) == {}
+    for bad in ({"key": "Bb", "transpose": 2}, {"lineup": "huge"}, {"difficulty": "hard"}, {"transpose": 13}):
+        with pytest.raises(ValueError):
+            profiles.arrangement_options(bad)
+    default = profiles.build("orchestra-with-soloist", "m.wav").stage("arrange").params
+    easier = profiles.build("orchestra-with-soloist", "m.wav", params={"difficulty": "easier"}).stage("arrange").params
+    assert "arrangement" not in default and easier["arrangement"] == {"difficulty": "easier"}
+
+
+def test_difficulty_is_a_cache_key_pass_through(settings, audio):
+    from brasscribe_engine import runner, stages
+
+    ran = []
+
+    def arrange(ctx):
+        ran.append(stages._arrangement_flags(ctx, "json.tool"))  # a module without arrangement flags
+        (ctx.out / "composition.json").write_text("{}")
+        (ctx.out / "brass-band.musicxml").write_text("<score-partwise/>")
+
+    from .conftest import fake_pipeline
+
+    def pipeline(title, params):
+        p = fake_pipeline(title, params)
+        a = p.stage("arrange")
+        a.run, a.params = arrange, profiles._arrange_params(title, params)
+        return p
+
+    profiles.PROFILES["test"] = profiles.Profile("test", "test", "", False, pipeline)
+    m1 = runner.run(settings, audio, "test")
+    m2 = runner.run(settings, audio, "test", params={"difficulty": "easier"})
+    k = {m["run_id"]: {s["stage"]: s for s in m["stages"]}["arrange"] for m in (m1, m2)}
+    a1, a2 = k[m1["run_id"]], k[m2["run_id"]]
+    assert a1["key"] != a2["key"] and a2["status"] == "ran" and ran == [[], []]
+    m3 = runner.run(settings, audio, "test", params={"lineup": "minimal"})
+    assert m3["status"] == "failed" and "does not support --lineup" in m3["error"]
+
+
+def test_braille_and_talking_score_endpoints(settings, audio, tmp_path):
+    with TestClient(create_app(settings)) as c:
+        r = c.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())}, data={"profile": "test"})
+        job = wait(c, r.json()["id"])
+        out = settings.runs_dir / job["id"] / "outputs"
+        # what the export stage writes for a real profile
+        (out / "parts").mkdir()
+        (out / "parts" / "02-Solo-Cornet.musicxml").write_text(SMALL)
+        (out / "brass-band.musicxml").write_text(SMALL)
+        from brasscribe_engine import talking_score as T
+        from brasscribe_engine.stages import accessible_exports
+
+        class Ctx:
+            out = tmp_path / "export"
+
+            @staticmethod
+            def log(msg):
+                pass
+
+        Ctx.out.mkdir()
+        info = accessible_exports(out, Ctx)
+        assert info["braille_failed"] == {} and "parts/02-Solo-Cornet.brf" in info["written"]
+        for f in ("brass-band.brf", "talking-score.json"):
+            shutil.copy(Ctx.out / f, out / f)
+        shutil.copy(Ctx.out / "parts" / "02-Solo-Cornet.brf", out / "parts" / "02-Solo-Cornet.brf")
+
+        score = c.get(f"/v1/jobs/{job['id']}/braille")
+        assert score.status_code == 200 and score.text.isascii() and score.text.endswith("\r\n")
+        for part in ("2", "02", "Solo Cornet", "solo-cornet"):
+            assert c.get(f"/v1/jobs/{job['id']}/braille", params={"part": part}).status_code == 200
+        assert c.get(f"/v1/jobs/{job['id']}/braille", params={"part": "Tuba"}).status_code == 404
+
+        html = c.get(f"/v1/jobs/{job['id']}/talking-score")
+        assert html.headers["content-type"].startswith("text/html") and "<h2>Solo Cornet</h2>" in html.text
+        text = c.get(f"/v1/jobs/{job['id']}/talking-score",
+                     params={"format": "text", "lang": "nb", "part": "1"}).text
+        assert "takt 1, tempo 120, slag 1: B 4, åttendedelsnote" in text  # one part: written pitch
+        concert = c.get(f"/v1/jobs/{job['id']}/talking-score", params={"format": "text"}).text
+        assert "beat 1: A-flat 4, eighth note" in concert  # whole score: concert pitch
+        doc = c.get(f"/v1/jobs/{job['id']}/talking-score", params={"format": "json"}).json()
+        assert doc["version"] == 1 and doc["parts"][0]["name"] == "Solo Cornet"
+        assert json.loads((out / "talking-score.json").read_text()) == doc
+        assert c.get(f"/v1/jobs/{job['id']}/talking-score", params={"part": "9"}).status_code == 404
+        assert T.to_text(doc)
+
+
+def test_job_options_validated_by_the_api(settings, audio):
+    with TestClient(create_app(settings)) as c:
+        ref = c.post("/v1/audio", files={"file": ("a.wav", audio.read_bytes())}).json()
+        bad = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "key": "Bb", "transpose": 2})
+        assert bad.status_code == 422
+        assert c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "lineup": "huge"}).status_code == 422
+        ok = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "difficulty": "easier"})
+        assert ok.status_code == 202
