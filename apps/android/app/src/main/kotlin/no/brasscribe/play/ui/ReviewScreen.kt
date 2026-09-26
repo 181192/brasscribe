@@ -1,5 +1,6 @@
 package no.brasscribe.play.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -10,7 +11,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +21,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,15 +44,20 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,6 +66,9 @@ import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
+import no.brasscribe.play.engine.NoteEvidence
+import no.brasscribe.play.noteAt
+import kotlin.math.roundToInt
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.Lang
@@ -127,6 +142,7 @@ fun ReviewScreen(vm: PlayViewModel) {
     var at by rememberSaveable(voiceId) { mutableIntStateOf(-1) }
     val current = todo.firstOrNull { it.index > at } ?: todo.firstOrNull()
     var confirmLater by remember { mutableStateOf(false) }
+    var changing by remember { mutableStateOf(false) }
 
     fun advance(from: Int, announce: Boolean = true) {
         at = from
@@ -178,16 +194,37 @@ fun ReviewScreen(vm: PlayViewModel) {
                 }
             }
             item {
-                if (current != null) NoteCard(
-                    current, partName, todo.indexOf(current) + 1, todo.size, spoken[current.index], lang, playingBar == current.bar,
-                    listen = { vm.listenToBar(current.bar) }, stop = vm::stopListening,
-                    keep = { keep(current) }, next = { advance(current.index) },
-                    correct = { delta ->
-                        val note = current.note
-                        if (note != null && vm.correctNote(voiceId, note.start, note.pitch, delta)) vm.say(R.string.note_saved)
-                    },
-                    neighbours = bars.firstOrNull { it.number == current.bar }?.events.orEmpty(), checked = checked,
-                )
+                if (current != null) {
+                    val note = current.note
+                    val evidence = note?.let { r.evidence?.noteAt(voiceId, it.start, it.pitch) }
+                    val fifths = view.instrument.writtenFifths(composition.keys.firstOrNull()?.fifths ?: 0)
+                    val written = current.stop.event.written
+                    val label: (Int) -> String = { concert ->
+                        // The note itself keeps its written spelling; other pitches are spelled by the key.
+                        if (note != null && concert == note.pitch && written != null) no.brasscribe.play.model.Announcer.pitchLabel(written, lang)
+                        else no.brasscribe.play.model.Announcer.pitchLabel(
+                            no.brasscribe.play.model.SpelledPitch.spell(view.instrument.writtenMidi(concert), fifths), lang)
+                    }
+                    NoteCard(
+                        current, partName, todo.indexOf(current) + 1, todo.size, spoken[current.index], lang, playingBar == current.bar,
+                        listen = { vm.listenToBar(current.bar) }, stop = vm::stopListening,
+                        keep = { keep(current) }, next = { advance(current.index) },
+                        changeNote = { changing = true },
+                        neighbours = bars.firstOrNull { it.number == current.bar }?.events.orEmpty(), checked = checked,
+                        evidence = evidence, pitchLabel = label,
+                    )
+                    if (changing && note != null) ChangeNoteSheet(
+                        written = note.pitch, evidence = evidence, pitchLabel = label,
+                        dismiss = { changing = false },
+                        save = { shift ->
+                            changing = false
+                            if (shift == 0 || vm.correctNote(voiceId, note.start, note.pitch, shift)) {
+                                if (shift != 0) vm.say(R.string.note_saved)
+                                keep(current)
+                            }
+                        },
+                    )
+                }
             }
             item {
                 val rest = todo.filter { it != current }
@@ -265,26 +302,31 @@ private fun noteLine(e: PartEvent, lang: Lang): String {
 
 /**
  * The note being checked: bar and part, its place in the queue, the bar's notes with the marks, the
- * note in words with its level, and Listen. Keep and Skip sit in the bottom bar; TalkBack also gets
- * them as custom actions here.
+ * note in words with its level and what else it could be, how sure Brasscribe is and what each
+ * transcriber heard, then Listen and Change note…. Keep and Skip sit in the bottom bar; TalkBack also
+ * gets them as custom actions here.
  */
 @Composable
 private fun NoteCard(
     e: PartEvent, partName: String, position: Int, total: Int, spoken: String, lang: Lang, playing: Boolean,
     listen: () -> Unit, stop: () -> Unit, keep: () -> Unit, next: () -> Unit,
-    correct: (Int) -> Unit,
+    changeNote: () -> Unit,
     neighbours: List<PartEvent>, checked: Set<Int>,
+    evidence: NoteEvidence?, pitchLabel: (Int) -> String,
 ) {
     val c = BrasscribeTheme.colors
     val listenLabel = stringResource(R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
     val level = stringResource(if (e.uncertainty == Uncertainty.VERY_UNCERTAIN) R.string.level_very_uncertain else R.string.level_uncertain)
+    val alternative = evidence?.alternativeShift?.let { pitchLabel(evidence.pitch + it) }
+    val levelSentence = if (alternative != null) stringResource(R.string.review_could_also_be, level, withArticle(alternative, lang))
+        else stringResource(R.string.review_listen_side_by_side, level)
     Surface(shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border)) {
         Column(Modifier.fillMaxWidth().padding(BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
             Column(
                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                    contentDescription = spoken
+                    contentDescription = "$spoken. $levelSentence"
                     customActions = listOf(
                         CustomAccessibilityAction(listenLabel) { listen(); true },
                         CustomAccessibilityAction(checkLabel) { keep(); true },
@@ -304,17 +346,105 @@ private fun NoteCard(
                             Modifier.then(if (mine) Modifier.border(2.dp, c.text, MaterialTheme.shapes.small).padding(2.dp) else Modifier), size = 30.dp)
                     }
                 }
-                Text(
-                    stringResource(R.string.review_note_and_level, noteLine(e, lang), level),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                Text(noteLine(e, lang), style = MaterialTheme.typography.titleMedium)
+                Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                OutlineButton(stringResource(R.string.pitch_down), { correct(-1) }, fill = false)
-                OutlineButton(stringResource(R.string.pitch_up), { correct(1) }, fill = false)
-            }
+            if (evidence != null) EvidencePanel(evidence, pitchLabel)
             if (playing) OutlineButton(stringResource(R.string.stop_listening), stop, icon = R.drawable.ic_bc_stop)
-            else SecondaryButton(stringResource(R.string.listen), listen, icon = R.drawable.ic_bc_listen_bar)
+            else SecondaryButton(stringResource(R.string.action_listen_bar), listen, icon = R.drawable.ic_bc_listen_bar)
+            OutlineButton(stringResource(R.string.change_note), changeNote, icon = R.drawable.ic_bc_transpose)
+        }
+    }
+}
+
+/** "an A", "a B" in English; Norwegian names the note bare. */
+private fun withArticle(name: String, lang: Lang): String =
+    if (lang == Lang.NB) name else (if (name.firstOrNull()?.uppercaseChar() in setOf('A', 'E', 'F')) "an " else "a ") + name
+
+/** How sure Brasscribe is, and what each transcriber heard at this note. */
+@Composable
+private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
+    val c = BrasscribeTheme.colors
+    val howSure = stringResource(R.string.evidence_how_sure)
+    val percent = stringResource(R.string.evidence_percent, (evidence.confidence * 100).roundToInt())
+    Column(
+        Modifier.fillMaxWidth().background(c.surface, MaterialTheme.shapes.medium).border(1.dp, c.border, MaterialTheme.shapes.medium)
+            .padding(BrasscribeSpace.s4),
+        verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+    ) {
+        Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
+            Text(howSure, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(percent, style = no.brasscribe.design.BrasscribeNumericStyle.copy(fontSize = MaterialTheme.typography.titleSmall.fontSize))
+        }
+        LinearProgressIndicator(
+            progress = { evidence.confidence.toFloat().coerceIn(0f, 1f) },
+            color = c.text, trackColor = c.border,
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentDescription = howSure
+                stateDescription = percent
+                progressBarRangeInfo = ProgressBarRangeInfo(evidence.confidence.toFloat().coerceIn(0f, 1f), 0f..1f)
+            },
+        )
+        if (evidence.models.isNotEmpty()) {
+            HorizontalDivider(color = c.border)
+            Text(stringResource(R.string.evidence_heard), style = MaterialTheme.typography.titleSmall)
+            evidence.models.forEach { m ->
+                val heard = when {
+                    m.pitch == null -> stringResource(R.string.evidence_no_note)
+                    m.agrees -> stringResource(R.string.evidence_same, pitchLabel(m.pitch!!))
+                    else -> pitchLabel(m.pitch!!)
+                }
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 32.dp).semantics(mergeDescendants = true) {},
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+                ) {
+                    BcIcon(if (m.agrees) R.drawable.ic_bc_done else R.drawable.ic_bc_info, null, Modifier.size(20.dp), tint = c.textMuted)
+                    Text(m.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(heard, style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (m.agrees) FontWeight.Normal else FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * "Change note…": move the written note by semitones or take what a transcriber heard, then Save.
+ * Saving writes the score and marks the note checked, as on every platform.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (Int) -> String, dismiss: () -> Unit, save: (Int) -> Unit) {
+    var shift by remember(written) { mutableIntStateOf(0) }
+    val c = BrasscribeTheme.colors
+    ModalBottomSheet(onDismissRequest = dismiss, containerColor = c.bg) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
+            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+        ) {
+            ScreenTitle(stringResource(R.string.change_note_title))
+            Text(
+                pitchLabel(written + shift),
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                OutlineButton(stringResource(R.string.pitch_down), { shift -= 1 }, Modifier.weight(1f), enabled = written + shift > 0)
+                OutlineButton(stringResource(R.string.pitch_up), { shift += 1 }, Modifier.weight(1f), enabled = written + shift < 127)
+            }
+            val heard = evidence?.models.orEmpty().mapNotNull { m -> m.pitch?.let { m.name to it } }
+            if (heard.isNotEmpty()) {
+                SectionLabel(stringResource(R.string.evidence_heard))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    heard.forEach { (name, pitch) ->
+                        PracticeChip("$name: ${pitchLabel(pitch)}", written + shift == pitch, { shift = pitch - written }, role = Role.RadioButton)
+                    }
+                }
+            }
+            PrimaryButton(stringResource(R.string.save), { save(shift) })
+            PlainButton(stringResource(R.string.cancel), dismiss, Modifier.fillMaxWidth())
         }
     }
 }

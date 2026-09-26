@@ -50,6 +50,24 @@ struct Reference: Decodable {
         #expect(pitch == SpelledPitch(step: "F", alter: -1, octave: 5))
         #expect(notes[0].midiPitch == SpelledPitch(step: "D", alter: 0, octave: 4).midi)
     }
+
+    @Test func retainsTheRealScoreDoctypeAndParsesAfterPitchEdit() throws {
+        guard let dir = goldenDir() else { return }
+        let xml = try String(contentsOf: dir.appending(path: "brass-band.musicxml"), encoding: .utf8)
+        let score = try MusicXMLParser.parse(Data(xml.utf8))
+        let part = try #require(score.parts.first { candidate in
+            candidate.notes.contains { if case .pitched = $0.kind { true } else { false } }
+        })
+        let selected = try #require(part.notes.enumerated().first { if case .pitched = $0.element.kind { true } else { false } })
+        guard case .pitched(let original) = selected.element.kind else { Issue.record("Expected a pitched note"); return }
+        let replacement = SpelledPitch.spelling(midi: original.midi + 1, fifths: part.writtenFifths)
+
+        let edited = try MusicXMLNoteEditor.replacingPitch(in: xml, partID: part.id, noteIndex: selected.offset, with: replacement)
+        let reparsed = try MusicXMLParser.parse(Data(edited.utf8))
+
+        #expect(edited.contains("<!DOCTYPE"))
+        #expect(reparsed.parts.first(where: { $0.id == part.id })?.notes[selected.offset].kind == .pitched(written: replacement))
+    }
 }
 /// Checks against the golden Mikkel output. The golden files are re-saved when the engine
 /// improves, so these tests check structure and agreement with the Python reference

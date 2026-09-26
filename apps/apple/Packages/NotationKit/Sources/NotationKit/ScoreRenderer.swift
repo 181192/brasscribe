@@ -147,6 +147,40 @@ public final class ScoreRenderer: @unchecked Sendable {
 
     public func renderAllPages() -> [Page] { (1...max(1, pageCount)).compactMap(page) }
 
+    /// One part's bars `first...last` (1-based printed order) on a single strip, for Check the notes.
+    public static func snippet(musicXML: String, partID: String, bars: ClosedRange<Int>, width: CGFloat, pitch: PitchMode = .written,
+                               resourcePath: String? = VerovioToolkit.defaultResourcePath()) -> Page? {
+        guard let tk = VerovioToolkit(resourcePath: resourcePath) else { return nil }
+        let scale = 40
+        tk.setOptions([
+            "pageWidth": max(500, Int(width * 100 / CGFloat(scale))), "pageHeight": 60000, "adjustPageHeight": true, "scale": scale,
+            "pageMarginLeft": 20, "pageMarginRight": 20, "pageMarginTop": 20, "pageMarginBottom": 20,
+            "breaks": "none", "font": "Leipzig", "svgHtml5": false, "header": "none", "footer": "none",
+            "transposeToSoundingPitch": pitch == .concert,
+        ])
+        let xml = MusicXMLFilter.keepingParts([partID], in: removingQuestionMarks(musicXML))
+        guard tk.loadData(xml) else { return nil }
+        tk.select(["measureRange": "\(bars.lowerBound)-\(bars.upperBound)"])
+        tk.redoLayout()
+        guard let doc = try? SVGDocument(svg: tk.renderToSVG(page: 1)) else { return nil }
+        var notes: [String: [String]] = [:]
+        var lines: [String: CGRect] = [:]
+        for op in doc.ops {
+            var staff: String?
+            for o in op.owners {
+                let id = doc.ids[Int(o)]
+                switch doc.classes[id] {
+                case "staff":
+                    staff = id
+                    if let path = op.path, o == op.owners.last { lines[id] = (lines[id] ?? .null).union(path.boundingBoxOfPath) }
+                case "note": if let staff, !(notes[staff] ?? []).contains(id) { notes[staff, default: []].append(id) }
+                default: break
+                }
+            }
+        }
+        return Page(number: 1, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: [:], notesByStaff: notes, staffLines: lines)
+    }
+
     /// Page holding a measure id.
     public func pageNumber(forMeasure id: String) -> Int {
         lock.lock(); defer { lock.unlock() }

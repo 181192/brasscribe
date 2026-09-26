@@ -6,8 +6,6 @@ struct HomeView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
     @State private var dropTargeted = false
-    @State private var renameTarget: Piece?
-    @State private var titleDraft = ""
 
     private var wide: Bool {
         #if os(macOS)
@@ -41,14 +39,8 @@ struct HomeView: View {
         .pageBackground()
         .navigationTitle(Text("Home"))
         .toolbar(removing: .title)
-        .alert("Edit title", isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
-            TextField("Title", text: $titleDraft)
-            Button("Cancel", role: .cancel) { renameTarget = nil }
-            Button("Save") {
-                if let renameTarget { app.rename(renameTarget, to: titleDraft) }
-                renameTarget = nil
-            }
-        }
+        .refreshable { await app.refreshComputerScores() }
+        .task { await app.refreshComputerScores() }
         .toolbar {
             #if os(iOS)
             if !wide {
@@ -138,7 +130,7 @@ struct HomeView: View {
     @ViewBuilder private var scores: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             SectionLabel(String(localized: "Your scores"))
-            if app.pieces.isEmpty {
+            if app.scores.isEmpty {
                 HStack(spacing: Space.s3) {
                     BrandMark(size: 32)
                     Text("Your scores appear here after the first recording.")
@@ -147,29 +139,28 @@ struct HomeView: View {
                 .padding(.vertical, Space.s2)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(app.pieces.enumerated()), id: \.element.id) { i, p in
+                    ForEach(Array(app.scores.enumerated()), id: \.element.id) { i, entry in
                         if i > 0 { Divider().overlay(Color.Brasscribe.border) }
-                        Button { app.open(p) } label: {
-                            HStack(spacing: Space.s3) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(p.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                    Text(p.summary).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        HStack(spacing: Space.s2) {
+                            Button { app.open(entry) } label: {
+                                HStack(spacing: Space.s3) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(entry.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                                        Text(entry.summary).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                    }
+                                    Spacer(minLength: Space.s2)
+                                    if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                                 }
-                                Spacer(minLength: Space.s2)
-                                Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Brasscribe.textMuted)
-                                    .accessibilityHidden(true)
+                                .frame(minHeight: 60)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.horizontal, Space.s4)
-                            .frame(minHeight: 60)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("piece-\(entry.title)")
+                            ScoreOptionsMenu(entry: entry)
                         }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button { titleDraft = p.title; renameTarget = p } label: { Label("Edit title", systemImage: "pencil") }
-                            Button { app.path = [.review(p)] } label: { Label("Check the notes", systemImage: BrasscribeIcon.nextUncertain.systemName) }
-                            Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: BrasscribeIcon.delete.systemName) }
-                        }
-                        .accessibilityIdentifier("piece-\(p.title)")
+                        .padding(.leading, Space.s4)
+                        .padding(.trailing, Space.s2)
+                        .contextMenu { ScoreOptionItems(entry: entry) }
                     }
                 }
                 .card(padding: 0)

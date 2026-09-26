@@ -9,9 +9,16 @@ struct ScoreScreen: View {
     let piece: Piece
     @State private var model: PracticeModel?
     @State private var error: String?
-    @State private var editingPitches = false
 
     var body: some View {
+        screenContent
+            .navigationTitle(currentTitle)
+            .toolbar { editToolbar }
+            .task { loadModel() }
+            .onDisappear { model?.stopAll() }
+    }
+
+    @ViewBuilder private var screenContent: some View {
         Group {
             if let model {
                 PracticeView(model: model)
@@ -21,34 +28,30 @@ struct ScoreScreen: View {
                 ProgressView()
             }
         }
-        .navigationTitle(app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { editingPitches = true } label: { Label("Correct notes", systemImage: "pencil.and.outline") }
-                    .accessibilityIdentifier("correctNotes")
+    }
+
+    private var currentTitle: String {
+        app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title
+    }
+
+    private var editToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button { model?.stopAll(); app.path.append(.review(piece)) } label: {
+                Label("Check the notes", systemImage: BrasscribeIcon.nextUncertain.systemName)
             }
+            .accessibilityIdentifier("checkNotes")
         }
-        .sheet(isPresented: $editingPitches) {
-            PitchCorrectionView(piece: piece) {
-                app.refresh()
-                model?.stopAll()
-                do {
-                    let refreshed = try PracticeModel(piece: piece)
-                    refreshed.start()
-                    model = refreshed
-                    error = nil
-                } catch { error = error.localizedDescription }
-            }
+    }
+
+    private func loadModel() {
+        guard model == nil else { return }
+        do {
+            let loaded = try PracticeModel(piece: piece)
+            loaded.start()
+            model = loaded
+        } catch {
+            self.error = error.localizedDescription
         }
-        .task {
-            guard model == nil else { return }
-            do {
-                let m = try PracticeModel(piece: piece)
-                m.start()
-                model = m
-            } catch { self.error = error.localizedDescription }
-        }
-        .onDisappear { model?.stopAll() }
     }
 }
 

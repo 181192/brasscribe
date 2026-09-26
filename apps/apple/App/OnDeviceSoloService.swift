@@ -36,10 +36,14 @@ struct OnDeviceSoloService: TranscriptionService {
                     report(.arranging, 0.85)
                     let out = try Self.arrange(solo, title: request.title ?? "Solo", output: request.output)
                     let comp = try? Composition.decode(Data(out.compositionJson.utf8))
+                    let evidence = comp.map { NoteEvidence.build(composition: $0, models: [
+                        .init(model: "swift-f0", name: "SwiftF0", notes: solo.swiftF0.map { .init(onset: $0.onset, offset: $0.offset, pitch: $0.pitch) }),
+                        .init(model: "basic-pitch", name: "Basic Pitch", notes: solo.basicPitch.map { .init(onset: $0.onset, offset: $0.offset, pitch: $0.pitch) }),
+                    ]) }
                     report(.engraving, 1)
                     print("ON-DEVICE solo \(Int(Date().timeIntervalSince(t0) * 1000)) ms, steps \(solo.seconds.mapValues { Int($0 * 1000) })")
                     continuation.yield(.finished(.init(jobID: "on-device", composition: comp, musicXML: Data(out.musicxml.utf8),
-                                                       available: [.musicXML, .composition])))
+                                                       available: [.musicXML, .composition], evidence: evidence)))
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error is CancellationError ? TranscriptionError.cancelled : error)

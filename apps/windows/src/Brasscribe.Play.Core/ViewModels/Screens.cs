@@ -25,6 +25,8 @@ public static class Screens
     public static bool UncertainOpen(bool kept, bool veryUncertain) => !kept && !veryUncertain;
     public static bool VeryUncertainOpen(bool kept, bool veryUncertain) => !kept && veryUncertain;
     public static bool HasNotes(int count) => count > 0;
+    /// <summary>The sidebar icon of a score: the computer (BcIconComputer) for one still on the paired computer, else the score (BcIconScore).</summary>
+    public static string LibraryGlyph(bool onComputer) => onComputer ? "\uE977" : "\uEC4F";
     public static bool Both(bool a, bool b) => a && b;
     /// <summary>A percentage in the UI language's spacing ("75%", "75 %").</summary>
     public static string PercentOf(double value) => Percent(value);

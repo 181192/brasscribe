@@ -106,11 +106,22 @@
             <NavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="vm:LibraryItem">
                     <NavigationViewItem AutomationProperties.Name="{x:Bind Title}" AutomationProperties.HelpText="{x:Bind Subtitle}"
-                                        ToolTipService.ToolTip="{x:Bind Subtitle}">
+                                        ToolTipService.ToolTip="{x:Bind Subtitle}" ContextRequested="OnLibraryItemContextRequested">
                         <NavigationViewItem.Icon>
-                            <FontIcon Glyph="{StaticResource BcIconScore}" />
+                            <FontIcon Glyph="{x:Bind vm:Screens.LibraryGlyph(OnComputer)}" />
                         </NavigationViewItem.Icon>
-                        <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                        <Grid ColumnSpacing="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Width="32" Height="32" Padding="0"
+                                    Tag="{x:Bind}" Click="OnLibraryItemOptions" x:Uid="ScoreOptionsButton"
+                                    AutomationProperties.HelpText="{x:Bind Title}" ToolTipService.ToolTip="{x:Bind Title}">
+                                <FontIcon Glyph="{StaticResource BcIconMore}" FontSize="14" />
+                            </Button>
+                        </Grid>
                     </NavigationViewItem>
                 </DataTemplate>
             </NavigationView.MenuItemTemplate>

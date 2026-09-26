@@ -35,14 +35,23 @@ public sealed class MusicXmlNoteEditorTests
         try
         {
             var library = new ScoreLibrary(root);
-            var entry = library.AddMade("Old", Xml, null, parts: 1, bars: 1, notesToCheck: 0, jobId: null);
+            var composition = new Composition
+            {
+                Title = "Old",
+                Voices = [new Voice { Id = "solo", Role = VoiceRole.Melody, Notes = [new Note { Pitch = 60, Start = 0, Dur = 24 }] }],
+            };
+            var entry = library.AddMade("Old", Xml, composition, parts: 1, bars: 1, notesToCheck: 0, jobId: null);
             library.Rename(entry.Id, "Rehearsal");
             var corrected = MusicXmlNoteEditor.ReplacePitch(Xml, "P1", 1, midi: 77, fifths: -2);
-            library.SaveMusicXml(entry.Id, corrected);
+            composition.Voices[0].Notes[0].Pitch = 61;
+            library.SaveMusicXml(entry.Id, corrected, CompositionJson.Serialize(composition));
 
             var reopened = Assert.Single(new ScoreLibrary(root).Entries);
             Assert.Equal("Rehearsal", reopened.Title);
             Assert.Equal("F", XDocument.Load(reopened.MusicXmlPath).Descendants("pitch").Last().Element("step")?.Value);
+            var sidecar = CompositionJson.Parse(File.ReadAllText(reopened.CompositionPath!));
+            Assert.Equal("Rehearsal", sidecar.Title);
+            Assert.Equal(61, sidecar.Voices[0].Notes[0].Pitch);
         }
         finally
         {

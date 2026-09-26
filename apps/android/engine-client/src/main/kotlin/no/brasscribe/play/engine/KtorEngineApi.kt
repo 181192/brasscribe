@@ -13,6 +13,7 @@ import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
@@ -153,6 +154,18 @@ class KtorEngineApi(
     override suspend fun artifacts(jobId: String): List<Artifact> = http.get("v1/jobs/$jobId/artifacts") { auth() }.ok().body()
     override suspend fun artifact(jobId: String, name: String): ByteArray = bytes("v1/jobs/$jobId/artifacts/$name")
     override suspend fun manifest(jobId: String): String = http.get("v1/jobs/$jobId/manifest") { auth() }.ok().bodyAsText()
+    override suspend fun evidence(jobId: String): Evidence = http.get("v1/jobs/$jobId/evidence") { auth() }.ok().body()
+
+    override suspend fun renameRun(jobId: String, title: String): Job =
+        http.patch("v1/runs/$jobId") {
+            auth()
+            contentType(ContentType.Application.Json)
+            setBody(RunUpdate(title))
+        }.ok().body()
+
+    override suspend fun deleteRun(jobId: String) {
+        http.delete("v1/runs/$jobId") { auth() }.ok()
+    }
 
     private suspend fun bytes(path: String): ByteArray = http.get(path) { auth() }.ok().bodyAsBytes()
 

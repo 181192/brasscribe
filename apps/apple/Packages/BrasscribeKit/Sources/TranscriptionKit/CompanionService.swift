@@ -33,6 +33,44 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let stages: [Stage]
         public let outputs: [String]
         public let error: String?
+        public let profile: String?
+        public let title: String?
+        public let created: Double?
+        public let audioID: String?
+        enum CodingKeys: String, CodingKey {
+            case id, status, progress, stages, outputs, error, profile, title, created
+            case audioID = "audio_id"
+        }
+    }
+
+    /// What each transcriber heard at the notes Brasscribe is unsure about.
+    public struct Evidence: Codable, Sendable, Equatable {
+        public struct Model: Codable, Sendable, Equatable { public let model: String; public let name: String }
+        public struct Heard: Codable, Sendable, Equatable {
+            public let model: String
+            public let name: String
+            public let pitch: Int?
+            public let agrees: Bool
+            public init(model: String, name: String, pitch: Int?, agrees: Bool) {
+                self.model = model; self.name = name; self.pitch = pitch; self.agrees = agrees
+            }
+        }
+        public struct Note: Codable, Sendable, Equatable {
+            public let voice: String
+            public let start: Int
+            public let pitch: Int
+            public let confidence: Double
+            public let onsetS: Double?
+            public let models: [Heard]
+            enum CodingKeys: String, CodingKey { case voice, start, pitch, confidence, models; case onsetS = "onset_s" }
+            public init(voice: String, start: Int, pitch: Int, confidence: Double, onsetS: Double?, models: [Heard]) {
+                self.voice = voice; self.start = start; self.pitch = pitch; self.confidence = confidence
+                self.onsetS = onsetS; self.models = models
+            }
+        }
+        public let models: [Model]
+        public let notes: [Note]
+        public init(models: [Model], notes: [Note]) { self.models = models; self.notes = notes }
     }
 
     public struct ProfileInfo: Decodable, Sendable {
@@ -100,6 +138,26 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
 
     public func cancel(_ id: String) async {
         _ = try? await send(request("v1/jobs/\(id)", method: "DELETE"))
+    }
+
+    /// Every run on the computer, newest first.
+    public func jobs() async throws -> [Job] {
+        try JSONDecoder().decode([Job].self, from: try await send(request("v1/jobs")))
+    }
+
+    public func evidence(jobID: String) async throws -> Evidence {
+        try JSONDecoder().decode(Evidence.self, from: try await send(request("v1/jobs/\(jobID)/evidence")))
+    }
+
+    public func rename(jobID: String, title: String) async throws {
+        var r = request("v1/runs/\(jobID)", method: "PATCH")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: ["title": title])
+        _ = try await send(r)
+    }
+
+    public func deleteRun(jobID: String) async throws {
+        _ = try await send(request("v1/runs/\(jobID)", method: "DELETE"))
     }
 
     /// Multipart upload streamed from a temporary file, so long recordings never sit in memory.
@@ -188,7 +246,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                     let available = Set(ArtifactKind.allCases.filter { names.contains($0.engineName) })
                     let xml = try await artifact(.musicXML, jobID: job.id)
                     let comp = try? Composition.decode(try await artifact(.composition, jobID: job.id))
-                    continuation.yield(.finished(.init(jobID: job.id, composition: comp, musicXML: xml, available: available)))
+                    let evidence = try? await self.evidence(jobID: job.id)
+                    continuation.yield(.finished(.init(jobID: job.id, composition: comp, musicXML: xml, available: available, evidence: evidence)))
                     continuation.finish()
                 } catch {
                     if let jobID, Task.isCancelled || error is CancellationError { await cancel(jobID) }

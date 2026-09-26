@@ -39,7 +39,12 @@ public sealed partial class ScoreViewModel : ObservableObject
     public TalkingScoreDocument? Document { get; private set; }
     public Composition? Composition { get; private set; }
     public string? MusicXml { get; private set; }
-    public Action<string>? PersistEditedMusicXml { get; set; }
+    public Action<string, string?>? PersistEditedScore { get; set; }
+
+    /// <summary>Confidence and what each transcriber heard at the uncertain notes; null for opened files.</summary>
+    public Engine.Evidence? Evidence { get; set; }
+
+    public Action<Engine.Evidence>? PersistEvidence { get; set; }
     public ScoreNavigator? Navigator => _nav;
 
     public ObservableCollection<ScorePartItem> Parts { get; } = [];
@@ -158,9 +163,32 @@ public sealed partial class ScoreViewModel : ObservableObject
         if (ev.Written is not { } written || ev.MusicXmlNoteIndex < 0) return false;
         int midi = Announcer.Midi(written) + semitones;
         if (midi is < 0 or > 127) return false;
+        string? compositionJson = null;
+        if (Composition is { } composition && ev.CompositionVoiceId is { } voiceId && ev.CompositionNoteStart is { } noteStart)
+        {
+            var sourceNote = composition.Voices.FirstOrDefault(v => v.Id == voiceId)?.Notes.FirstOrDefault(n => n.Start == noteStart);
+            if (sourceNote is not null)
+            {
+                int old = sourceNote.Pitch;
+                sourceNote.Pitch = Math.Clamp(sourceNote.Pitch + semitones, 0, 127);
+                compositionJson = CompositionJson.Serialize(composition);
+                // The evidence follows the note: the musician's pitch is now the one each transcriber is compared to.
+                if (Evidence is { } evidence && evidence.Notes.Any(n => n.Voice == voiceId && n.Start == noteStart && n.Pitch == old))
+                {
+                    int now = sourceNote.Pitch;
+                    Evidence = evidence with
+                    {
+                        Notes = evidence.Notes.Select(n => n.Voice == voiceId && n.Start == noteStart && n.Pitch == old
+                            ? n with { Pitch = now, Models = n.Models.Select(m => m with { Agrees = m.Pitch == now }).ToList() }
+                            : n).ToList(),
+                    };
+                    PersistEvidence?.Invoke(Evidence);
+                }
+            }
+        }
         string edited = MusicXmlNoteEditor.ReplacePitch(MusicXml, part.Id, ev.MusicXmlNoteIndex, midi, part.Bars[barIndex].KeyFifths);
         Player.Player.Pause();
-        PersistEditedMusicXml?.Invoke(edited);
+        PersistEditedScore?.Invoke(edited, compositionJson);
         Load(edited, Composition);
         return true;
     }

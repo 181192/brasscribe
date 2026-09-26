@@ -44,7 +44,7 @@ struct MicRecordView: View {
                 Button {
                     if rec.isRecording {
                         if let url = rec.stop() {
-                            if rec.peak < 0.001 { app.alert = .silence } else {
+                            if rec.peak < 0.001 { app.show(.silence) } else {
                                 dismiss()
                                 app.acceptRecording(url, title: String(localized: "Recording \(Date().formatted(date: .abbreviated, time: .shortened))"))
                             }
@@ -119,7 +119,7 @@ struct CaptureView: View {
             do {
                 let result = try r.stop()
                 recorder = nil
-                if result.isSilent { app.alert = .silence; return }
+                if result.isSilent { app.show(.silence); return }
                 dismiss()
                 app.acceptRecording(result.url, title: String(localized: "Recording \(Date().formatted(date: .abbreviated, time: .shortened))"))
             } catch { self.error = "\(error)" }

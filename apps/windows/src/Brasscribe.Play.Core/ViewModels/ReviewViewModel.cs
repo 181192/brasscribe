@@ -47,6 +47,16 @@ public sealed partial class ReviewItem : ObservableObject
 /// <summary>A part heading in the review list with its notes.</summary>
 public sealed record ReviewGroup(string PartName, IReadOnlyList<ReviewItem> Items);
 
+/// <summary>What one transcriber heard at the note: "SwiftF0 · Same, G" or "Basic Pitch · A".</summary>
+public sealed record EvidenceRow(string Name, string Heard, bool Agrees)
+{
+    public bool Differs => !Agrees;
+    public string AccessibleName => $"{Name}: {Heard}";
+}
+
+/// <summary>A pitch to change the note to in "Change note…", as a shift from the written note.</summary>
+public sealed record NoteChoice(string Label, int Shift);
+
 /// <summary>
 /// "Check the notes": one uncertain note at a time (design/system.md §5, Review list). The note is
 /// shown with its bar, part, name and duration, the level in words and what else it could be; the
@@ -75,6 +85,12 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
     [ObservableProperty] public partial bool IsConfirmingFinish { get; set; }
 
     [ObservableProperty] public partial string ConfirmText { get; set; } = "";
+
+    /// <summary>The note has evidence: how sure Brasscribe is and what each transcriber heard.</summary>
+    [ObservableProperty] public partial bool HasEvidence { get; set; }
+    [ObservableProperty] public partial double ConfidencePercent { get; set; }
+    [ObservableProperty] public partial string ConfidenceText { get; set; } = "";
+    public ObservableCollection<EvidenceRow> Heard { get; } = [];
 
     public int Left => Items.Count(i => !i.IsKept);
 
@@ -156,19 +172,68 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
         score.ListenToBarCommand.Execute(null);
     }
 
-    [RelayCommand]
-    private void LowerPitch() => CorrectPitch(-1);
-
-    [RelayCommand]
-    private void RaisePitch() => CorrectPitch(1);
-
-    private void CorrectPitch(int semitones)
+    /// <summary>
+    /// "Change note…": moves the note by <paramref name="shift"/> semitones (0 keeps it as written), saves the
+    /// score and keeps the note, so its "?" goes. The same on every platform.
+    /// </summary>
+    public bool ChangeNote(int shift)
     {
-        if (Current is not { } selected || !score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, semitones)) return;
-        int sourceNoteIndex = selected.Event.MusicXmlNoteIndex;
-        Load();
-        Select(Items.FirstOrDefault(x => x.Part == selected.Part && x.Event.MusicXmlNoteIndex == sourceNoteIndex));
+        if (Current is not { } selected) return false;
+        if (shift != 0)
+        {
+            if (!score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, shift)) return false;
+            int sourceNoteIndex = selected.Event.MusicXmlNoteIndex;
+            var kept = Items.Where(i => i.IsKept).Select(i => (i.Part, i.Event.MusicXmlNoteIndex)).ToHashSet();
+            Load();
+            foreach (var i in Items) i.IsKept = kept.Contains((i.Part, i.Event.MusicXmlNoteIndex));
+            Select(Items.FirstOrDefault(x => x.Part == selected.Part && x.Event.MusicXmlNoteIndex == sourceNoteIndex));
+            announcer.Announce(s.Format("Review_Changed", PitchNameAt(Current!, 0)));
+        }
+        Keep();
+        return true;
     }
+
+    /// <summary>The current note moved by <paramref name="shift"/> semitones, named as the review shows it.</summary>
+    public string ChangeLabel(int shift) => Current is { } item ? PitchNameAt(item, shift) : "";
+
+    /// <summary>What the transcribers heard at the current note, as choices for "Change note…".</summary>
+    public IReadOnlyList<NoteChoice> ChangeChoices()
+    {
+        if (Current is not { } item || EvidenceFor(item) is not { } evidence) return [];
+        return evidence.Models.Where(m => m.Pitch is not null)
+            .Select(m => new NoteChoice($"{m.Name}: {PitchNameAt(item, m.Pitch!.Value - evidence.Pitch)}", m.Pitch!.Value - evidence.Pitch))
+            .ToList();
+    }
+
+    /// <summary>The evidence behind a review item: its Composition note, matched by voice, start and pitch class.</summary>
+    private Engine.NoteEvidence? EvidenceFor(ReviewItem item)
+    {
+        var ev = item.Event;
+        if (score.Evidence is not { } evidence || ev.CompositionVoiceId is not { } voice || ev.CompositionNoteStart is not { } start) return null;
+        var pitch = ev.Concert ?? ev.Written;
+        return pitch is null ? null : evidence.NoteAt(voice, start, Announcer.Midi(pitch));
+    }
+
+    /// <summary>"G", "B♭" (Norwegian "G", "B"): the note as shown (written or concert) moved by <paramref name="shift"/>.</summary>
+    private string PitchNameAt(ReviewItem item, int shift)
+    {
+        bool concert = score.ConcertPitch;
+        var ev = item.Event;
+        var shown = concert ? ev.Concert ?? ev.Written : ev.Written ?? ev.Concert;
+        if (shown is null || score.Document is not { } doc) return "";
+        if (shift == 0) return Announcer.PitchLabel(shown, Nb);
+        var part = doc.Parts[item.Part];
+        int fifths = part.Bars[item.BarIndex].KeyFifths;
+        if (concert) fifths = Announcer.ConcertKey(fifths, part.Transpose);
+        var spelled = MusicXmlNoteEditor.Spell(Announcer.Midi(shown) + shift, fifths);
+        return Announcer.PitchLabel(spelled, Nb);
+    }
+
+    private bool Nb => s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>"an A", "a B" in English; Norwegian names the note bare.</summary>
+    private string WithArticle(string name) =>
+        Nb || name.Length == 0 ? name : (name[0] is 'A' or 'E' or 'F' ? "an " : "a ") + name;
 
     /// <summary>"Finish later (9 left)": asks first while notes are left; with none left it finishes.</summary>
     [RelayCommand]
@@ -218,15 +283,34 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
     private void UpdateTexts()
     {
         FinishLaterText = s.Format("Review_FinishLater", Left);
+        Heard.Clear();
         if (Current is not { } item)
         {
-            Heading = Overline = NoteLine = LevelLine = "";
+            Heading = Overline = NoteLine = LevelLine = ConfidenceText = "";
+            HasEvidence = false;
             return;
         }
         int index = Items.ToList().IndexOf(item) + 1;
         Overline = s.Format("Review_Overline", index, Items.Count, item.PartName).ToUpperInvariant();
         Heading = s.Format("Review_BarHeading", item.BarNumber);
         NoteLine = s.Format(score.ConcertPitch ? "Review_NoteConcert" : "Review_NoteWritten", item.Label);
-        LevelLine = s[item.IsVeryUncertain ? "Review_LevelVeryUncertain" : "Review_LevelUncertain"];
+        var evidence = EvidenceFor(item);
+        HasEvidence = evidence is not null;
+        if (evidence is not null)
+        {
+            ConfidencePercent = Math.Round(Math.Clamp(evidence.Confidence, 0, 1) * 100);
+            ConfidenceText = Screens.Percent(ConfidencePercent, s.Language);
+            foreach (var m in evidence.Models)
+            {
+                string heard = m.Pitch is not { } p ? s["Review_HeardNothing"]
+                    : m.Agrees ? s.Format("Review_HeardSame", PitchNameAt(item, p - evidence.Pitch))
+                    : PitchNameAt(item, p - evidence.Pitch);
+                Heard.Add(new EvidenceRow(m.Name, heard, m.Agrees));
+            }
+        }
+        LevelLine = evidence?.AlternativeShift is { } shift
+            ? s.Format("Review_LevelAlternative", s[item.IsVeryUncertain ? "Review_WordVeryUncertain" : "Review_WordUncertain"],
+                WithArticle(PitchNameAt(item, shift)))
+            : s[item.IsVeryUncertain ? "Review_LevelVeryUncertain" : "Review_LevelUncertain"];
     }
 }

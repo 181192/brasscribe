@@ -141,8 +141,11 @@ public static class MusicXmlTalkingScoreBuilder
                             if (ev.Concert is { } concert)
                             {
                                 int midi = Announcer.Midi(concert);
-                                if (matcher?.Match(absQuarter, midi) is { } hit)
+                                if (matcher?.Match(absQuarter, midi) is { } match)
                                 {
+                                    var hit = match.Note;
+                                    ev.CompositionVoiceId = match.VoiceId;
+                                    ev.CompositionNoteStart = hit.Start;
                                     ev.Confidence = hit.Confidence;
                                     ev.Sources = [.. hit.Sources];
                                     if (hit.OnsetS is { } on) ev.TimeS = on;
@@ -389,21 +392,25 @@ public static class MusicXmlTalkingScoreBuilder
     /// </summary>
     private sealed class CompositionMatcher
     {
-        private readonly Dictionary<long, List<Note>> _byOnset = [];
+        public sealed record MatchedNote(string VoiceId, Note Note);
+        private readonly Dictionary<long, List<MatchedNote>> _byOnset = [];
         private readonly int _tpb;
 
         public CompositionMatcher(Composition c)
         {
             _tpb = c.TicksPerBeat;
-            foreach (var n in c.Voices.Where(v => v.Layer != "drums" && v.Role != VoiceRole.Rhythm).SelectMany(v => v.Notes))
+            foreach (var voice in c.Voices.Where(v => v.Layer != "drums" && v.Role != VoiceRole.Rhythm))
             {
-                long key = n.Start;
-                if (!_byOnset.TryGetValue(key, out var list)) _byOnset[key] = list = [];
-                list.Add(n);
+                foreach (var note in voice.Notes)
+                {
+                    long key = note.Start;
+                    if (!_byOnset.TryGetValue(key, out var list)) _byOnset[key] = list = [];
+                    list.Add(new MatchedNote(voice.Id, note));
+                }
             }
         }
 
-        public Note? Match(double quarter, int midi)
+        public MatchedNote? Match(double quarter, int midi)
         {
             long tick = (long)Math.Round(quarter * _tpb);
             for (long d = 0; d <= 1; d++)
@@ -411,9 +418,9 @@ public static class MusicXmlTalkingScoreBuilder
                 foreach (long t in d == 0 ? [tick] : new[] { tick - 1, tick + 1 })
                 {
                     if (!_byOnset.TryGetValue(t, out var list)) continue;
-                    var exact = list.FirstOrDefault(n => n.Pitch == midi);
+                    var exact = list.FirstOrDefault(n => n.Note.Pitch == midi);
                     if (exact is not null) return exact;
-                    var pc = list.FirstOrDefault(n => ((n.Pitch - midi) % 12 + 12) % 12 == 0);
+                    var pc = list.FirstOrDefault(n => ((n.Note.Pitch - midi) % 12 + 12) % 12 == 0);
                     if (pc is not null) return pc;
                 }
             }

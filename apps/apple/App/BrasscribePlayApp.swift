@@ -90,6 +90,7 @@ struct RootView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
+        .scoreOptionDialogs()
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
         #if os(iOS)
         .sheet(isPresented: $app.showSettings) { SettingsView() }
@@ -149,17 +150,17 @@ struct RootView: View {
 struct LibrarySidebar: View {
     @Environment(AppModel.self) private var app
 
-    private var selection: Binding<UUID?> {
+    private var selection: Binding<String?> {
         Binding(get: {
             for r in app.path.reversed() {
                 switch r {
-                case .score(let p), .review(let p): return p.id
+                case .score(let p), .review(let p): return p.id.uuidString
                 default: continue
                 }
             }
             return nil
         }, set: { id in
-            if let id, let p = app.pieces.first(where: { $0.id == id }) { app.open(p) }
+            if let id, let entry = app.scores.first(where: { $0.id == id }) { app.open(entry) }
         })
     }
 
@@ -170,19 +171,24 @@ struct LibrarySidebar: View {
             }
             .accessibilityIdentifier("sidebarHome")
             Section {
-                if app.pieces.isEmpty {
+                if app.scores.isEmpty {
                     Text("Your scores appear here.").foregroundStyle(Color.Brasscribe.textMuted)
                 }
-                ForEach(app.pieces) { p in
-                    Label(p.title, systemImage: BrasscribeIcon.score.systemName)
-                        .tag(p.id)
-                        .contextMenu {
-                            Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: BrasscribeIcon.delete.systemName) }
-                        }
-                        .accessibilityIdentifier("sidebar-\(p.title)")
+                ForEach(app.scores) { entry in
+                    HStack(spacing: Space.s1) {
+                        Label(entry.title, systemImage: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        if app.openingScore == entry.id { ProgressView().controlSize(.small) }
+                        ScoreOptionsMenu(entry: entry)
+                    }
+                    .tag(entry.id)
+                    .contextMenu { ScoreOptionItems(entry: entry) }
+                    .accessibilityIdentifier("sidebar-\(entry.title)")
                 }
             } header: { Text("Your scores") }
         }
+        .task { await app.refreshComputerScores() }
         .safeAreaInset(edge: .top) {
             HStack { Lockup(); Spacer() }
                 .padding(.horizontal, Space.s4)

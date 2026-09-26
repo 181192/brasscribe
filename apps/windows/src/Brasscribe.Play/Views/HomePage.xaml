@@ -155,12 +155,27 @@
                       IsItemClickEnabled="True" ItemClick="OnScoreCardClick" Visibility="{x:Bind Main.HasLibrary, Mode=OneWay}">
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="vm:LibraryItem">
-                        <Border Style="{StaticResource CardStyle}" Width="264" Padding="16,14" AutomationProperties.Name="{x:Bind Title}"
-                                AutomationProperties.HelpText="{x:Bind Subtitle}">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{x:Bind Title}" Style="{StaticResource HeadlineStyle}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedStyle}" />
-                            </StackPanel>
+                        <Border Style="{StaticResource CardStyle}" Width="264" Padding="16,14,8,14" AutomationProperties.Name="{x:Bind Title}"
+                                AutomationProperties.HelpText="{x:Bind Subtitle}" ContextRequested="OnScoreCardContextRequested">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                                  Visibility="{x:Bind OnComputer}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource HeadlineStyle}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Top"
+                                        Tag="{x:Bind}" Click="OnScoreCardOptions" x:Uid="ScoreOptionsButton"
+                                        AutomationProperties.HelpText="{x:Bind Title}" ToolTipService.ToolTip="{x:Bind Title}">
+                                    <FontIcon Glyph="{StaticResource BcIconMore}" FontSize="16" />
+                                </Button>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </GridView.ItemTemplate>

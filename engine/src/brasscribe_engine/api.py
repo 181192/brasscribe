@@ -269,6 +269,21 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
             raise HTTPException(409, f"run {job_id} is still queued or running; cancel it first")
         return Response(status_code=204)
 
+    @app.patch("/v1/runs/{job_id}", response_model=m.Job, operation_id="updateRun", tags=["jobs"],
+               dependencies=[Depends(auth)],
+               responses={404: {"description": "unknown run"}, 409: {"description": "run is queued or running"}})
+    def update_run(job_id: str, body: m.RunUpdate) -> m.Job:
+        """Rename a finished score: the title in its manifest, Composition and MusicXML."""
+        title = body.title.strip()
+        if not title:
+            raise HTTPException(422, "title must not be blank")
+        result = jobs.rename(job_id, title)
+        if result == "unknown":
+            raise HTTPException(404, f"no run {job_id}")
+        if result == "active":
+            raise HTTPException(409, f"run {job_id} is still queued or running")
+        return job_model(job_or_404(job_id))
+
     @app.get("/v1/jobs/{job_id}/events", operation_id="streamJobEvents", tags=["jobs"], dependencies=[Depends(auth)],
              response_class=StreamingResponse,
              responses={200: {"description": "Server-Sent Events; each `data:` line is a JobEvent",
@@ -481,6 +496,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
                 device=st.get("device"),
                 files=[file_ref(d / f, f, f"/v1/jobs/{job.id}/stages/{name}/files/{f}", h) for f, h in files.items()]))
         return out
+
+    @app.get("/v1/jobs/{job_id}/evidence", response_model=m.Evidence, operation_id="getJobEvidence", tags=["results"],
+             dependencies=[Depends(auth)])
+    def get_evidence(job_id: str) -> m.Evidence:
+        """Per uncertain note: its confidence and the pitch each transcriber heard, for the apps' Check the notes."""
+        from .evidence import evidence
+
+        return m.Evidence(**evidence(jobs.run_dir(job_or_404(job_id).id)))
 
     @app.get("/v1/jobs/{job_id}/stages/{stage}/files/{name:path}", operation_id="getStageFile", tags=["inspection"],
              dependencies=[Depends(auth)], response_class=FileResponse,

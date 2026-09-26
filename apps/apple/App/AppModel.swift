@@ -27,7 +27,13 @@ enum Route: Hashable {
 
 @Observable @MainActor
 final class AppModel {
-    var pieces: [Piece] = Piece.loadAll()
+    var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
+    /// "Your scores": this device's pieces and the computer's latest finished scores.
+    private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
+    private var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
+    var openingScore: String?
+    var renameTarget: ScoreEntry?
+    var deleteTarget: ScoreEntry?
     var path: [Route] = []
     var jobs: [UUID: TranscriptionJob] = [:]
     var showSettings = false
@@ -94,6 +100,67 @@ final class AppModel {
 
     func refresh() { pieces = Piece.loadAll() }
 
+    private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
+
+    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable.
+    func refreshComputerScores() async {
+        guard !useDemoService, let svc = service() as? CompanionService else { computerJobs = []; return }
+        if let jobs = try? await svc.jobs() { computerJobs = jobs }
+    }
+
+    func open(_ entry: ScoreEntry, review: Bool = false) {
+        switch entry.location {
+        case .local(let p): path = [review ? .review(p) : .score(p)]
+        case .computer(let jobID): Task { await download(jobID: jobID, title: entry.title, profile: entry.profile, review: review) }
+        }
+    }
+
+    /// Copy a computer score into this device's library, then open it.
+    private func download(jobID: String, title: String, profile: SourceProfile?, review: Bool) async {
+        guard let svc = service() as? CompanionService else { return }
+        openingScore = "job:\(jobID)"
+        defer { openingScore = nil }
+        do {
+            let xml = try await svc.artifact(.musicXML, jobID: jobID)
+            let comp = try? Composition.decode(try await svc.artifact(.composition, jobID: jobID))
+            let evidence = try? await svc.evidence(jobID: jobID)
+            let names = Set(computerJobs.first { $0.id == jobID }?.outputs ?? [])
+            let result = TranscriptionResult(jobID: jobID, composition: comp, musicXML: xml,
+                                             available: Set(ArtifactKind.allCases.filter { names.contains($0.engineName) }), evidence: evidence)
+            let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil)
+            refresh()
+            path = [review ? .review(p) : .score(p)]
+        } catch {
+            show(.cantOpenFile(error.localizedDescription))
+        }
+    }
+
+    func rename(_ entry: ScoreEntry, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        switch entry.location {
+        case .local(let p): rename(p, to: cleaned)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                do { try await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+                catch { show(.cantOpenFile(error.localizedDescription)) }
+            }
+        }
+    }
+
+    func delete(_ entry: ScoreEntry) {
+        switch entry.location {
+        case .local(let p): delete(p)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                try? await svc.deleteRun(jobID: jobID)
+                await refreshComputerScores()
+            }
+        }
+    }
+
     func rename(_ piece: Piece, to title: String) {
         let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty, let index = pieces.firstIndex(where: { $0.id == piece.id }) else { return }
@@ -103,6 +170,9 @@ final class AppModel {
             try updated.saveMusicXML(MusicXMLNoteEditor.replacingTitle(in: updated.musicXML(), with: cleaned))
             try updated.save()
             pieces[index] = updated
+            if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useDemoService {
+                Task { try? await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+            }
         } catch {
             show(.notAScore(error.localizedDescription))
         }
