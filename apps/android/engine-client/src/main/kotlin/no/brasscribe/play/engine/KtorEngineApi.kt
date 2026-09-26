@@ -81,6 +81,17 @@ class KtorEngineApi(
             setBody(request)
         }.ok().body()
 
+    override suspend fun braille(jobId: String, part: String?): ByteArray =
+        http.get("v1/jobs/$jobId/braille") { auth(); part?.let { parameter("part", it) } }.ok().bodyAsBytes()
+
+    override suspend fun talkingScore(jobId: String, format: String, lang: String, part: String?, pitchMode: String?, verbosity: String): String =
+        http.get("v1/jobs/$jobId/talking-score") {
+            auth()
+            parameter("format", format); parameter("lang", lang); parameter("verbosity", verbosity)
+            part?.let { parameter("part", it) }
+            pitchMode?.let { parameter("pitch_mode", it) }
+        }.ok().bodyAsText()
+
     override suspend fun createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean): Job =
         http.submitFormWithBinaryData("v1/jobs/upload", formData {
             appendFile(filename, bytes)

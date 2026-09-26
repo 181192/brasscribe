@@ -100,7 +100,7 @@ class FixtureEngineApi(
 
     override suspend fun composition(jobId: String): Composition = CompositionJson.decode(String(file("composition.json")))
     override suspend fun musicXml(jobId: String): String = String(file("brass-band.musicxml"))
-    override suspend fun midi(jobId: String): ByteArray = throw EngineException(404, "the golden fixture has no MIDI file")
+    override suspend fun midi(jobId: String): ByteArray = file("brass-band.mid")
     override suspend fun pdf(jobId: String): ByteArray = file("brass-band.pdf")
     override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
 
@@ -109,16 +109,22 @@ class FixtureEngineApi(
     }
 
     override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
+    override suspend fun braille(jobId: String, part: String?): ByteArray =
+        file(if (part == null) "brass-band.brf" else throw EngineException(404, "the fixture has only the score's braille"))
+
+    override suspend fun talkingScore(jobId: String, format: String, lang: String, part: String?, pitchMode: String?, verbosity: String): String =
+        throw EngineException(404, "the fixture has no talking score; the app builds it with the core")
+
     override suspend fun manifest(jobId: String): String = """{"run":"$jobId","fixture":"data/golden/mikkel-arranged-band"}"""
 
     private fun file(name: String): ByteArray = source.read(name) ?: throw EngineException(404, "fixture file $name is missing")
     private fun now() = System.currentTimeMillis() / 1000.0
 
     companion object {
-        val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3")
+        val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
         private val MEDIA = mapOf(
             "composition.json" to "application/json", "brass-band.musicxml" to "application/vnd.recordare.musicxml+xml",
-            "brass-band.pdf" to "application/pdf", "brass-band.mp3" to "audio/mpeg",
+            "brass-band.pdf" to "application/pdf", "brass-band.mp3" to "audio/mpeg", "brass-band.brf" to "text/plain",
         )
 
         /** Stage names per profile, as the engine's profiles define them. */

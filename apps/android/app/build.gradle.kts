@@ -96,7 +96,7 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
 }
 val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
     from(File(repoRoot, "data/golden/mikkel-arranged-band")) {
-        include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3")
+        include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf", "brass-band.mid")
     }
     into(layout.buildDirectory.dir("generated/brasscribe/fixtures/fixtures"))
 }

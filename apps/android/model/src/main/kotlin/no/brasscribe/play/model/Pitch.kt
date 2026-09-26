@@ -7,6 +7,15 @@ import kotlinx.serialization.Serializable
 data class SpelledPitch(val step: String, val alter: Int = 0, val octave: Int) {
     val midi: Int get() = 12 * (octave + 1) + STEP_PC.getValue(step) + alter
 
+    /** This pitch moved by [diatonic] letter steps and [chromatic] semitones, keeping the spelling. */
+    fun transposed(diatonic: Int, chromatic: Int): SpelledPitch {
+        val index = STEPS.indexOf(step) + octave * 7 + diatonic
+        val newStep = STEPS[Math.floorMod(index, 7)]
+        val newOctave = Math.floorDiv(index, 7)
+        val natural = 12 * (newOctave + 1) + STEP_PC.getValue(newStep)
+        return SpelledPitch(newStep, midi + chromatic - natural, newOctave)
+    }
+
     companion object {
         val STEPS = listOf("C", "D", "E", "F", "G", "A", "B")
         val STEP_PC = mapOf("C" to 0, "D" to 2, "E" to 4, "F" to 5, "G" to 7, "A" to 9, "B" to 11)
@@ -88,4 +97,7 @@ enum class Instrument(
 
     fun spellWritten(concert: Int, concertFifths: Int): SpelledPitch =
         SpelledPitch.spell(writtenMidi(concert), writtenFifths(concertFifths))
+
+    /** The written pitch of a spelled concert pitch (the part's `<transpose>` undone). */
+    fun written(concert: SpelledPitch): SpelledPitch = concert.transposed(-diatonic, -chromatic)
 }

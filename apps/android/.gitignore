@@ -7,3 +7,4 @@ local.properties
 .idea/
 captures/
 third_party/
+core-bridge/src/main/jniLibs/
