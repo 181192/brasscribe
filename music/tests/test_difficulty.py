@@ -75,3 +75,11 @@ def test_semitones_to_target_key():
     assert semitones_to(KeySig(0, 0, "minor"), "Am") == 0
     assert semitones_to(KeySig(0, 0), "F#") == 6
     assert BRASS_BAND.by_name("Soprano Cornet")
+
+
+def test_transposed_bass_phrase_wider_than_its_range_is_split():
+    from brasscribe_music.arranger import _split_wide
+    notes = [Note(p, i * 24, 24) for i, p in enumerate([29, 31, 33, 50, 48, 46])]
+    parts = _split_wide(notes, 20)
+    assert [len(p) for p in parts] == [3, 3]
+    assert _split_wide(notes[:3], 20) == [notes[:3]]

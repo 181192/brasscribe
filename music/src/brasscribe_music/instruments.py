@@ -119,6 +119,7 @@ class Part:
     instrument: Instrument
     players: int = 1
     short: str = ""  # staff label after the first system; distinct per part (default: the instrument's)
+    midi_bank: int | None = None  # 1-based MusicXML <midi-bank> of this part's preset in the band SoundFont
 
     @property
     def abbreviation(self) -> str:
@@ -134,29 +135,30 @@ class Lineup:
         return next(p for p in self.parts if p.name == name)
 
 
-def _p(name: str, inst: str, players: int = 1, short: str = "") -> Part:
-    return Part(name, INSTRUMENTS[inst], players, short)
+def _p(name: str, inst: str, players: int = 1, short: str = "", bank: int | None = None) -> Part:
+    return Part(name, INSTRUMENTS[inst], players, short, bank)
 
 
 # Standard British/Norwegian contest band, in conventional score order.
 BRASS_BAND = Lineup("Brass band", [
-    _p("Soprano Cornet", "eb-soprano-cornet", 1, "Sop. Cnt."),
-    _p("Solo Cornet", "bb-cornet", 4, "Solo Cnt."),
-    _p("Repiano Cornet", "bb-cornet", 1, "Rep."),
-    _p("2nd Cornet", "bb-cornet", 2, "2nd Cnt."),
-    _p("3rd Cornet", "bb-cornet", 2, "3rd Cnt."),
-    _p("Flugelhorn", "flugelhorn", 1, "Flug."),
-    _p("Solo Horn", "eb-tenor-horn", 1, "Solo Hn."),
-    _p("1st Horn", "eb-tenor-horn", 1, "1st Hn."),
-    _p("2nd Horn", "eb-tenor-horn", 1, "2nd Hn."),
-    _p("1st Baritone", "baritone", 1, "1st Bar."),
-    _p("2nd Baritone", "baritone", 1, "2nd Bar."),
-    _p("1st Trombone", "tenor-trombone", 1, "1st Tbn."),
-    _p("2nd Trombone", "tenor-trombone", 1, "2nd Tbn."),
-    _p("Bass Trombone", "bass-trombone", 1, "B. Tbn."),
-    _p("Euphonium", "euphonium", 2, "Euph."),
-    _p("E♭ Bass", "eb-bass", 2, "E♭ Bass"),
-    _p("B♭ Bass", "bb-bass", 2, "B♭ Bass"),
+    # Banks: the part's preset in the band SoundFont (sounds/mapping.json band_soundfont.musicxml).
+    _p("Soprano Cornet", "eb-soprano-cornet", 1, "Sop. Cnt.", 2),
+    _p("Solo Cornet", "bb-cornet", 4, "Solo Cnt.", 1),
+    _p("Repiano Cornet", "bb-cornet", 1, "Rep.", 3),
+    _p("2nd Cornet", "bb-cornet", 2, "2nd Cnt.", 4),
+    _p("3rd Cornet", "bb-cornet", 2, "3rd Cnt.", 5),
+    _p("Flugelhorn", "flugelhorn", 1, "Flug.", 6),
+    _p("Solo Horn", "eb-tenor-horn", 1, "Solo Hn.", 1),
+    _p("1st Horn", "eb-tenor-horn", 1, "1st Hn.", 2),
+    _p("2nd Horn", "eb-tenor-horn", 1, "2nd Hn.", 3),
+    _p("1st Baritone", "baritone", 1, "1st Bar.", 4),
+    _p("2nd Baritone", "baritone", 1, "2nd Bar.", 5),
+    _p("1st Trombone", "tenor-trombone", 1, "1st Tbn.", 1),
+    _p("2nd Trombone", "tenor-trombone", 1, "2nd Tbn.", 2),
+    _p("Bass Trombone", "bass-trombone", 1, "B. Tbn.", 3),
+    _p("Euphonium", "euphonium", 2, "Euph.", 3),
+    _p("E♭ Bass", "eb-bass", 2, "E♭ Bass", 1),
+    _p("B♭ Bass", "bb-bass", 2, "B♭ Bass", 2),
     _p("Percussion", "drum-kit", 1, "Perc."),
 ])
 

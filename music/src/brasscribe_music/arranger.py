@@ -53,7 +53,7 @@ BASS_TARGET = 0.35  # bass lines centre a third of the way up the reading range
 
 
 def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], prefer_low: bool = False,
-                prev: int | None = None) -> int | None:
+                prev: int | None = None, bass_overflow_up: bool = False) -> int | None:
     """Octave shift that puts the most notes in [lo, hi] and none outside the pro range.
 
     Ties go to the octave nearest the middle of the range (a third of the way
@@ -67,7 +67,10 @@ def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], pref
         shifted = [p + 12 * k for p in pitches]
         if any(not pro[0] <= p <= pro[1] for p in shifted):
             continue
-        inside = sum(lo <= p <= hi for p in shifted)
+        # Bass parts in treble clef read up to the top of their range easily but go onto ledger
+        # lines below it, so for bass lines notes above the reading range still count as inside.
+        top = pro[1] if prefer_low and bass_overflow_up else hi
+        inside = sum(lo <= p <= top for p in shifted)
         mean = sum(shifted) / len(shifted)
         jump = abs(shifted[0] - prev) if prev is not None else 0
         cand = (inside, -(abs(mean - target) + jump))
@@ -86,12 +89,28 @@ def _nearest_octave(pitch: int, ranges: list[tuple[int, int]], prev: int | None)
     return None
 
 
-def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False) -> list[Note]:
+def _split_wide(phrase: list[Note], width: int) -> list[list[Note]]:
+    """Split a phrase that spans more than `width` semitones at its largest leap, recursively,
+    so each piece can take its own octave (the line changes octave where it jumps anyway)."""
+    ps = [n.pitch for n in phrase]
+    if len(phrase) < 4 or max(ps) - min(ps) <= width:
+        return [phrase]
+    _, cut = max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))
+    return _split_wide(phrase[:cut], width) + _split_wide(phrase[cut:], width)
+
+
+def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False,
+                bass_overflow_up: bool = False) -> list[Note]:
     inst = part.instrument
     placed = []
-    for phrase in _phrases(notes):
+    phrases = _phrases(notes)
+    if bass_overflow_up:
+        width = inst.preferred[1] - inst.preferred[0]
+        phrases = [q for ph in phrases for q in _split_wide(ph, width)]
+    for phrase in phrases:
         prev = placed[-1].pitch if placed else None
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev)
+        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev,
+                        bass_overflow_up=bass_overflow_up)
         if k is None:
             # No single octave fits the whole phrase: per note, the octave nearest the previous note.
             for n in phrase:
@@ -353,7 +372,11 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
 
     bass = _layer(comp, "bass")
     eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
-    arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
+    # A transposed piece re-fits its bass lines: phrases wider than the reading range are split at their
+    # largest leap, and a phrase may spill above the range rather than below it (onto ledger lines).
+    # Untransposed arrangements keep their established placement.
+    refit = bool(comp.arrangement and comp.arrangement.get("transpose_semitones"))
+    arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True, bass_overflow_up=refit)
     arr.parts[bb.name] = [_moved(n, n.pitch - 12 if _readable(bb.instrument, n.pitch - 12) else n.pitch)
                           for n in arr.parts[eb.name]]
 
