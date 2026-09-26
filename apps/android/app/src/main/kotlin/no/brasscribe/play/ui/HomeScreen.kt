@@ -57,6 +57,7 @@ fun HomeScreen(vm: PlayViewModel) {
     var pendingDevice by remember { mutableStateOf(false) }
 
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importUri) }
+    val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
     val projectionConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         val data = r.data
         if (r.resultCode == Activity.RESULT_OK && data != null) {
@@ -98,6 +99,13 @@ fun HomeScreen(vm: PlayViewModel) {
         BigButton(stringResource(R.string.home_import), { pickFile.launch(arrayOf("audio/*", "video/*")) }, enabled = !busy)
         BigButton(stringResource(R.string.home_record_mic), { withMic(device = false) }, enabled = !busy)
         BigButton(stringResource(R.string.home_record_device), { showDeviceNotice = true }, enabled = !busy)
+        // Most pickers give MusicXML no type of its own, so the wildcard has to be there too.
+        BigButton(
+            stringResource(R.string.home_open_score),
+            { pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*")) },
+            enabled = !busy,
+            primary = false,
+        )
         if (vm.container.hasFixtures) BigButton(stringResource(R.string.home_sample), vm::openSample, enabled = !busy, primary = false)
         Spacer(Modifier.height(8.dp))
         SubHeading(stringResource(R.string.home_companion))

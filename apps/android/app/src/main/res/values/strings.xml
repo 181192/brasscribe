@@ -178,6 +178,9 @@
     <string name="performance_exit">Leave full screen</string>
     <string name="previous">Previous</string>
     <string name="next">Next</string>
+    <string name="opened_score">Opened %1$s.</string>
+    <string name="home_open_score">Open a MusicXML score</string>
+    <string name="talking_score_unavailable">The talking score needs the core, which is not installed.</string>
     <string name="sound">Sound</string>
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistic</string>

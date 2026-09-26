@@ -71,6 +71,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.audio.RealisticSynth
+import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScoreUiState
 import no.brasscribe.play.ui.theme.LocalPlayTokens
@@ -94,7 +95,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     val controller = remember(r) {
         val c = vm.container
         ScoreController(context, reducedMotion, c.core, c.bandSoundMap, c.bandSoundFont(),
-            r.compositionJson ?: runCatching { c.core.encodeComposition(r.composition) }.getOrNull()).also { vm.scoreController = it }
+            r.compositionJsonFor(c.core)).also { vm.scoreController = it }
     }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
@@ -119,7 +120,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
     val shownText = if (st.shown.size == 1) partName else stringResource(R.string.show_all_parts)
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
-    val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition.title }, shownText, st.bar, st.totalBars)
+    val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
     val nextBar = stringResource(R.string.action_next_bar)
     val prevBar = stringResource(R.string.action_prev_bar)
     val nextPart = stringResource(R.string.action_next_part)
