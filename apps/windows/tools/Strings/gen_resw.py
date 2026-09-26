@@ -92,6 +92,9 @@ prop("ConcertPitchSwitch", "Header", "Concert pitch", "Klingende tone"); help_("
 icon_button("ZoomOutButton", "Zoom out", "Zoom ut", "Smaller notation (Ctrl+-)", "Mindre noter (Ctrl+-)")
 prop("ZoomBox", "Header", "Zoom, percent", "Zoom, prosent"); help_("ZoomBox", "Notation size from 50 to 400 percent", "Notestørrelse fra 50 til 400 prosent")
 icon_button("ZoomInButton", "Zoom in", "Zoom inn", "Larger notation (Ctrl+=)", "Større noter (Ctrl+=)")
+text_button("SourceToggle", "Original", "Opptaket", "Switch between the score and the original recording at the same place (O)", "Bytt mellom partituret og opptaket på samme sted (O)")
+name("VideoView", "Original video", "Originalvideo")
+text_button("PipButton", "Picture in picture", "Bilde i bilde", "Show the original video in a small window on top", "Vis originalvideoen i et lite vindu øverst")
 text_button("TalkingScoreToggle", "Talking score", "Talende note", "Show the score as text, one line per note (Ctrl+T)", "Vis noten som tekst, én linje per note (Ctrl+T)")
 text_button("OutputOptionsButton", "Output", "Utgave", "Lineup, difficulty and key", "Besetning, vanskegrad og toneart")
 prop("OutputHeading", "Text", "Choose output", "Velg utgave")
@@ -102,8 +105,7 @@ prop("DifficultyBox", "Header", "Difficulty", "Vanskegrad")
 prop("DifficultyFaithful", "Content", "Faithful", "Tro mot opptaket")
 prop("DifficultyStandard", "Content", "Standard", "Standard")
 prop("DifficultyEasier", "Content", "Easier", "Enklere")
-prop("KeyBox", "Header", "Key", "Toneart")
-prop("KeyOriginal", "Content", "As recorded", "Som i opptaket")
+prop("KeyBox", "Header", "Key (concert pitch)", "Toneart (klingende)")
 text_button("ApplyOutputButton", "Apply", "Bruk", "Arrange again with these choices", "Arranger på nytt med disse valgene")
 name("ScoreNotation", "Score", "Partitur")
 help_("ScoreNotation", "Arrows move by note, Ctrl+arrows by beat and bar, Ctrl+Shift+arrows by part. U finds uncertain notes. Tab leaves the score.",
@@ -232,6 +234,11 @@ code = {
     "Score_ListeningOriginal": ("Playing bar {0} from the recording", "Spiller takt {0} fra opptaket"),
     "Score_ListeningScore": ("Playing bar {0}", "Spiller takt {0}"),
     "Score_Zoom": ("Zoom {0} percent", "Zoom {0} prosent"),
+    "Score_NoOriginal": ("No recording to switch to: this score was opened without one.", "Ingen opptak å bytte til: partituret ble åpnet uten."),
+    "Score_SwitchedToOriginal": ("Playing the recording from bar {0}", "Spiller opptaket fra takt {0}"),
+    "Score_SwitchedToScore": ("Playing the score", "Spiller partituret"),
+    "Pip_Title": ("Original video", "Originalvideo"),
+    "Shortcut_SwitchSource": ("Switch between score and recording", "Bytt mellom partitur og opptak"),
     "Player_Position": ("Bar {0} of {1}", "Takt {0} av {1}"),
     "Player_LoopOff": ("No loop", "Ingen løkke"),
     "Player_LoopSet": ("Loop set, bars {0} to {1}", "Løkke satt, takt {0} til {1}"),
@@ -260,10 +267,20 @@ code = {
     "Export_Format_Braille": ("Braille music (BRF)", "Punktskrift for noter (BRF)"),
     "Export_Reason_NeedsEngine": ("Needs the engine that made this score.", "Krever motoren som laget dette partituret."),
     "Export_Reason_NoScore": ("Open or make a score first.", "Åpne eller lag et partitur først."),
-    "Export_Reason_BrailleMissing": ("Braille export is not available yet: the engine does not write BRF files.", "Eksport til punktskrift finnes ikke ennå: motoren lager ikke BRF-filer."),
     "Export_Done": ("Saved {0} as {1}", "Lagret {0} som {1}"),
     "Export_Failed": ("Could not save: {0}", "Kunne ikke lagre: {0}"),
-    "Output_NotYet": ("Difficulty and key choices are not available yet.", "Valg av vanskegrad og toneart finnes ikke ennå."),
+    "Output_NeedsEngine": ("Difficulty and key are set by the transcription engine; open a score it made to change them.", "Vanskegrad og toneart settes av transkripsjonsmotoren; åpne et partitur den har laget for å endre dem."),
+    "Output_Rearranging": ("Arranging again with the new choices", "Arrangerer på nytt med de nye valgene"),
+    "Transcribe_Rearranging": ("Arranging again with the new choices", "Arrangerer på nytt med de nye valgene"),
+    "Key_AsRecorded": ("As recorded", "Som i opptaket"),
+    "Key_Bb": ("B♭ major", "B-dur"),
+    "Key_Eb": ("E♭ major", "Ess-dur"),
+    "Key_F": ("F major", "F-dur"),
+    "Key_C": ("C major", "C-dur"),
+    "Key_Ab": ("A♭ major", "Ass-dur"),
+    "Key_G": ("G major", "G-dur"),
+    "Key_D": ("D major", "D-dur"),
+    "Key_Db": ("D♭ major", "Dess-dur"),
     "Output_NeedsCore": ("Arranging on this PC needs the Brasscribe core library, which is not installed.", "Arrangering på denne PC-en krever Brasscribe-kjernebiblioteket, som ikke er installert."),
     "Output_Ready": ("Arrangement ready", "Arrangementet er klart"),
     "Output_Failed": ("Could not arrange: {0}", "Kunne ikke arrangere: {0}"),

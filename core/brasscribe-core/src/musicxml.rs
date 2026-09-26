@@ -2,13 +2,15 @@
 //!
 //! Notes sharing a start tick within a part become a chord (clipped to the
 //! shortest member); overlaps within a part are cut at the next onset, so every
-//! part is a single voice. Transposing parts are written at written pitch with
-//! a <transpose> element; every part names its MuseScore <instrument-sound>.
+//! part is a single voice. Values are split into tied pieces that show the
+//! beat; transposing parts are written at written pitch with a <transpose>
+//! element; every part names its MuseScore <instrument-sound>.
 
-use crate::arranger::Arrangement;
+use crate::arranger::{layer_of_part, Arrangement};
 use crate::model::Composition;
 use crate::quantize::QNote;
 
+pub use crate::notation::parts::split_parts;
 pub use crate::notation::score::{write_score, FreeSpan, PartSpec, ScoreSpec};
 
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
@@ -31,7 +33,16 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
                     articulations: n.articulations.clone(),
                 })
                 .collect();
-            PartSpec { name: part.name.to_string(), notes, clef: part.instrument.clef.as_str().to_string(), instrument: Some(part.instrument) }
+            let layer = layer_of_part(part.name);
+            let dynamics = comp.dynamics.iter().filter(|d| Some(d.layer.as_str()) == layer).map(|d| (d.tick, d.mark.clone())).collect();
+            PartSpec {
+                name: part.name.to_string(),
+                notes,
+                clef: part.instrument.clef.as_str().to_string(),
+                instrument: Some(part.instrument),
+                abbreviation: Some(part.abbreviation().to_string()),
+                dynamics,
+            }
         })
         .collect();
     ScoreSpec {
@@ -44,6 +55,8 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         key_fifths: comp.keys.first().map(|k| k.fifths),
         sounds: band_sounds(arr),
         free_spans: comp.free_regions.iter().map(|r| FreeSpan { start: r.start, end: r.end, bpm: r.tempo_bpm, label: r.label.clone() }).collect(),
+        key_changes: comp.keys.iter().skip(1).map(|k| (k.tick, k.fifths)).collect(),
+        rehearsal: comp.sections.iter().map(|s| (s.tick, s.label.clone())).collect(),
         encoding_date: String::new(),
     }
 }

@@ -50,9 +50,17 @@ public interface IAudioOutput : IDisposable
 public interface IOriginalPlayer
 {
     bool HasMedia { get; }
-    void Open(string path);
+    /// <summary>The original has a picture (video file), shown in the score screen and picture-in-picture.</summary>
+    bool HasVideo { get; }
+    void Open(string path, bool hasVideo);
     void PlayRange(TimeSpan start, TimeSpan end, bool loop);
+    void Play();
+    void Pause();
     void Stop();
+    bool IsPlaying { get; }
+    bool IsMuted { get; set; }
+    /// <summary>Playback rate, 1 = normal.</summary>
+    double Rate { get; set; }
     TimeSpan Position { get; set; }
 }
 

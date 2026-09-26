@@ -94,12 +94,15 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Loads the baseline brass SoundFonts shipped next to the exe (SoundFonts\&lt;instrument&gt;\*.sf2),
-    /// one program pair per instrument, and routes each part to its instrument.
+    /// Loads the band SoundFont with its part map (SoundFonts\brasscribe-band.sf2 + mapping.json):
+    /// a preset and a level per part, drums on channel 10. Without it, the per-instrument SoundFonts
+    /// under SoundFonts\built are used, one program pair per instrument.
     /// </summary>
     private static void LoadSoundFonts(AlphaTabScorePlayer player)
     {
         var dir = Path.Combine(AppContext.BaseDirectory, "SoundFonts");
-        if (Directory.Exists(dir)) BrassSoundSet.Load(dir).ApplyTo(player);
+        string band = Path.Combine(dir, "brasscribe-band.sf2"), map = Path.Combine(dir, "mapping.json");
+        if (File.Exists(band) && File.Exists(map)) _ = BandSoundFont.Load(map, band).ApplyTo(player, inBackground: true);
+        else if (Directory.Exists(Path.Combine(dir, "built"))) BrassSoundSet.Load(Path.Combine(dir, "built")).ApplyTo(player);
     }
 }

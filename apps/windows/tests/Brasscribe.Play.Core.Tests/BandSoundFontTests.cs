@@ -12,7 +12,6 @@ namespace Brasscribe.Play.Core.Tests;
 public class BandSoundFontTests(ITestOutputHelper log)
 {
     private const string BandSf2 = "data/sounds/band/brasscribe-band.sf2";
-    private const string BankedScore = "data/runs/sound/band-sf2/brass-band.banks.musicxml";
 
     private static (string Track, double Rms, bool HasNotes, bool Percussion)[] SoloLevels(byte[] sf2, byte[] score)
     {
@@ -25,7 +24,11 @@ public class BandSoundFontTests(ITestOutputHelper log)
         foreach (var track in player.Tracks)
         {
             foreach (var t in player.Tracks) player.SetSolo(t.Index, t.Index == track.Index);
-            player.SeekToBar(19);
+            // from bar 20, or the track's first bar with notes after that (the drums enter at bar 36)
+            var bars = player.Score!.Tracks[track.Index].Staves[0].Bars;
+            int start = Enumerable.Range(19, Math.Max(0, bars.Count - 19))
+                .FirstOrDefault(i => bars[i].Voices.Any(v => v.Beats.Any(b => b.Notes.Count > 0)), 19);
+            player.SeekToBar(start);
             player.Play();
             var buffer = new float[2 * 1024];
             double sum = 0;
@@ -48,32 +51,30 @@ public class BandSoundFontTests(ITestOutputHelper log)
         log.WriteLine($"{label}: " + string.Join("; ", levels.Select(l => $"{l.Track} {l.Rms:0.0000}")));
 
     [Fact]
-    public void Golden_score_plays_every_part_from_the_band_soundfont_by_program_alone()
+    public void Golden_score_plays_every_part_and_the_drums_from_the_band_soundfont()
     {
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         if (sf2 is null || golden is null) return;
         var levels = SoloLevels(File.ReadAllBytes(sf2), File.ReadAllBytes(golden));
         Report("programs only", levels);
-        // Percussion is checked separately: the golden score's unpitched notes carry no
-        // <midi-unpitched> mapping, so alphaTab sends them all as MIDI note 0 (silent in any kit).
-        Assert.Empty(levels.Where(l => l.HasNotes && !l.Percussion && l.Rms < 1e-4).Select(l => l.Track));
+        Assert.Empty(levels.Where(l => l.HasNotes && l.Rms < 1e-4).Select(l => l.Track));
     }
 
     [Fact]
-    public void Banked_score_plays_every_part_and_banks_select_distinct_presets()
+    public void Midi_bank_selects_the_part_preset_within_a_program()
     {
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        var banked = TestPaths.RepoFile(BankedScore);
-        if (sf2 is null || golden is null || banked is null) return;
+        if (sf2 is null || golden is null) return;
+        var xml = File.ReadAllText(golden);
+        if (!xml.Contains("<midi-bank>", StringComparison.Ordinal)) return; // score written before banks
         var bytes = File.ReadAllBytes(sf2);
-        var plain = SoloLevels(bytes, File.ReadAllBytes(golden));
-        var withBanks = SoloLevels(bytes, File.ReadAllBytes(banked));
-        Report("with midi-bank", withBanks);
-        Assert.Empty(withBanks.Where(l => l.HasNotes && !l.Percussion && l.Rms < 1e-4).Select(l => l.Track));
+        var withBanks = SoloLevels(bytes, System.Text.Encoding.UTF8.GetBytes(xml));
+        var noBanks = SoloLevels(bytes, System.Text.Encoding.UTF8.GetBytes(
+            System.Text.RegularExpressions.Regex.Replace(xml, @"\s*<midi-bank>\d+</midi-bank>", "")));
         // Flugelhorn is program 56 bank 5 (flugel samples); without the bank it gets bank 0 (cornets).
-        var a = plain.Single(l => l.Track.StartsWith("Flugel", StringComparison.Ordinal)).Rms;
+        var a = noBanks.Single(l => l.Track.StartsWith("Flugel", StringComparison.Ordinal)).Rms;
         var b = withBanks.Single(l => l.Track.StartsWith("Flugel", StringComparison.Ordinal)).Rms;
         log.WriteLine($"Flugelhorn rms without bank {a:0.00000}, with bank {b:0.00000}");
         Assert.True(Math.Abs(20 * Math.Log10(b / a)) > 0.5, "midi-bank did not change the Flugelhorn preset");

@@ -243,6 +243,101 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureRes
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CLONE_PERFORMANCE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CLONE_PERFORMANCE
+uint64_t uniffi_brasscribe_ffi_fn_clone_performance(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FREE_PERFORMANCE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FREE_PERFORMANCE
+void uniffi_brasscribe_ffi_fn_free_performance(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CONSTRUCTOR_PERFORMANCE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CONSTRUCTOR_PERFORMANCE_NEW
+uint64_t uniffi_brasscribe_ffi_fn_constructor_performance_new(RustBuffer composition_json, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CLONE_TALKINGSCORE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CLONE_TALKINGSCORE
+uint64_t uniffi_brasscribe_ffi_fn_clone_talkingscore(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FREE_TALKINGSCORE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FREE_TALKINGSCORE
+void uniffi_brasscribe_ffi_fn_free_talkingscore(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CONSTRUCTOR_TALKINGSCORE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_CONSTRUCTOR_TALKINGSCORE_NEW
+uint64_t uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(RustBuffer musicxml, RustBuffer composition_json, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_ANNOUNCE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_ANNOUNCE
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_announce(uint64_t ptr, RustBuffer cursor, RustBuffer context, RustBuffer settings, int8_t by_bar, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_BAR_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_BAR_COUNT
+uint32_t uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(uint64_t ptr, uint32_t part, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_CONTEXT_AT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_CONTEXT_AT
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(uint64_t ptr, RustBuffer cursor, RustBuffer settings, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_EVENT_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_EVENT_COUNT
+uint32_t uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(uint64_t ptr, uint32_t part, uint32_t bar, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_NAVIGATE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_NAVIGATE
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(uint64_t ptr, RustBuffer cursor, RustBuffer unit, int8_t forward, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_PART_LINES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_PART_LINES
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(uint64_t ptr, uint32_t part, RustBuffer settings, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_PART_NAMES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_PART_NAMES
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TITLE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TITLE
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_title(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_HTML
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_HTML
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(uint64_t ptr, RustBuffer settings, RustBuffer parts, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_TEXT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TO_TEXT
+RustBuffer uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(uint64_t ptr, RustBuffer settings, RustBuffer parts, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TOTAL_BARS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_METHOD_TALKINGSCORE_TOTAL_BARS
+uint32_t uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_LAYERS_BAND
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_LAYERS_BAND
+RustBuffer uniffi_brasscribe_ffi_fn_func_arrange_layers_band(RustBuffer layers, RustBuffer stems, RustBuffer beats_text, RustBuffer title, RustBuffer options, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_LAYERS_SONG
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_LAYERS_SONG
 RustBuffer uniffi_brasscribe_ffi_fn_func_arrange_layers_song(RustBuffer layers, RustBuffer beats_text, RustBuffer title, RustBuffer solo_contour, int8_t free_time, RustBuffer free_tempo, RustCallStatus *_Nonnull out_status
@@ -280,6 +375,12 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_instruments(RustCallStatus *_Nonnull ou
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_LAYERS_SONG_DEFAULTS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_LAYERS_SONG_DEFAULTS
+RustBuffer uniffi_brasscribe_ffi_fn_func_layers_song_defaults(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_NORMALIZE_COMPOSITION
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_NORMALIZE_COMPOSITION
 RustBuffer uniffi_brasscribe_ffi_fn_func_normalize_composition(RustBuffer json, RustCallStatus *_Nonnull out_status
@@ -293,6 +394,27 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_quantize_notes(RustBuffer notes, RustBu
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SPELL_PITCHES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SPELL_PITCHES
 RustBuffer uniffi_brasscribe_ffi_fn_func_spell_pitches(RustBuffer onsets_beats, RustBuffer pitches, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_PART
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_PART
+RustBuffer uniffi_brasscribe_ffi_fn_func_humanize_part(RustBuffer notes, RustBuffer part, int64_t player, RustBuffer seed, RustBuffer performance, int8_t performed_timing, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_UNIFORM
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_UNIFORM
+double uniffi_brasscribe_ffi_fn_func_humanize_uniform(RustBuffer key, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_TALKING_ANNOUNCE_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_TALKING_ANNOUNCE_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_func_talking_announce_json(RustBuffer request, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_TALKING_SETTINGS_DEFAULT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_TALKING_SETTINGS_DEFAULT
+RustBuffer uniffi_brasscribe_ffi_fn_func_talking_settings_default(RustCallStatus *_Nonnull out_status
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_BRASSCRIBE_FFI_RUSTBUFFER_ALLOC
@@ -555,6 +677,12 @@ void ffi_brasscribe_ffi_rust_future_free_void(uint64_t handle
 void ffi_brasscribe_ffi_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_LAYERS_BAND
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_LAYERS_BAND
+uint16_t uniffi_brasscribe_ffi_checksum_func_arrange_layers_band(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_LAYERS_SONG
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_LAYERS_SONG
 uint16_t uniffi_brasscribe_ffi_checksum_func_arrange_layers_song(void
@@ -597,6 +725,12 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_instruments(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_LAYERS_SONG_DEFAULTS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_LAYERS_SONG_DEFAULTS
+uint16_t uniffi_brasscribe_ffi_checksum_func_layers_song_defaults(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_NORMALIZE_COMPOSITION
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_NORMALIZE_COMPOSITION
 uint16_t uniffi_brasscribe_ffi_checksum_func_normalize_composition(void
@@ -612,6 +746,114 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_quantize_notes(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SPELL_PITCHES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SPELL_PITCHES
 uint16_t uniffi_brasscribe_ffi_checksum_func_spell_pitches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_HUMANIZE_PART
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_HUMANIZE_PART
+uint16_t uniffi_brasscribe_ffi_checksum_func_humanize_part(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_HUMANIZE_UNIFORM
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_HUMANIZE_UNIFORM
+uint16_t uniffi_brasscribe_ffi_checksum_func_humanize_uniform(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_TALKING_ANNOUNCE_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_TALKING_ANNOUNCE_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_func_talking_announce_json(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_TALKING_SETTINGS_DEFAULT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_TALKING_SETTINGS_DEFAULT
+uint16_t uniffi_brasscribe_ffi_checksum_func_talking_settings_default(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_ANNOUNCE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_ANNOUNCE
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_announce(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_BAR_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_BAR_COUNT
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_CONTEXT_AT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_CONTEXT_AT
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_EVENT_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_EVENT_COUNT
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_NAVIGATE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_NAVIGATE
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_PART_LINES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_PART_LINES
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_PART_NAMES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_PART_NAMES
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TITLE
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TITLE
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_title(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_HTML
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_HTML
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_TEXT
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TO_TEXT
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TOTAL_BARS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_METHOD_TALKINGSCORE_TOTAL_BARS
+uint16_t uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_CONSTRUCTOR_PERFORMANCE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_CONSTRUCTOR_PERFORMANCE_NEW
+uint16_t uniffi_brasscribe_ffi_checksum_constructor_performance_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_CONSTRUCTOR_TALKINGSCORE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_CONSTRUCTOR_TALKINGSCORE_NEW
+uint16_t uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new(void
     
 );
 #endif

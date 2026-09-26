@@ -38,6 +38,8 @@ public interface IScorePlayer : IDisposable
     void Pause();
     void Stop();
     void SeekToBar(int barIndex);
+    /// <summary>Seeks to a MIDI tick (960 per quarter), for switching back from the original recording.</summary>
+    void SeekToTick(double tick);
 
     /// <summary>Loops bars first..last (0-based, inclusive); null clears the loop.</summary>
     void SetLoop(int? firstBar, int? lastBar);

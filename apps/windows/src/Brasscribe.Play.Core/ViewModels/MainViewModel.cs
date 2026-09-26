@@ -53,14 +53,15 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _result = null;
             Screen = Screen.Transcribing;
-            await Transcription.RunAsync(choice.Source, choice.Kind);
+            await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
             if (!Transcription.IsRunning && _result is null && Screen == Screen.Transcribing && Transcription.ErrorText is null)
                 Screen = Screen.SourceKind; // cancelled: back to the choice, source kept
         };
         Transcription.Completed += (_, r) =>
         {
             _result = r;
-            if (r.Source.OriginalPath is { } original) Score.Original?.Open(original);
+            Output.HasEngineJob = r.AudioId is not null;
+            Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
             Score.Load(r.MusicXml, r.Composition);
             Screen = Screen.Score;
         };
@@ -69,6 +70,14 @@ public sealed partial class MainViewModel : ObservableObject
             if (e.PropertyName == nameof(TranscriptionViewModel.IsRunning)) BackCommand.NotifyCanExecuteChanged();
         };
         Output.Arranged += (_, xml) => Score.Load(xml, Score.Composition);
+        Output.RearrangeRequested += async (_, options) =>
+        {
+            if (_result is not { } previous) return;
+            Screen = Screen.Transcribing;
+            await Transcription.RearrangeAsync(previous, options);
+            if (!Transcription.IsRunning && Transcription.ErrorText is null && Screen == Screen.Transcribing)
+                Screen = Screen.Score; // cancelled: back to the score as it was
+        };
         Settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(SettingsViewModel.EngineAddress) or nameof(SettingsViewModel.EngineToken)) _engine = null;
@@ -103,6 +112,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             string xml = File.ReadAllText(path);
             _result = null;
+            Output.HasEngineJob = false;
             Score.Load(xml, null);
             Screen = Screen.Score;
         }
@@ -125,7 +135,8 @@ public sealed partial class MainViewModel : ObservableObject
         Screen = Screen switch
         {
             Screen.SourceKind => Screen.Start,
-            Screen.Transcribing => Screen.SourceKind, // after a failure: pick again or fix the engine, source kept
+            // After a failure: back to the score being re-arranged, or to the choice with the source kept.
+            Screen.Transcribing => _result is not null ? Screen.Score : Screen.SourceKind,
             Screen.Score => Screen.Start,
             _ => Screen,
         };

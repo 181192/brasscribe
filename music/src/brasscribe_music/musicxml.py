@@ -363,6 +363,95 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
     return path
 
 
+# Percussion instruments by the written position and notehead the drum map uses, as General MIDI notes.
+DRUM_SOUNDS: dict[tuple[str, str], tuple[int, str]] = {
+    ("F4", "normal"): (36, "Bass Drum"), ("C5", "normal"): (38, "Snare Drum"), ("C5", "x"): (37, "Side Stick"),
+    ("A4", "normal"): (43, "Floor Tom"), ("D5", "normal"): (47, "Low-Mid Tom"), ("E5", "normal"): (50, "High Tom"),
+    ("G5", "x"): (42, "Closed Hi-Hat"), ("D4", "x"): (44, "Pedal Hi-Hat"), ("G5", "circle-x"): (46, "Open Hi-Hat"),
+    ("A5", "x"): (49, "Crash Cymbal"), ("F5", "x"): (51, "Ride Cymbal"), ("F5", "diamond"): (53, "Ride Bell"),
+    ("B5", "x"): (54, "Tambourine"),
+}
+DRUM_CHANNEL = 10
+_CHANNELS = [c for c in range(1, 17) if c != DRUM_CHANNEL]
+
+
+def _band_midi(root, banks: dict[str, int]) -> None:
+    """MIDI setup for the band SoundFont.
+
+    Pitched parts: their preset's <midi-bank> (from Part.midi_bank) next to the
+    existing <midi-program>, and a channel of their own in score order,
+    skipping the drum channel; past 15 parts the channels continue on MIDI
+    port 2 (<midi-device port="2">). Percussion: one score-instrument per
+    drum sound used, on channel 10 with <midi-unpitched> = GM note + 1, and an
+    <instrument id> on every note, so players that map unpitched notes (e.g.
+    alphaTab) sound the kit.
+    """
+    import xml.etree.ElementTree as ET
+
+    parts = {p.get("id"): p for p in root.findall("part")}
+    k = 0
+    for sp in root.iter("score-part"):
+        pid = sp.get("id")
+        part = parts.get(pid)
+        if part is not None and part.find(".//unpitched") is not None:
+            _percussion_midi(sp, part)
+            continue
+        name = (sp.findtext("part-name") or "").strip()
+        mi = sp.find("midi-instrument")
+        if mi is None:
+            continue
+        port, channel = divmod(k, len(_CHANNELS))
+        k += 1
+        ch = mi.find("midi-channel")
+        if ch is None:
+            ch = ET.Element("midi-channel")
+            mi.insert(0, ch)
+        ch.text = str(_CHANNELS[channel])
+        if port:
+            dev = ET.Element("midi-device", {"id": mi.get("id"), "port": str(port + 1)})
+            sp.insert(list(sp).index(mi), dev)
+        if name in banks and mi.find("midi-bank") is None:
+            bank = ET.Element("midi-bank")
+            bank.text = str(banks[name])
+            after = [i for i, el in enumerate(mi) if el.tag in ("midi-channel", "midi-name")]
+            mi.insert(after[-1] + 1 if after else 0, bank)
+            bank.tail = ch.tail
+
+
+def _percussion_midi(sp, part) -> None:
+    import xml.etree.ElementTree as ET
+
+    used: dict[int, str] = {}
+    notes = []
+    for n in part.iter("note"):
+        u = n.find("unpitched")
+        if u is None:
+            continue
+        pos = f"{u.findtext('display-step')}{u.findtext('display-octave')}"
+        head = n.findtext("notehead") or "normal"
+        gm, label = DRUM_SOUNDS.get((pos, head), DRUM_SOUNDS[("B5", "x")])
+        used[gm] = label
+        notes.append((n, gm))
+    base = sp.find("score-instrument").get("id")
+    for el in [e for e in sp if e.tag in ("score-instrument", "midi-instrument", "midi-device")]:
+        sp.remove(el)
+    ids = {gm: f"{base}-{gm}" for gm in used}
+    for gm in sorted(used):
+        si = ET.SubElement(sp, "score-instrument", {"id": ids[gm]})
+        ET.SubElement(si, "instrument-name").text = used[gm]
+        ET.SubElement(si, "instrument-sound").text = "drum.group.set"
+    for gm in sorted(used):
+        mi = ET.SubElement(sp, "midi-instrument", {"id": ids[gm]})
+        ET.SubElement(mi, "midi-channel").text = str(DRUM_CHANNEL)
+        ET.SubElement(mi, "midi-unpitched").text = str(gm + 1)
+    for n, gm in notes:
+        # Schema order: ..., duration, tie*, instrument, voice, type, ...
+        after = [i for i, el in enumerate(n) if el.tag in ("unpitched", "duration", "tie", "chord", "grace", "cue")]
+        inst = ET.Element("instrument", {"id": ids[gm]})
+        n.insert(after[-1] + 1 if after else 0, inst)
+        inst.tail = n[after[-1]].tail if after else None
+
+
 AWKWARD = {("E", 1), ("B", 1), ("F", -1), ("C", -1)}
 _SHARP_NAMES = ["C", "C#", "D", "E-", "E", "F", "F#", "G", "A-", "A", "B-", "B"]
 _FLAT_NAMES = ["C", "D-", "D", "E-", "E", "F", "G-", "G", "A-", "A", "B-", "B"]
@@ -404,6 +493,9 @@ def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
                 # Schema order: instrument-name, instrument-abbreviation?, instrument-sound?
                 idx = 1 + (si.find("instrument-abbreviation") is not None)
                 si.insert(idx, el)
+    from .instruments import BRASS_BAND
+
+    _band_midi(root, {p.name: p.midi_bank for p in BRASS_BAND.parts if p.midi_bank})
     path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
 
 

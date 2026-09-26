@@ -30,20 +30,18 @@ public sealed record ExportSources(
 
 /// <summary>
 /// Decides which export formats are possible now and writes them. Score, parts and MIDI work
-/// offline; PDF and audio renders come from the engine job; braille needs an engine or core
-/// braille writer that does not exist yet, so it is listed as unavailable with the reason.
+/// offline; PDF, audio and braille (BRF, score or one part) come from the engine job.
 /// </summary>
 public sealed class ExportService
 {
     public const string ReasonNeedsEngine = "Export_Reason_NeedsEngine";
     public const string ReasonNoScore = "Export_Reason_NoScore";
-    public const string ReasonBrailleMissing = "Export_Reason_BrailleMissing";
 
     public IReadOnlyList<ExportOption> Options(ExportSources s)
     {
         bool score = s.MusicXml is not null;
         bool job = s.Engine is not null && s.JobId is not null;
-        bool brf = job && s.JobOutputs?.Any(o => o.EndsWith(".brf", StringComparison.OrdinalIgnoreCase)) == true;
+        bool brf = job; // the engine writes braille (BRF) for the score or a part on request
         return
         [
             new(ExportFormat.MusicXmlScore, ".musicxml", "application/vnd.recordare.musicxml+xml", score, score ? null : ReasonNoScore),
@@ -53,7 +51,7 @@ public sealed class ExportService
             new(ExportFormat.Audio, ".mp3", "audio/mpeg", job, job ? null : ReasonNeedsEngine),
             new(ExportFormat.TalkingScoreHtml, ".html", "text/html", s.TalkingScore is not null, s.TalkingScore is not null ? null : ReasonNoScore),
             new(ExportFormat.TalkingScoreText, ".txt", "text/plain", s.TalkingScore is not null, s.TalkingScore is not null ? null : ReasonNoScore),
-            new(ExportFormat.Braille, ".brf", "text/plain", brf, brf ? null : ReasonBrailleMissing),
+            new(ExportFormat.Braille, ".brf", "text/plain", brf, brf ? null : ReasonNeedsEngine),
         ];
     }
 
@@ -96,8 +94,9 @@ public sealed class ExportService
                 break;
             case ExportFormat.Braille:
             {
-                string name = s.JobOutputs!.First(o => o.EndsWith(".brf", StringComparison.OrdinalIgnoreCase));
-                await using var src = await s.Engine!.GetArtifactAsync(s.JobId!, name, ct);
+                // The engine numbers parts from 1 in score order; no part means the whole score.
+                string? part = partIndex is { } i ? (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+                await using var src = await s.Engine!.DownloadBrailleAsync(s.JobId!, part, ct);
                 await src.CopyToAsync(destination, ct);
                 break;
             }

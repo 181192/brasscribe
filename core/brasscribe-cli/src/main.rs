@@ -3,11 +3,16 @@
 //!
 //! ```text
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
+//!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal]
+//!                               [--difficulty faithful|standard|easier] [--key KEY | --transpose N]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
 //! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
 //! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
+//! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
+//! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
+//!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! ```
 
 use std::collections::HashMap;
@@ -16,8 +21,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use brasscribe_core::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
+use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::MidiFile;
 use brasscribe_core::model::Composition;
 use brasscribe_core::musicxml::{band_score, write_score};
@@ -137,8 +142,23 @@ fn contour(p: &Path) -> R<Contour> {
 
 fn out_band(dir: &Path, r: &pipeline::BandResult) -> R<()> {
     write(&dir.join("composition.json"), &r.composition.to_json_string())?;
-    write(&dir.join("brass-band.musicxml"), &stamp(r.musicxml.clone()))
+    if let Some(s) = &r.separation_check {
+        write(&dir.join("separation-check.json"), s)?;
+    }
+    write(&dir.join("brass-band.musicxml"), &stamp(r.musicxml.clone()))?;
+    for (name, xml) in &r.parts {
+        write(&dir.join("parts").join(name), &stamp(xml.clone()))?;
+    }
+    Ok(())
 }
+
+fn wav_if(p: &Path) -> R<Option<Audio>> {
+    if !p.exists() {
+        return Ok(None);
+    }
+    Audio::from_wav(&read(p)?).map(Some).map_err(|e| format!("{}: {e}", p.display()))
+}
+
 
 fn run(cmd: &str, a: &Args) -> R<()> {
     let title = a.opt("title").unwrap_or_else(|| "Draft".into());
@@ -152,12 +172,23 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 bass: midi(&l.join("bass-mus.mid"))?,
                 orchestra: midi(&l.join("orchestra-mus.mid"))?,
                 drums: midi(&l.join("drums-mus.mid"))?,
+                solo_audio: wav_if(&l.join("solo.wav"))?,
+                bass_audio: wav_if(&l.join("bass.wav"))?,
+                drums_audio: wav_if(&l.join("drums.wav"))?,
+                orchestra_audio: wav_if(&l.join("orchestra.wav"))?,
             };
             let contour_path = a.opt("solo-contour").map(PathBuf::from).or_else(|| Some(l.join("solo-sw.contour.npz")).filter(|p| p.exists()));
             let opts = LayersOptions {
                 solo_contour: contour_path.map(|p| contour(&p)).transpose()?,
                 no_free_time: a.has("no-free-time"),
                 free_tempo: a.opt("free-tempo").map(|s| s.parse::<f64>().map_err(|e| e.to_string())).transpose()?,
+                no_gate: a.has("no-gate"),
+                no_beat_cleanup: a.has("no-beat-cleanup"),
+                single_key: a.has("single-key"),
+                lineup: a.opt("lineup").unwrap_or_default(),
+                difficulty: a.opt("difficulty").unwrap_or_default(),
+                key: a.opt("key"),
+                transpose: a.opt("transpose").map(|s| s.parse::<i32>().map_err(|e| e.to_string())).transpose()?,
             };
             let r = pipeline::arrange_layers_song(&layers, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
@@ -199,12 +230,59 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         }
         "musicxml" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
-            let arr = if comp.voices.iter().any(|v| v.layer.is_some()) { arrange_layers(&comp) } else { arrange(&comp) };
+            let arr = pipeline::arrange_composition(&comp)?;
             write(Path::new(&a.one("out")?), &stamp(write_score(&band_score(&arr, &comp))))
         }
         "normalize" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
             write(Path::new(&a.one("out")?), &comp.to_json_string())
+        }
+        "humanize" => {
+            use brasscribe_core::humanize::{humanize, Performance, ScoreNote, Timing};
+            let notes: Vec<ScoreNote> = serde_json::from_slice(&read(Path::new(&a.one("notes")?))?).map_err(|e| e.to_string())?;
+            let perf = match a.opt("composition") {
+                Some(c) => Some(Performance::from_json_str(&String::from_utf8_lossy(&read(Path::new(&c))?))?),
+                None => None,
+            };
+            let timing = match a.opt("timing").as_deref() {
+                None | Some("score") => Timing::Score,
+                Some("performed") => Timing::Performed,
+                Some(t) => return Err(format!("unknown timing {t}")),
+            };
+            let player = a.one("player")?.parse::<i64>().map_err(|e| e.to_string())?;
+            let seed = a.opt("seed").unwrap_or_else(|| "brasscribe".into());
+            let h = humanize(&notes, &a.one("part")?, player, &seed, perf.as_ref(), timing)?;
+            write(Path::new(&a.one("out")?), &h.to_json_string())
+        }
+        "talking-score" => {
+            use brasscribe_core::talking_score as ts;
+            let xml = String::from_utf8_lossy(&read(Path::new(&a.one("musicxml")?))?).into_owned();
+            let comp: Option<Value> = match a.opt("composition") {
+                Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
+                None => None,
+            };
+            let doc = ts::build(&xml, comp.as_ref())?;
+            let d = ts::Settings::default();
+            let settings = ts::Settings {
+                lang: a.opt("lang").unwrap_or(d.lang),
+                pitch_mode: a.opt("pitch-mode").unwrap_or(d.pitch_mode),
+                verbosity: a.opt("verbosity").unwrap_or(d.verbosity),
+                octave_style: a.opt("octave-style").unwrap_or(d.octave_style),
+                announce_confident: a.has("announce-confident"),
+            };
+            if let Some(p) = a.opt("json") {
+                write(Path::new(&p), &brasscribe_core::pyjson::dumps(&doc))?;
+            }
+            if let Some(p) = a.opt("json-utf8") {
+                write(Path::new(&p), &brasscribe_core::pyjson::dumps_utf8(&doc))?;
+            }
+            if let Some(p) = a.opt("text") {
+                write(Path::new(&p), &ts::to_text(&doc, &settings, None))?;
+            }
+            if let Some(p) = a.opt("html") {
+                write(Path::new(&p), &ts::to_html(&doc, &settings, None))?;
+            }
+            Ok(())
         }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);

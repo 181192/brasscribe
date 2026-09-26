@@ -92,9 +92,15 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 ///
 /// `options_json` may be null (defaults) or
 /// `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
-///   "free_time": true, "free_tempo": null}`: the SwiftF0 contour of the solo
-/// stem (where sustained notes end), free-time detection on/off, and a fixed
-/// BPM for free-time passages.
+///   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
+///   "key_changes": true, "lineup": "band" | "minimal",
+///   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
+///   "transpose": null}`: the SwiftF0 contour of the solo stem (where
+/// sustained notes end), free-time detection on/off, a fixed BPM for free-time
+/// passages, the energy gate, beat cleanup, key changes, the lineup, the
+/// difficulty and a transposition (to a concert key or by semitones). Without stems the
+/// gate, dynamics and rehearsal marks have nothing to read; see
+/// [`bc_arrange_layers_band`].
 #[no_mangle]
 pub unsafe extern "C" fn bc_arrange_layers_song(
     midi: *const *const u8,
@@ -135,15 +141,8 @@ pub unsafe extern "C" fn bc_arrange_layers_song(
             Some(s) if !s.trim().is_empty() => serde_json::from_str(s).map_err(|e| (BC_INVALID, format!("options: {e}")))?,
             _ => serde_json::Value::Null,
         };
-        let floats = |v: &serde_json::Value| -> Vec<f64> { v.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() };
-        let contour = opts.get("solo_contour").filter(|c| c.is_object()).map(|c| crate::SoloContour {
-            times: floats(&c["times"]),
-            pitch_hz: floats(&c["pitch_hz"]),
-            loudness_db: floats(&c["loudness_db"]),
-        });
-        let free_time = opts.get("free_time").and_then(|v| v.as_bool()).unwrap_or(true);
-        let free_tempo = opts.get("free_tempo").and_then(|v| v.as_f64());
-        let r = crate::arrange_layers_song(layers, beats, title, contour, free_time, free_tempo).map_err(map_err)?;
+        let o = options_of(&opts);
+        let r = crate::band_impl(&layers, &crate::LayerStems::default(), &beats, &title, o).map_err(map_err)?;
         xml = r.musicxml;
         Ok(r.composition_json)
     });
@@ -172,4 +171,250 @@ pub unsafe extern "C" fn bc_spell_json(request: *const c_char, out: *mut *mut c_
             .collect();
         Ok(serde_json::Value::Array(rows).to_string())
     })
+}
+
+fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
+    let floats = |v: &serde_json::Value| -> Vec<f64> { v.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() };
+    let flag = |k: &str| opts.get(k).and_then(|v| v.as_bool()).unwrap_or(true);
+    crate::LayersSongOptions {
+        solo_contour: opts.get("solo_contour").filter(|c| c.is_object()).map(|c| crate::SoloContour {
+            times: floats(&c["times"]),
+            pitch_hz: floats(&c["pitch_hz"]),
+            loudness_db: floats(&c["loudness_db"]),
+        }),
+        free_time: flag("free_time"),
+        free_tempo: opts.get("free_tempo").and_then(|v| v.as_f64()),
+        gate: flag("gate"),
+        beat_cleanup: flag("beat_cleanup"),
+        key_changes: flag("key_changes"),
+        lineup: opts.get("lineup").and_then(|v| v.as_str()).unwrap_or("band").to_string(),
+        difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
+        key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
+        transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+    }
+}
+
+unsafe fn options_json(p: *const c_char) -> Result<serde_json::Value, (i32, String)> {
+    match from_c(p) {
+        Some(s) if !s.trim().is_empty() => serde_json::from_str(&s).map_err(|e| (BC_INVALID, format!("options: {e}"))),
+        _ => Ok(serde_json::Value::Null),
+    }
+}
+
+/// Like [`bc_arrange_layers_song`], plus the stems' audio: `wav` and `wav_len`
+/// hold four WAV files (solo, bass, drums, orchestra; a null pointer = not
+/// given). Writes one JSON object to `*out`:
+/// `{"composition": "<composition.json text>", "musicxml": "...",
+///   "parts": [{"file_name": "...", "musicxml": "..."}], "separation_check": "<json text>" | null}`.
+#[no_mangle]
+pub unsafe extern "C" fn bc_arrange_layers_band(
+    midi: *const *const u8,
+    midi_len: *const usize,
+    wav: *const *const u8,
+    wav_len: *const usize,
+    beats_text: *const c_char,
+    title: *const c_char,
+    options: *const c_char,
+    out: *mut *mut c_char,
+    err: *mut *mut c_char,
+) -> i32 {
+    if midi.is_null() || midi_len.is_null() {
+        return BC_NULL;
+    }
+    let Some(beats) = from_c(beats_text) else { return BC_NULL };
+    let title = from_c(title).unwrap_or_else(|| "Draft".into());
+    let mut files: Vec<Vec<u8>> = Vec::with_capacity(6);
+    for i in 0..6 {
+        let p = *midi.add(i);
+        if p.is_null() {
+            return BC_NULL;
+        }
+        files.push(std::slice::from_raw_parts(p, *midi_len.add(i)).to_vec());
+    }
+    let mut stems: [Option<Vec<u8>>; 4] = [None, None, None, None];
+    if !wav.is_null() && !wav_len.is_null() {
+        for (i, slot) in stems.iter_mut().enumerate() {
+            let p = *wav.add(i);
+            if !p.is_null() {
+                *slot = Some(std::slice::from_raw_parts(p, *wav_len.add(i)).to_vec());
+            }
+        }
+    }
+    run(out, err, || {
+        let opts = options_json(options)?;
+        let layers = crate::LayerMidi {
+            solo_swiftf0: files[0].clone(),
+            solo_muscriptor: files[1].clone(),
+            solo_basic_pitch: files[2].clone(),
+            bass: files[3].clone(),
+            orchestra: files[4].clone(),
+            drums: files[5].clone(),
+        };
+        let [solo, bass, drums, orchestra] = stems.clone();
+        let st = crate::LayerStems { solo, bass, drums, orchestra };
+        let r = crate::band_impl(&layers, &st, &beats, &title, options_of(&opts)).map_err(map_err)?;
+        let parts: Vec<serde_json::Value> = r.parts.iter().map(|p| serde_json::json!({"file_name": p.file_name, "musicxml": p.musicxml})).collect();
+        Ok(serde_json::json!({"composition": r.composition_json, "musicxml": r.musicxml, "parts": parts, "separation_check": r.separation_check_json}).to_string())
+    })
+}
+
+/// Humanize one player's notes. `request` is JSON
+/// `{"notes": [{"tick", "dur_tick", "start_s", "end_s", "pitch", "velocity"}...],
+///   "part": "Solo Cornet", "player": 0, "seed": "brasscribe",
+///   "timing": "score" | "performed", "composition": {...} | null}`;
+/// writes `{"notes": [{"start", "end", "pitch", "velocity", "staccato",
+/// "from_composition"}...], "detune": cents, "stats": {...}}`.
+#[no_mangle]
+pub unsafe extern "C" fn bc_humanize_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    use brasscribe_core::humanize as h;
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || {
+        let v: serde_json::Value = serde_json::from_str(&req).map_err(|e| (BC_INVALID, e.to_string()))?;
+        let notes: Vec<h::ScoreNote> = serde_json::from_value(v.get("notes").cloned().unwrap_or_default()).map_err(|e| (BC_INVALID, format!("notes: {e}")))?;
+        let perf = match v.get("composition").filter(|c| c.is_object()) {
+            Some(c) => Some(h::Performance::from_value(c).map_err(|e| (BC_INVALID, e))?),
+            None => None,
+        };
+        let timing = match v.get("timing").and_then(|t| t.as_str()) {
+            None | Some("score") => h::Timing::Score,
+            Some("performed") => h::Timing::Performed,
+            Some(t) => return Err((BC_INVALID, format!("unknown timing {t}"))),
+        };
+        let part = v.get("part").and_then(|x| x.as_str()).unwrap_or("");
+        let player = v.get("player").and_then(|x| x.as_i64()).unwrap_or(0);
+        let seed = v.get("seed").and_then(|x| x.as_str()).unwrap_or("brasscribe");
+        let r = h::humanize(&notes, part, player, seed, perf.as_ref(), timing).map_err(|e| (BC_INVALID, e))?;
+        Ok(r.to_json_string())
+    })
+}
+
+/// Opaque talking-score document.
+pub struct BcTalkingScore(crate::talking::TalkingScore);
+
+/// Build a talking score from MusicXML and (optionally, may be null) the
+/// Composition JSON. Writes a handle to `*out`; release with
+/// [`bc_talking_score_free`].
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_new(musicxml: *const c_char, composition_json: *const c_char, out: *mut *mut BcTalkingScore, err: *mut *mut c_char) -> i32 {
+    let Some(xml) = from_c(musicxml) else { return BC_NULL };
+    if out.is_null() {
+        return BC_NULL;
+    }
+    let comp = from_c(composition_json);
+    let r = catch_unwind(AssertUnwindSafe(|| -> Result<serde_json::Value, (i32, String)> {
+        let c: Option<serde_json::Value> = comp.map(|c| serde_json::from_str(&c)).transpose().map_err(|e| (BC_INVALID, e.to_string()))?;
+        brasscribe_core::talking_score::build(&xml, c.as_ref()).map_err(|e| (BC_INVALID, e))
+    }));
+    match r {
+        Ok(Ok(doc)) => {
+            *out = Box::into_raw(Box::new(BcTalkingScore(crate::talking::TalkingScore::from_doc(doc))));
+            BC_OK
+        }
+        Ok(Err((code, msg))) => {
+            put(err, msg);
+            code
+        }
+        Err(_) => {
+            put(err, "internal error (panic)".into());
+            BC_PANIC
+        }
+    }
+}
+
+/// Release a talking score. Null is ignored.
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_free(ts: *mut BcTalkingScore) {
+    if !ts.is_null() {
+        drop(Box::from_raw(ts));
+    }
+}
+
+/// The document as JSON (spec §6 shape).
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_json(ts: *const BcTalkingScore, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(t) = ts.as_ref() else { return BC_NULL };
+    run(out, err, || Ok(brasscribe_core::pyjson::dumps(t.0.doc())))
+}
+
+fn cursor_of(v: &serde_json::Value) -> brasscribe_core::talking_score::Cursor {
+    let g = |k: &str| v.get(k).and_then(|x| x.as_u64()).unwrap_or(0) as usize;
+    brasscribe_core::talking_score::Cursor { part: g("part"), bar: g("bar"), event: g("event") }
+}
+
+/// Announce at a cursor. `request`: `{"cursor": {"part", "bar", "event"},
+/// "context": {"part", "bar", "pitch_mode"}, "settings": {"lang", "pitch_mode",
+/// "verbosity", "octave_style", "announce_confident"}, "by_bar": false}`.
+/// Writes `{"text": "...", "context": {...}}`: the announcement and the
+/// context it leaves behind.
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_announce(ts: *const BcTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    use brasscribe_core::talking_score as t;
+    let Some(ts) = ts.as_ref() else { return BC_NULL };
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || {
+        let v: serde_json::Value = serde_json::from_str(&req).map_err(|e| (BC_INVALID, e.to_string()))?;
+        let n = serde_json::Value::Null;
+        let c = cursor_of(v.get("cursor").unwrap_or(&n));
+        let s = t::settings_from_json(v.get("settings").unwrap_or(&n));
+        let ctx = t::context_from_json(v.get("context").unwrap_or(&n));
+        let text = t::announce_at(ts.0.doc(), c, &ctx, &s, v.get("by_bar").and_then(|x| x.as_bool()).unwrap_or(false)).map_err(|e| (BC_INVALID, e))?;
+        let p = &ts.0.doc()["parts"][c.part];
+        let next = serde_json::json!({"part": p["name"], "bar": p["bars"][c.bar]["number"], "pitch_mode": s.pitch_mode});
+        Ok(serde_json::json!({"text": text, "context": next}).to_string())
+    })
+}
+
+/// One navigation step. `request`: `{"cursor": {...}, "unit": "note" | "bar" |
+/// "part" | "uncertain", "forward": true}`. Writes the new cursor as JSON, or
+/// `null` at either end of the score.
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_navigate(ts: *const BcTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    use brasscribe_core::talking_score as t;
+    let Some(ts) = ts.as_ref() else { return BC_NULL };
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || {
+        let v: serde_json::Value = serde_json::from_str(&req).map_err(|e| (BC_INVALID, e.to_string()))?;
+        let unit = match v.get("unit").and_then(|x| x.as_str()).unwrap_or("note") {
+            "note" => t::Unit::Note,
+            "bar" => t::Unit::Bar,
+            "part" => t::Unit::Part,
+            "uncertain" => t::Unit::Uncertain,
+            u => return Err((BC_INVALID, format!("unknown unit {u}"))),
+        };
+        let c = cursor_of(v.get("cursor").unwrap_or(&serde_json::Value::Null));
+        Ok(match t::navigate(ts.0.doc(), c, unit, v.get("forward").and_then(|x| x.as_bool()).unwrap_or(true)) {
+            Some(n) => serde_json::json!({"part": n.part, "bar": n.bar, "event": n.event}).to_string(),
+            None => "null".into(),
+        })
+    })
+}
+
+/// Export the talking score. `format`: "text" or "html"; `settings_json` may be
+/// null (defaults).
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_score_export(ts: *const BcTalkingScore, format: *const c_char, settings_json: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    use brasscribe_core::talking_score as t;
+    let Some(ts) = ts.as_ref() else { return BC_NULL };
+    let format = from_c(format).unwrap_or_else(|| "text".into());
+    let settings = from_c(settings_json);
+    run(out, err, || {
+        let v: serde_json::Value = match &settings {
+            Some(s) if !s.trim().is_empty() => serde_json::from_str(s).map_err(|e| (BC_INVALID, e.to_string()))?,
+            _ => serde_json::Value::Null,
+        };
+        let s = t::settings_from_json(&v);
+        match format.as_str() {
+            "text" => Ok(t::to_text(ts.0.doc(), &s, None)),
+            "html" => Ok(t::to_html(ts.0.doc(), &s, None)),
+            f => Err((BC_INVALID, format!("unknown format {f}"))),
+        }
+    })
+}
+
+/// Announce one event outside a document (the conformance-vector form):
+/// `{"part": {...}, "bar": {...}, "event": {...}, "context": {...}, "settings": {...}, "by_bar": false}`.
+#[no_mangle]
+pub unsafe extern "C" fn bc_talking_announce_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || crate::talking::announce_json(&req).map_err(|e| (BC_INVALID, e)))
 }
