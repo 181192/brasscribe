@@ -383,7 +383,7 @@
     <string name="key_major">%1$s-dur</string>
     <string name="key_minor">%1$s-moll</string>
     <string name="key_shifted">%1$s fra opptaket</string>
-    <string name="demo_label">eksempelet, uten datamaskin</string>
+    <string name="demo_label">Bare et eksempel · ingen datamaskin trengs</string>
     <string name="view_menu">Visning</string>
     <string name="export_what">Hva</string>
     <string name="export_scope_my_part">%1$s (deg)</string>
@@ -433,4 +433,5 @@
     <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
     <string name="octave_down">Oktav ned</string>
     <string name="octave_up">Oktav opp</string>
+    <string name="demo_where">Eksempelet, uten datamaskin</string>
 </resources>

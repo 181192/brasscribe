@@ -385,7 +385,7 @@
     <string name="key_major">%1$s major</string>
     <string name="key_minor">%1$s minor</string>
     <string name="key_shifted">%1$s from the recording</string>
-    <string name="demo_label">the example, no computer needed</string>
+    <string name="demo_label">Example only · no computer needed</string>
     <string name="view_menu">View</string>
     <string name="export_what">What</string>
     <string name="export_scope_my_part">%1$s (you)</string>
@@ -435,4 +435,5 @@
     <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
     <string name="octave_down">Octave down</string>
     <string name="octave_up">Octave up</string>
+    <string name="demo_where">The example, no computer needed</string>
 </resources>

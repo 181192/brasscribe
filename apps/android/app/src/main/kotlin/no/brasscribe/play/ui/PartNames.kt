@@ -23,7 +23,9 @@ object PartNames {
         if (lang == Lang.NB) NB[name.replace(' ', ' ').trim()] ?: name else name
 
     /** "Mikkel — solo cornet & brass band (draft)" → "Mikkel": the short song title for headers. */
-    fun shortTitle(title: String): String =
-        title.substringBefore(" — ").substringBefore(" - ").replace(Regex("""\s*\((draft|utkast)\)\s*$""", RegexOption.IGNORE_CASE), "").trim()
+    fun shortTitle(title: String): String {
+        val t = title.replace('\u00A0', ' ')
+        return t.split(Regex("""\s[—–-]\s""")).first().replace(Regex("""\s*\((draft|utkast)\)\s*$""", RegexOption.IGNORE_CASE), "").trim()
             .ifBlank { title }
+    }
 }

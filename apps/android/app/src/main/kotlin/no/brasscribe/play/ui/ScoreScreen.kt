@@ -193,16 +193,17 @@ fun ScoreScreen(vm: PlayViewModel) {
                 if (largeText()) {
                     PracticeChip(writtenLabel, !st.concertPitch, { controller.setConcertPitch(false) }, role = Role.RadioButton)
                     PracticeChip(stringResource(R.string.concert_pitch), st.concertPitch, { controller.setConcertPitch(true) }, role = Role.RadioButton)
-                } else SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
                     SegmentedButton(selected = !st.concertPitch, onClick = { controller.setConcertPitch(false) }, shape = SegmentedButtonDefaults.itemShape(0, 2),
                         colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(writtenLabel, maxLines = 2) }
                     SegmentedButton(selected = st.concertPitch, onClick = { controller.setConcertPitch(true) }, shape = SegmentedButtonDefaults.itemShape(1, 2),
                         colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.concert_pitch), maxLines = 2) }
                 }
-                IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                    IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                }
             }
             if (writtenTip && !performance) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
-            if (!performance) StatusLine(status, Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
             if (toCheck > 0 && !performance) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
                 UncertainMark(false)
                 Text(pluralStringResource(R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
@@ -230,6 +231,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                     )
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
+                    // Status messages float over the bottom of the notation, clear of the player.
+                    if (!performance) StatusLine(status, Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                     if (performance) PerformanceBar(controller, st, Modifier.align(Alignment.BottomCenter), onBar = ::moveBar) { performance = false }
                 }
             }

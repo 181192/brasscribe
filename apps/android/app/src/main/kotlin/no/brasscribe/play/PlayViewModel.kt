@@ -450,7 +450,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val engine: EngineApi = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
-            res.getString(R.string.transcribe_where_companion, container.engineLabel()))
+            if (container.usingFixture) res.getString(R.string.demo_where) else res.getString(R.string.transcribe_where_companion, container.engineLabel()))
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
         val audio = engine.uploadAudio(s.name, bytes)
         val created = engine.createJob(
