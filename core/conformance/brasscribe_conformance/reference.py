@@ -47,7 +47,6 @@ def run(case: Case, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     a = case.args
     if case.kind == "meter":
-        import numpy as np
         from brasscribe_music.beats import meter_of
 
         b = np.loadtxt(a["beats"], ndmin=2)
