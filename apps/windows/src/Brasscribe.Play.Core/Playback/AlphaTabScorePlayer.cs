@@ -104,10 +104,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             (int)t.Index, t.Name.Replace('\u00A0', ' '), t.Staves.Any(s => s.IsPercussion),
             (int)(t.Staves.FirstOrDefault()?.DisplayTranspositionPitch ?? 0))).ToList();
 
-        if (ProgramMap is { } map)
-            foreach (var t in _score.Tracks)
-                if (map(t.Name.Replace('\u00A0', ' ')) is { } program)
-                    SetProgram(t, program);
+        _gains = Prepare(_score, forMidiFile: false);
 
         _midi = new MidiFile();
         var generator = new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(_midi, false));
@@ -116,6 +113,8 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         _muted.Clear();
         _solo.Clear();
         lock (Gate) _synth.LoadMidiFile(_midi);
+        _volumes = Tracks.Select(_ => 1.0).ToArray();
+        for (int t = 0; t < Tracks.Count; t++) ApplyVolume(t);
         Transpose = _transpose;
     }
 
@@ -129,6 +128,94 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     /// <summary>Optional MIDI program per part name (0-based), applied when a score loads.</summary>
     public Func<string, int?>? ProgramMap { get; set; }
+
+    /// <summary>Optional preset and balance per part name (the band SoundFont); wins over <see cref="ProgramMap"/>.</summary>
+    public Func<string, TrackSound?>? SoundMap { get; set; }
+
+    /// <summary>MIDI channel of each track as the synth plays it.</summary>
+    public IReadOnlyList<int> TrackChannels => _score?.Tracks.Select(t => (int)t.PlaybackInfo.PrimaryChannel).ToList() ?? [];
+
+    /// <summary>Linear balance gain of each track from the sound map (1 when none).</summary>
+    public IReadOnlyList<double> TrackGains => _gains;
+
+    private double[] _gains = [];
+    private double[] _volumes = [];
+
+    /// <summary>
+    /// Channels, presets, balance and drum notes for a freshly loaded score. Returns each track's
+    /// linear gain. For a MIDI file the channels fit into 16 and the balance goes into CC 7.
+    /// </summary>
+    private double[] Prepare(Score score, bool forMidiFile)
+    {
+        var sounds = score.Tracks.Select(t =>
+        {
+            string name = t.Name.Replace('\u00A0', ' ');
+            // ProgramMap numbers are private to the loaded SoundFonts (not GM), so they stay out of files.
+            return SoundMap?.Invoke(name) ?? (!forMidiFile && ProgramMap?.Invoke(name) is int p ? new TrackSound(p, 0) : null);
+        }).ToList();
+        var parts = score.Tracks.Select((t, i) => new ChannelPlan.Part(i, t.Staves.Any(st => st.IsPercussion),
+            sounds[i]?.Program ?? (int)t.PlaybackInfo.Program, sounds[i]?.GainDb ?? 0)).ToList();
+        var channels = forMidiFile ? ChannelPlan.ForMidiFile(parts) : ChannelPlan.ForPlayback(parts);
+        var gains = new double[score.Tracks.Count];
+        for (int i = 0; i < score.Tracks.Count; i++)
+        {
+            var track = score.Tracks[i];
+            track.PlaybackInfo.PrimaryChannel = channels[i];
+            track.PlaybackInfo.SecondaryChannel = channels[i];
+            if (sounds[i] is { } sound)
+            {
+                track.PlaybackInfo.Program = sound.Percussion ? 0 : sound.Program;
+                track.PlaybackInfo.Bank = sound.Percussion ? 0 : sound.Bank;
+                RemoveInstrumentChanges(track);
+            }
+            double db = sounds[i]?.GainDb ?? 0;
+            gains[i] = Math.Pow(10, db / 20);
+            if (forMidiFile) track.PlaybackInfo.Volume = Math.Clamp(Math.Round(16 * Math.Pow(10, db / 40)), 0, 16);
+            if (parts[i].Percussion) MapDrums(track);
+        }
+        return gains;
+    }
+
+    /// <summary>
+    /// The MusicXML importer turns &lt;midi-instrument&gt; into per-beat instrument and bank changes
+    /// that would override the part's preset; the preset map replaces them.
+    /// </summary>
+    private static void RemoveInstrumentChanges(Track track)
+    {
+        foreach (var staff in track.Staves)
+            foreach (var bar in staff.Bars)
+                foreach (var voice in bar.Voices)
+                    foreach (var beat in voice.Beats)
+                        for (int a = beat.Automations.Count - 1; a >= 0; a--)
+                            if (beat.Automations[a].Type is AutomationType.Instrument or AutomationType.Bank)
+                                beat.Automations.RemoveAt(a);
+    }
+
+    /// <summary>Gives unpitched notes without a MIDI number the GM drum of their staff position.</summary>
+    private static void MapDrums(Track track)
+    {
+        var display = new Dictionary<int, int>();
+        foreach (var staff in track.Staves)
+            foreach (var bar in staff.Bars)
+                foreach (var voice in bar.Voices)
+                    foreach (var beat in voice.Beats)
+                        foreach (var note in beat.Notes)
+                            if (note.PercussionArticulation >= 0)
+                                display.TryAdd((int)note.PercussionArticulation, (int)(note.Octave * 12 + note.Tone));
+        for (int i = 0; i < track.PercussionArticulations.Count; i++)
+        {
+            var art = track.PercussionArticulations[i];
+            if (art.OutputMidiNumber > 0 || !display.TryGetValue(i, out int pitch)) continue;
+            art.OutputMidiNumber = DrumMap.ForDisplay(pitch);
+        }
+    }
+
+    private void ApplyVolume(int track)
+    {
+        if (track < 0 || track >= _volumes.Length) return;
+        double v = Math.Clamp(_volumes[track], 0, 1) * (track < _gains.Length ? _gains[track] : 1);
+        lock (Gate) foreach (var ch in ChannelsOf(track)) _synth.SetChannelVolume(ch, v);
+    }
 
     public void Play()
     {
@@ -194,7 +281,9 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     public void SetVolume(int track, double volume)
     {
-        lock (Gate) foreach (var ch in ChannelsOf(track)) _synth.SetChannelVolume(ch, Math.Clamp(volume, 0, 1));
+        if (track < 0 || track >= _volumes.Length) return;
+        _volumes[track] = Math.Clamp(volume, 0, 1);
+        ApplyVolume(track);
     }
 
     public bool IsMuted(int track) => _muted.Contains(track);
@@ -207,6 +296,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         // must not leak into the file. The playback MIDI also carries synth-only events, so the
         // export is generated in SMF1 mode.
         var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(_musicXml), new Settings());
+        Prepare(score, forMidiFile: true);
         var smf = new MidiFile { Format = MidiFileFormat.MultiTrack };
         new MidiFileGenerator(score, new Settings(), new AlphaSynthMidiFileHandler(smf, true)).Generate();
         var bin = smf.ToBinary();
@@ -224,21 +314,6 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     public void Dispose()
     {
         lock (Gate) _synth.Destroy();
-    }
-
-    /// <summary>
-    /// Points a track at a program: its default and every instrument change in it (the MusicXML
-    /// importer turns &lt;midi-instrument&gt; into instrument automations that would override the default).
-    /// </summary>
-    private static void SetProgram(Track track, int program)
-    {
-        track.PlaybackInfo.Program = program;
-        foreach (var staff in track.Staves)
-            foreach (var bar in staff.Bars)
-                foreach (var voice in bar.Voices)
-                    foreach (var beat in voice.Beats)
-                        foreach (var a in beat.Automations)
-                            if (a.Type == AutomationType.Instrument) a.Value = program;
     }
 
     private int BarAt(double tick)
