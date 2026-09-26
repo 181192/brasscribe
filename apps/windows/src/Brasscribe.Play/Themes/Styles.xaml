@@ -177,10 +177,10 @@
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
 
-    <!-- Player chips (Count-in, Metronome, Loop, Play along): outline, ink fill when on. -->
+    <!-- Player chips (Count-in, Metronome, Mute my part): 48 epx, outline when off, tonal + check when on. -->
     <Style x:Key="TransportToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
-        <Setter Property="MinHeight" Value="40" />
-        <Setter Property="MinWidth" Value="40" />
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="MinWidth" Value="48" />
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
@@ -189,6 +189,73 @@
         <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
+                     Ink fill is kept for the one primary (design/system.md §1). -->
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Chip" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource BcTextBrush}" Visibility="Collapsed" />
+                            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Foreground="{ThemeResource BcTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Opacity" Value="0.5" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Opacity" Value="0.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Segments (Written/Concert pitch, Score/Original, what to export): warm greys, no colour. -->
@@ -202,23 +269,139 @@
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
     </Style>
 
+    <!-- A segment that is one of a group (RadioButton with GroupName): the chosen one is raised with an outline. -->
+    <Style x:Key="SegmentRadioStyle" TargetType="RadioButton">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Segment" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="{StaticResource BcRadiusSm}" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                        <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource BcTextMutedBrush}" FontWeight="SemiBold" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource BcTextBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed" />
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Segment.Opacity" Value="0.5" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="CheckStates">
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Segment.Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
+                                        <Setter Target="Segment.BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource BcTextBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Unchecked" />
+                                <VisualState x:Name="Indeterminate" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="SegmentGroupStyle" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
         <Setter Property="Padding" Value="3" />
     </Style>
 
-    <!-- Mute and solo toggles of a part: small squares, ink fill when pressed. -->
+    <!-- Mute / Only this of a part: labelled, 36 epx (40 on touch), tonal + check when on. -->
     <Style x:Key="MixerToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
-        <Setter Property="Width" Value="36" />
-        <Setter Property="Height" Value="36" />
-        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
+                     Ink fill is kept for the one primary (design/system.md §1). -->
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Chip" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource BcTextBrush}" Visibility="Collapsed" />
+                            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Foreground="{ThemeResource BcTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Opacity" Value="0.5" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.BorderThickness" Value="1.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Chip.Opacity" Value="0.5" />
+                                        <Setter Target="Check.Visibility" Value="Visible" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ===== Surfaces ===== -->

@@ -80,6 +80,16 @@ public sealed partial class ScoreView : UserControl
         };
         Loaded += (_, _) => ApplyBrushes();
         GotFocus += (_, _) => _peer?.RaiseFocusedTextChanged();
+        // The "?" marks can be tapped (a 44 epx target around each) to check that note.
+        _surface.Tapped += (_, e) =>
+        {
+            var p = e.GetPosition(_surface);
+            var hit = _items.FirstOrDefault(i => i.Kind is OverlayKind.UncertainMark or OverlayKind.VeryUncertainMark
+                                                 && Math.Abs(i.Box.X + i.Box.W / 2 - p.X) <= 22 && Math.Abs(i.Box.Y + i.Box.H / 2 - p.Y) <= 22);
+            if (hit is null) return;
+            e.Handled = true;
+            MarkInvoked?.Invoke(this, hit);
+        };
     }
 
     /// <summary>Localised control type spoken by screen readers ("score", "partitur").</summary>
@@ -110,6 +120,9 @@ public sealed partial class ScoreView : UserControl
     public IReadOnlyList<ScoreEventItem> CurrentEvents { get; private set; } = [];
 
     public event EventHandler? LeaveRequested;
+
+    /// <summary>A "?" mark was tapped.</summary>
+    public event EventHandler<OverlayItem>? MarkInvoked;
     public event EventHandler? GoToBarRequested;
 
     public ScoreViewModel? ViewModel

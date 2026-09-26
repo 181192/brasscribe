@@ -40,7 +40,7 @@ public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
         Reason = s[$"Error_{k}_Reason"];
         Steps.Clear();
         foreach (var n in new[] { 1, 2, 3 })
-            if (s[$"Error_{k}_Step{n}"] is { Length: > 0 } step && step != $"Error_{k}_Step{n}") Steps.Add(step);
+            if (s[$"Error_{k}_Step{n}"] is { Length: > 0 } step && step != $"Error_{k}_Step{n}") Steps.Add($"{n}. {step}");
         PrimaryLabel = s["Error_TryAgain"];
         SecondaryLabel = s["Error_ChooseAnother"];
         DetailsHeading = s["Error_DetailsHeading"];

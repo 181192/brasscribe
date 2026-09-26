@@ -115,7 +115,7 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
         }
         Items = items;
         IsConfirmingFinish = false;
-        CountHeading = s.Format("Review_Count", items.Count);
+        CountHeading = s.Format(items.Count == 1 ? "Review_CountOne" : "Review_Count", items.Count).ToUpperInvariant();
         Select(items.FirstOrDefault());
     }
 
@@ -165,7 +165,7 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
             Finish();
             return;
         }
-        ConfirmText = s.Format("Review_FinishConfirm", Left);
+        ConfirmText = s.Format(Left == 1 ? "Review_FinishConfirmOne" : "Review_FinishConfirm", Left);
         IsConfirmingFinish = true;
         announcer.Announce(ConfirmText, AnnouncementKind.Important);
     }

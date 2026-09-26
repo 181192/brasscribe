@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl
+<Page
     x:Class="Brasscribe.Play.Views.ScoreScreen"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Brasscribe.Play.Controls"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels">
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    NavigationCacheMode="Required">
 
-    <Grid Padding="12,8" RowSpacing="8">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -14,188 +15,325 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Result heading: focus lands here when transcription completes. -->
-        <StackPanel Grid.Row="0" Spacing="2">
-            <TextBlock x:Name="Heading" Style="{StaticResource ScreenHeadingStyle}" Margin="0"
-                       AutomationProperties.HeadingLevel="Level1" IsTabStop="True"
-                       Text="{x:Bind ViewModel.Title, Mode=OneWay}" />
-            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.UncertainText, Mode=OneWay}" />
-            <TextBlock x:Uid="AdLibNotice" Style="{StaticResource MutedStyle}" Visibility="{x:Bind ViewModel.HasFreeTime, Mode=OneWay}" />
-        </StackPanel>
-
-        <!-- Toolbar: part, pitch, zoom, view. -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
-            <ComboBox x:Name="PartPicker" x:Uid="PartPicker" MinWidth="220" SelectionChanged="OnPartSelected" AccessKey="P" />
-            <ToggleSwitch x:Name="ConcertPitchSwitch" x:Uid="ConcertPitchSwitch"
-                          IsOn="{x:Bind ViewModel.ConcertPitch, Mode=TwoWay}" AccessKey="C" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                <Button x:Uid="ZoomOutButton" Style="{StaticResource ActionButtonStyle}" Click="OnZoomOut">
-                    <FontIcon Glyph="&#xE71F;" />
-                </Button>
-                <NumberBox x:Name="ZoomBox" x:Uid="ZoomBox" Minimum="50" Maximum="400" SmallChange="10" LargeChange="50"
-                           SpinButtonPlacementMode="Hidden" Width="90"
-                           Value="{x:Bind ViewModel.ZoomPercent, Mode=TwoWay}" />
-                <Button x:Uid="ZoomInButton" Style="{StaticResource ActionButtonStyle}" Click="OnZoomIn">
-                    <FontIcon Glyph="&#xE8A3;" />
-                </Button>
-            </StackPanel>
-            <ToggleButton x:Name="SourceToggle" x:Uid="SourceToggle" Style="{StaticResource TransportToggleStyle}" VerticalAlignment="Bottom"
-                          IsChecked="{x:Bind vm:Screens.IsOriginal(ViewModel.ListeningTo), Mode=OneWay}" Click="OnSwitchSource" AccessKey="R" />
-            <ToggleButton x:Name="TalkingScoreToggle" x:Uid="TalkingScoreToggle" Style="{StaticResource TransportToggleStyle}"
-                          IsChecked="{x:Bind ViewModel.ShowTalkingScore, Mode=TwoWay}" AccessKey="V" VerticalAlignment="Bottom" />
-            <DropDownButton x:Uid="OutputOptionsButton" VerticalAlignment="Bottom" MinHeight="44" AccessKey="O">
+        <!-- Toolbar: parts ▾, As written / Concert pitch, zoom, View ▾. -->
+        <Grid Grid.Row="0" Padding="24,12" ColumnSpacing="12" Background="{ThemeResource BcBgBrush}"
+              AutomationProperties.LandmarkType="Custom" x:Uid="ScoreToolbar">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <DropDownButton x:Name="PartPicker" x:Uid="PartPicker" MinHeight="40" CornerRadius="{StaticResource BcRadiusMd}"
+                            Background="{ThemeResource BcSecondaryBrush}" BorderThickness="0" AccessKey="P">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource BcIconParts}" FontSize="16" />
+                    <TextBlock x:Name="PartPickerLabel" Style="{StaticResource LabelStyle}" />
+                </StackPanel>
                 <DropDownButton.Flyout>
-                    <Flyout Placement="Bottom">
-                        <StackPanel Spacing="8" MinWidth="280">
-                            <TextBlock x:Uid="OutputHeading" Style="{StaticResource SectionHeadingStyle}" Margin="0"
-                                       AutomationProperties.HeadingLevel="Level2" />
-                            <ComboBox x:Name="LineupBox" x:Uid="LineupBox" SelectedIndex="0" SelectionChanged="OnLineupChanged">
-                                <ComboBoxItem x:Uid="LineupFull" />
-                                <ComboBoxItem x:Uid="LineupMinimal" />
-                            </ComboBox>
-                            <ComboBox x:Name="DifficultyBox" x:Uid="DifficultyBox" SelectedIndex="0" SelectionChanged="OnDifficultyChanged"
-                                      IsEnabled="{x:Bind Output.DifficultyAvailable, Mode=OneWay}">
-                                <ComboBoxItem x:Uid="DifficultyFaithful" />
-                                <ComboBoxItem x:Uid="DifficultyStandard" />
-                                <ComboBoxItem x:Uid="DifficultyEasier" />
-                            </ComboBox>
-                            <!-- Filled from OutputOptionsViewModel.Keys with localised key names. -->
-                            <ComboBox x:Name="KeyBox" x:Uid="KeyBox" SelectionChanged="OnKeyChanged"
-                                      IsEnabled="{x:Bind Output.KeyAvailable, Mode=OneWay}" />
-                            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Output.UnavailableText, Mode=OneWay}" />
-                            <Button x:Uid="ApplyOutputButton" Style="{StaticResource ActionButtonStyle}" Click="OnApplyOutput" />
-                            <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind Output.StatusText, Mode=OneWay}" />
-                        </StackPanel>
-                    </Flyout>
+                    <MenuFlyout x:Name="PartMenu" Placement="BottomEdgeAlignedLeft" />
                 </DropDownButton.Flyout>
             </DropDownButton>
-        </StackPanel>
+            <Border Grid.Column="1" Style="{StaticResource SegmentGroupStyle}" x:Uid="PitchChoice">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                    <RadioButton x:Name="WrittenChoice" GroupName="Pitch" Style="{StaticResource SegmentRadioStyle}" Checked="OnPitchChecked"
+                                 Content="{x:Bind ViewModel.WrittenLabel, Mode=OneWay}" x:Uid="WrittenChoice" />
+                    <RadioButton x:Name="ConcertChoice" GroupName="Pitch" Style="{StaticResource SegmentRadioStyle}" Checked="OnPitchChecked"
+                                 x:Uid="ConcertChoice" AccessKey="C" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource SegmentGroupStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button x:Uid="ZoomOutButton" Style="{StaticResource IconButtonStyle}" Click="OnZoomOut">
+                        <FontIcon Glyph="{StaticResource BcIconZoomOut}" FontSize="16" />
+                    </Button>
+                    <NumberBox x:Name="ZoomBox" x:Uid="ZoomBox" Minimum="50" Maximum="400" SmallChange="10" LargeChange="50"
+                               SpinButtonPlacementMode="Hidden" Width="72" BorderThickness="0" Background="Transparent"
+                               Value="{x:Bind ViewModel.ZoomPercent, Mode=TwoWay}" />
+                    <Button x:Uid="ZoomInButton" Style="{StaticResource IconButtonStyle}" Click="OnZoomIn">
+                        <FontIcon Glyph="{StaticResource BcIconZoomIn}" FontSize="16" />
+                    </Button>
+                </StackPanel>
+            </Border>
+            <DropDownButton x:Name="ViewMenuButton" x:Uid="ViewMenuButton" Grid.Column="4" MinHeight="40" CornerRadius="{StaticResource BcRadiusMd}"
+                            Background="{ThemeResource BcSecondaryBrush}" BorderThickness="0" AccessKey="V">
+                <TextBlock x:Uid="ViewMenuLabel" Style="{StaticResource LabelStyle}" />
+                <DropDownButton.Flyout>
+                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                        <ToggleMenuFlyoutItem x:Name="TalkingScoreToggle" x:Uid="TalkingScoreToggle"
+                                              IsChecked="{x:Bind ViewModel.ShowTalkingScore, Mode=TwoWay}" KeyboardAcceleratorTextOverride="Ctrl+T">
+                            <ToggleMenuFlyoutItem.Icon>
+                                <FontIcon Glyph="{StaticResource BcIconTalkingScore}" />
+                            </ToggleMenuFlyoutItem.Icon>
+                        </ToggleMenuFlyoutItem>
+                        <ToggleMenuFlyoutItem x:Name="VideoToggle" x:Uid="VideoToggle" IsChecked="{x:Bind ViewModel.ShowVideo, Mode=TwoWay}"
+                                              IsEnabled="{x:Bind ViewModel.HasVideo, Mode=OneWay}">
+                            <ToggleMenuFlyoutItem.Icon>
+                                <FontIcon Glyph="{StaticResource BcIconVideo}" />
+                            </ToggleMenuFlyoutItem.Icon>
+                        </ToggleMenuFlyoutItem>
+                        <MenuFlyoutItem x:Name="PipItem" x:Uid="PipItem" Click="OnPictureInPicture" IsEnabled="{x:Bind ViewModel.HasVideo, Mode=OneWay}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="{StaticResource BcIconPictureInPicture}" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem x:Uid="ChooseOutputItem" Click="OnChooseOutput">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="{StaticResource BcIconTranspose}" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </DropDownButton.Flyout>
+            </DropDownButton>
+        </Grid>
 
-        <!-- Score area and mixer. -->
-        <Grid Grid.Row="2" ColumnSpacing="12">
+        <!-- The status line and the "?" legend; "Check them" goes back to the review. -->
+        <Grid Grid.Row="1" Padding="24,6" ColumnSpacing="12" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="Heading" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1"
+                       IsTabStop="True" Text="{x:Bind ViewModel.Title, Mode=OneWay}" Visibility="{x:Bind vm:Screens.Not(ViewModel.IsPartView), Mode=OneWay}" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                        Visibility="{x:Bind vm:Screens.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}">
+                <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.UncertainText, Mode=OneWay}" VerticalAlignment="Center" />
+            </StackPanel>
+            <HyperlinkButton x:Name="CheckThemButton" x:Uid="CheckThemButton" Grid.Column="2" Click="OnCheckThem" Padding="6,4"
+                             Visibility="{x:Bind vm:Screens.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}" />
+        </Grid>
+
+        <!-- The notation (full width), or the part view's page; the parts panel on the right. -->
+        <Grid Grid.Row="2" x:Name="ScoreArea">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <Border x:Name="PageFrame" Background="{ThemeResource BcBgBrush}">
+                <Grid x:Name="PageSheet" RowSpacing="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <!-- The part view's page header. -->
+                    <StackPanel Spacing="4" Padding="0,40,0,16" HorizontalAlignment="Center" Visibility="{x:Bind ViewModel.IsPartView, Mode=OneWay}">
+                        <TextBlock Style="{StaticResource OverlineStyle}" HorizontalAlignment="Center" Text="{x:Bind ViewModel.PartHeader, Mode=OneWay}" />
+                        <TextBlock x:Name="PartHeading" Style="{StaticResource ScreenHeadingStyle}" HorizontalAlignment="Center" Margin="0"
+                                   AutomationProperties.HeadingLevel="Level1" IsTabStop="True" Text="{x:Bind ViewModel.Title, Mode=OneWay}" />
+                        <TextBlock x:Uid="PartPageNote" Style="{StaticResource MutedStyle}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <controls:ScoreView x:Name="Notation" x:Uid="ScoreNotation" Grid.Row="1" Background="Transparent"
+                                        Visibility="{x:Bind vm:Screens.Not(ViewModel.ShowTalkingScore), Mode=OneWay}">
+                        <controls:ScoreView.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem x:Uid="ListenToBarItem" Click="OnListenToBar" KeyboardAcceleratorTextOverride="P" />
+                                <MenuFlyoutItem x:Uid="MarkCheckedItem" Click="OnMarkChecked" KeyboardAcceleratorTextOverride="C" />
+                                <MenuFlyoutItem x:Uid="ReadBarItem" Click="OnReadBar" KeyboardAcceleratorTextOverride="R" />
+                                <MenuFlyoutItem x:Uid="GoToBarItem" Click="OnGoToBarItem" KeyboardAcceleratorTextOverride="Ctrl+G" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="LoopStartItem" Click="OnLoopStartItem" KeyboardAcceleratorTextOverride="[" />
+                                <MenuFlyoutItem x:Uid="LoopEndItem" Click="OnLoopEndItem" KeyboardAcceleratorTextOverride="]" />
+                            </MenuFlyout>
+                        </controls:ScoreView.ContextFlyout>
+                    </controls:ScoreView>
+                    <!-- Read aloud: the same strings as the score cursor, one list item per event. -->
+                    <ListView x:Name="TalkingList" x:Uid="TalkingList" Grid.Row="1" Padding="24,8"
+                              ItemsSource="{x:Bind ViewModel.TalkingLines}" SelectionMode="Single"
+                              SelectedIndex="{x:Bind ViewModel.CurrentLineIndex, Mode=OneWay}"
+                              Visibility="{x:Bind ViewModel.ShowTalkingScore, Mode=OneWay}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{x:Bind}" Style="{StaticResource BodyStyle}" Padding="0,6" AutomationProperties.Name="{x:Bind}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
 
-            <controls:ScoreView x:Name="Notation" x:Uid="ScoreNotation" Grid.Column="0"
-                                Background="{ThemeResource BcBackgroundBrush}" BorderBrush="{ThemeResource BcTextMutedBrush}" BorderThickness="1"
-                                Visibility="{x:Bind vm:Screens.Not(ViewModel.ShowTalkingScore), Mode=OneWay}">
-                <controls:ScoreView.ContextFlyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem x:Uid="ListenToBarItem" Click="OnListenToBar" KeyboardAcceleratorTextOverride="P" />
-                        <MenuFlyoutItem x:Uid="MarkCheckedItem" Click="OnMarkChecked" KeyboardAcceleratorTextOverride="C" />
-                        <MenuFlyoutItem x:Uid="ReadBarItem" Click="OnReadBar" KeyboardAcceleratorTextOverride="R" />
-                        <MenuFlyoutItem x:Uid="GoToBarItem" Click="OnGoToBarItem" KeyboardAcceleratorTextOverride="Ctrl+G" />
-                        <MenuFlyoutSeparator />
-                        <MenuFlyoutItem x:Uid="LoopStartItem" Click="OnLoopStartItem" KeyboardAcceleratorTextOverride="[" />
-                        <MenuFlyoutItem x:Uid="LoopEndItem" Click="OnLoopEndItem" KeyboardAcceleratorTextOverride="]" />
-                    </MenuFlyout>
-                </controls:ScoreView.ContextFlyout>
-            </controls:ScoreView>
+            <!-- Parts: Mute and Only this, labelled; the player's own part says so. -->
+            <Border Grid.Column="1" Width="336" Background="{ThemeResource BcSurfaceBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="1,0,0,0"
+                    Visibility="{x:Bind ViewModel.IsPartView, Mode=OneWay, Converter={StaticResource NotVisible}}">
+                <Grid RowSpacing="8" Padding="16,20,12,16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <!-- The original video, synced to whichever source plays; muted while the band plays. -->
+                    <MediaPlayerElement x:Name="VideoView" x:Uid="VideoView" Height="170" AreTransportControlsEnabled="False" Stretch="Uniform"
+                                        Visibility="{x:Bind vm:Screens.Both(ViewModel.HasVideo, ViewModel.ShowVideo), Mode=OneWay}" />
+                    <TextBlock Grid.Row="1" x:Uid="MixerHeading" Style="{StaticResource OverlineStyle}" Margin="4,8,0,4"
+                               AutomationProperties.HeadingLevel="Level2" />
+                    <ListView x:Name="Mixer" x:Uid="Mixer" Grid.Row="2" ItemsSource="{x:Bind ViewModel.Player.Parts}" SelectionMode="None"
+                              IsItemClickEnabled="False" Padding="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MixerPartViewModel">
+                                <Grid ColumnSpacing="6" Padding="0,4" AutomationProperties.Name="{x:Bind Name}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Your part: bold with a leading bar, not colour alone. -->
+                                    <Border Background="{ThemeResource BcTextBrush}" Visibility="{x:Bind IsMine, Mode=OneWay}" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Padding="6,0,0,0">
+                                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStyle}" FontSize="15" TextWrapping="Wrap"
+                                                   FontWeight="{x:Bind controls:Bind.Weight(IsMine), Mode=OneWay}" />
+                                        <TextBlock x:Uid="MixerYourPart" Style="{StaticResource MutedStyle}" FontSize="12"
+                                                   Visibility="{x:Bind IsMine, Mode=OneWay}" />
+                                    </StackPanel>
+                                    <ToggleButton Grid.Column="2" Style="{StaticResource MixerToggleStyle}" IsChecked="{x:Bind IsMuted, Mode=TwoWay}"
+                                                  AutomationProperties.Name="{x:Bind MuteLabel}" ToolTipService.ToolTip="{x:Bind MuteLabel}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="{StaticResource BcIconMute}" FontSize="12" />
+                                            <TextBlock x:Uid="MixerMuteLabel" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <ToggleButton Grid.Column="3" Style="{StaticResource MixerToggleStyle}" IsChecked="{x:Bind IsSolo, Mode=TwoWay}"
+                                                  AutomationProperties.Name="{x:Bind SoloLabel}" ToolTipService.ToolTip="{x:Bind SoloLabel}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <PathIcon Width="12" Height="12"
+                                                      Data="{Binding Source={StaticResource BcIconPathSolo}, Converter={StaticResource PathData}}" />
+                                            <TextBlock x:Uid="MixerSoloLabel" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock Grid.Row="3" x:Uid="MixerNote" Style="{StaticResource MutedStyle}" Margin="4,8,4,0" />
+                    <!-- Bars without a steady beat: a note, anchored in the panel. -->
+                    <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="14,12" Margin="0,12,0,0"
+                            Visibility="{x:Bind ViewModel.HasFreeTime, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            <TextBlock x:Uid="AdLibNotice" Style="{StaticResource MutedStyle}" MaxWidth="250" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
 
-            <!-- Talking-score view: the same strings as the score cursor, one list item per event. -->
-            <ListView x:Name="TalkingList" x:Uid="TalkingList" Grid.Column="0"
-                      ItemsSource="{x:Bind ViewModel.TalkingLines}" SelectionMode="Single"
-                      SelectedIndex="{x:Bind ViewModel.CurrentLineIndex, Mode=OneWay}"
-                      Visibility="{x:Bind ViewModel.ShowTalkingScore, Mode=OneWay}">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
-                        <TextBlock Text="{x:Bind}" TextWrapping="Wrap" Padding="0,6" AutomationProperties.Name="{x:Bind}" />
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+        <!-- The player: transport · position · practice. Play is the only ink control. -->
+        <Grid Grid.Row="3" Background="{ThemeResource BcBgBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0"
+              Padding="24,12" ColumnSpacing="24" AutomationProperties.LandmarkType="Custom" x:Uid="PlayerBar">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button x:Uid="PreviousBarButton" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
+                        Command="{x:Bind ViewModel.Player.PreviousBarCommand}">
+                    <FontIcon Glyph="{StaticResource BcIconPreviousBar}" FontSize="16" />
+                </Button>
+                <Button x:Name="PlayButton" x:Uid="PlayPauseButton" Style="{StaticResource PlayButtonStyle}"
+                        Command="{x:Bind ViewModel.Player.PlayPauseCommand}">
+                    <Grid>
+                        <FontIcon Glyph="{StaticResource BcIconPlay}" Visibility="{x:Bind ViewModel.Player.IsPlaying, Mode=OneWay, Converter={StaticResource NotVisible}}" />
+                        <FontIcon Glyph="{StaticResource BcIconPause}" Visibility="{x:Bind ViewModel.Player.IsPlaying, Mode=OneWay}" />
+                    </Grid>
+                </Button>
+                <Button x:Uid="NextBarButton" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
+                        Command="{x:Bind ViewModel.Player.NextBarCommand}">
+                    <FontIcon Glyph="{StaticResource BcIconNextBar}" FontSize="16" />
+                </Button>
+            </StackPanel>
 
-            <!-- Mixer: mute and solo are toggle buttons (Toggle pattern), volume a slider (RangeValue). -->
-            <Grid Grid.Column="1" RowSpacing="4">
+            <!-- Where: "Bar 13, beat 2" and the beat counter beside it (it never flashes), then the tempo. -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" MinWidth="200">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Style="{StaticResource HeadlineStyle}" Text="{x:Bind ViewModel.Player.BarBeatText, Mode=OneWay}" />
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Player.BeatCounter}" IsTabStop="False" VerticalAlignment="Center"
+                                  AutomationProperties.AccessibilityView="Raw">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BeatCell">
+                                <StackPanel>
+                                    <TextBlock Text="{x:Bind Number}" Style="{StaticResource MutedStyle}"
+                                               FontWeight="{x:Bind controls:Bind.Weight(IsCurrent)}" />
+                                    <Border Height="2" Background="{ThemeResource BcTextBrush}" Visibility="{x:Bind IsCurrent}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.Player.PositionDetail, Mode=OneWay}" />
+            </StackPanel>
+
+            <!-- Hear: the band (the score) or the recording, at the same place. -->
+            <Border Grid.Column="2" Style="{StaticResource SegmentGroupStyle}" VerticalAlignment="Center" x:Uid="HearChoice"
+                    Visibility="{x:Bind ViewModel.CanSwitchSource, Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                    <RadioButton x:Name="HearBand" x:Uid="HearBand" GroupName="Hear" Style="{StaticResource SegmentRadioStyle}" Checked="OnHearChecked" />
+                    <RadioButton x:Name="HearRecording" x:Uid="HearRecording" GroupName="Hear" Style="{StaticResource SegmentRadioStyle}" Checked="OnHearChecked"
+                                 AccessKey="R" />
+                </StackPanel>
+            </Border>
+
+            <!-- Practice: two rows so nothing is ever clipped. -->
+            <Grid Grid.Column="3" RowSpacing="8" ColumnSpacing="12" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <!-- The original video, synced to whichever source plays; muted while the score plays. -->
-                <StackPanel Grid.Row="0" Spacing="4" Visibility="{x:Bind ViewModel.HasVideo, Mode=OneWay}">
-                    <MediaPlayerElement x:Name="VideoView" x:Uid="VideoView" Height="170" AreTransportControlsEnabled="False" Stretch="Uniform" />
-                    <Button x:Name="PipButton" x:Uid="PipButton" Style="{StaticResource ActionButtonStyle}" Click="OnPictureInPicture" />
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <TextBlock x:Uid="SpeedLabel" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" />
+                        <Slider x:Name="SpeedSlider" x:Uid="SpeedSlider" Minimum="25" Maximum="150" SmallChange="5" LargeChange="25"
+                                StepFrequency="5" Width="140" VerticalAlignment="Center"
+                                Value="{x:Bind ViewModel.Player.SpeedPercent, Mode=TwoWay}" />
+                        <TextBlock Style="{StaticResource NumericStyle}" FontSize="16" VerticalAlignment="Center" MinWidth="44"
+                                   Text="{x:Bind vm:Screens.PercentOf(ViewModel.Player.SpeedPercent), Mode=OneWay}" />
+                    </StackPanel>
+                    <ToggleButton x:Uid="CountInToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.CountIn, Mode=TwoWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Width="16" Height="16" Data="{Binding Source={StaticResource BcIconPathCountIn}, Converter={StaticResource PathData}}" />
+                            <TextBlock x:Uid="CountInLabel" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Uid="MetronomeToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.Metronome, Mode=TwoWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Width="16" Height="16" Data="{Binding Source={StaticResource BcIconPathMetronome}, Converter={StaticResource PathData}}" />
+                            <TextBlock x:Uid="MetronomeLabel" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="MuteMyPartToggle" x:Uid="MuteMyPartToggle" Style="{StaticResource TransportToggleStyle}"
+                                  IsChecked="{x:Bind ViewModel.Player.MuteMyPart, Mode=TwoWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="{StaticResource BcIconPlayAlong}" FontSize="16" />
+                            <TextBlock x:Uid="MuteMyPartLabel" />
+                        </StackPanel>
+                    </ToggleButton>
                 </StackPanel>
-                <TextBlock Grid.Row="1" x:Uid="MixerHeading" Style="{StaticResource SectionHeadingStyle}" Margin="0"
-                           AutomationProperties.HeadingLevel="Level2" />
-                <ListView x:Name="Mixer" x:Uid="Mixer" Grid.Row="2" ItemsSource="{x:Bind ViewModel.Player.Parts}" SelectionMode="None"
-                          IsItemClickEnabled="False">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="vm:MixerPartViewModel">
-                            <Grid ColumnSpacing="4" Padding="0,4" AutomationProperties.Name="{x:Bind Name}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                <ToggleButton Grid.Column="1" Content="M" MinWidth="44" MinHeight="44"
-                                              IsChecked="{x:Bind IsMuted, Mode=TwoWay}"
-                                              AutomationProperties.Name="{x:Bind MuteLabel}" />
-                                <ToggleButton Grid.Column="2" Content="S" MinWidth="44" MinHeight="44"
-                                              IsChecked="{x:Bind IsSolo, Mode=TwoWay}"
-                                              AutomationProperties.Name="{x:Bind SoloLabel}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <!-- Repeat bars [12] to [13] with typed bar numbers (no dragging), and Stop repeating when on. -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <FontIcon Glyph="{StaticResource BcIconLoop}" FontSize="16" VerticalAlignment="Center" />
+                    <TextBlock x:Uid="RepeatBarsLabel" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" />
+                    <NumberBox x:Name="LoopStartBox" x:Uid="LoopStartBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
+                               SpinButtonPlacementMode="Hidden" Width="64" Value="{x:Bind ViewModel.Player.LoopStart, Mode=TwoWay}" />
+                    <TextBlock x:Uid="RepeatToLabel" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                    <NumberBox x:Name="LoopEndBox" x:Uid="LoopEndBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
+                               SpinButtonPlacementMode="Hidden" Width="64" Value="{x:Bind ViewModel.Player.LoopEnd, Mode=TwoWay}" />
+                    <Button x:Uid="SetLoopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.SetLoopCommand}"
+                            Visibility="{x:Bind ViewModel.Player.IsLooping, Mode=OneWay, Converter={StaticResource NotVisible}}" />
+                    <Button x:Uid="ClearLoopButton" Style="{StaticResource PlainButtonStyle}" MinHeight="40" Command="{x:Bind ViewModel.Player.ClearLoopCommand}"
+                            Visibility="{x:Bind ViewModel.Player.IsLooping, Mode=OneWay}" />
+                </StackPanel>
             </Grid>
         </Grid>
-
-        <!-- Player bar. -->
-        <Grid Grid.Row="3" Background="{ThemeResource BcSurfaceBrush}" Padding="8" ColumnSpacing="8" RowSpacing="4"
-              AutomationProperties.LandmarkType="Custom" x:Uid="PlayerBar">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="0">
-                <Button x:Name="PlayButton" x:Uid="PlayPauseButton" Style="{StaticResource ActionButtonStyle}"
-                        Command="{x:Bind ViewModel.Player.PlayPauseCommand}">
-                    <FontIcon Glyph="&#xE768;" />
-                </Button>
-                <Button x:Uid="StopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.StopCommand}">
-                    <FontIcon Glyph="&#xE71A;" />
-                </Button>
-                <Button x:Uid="ListenBarButton" Style="{StaticResource ActionButtonStyle}" Click="OnListenToBar" />
-                <Button x:Uid="MarkCheckedButton" Style="{StaticResource ActionButtonStyle}" Click="OnMarkChecked" />
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="1" VerticalAlignment="Center">
-                <Button x:Uid="SlowerButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.SlowerBy5Command}" Content="−" />
-                <Slider x:Name="SpeedSlider" x:Uid="SpeedSlider" Minimum="25" Maximum="150" SmallChange="5" LargeChange="25"
-                        StepFrequency="5" TickFrequency="25" TickPlacement="Outside" Width="180"
-                        Value="{x:Bind ViewModel.Player.SpeedPercent, Mode=TwoWay}" />
-                <Button x:Uid="FasterButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.FasterBy5Command}" Content="+" />
-            </StackPanel>
-
-            <!-- Loop by bar numbers: no dragging needed (WCAG 2.5.7). -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="2" VerticalAlignment="Center">
-                <NumberBox x:Name="LoopStartBox" x:Uid="LoopStartBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
-                           SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.Player.LoopStart, Mode=TwoWay}" Width="110" />
-                <NumberBox x:Name="LoopEndBox" x:Uid="LoopEndBox" Minimum="1" Maximum="{x:Bind ViewModel.Player.LastBar, Mode=OneWay}"
-                           SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.Player.LoopEnd, Mode=TwoWay}" Width="110" />
-                <Button x:Uid="SetLoopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.SetLoopCommand}" />
-                <Button x:Uid="ClearLoopButton" Style="{StaticResource ActionButtonStyle}" Command="{x:Bind ViewModel.Player.ClearLoopCommand}" />
-                <TextBlock Style="{StaticResource MutedStyle}" VerticalAlignment="Center" Text="{x:Bind ViewModel.Player.LoopText, Mode=OneWay}" />
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="3" VerticalAlignment="Center">
-                <ToggleButton x:Uid="CountInToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.CountIn, Mode=TwoWay}" />
-                <ToggleButton x:Uid="MetronomeToggle" Style="{StaticResource TransportToggleStyle}" IsChecked="{x:Bind ViewModel.Player.Metronome, Mode=TwoWay}" />
-                <NumberBox x:Uid="TransposeBox" Minimum="-12" Maximum="12" SpinButtonPlacementMode="Compact" Width="110"
-                           Value="{x:Bind ViewModel.Player.Transpose, Mode=TwoWay, Converter={StaticResource IntToDouble}}" />
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="4" VerticalAlignment="Center">
-                <ToggleButton x:Name="PlayAlongToggle" x:Uid="PlayAlongToggle" Style="{StaticResource TransportToggleStyle}"
-                              IsChecked="{x:Bind ViewModel.Player.IsPlayingAlong, Mode=OneWay}" Click="OnPlayAlong" />
-            </StackPanel>
-        </Grid>
     </Grid>
-</UserControl>
+</Page>

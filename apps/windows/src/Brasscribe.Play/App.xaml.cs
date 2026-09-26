@@ -74,10 +74,11 @@ public partial class App : Application
             new SourceKindViewModel(Strings),
             new TranscriptionViewModel(() => main!.Engine, announcer, Strings, ui),
             score,
-            new ExportViewModel(new ExportService(), dialogs, announcer, Strings),
+            new ExportViewModel(new ExportService(), dialogs, announcer, Strings, new ShellPdfPrinter()),
             new OutputOptionsViewModel(core, announcer, Strings),
             settingsVm,
-            EngineFactory, announcer, Strings, core)
+            EngineFactory, announcer, Strings, core,
+            new ScoreLibrary(System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "library")))
         {
             LayerCacheRoot = System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "layers"),
         };

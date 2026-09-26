@@ -76,7 +76,7 @@ public class SourceSyncTests
         vm.Load(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), Take());
 
         vm.SwitchSource();
-        Assert.Contains("No recording", said.Last()); // nothing opened yet
+        Assert.Contains("no recording to hear", said.Last()); // nothing opened yet
         original.Open("take.wav", hasVideo: false);
 
         player.SeekToTick(3840); // bar 2
@@ -88,7 +88,7 @@ public class SourceSyncTests
         original.Position = TimeSpan.FromSeconds(6); // bar 3 in the recording
         Assert.True(vm.Execute(ScoreCommand.SwitchSource));
         Assert.Equal(ListeningSource.Score, vm.ListeningTo);
-        Assert.Equal("Playing the score", said.Last());
+        Assert.Equal("Playing the band", said.Last());
     }
 
     private sealed class Inline : IUiDispatcher

@@ -85,7 +85,7 @@ public class AppFlowTests
         };
     });
 
-    private static (MainViewModel Main, Announcements Said) Build(FakeHandler engine)
+    private static (MainViewModel Main, Announcements Said) Build(FakeHandler engine, bool firstRun = false, ScoreLibrary? library = null)
     {
         var said = new Announcements();
         var strings = Strings();
@@ -101,10 +101,17 @@ public class AppFlowTests
             new ScoreViewModel(core, new PlayerViewModel(player, said, strings, ui), said, strings),
             new ExportViewModel(new ExportService(), new NoDialogs(), said, strings),
             new OutputOptionsViewModel(core, said, strings),
-            new SettingsViewModel(new InMemorySettings(), said, strings),
+            new SettingsViewModel(Settings(firstRun), said, strings),
             (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token },
-            said, strings, core);
+            said, strings, core, library);
         return (main, said);
+    }
+
+    private static InMemorySettings Settings(bool firstRun)
+    {
+        var settings = new InMemorySettings();
+        if (!firstRun) settings.Set("FirstRunDone", true);
+        return settings;
     }
 
     private static async Task<string> Take()
@@ -121,14 +128,22 @@ public class AppFlowTests
     }
 
     [Fact]
-    public async Task Import_choose_transcribe_and_score()
+    public async Task First_run_then_import_choose_make_check_choose_output_and_score()
     {
-        var (main, said) = Build(Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n"));
+        var library = new ScoreLibrary(Path.Combine(Path.GetTempPath(), "brasscribe-library-" + Guid.NewGuid().ToString("N")));
+        var (main, said) = Build(Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n"),
+            firstRun: true, library: library);
+        Assert.Equal(Screen.FirstRun, main.Screen);
+        main.GetStartedCommand.Execute(null);
         Assert.Equal(Screen.Start, main.Screen);
+        Assert.True(main.Settings.FirstRunDone);
+        Assert.False(main.HasLibrary);
 
         await main.Start.OpenPathAsync(await Take());
         await Until(() => main.Screen == Screen.SourceKind);
-        Assert.Contains(said.Items, a => a.Text.StartsWith("Imported take-") && a.Text.EndsWith("1 min 5 s"));
+        Assert.Contains(said.Items, a => a.Text.StartsWith("Opened take-") && a.Text.EndsWith("1 min 5 s"));
+        Assert.StartsWith("take-", main.Kind.SourceLine);
+        Assert.Equal("Made on this PC. Nothing goes online.", main.Kind.WhereText);
         Assert.False(main.Kind.ContinueCommand.CanExecute(null)); // nothing chosen yet: the app never guesses
         await Until(() => !main.Kind.Options.Single(o => o.Kind == SourceKind.PopRock).IsAvailable); // engine lists no pop-rock
 
@@ -136,27 +151,83 @@ public class AppFlowTests
         Assert.True(main.Kind.ContinueCommand.CanExecute(null));
         main.Kind.ContinueCommand.Execute(null);
 
-        await Until(() => main.Screen == Screen.Score);
+        // One note is marked ?, so the finished score opens on "Check the notes".
+        await Until(() => main.Screen == Screen.Review);
         Assert.Equal("Test tune", main.Score.Title);
+        Assert.Contains(said.Items, a => a is { Text: "The score is ready", Kind: AnnouncementKind.Important });
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Progress && a.Text.StartsWith("50 percent. Arranging for brass band"));
+        Assert.Equal(["Ready", "Beats", "Separate", "Notes", "Arrange", "Layout"], main.Transcription.Steps.Select(x => x.Key));
+        Assert.All(main.Transcription.Steps, x => Assert.True(x.IsDone));
+        var item = Assert.Single(main.Review.Items);
+        Assert.Equal("Bar 1", main.Review.Heading);
+        Assert.Equal("Written B♭, eighth note", main.Review.NoteLine);
+        Assert.Equal("Finish later (1 left)", main.Review.FinishLaterText);
+        Assert.True(main.HasLibrary);
+        Assert.Equal("Test tune", main.LibraryItems[0].Title);
+        Assert.Contains("1 notes to check", main.LibraryItems[0].Subtitle);
+
+        // Keeping the last note goes on to "How should the score be?"; unchanged, it just shows the score.
+        main.Review.KeepCommand.Execute(null);
+        Assert.True(item.IsKept);
+        Assert.Equal(Screen.ChooseOutput, main.Screen);
+        await main.Output.ShowScoreCommand.ExecuteAsync(main.Score.Composition);
+        Assert.Equal(Screen.Score, main.Screen);
+        Assert.Equal(0, main.Score.UncertainLeft);
+        Assert.DoesNotContain("to check", main.LibraryItems[0].Subtitle);
         Assert.Equal(3, main.Score.Parts.Count);
         Assert.Equal(5, main.Score.Player.BarCount);
         Assert.Equal("Bar 1 of 5", main.Score.Player.PositionText);
-        Assert.Equal("1 uncertain notes to check", main.Score.UncertainText);
-        Assert.Contains(said.Items, a => a is { Text: "The score is ready", Kind: AnnouncementKind.Important });
-        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Progress && a.Text.StartsWith("50 percent. Arranging for brass band"));
 
-        // The score keys drive the talking score; the export dialog offers what works offline and via the engine.
-        Assert.True(main.Score.Execute(ScoreCommand.NextUncertain));
-        Assert.Equal("beat 2: B-flat 4, eighth note, uncertain", main.Score.Announcement);
+        // Share or print starts with your own part as a PDF.
         main.OpenExportCommand.Execute(null);
-        var pdf = main.Export.Formats.Single(f => f.Format == ExportFormat.Pdf);
-        Assert.True(pdf.Available);
-        var brf = main.Export.Formats.Single(f => f.Format == ExportFormat.Braille);
-        Assert.True(brf.Available);
-        Assert.True(brf.NeedsPart);
+        Assert.Equal(ExportScope.MyPart, main.Export.Scope);
+        var pdf = main.Export.Formats.Single(f => f.Key == "Pdf");
+        Assert.True(pdf is { Available: true, IsSelected: true });
+        Assert.All(main.Export.Formats.Where(f => f.Key != "Pdf"), f => Assert.False(f.IsSelected));
+        Assert.Equal(1, main.Export.FileCount);
+        Assert.True(main.Export.Formats.Single(f => f.Key == "Braille").Available);
+        main.Export.Scope = ExportScope.EveryPart;
+        Assert.Equal(3, main.Export.FileCount);
+        Assert.Equal("Save 3 files…", main.Export.SaveLabel);
 
+        // The part view: back goes to the full score, then Home.
+        main.Score.SelectedPartIndex = 0;
+        Assert.True(main.Score.IsPartView);
+        Assert.True(main.Score.Player.MuteMyPart);
+        main.BackCommand.Execute(null);
+        Assert.Equal(Screen.Score, main.Screen);
+        Assert.False(main.Score.IsPartView);
         main.BackCommand.Execute(null);
         Assert.Equal(Screen.Start, main.Screen);
+    }
+
+    [Fact]
+    public async Task Finish_later_asks_first_and_check_them_comes_back()
+    {
+        var (main, _) = Build(Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n"));
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        main.Kind.ContinueCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Review);
+
+        main.Review.FinishLaterCommand.Execute(null);
+        Assert.True(main.Review.IsConfirmingFinish);
+        Assert.Equal(Screen.Review, main.Screen);
+        Assert.StartsWith("1 note keeps its ? mark.", main.Review.ConfirmText);
+        main.Review.CancelFinishCommand.Execute(null);
+        Assert.Equal(Screen.Review, main.Screen);
+        main.Review.FinishLaterCommand.Execute(null);
+        main.Review.ConfirmFinishCommand.Execute(null);
+        Assert.Equal(Screen.ChooseOutput, main.Screen);
+        main.BackCommand.Execute(null);
+        Assert.Equal(Screen.Score, main.Screen);
+        Assert.Equal("1 note marked ? (boxed ? = very unsure)", main.Score.UncertainText);
+
+        main.CheckNotesCommand.Execute(null);
+        Assert.Equal(Screen.Review, main.Screen);
+        main.Review.KeepCommand.Execute(null);
+        Assert.Equal(Screen.Score, main.Screen); // from the score, straight back to it
     }
 
     [Fact]
@@ -168,7 +239,9 @@ public class AppFlowTests
         await Until(() => main.Screen == Screen.SourceKind);
         main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
         main.Kind.ContinueCommand.Execute(null);
-        await Until(() => main.Screen == Screen.Score);
+        await Until(() => main.Screen == Screen.Review);
+        main.Review.KeepCommand.Execute(null);
+        Assert.Equal(Screen.ChooseOutput, main.Screen);
         Assert.True(main.Output.HasEngineJob);
         Assert.True(main.Output.DifficultyAvailable && main.Output.KeyAvailable);
 
@@ -176,9 +249,10 @@ public class AppFlowTests
         main.Output.Lineup = Lineup.MinimalBand;
         main.Output.Difficulty = Difficulty.Easier;
         main.Output.KeyIndex = Array.IndexOf(OutputOptionsViewModel.Keys, "Eb");
-        main.Output.ApplyCommand.Execute(main.Score.Composition);
+        Assert.Equal("E♭ major", main.Output.KeyLabel);
+        await main.Output.ShowScoreCommand.ExecuteAsync(main.Score.Composition);
         await Until(() => engine.Requests.Count(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs") == 2);
-        await Until(() => main.Screen == Screen.Score && !main.Transcription.IsRunning);
+        await Until(() => main.Screen is Screen.Score or Screen.Review && !main.Transcription.IsRunning);
 
         var second = engine.Requests.Last(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!;
         Assert.Contains("\"audio_id\":\"a1\"", second);
@@ -212,14 +286,25 @@ public class AppFlowTests
         main.Kind.Selected = main.Kind.Options[0];
         main.Kind.ContinueCommand.Execute(null);
 
-        await Until(() => main.Transcription.ErrorText is not null);
-        Assert.Equal(Screen.Transcribing, main.Screen);
+        await Until(() => main.Screen == Screen.Error);
         Assert.False(main.Transcription.IsRunning);
-        Assert.Contains("could not be reached", main.Transcription.ErrorText);
-        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Transcription stopped:"));
+        Assert.Equal(ErrorKind.ComputerUnreachable, main.Error.Kind);
+        Assert.Equal("Can't reach Brasscribe on your computer", main.Error.Title);
+        Assert.StartsWith("Your recording is safe.", main.Error.Reason);
+        Assert.Equal(3, main.Error.Steps.Count);
+        Assert.StartsWith("1. ", main.Error.Steps[0]);
+        // Commands and technical messages only in the details, never in the body.
+        Assert.DoesNotContain("brasscribe serve", main.Error.Reason + string.Join(" ", main.Error.Steps));
+        Assert.Contains("brasscribe serve", main.Error.Details);
+        Assert.Contains("could not be reached", main.Error.Details);
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Stopped:"));
+
+        // Try again runs the same choice again; it fails the same way here.
+        main.Error.TryAgainCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Error && !main.Transcription.IsRunning);
         Assert.True(main.BackCommand.CanExecute(null));
         main.BackCommand.Execute(null);
-        Assert.Equal(Screen.SourceKind, main.Screen);
+        Assert.Equal(Screen.Start, main.Screen);
         Assert.NotNull(main.Kind.Source); // the recording is kept for another try
     }
 
@@ -234,7 +319,7 @@ public class AppFlowTests
 
         await Until(() => main.Screen == Screen.SourceKind && !main.Transcription.IsRunning);
         Assert.Null(main.Transcription.ErrorText);
-        Assert.Contains(said.Items, a => a.Text == "Transcription cancelled");
+        Assert.Contains(said.Items, a => a.Text == "Stopped. The recording is kept.");
     }
 
     [Fact]
@@ -242,9 +327,9 @@ public class AppFlowTests
     {
         var (main, _) = Build(Engine(""));
         await main.Start.OpenPathAsync("https://www.youtube.com/watch?v=abc");
-        Assert.StartsWith("Links are not downloaded", main.Start.ErrorText);
+        Assert.StartsWith("Links to streaming sites can't be downloaded", main.Start.ErrorText);
         await main.Start.OpenPathAsync("notes.docx");
-        Assert.Equal("notes.docx is not an audio, video or MusicXML file.", main.Start.ErrorText);
+        Assert.Equal("notes.docx can't be opened. Try an MP3, WAV, M4A or MP4 file, or a MusicXML score.", main.Start.ErrorText);
         Assert.Equal(Screen.Start, main.Screen);
     }
 }
