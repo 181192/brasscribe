@@ -96,6 +96,21 @@
   <data name="CaptureNotice.Title" xml:space="preserve">
     <value>Nothing was heard</value>
   </data>
+  <data name="ChangeNote_Down" xml:space="preserve">
+    <value>Down a semitone</value>
+  </data>
+  <data name="ChangeNote_Heard" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="ChangeNote_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ChangeNote_Title" xml:space="preserve">
+    <value>Change note</value>
+  </data>
+  <data name="ChangeNote_Up" xml:space="preserve">
+    <value>Up a semitone</value>
+  </data>
   <data name="CheckThemButton.Content" xml:space="preserve">
     <value>Check them</value>
   </data>
@@ -158,6 +173,9 @@
   </data>
   <data name="Duration_Seconds" xml:space="preserve">
     <value>{0} s</value>
+  </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Edit score title</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
     <value>Details for the band's tech person: address</value>
@@ -465,50 +483,26 @@
   <data name="ImportButtonLabel.Text" xml:space="preserve">
     <value>Open a recording…</value>
   </data>
-  <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Choose the key before this one</value>
-  </data>
   <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Previous key</value>
+    <value>Lower</value>
   </data>
   <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Previous key</value>
+    <value>A semitone lower</value>
   </data>
-  <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Choose the key after this one</value>
+  <data name="KeyDownLabel.Text" xml:space="preserve">
+    <value>Lower</value>
   </data>
   <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Next key</value>
+    <value>Higher</value>
   </data>
   <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Next key</value>
+    <value>A semitone higher</value>
   </data>
-  <data name="Key_Ab" xml:space="preserve">
-    <value>A♭ major</value>
+  <data name="KeyUpLabel.Text" xml:space="preserve">
+    <value>Higher</value>
   </data>
   <data name="Key_AsRecorded" xml:space="preserve">
     <value>As recorded</value>
-  </data>
-  <data name="Key_Bb" xml:space="preserve">
-    <value>B♭ major</value>
-  </data>
-  <data name="Key_C" xml:space="preserve">
-    <value>C major</value>
-  </data>
-  <data name="Key_D" xml:space="preserve">
-    <value>D major</value>
-  </data>
-  <data name="Key_Db" xml:space="preserve">
-    <value>D♭ major</value>
-  </data>
-  <data name="Key_Eb" xml:space="preserve">
-    <value>E♭ major</value>
-  </data>
-  <data name="Key_F" xml:space="preserve">
-    <value>F major</value>
-  </data>
-  <data name="Key_G" xml:space="preserve">
-    <value>G major</value>
   </data>
   <data name="KindCancelButton.Content" xml:space="preserve">
     <value>Cancel</value>
@@ -585,8 +579,17 @@
   <data name="LibraryNav.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Your scores</value>
   </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Couldn't delete {0}. Is your computer on?</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Deleted {0}</value>
+  </data>
   <data name="Library_FullBand" xml:space="preserve">
     <value>Full band</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · On your computer</value>
   </data>
   <data name="Library_OnePart" xml:space="preserve">
     <value>One part</value>
@@ -741,8 +744,14 @@
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>As recorded · concert pitch</value>
   </data>
+  <data name="Output_KeyConcert" xml:space="preserve">
+    <value>{0} (concert)</value>
+  </data>
   <data name="Output_KeyConcertDetail" xml:space="preserve">
     <value>Concert pitch</value>
+  </data>
+  <data name="Output_KeyWritten" xml:space="preserve">
+    <value>{0} for {1} instruments</value>
   </data>
   <data name="Output_NeedsCore" xml:space="preserve">
     <value>Arranging on this PC needs Brasscribe's arranger, which isn't installed.</value>
@@ -764,99 +773,6 @@
   </data>
   <data name="PartPageNote.Text" xml:space="preserve">
     <value>Written down by Brasscribe. Check the notes marked ? before the rehearsal.</value>
-  </data>
-  <data name="EditTitleItem.Text" xml:space="preserve">
-    <value>Edit score title</value>
-  </data>
-  <data name="Score_EditTitle" xml:space="preserve">
-    <value>Edit score title</value>
-  </data>
-  <data name="Score_SaveTitle" xml:space="preserve">
-    <value>Save</value>
-  </data>
-  <data name="Score_CancelTitle" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
-  <data name="Score_RenameFailed" xml:space="preserve">
-    <value>Couldn't rename {0}</value>
-  </data>
-  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Score options</value>
-  </data>
-  <data name="ScoreOptions_EditTitle" xml:space="preserve">
-    <value>Edit title</value>
-  </data>
-  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
-    <value>Check the notes</value>
-  </data>
-  <data name="ScoreOptions_Delete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
-    <value>Delete “{0}”?</value>
-  </data>
-  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
-    <value>The score is removed from this PC.</value>
-  </data>
-  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
-    <value>The score is removed from your computer.</value>
-  </data>
-  <data name="Library_OnComputer" xml:space="preserve">
-    <value>{0} · On your computer</value>
-  </data>
-  <data name="Library_Deleted" xml:space="preserve">
-    <value>Deleted {0}</value>
-  </data>
-  <data name="Library_DeleteFailed" xml:space="preserve">
-    <value>Couldn't delete {0}. Is your computer on?</value>
-  </data>
-  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Change note</value>
-  </data>
-  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
-    <value>Change note…</value>
-  </data>
-  <data name="ReviewHowSure.Text" xml:space="preserve">
-    <value>How sure Brasscribe is</value>
-  </data>
-  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>How sure Brasscribe is</value>
-  </data>
-  <data name="ReviewHeardHeading.Text" xml:space="preserve">
-    <value>What each transcriber heard</value>
-  </data>
-  <data name="Review_WordUncertain" xml:space="preserve">
-    <value>Uncertain</value>
-  </data>
-  <data name="Review_WordVeryUncertain" xml:space="preserve">
-    <value>Very uncertain</value>
-  </data>
-  <data name="Review_LevelAlternative" xml:space="preserve">
-    <value>{0}: it could also be {1}.</value>
-  </data>
-  <data name="Review_HeardSame" xml:space="preserve">
-    <value>Same, {0}</value>
-  </data>
-  <data name="Review_HeardNothing" xml:space="preserve">
-    <value>No note</value>
-  </data>
-  <data name="Review_Changed" xml:space="preserve">
-    <value>Changed to {0}</value>
-  </data>
-  <data name="ChangeNote_Title" xml:space="preserve">
-    <value>Change note</value>
-  </data>
-  <data name="ChangeNote_Down" xml:space="preserve">
-    <value>Down a semitone</value>
-  </data>
-  <data name="ChangeNote_Up" xml:space="preserve">
-    <value>Up a semitone</value>
-  </data>
-  <data name="ChangeNote_Heard" xml:space="preserve">
-    <value>What each transcriber heard</value>
-  </data>
-  <data name="ChangeNote_Save" xml:space="preserve">
-    <value>Save</value>
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>All parts, or one part as a page (P)</value>
@@ -1029,6 +945,24 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>to</value>
   </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Choose what the note should be; the whole score follows</value>
+  </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Change note…</value>
+  </data>
+  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
+    <value>Change note…</value>
+  </data>
+  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
+  </data>
+  <data name="ReviewHeardHeading.Text" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="ReviewHowSure.Text" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
+  </data>
   <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>The note is right; its “?” goes (K)</value>
   </data>
@@ -1056,6 +990,9 @@
   <data name="ReviewListenLabel.Text" xml:space="preserve">
     <value>Listen to this bar</value>
   </data>
+  <data name="ReviewScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Which notes to check</value>
+  </data>
   <data name="ReviewSkipButton.Content" xml:space="preserve">
     <value>Skip</value>
   </data>
@@ -1065,11 +1002,17 @@
   <data name="ReviewSnippet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>The bars around the note</value>
   </data>
+  <data name="Review_Accompaniment" xml:space="preserve">
+    <value>Accompaniment</value>
+  </data>
   <data name="Review_AllDone" xml:space="preserve">
     <value>Every note is checked</value>
   </data>
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Bar {0}</value>
+  </data>
+  <data name="Review_Changed" xml:space="preserve">
+    <value>Changed to {0}</value>
   </data>
   <data name="Review_Count" xml:space="preserve">
     <value>{0} notes to check</value>
@@ -1086,8 +1029,17 @@
   <data name="Review_FinishLater" xml:space="preserve">
     <value>Finish later ({0} left)</value>
   </data>
+  <data name="Review_HeardNothing" xml:space="preserve">
+    <value>No note</value>
+  </data>
+  <data name="Review_HeardSame" xml:space="preserve">
+    <value>Same, {0}</value>
+  </data>
   <data name="Review_Kept" xml:space="preserve">
     <value>Kept bar {0}. {1} left</value>
+  </data>
+  <data name="Review_LevelAlternative" xml:space="preserve">
+    <value>{0}: it could also be {1}.</value>
   </data>
   <data name="Review_LevelUncertain" xml:space="preserve">
     <value>Uncertain: listen to the original and the score side by side.</value>
@@ -1104,6 +1056,9 @@
   <data name="Review_ListItemVeryUncertain" xml:space="preserve">
     <value>Bar {0}, {1}, very uncertain</value>
   </data>
+  <data name="Review_MyPartDone" xml:space="preserve">
+    <value>Your part is checked. Now the other parts.</value>
+  </data>
   <data name="Review_NoteConcert" xml:space="preserve">
     <value>Concert {0}</value>
   </data>
@@ -1112,6 +1067,21 @@
   </data>
   <data name="Review_Overline" xml:space="preserve">
     <value>{0} of {1} · {2}</value>
+  </data>
+  <data name="Review_ScopeAll" xml:space="preserve">
+    <value>All parts ({0})</value>
+  </data>
+  <data name="Review_ScopeMine" xml:space="preserve">
+    <value>Your part ({0})</value>
+  </data>
+  <data name="Review_Triage" xml:space="preserve">
+    <value>Check your part first: {0} notes in {1}, {2} very unsure</value>
+  </data>
+  <data name="Review_WordUncertain" xml:space="preserve">
+    <value>Uncertain</value>
+  </data>
+  <data name="Review_WordVeryUncertain" xml:space="preserve">
+    <value>Very uncertain</value>
   </data>
   <data name="ScoreCards.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Your scores</value>
@@ -1122,6 +1092,27 @@
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score</value>
   </data>
+  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Score options</value>
+  </data>
+  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
+    <value>Check the notes</value>
+  </data>
+  <data name="ScoreOptions_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
+    <value>The score is removed from your computer.</value>
+  </data>
+  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
+    <value>The score is removed from this PC.</value>
+  </data>
+  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
+    <value>Delete “{0}”?</value>
+  </data>
+  <data name="ScoreOptions_EditTitle" xml:space="preserve">
+    <value>Edit title</value>
+  </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score tools</value>
   </data>
@@ -1131,11 +1122,17 @@
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>As written for {0}</value>
   </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="Score_Checked" xml:space="preserve">
     <value>Kept. {0} left</value>
   </data>
   <data name="Score_ControlType" xml:space="preserve">
     <value>score</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Edit score title</value>
   </data>
   <data name="Score_FullScore" xml:space="preserve">
     <value>All parts</value>
@@ -1154,6 +1151,12 @@
   </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0} part.</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Couldn't rename {0}</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Save</value>
   </data>
   <data name="Score_SwitchedToOriginal" xml:space="preserve">
     <value>Playing the recording from bar {0}</value>

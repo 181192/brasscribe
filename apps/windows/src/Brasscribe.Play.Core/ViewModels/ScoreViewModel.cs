@@ -154,6 +154,19 @@ public sealed partial class ScoreViewModel : ObservableObject
         RebuildTalkingLines();
     }
 
+    /// <summary>Arranges the score again from a changed Composition (the native core); null when that can't be done here.</summary>
+    public Func<Composition, string?>? Rearrange { get; set; }
+
+    /// <summary>A kept note: its Composition note gets confidence 1, so it stays kept when the score is arranged again.</summary>
+    public void KeepInComposition(TsEvent ev)
+    {
+        if (Composition is not { } composition || ev.CompositionVoiceId is not { } voiceId || ev.CompositionNoteStart is not { } start) return;
+        var note = composition.Voices.FirstOrDefault(v => v.Id == voiceId)?.Notes.FirstOrDefault(n => n.Start == start);
+        if (note is null || note.Confidence >= 1.0) return;
+        note.Confidence = 1.0;
+        if (MusicXml is not null) PersistEditedScore?.Invoke(MusicXml, CompositionJson.Serialize(composition));
+    }
+
     public bool CorrectPitch(int partIndex, int barIndex, int eventIndex, int semitones)
     {
         if (MusicXml is null || Document is null || partIndex < 0 || partIndex >= Document.Parts.Count) return false;
@@ -186,7 +199,11 @@ public sealed partial class ScoreViewModel : ObservableObject
                 }
             }
         }
-        string edited = MusicXmlNoteEditor.ReplacePitch(MusicXml, part.Id, ev.MusicXmlNoteIndex, midi, part.Bars[barIndex].KeyFifths);
+        // With the changed Composition the whole score is arranged again (other parts that double the
+        // line follow it); without an arranger here, only this printed note changes.
+        string edited = compositionJson is not null && Composition is { } changed && Rearrange?.Invoke(changed) is { } arranged
+            ? arranged
+            : MusicXmlNoteEditor.ReplacePitch(MusicXml, part.Id, ev.MusicXmlNoteIndex, midi, part.Bars[barIndex].KeyFifths);
         Player.Player.Pause();
         PersistEditedScore?.Invoke(edited, compositionJson);
         Load(edited, Composition);
@@ -225,6 +242,18 @@ public sealed partial class ScoreViewModel : ObservableObject
     public string PartHeader => Document is null || SelectedPartIndex < 0 || SelectedPartIndex >= Document.Parts.Count ? ""
         : ((Language == "nb" ? Document.Parts[SelectedPartIndex].InstrumentNb : null) ?? Document.Parts[SelectedPartIndex].Instrument
            ?? Document.Parts[SelectedPartIndex].Name).ToUpperInvariant();
+
+    /// <summary>The player's own part in the score (the one "Mute my part" silences), or -1 without parts.</summary>
+    public int MyPartIndex
+    {
+        get
+        {
+            if (Document is null || Document.Parts.Count == 0) return -1;
+            if (Player.PlayAlongPart is { } mine && Document.Parts.FindIndex(p => p.Name == mine.Name) is var i and >= 0) return i;
+            int solo = Document.Parts.FindIndex(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase) && !p.Percussion);
+            return solo >= 0 ? solo : 0;
+        }
+    }
 
     /// <summary>The part view: one part chosen, laid out as a page, with the player's own part muted.</summary>
     public bool IsPartView => SelectedPartIndex >= 0;

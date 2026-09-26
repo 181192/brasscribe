@@ -18,8 +18,8 @@ public enum Difficulty { Faithful, Standard, Easier }
 /// </summary>
 public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer announcer, IStrings s) : ObservableObject
 {
-    /// <summary>Target keys offered, as the engine takes them (concert tonic); null keeps the key as recorded.</summary>
-    public static readonly string?[] Keys = [null, "Bb", "Eb", "F", "C", "Ab", "G", "D", "Db"];
+    /// <summary>Target keys as Brasscribe takes them (concert tonic, by semitone); null keeps the key as recorded.</summary>
+    public static readonly string?[] Keys = [null, .. Scores.KeyNames.Tonics];
 
     [ObservableProperty] public partial Lineup Lineup { get; set; } = Lineup.FullBand;
     [ObservableProperty] public partial Difficulty Difficulty { get; set; } = Difficulty.Faithful;
@@ -29,17 +29,65 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     [NotifyPropertyChangedFor(nameof(KeyLabel), nameof(KeyDetail))]
     public partial int KeyIndex { get; set; }
 
-    /// <summary>"B♭ major", or "As recorded".</summary>
-    public string KeyLabel => s[Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } k ? $"Key_{k}" : "Key_AsRecorded"];
+    /// <summary>The key the recording is in (from the Composition), when known.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyLabel), nameof(KeyDetail))]
+    public partial (int PitchClass, bool Minor)? RecordedKey { get; set; }
 
-    /// <summary>"As recorded · concert pitch" / "concert pitch".</summary>
-    public string KeyDetail => KeyIndex == 0 ? s["Output_KeyAsRecordedDetail"] : s["Output_KeyConcertDetail"];
+    /// <summary>The player's instrument: semitones from written to sounding (−2 for B♭ cornet), null for C instruments.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyDetail))]
+    public partial int? InstrumentChromatic { get; set; }
 
+    /// <summary>Sets the recorded key and the player's instrument from a loaded score.</summary>
+    public void SetScoreContext(Scores.Composition? composition, int? chromatic)
+    {
+        RecordedKey = composition?.Keys.OrderBy(k => k.Tick).FirstOrDefault() is { } k
+            ? (Scores.KeyNames.TonicOf(k.Fifths, k.Mode == "minor"), k.Mode == "minor")
+            : null;
+        InstrumentChromatic = chromatic is { } c && ((c % 12) + 12) % 12 != 0 ? c : null;
+    }
+
+    private bool Nb => s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) || s.Language.StartsWith("no", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The concert key chosen (or recorded), when it can be said.</summary>
+    private (int PitchClass, bool Minor)? ConcertKey =>
+        Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } tonic
+            ? (Scores.KeyNames.PitchClassOf(tonic), RecordedKey?.Minor ?? false)
+            : RecordedKey;
+
+    /// <summary>"C major (concert)", or "As recorded" when the recording's key is not known.</summary>
+    public string KeyLabel => ConcertKey is { } k
+        ? s.Format("Output_KeyConcert", Scores.KeyNames.Name(k.PitchClass, k.Minor, Nb))
+        : s["Key_AsRecorded"];
+
+    /// <summary>"As recorded · D major for B♭ instruments" (usability review 2, P2-3).</summary>
+    public string KeyDetail
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (KeyIndex == 0) parts.Add(s["Key_AsRecorded"]);
+            if (ConcertKey is { } k && InstrumentChromatic is { } c && Scores.KeyNames.InstrumentKey(c, Nb) is { } instrument)
+                parts.Add(s.Format("Output_KeyWritten", Scores.KeyNames.Name(Scores.KeyNames.WrittenOf(k.PitchClass, c), k.Minor, Nb), instrument));
+            return parts.Count > 0 ? string.Join(" · ", parts) : s["Output_KeyConcertDetail"];
+        }
+    }
+
+    /// <summary>A semitone lower (the "Lower" button).</summary>
     [RelayCommand]
-    private void KeyDown() => KeyIndex = (KeyIndex + Keys.Length - 1) % Keys.Length;
+    private void KeyDown() => StepKey(-1);
 
+    /// <summary>A semitone higher (the "Higher" button).</summary>
     [RelayCommand]
-    private void KeyUp() => KeyIndex = (KeyIndex + 1) % Keys.Length;
+    private void KeyUp() => StepKey(+1);
+
+    private void StepKey(int semitones)
+    {
+        int current = ConcertKey?.PitchClass ?? 0;
+        int next = ((current + semitones) % 12 + 12) % 12;
+        KeyIndex = RecordedKey is { } r && r.PitchClass == next ? 0 : 1 + next;
+    }
 
     /// <summary>The options the shown score was arranged with; "Show the score" arranges only when these change.</summary>
     public ArrangementOptions Applied { get; set; } = ArrangementOptions.Default;
@@ -86,7 +134,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     public ArrangementOptions Options => new(
         Lineup == Lineup.MinimalBand ? "minimal" : "full",
         Difficulty switch { Difficulty.Standard => "standard", Difficulty.Easier => "easier", _ => "faithful" },
-        Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)]);
+        Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } tonic && RecordedKey is { Minor: true } ? tonic + "m" : Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)]);
 
     /// <summary>Raised with the options when the engine should arrange again.</summary>
     public event EventHandler<ArrangementOptions>? RearrangeRequested;
