@@ -13,7 +13,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-_ID = re.compile(r'"([PI][0-9a-f]{32})"')
+_ID = re.compile(r'"([PI][0-9a-f]{32})(-\d+)?"')
 _DATE = re.compile(r"<encoding-date>[^<]*</encoding-date>")
 _PART = re.compile(r'<part id="([^"]+)">(.*?)</part>', re.S)
 _SCORE_PART = re.compile(r'<score-part id="([^"]+)">.*?<part-name>([^<]*)</part-name>', re.S)
@@ -21,14 +21,17 @@ _NOTE = re.compile(r"<note\b.*?</note>", re.S)
 
 
 def stable_ids(text: str) -> str:
-    """Replace music21's random part/instrument ids (P<32 hex>, I<32 hex>) by P1, P2 ..., I1, I2 ... in order."""
+    """Replace music21's random part/instrument ids (P<32 hex>, I<32 hex>) by P1, P2 ..., I1, I2 ... in order.
+
+    Per-drum instrument ids carry a -<GM note> suffix, which is kept.
+    """
     ids: dict[str, str] = {}
 
     def sub(m: re.Match) -> str:
         raw = m.group(1)
         if raw not in ids:
             ids[raw] = f"{raw[0]}{sum(1 for k in ids if k[0] == raw[0]) + 1}"
-        return f'"{ids[raw]}"'
+        return f'"{ids[raw]}{m.group(2) or ""}"'
 
     return _ID.sub(sub, text)
 

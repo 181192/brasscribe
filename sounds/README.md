@@ -33,6 +33,8 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 | `build.py`, `sf2.py` | Region table → `<target>-sus.sfz`, `<target>-stac.sfz`, `<target>.sf2` (program 0 sus, 1 stac), `regions.json`. |
 | `render.py` | MusicXML/MIDI → humanised per-player renders → placement, early reflections, IR convolution → −16 LUFS WAV/MP3. |
 | `humanize.py` | Deterministic humanization (specified below). |
+| `band.py`, `sf3.py`, `band_programs.py` | The single band SoundFont, the SF2/SF3 reader it copies the drum kit with, and the MusicXML program writer. |
+| `sf2check.py`, `sf2play.py`, `tools/avsampler_probe.swift` | SF2 2.04 structure check, FluidSynth per-preset probe, AVAudioUnitSampler per-preset probe. |
 
 ## How the instruments are built
 
@@ -43,6 +45,37 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 - **Round robin:** SFZ only (`seq_length`/`seq_position`). SF2 has no round robin and uses the first variant.
 - **Articulation at render time:** a note is staccato only if it is at most 0.3 s long and lasts under 60% of the time to the next onset in its part. Everything else plays the sustain with a 0.2 s release.
 - **Staccato samples:** VSCO has real staccato samples, with 2–4 round robins. Iowa has none, so Iowa targets use the sustain sample cut to 0.6 s with a 0.1 s release.
+
+## Band SoundFont
+
+`sounds/band.py` builds `data/sounds/band/brasscribe-band.sf2`. It is one SF2 2.04 file for the whole band, 222.7 MB at 24-bit; `--bits 16` gives 148.5 MB. It lives outside `data/sounds/built/`, so per-instrument loaders that glob `built/**/*.sf2` do not pick it up.
+
+**Presets.** Each brass part has its own sustain preset at (bank, program) and a staccato preset at (bank + 64, program).
+- The program is the part's General MIDI program from `instruments.py`: 56 cornets and flugel, 57 trombones, 58 basses, euphonium and baritones, 60 horns.
+- Bank 0 of each program is the section principal: Solo Cornet, 1st Trombone, E♭ Bass and Solo Horn. A player that ignores banks therefore still gets the right family.
+- Percussion is bank 128, program 0, on MIDI channel 10. This is the GM Standard kit copied from MS Basic (MIT) and decoded from its Ogg Vorbis samples. Stereo halves become mono samples, each keeping its zone's pan. Played through FluidSynth, it measures 0.0 dB against MS Basic itself.
+- VSCO 2 CE has no drum-kit hi-hat or toms. The Mikkel percussion part is 64% closed hi-hat, so the kit comes from MS Basic instead.
+- The full map is in `mapping.json` under `parts[].band_soundfont`: `program`, `bank`, `staccato_bank`, `channel_gain_db`, and the 1-based MusicXML `midi-program` and `midi-bank`.
+
+**Layering and balance.**
+- The cornet desks layer cornet-a and cornet-b, detuned by ±3 cents.
+- Balance is not stored in the SoundFont. Apps set channel volume to `channel_gain_db`, which is `gain_db − max(gain_db)`, minus a further 3 dB when the preset is layered.
+- The reason: AVAudioUnitSampler applies almost none of a preset-level `initialAttenuation`, and FluidSynth applies 0.4 of it. Measured on Solo Horn against 1st Horn (1 dB apart) and Solo Cornet against 2nd Cornet (4 dB apart).
+
+**MusicXML.** `sounds/band_programs.py IN OUT` writes `<midi-bank>` and `<midi-program>` per part into a score. It is the reference for the arranger.
+
+**Checks** (all pass on the 24-bit and 16-bit files):
+
+| Engine | Command | Result |
+|---|---|---|
+| Structure | `sounds/sf2check.py FILE` | Every SF2 2.04 structural rule checked: even chunks, generator order, loop margins, 46-frame padding, stereo links, unique presets |
+| FluidSynth 2.6.1 | `sounds/sf2play.py FILE` | 37/37 presets sound. Pitch is within 10 cents of the note played on all 34 brass presets |
+| AVAudioUnitSampler (macOS) | `sounds/tools/avsampler_probe.swift FILE sf2play.tsv` | 37/37 presets load and sound, rendered offline with `loadSoundBankInstrument` |
+| alphaTab 1.8.4 .NET | `apps/windows` `dotnet test --filter BandSoundFontTests` | Every pitched part of the golden score sounds, with or without `<midi-bank>`. The bank changes the preset (Flugelhorn rms 0.0265 → 0.0243). The bank-128 kit sounds when notes carry `<midi-unpitched>` |
+
+- **AVAudioUnitSampler addressing:** melodic presets are `bankMSB = 0x79`, `bankLSB = bank`. The kit is `bankMSB = 0x78`, `bankLSB = 0`.
+- **Level differences at velocity 80:** AVAudioUnitSampler plays the sustain presets 7–9 dB louder than FluidSynth.
+- **Golden score percussion:** the arranger's score now writes `<midi-unpitched>` per drum and `<instrument id>` per note, and alphaTab plays the kit from bank 128 (rms 0.163 from bar 36, where the drums enter). Earlier scores without `<midi-unpitched>` send every drum note as MIDI note 0, which is silent in any kit.
 
 ## Humanization
 

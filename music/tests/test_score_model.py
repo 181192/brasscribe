@@ -66,3 +66,21 @@ def test_legacy_composition_loads_and_rewrites_losslessly(tmp_path):
         for n in v["notes"]:
             assert n.pop("performed_dur") is None and n.pop("articulations") == []
     assert new == old
+
+
+def test_arrangement_options_are_written_only_when_set(tmp_path):
+    c = _comp()
+    c.to_json(tmp_path / "a.json")
+    assert "arrangement" not in json.loads((tmp_path / "a.json").read_text())
+    c.arrangement = {"lineup": "minimal", "difficulty": "easier", "transpose_semitones": 0}
+    c.to_json(tmp_path / "b.json")
+    assert Composition.from_json(tmp_path / "b.json").arrangement == c.arrangement
+
+
+def test_transposed_moves_pitches_and_keys_but_not_drums():
+    c = _comp()
+    c.voices.append(Voice("drums", VoiceRole.RHYTHM, [Note(36, 0, 24)], layer="drums"))
+    t = c.transposed(-2)
+    assert [n.pitch for n in t.voices[0].notes] == [70, 72]
+    assert t.voices[1].notes[0].pitch == 36
+    assert t.keys[0].fifths == -2  # C major -> Bb major

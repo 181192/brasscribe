@@ -41,6 +41,8 @@ class Sample:
     root: int
     cents: int  # pitch correction applied by the player (+ raises pitch)
     loop: tuple[int, int] | None  # [start, end) in sample frames
+    kind: int = 1  # SF2 sampleType: 1 mono, 2 right, 4 left (stereo halves point at each other via link)
+    link: int = 0  # index of the other stereo half
 
 
 @dataclass
@@ -87,8 +89,73 @@ def timecents(seconds: float) -> int:
     return int(round(1200 * math.log2(max(seconds, 0.001))))
 
 
+@dataclass
+class RawZone:
+    """One zone as raw generators: (generator id, 16-bit amount as int, signed or packed lo/hi)."""
+    gens: list[tuple[int, int]]
+    mods: list[bytes] = field(default_factory=list)  # 10-byte modulator records
+    ref: int | None = None  # sample index (instrument zone), instrument index (preset zone), None = global
+
+
+@dataclass
+class RawInstrument:
+    name: str
+    zones: list[RawZone]
+
+
+@dataclass
+class RawPreset:
+    name: str
+    program: int
+    bank: int
+    zones: list[RawZone]
+
+
+def _gen(oper: int, amount: int) -> bytes:
+    return struct.pack("<HH", oper, amount & 0xFFFF)
+
+
+def _range(lo: int, hi: int) -> int:
+    return (hi << 8) | lo
+
+
+def _zone_records(z: RawZone, ref_gen: int) -> tuple[list[bytes], list[bytes]]:
+    """Generators in SF2 order: keyRange, velRange, the rest, then the sample/instrument reference."""
+    first = [g for g in z.gens if g[0] == G_KEY_RANGE] + [g for g in z.gens if g[0] == G_VEL_RANGE]
+    rest = [g for g in z.gens if g[0] not in (G_KEY_RANGE, G_VEL_RANGE, ref_gen)]
+    gens = [_gen(*g) for g in first + rest]
+    if z.ref is not None:
+        gens.append(_gen(ref_gen, z.ref))
+    return gens, list(z.mods)
+
+
+def target_instrument(inst: Instrument) -> RawInstrument:
+    """The per-target instrument (explicit velocity modulators, envelope) as raw zones."""
+    glob = RawZone(
+        [(G_ATTACK_VOL_ENV, timecents(inst.attack_s)), (G_RELEASE_VOL_ENV, timecents(inst.release_s))],
+        [struct.pack("<HHhHH", SRC_VEL_CONCAVE_NEG, G_INITIAL_ATTENUATION, 0, 0, 0),
+         struct.pack("<HHhHH", SRC_VEL_LINEAR_NEG, DEST_FILTER_FC, 0, 0, 0),
+         struct.pack("<HHhHH", SRC_VEL_LINEAR_NEG, G_INITIAL_ATTENUATION, int(round(inst.vel_span_db * 10)), 0, 0)])
+    zones = [glob]
+    for z in inst.zones:
+        gens = [(G_KEY_RANGE, _range(z.lokey, z.hikey)), (G_VEL_RANGE, _range(z.lovel, z.hivel))]
+        if z.attenuation_cb:
+            gens.append((G_INITIAL_ATTENUATION, z.attenuation_cb))
+        gens.append((G_SAMPLE_MODES, 1 if z.loop else 0))
+        zones.append(RawZone(gens, [], z.sample))
+    return RawInstrument(inst.name, zones)
+
+
 def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tuple[str, int, Instrument]]) -> None:
-    """presets: (name, program number, instrument). Bank 0."""
+    """One instrument per preset, bank 0: presets are (name, program number, instrument)."""
+    insts = [target_instrument(inst) for _, _, inst in presets]
+    raw = [RawPreset(name, program, 0, [RawZone([], [], i)]) for i, (name, program, _) in enumerate(presets)]
+    write_raw(path, bank_name, samples, insts, raw)
+
+
+def write_raw(path: str, bank_name: str, samples: list[Sample], instruments: list[RawInstrument],
+              presets: list[RawPreset], bits: int = 24, comment: str = "") -> None:
+    """General writer. bits=16 drops the sm24 chunk."""
     # ---- sample data: 16-bit high words in smpl, low bytes in sm24, 46 zero frames after each sample
     hi_parts, lo_parts, headers, pos = [], [], [], 0
     for s in samples:
@@ -100,7 +167,7 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
         n = len(s.data)
         ls, le = s.loop if s.loop else (0, 0)
         headers.append(struct.pack("<20sIIIIIBbHH", _name(s.name), pos, pos + n, pos + ls, pos + le,
-                                   s.rate, s.root, int(np.clip(s.cents, -99, 99)), 0, 1))
+                                   s.rate, s.root, int(np.clip(s.cents, -99, 99)), s.link, s.kind))
         pos += n + 46
     if pos % 2:  # keep sm24 an even size: some readers (alphaTab/TinySoundFont) ignore RIFF pad bytes
         hi_parts.append(b"\0\0")
@@ -111,24 +178,13 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
 
     # ---- instruments
     inst_recs, ibag, imod, igen = [], [], [], []
-    for _, _, inst in presets:
+    for inst in instruments:
         inst_recs.append(struct.pack("<20sH", _name(inst.name), len(ibag)))
-        # global zone: modulators + envelope
-        ibag.append(struct.pack("<HH", len(igen), len(imod)))
-        imod.append(struct.pack("<HHhHH", SRC_VEL_CONCAVE_NEG, G_INITIAL_ATTENUATION, 0, 0, 0))
-        imod.append(struct.pack("<HHhHH", SRC_VEL_LINEAR_NEG, DEST_FILTER_FC, 0, 0, 0))
-        imod.append(struct.pack("<HHhHH", SRC_VEL_LINEAR_NEG, G_INITIAL_ATTENUATION,
-                                int(round(inst.vel_span_db * 10)), 0, 0))
-        igen.append(struct.pack("<Hh", G_ATTACK_VOL_ENV, timecents(inst.attack_s)))
-        igen.append(struct.pack("<Hh", G_RELEASE_VOL_ENV, timecents(inst.release_s)))
         for z in inst.zones:
             ibag.append(struct.pack("<HH", len(igen), len(imod)))
-            igen.append(struct.pack("<HBB", G_KEY_RANGE, z.lokey, z.hikey))
-            igen.append(struct.pack("<HBB", G_VEL_RANGE, z.lovel, z.hivel))
-            if z.attenuation_cb:
-                igen.append(struct.pack("<Hh", G_INITIAL_ATTENUATION, z.attenuation_cb))
-            igen.append(struct.pack("<Hh", G_SAMPLE_MODES, 1 if z.loop else 0))
-            igen.append(struct.pack("<HH", G_SAMPLE_ID, z.sample))
+            g, m = _zone_records(z, G_SAMPLE_ID)
+            igen += g
+            imod += m
     inst_recs.append(struct.pack("<20sH", _name("EOI"), len(ibag)))
     ibag.append(struct.pack("<HH", len(igen), len(imod)))
     imod.append(struct.pack("<HHhHH", 0, 0, 0, 0, 0))
@@ -136,10 +192,13 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
 
     # ---- presets
     phdr, pbag, pmod, pgen = [], [], [], []
-    for i, (name, program, _) in enumerate(presets):
-        phdr.append(struct.pack("<20sHHHIII", _name(name), program, 0, len(pbag), 0, 0, 0))
-        pbag.append(struct.pack("<HH", len(pgen), len(pmod)))
-        pgen.append(struct.pack("<HH", G_INSTRUMENT, i))
+    for p in sorted(presets, key=lambda p: (p.bank, p.program)):
+        phdr.append(struct.pack("<20sHHHIII", _name(p.name), p.program, p.bank, len(pbag), 0, 0, 0))
+        for z in p.zones:
+            pbag.append(struct.pack("<HH", len(pgen), len(pmod)))
+            g, m = _zone_records(z, G_INSTRUMENT)
+            pgen += g
+            pmod += m
     phdr.append(struct.pack("<20sHHHIII", _name("EOP"), 0, 0, len(pbag), 0, 0, 0))
     pbag.append(struct.pack("<HH", len(pgen), len(pmod)))
     pmod.append(struct.pack("<HHhHH", 0, 0, 0, 0, 0))
@@ -149,9 +208,10 @@ def write_sf2(path: str, bank_name: str, samples: list[Sample], presets: list[tu
         _chunk(b"ifil", struct.pack("<HH", 2, 4)),
         _chunk(b"isng", _zstr("EMU8000")),
         _chunk(b"INAM", _zstr(bank_name)),
-        _chunk(b"ICMT", _zstr("Built by brasscribe sounds/build.py from CC0 / unrestricted samples; see sounds/manifest.json")),
+        _chunk(b"ICMT", _zstr(comment or "Built by brasscribe sounds/build.py from CC0 / unrestricted samples; "
+                                         "see sounds/manifest.json")),
     ])
-    sdta = _list(b"sdta", [_chunk(b"smpl", b"".join(hi_parts)), _chunk(b"sm24", sm24)])
+    sdta = _list(b"sdta", [_chunk(b"smpl", b"".join(hi_parts))] + ([_chunk(b"sm24", sm24)] if bits == 24 else []))
     pdta = _list(b"pdta", [
         _chunk(b"phdr", b"".join(phdr)), _chunk(b"pbag", b"".join(pbag)), _chunk(b"pmod", b"".join(pmod)),
         _chunk(b"pgen", b"".join(pgen)), _chunk(b"inst", b"".join(inst_recs)), _chunk(b"ibag", b"".join(ibag)),

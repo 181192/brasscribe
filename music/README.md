@@ -30,6 +30,7 @@ defaults: files written before a field existed stay valid.
 | `ticks_per_beat` | int | 24 |
 | `free_regions` | FreeRegion[] | optional, default `[]` |
 | `sections` | `{tick, label}`[] | optional, default `[]`. Rehearsal marks (A, B, …; no I) at bar lines |
+| `arrangement` | object | optional, absent for default options. `{lineup: band|minimal, difficulty: faithful|standard|easier, transpose_semitones}`: how the arrangement was made. Pitches and keys in the file are already transposed |
 | `dynamics` | `{tick, layer, mark}`[] | optional, default `[]`. A marking (`pp` `p` `mp` `mf` `f` `ff`) for one textural layer from `tick` on; the parts playing that layer show it at their next note |
 
 ### Voice
@@ -91,3 +92,16 @@ note of the melody that starts inside it carries a `fermata`.
 - `durations.py`: `contour_offsets` (note ends from a SwiftF0 contour;
   `SEPARATED_STEM` settings for separated stems) and `written_durations`
   (`LEGATO_RATIO`, `MAX_HELD_GAP`, `READABLE`, `STACCATO_RATIO`).
+
+## Arrangement options
+
+`arranger.arrange_layers(comp, lineup, difficulty)`; `difficulty.py` holds the modes:
+
+| Mode | Rhythm | Range | Also |
+|---|---|---|---|
+| `faithful` | as arranged | reading range preferred | the default; no soprano doubling or figuration |
+| `standard` | 16th pairs merged into 8ths where the dropped note is not a chord tone | every part folded into its reading range | Soprano Cornet doubles the solo an octave up at climaxes; pads and choir re-attacked at the source's 8th-grid attacks |
+| `easier` | non-solo parts on an 8th grid; the solo's 16th pairs merged keeping its turning points | every part in its easy range (reading range minus its top 4 semitones) | as standard, and fewer key changes (key-plan penalty 1.0) |
+
+`Composition.transposed(n)` and `keys.semitones_to(key, "Bb" | "Am" | "-2:minor")` move a piece to a
+concert key; the arranger then places every part in range as usual.
