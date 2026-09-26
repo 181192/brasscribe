@@ -18,7 +18,7 @@ struct ReviewView: View {
     @State private var evidence: NoteEvidence?
     @State private var composition: Composition?
     @State private var changing: ReviewItem?
-    @State private var confirmLater = false
+    @State private var confirmLater = LaunchOptions.screen == "finish-later"
     @State private var loadError: String?
     @State private var filter: Filter = .mine
 

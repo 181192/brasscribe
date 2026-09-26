@@ -58,6 +58,7 @@ struct ScoreScreen: View {
             if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
             loaded.start()
             model = loaded
+            ScreenshotScenes.stage(loaded)
         } catch {
             self.error = error.localizedDescription
         }

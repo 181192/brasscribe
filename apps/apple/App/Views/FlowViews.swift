@@ -198,7 +198,7 @@ struct TranscribeView: View {
     @Environment(\.horizontalSizeClass) private var hsize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let jobID: UUID
-    @State private var confirmCancel = false
+    @State private var confirmCancel = LaunchOptions.screen == "transcribing-cancel"
     @State private var lastAnnounced: (fraction: Double, at: Date) = (0, .distantPast)
 
     private var wide: Bool {
