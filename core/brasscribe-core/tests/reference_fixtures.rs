@@ -23,6 +23,29 @@ fn i64s(v: &Value) -> Vec<i64> {
 }
 
 #[test]
+fn solo_meter_matches_reference() {
+    use brasscribe_core::beats::{labels_on, solo_meter, track_bar_phase, PHASE_JUMP_COST};
+    for (i, c) in load("meter").iter().enumerate() {
+        let (t, grid, on, du) = (f64s(&c["t"]), f64s(&c["grid"]), f64s(&c["onsets"]), f64s(&c["durations"]));
+        let pos = i64s(&c["pos"]);
+        let gp = labels_on(&grid, &t, &pos, 0);
+        assert_eq!(gp, i64s(&c["grid_pos"]), "case {i}: labels");
+        let down: Vec<bool> = gp.iter().map(|&p| p == 1).collect();
+        let m = solo_meter(&grid, &down, &gp, 1, 0, &on, &du);
+        let want = &c["meter"];
+        assert_eq!(m.beats_per_bar, want[0].as_i64().unwrap(), "case {i}: bpb");
+        assert_eq!(m.first_downbeat, want[1].as_i64().unwrap(), "case {i}: first");
+        assert_eq!((m.from_labels, m.compound), (want[2].as_bool().unwrap(), want[3].as_bool().unwrap()), "case {i}");
+        assert_eq!(m.strength.to_bits(), want[4].as_f64().unwrap().to_bits(), "case {i}: strength");
+        assert_eq!(m.times, if want[5].is_null() { None } else { Some(f64s(&want[5])) }, "case {i}: times");
+        let tr = &c["track"];
+        let (tb, first) = track_bar_phase(&t, &pos.iter().map(|&p| (p == 1) as i64 as f64).collect::<Vec<_>>(), tr[0].as_i64().unwrap(), PHASE_JUMP_COST, None);
+        assert_eq!(tb, f64s(&tr[1]), "case {i}: tracked times");
+        assert_eq!(first, tr[2].as_i64().unwrap(), "case {i}: tracked first");
+    }
+}
+
+#[test]
 fn spelling_and_key_match_reference() {
     for (i, c) in load("spelling").iter().enumerate() {
         let on = f64s(&c["onsets"]);
