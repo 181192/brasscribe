@@ -22,6 +22,9 @@ enum class ExportFormat(val extension: String, val mime: String) {
     BRAILLE("brf", "text/plain"),
 }
 
+/** What Share or print makes: the player's own part, one file per player, or the conductor's score. */
+enum class ExportScope { MY_PART, EVERY_PART, CONDUCTOR }
+
 /** A file ready to share or save. */
 class ExportFile(val file: File, val format: ExportFormat)
 
@@ -32,10 +35,66 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
     fun available(r: TranscriptionResult, format: ExportFormat, midiFromScore: Boolean): Boolean = when (format) {
         ExportFormat.MUSICXML, ExportFormat.TALKING_SCORE -> true
         ExportFormat.MIDI -> midiFromScore || r.jobId != null
-        ExportFormat.PDF -> r.jobId != null && "brass-band.pdf" in r.engineOutputs
-        ExportFormat.AUDIO -> r.jobId != null && "brass-band.mp3" in r.engineOutputs
+        // The engine's files show the score as it made it; after a change on the phone they are stale.
+        ExportFormat.PDF -> r.jobId != null && "brass-band.pdf" in r.engineOutputs && !r.changedOnPhone
+        ExportFormat.AUDIO -> r.jobId != null && "brass-band.mp3" in r.engineOutputs && !r.changedOnPhone
         // Braille music comes from the engine (music21's translator; the core does not write BRF).
-        ExportFormat.BRAILLE -> r.jobId != null && (r.engineOutputs.isEmpty() || r.engineOutputs.any { it.endsWith(".brf") })
+        ExportFormat.BRAILLE -> r.jobId != null && (r.engineOutputs.isEmpty() || r.engineOutputs.any { it.endsWith(".brf") }) && !r.changedOnPhone
+    }
+
+    /** Whether [format] can be made for single parts (audio and MIDI are always the whole score). */
+    fun perPart(r: TranscriptionResult, format: ExportFormat): Boolean = when (format) {
+        ExportFormat.MUSICXML, ExportFormat.TALKING_SCORE, ExportFormat.BRAILLE -> true
+        ExportFormat.PDF -> r.engineOutputs.any { it.startsWith("parts/") && it.endsWith(".pdf") }
+        ExportFormat.AUDIO, ExportFormat.MIDI -> false
+    }
+
+    /** The engine's file for part [index] (0-based): parts/NN-Name.ext, numbered in score order. */
+    private fun partFile(r: TranscriptionResult, index: Int, ext: String): String? {
+        val prefix = "parts/%02d-".format(index + 1)
+        return r.engineOutputs.firstOrNull { it.startsWith(prefix) && it.endsWith(".$ext") }
+    }
+
+    private fun safe(s: String) = s.replace(Regex("[^\\p{L}\\p{N} ._-]"), "").trim()
+
+    /**
+     * Every file of [formats] for [scope]: one per part for Every part, the shown part for My part,
+     * the full score for the conductor. Audio and MIDI are always the whole score.
+     */
+    suspend fun buildAll(
+        r: TranscriptionResult, formats: List<ExportFormat>, scope: ExportScope, myPart: Int, partNames: List<String>,
+        engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang,
+    ): List<ExportFile> {
+        val targets: List<Int?> = when (scope) {
+            ExportScope.CONDUCTOR -> listOf(null)
+            ExportScope.MY_PART -> listOf(myPart.takeIf { partNames.isNotEmpty() })
+            ExportScope.EVERY_PART -> partNames.indices.toList().ifEmpty { listOf(null) }
+        }
+        val out = ArrayList<ExportFile>()
+        for (format in formats) {
+            if (format == ExportFormat.AUDIO || format == ExportFormat.MIDI || !perPart(r, format)) {
+                out += build(r, format, engine, midi, parts, lang)
+                continue
+            }
+            for (t in targets) out += if (t == null) build(r, format, engine, midi, parts, lang) else buildPart(r, format, t, partNames[t], engine, lang)
+        }
+        return out
+    }
+
+    private suspend fun buildPart(r: TranscriptionResult, format: ExportFormat, index: Int, name: String, engine: EngineApi?, lang: Lang): ExportFile {
+        val base = safe(r.composition?.title.orEmpty()).ifBlank { "score" }
+        val bytes: ByteArray = when (format) {
+            ExportFormat.PDF -> engine!!.artifact(r.jobId!!, partFile(r, index, "pdf") ?: error("no PDF for $name"))
+            ExportFormat.BRAILLE -> engine!!.braille(r.jobId!!, (index + 1).toString())
+            ExportFormat.MUSICXML -> no.brasscribe.play.model.MusicXmlParts.single(r.musicXml, index).toByteArray()
+            ExportFormat.TALKING_SCORE -> (runCatching {
+                core.talkingScore(r.musicXml, r.compositionJsonFor(core))?.use { it.toHtml(lang, listOf(index)) }
+            }.getOrNull() ?: error("no talking score")).toByteArray()
+            else -> error("$format is whole-score only")
+        }
+        val f = File(dir, "$base - ${safe(name)}.${format.extension}")
+        f.writeBytes(bytes)
+        return ExportFile(f, format)
     }
 
     suspend fun build(r: TranscriptionResult, format: ExportFormat, engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang): ExportFile {

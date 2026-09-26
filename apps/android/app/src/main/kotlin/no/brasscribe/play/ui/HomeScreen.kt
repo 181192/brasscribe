@@ -155,6 +155,7 @@ fun HomeScreen(vm: PlayViewModel) {
                 Spacer(Modifier.size(BrasscribeSpace.s2))
                 Text(stringResource(R.string.brand_name), style = MaterialTheme.typography.headlineMedium.copy(fontFamily = MaterialTheme.typography.displaySmall.fontFamily),
                     modifier = Modifier.weight(1f))
+                IconButton({ vm.navigate(Screen.HELP) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_help, stringResource(R.string.help)) }
                 IconButton({ vm.navigate(Screen.SETTINGS) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_settings, stringResource(R.string.settings)) }
             }
             Text(

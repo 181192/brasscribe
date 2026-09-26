@@ -28,8 +28,12 @@ class FixtureEngineApiTest {
         val xml = api.musicXml(job.id)
         assertEquals(18, Regex("<score-part ").findAll(xml).count())
         assertTrue(api.pdf(job.id).take(4).toByteArray().contentEquals("%PDF".toByteArray()))
-        assertEquals(5, api.artifacts(job.id).size)
+        // The score's five files and, per player, a PDF, a braille file and a MusicXML part.
+        val artifacts = api.artifacts(job.id).map { it.name }
+        assertEquals(5 + 18 * 3, artifacts.size)
+        assertTrue("parts/02-Solo-Cornet.pdf" in artifacts)
         assertTrue(String(api.braille(job.id)).contains("\r\n"))
+        assertTrue(String(api.braille(job.id, "2")).isNotBlank())
     }
 
     @Test
