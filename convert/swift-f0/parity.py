@@ -29,7 +29,8 @@ import convert as C  # noqa: E402
 
 UNITS = ["CPU_ONLY", "CPU_AND_GPU", "CPU_AND_NE", "ALL"]
 BACKENDS = (["ort-cpu-static", "ort-coreml-static"]
-            + [f"coreml-{p}-{u}" for p in ("fp32", "fp16") for u in UNITS])
+            + [f"coreml-{p}-{u}" for p in ("fp32", "fp16") for u in UNITS]
+            + ["coreml-split-CPU_AND_NE", "coreml-split-CPU_AND_GPU"])
 
 
 class PaddedSession:
@@ -50,6 +51,30 @@ class PaddedSession:
         return [pitch[:, :frames], confidence[:, :frames]]
 
 
+def _split_runner(length: str, trunk_units: str):
+    """Chain the three mixed-precision models (mixed.py): fp32 front/head on the GPU, fp16 trunk."""
+    import coremltools as ct
+    models = {}
+    for part in ("front", "trunk", "head"):
+        units = trunk_units if part == "trunk" else "CPU_AND_GPU"
+        ml = ct.models.MLModel(str(C.OUT / f"swift-f0-{length}-mixed-{part}.mlpackage"),
+                               compute_units=getattr(ct.ComputeUnit, units))
+        meta = ml.user_defined_metadata
+        models[part] = (ml, meta["onnx_inputs"].split(","), meta["onnx_outputs"].split(","))
+
+    def call(part, tensors):
+        ml, ins, outs = models[part]
+        res = ml.predict({f"in{i}": tensors[n] for i, n in enumerate(ins)})
+        tensors.update({n: res[f"out{i}"] for i, n in enumerate(outs)})
+
+    def run(a, lo, hi):
+        tensors = {"audio": a, "fmin": np.array([lo], np.float32), "fmax": np.array([hi], np.float32)}
+        for part in ("front", "trunk", "head"):
+            call(part, tensors)
+        return tensors["pitch"].astype(np.float64), tensors["confidence"].astype(np.float64)
+    return run
+
+
 def make_detector(backend: str, length: str = "window") -> SwiftF0:
     det = SwiftF0()
     if backend == "ort-cpu-upstream":
@@ -62,6 +87,8 @@ def make_detector(backend: str, length: str = "window") -> SwiftF0:
         def run(a, lo, hi):
             return sess.run(["pitch", "confidence"], {"audio": a, "fmin": np.asarray(lo, np.float32),
                                                       "fmax": np.asarray(hi, np.float32)})
+    elif backend.startswith("coreml-split-"):
+        run = _split_runner(length, backend.rsplit("-", 1)[1])
     else:
         import coremltools as ct
         _, precision, units = backend.split("-", 2)
@@ -145,7 +172,7 @@ def main() -> None:
 
     # Streaming: 1 s pushes through the 128-frame model vs the upstream batch result.
     stream_clips = [c for c in clips if c.kind == "part"][:12]
-    for backend in ("ort-coreml-static", "coreml-fp32-ALL", "coreml-fp16-ALL"):
+    for backend in ("ort-coreml-static", "coreml-fp32-ALL", "coreml-fp16-ALL", "coreml-split-CPU_AND_NE"):
         det = make_detector(backend, "stream")
         per_clip = {c.name: P.note_match(ref_notes[c.name], to_notes(stream(det, c))) for c in stream_clips}
         results[f"stream/{backend}"] = {"note_f1": P.pool(per_clip),
@@ -159,6 +186,7 @@ def main() -> None:
 
     plans = {f"{p}-{u}": P.coreml_compute_plan(C.OUT / f"swift-f0-window-{p}.mlpackage", u)
              for p in ("fp32", "fp16") for u in UNITS}
+    plans["mixed-trunk-CPU_AND_NE"] = P.coreml_compute_plan(C.OUT / "swift-f0-window-mixed-trunk.mlpackage", "CPU_AND_NE")
     artifacts = {}
     for f in sorted(C.OUT.iterdir()):
         artifacts[f.name] = {"size_bytes": P.size_bytes(f), "sha256": P.sha256(f)}
@@ -175,7 +203,7 @@ def main() -> None:
         "pass": gate,
         "pass_all": all(gate.values()),
         "versions": P.versions("swift-f0", "onnxruntime", "coremltools", "torch", "onnx2torch", "onnxsim", "mir_eval"),
-        "command": "cd convert/swift-f0 && uv run python convert.py && uv run python parity.py",
+        "command": "cd convert/swift-f0 && uv run python convert.py && uv run python mixed.py && uv run python parity.py",
     }
     print("wrote", P.write_report("swift-f0", report))
 
