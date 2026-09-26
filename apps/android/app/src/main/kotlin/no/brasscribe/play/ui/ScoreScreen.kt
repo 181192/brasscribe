@@ -122,7 +122,7 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     LaunchedEffect(controller, c) {
         controller.setNotationColors(ScorePalette(c.bg.toArgb(), c.ink.toArgb(), c.staff.toArgb(), c.cursor.toArgb(),
-            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast))
+            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb()))
     }
     LaunchedEffect(controller) {
         // One part first (the full score is one tap away in Parts); a key shift re-renders once.

@@ -95,6 +95,8 @@ class ScoreController(
             player.enableUserInteraction = true
             player.enableAnimatedBeatCursor = !reducedMotion
             player.scrollMode = if (reducedMotion) ScrollMode.OffScreen else ScrollMode.Continuous
+            // The overlay draws the uncertainty marks from the note heads.
+            core.includeNoteBounds = true
         }
         view.api.updateSettings()
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
@@ -110,7 +112,7 @@ class ScoreController(
         }
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
-        view.api.postRenderFinished.on { applyVolumes() }
+        view.api.postRenderFinished.on { applyVolumes(); overlays().forEach { it.refresh() } }
 
         view.api.playedBeatChanged.on { beat ->
             val mb = beat.voice.bar.masterBar
@@ -138,6 +140,7 @@ class ScoreController(
         try {
             val s = ScoreLoader.loadScoreFromBytes(Uint8Array(markVeryUncertain(bytes).asUByteArray()), view.settings)
             score = s
+            collectMarks(s)
             colourUncertainty(s)
             s.tracks.forEach { t -> writtenTransposition[t.index.toInt()] = t.staves[0].displayTranspositionPitch }
             // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
@@ -300,6 +303,8 @@ class ScoreController(
             view.api.tickPosition = first.start
         }
         _state.value = _state.value.copy(loop = range)
+        tints.loop = range
+        tints.invalidate()
     }
 
     fun goToBar(bar: Int) {
@@ -381,11 +386,54 @@ class ScoreController(
             barNumberColor = p.staff.toAlphaTabColor()
         }
         view.api.updateSettings()
+        overlays().forEach { it.palette = p }
         score?.let { colourUncertainty(it) }
-        if (_state.value.loaded) render()
+        if (_state.value.loaded) render() else overlay.invalidate()
     }
 
     private var palette: ScorePalette? = null
+
+    /** The overlay with the uncertainty marks, the ad-lib tint and the review ring. */
+    private val tints: NotationOverlay = NotationOverlay.attach(view, under = true)
+    val overlay: NotationOverlay = NotationOverlay.attach(view, under = false)
+    private fun overlays() = listOf(tints, overlay)
+    private var marks: Map<alphaTab.model.Beat, Boolean> = emptyMap()
+
+    /**
+     * Finds the marked beats (their "?" text) and the free-time bars ("ad lib." up to "a tempo"),
+     * then blanks the small text marks so alphaTab keeps their band and the overlay draws them.
+     */
+    private fun collectMarks(s: Score) {
+        val found = HashMap<alphaTab.model.Beat, Boolean>()
+        val adLib = HashSet<Int>()
+        for (t in 0 until s.tracks.length.toInt()) for (st in s.tracks[t].staves) {
+            var free = false
+            for (bar in st.bars) {
+                for (voice in bar.voices) for (beat in voice.beats) {
+                    when (beat.text?.trim()?.lowercase()) {
+                        "?" -> { found[beat] = false; beat.text = MARK_SPACE }
+                        BOXED_QUESTION -> { found[beat] = true; beat.text = MARK_SPACE }
+                        "ad lib.", "ad lib", "ad. lib." -> free = true
+                        "a tempo" -> free = false
+                    }
+                }
+                if (free) adLib += bar.index.toInt()
+            }
+        }
+        marks = found
+        overlay.marks = found
+        tints.adLibBars = adLib
+    }
+
+    /** Rings one note of the rendered score (the review's note card). */
+    fun ringNote(bar: Int, noteIndexInBar: Int) {
+        val s = score ?: return
+        val staff = s.tracks[_state.value.shown.minOrNull() ?: 0].staves[0]
+        val b = if (bar in 1..staff.bars.length.toInt()) staff.bars[bar - 1] else null
+        val beats = b?.voices?.let { v -> if (v.length > 0) (0 until v[0].beats.length.toInt()).map { v[0].beats[it] } else null }.orEmpty().filter { !it.isRest }
+        overlay.ring = beats.getOrNull(noteIndexInBar)
+        overlay.invalidate()
+    }
 
     /**
      * Uncertain notes carry a "?" above them (MusicXML <words>) and, below 0.4 confidence, a boxed
@@ -405,7 +453,7 @@ class ScoreController(
         val very = p.veryUncertain.toAlphaTabColor()
         for (t in 0 until s.tracks.length.toInt()) for (st in s.tracks[t].staves) for (bar in st.bars) for (voice in bar.voices) {
             for (beat in voice.beats) {
-                val colour = when (beat.text?.trim()) { "?" -> uncertain; BOXED_QUESTION -> very; else -> null } ?: continue
+                val colour = when (marks[beat]) { false -> uncertain; true -> very; null -> null } ?: continue
                 beat.style = BeatStyle().apply {
                     for (e in listOf(BeatSubElement.Effects, BeatSubElement.StandardNotationEffects, BeatSubElement.StandardNotationStem,
                         BeatSubElement.StandardNotationFlags)) colors.set(e, colour)
@@ -473,10 +521,12 @@ class ScoreController(
 /** Theme colours of the notation (design tokens, ARGB). */
 data class ScorePalette(
     val paper: Int, val ink: Int, val staff: Int, val cursor: Int, val uncertain: Int, val veryUncertain: Int,
-    val loopTint: Int, val highContrast: Boolean,
+    val loopTint: Int, val highContrast: Boolean, val adlibTint: Int = loopTint,
 )
 
 private const val BOXED_QUESTION = "\u2370"
+/** Blank text in place of a mark: alphaTab still reserves the text band above the note. */
+private const val MARK_SPACE = "\u2003\u2003"
 private val VERY_UNCERTAIN_WORDS = Regex("""<words\b[^>]*enclosure="rectangle"[^>]*>\?</words>""")
 
 /** A colour with [alpha] that, drawn over [paper], gives [tint]. */
