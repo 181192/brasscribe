@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brukerveiledning · Brasscribe Play</title>
+  <meta name="description" content="Slik lager du partitur til brassbandet ditt med Brasscribe Play: åpne eller spill inn, sjekk tonene, velg resultat, øv og skriv ut.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="alternate" hreflang="en" href="../../guide/">
+  <link rel="alternate" hreflang="nb" href="./">
+  <link rel="alternate" hreflang="x-default" href="../../guide/">
+  <script src="../../lang.js"></script>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+  <link rel="stylesheet" href="../../assets/brasscribe.css">
+  <link rel="stylesheet" href="../../assets/fonts.css">
+  <link rel="stylesheet" href="../../site.css">
+</head>
+<body>
+<a class="skip" href="#main">Hopp til innholdet</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../">
+      <img class="logo-light" src="../../assets/logo/lockup-play.svg" alt="Brasscribe Play, forsiden" width="180" height="32">
+      <img class="logo-dark" src="../../assets/logo/lockup-play-on-dark.svg" alt="Brasscribe Play, forsiden" width="180" height="32">
+    </a>
+    <nav class="site-nav" aria-label="Hovedmeny">
+      <a href="../">Forside</a>
+      <a href="./" aria-current="page">Brukerveiledning</a>
+      <a href="#computer">Datamaskinen din</a>
+      <a href="https://github.com/181192/brasscribe">Kildekode</a>
+      <a class="lang-switch" href="../../guide/" hreflang="en" lang="en" data-lang-switch>English</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap guide">
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title" class="toc-title">I denne veiledningen</h2>
+    <ol>
+      <li><a href="#get-started">Kom i gang</a></li>
+      <li><a href="#open">Åpne eller spill inn</a></li>
+      <li><a href="#what">Hva er dette?</a></li>
+      <li><a href="#making">Partituret lages</a></li>
+      <li><a href="#check">Sjekk tonene</a></li>
+      <li><a href="#output">Hvordan skal partituret bli?</a></li>
+      <li><a href="#score">Partituret og avspilleren</a></li>
+      <li><a href="#share">Del eller skriv ut</a></li>
+      <li><a href="#computer">Brasscribe på datamaskinen</a></li>
+      <li><a href="#access">Tilgjengelighet</a></li>
+      <li><a href="#trouble">Når noe går galt</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="get-started">
+      <p class="overline">Brukerveiledning</p>
+      <h1>Kom i gang</h1>
+      <p class="lead">Brasscribe Play gjør et opptak om til et partitur for brassbandet ditt. Denne veiledningen går gjennom det én gang, fra opptaket til de utskrevne stemmene.</p>
+      <p>Brasscribe Play finnes for iPhone, iPad, Mac, Android og Windows. Den er i tidlig testing og ligger ikke i appbutikkene ennå: den tekniske i bandet kan bygge den fra <a href="https://github.com/181192/brasscribe#readme">kildekoden på GitHub</a>.</p>
+      <p>Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>. Den spør om mikrofonen først når du spiller inn.</p>
+      <div class="note">
+        <p><strong>Solo eller fullt band?</strong> Ett instrument kan skrives ned på telefonen. For et fullt band gjør Brasscribe på datamaskinen jobben. Se <a href="#computer">Brasscribe på datamaskinen</a>.</p>
+      </div>
+      <p>Vil du se deg rundt først? Velg <strong>Prøv eksempelet</strong> på startsiden for å åpne et ferdig partitur.</p>
+    </section>
+
+    <section id="open">
+      <h2>Åpne eller spill inn</h2>
+      <figure class="phone">
+        <picture>
+          <source srcset="../../assets/shots/home-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="../../assets/shots/home-phone-light.png" alt="Startsiden, med Åpne et opptak, Spill inn og Partiturene dine. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
+        </picture>
+      </figure>
+      <p>Velg én av disse på startsiden:</p>
+      <ul>
+        <li><strong>Åpne et opptak:</strong> en lyd- eller videofil du har (MP3, WAV, M4A, MP4 og de fleste andre formater). Du kan også dele en fil til Brasscribe fra en annen app, eller slippe den i vinduet på datamaskinen.</li>
+        <li><strong>Spill inn med mikrofonen:</strong> spill stemmen din selv, eller ta opp øvelsen.</li>
+        <li><strong>Spill inn det som spilles:</strong> ta opp lyden fra en annen app, eller alt enheten spiller.</li>
+      </ul>
+      <p>Lenker til strømmetjenester kan ikke lastes ned. Spill musikken og ta den opp i stedet. Strømmeapper stopper som regel opptak, så mikrofonen er veien rundt det.</p>
+      <p>Partiturene dine ligger under <strong>Partiturene dine</strong> på startsiden.</p>
+    </section>
+
+    <section id="what">
+      <h2>Hva er dette?</h2>
+      <figure class="phone">
+        <img src="../../assets/shots/what-is-this-nb-phone-light.png" alt="Hva er dette? med de fire valgene og hvor partituret lages." loading="lazy" width="390" height="844">
+      </figure>
+      <p>Brasscribe spør hva opptaket er. Svaret ditt avgjør hvordan den lytter. Den gjetter aldri, og ingenting er valgt for deg første gang.</p>
+      <div class="table-scroll" role="region" aria-labelledby="what-caption" tabindex="0">
+        <table>
+          <caption id="what-caption">De fire typene opptak</caption>
+          <thead><tr><th scope="col">Valg</th><th scope="col">Til</th><th scope="col">Du får</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Brassband</th><td>Et helt band som spiller sammen</td><td>Alle stemmene</td></tr>
+            <tr><th scope="row">Ett instrument</th><td>Én musiker alene, som når du øver</td><td>Én stemme</td></tr>
+            <tr><th scope="row">Solist med orkester eller band</th><td>En solist foran et orkester eller band</td><td>Solostemmen, og akkompagnementet arrangert for brassband</td></tr>
+            <tr><th scope="row">Pop eller rock</th><td>Sang, gitarer, tangenter, bass og trommer</td><td>Et arrangement for brassband</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Usikker? Velg <strong>Brassband</strong>. Du kan endre det senere. Under valgene står det hvor partituret lages: på denne enheten, eller på datamaskinen.</p>
+    </section>
+
+    <section id="making">
+      <h2>Partituret lages</h2>
+      <figure class="phone">
+        <picture>
+          <source srcset="../../assets/shots/transcribing-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="../../assets/shots/transcribing-phone-light.png" alt="Partituret lages: steget som pågår som overskrift, prosent, tid igjen og en liste over alle stegene. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
+        </picture>
+      </figure>
+      <p>Brasscribe viser hvert steg med vanlige ord, som <em>Finner pulsen</em> og <em>Arrangerer for brassband</em>, med prosent og tid igjen. Noen minutter musikk tar vanligvis noen minutter.</p>
+      <p>Du kan gå fra skjermen. For å stoppe velger du <strong>Avbryt</strong>: appen spør først, og opptaket blir liggende i Partiturene dine.</p>
+    </section>
+
+    <section id="check">
+      <h2>Sjekk tonene</h2>
+      <figure class="phone">
+        <picture>
+          <source srcset="../../assets/shots/review-phone-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="../../assets/shots/review-phone-light.png" alt="Én usikker tone sjekkes: takten, stemmen og den noterte tonen, med Lytt til denne takten, Hopp over og Behold, gå til neste. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
+        </picture>
+      </figure>
+      <p>Når partituret er klart, viser Brasscribe tonene den var usikker på, én om gangen.</p>
+      <ul>
+        <li>Et spørsmålstegn <span class="q uncertain" aria-hidden="true">?</span> over en tone betyr <strong>usikker</strong>.</li>
+        <li>Et spørsmålstegn i en boks <span class="q very-uncertain" aria-hidden="true"><span class="qbox">?</span></span> betyr <strong>svært usikker</strong>.</li>
+      </ul>
+      <p>For hver tone ser du takten, stemmen og tonen slik den er notert. Så:</p>
+      <ul>
+        <li><strong>Lytt til denne takten</strong> spiller takten fra opptaket, om og om igjen.</li>
+        <li><strong>Behold, gå til neste</strong> hvis den er riktig. Spørsmålstegnet fjernes.</li>
+        <li><strong>Hopp over</strong> lar tonen være merket og går videre.</li>
+      </ul>
+      <p>Du trenger ikke sjekke alle tonene nå. <strong>Fortsett senere</strong> beholder spørsmålstegnene, og <strong>«9 toner merket ? · Sjekk dem»</strong> over partituret tar deg tilbake når som helst.</p>
+    </section>
+
+    <section id="output">
+      <h2>Hvordan skal partituret bli?</h2>
+      <figure class="phone">
+        <img src="../../assets/shots/choose-output-nb-phone-light.png" alt="Hvordan skal partituret bli? med Hvilket band?, Hvor vanskelig? og Toneart." loading="lazy" width="390" height="844">
+      </figure>
+      <p>Tre spørsmål på én skjerm. Brasscribe husker svarene for hver låt.</p>
+      <ul>
+        <li><strong>Hvilket band?</strong> Fullt brassband (rundt 25 musikere) eller lite band (10–15 musikere, stemmene slått sammen).</li>
+        <li><strong>Hvor vanskelig?</strong> <em>Som spilt</em>, eller <em>Enklere</em>: melodien beholdes, men høye toner og raske løp unngås.</li>
+        <li><strong>Toneart:</strong> som i opptaket, eller trinn opp og ned til tonearten du vil ha.</li>
+      </ul>
+      <p>Ingenting endres før du velger <strong>Vis partituret</strong>. Du kan komme tilbake og endre det senere, og ingenting går tapt.</p>
+    </section>
+
+    <section id="score">
+      <h2>Partituret og avspilleren</h2>
+      <figure>
+        <picture>
+          <source srcset="../../assets/shots/score-desktop-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="../../assets/shots/score-desktop-light.png" alt="Hele partituret på datamaskinen, med verktøylinjen over og avspilleren nederst. Skjermbildet er på engelsk." loading="lazy" width="1440" height="900">
+        </picture>
+      </figure>
+      <h3>Lese</h3>
+      <ul>
+        <li><strong>Alle stemmer ▾</strong> bytter mellom hele partituret og én stemme. Din egen stemme kan vises stort, som en side.</li>
+        <li><strong>Notert for B♭ / Klingende:</strong> notert er det du leser på stemmen din; klingende er slik det låter på et piano.</li>
+        <li>Zoom inn og ut. Over 200 % brytes partituret om til én stemme som ruller sidelengs.</li>
+      </ul>
+      <h3>Øve</h3>
+      <ul>
+        <li><strong>Spill av</strong> starter fra markøren. Forrige og neste takt flytter én takt om gangen.</li>
+        <li><strong>Tempo:</strong> fra 25 % til 150 %. Tempoet vises som «♩ = 102 (ned fra 136)».</li>
+        <li><strong>Gjenta takt</strong> [12] til [13] spiller en passasje om og om igjen. <strong>Slutt å gjenta</strong> slår det av.</li>
+        <li><strong>Inntelling:</strong> én takt med klikk før musikken starter. <strong>Metronom:</strong> et klikk på hvert slag.</li>
+        <li><strong>Lyd av min stemme:</strong> stemmen din blir stille, så du kan spille den selv.</li>
+        <li>I stemmelisten slår <strong>Lyd av</strong> av en stemme, og <strong>Bare denne</strong> spiller én stemme alene.</li>
+        <li><strong>Hør: Band / Opptak</strong> bytter til originalopptaket fra samme takt.</li>
+      </ul>
+    </section>
+
+    <section id="share">
+      <h2>Del eller skriv ut</h2>
+      <p>Velg <strong>Del eller skriv ut</strong>, så hva og hvordan.</p>
+      <div class="table-scroll" role="region" aria-labelledby="share-what" tabindex="0">
+        <table>
+          <caption id="share-what">Hva du kan dele eller skrive ut</caption>
+          <thead><tr><th scope="col">Hva</th><th scope="col">Til</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Solokornett (deg)</th><td>Din egen stemme (standard)</td></tr>
+            <tr><th scope="row">Alle stemmer</th><td>Én PDF per musiker</td></tr>
+            <tr><th scope="row">Dirigentpartitur</th><td>Alle stemmene samlet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-scroll" role="region" aria-labelledby="share-as" tabindex="0">
+        <table>
+          <caption id="share-as">Formater</caption>
+          <thead><tr><th scope="col">Som</th><th scope="col">Til</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">PDF</th><td>Utskrift og notestativet (standard)</td></tr>
+            <tr><th scope="row">Lyd (MP3)</th><td>Å øve med</td></tr>
+            <tr><th scope="row">MusicXML</th><td>Redigering i MuseScore, Sibelius eller Dorico</td></tr>
+            <tr><th scope="row">MIDI</th><td>Andre musikkapper</td></tr>
+            <tr><th scope="row">Talende partitur</th><td>Tekst en skjermleser kan lese opp</td></tr>
+            <tr><th scope="row">Punktskriftnoter (BRF)</th><td>Leselist eller punktskriver</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Toner ingen har sjekket, beholder spørsmålstegnet i det du deler, så bandet vet hvilke de skal lytte etter.</p>
+    </section>
+
+    <section id="computer">
+      <h2>Brasscribe på datamaskinen</h2>
+      <p>For et fullt band lager Brasscribe på datamaskinen (Mac eller PC) partituret og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder.</p>
+      <ol>
+        <li>Start Brasscribe på datamaskinen. Den viser en sekssifret kode.</li>
+        <li>Sett telefonen på <strong>samme Wi-Fi</strong> som datamaskinen.</li>
+        <li>Åpne <strong>Innstillinger</strong> i appen, og så <strong>Brasscribe på datamaskinen</strong>.</li>
+        <li>Datamaskinen dukker opp i listen, for eksempel <em lang="en">Brasscribe on Kari's Mac</em>. Velg den. På Windows velger du <strong>Finn på dette nettverket</strong> først.</li>
+        <li>Skriv inn den sekssifrede koden og velg <strong>Koble til</strong>.</li>
+      </ol>
+      <p>Appen sier <em>Koblet til</em> og viser navnet på datamaskinen. Du gjør dette bare én gang; koble til på nytt hvis koden på datamaskinen endres.</p>
+      <details>
+        <summary>Detaljer for den tekniske i bandet</summary>
+        <p>Start motoren på datamaskinen fra en kopi av kodelageret:</p>
+        <pre tabindex="0"><code>pixi install
+BRASSCRIBE_TOKEN=velg-en-lang-hemmelighet pixi run serve --lan</code></pre>
+        <p>Den lytter på port 8765 på alle nettverkskort, skriver ut LAN-adressen og paringskoden, og kunngjør seg over Bonjour/mDNS som <code>_brasscribe._tcp</code>. Med <code>BRASSCRIBE_TOKEN</code> satt forblir telefonene paret når motoren starter på nytt.</p>
+        <ul>
+          <li>Tillat innkommende tilkoblinger når brannmuren spør (macOS: Systeminnstillinger › Nettverk › Brannmur; Windows: private nettverk).</li>
+          <li>Gjestenett og kontornett hindrer ofte enheter i å se hverandre. Skriv inn adressen i stedet, for eksempel <code>http://192.168.1.20:8765</code>.</li>
+          <li>Fem feil koder på rad gjør at motoren velger en ny kode. Start den på nytt for å se den nye.</li>
+          <li><code>--no-advertise</code> slår av kunngjøringen. Docker-bildet gjør det som standard.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="access">
+      <h2>Tilgjengelighet</h2>
+      <ul>
+        <li>Fungerer med VoiceOver, TalkBack og Skjermleser. Fremdrift og endringer leses opp.</li>
+        <li><strong>Les opp</strong> (Vis-menyen) leser partituret som talende partitur: takt for takt, med ord.</li>
+        <li>Usikre toner merkes med en form (et spørsmålstegn, eller et i en boks), aldri bare med farge.</li>
+        <li>Følger tekststørrelse, mørk modus, høy kontrast og redusert bevegelse fra systemet.</li>
+        <li>Del eller skriv ut har talende partitur og punktskriftnoter.</li>
+      </ul>
+      <h3>Tastatur</h3>
+      <p>På datamaskinen fungerer alt fra tastaturet. Hurtigtaster med én tast kan slås av i Innstillinger.</p>
+      <div class="table-scroll" role="region" aria-labelledby="keys" tabindex="0">
+        <table>
+          <caption id="keys">Hurtigtaster i partituret</caption>
+          <thead><tr><th scope="col">Tast</th><th scope="col">Gjør</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><kbd>Mellomrom</kbd></th><td>Spill av eller pause</td></tr>
+            <tr><th scope="row"><kbd aria-label="Venstre pil">←</kbd> <kbd aria-label="Høyre pil">→</kbd></th><td>Flytt én tone</td></tr>
+            <tr><th scope="row"><kbd>U</kbd></th><td>Neste tone merket med spørsmålstegn</td></tr>
+            <tr><th scope="row"><kbd>K</kbd></th><td>Behold tonen (når du sjekker)</td></tr>
+            <tr><th scope="row"><kbd>L</kbd></th><td>Gjenta disse taktene</td></tr>
+            <tr><th scope="row"><kbd>O</kbd></th><td>Hør opptaket herfra</td></tr>
+            <tr><th scope="row"><kbd>P</kbd></th><td>Stemmer</td></tr>
+            <tr><th scope="row"><kbd>Tab</kbd></th><td>Gå ut av partituret</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>På Windows viser <kbd>F1</kbd> alle hurtigtastene.</p>
+    </section>
+
+    <section id="trouble">
+      <h2>Når noe går galt</h2>
+      <p>Opptaket ditt blir alltid tatt vare på. Hver melding sier hva du kan gjøre videre.</p>
+      <details>
+        <summary>Datamaskinen dukker ikke opp i listen</summary>
+        <p>Sjekk at Brasscribe kjører på datamaskinen, og at begge er på samme Wi-Fi. Gjestenett og kontornett skjuler ofte enheter for hverandre: skriv inn adressen til datamaskinen i stedet. Den tekniske i bandet finner den under <em>Detaljer for den tekniske i bandet</em>.</p>
+      </details>
+      <details>
+        <summary>Den fant datamaskinen, men får ikke koblet til</summary>
+        <p>Telefonen kan ha byttet til mobildata fordi Wi-Fi-signalet er svakt. Gå nærmere ruteren, eller slå av mobildata en liten stund. Sjekk på datamaskinen at brannmuren slipper Brasscribe gjennom.</p>
+      </details>
+      <details>
+        <summary>«Feil paringskode»</summary>
+        <p>Skriv inn de seks sifrene datamaskinen viser akkurat nå. Etter fem feil forsøk velger datamaskinen en ny kode.</p>
+      </details>
+      <details>
+        <summary>Opptaket er stille</summary>
+        <p>Strømmeapper stopper som regel opptak. Spill musikken høyt og ta den opp med mikrofonen, eller åpne en fil du har.</p>
+      </details>
+      <details>
+        <summary>Mange toner er merket med spørsmålstegn</summary>
+        <p>Sjekk svaret på <em>Hva er dette?</em>: et band spilt inn som <em>Ett instrument</em> gir rare resultater. Et tydeligere opptak, med mindre prat og romstøy, hjelper også.</p>
+      </details>
+      <p><a class="to-top" href="#main">Tilbake til toppen</a></p>
+    </section>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Brasscribe Play og Brasscribe Studio</span>
+    <span><a href="../">Forside</a> · <a href="https://github.com/181192/brasscribe">Kildekode</a></span>
+  </div>
+</footer>
+</body>
+</html>

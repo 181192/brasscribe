@@ -1,3 +1,4 @@
+using Brasscribe.Play.Core.Engine;
 using Brasscribe.Play.Core.TalkingScore;
 using Brasscribe.Play.Core.ViewModels;
 using Microsoft.UI.Xaml;
@@ -30,4 +31,8 @@ public sealed partial class SettingsDialog : ContentDialog
         ViewModel.Verbosity = (Verbosity)Math.Max(0, VerbosityBox.SelectedIndex);
 
     private async void OnConnect(object sender, RoutedEventArgs e) => await ViewModel.ConnectCommand.ExecuteAsync(_main.Engine);
+
+    private async void OnFindEngines(object sender, RoutedEventArgs e) => await ViewModel.FindEnginesCommand.ExecuteAsync(null);
+
+    private void OnEngineClicked(object sender, ItemClickEventArgs e) => ViewModel.UseEngineCommand.Execute(e.ClickedItem as DiscoveredEngine);
 }

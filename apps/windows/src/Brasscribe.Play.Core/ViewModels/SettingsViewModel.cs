@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Brasscribe.Play.Core.Engine;
 using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.TalkingScore;
@@ -12,19 +13,26 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ISettingsStore _store;
     private readonly IAnnouncer _announcer;
     private readonly IStrings _s;
+    private readonly IEngineDiscovery _discovery;
 
-    public SettingsViewModel(ISettingsStore store, IAnnouncer announcer, IStrings strings)
+    public SettingsViewModel(ISettingsStore store, IAnnouncer announcer, IStrings strings, IEngineDiscovery? discovery = null)
     {
         _store = store;
         _announcer = announcer;
         _s = strings;
+        _discovery = discovery ?? new EngineDiscovery();
         Language = store.Get(nameof(Language), "system");
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
         Verbosity = store.Get(nameof(Verbosity), Verbosity.Standard);
         EngineAddress = store.Get(nameof(EngineAddress), EngineClient.DefaultBaseAddress.ToString());
         EngineToken = store.Get<string?>(nameof(EngineToken), null);
+        FirstRunDone = store.Get(nameof(FirstRunDone), false);
     }
+
+    /// <summary>The first-run screen was seen (it shows once).</summary>
+    [ObservableProperty] public partial bool FirstRunDone { get; set; }
+    partial void OnFirstRunDoneChanged(bool value) => _store.Set(nameof(FirstRunDone), value);
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
@@ -44,6 +52,37 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnEngineTokenChanged(string? value) => _store.Set(nameof(EngineToken), value);
 
     public Uri EngineUri => Uri.TryCreate(EngineAddress, UriKind.Absolute, out var u) ? u : EngineClient.DefaultBaseAddress;
+
+    /// <summary>Engines advertising themselves on the local network, from the last search.</summary>
+    public ObservableCollection<DiscoveredEngine> DiscoveredEngines { get; } = [];
+
+    [RelayCommand]
+    private async Task FindEnginesAsync()
+    {
+        EngineStatus = _s["Settings_Engine_Searching"];
+        var found = await _discovery.BrowseAsync(TimeSpan.FromSeconds(3));
+        DiscoveredEngines.Clear();
+        foreach (var e in found) DiscoveredEngines.Add(e);
+        EngineStatus = found.Count switch
+        {
+            0 => _s["Settings_Engine_NoneFound"],
+            1 => _s.Format("Settings_Engine_FoundOne", found[0].Name),
+            _ => _s.Format("Settings_Engine_FoundMany", found.Count),
+        };
+        _announcer.Announce(EngineStatus, AnnouncementKind.Important);
+    }
+
+    /// <summary>Points the app at a discovered engine; a token from another engine is dropped.</summary>
+    [RelayCommand]
+    private void UseEngine(DiscoveredEngine? engine)
+    {
+        if (engine is null) return;
+        var address = engine.BaseAddress.ToString();
+        if (!Uri.TryCreate(EngineAddress, UriKind.Absolute, out var current) || current != engine.BaseAddress) EngineToken = null;
+        EngineAddress = address;
+        EngineStatus = _s.Format("Settings_Engine_Chosen", engine.Name);
+        _announcer.Announce(EngineStatus, AnnouncementKind.Important);
+    }
 
     /// <summary>Checks the engine and pairs when it asks for a code (LAN engines).</summary>
     [RelayCommand]

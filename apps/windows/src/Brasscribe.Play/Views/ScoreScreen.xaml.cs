@@ -8,33 +8,35 @@ using Brasscribe.Play.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Storage.Streams;
 
 namespace Brasscribe.Play.Views;
 
 /// <summary>
-/// Review and practice screen. Renders the selected part (or the full score) with alphaTab's Skia
-/// engine into bitmaps, draws the overlays from alphaTab's bounds, and keeps the notation, the
-/// talking score and the player in step.
+/// The score and the part view. Renders the selected part (or the full score) with alphaTab's Skia
+/// engine into bitmaps, draws the design overlays from alphaTab's bounds, and keeps the notation, the
+/// talking score and the player in step. With one part chosen it becomes the part view: a page with
+/// the part's header, no parts panel, and the player's own part muted.
 /// </summary>
-public sealed partial class ScoreScreen : UserControl
+public sealed partial class ScoreScreen : Page, IScreenPage
 {
     private ScoreLayout? _layout;
-    private readonly LazyScoreRenderer _renderer = new("skia");
+    private readonly LazyScoreRenderer _renderer = ScoreRendering.Renderer;
     private readonly HashSet<string> _requested = [];
     private int[] _tracks = [];
     private bool _renderQueued;
-    private int _lastCursorBar = -1;
 
     public ScoreScreen()
     {
         InitializeComponent();
         Notation.LeaveRequested += (_, _) => PlayButton.Focus(FocusState.Keyboard);
+        Notation.MarkInvoked += (_, _) => Main?.CheckNotesCommand.Execute(null);
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
         Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
-        Loaded += (_, _) => FillKeyBox();
+        ActualThemeChanged += (_, _) => QueueRender(); // the notation itself is drawn in the theme's ink
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
     }
 
@@ -47,15 +49,16 @@ public sealed partial class ScoreScreen : UserControl
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(nameof(ViewModel), typeof(ScoreViewModel), typeof(ScoreScreen), new PropertyMetadata(null, OnViewModelChanged));
 
-    public OutputOptionsViewModel Output
-    {
-        get => (OutputOptionsViewModel)GetValue(OutputProperty);
-        set => SetValue(OutputProperty, value);
-    }
+    public MainViewModel? Main { get; private set; }
 
-    public static readonly DependencyProperty OutputProperty =
-        DependencyProperty.Register(nameof(Output), typeof(OutputOptionsViewModel), typeof(ScoreScreen),
-            new PropertyMetadata(null, (d, _) => ((ScoreScreen)d).Bindings.Update()));
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        Main = (MainViewModel)e.Parameter;
+        if (!ReferenceEquals(ViewModel, Main.Score)) ViewModel = Main.Score;
+        else Bindings.Update();
+        FillPartPicker();
+        SyncChoices();
+    }
 
     private static void OnViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -76,7 +79,11 @@ public sealed partial class ScoreScreen : UserControl
         self.Bindings.Update();
     }
 
-    public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+    public void FocusHeading()
+    {
+        if (ViewModel.IsPartView) PartHeading.Focus(FocusState.Programmatic);
+        else Heading.Focus(FocusState.Programmatic);
+    }
 
     public void FocusScore()
     {
@@ -94,6 +101,23 @@ public sealed partial class ScoreScreen : UserControl
         FocusScore();
     }
 
+    private async void OnEditTitle(object sender, RoutedEventArgs e)
+    {
+        if (Main is null) return;
+        var input = new TextBox { Text = ViewModel.Title, MaxLength = 160, Width = 360 };
+        var strings = App.Strings;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = strings["Score_EditTitle"],
+            Content = input,
+            PrimaryButtonText = strings["Score_SaveTitle"],
+            CloseButtonText = strings["Score_CancelTitle"],
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -106,27 +130,88 @@ public sealed partial class ScoreScreen : UserControl
             case nameof(ScoreViewModel.HasVideo):
                 AttachVideo();
                 break;
-            case nameof(ScoreViewModel.SelectedPartIndex) or nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
+            case nameof(ScoreViewModel.SelectedPartIndex):
+                ApplyPageLayout();
+                UpdatePartPickerLabel();
                 QueueRender();
                 break;
+            case nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
+                SyncChoices();
+                QueueRender();
+                break;
+            case nameof(ScoreViewModel.ListeningTo):
+                SyncChoices();
+                break;
             case nameof(ScoreViewModel.UncertainLeft):
-                DrawOverlays(); // rings only; notehead colours follow on the next render
+                QueueRender(); // a kept note loses its "?" and its colour
                 break;
         }
     }
 
+    /// <summary>"All parts" and each part as radio items; choosing one opens the part view.</summary>
     private void FillPartPicker()
     {
-        PartPicker.Items.Clear();
-        PartPicker.Items.Add(new ComboBoxItem { Content = App.Strings["Score_FullScore"], Tag = -1 });
-        foreach (var p in ViewModel.Parts) PartPicker.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Index });
-        PartPicker.SelectedIndex = ViewModel.SelectedPartIndex + 1;
+        PartMenu.Items.Clear();
+        void Add(string name, int index)
+        {
+            var item = new RadioMenuFlyoutItem { Text = name, GroupName = "Parts", Tag = index, IsChecked = ViewModel.SelectedPartIndex == index };
+            item.Click += (_, _) => ViewModel.SelectedPartIndex = index;
+            PartMenu.Items.Add(item);
+        }
+        Add(App.Strings["Score_FullScore"], -1);
+        foreach (var p in ViewModel.Parts) Add(p.Name, p.Index);
+        UpdatePartPickerLabel();
+        ApplyPageLayout();
     }
 
-    private void OnPartSelected(object sender, SelectionChangedEventArgs e)
+    private void UpdatePartPickerLabel()
     {
-        if (PartPicker.SelectedItem is ComboBoxItem { Tag: int index }) ViewModel.SelectedPartIndex = index;
+        int i = ViewModel.SelectedPartIndex;
+        PartPickerLabel.Text = i >= 0 && i < ViewModel.Parts.Count ? ViewModel.Parts[i].Name : App.Strings["Score_FullScore"];
+        foreach (var item in PartMenu.Items.OfType<RadioMenuFlyoutItem>()) item.IsChecked = item.Tag is int t && t == i;
     }
+
+    /// <summary>The part view is a page on the paper, centred and at most 960 wide; the full score is full width.</summary>
+    private void ApplyPageLayout()
+    {
+        bool part = ViewModel.IsPartView;
+        PageFrame.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[part ? "BcSurfaceBrush" : "BcBgBrush"];
+        PageSheet.MaxWidth = part ? 960 : double.PositiveInfinity;
+        PageSheet.Margin = part ? new Thickness(24, 24, 24, 0) : new Thickness(0);
+        PageSheet.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+    }
+
+    private bool _syncing;
+
+    /// <summary>The segments follow the view model (pitch, which audio plays).</summary>
+    private void SyncChoices()
+    {
+        if (ViewModel is null) return;
+        _syncing = true;
+        WrittenChoice.IsChecked = !ViewModel.ConcertPitch;
+        ConcertChoice.IsChecked = ViewModel.ConcertPitch;
+        HearBand.IsChecked = ViewModel.ListeningTo == ListeningSource.Score;
+        HearRecording.IsChecked = ViewModel.ListeningTo == ListeningSource.Original;
+        _syncing = false;
+    }
+
+    private void OnPitchChecked(object sender, RoutedEventArgs e)
+    {
+        if (_syncing) return;
+        ViewModel.ConcertPitch = ReferenceEquals(sender, ConcertChoice);
+    }
+
+    private void OnHearChecked(object sender, RoutedEventArgs e)
+    {
+        if (_syncing) return;
+        var wanted = ReferenceEquals(sender, HearRecording) ? ListeningSource.Original : ListeningSource.Score;
+        if (ViewModel.ListeningTo != wanted) ViewModel.SwitchSource();
+        SyncChoices();
+    }
+
+    private void OnCheckThem(object sender, RoutedEventArgs e) => Main?.CheckNotesCommand.Execute(null);
+
+    private void OnChooseOutput(object sender, RoutedEventArgs e) => Main?.ChooseOutputCommand.Execute(null);
 
     /// <summary>Renders once per UI turn however many settings changed.</summary>
     private void QueueRender()
@@ -152,8 +237,7 @@ public sealed partial class ScoreScreen : UserControl
         _tracks = ViewModel.SelectedPartIndex >= 0 ? [ViewModel.SelectedPartIndex] : player.Tracks.Select(t => t.Index).ToArray();
         bool concert = ViewModel.ConcertPitch;
         var display = player.Tracks.ToDictionary(t => t.Index, t => t.DisplayTransposition);
-        var palette = UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
-        if (new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast) palette = UncertaintyPalette.HighContrast;
+        var palette = Palette();
         // Above 200 % a single part reflows into one horizontal line so scrolling goes one way.
         var mode = ViewModel.ZoomPercent > 200 && ViewModel.SelectedPartIndex >= 0 ? AlphaTab.LayoutMode.Horizontal : AlphaTab.LayoutMode.Page;
         double width = Math.Max(400, Notation.ActualWidth - 24);
@@ -165,7 +249,7 @@ public sealed partial class ScoreScreen : UserControl
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        });
+        }, palette);
         if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
 
         _layout = layout;
@@ -203,15 +287,22 @@ public sealed partial class ScoreScreen : UserControl
         if (generation == _renderer.Generation) Notation.SetPageImage(id, bitmap);
     }
 
+    /// <summary>The score colours of the current theme (a stand-in in contrast themes, where XAML uses system colours).</summary>
+    private UncertaintyPalette Palette() =>
+        ScoreView.IsHighContrast() ? UncertaintyPalette.HighContrast
+        : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
+
+    private IReadOnlyList<Box> _loopBoxes = [];
+
+    /// <summary>"?" marks, the repeated bars and the ad lib bars, planned in Core and drawn by the score view.</summary>
     private void DrawOverlays()
     {
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
-        Notation.SetNoteMarks(ScoreGeometry.UncertainHeads(player.Score, bounds, ViewModel.Document!, _tracks)
-            .Select(h => new NoteMark(ToRect(h.Head), h.Level)));
-
-        var loop = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last).Select(ToRect) : [];
-        var adlib = ViewModel.Document!.FreeRegions.SelectMany(r => ScoreGeometry.RangeBoxes(bounds, r.StartBar - 1, r.EndBar - 1)).Select(ToRect);
-        Notation.SetBands(loop, adlib);
+        var heads = ScoreGeometry.UncertainHeads(player.Score, bounds, ViewModel.Document!, _tracks);
+        _loopBoxes = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last) : [];
+        string? label = player.Loop is { } loop ? App.Strings.Format("Score_LoopLabel", loop.First + 1, loop.Last + 1) : null;
+        Notation.SetOverlay(ScoreOverlay.Build(new(heads, _loopBoxes, label, ScoreGeometry.AdlibRegions(bounds, ViewModel.Document!),
+            null, null, ScoreView.IsHighContrast())));
         UpdateFocus();
     }
 
@@ -252,12 +343,7 @@ public sealed partial class ScoreScreen : UserControl
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
         if (ScoreGeometry.Cursor(player.TickLookup, bounds, _tracks, p.Tick) is { } c)
         {
-            Notation.SetCursor(ToRect(c.Beat), ToRect(c.Bar));
-            if (p.BarIndex != _lastCursorBar)
-            {
-                _lastCursorBar = p.BarIndex;
-                if (player.Loop is null) DrawOverlays();
-            }
+            Notation.SetCursor(ScoreOverlay.Cursor(c.Beat, c.Bar, _loopBoxes, ScoreView.IsHighContrast()));
         }
     }
 
@@ -282,27 +368,17 @@ public sealed partial class ScoreScreen : UserControl
         DrawOverlays();
     }
 
-    private void OnPlayAlong(object sender, RoutedEventArgs e) => ViewModel.Player.TogglePlayAlongCommand.Execute(null);
-
-    private void OnLineupChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (Output is not null) Output.Lineup = LineupBox.SelectedIndex == 1 ? Lineup.MinimalBand : Lineup.FullBand;
-    }
-
-    private void OnApplyOutput(object sender, RoutedEventArgs e) => Output.ApplyCommand.Execute(ViewModel.Composition);
-
     private VideoWindow? _pip;
     private VideoFollower? _follower;
 
-    private void OnSwitchSource(object sender, RoutedEventArgs e) => ViewModel.SwitchSource();
-
     private Services.MediaPlayerOriginal? Media => ViewModel.Original as Services.MediaPlayerOriginal;
 
-    /// <summary>Shows the original video in the score screen once a score with a video loads.</summary>
+    /// <summary>Shows the original video in the parts panel once a score with a video loads.</summary>
     private void AttachVideo()
     {
         _follower = ViewModel.Original is { } o && ViewModel.TimeMap is { } map ? new VideoFollower(o, map) : null;
         if (Media is { } media && ViewModel.HasVideo && _pip is null) VideoView.SetMediaPlayer(media.Player);
+        SyncChoices();
     }
 
     private void OnPictureInPicture(object sender, RoutedEventArgs e)
@@ -320,26 +396,8 @@ public sealed partial class ScoreScreen : UserControl
             _pip?.Detach();
             _pip = null;
             VideoView.SetMediaPlayer(media.Player);
-            PipButton.Focus(FocusState.Programmatic);
+            ViewMenuButton.Focus(FocusState.Programmatic);
         };
         _pip.Activate();
-    }
-
-    private void OnDifficultyChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (Output is not null) Output.Difficulty = (Difficulty)Math.Max(0, DifficultyBox.SelectedIndex);
-    }
-
-    private void OnKeyChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (Output is not null && KeyBox.SelectedIndex >= 0) Output.KeyIndex = KeyBox.SelectedIndex;
-    }
-
-    private void FillKeyBox()
-    {
-        if (KeyBox.Items.Count > 0) return;
-        foreach (var key in OutputOptionsViewModel.Keys)
-            KeyBox.Items.Add(new ComboBoxItem { Content = App.Strings[key is null ? "Key_AsRecorded" : $"Key_{key}"] });
-        KeyBox.SelectedIndex = 0;
     }
 }

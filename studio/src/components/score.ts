@@ -8,6 +8,7 @@ import { Navigator, type Stop } from "../lib/navigator";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
 import { announce, clear, h, nextId, prefersReducedMotion } from "../ui/dom";
+import { icon } from "../ui/icons";
 
 declare const alphaTab: typeof AT;
 
@@ -25,8 +26,27 @@ export interface NoteMark {
 }
 
 const ASSETS = new URL("assets/alphatab/", document.baseURI).href;
-// The score is white paper in every theme, so marks use light-theme token values.
-const PAPER_UNCERTAIN = "#0063A6";
+
+/**
+ * A design token as a concrete colour. Tokens can be system colours (forced
+ * colours) or use var(), so the value is resolved through a probe element.
+ */
+export function tokenColour(name: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(--bc-${name})`;
+  probe.style.display = "none";
+  document.body.append(probe);
+  const c = getComputedStyle(probe).color;
+  probe.remove();
+  const m = c.match(/\d+(\.\d+)?/g);
+  if (!m || m.length < 3) return "#000000";
+  return `#${m.slice(0, 3).map((x) => Math.round(Number(x)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Label text inside an icon button, so the label can change without losing the icon. */
+function labelled(name: string, text: string): [SVGSVGElement, HTMLSpanElement] {
+  return [icon(name), h("span", { class: "label" }, text)];
+}
 
 export class ScoreElement extends HTMLElement {
   api: AT.AlphaTabApi | null = null;
@@ -67,6 +87,10 @@ export class ScoreElement extends HTMLElement {
   private pitchSel!: HTMLSelectElement;
   private verbSel!: HTMLSelectElement;
   private uncertainCount = 0;
+  private legend!: HTMLElement;
+  private marks: HTMLDivElement | null = null;
+  private bands: HTMLDivElement | null = null;
+  private themeWatch: (() => void) | null = null;
   private barPlay: number | null = null; // bar index while "play bar" runs
   private barPending: number | null = null; // set by playBar until the player reports playing
 
@@ -74,11 +98,12 @@ export class ScoreElement extends HTMLElement {
     if (this.view) return;
     const id = nextId("score");
     this.classList.add("score-shell");
-    this.playBtn = h("button", { type: "button", class: "primary", "aria-keyshortcuts": "Space", onclick: () => this.togglePlay() }, t("score.play"));
+    // One primary per screen: pages that show two scores pass data-play="secondary".
+    this.playBtn = h("button", { type: "button", class: this.dataset.play === "secondary" ? null : "primary", "aria-keyshortcuts": "Space", onclick: () => this.togglePlay() }, ...labelled("play", t("score.play")));
     this.barInput = h("input", { type: "number", min: 1, value: 1, id: `${id}-bar`, inputmode: "numeric" });
     this.loopFrom = h("input", { type: "number", min: 1, value: 1, id: `${id}-lf`, inputmode: "numeric" });
     this.loopTo = h("input", { type: "number", min: 1, value: 4, id: `${id}-lt`, inputmode: "numeric" });
-    this.loopBtn = h("button", { type: "button", "aria-pressed": "false", "aria-keyshortcuts": "L", onclick: () => this.toggleLoop() }, t("score.loop"));
+    this.loopBtn = h("button", { type: "button", "aria-keyshortcuts": "L", onclick: () => this.toggleLoop() }, ...labelled("loop", t("score.loop")));
     this.speed = h("input", { type: "range", min: 25, max: 200, step: 5, value: 100, id: `${id}-speed`, oninput: () => this.setSpeed(Number(this.speed.value) / 100) });
     this.speedOut = h("output", { for: `${id}-speed` }, "100%");
     this.zoomOut = h("output", {}, "100%");
@@ -93,23 +118,23 @@ export class ScoreElement extends HTMLElement {
     const transport = h("div", { class: "transport", role: "group", "aria-label": t("score.player") },
       h("div", { class: "group" },
         this.playBtn,
-        h("button", { type: "button", onclick: () => this.stop() }, t("score.stop")),
-        h("button", { type: "button", "aria-keyshortcuts": "P", onclick: () => this.playBar() }, t("score.playBar"))),
+        h("button", { type: "button", onclick: () => this.stop() }, ...labelled("stop", t("score.stop"))),
+        h("button", { type: "button", "aria-keyshortcuts": "P", onclick: () => this.playBar() }, ...labelled("listen-bar", t("score.playBar")))),
       h("div", { class: "group" },
-        h("button", { type: "button", "aria-label": t("score.prevBar"), "aria-keyshortcuts": "Alt+ArrowUp", onclick: () => this.goBar(this.current - 1) }, "◀"),
+        h("button", { type: "button", class: "icon-only", "aria-label": t("score.prevBar"), "aria-keyshortcuts": "Alt+ArrowUp", onclick: () => this.goBar(this.current - 1) }, icon("previous-bar")),
         h("label", { for: `${id}-bar` }, t("score.bar")), this.barInput,
         h("button", { type: "button", onclick: () => this.goBar(Number(this.barInput.value) - 1, true) }, t("score.go")),
-        h("button", { type: "button", "aria-label": t("score.nextBar"), "aria-keyshortcuts": "Alt+ArrowDown", onclick: () => this.goBar(this.current + 1) }, "▶")),
+        h("button", { type: "button", class: "icon-only", "aria-label": t("score.nextBar"), "aria-keyshortcuts": "Alt+ArrowDown", onclick: () => this.goBar(this.current + 1) }, icon("next-bar"))),
       h("div", { class: "group", role: "group", "aria-label": t("score.loop") },
         h("label", { for: `${id}-lf` }, t("score.loopFrom")), this.loopFrom,
         h("label", { for: `${id}-lt` }, t("score.loopTo")), this.loopTo, this.loopBtn),
       h("div", { class: "group" },
-        h("label", { for: `${id}-speed` }, t("score.speed")), this.speed, this.speedOut,
+        h("label", { for: `${id}-speed` }, icon("speed"), t("score.speed")), this.speed, this.speedOut,
         h("button", { type: "button", onclick: () => this.setSpeed(1) }, t("score.reset"))),
       h("div", { class: "group", role: "group", "aria-label": t("score.zoom") },
-        h("button", { type: "button", "aria-label": t("common.zoomOut"), onclick: () => this.zoom(this.scale - 0.1) }, "−"),
+        h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomOut"), onclick: () => this.zoom(this.scale - 0.1) }, icon("zoom-out")),
         this.zoomOut,
-        h("button", { type: "button", "aria-label": t("common.zoomIn"), onclick: () => this.zoom(this.scale + 0.1) }, "+")),
+        h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomIn"), onclick: () => this.zoom(this.scale + 0.1) }, icon("zoom-in"))),
       h("div", { class: "group" }, h("label", { for: `${id}-part` }, t("score.show")), this.partSelect));
     const help = h("p", { id: `${id}-help`, class: "visually-hidden" }, t("score.help"));
 
@@ -121,7 +146,7 @@ export class ScoreElement extends HTMLElement {
     this.talkNow = h("p", { class: "talk-now", id: `${id}-now` });
     this.talkText = h("div", { class: "talk-text", tabindex: 0, role: "region", "aria-label": t("score.talking") });
     this.talkPanel = h("details", { class: "card talking" },
-      h("summary", {}, t("score.talking")),
+      h("summary", {}, icon("talking-score"), " ", t("score.talking")),
       h("p", { class: "hint" }, t("score.talkingHint")),
       h("div", { class: "row" },
         h("label", { for: `${id}-pm` }, t("score.pitchMode")), this.pitchSel,
@@ -130,13 +155,39 @@ export class ScoreElement extends HTMLElement {
     this.talkPanel.addEventListener("toggle", () => {
       if (this.talkPanel.open) this.renderTalkingText();
     });
-    this.append(transport, this.view, this.statusEl, help, this.talkPanel,
-      h("details", { class: "card" }, h("summary", {}, t("score.mixer")), this.mixer));
+    this.legend = h("p", { class: "score-legend" });
+    this.append(transport, this.view, this.statusEl, this.legend, help, this.talkPanel,
+      h("details", { class: "card" }, h("summary", {}, icon("parts"), " ", t("score.mixer")), this.mixer));
   }
 
   disconnectedCallback(): void {
     this.api?.destroy();
     this.api = null;
+    this.themeWatch?.();
+    this.themeWatch = null;
+  }
+
+  /** alphaTab colours from the design tokens (ink, staff), so the notation follows the theme. */
+  private resources(): Record<string, string> {
+    const ink = tokenColour("ink");
+    const staff = tokenColour("staff");
+    const muted = tokenColour("text-muted");
+    return { mainGlyphColor: ink, secondaryGlyphColor: ink, scoreInfoColor: tokenColour("text"), staffLineColor: staff, barSeparatorColor: staff, barNumberColor: muted };
+  }
+
+  /** Re-colour the notation when the theme changes (dark mode, more contrast, forced colours). */
+  private watchTheme(): void {
+    if (this.themeWatch) return;
+    const queries = ["(prefers-color-scheme: dark)", "(prefers-contrast: more)", "(forced-colors: active)"].map((q) => matchMedia(q));
+    const onChange = () => {
+      if (!this.api?.score) return;
+      Object.assign(this.api.settings.display.resources, Object.fromEntries(Object.entries(this.resources()).map(([k, v]) => [k, alphaTab.model.Color.fromJson(v)])));
+      this.markNotes(this.api.score);
+      this.api.updateSettings();
+      this.api.render();
+    };
+    for (const q of queries) q.addEventListener("change", onChange);
+    this.themeWatch = () => queries.forEach((q) => q.removeEventListener("change", onChange));
   }
 
   /** Load a MusicXML document (text) and render it. Resolves when the first render finishes. */
@@ -159,10 +210,14 @@ export class ScoreElement extends HTMLElement {
     this.ready = false;
     this.rendered = false;
     const surface = h("div", {});
-    this.view.append(surface);
+    this.marks = h("div", { class: "score-marks", "aria-hidden": "true" });
+    this.bands = h("div", { class: "score-bands", "aria-hidden": "true" });
+    // alphaTab owns its container's attributes, so the stacking wrapper is a separate element.
+    this.view.append(this.bands, h("div", { class: "score-surface" }, surface), this.marks);
+    this.watchTheme();
     const settings: AT.json.SettingsJson = {
-      core: { fontDirectory: `${ASSETS}font/`, logLevel: "warning" },
-      display: { layoutMode: "page", scale: this.scale, staveProfile: "score" },
+      core: { fontDirectory: `${ASSETS}font/`, logLevel: "warning", includeNoteBounds: true, enableLazyLoading: false },
+      display: { layoutMode: "page", scale: this.scale, staveProfile: "score", resources: this.resources() },
       player: {
         playerMode: "enabledSynthesizer",
         soundFont: `${ASSETS}soundfont/sonivox.sf2`,
@@ -178,6 +233,7 @@ export class ScoreElement extends HTMLElement {
     this.api = api;
     const rendered = new Promise<void>((resolve, reject) => {
       api.postRenderFinished.on(() => {
+        this.drawMarks();
         this.rendered = true;
         this.dispatchEvent(new CustomEvent("rendered"));
         resolve();
@@ -202,7 +258,7 @@ export class ScoreElement extends HTMLElement {
         this.api.playbackRange = null;
         this.goBar(b, false);
       }
-      this.playBtn.textContent = this.playing ? t("score.pause") : t("score.play");
+      this.playBtn.replaceChildren(...labelled(this.playing ? "pause" : "play", this.playing ? t("score.pause") : t("score.play")));
       this.updateStatus();
     });
     api.playerPositionChanged.on((e: { currentTick: number; currentTime: number; endTime: number; isSeek: boolean }) => {
@@ -241,11 +297,23 @@ export class ScoreElement extends HTMLElement {
       score.tracks.map((_, i) => h("option", { value: String(i), selected: this.tracks?.length === 1 && this.tracks[0] === i }, this.partLabel(i))));
     clear(this.mixer, score.tracks.map((tr, i) => {
       const name = this.partLabel(i);
-      const mute = h("input", { type: "checkbox", "aria-label": t("score.muteName", { name }), onchange: () => this.api?.changeTrackMute([tr], mute.checked) });
-      const solo = h("input", { type: "checkbox", "aria-label": t("score.soloName", { name }), onchange: () => this.api?.changeTrackSolo([tr], solo.checked) });
+      const toggle = (kind: "mute" | "solo") => {
+        const b: HTMLButtonElement = h("button", {
+          type: "button", class: "toggle", "aria-pressed": "false", "data-kind": kind,
+          "aria-label": kind === "mute" ? t("score.muteName", { name }) : t("score.soloName", { name }),
+          title: kind === "solo" ? t("score.soloTip") : null,
+          onclick: () => {
+            const on = b.getAttribute("aria-pressed") !== "true";
+            b.setAttribute("aria-pressed", String(on));
+            if (kind === "mute") this.api?.changeTrackMute([tr], on);
+            else this.api?.changeTrackSolo([tr], on);
+          },
+        }, icon(kind === "mute" ? "mute" : "solo"), kind === "mute" ? t("score.mute") : t("score.solo"));
+        return b;
+      };
       return h("div", { class: `part${i === this.partIndex ? " current" : ""}`, "data-track": i },
         h("span", { class: "part-name" }, name),
-        h("span", { class: "row" }, h("label", {}, mute, t("score.mute")), h("label", {}, solo, t("score.solo"))));
+        h("span", { class: "row" }, toggle("mute"), toggle("solo")));
     }));
     this.current = 0;
     // Without the part list from our own reader alphaTab renders only the first track; show them all.
@@ -254,13 +322,15 @@ export class ScoreElement extends HTMLElement {
   }
 
   /**
-   * Notes the engine coloured in the MusicXML are uncertain. alphaTab keeps no
-   * MusicXML colours, so they get the `uncertain` colour and parentheses
-   * (shape as well as colour; WCAG 1.4.1). `decorate` adds marks on top.
+   * Notes the engine marked uncertain get the `uncertain` or `very-uncertain`
+   * colour here; the "?" (boxed below 0.4) is drawn over the notation by
+   * drawMarks(), so colour is never the only signal (visual-design-tokens.md §2).
+   * `decorate` adds marks on top (Compare).
    */
   private markNotes(score: AT.model.Score): number {
     if (!this.xml) return 0;
     const M = alphaTab.model;
+    const colours = { u: M.Color.fromJson(tokenColour("uncertain")), vu: M.Color.fromJson(tokenColour("very-uncertain")) };
     let marked = 0;
     score.tracks.forEach((track, ti) => {
       const part = this.xml!.parts[ti];
@@ -269,6 +339,8 @@ export class ScoreElement extends HTMLElement {
       part.notes.forEach((n, i) => (byBar.get(n.barIndex) ?? byBar.set(n.barIndex, []).get(n.barIndex)!).push(i));
       const staff = track.staves[0];
       staff?.bars.forEach((bar, bi) => {
+        // The "?" words directions are drawn by drawMarks() in the note colour, not as plain text.
+        for (const v of bar.voices) for (const b of v.beats) if (b.text?.trim() === "?") b.text = null;
         const idx = byBar.get(bi);
         if (!idx) return;
         const notes = bar.voices.flatMap((v) => v.beats.flatMap((b) => b.notes));
@@ -276,13 +348,14 @@ export class ScoreElement extends HTMLElement {
         notes.forEach((note, k) => {
           const xn = part.notes[idx[k]];
           const extra = this.decorate?.(ti, idx[k], xn) ?? null;
-          if (!xn.color && !extra) return;
-          const style = new M.NoteStyle();
-          if (xn.color) {
-            note.isGhost = true;
-            marked++;
+          note.isGhost = false;
+          if (!xn.level && !extra) {
+            note.style = undefined;
+            return;
           }
-          style.colors.set(M.NoteSubElement.StandardNotationNoteHead, M.Color.fromJson(extra?.colour ?? PAPER_UNCERTAIN));
+          const style = new M.NoteStyle();
+          if (xn.level) marked++;
+          style.colors.set(M.NoteSubElement.StandardNotationNoteHead, extra ? M.Color.fromJson(extra.colour) : colours[xn.level!]);
           if (extra?.head && extra.head !== "paren") {
             const d = note.beat.duration as number; // 1 whole, 2 half, 4 quarter …
             const kind = d <= 1 ? "Whole" : d === 2 ? "Half" : "Black";
@@ -293,12 +366,63 @@ export class ScoreElement extends HTMLElement {
             const sym = (M.MusicFontSymbol as unknown as Record<string, number>)[names[extra.head]];
             if (sym !== undefined) style.noteHead = sym as unknown as AT.model.MusicFontSymbol;
           }
-          if (extra?.head === "paren") note.isGhost = true;
           note.style = style;
         });
       });
     });
     return marked;
+  }
+
+  /**
+   * Draw the "?" above each uncertain note (a boxed "?" when very uncertain),
+   * outside the staff, in the note's colour, plus the ad lib band behind
+   * free-time bars. Positions come from alphaTab's bounds lookup.
+   */
+  private drawMarks(): void {
+    const layer = this.marks;
+    const api = this.api;
+    const lookup = (api?.renderer as unknown as { boundsLookup?: AT.rendering.BoundsLookup } | undefined)?.boundsLookup;
+    if (!layer || !api?.score || !lookup || !this.xml) return;
+    layer.replaceChildren();
+    const surface = this.view.querySelector<HTMLElement>(".score-surface");
+    this.bands?.replaceChildren();
+    const ox = surface?.offsetLeft ?? 0;
+    const oy = surface?.offsetTop ?? 0;
+    // Ad lib bands (tints never stack: the loop tint is drawn above them by alphaTab).
+    for (const [from, to] of this.xml.adlib) {
+      for (let i = from; i <= to; i++) {
+        const mb = lookup.findMasterBarByIndex(i);
+        if (!mb) continue;
+        const r = mb.realBounds;
+        this.bands?.append(h("span", { class: "adlib", style: `left:${ox + r.x}px;top:${oy + r.y}px;width:${r.w}px;height:${r.h}px` }));
+      }
+    }
+    api.score.tracks.forEach((track, ti) => {
+      const part = this.xml!.parts[ti];
+      if (!part?.notes.some((n) => n.level)) return;
+      const byBar = new Map<number, number[]>();
+      part.notes.forEach((n, i) => (byBar.get(n.barIndex) ?? byBar.set(n.barIndex, []).get(n.barIndex)!).push(i));
+      track.staves[0]?.bars.forEach((bar, bi) => {
+        const idx = byBar.get(bi);
+        if (!idx) return;
+        const notes = bar.voices.flatMap((v) => v.beats.flatMap((b) => b.notes));
+        if (notes.length !== idx.length) return;
+        let lastX = -1e9;
+        notes.forEach((note, k) => {
+          const level = part.notes[idx[k]].level;
+          if (!level) return;
+          const bb = lookup.findBeat(note.beat);
+          const nb = bb?.notes?.find((x) => x.note === note);
+          if (!bb || !nb) return;
+          const x = nb.noteHeadBounds.x + nb.noteHeadBounds.w / 2;
+          if (Math.abs(x - lastX) < 4) return; // one mark per chord
+          lastX = x;
+          const staffTop = bb.barBounds.visualBounds.y;
+          const y = Math.min(staffTop, nb.noteHeadBounds.y) - 20;
+          layer.append(h("span", { class: `q ${level}`, style: `left:${ox + x}px;top:${oy + y}px` }, "?"));
+        });
+      });
+    });
   }
 
   private barAt(tick: number): number {
@@ -393,7 +517,7 @@ export class ScoreElement extends HTMLElement {
     this.api.playbackRange = { startTick: b.start, endTick: b.end } as AT.synth.PlaybackRange;
     this.api.tickPosition = b.start;
     this.loop = null;
-    this.loopBtn.setAttribute("aria-pressed", "false");
+    this.loopBtn.replaceChildren(...labelled("loop", t("score.loop")));
     this.barPlay = null;
     this.barPending = b.index;
     this.api.play();
@@ -418,8 +542,7 @@ export class ScoreElement extends HTMLElement {
       this.api.isLooping = false;
       announce(t("score.loopOff"));
     }
-    this.loopBtn.setAttribute("aria-pressed", String(on));
-    this.loopBtn.textContent = on ? t("score.loopRange", { a: a + 1, b: b + 1 }) : t("score.loop");
+    this.loopBtn.replaceChildren(...labelled(on ? "close" : "loop", on ? t("score.loopStop") : t("score.loop")));
     this.updateStatus();
   }
 
@@ -485,11 +608,11 @@ export class ScoreElement extends HTMLElement {
 
   toggleMute(solo: boolean): void {
     const row = this.mixer.children[this.partIndex];
-    const box = row?.querySelectorAll("input")[solo ? 1 : 0] as HTMLInputElement | undefined;
-    if (!box) return;
-    box.checked = !box.checked;
-    box.dispatchEvent(new Event("change"));
-    announce(t("score.toggled", { name: this.partLabel(this.partIndex), what: solo ? t("score.solo") : t("score.mute"), state: box.checked ? t("score.on") : t("score.off") }));
+    const btn = row?.querySelector<HTMLButtonElement>(`button[data-kind="${solo ? "solo" : "mute"}"]`);
+    if (!btn) return;
+    btn.click();
+    const on = btn.getAttribute("aria-pressed") === "true";
+    announce(t("score.toggled", { name: this.partLabel(this.partIndex), what: solo ? t("score.solo") : t("score.mute"), state: on ? t("score.on") : t("score.off") }));
   }
 
   /** The talking-score text for the current part: a heading per bar and one line per event (spec §6). */
@@ -615,9 +738,16 @@ export class ScoreElement extends HTMLElement {
       t("score.status.speed", { v: this.speedOut?.textContent ?? "100%" }),
       this.loop ? t("score.loopRange", { a: this.loop.from + 1, b: this.loop.to + 1 }) : "",
       this.api?.score ? t("score.status.part", { name: this.partLabel(this.partIndex) }) : "",
-      this.uncertainCount ? t("score.status.uncertain", { n: this.uncertainCount }) : "",
     ];
     this.statusEl.textContent = parts.filter(Boolean).join(" · ");
+    // Legend: the same "?" marks as on the score, and how many there are.
+    this.legend.hidden = !this.uncertainCount;
+    if (this.uncertainCount) {
+      clear(this.legend,
+        h("span", {}, h("span", { class: "q u", "aria-hidden": "true" }, "?"), t("score.legendU")),
+        h("span", {}, h("span", { class: "q vu", "aria-hidden": "true" }, "?"), t("score.legendVu")),
+        h("span", {}, t("score.legendCount", { n: this.uncertainCount })));
+    }
   }
 }
 

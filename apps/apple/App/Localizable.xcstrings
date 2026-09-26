@@ -1,1896 +1,1927 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "%lld": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld %%" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %%"
+          }
+        }
+      }
+    },
+    "%lld percent" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld prosent"
           }
         }
       }
     },
-    "%lld %%": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld %%"
+    "%lld to download (%lld MB)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld må lastes ned (%lld MB)"
           }
         }
       }
     },
-    "%lld percent": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld prosent"
+    "%lld uncertain notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld usikre noter"
           }
         }
       }
     },
-    "%lld to download (%lld MB)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld må lastes ned (%lld MB)"
+    "A brass band playing together." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et brassband som spiller sammen."
           }
         }
       }
     },
-    "%lld uncertain notes": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld usikre noter"
+    "A single player, for example you practising." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Én utøver, for eksempel deg når du øver."
           }
         }
       }
     },
-    "A brass band playing together.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Et brassband som spiller sammen."
+    "A soloist in front of an orchestra or band." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En solist foran et orkester eller korps."
           }
         }
       }
     },
-    "A single player, for example you practising.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Én utøver, for eksempel deg når du øver."
+    "About" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Om"
           }
         }
       }
     },
-    "A soloist in front of an orchestra or band.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En solist foran et orkester eller korps."
+    "About %lld min left" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omtrent %lld min igjen"
           }
         }
       }
     },
-    "About": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Om"
+    "Address" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
           }
         }
       }
     },
-    "About %lld min left": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Omtrent %lld min igjen"
+    "All parts" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle stemmer"
           }
         }
       }
     },
-    "Address": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse"
+    "Arrange again on this device" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arranger på nytt på denne enheten"
           }
         }
       }
     },
-    "All parts": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle stemmer"
+    "Arranging for brass band" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrangerer for brassband"
           }
         }
       }
     },
-    "Arrange again on this device": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arranger på nytt på denne enheten"
+    "Audio of the score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lyd av partituret"
           }
         }
       }
     },
-    "Arranging for brass band": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arrangerer for brassband"
+    "available" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tilgjengelig"
           }
         }
       }
     },
-    "Audio of the score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyd av partituret"
+    "Back" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake"
           }
         }
       }
     },
-    "Back": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tilbake"
+    "Bar %lld, beat %lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takt %lld, slag %lld"
           }
         }
       }
     },
-    "Bar %lld, beat %lld": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Takt %lld, slag %lld"
+    "Bars" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takter"
           }
         }
       }
     },
-    "Bars": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Takter"
+    "Bars %lld–%lld: ad lib (free time)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takt %lld–%lld: ad lib (fritt tempo)"
           }
         }
       }
     },
-    "Bars %lld–%lld: ad lib (free time)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Takt %lld–%lld: ad lib (fritt tempo)"
+    "Bars with uncertain notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takter med usikre noter"
           }
         }
       }
     },
-    "Bars with uncertain notes": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Takter med usikre noter"
+    "Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunnlyder: MuseScore General SoundFont (MIT), lastes ned separat."
           }
         }
       }
     },
-    "Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grunnlyder: MuseScore General SoundFont (MIT), lastes ned separat."
+    "Braille music (BRF)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Punktskriftnoter (BRF)"
           }
         }
       }
     },
-    "Braille music (BRF)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Punktskriftnoter (BRF)"
+    "Brass band" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brassband"
           }
         }
       }
     },
-    "Brass band": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brassband"
+    "Brasscribe Play" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brasscribe Play"
           }
         }
       }
     },
-    "Brasscribe Play": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brasscribe Play"
+    "Cancel" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
           }
         }
       }
     },
-    "Cancel": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avbryt"
+    "Cancelled." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbrutt."
           }
         }
       }
     },
-    "Cancelled.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avbrutt."
+    "Check connection" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen"
           }
         }
       }
     },
-    "Check connection": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sjekk tilkoblingen"
+    "Concert" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klingende"
           }
         }
       }
     },
-    "Concert": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klingende"
+    "Concert hall and seating" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konsertsal og plassering"
           }
         }
       }
     },
-    "Concert hall and seating": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konsertsal og plassering"
+    "Connected to Brasscribe %@ (%@)." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koblet til Brasscribe %@ (%@)."
           }
         }
       }
     },
-    "Connected to Brasscribe %@ (%@).": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Koblet til Brasscribe %@ (%@)."
+    "Couldn't arrange on this device." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke arrangere på denne enheten."
           }
         }
       }
     },
-    "Couldn't arrange on this device.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kunne ikke arrangere på denne enheten."
+    "Couldn't open the score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne partituret"
           }
         }
       }
     },
-    "Couldn't open the score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kunne ikke åpne partituret"
+    "Couldn't open this file." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne filen."
           }
         }
       }
     },
-    "Couldn't open this file.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kunne ikke åpne filen."
+    "Count-in" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inntelling"
           }
         }
       }
     },
-    "Count-in": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inntelling"
+    "Count-in %lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inntelling %lld"
           }
         }
       }
     },
-    "Count-in %lld": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inntelling %lld"
+    "Count-in: C · Metronome: M · Play along: A" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inntelling: C · Metronom: M · Spill med: A"
           }
         }
       }
     },
-    "Count-in: C · Metronome: M · Play along: A": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inntelling: C · Metronom: M · Spill med: A"
+    "Delete" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
           }
         }
       }
     },
-    "Delete": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Slett"
+    "Difficulty" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vanskelighetsgrad"
           }
         }
       }
     },
-    "Difficulty": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vanskelighetsgrad"
+    "Done" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
           }
         }
       }
     },
-    "Done": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ferdig"
+    "Double-tap to move playback here." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobbelttrykk for å flytte avspillingen hit."
           }
         }
       }
     },
-    "Double-tap to move playback here.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dobbelttrykk for å flytte avspillingen hit."
+    "Download models" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last ned modellene"
           }
         }
       }
     },
-    "Download models": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Last ned modellene"
+    "Easier" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enklere"
           }
         }
       }
     },
-    "Easier": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enklere"
+    "Engraving the score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setter partituret"
           }
         }
       }
     },
-    "Engraving the score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Setter partituret"
+    "Engraving the score…" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setter partituret …"
           }
         }
       }
     },
-    "Engraving the score…": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Setter partituret …"
+    "Estimating time…" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beregner tid …"
           }
         }
       }
     },
-    "Estimating time…": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beregner tid …"
+    "Everything playing on this Mac" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All lyd som spilles på denne Macen"
           }
         }
       }
     },
-    "Everything playing on this Mac": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All lyd som spilles på denne Macen"
+    "Export" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eksporter"
           }
         }
       }
     },
-    "Export": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eksporter"
+    "Faithful" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tro mot opptaket"
           }
         }
       }
     },
-    "Faithful": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tro mot opptaket"
+    "Faster" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raskere"
           }
         }
       }
     },
-    "Faster": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Raskere"
+    "Finding the beat" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finner pulsen"
           }
         }
       }
     },
-    "Finding the beat": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finner pulsen"
+    "Found at %@. Type the six-digit code to pair." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funnet på %@. Skriv inn den sekssifrede koden for å koble til."
           }
         }
       }
     },
-    "Free time": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fritt tempo"
+    "Free time" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fritt tempo"
           }
         }
       }
     },
-    "Full brass band": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fullt brassband"
+    "from %lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fra %lld"
           }
         }
       }
     },
-    "Getting the recording ready": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjør opptaket klart"
+    "Full brass band" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullt brassband"
           }
         }
       }
     },
-    "Import audio or video": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Importer lyd eller video"
+    "Getting the recording ready" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør opptaket klart"
           }
         }
       }
     },
-    "Input level": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inngangsnivå"
+    "Import audio or video" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer lyd eller video"
           }
         }
       }
     },
-    "Keep the original key": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Behold originaltonearten"
+    "Input level" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inngangsnivå"
           }
         }
       }
     },
-    "Key (concert)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toneart (klingende)"
+    "Keep the original key" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold originaltonearten"
           }
         }
       }
     },
-    "Less than a minute left": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Under ett minutt igjen"
+    "Key (concert)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toneart (klingende)"
           }
         }
       }
     },
-    "Lineup": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Besetning"
+    "Less than a minute left" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under ett minutt igjen"
           }
         }
       }
     },
-    "Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Besetning, vanskelighetsgrad og toneart sendes til datamaskinen din. Eldre versjoner av Brasscribe kan overse dem."
+    "Lineup" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besetning"
           }
         }
       }
     },
-    "Links to streaming sites can't be downloaded. Play the music and record it, or import a file you have.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lenker til strømmetjenester kan ikke lastes ned. Spill av musikken og ta den opp, eller importer en fil du har."
+    "Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besetning, vanskelighetsgrad og toneart sendes til datamaskinen din. Eldre versjoner av Brasscribe kan overse dem."
           }
         }
       }
     },
-    "Listen to the original": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hør originalen"
+    "Links to streaming sites can't be downloaded. Play the music and record it, or import a file you have." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lenker til strømmetjenester kan ikke lastes ned. Spill av musikken og ta den opp, eller importer en fil du har."
           }
         }
       }
     },
-    "Listen to uncertain bars": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hør på usikre takter"
+    "Listen to the original" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hør originalen"
           }
         }
       }
     },
-    "Loop": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta"
+    "Listen to uncertain bars" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hør på usikre takter"
           }
         }
       }
     },
-    "Loop current bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta gjeldende takt"
+    "Looking for Brasscribe on your network…" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ser etter Brasscribe på nettverket …"
           }
         }
       }
     },
-    "Loop current bar: L": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta denne takten: L"
+    "Loop" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta"
           }
         }
       }
     },
-    "Loop from bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta fra takt"
+    "Loop current bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta gjeldende takt"
           }
         }
       }
     },
-    "Loop this bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta denne takten"
+    "Loop current bar: L" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta denne takten: L"
           }
         }
       }
     },
-    "Loop to bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjenta til takt"
+    "Loop from bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta fra takt"
           }
         }
       }
     },
-    "MIDI": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MIDI"
+    "Loop this bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta denne takten"
           }
         }
       }
     },
-    "Making the audio": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lager lyden"
+    "Loop to bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta til takt"
           }
         }
       }
     },
-    "Metronome": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Metronom"
+    "Making the audio" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lager lyden"
           }
         }
       }
     },
-    "Microphone access is off. Turn it on in Settings to record.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mikrofontilgang er slått av. Slå den på i Innstillinger for å ta opp."
+    "Metronome" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metronom"
           }
         }
       }
     },
-    "Model download address": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse for nedlasting av modeller"
+    "Microphone access is off. Turn it on in Settings to record." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mikrofontilgang er slått av. Slå den på i Innstillinger for å ta opp."
           }
         }
       }
     },
-    "Models": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modeller"
+    "MIDI" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MIDI"
           }
         }
       }
     },
-    "Models ready.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modellene er klare."
+    "Model download address" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse for nedlasting av modeller"
           }
         }
       }
     },
-    "MusicXML (score and parts)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MusicXML (partitur og stemmer)"
+    "Models" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modeller"
           }
         }
       }
     },
-    "Mute": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demp"
+    "Models ready." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellene er klare."
           }
         }
       }
     },
-    "Mute %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demp %@"
+    "MusicXML (score and parts)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MusicXML (partitur og stemmer)"
           }
         }
       }
     },
-    "Mutes your part so you can play it.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demper stemmen din så du kan spille den selv."
+    "Mute" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demp"
           }
         }
       }
     },
-    "My part": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Min stemme"
+    "Mute %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demp %@"
           }
         }
       }
     },
-    "New score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nytt partitur"
+    "Mutes your part so you can play it." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demper stemmen din så du kan spille den selv."
           }
         }
       }
     },
-    "Next bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neste takt"
+    "My part" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Min stemme"
           }
         }
       }
     },
-    "Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notene settes med Verovio (LGPL-3.0), som følger med som et uendret dynamisk rammeverk."
+    "New score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt partitur"
           }
         }
       }
     },
-    "Nothing was heard. Either nothing was playing, recording permission was refused, or the app plays protected (DRM) audio, which the system does not let anyone record.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ingenting ble hørt. Enten ble ingenting spilt av, tillatelsen til opptak ble avslått, eller appen spiller beskyttet lyd (DRM), som systemet ikke lar noen ta opp."
+    "Next bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste takt"
           }
         }
       }
     },
-    "OK": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
+    "Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notene settes med Verovio (LGPL-3.0), som følger med som et uendret dynamisk rammeverk."
           }
         }
       }
     },
-    "On this device": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "På denne enheten"
+    "Nothing was heard. Either nothing was playing, recording permission was refused, or the app plays protected (DRM) audio, which the system does not let anyone record." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingenting ble hørt. Enten ble ingenting spilt av, tillatelsen til opptak ble avslått, eller appen spiller beskyttet lyd (DRM), som systemet ikke lar noen ta opp."
           }
         }
       }
     },
-    "One instrument": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ett instrument"
+    "OK" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         }
       }
     },
-    "Only silence was recorded": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bare stillhet ble tatt opp"
+    "On this device" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På denne enheten"
           }
         }
       }
     },
-    "Open score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Åpne partituret"
+    "One instrument" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett instrument"
           }
         }
       }
     },
-    "Orchestra or band with a soloist": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Orkester eller korps med solist"
+    "Only silence was recorded" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare stillhet ble tatt opp"
           }
         }
       }
     },
-    "Original": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Original"
+    "Open score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne partituret"
           }
         }
       }
     },
-    "Original / score: O": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Original / partitur: O"
+    "Orchestra or band with a soloist" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orkester eller korps med solist"
           }
         }
       }
     },
-    "Original key": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Originaltoneart"
+    "Original" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
           }
         }
       }
     },
-    "Original or score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Original eller partitur"
+    "Original / score: O" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original / partitur: O"
           }
         }
       }
     },
-    "Original recording": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Originalopptak"
+    "Original key" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originaltoneart"
           }
         }
       }
     },
-    "PDF": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PDF"
+    "Original or score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original eller partitur"
           }
         }
       }
     },
-    "Pair": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Koble til"
+    "Original recording" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originalopptak"
           }
         }
       }
     },
-    "Paired.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tilkoblet."
+    "Pair" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til"
           }
         }
       }
     },
-    "Pairing code": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tilkoblingskode"
+    "Paired." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilkoblet."
           }
         }
       }
     },
-    "Part": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stemme"
+    "Pairing code" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilkoblingskode"
           }
         }
       }
     },
-    "Parts": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stemmer"
+    "Part" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stemme"
           }
         }
       }
     },
-    "Parts and sound": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stemmer og lyd"
+    "Parts" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stemmer"
           }
         }
       }
     },
-    "Pause": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pause"
+    "Parts and sound" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stemmer og lyd"
           }
         }
       }
     },
-    "Picture in picture": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bilde i bilde"
+    "Pause" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
           }
         }
       }
     },
-    "Pitch": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tonehøyde"
+    "PDF" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF"
           }
         }
       }
     },
-    "Pitch and beat models (about 40 MB) are downloaded once and not included in the app.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modellene for tonehøyde og puls (omtrent 40 MB) lastes ned én gang og følger ikke med appen."
+    "Picture in picture" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde i bilde"
           }
         }
       }
     },
-    "Play": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill"
+    "Pitch" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonehøyde"
           }
         }
       }
     },
-    "Play %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill %@"
+    "Pitch and beat models (about 40 MB) are downloaded once and not included in the app." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellene for tonehøyde og puls (omtrent 40 MB) lastes ned én gang og følger ikke med appen."
           }
         }
       }
     },
-    "Play along": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill med"
+    "Play" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
           }
         }
       }
     },
-    "Play along (mute my part)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill med (demp min stemme)"
+    "Play %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill %@"
           }
         }
       }
     },
-    "Play or pause": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill av eller pause"
+    "Play along" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill med"
           }
         }
       }
     },
-    "Play or pause: Space": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill eller pause: mellomrom"
+    "Play along (mute my part)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill med (demp min stemme)"
           }
         }
       }
     },
-    "Play this bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill denne takten"
+    "Play or pause" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill av eller pause"
           }
         }
       }
     },
-    "Play when you're ready.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spill når du er klar."
+    "Play or pause: Space" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill eller pause: mellomrom"
           }
         }
       }
     },
-    "Playback": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avspilling"
+    "Play this bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill denne takten"
           }
         }
       }
     },
-    "Playback problem": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Problem med avspillingen"
+    "Play when you're ready." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill når du er klar."
           }
         }
       }
     },
-    "Pop or rock": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pop eller rock"
+    "Playback" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avspilling"
           }
         }
       }
     },
-    "Previous / next bar: ← / →": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Forrige / neste takt: ← / →"
+    "Playback problem" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problem med avspillingen"
           }
         }
       }
     },
-    "Previous bar": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Forrige takt"
+    "Pop or rock" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pop eller rock"
           }
         }
       }
     },
-    "Protected (DRM) music and video can't be recorded or imported. Play the piece yourself, or use a file you own without copy protection.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beskyttet musikk og video (DRM) kan ikke tas opp eller importeres. Spill stykket selv, eller bruk en fil du eier uten kopibeskyttelse."
+    "Previous / next bar: ← / →" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forrige / neste takt: ← / →"
           }
         }
       }
     },
-    "Protected (DRM) playback, as in some streaming apps, can't be recorded; you'll hear it but the recording stays silent.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beskyttet avspilling (DRM), som i noen strømmeapper, kan ikke tas opp. Du hører lyden, men opptaket blir stille."
+    "Previous bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forrige takt"
           }
         }
       }
     },
-    "Ready": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klar"
+    "Protected (DRM) music and video can't be recorded or imported. Play the piece yourself, or use a file you own without copy protection." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskyttet musikk og video (DRM) kan ikke tas opp eller importeres. Spill stykket selv, eller bruk en fil du eier uten kopibeskyttelse."
           }
         }
       }
     },
-    "Record": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta opp"
+    "Protected (DRM) playback, as in some streaming apps, can't be recorded; you'll hear it but the recording stays silent." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskyttet avspilling (DRM), som i noen strømmeapper, kan ikke tas opp. Du hører lyden, men opptaket blir stille."
           }
         }
       }
     },
-    "Record from": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta opp fra"
+    "Ready" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klar"
           }
         }
       }
     },
-    "Record sound playing on this Mac": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta opp lyd som spilles på denne Macen"
+    "Record" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp"
           }
         }
       }
     },
-    "Record this Mac": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta opp fra denne Macen"
+    "Record from" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp fra"
           }
         }
       }
     },
-    "Record with the microphone": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta opp med mikrofonen"
+    "Record sound playing on this Mac" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp lyd som spilles på denne Macen"
           }
         }
       }
     },
-    "Recorded": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tatt opp"
+    "Record this Mac" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp fra denne Macen"
           }
         }
       }
     },
-    "Recorded %lld seconds": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld sekunder tatt opp"
+    "Record with the microphone" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp med mikrofonen"
           }
         }
       }
     },
-    "Recording %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opptak %@"
+    "Recorded" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tatt opp"
           }
         }
       }
     },
-    "Recording…": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tar opp …"
+    "Recorded %lld seconds" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sekunder tatt opp"
           }
         }
       }
     },
-    "Remove downloaded models": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fjern nedlastede modeller"
+    "Recording %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opptak %@"
           }
         }
       }
     },
-    "Review": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gjennomgang"
+    "Recording…" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tar opp …"
           }
         }
       }
     },
-    "Score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partitur"
+    "Remove downloaded models" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern nedlastede modeller"
           }
         }
       }
     },
-    "Score pages": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partitursider"
+    "Review" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjennomgang"
           }
         }
       }
     },
-    "Scores": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partiturer"
+    "Score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partitur"
           }
         }
       }
     },
-    "Sending the recording": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sender opptaket"
+    "Score pages" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partitursider"
           }
         }
       }
     },
-    "Separating the instruments": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skiller instrumentene fra hverandre"
+    "Scores" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partiturer"
           }
         }
       }
     },
-    "Settings": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Innstillinger"
+    "Sending the recording" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sender opptaket"
           }
         }
       }
     },
-    "Show": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vis"
+    "Separating the instruments" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skiller instrumentene fra hverandre"
           }
         }
       }
     },
-    "Slower": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saktere"
+    "Settings" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innstillinger"
           }
         }
       }
     },
-    "Slower / faster: [ / ]": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saktere / raskere: [ / ]"
+    "Show" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis"
           }
         }
       }
     },
-    "Small band": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lite korps"
+    "Slower" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saktere"
           }
         }
       }
     },
-    "Solo": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo"
+    "Slower / faster: [ / ]" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saktere / raskere: [ / ]"
           }
         }
       }
     },
-    "Solo %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solo %@"
+    "Small band" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lite korps"
           }
         }
       }
     },
-    "Solos are transcribed on this device. Other recordings go to your computer.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Soloer transkriberes på denne enheten. Andre opptak sendes til datamaskinen din."
+    "Solo" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo"
           }
         }
       }
     },
-    "Sound": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyd"
+    "Solo %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo %@"
           }
         }
       }
     },
-    "Sounds": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyder"
+    "Solos are transcribed on this device. Other recordings go to your computer." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soloer transkriberes på denne enheten. Andre opptak sendes til datamaskinen din."
           }
         }
       }
     },
-    "Speed": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tempo"
+    "Sound" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lyd"
           }
         }
       }
     },
-    "Standard": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standard"
+    "Sounds" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lyder"
           }
         }
       }
     },
-    "Start Brasscribe on your computer with “brasscribe serve --host 0.0.0.0” and type the six-digit code it shows.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start Brasscribe på datamaskinen med «brasscribe serve --host 0.0.0.0» og skriv inn den sekssifrede koden som vises."
+    "Speed" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo"
           }
         }
       }
     },
-    "Start recording": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start opptak"
+    "Standard" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
           }
         }
       }
     },
-    "Stop": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stopp"
+    "Start Brasscribe on your computer with “brasscribe serve --lan”. When it is on the same network it is listed here; choose it and type the six-digit code it shows." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Brasscribe på datamaskinen med «brasscribe serve --lan». Når den er på samme nettverk, vises den her. Velg den og skriv inn den sekssifrede koden som vises."
           }
         }
       }
     },
-    "Stop picture in picture": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stopp bilde i bilde"
+    "Start recording" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start opptak"
           }
         }
       }
     },
-    "Switch between the score and the original recording at the same place.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bytt mellom partituret og originalopptaket på samme sted."
+    "Stop" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp"
           }
         }
       }
     },
-    "Talking score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Talende partitur"
+    "Stop picture in picture" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp bilde i bilde"
           }
         }
       }
     },
-    "Talking score (text)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Talende partitur (tekst)"
+    "Switch between the score and the original recording at the same place." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytt mellom partituret og originalopptaket på samme sted."
           }
         }
       }
     },
-    "The demo recording is not available.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demo-opptaket er ikke tilgjengelig."
+    "Talking score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talende partitur"
           }
         }
       }
     },
-    "The notation engine could not start.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notesettingen kunne ikke starte."
+    "Talking score (text)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talende partitur (tekst)"
           }
         }
       }
     },
-    "The performer did not keep a steady beat here, so rhythms are approximate.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utøveren holdt ikke jevn puls her, så rytmene er omtrentlige."
+    "The demo recording is not available." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo-opptaket er ikke tilgjengelig."
           }
         }
       }
     },
-    "This decides how the music is taken apart. Brasscribe never guesses.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dette avgjør hvordan musikken tas fra hverandre. Brasscribe gjetter aldri."
+    "The notation engine could not start." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notesettingen kunne ikke starte."
           }
         }
       }
     },
-    "This is not a score Brasscribe can read.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dette er ikke et partitur Brasscribe kan lese."
+    "The performer did not keep a steady beat here, so rhythms are approximate." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utøveren holdt ikke jevn puls her, så rytmene er omtrentlige."
           }
         }
       }
     },
-    "This recording is copy-protected": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dette opptaket er kopibeskyttet"
+    "This decides how the music is taken apart. Brasscribe never guesses." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette avgjør hvordan musikken tas fra hverandre. Brasscribe gjetter aldri."
           }
         }
       }
     },
-    "Transcribe": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Transkriber"
+    "this device" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "denne enheten"
           }
         }
       }
     },
-    "Transcribe solos on this device": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Transkriber soloer på denne enheten"
+    "This is not a score Brasscribe can read." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette er ikke et partitur Brasscribe kan lese."
           }
         }
       }
     },
-    "Transcribing on %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Transkriberer på %@"
+    "This recording is copy-protected" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette opptaket er kopibeskyttet"
           }
         }
       }
     },
-    "Transpose %@%lld semitones": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Transponer %@%lld halvtoner"
+    "to %lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til %lld"
           }
         }
       }
     },
-    "Try the demo (Mikkel)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prøv demoen (Mikkel)"
+    "Transcribe" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkriber"
           }
         }
       }
     },
-    "Uncertain notes": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usikre noter"
+    "Transcribe solos on this device" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkriber soloer på denne enheten"
           }
         }
       }
     },
-    "Uncertain notes are marked with an open diamond and an orange colour.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usikre noter er merket med en åpen rute og oransje farge."
+    "Transcribing on %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkriberer på %@"
           }
         }
       }
     },
-    "Use the demo instead of a computer": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bruk demoen i stedet for en datamaskin"
+    "Transpose %@%lld semitones" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transponer %@%lld halvtoner"
           }
         }
       }
     },
-    "Video of the performance, synced to the score": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Video av framføringen, synkronisert med partituret"
+    "Try the demo (Mikkel)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv demoen (Mikkel)"
           }
         }
       }
     },
-    "Vocals or lead with bass, drums and keys.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sang eller melodi med bass, trommer og tangenter."
+    "unavailable" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ikke tilgjengelig"
           }
         }
       }
     },
-    "What is this?": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hva er dette?"
+    "Uncertain notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usikre noter"
           }
         }
       }
     },
-    "Working": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jobber"
+    "Uncertain notes are marked with an open diamond and an orange colour." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usikre noter er merket med en åpen rute og oransje farge."
           }
         }
       }
     },
-    "Writing down the notes": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skriver ned notene"
+    "Use the demo instead of a computer" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk demoen i stedet for en datamaskin"
           }
         }
       }
     },
-    "Written": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skrevet"
+    "Video of the performance, synced to the score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video av framføringen, synkronisert med partituret"
           }
         }
       }
     },
-    "Your computer": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Datamaskinen din"
+    "Vocals or lead with bass, drums and keys." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sang eller melodi med bass, trommer og tangenter."
           }
         }
       }
     },
-    "Your computer arranges the score with these choices.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Datamaskinen din arrangerer partituret med disse valgene."
+    "What is this?" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva er dette?"
           }
         }
       }
     },
-    "Your scores appear here.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partiturene dine vises her."
+    "Working" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jobber"
           }
         }
       }
     },
-    "Zoom %lld percent": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zoom %lld prosent"
+    "Writing down the notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver ned notene"
           }
         }
       }
     },
-    "Zoom in": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zoom inn"
+    "Written" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrevet"
           }
         }
       }
     },
-    "Zoom out": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zoom ut"
+    "Your computer" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datamaskinen din"
           }
         }
       }
     },
-    "available": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "tilgjengelig"
+    "Your computer arranges the score with these choices." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datamaskinen din arrangerer partituret med disse valgene."
           }
         }
       }
     },
-    "from %lld": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "fra %lld"
+    "Your scores appear here." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partiturene dine vises her."
           }
         }
       }
     },
-    "this device": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "denne enheten"
+    "Zoom %lld percent" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom %lld prosent"
           }
         }
       }
     },
-    "to %lld": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "til %lld"
+    "Zoom in" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom inn"
           }
         }
       }
     },
-    "unavailable": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ikke tilgjengelig"
+    "Zoom out" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom ut"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

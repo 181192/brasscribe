@@ -131,4 +131,3 @@ struct CaptureView: View {
     }
 }
 #endif
-

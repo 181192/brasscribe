@@ -146,7 +146,7 @@ export class Navigator {
   nextUncertain(dir: 1 | -1 = 1): Stop | null {
     const list = this.stops();
     const ev = (bi: number, ei: number) => this.part.bars[bi].events[ei];
-    const isU = (e: NavEvent) => !e.checked && (e.uncertain || (e.confidence != null && e.confidence < 0.7));
+    const isU = (e: NavEvent) => !e.checked && (!!e.uncertain || (e.confidence != null && e.confidence < 0.7));
     const at = this.cursor.tick;
     const j = dir > 0
       ? list.findIndex(([b, e]) => ev(b, e).tick > at && isU(ev(b, e)))

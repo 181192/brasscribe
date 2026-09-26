@@ -6,6 +6,8 @@ struct HomeView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
     @State private var dropTargeted = false
+    @State private var renameTarget: Piece?
+    @State private var titleDraft = ""
 
     private var wide: Bool {
         #if os(macOS)
@@ -39,6 +41,14 @@ struct HomeView: View {
         .pageBackground()
         .navigationTitle(Text("Home"))
         .toolbar(removing: .title)
+        .alert("Edit title", isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
+            TextField("Title", text: $titleDraft)
+            Button("Cancel", role: .cancel) { renameTarget = nil }
+            Button("Save") {
+                if let renameTarget { app.rename(renameTarget, to: titleDraft) }
+                renameTarget = nil
+            }
+        }
         .toolbar {
             #if os(iOS)
             if !wide {
@@ -151,6 +161,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
+                            Button { titleDraft = p.title; renameTarget = p } label: { Label("Edit title", systemImage: "pencil") }
                             Button { app.path = [.review(p)] } label: { Label("Check the notes", systemImage: BrasscribeIcon.nextUncertain.systemName) }
                             Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: BrasscribeIcon.delete.systemName) }
                         }

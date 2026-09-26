@@ -57,6 +57,7 @@ public static class MusicXmlTalkingScoreBuilder
             var time = new TsTime(4, 4);
             double partQuarter = 0;
             int tupletCount = 0;
+            int musicXmlNoteIndex = 0;
             var pendingTies = new List<(TsEvent Event, int Midi, int Bar)>();
             var chains = new Dictionary<TsEvent, ChainInfo>(ReferenceEqualityComparer.Instance);
             ChainInfo ChainHead(TsEvent e) => chains.TryGetValue(e, out var ci) ? ci : chains[e] = new ChainInfo(e);
@@ -109,6 +110,9 @@ public static class MusicXmlTalkingScoreBuilder
                             long dur = (long?)el.Element("duration") ?? 0;
                             bool chord = el.Element("chord") is not null;
                             bool grace = el.Element("grace") is not null;
+                            bool cue = el.Element("cue") is not null;
+                            int noteIndex = musicXmlNoteIndex;
+                            if (!grace && !cue) musicXmlNoteIndex++;
                             string voice = (string?)el.Element("voice") ?? "1";
                             if (chord && last is not null)
                             {
@@ -118,7 +122,7 @@ public static class MusicXmlTalkingScoreBuilder
                             long start = offset;
                             if (!grace) offset += dur;
                             measureLength = Math.Max(measureLength, offset);
-                            if (grace || voice != "1")
+                            if (grace || cue || voice != "1")
                             {
                                 if (voice != "1") last = null;
                                 continue;
@@ -126,6 +130,7 @@ public static class MusicXmlTalkingScoreBuilder
 
                             var ev = ReadNote(el, start, dur, divisions, time, part, ref tupletCount);
                             if (ev is null) continue;
+                            ev.MusicXmlNoteIndex = noteIndex;
                             if (pendingDynamic is not null && ev.Kind != EventKind.Rest && ev.Kind != EventKind.BarRest)
                             {
                                 ev.Dynamic = pendingDynamic;

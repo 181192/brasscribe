@@ -106,6 +106,7 @@ export function buildTalkingScore(xml: string): TalkingScore {
     let beatType = 4;
     let barStart = 0; // ticks
     let pendingDynamic: string | null = null;
+    let pendingQ: "u" | "vu" | null = null; // a "?" words direction before the note
     let tupletIndex = 0;
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, index) => {
@@ -138,6 +139,9 @@ export function buildTalkingScore(xml: string): TalkingScore {
         } else if (el.nodeName === "direction") {
           const dyn = el.querySelector("direction-type > dynamics > *");
           if (dyn) pendingDynamic = dyn.nodeName === "other-dynamics" ? dyn.textContent ?? null : dyn.nodeName;
+          for (const w of Array.from(el.querySelectorAll("direction-type > words"))) {
+            if ((w.textContent ?? "").trim() === "?") pendingQ = w.getAttribute("enclosure") === "rectangle" ? "vu" : "u";
+          }
           const reh = text(el, "direction-type > rehearsal");
           if (reh) bar.rehearsal = reh;
           const tempo = el.querySelector("sound[tempo]")?.getAttribute("tempo");
@@ -203,9 +207,10 @@ export function buildTalkingScore(xml: string): TalkingScore {
               ...(el.querySelector("notations > fermata") ? ["fermata"] : []),
             ],
             dynamic: pendingDynamic,
-            uncertain: !!colour,
+            uncertain: colour?.toLowerCase() === "#b04a00" || (colour && pendingQ === "vu") ? "very" : !!(colour || pendingQ),
           };
           pendingDynamic = null;
+          pendingQ = null;
           if (written) {
             ev.written = written;
             ev.concert = transposePitch(written, part.transpose);

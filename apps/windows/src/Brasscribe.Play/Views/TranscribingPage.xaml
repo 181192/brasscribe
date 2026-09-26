@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Brasscribe.Play.Views.TranscribingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    xmlns:controls="using:Brasscribe.Play.Controls"
+    NavigationCacheMode="Required">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="640" Padding="40,72,40,32" Spacing="12" HorizontalAlignment="Center" MinWidth="520">
+            <Image Source="ms-appx:///Assets/Brand/mark-brass.svg" Width="40" Height="40" HorizontalAlignment="Left" Margin="0,0,0,24"
+                   AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Style="{StaticResource OverlineStyle}" Text="{x:Bind ViewModel.Overline, Mode=OneWay}" />
+            <!-- The current step in plain words is the heading. -->
+            <TextBlock x:Name="Heading" Style="{StaticResource ScreenHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True"
+                       Text="{x:Bind ViewModel.StepHeading, Mode=OneWay}" />
+
+            <!-- The brass bar (the one working brand moment), the percentage and the time left in words. -->
+            <ProgressBar x:Name="Progress" x:Uid="TranscribeProgress" Minimum="0" Maximum="100" Style="{StaticResource BrassProgressStyle}"
+                         Value="{x:Bind ViewModel.Percent, Mode=OneWay}" Margin="0,16,0,0"
+                         AutomationProperties.LiveSetting="Polite" />
+            <Grid>
+                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.PercentText, Mode=OneWay}" />
+                <TextBlock Style="{StaticResource MutedStyle}" HorizontalAlignment="Right" Text="{x:Bind ViewModel.EtaText, Mode=OneWay}" />
+            </Grid>
+
+            <!-- Every step, done / now / to come, each with its state in its accessible name. -->
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Steps}" Margin="0,24,0,0" IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TranscriptionStep">
+                        <StackPanel Orientation="Horizontal" Spacing="14" Padding="0,8" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
+                            <Grid Width="24" Height="24">
+                                <Ellipse Fill="{ThemeResource BcPrimaryBrush}" Visibility="{x:Bind IsDone, Mode=OneWay}" />
+                                <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="12" Foreground="{ThemeResource BcOnPrimaryBrush}"
+                                          Visibility="{x:Bind IsDone, Mode=OneWay}" />
+                                <Ellipse Stroke="{ThemeResource BcPrimaryBrush}" StrokeThickness="2" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
+                                <Ellipse Width="8" Height="8" Fill="{ThemeResource BcPrimaryBrush}" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
+                                <Ellipse Stroke="{ThemeResource BcBorderStrongBrush}" StrokeThickness="1.5" Visibility="{x:Bind IsPending, Mode=OneWay}" />
+                            </Grid>
+                            <TextBlock Text="{x:Bind Label}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center"
+                                       FontWeight="{x:Bind controls:Bind.Weight(IsCurrent), Mode=OneWay}"
+                                       Foreground="{ThemeResource BcTextBrush}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Grid ColumnSpacing="16" Margin="0,32,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                    <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Main.Kind.WhereText, Mode=OneWay}" />
+                </StackPanel>
+                <Button x:Name="CancelButton" x:Uid="CancelTranscriptionButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}"
+                        MinHeight="48" Padding="20,10" Click="OnCancelClick" AccessKey="X" IsEnabled="{x:Bind ViewModel.IsRunning, Mode=OneWay}" />
+            </Grid>
+            <TextBlock x:Uid="TranscribeLeaveNote" Style="{StaticResource MutedStyle}" Margin="0,8,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -91,6 +91,37 @@ public sealed class WinFileDialogs(Func<nint> hwnd) : IFileDialogs
         var stream = new FileStream(file.Path, FileMode.Create, FileAccess.Write, FileShare.None);
         return new SaveTarget(stream, file.Name);
     }
+
+    public async Task<string?> PickFolderAsync()
+    {
+        var picker = new FolderPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+        picker.FileTypeFilter.Add("*");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd());
+        var folder = await picker.PickSingleFolderAsync();
+        return folder?.Path;
+    }
+}
+
+/// <summary>
+/// Prints a PDF through the PDF app the player uses (the shell's "print" verb opens its print dialog).
+/// When no app is registered for printing PDFs, the PDF opens instead so it can be printed from there.
+/// </summary>
+public sealed class ShellPdfPrinter : IPrinter
+{
+    public bool CanPrint => OperatingSystem.IsWindows();
+
+    public Task PrintAsync(string pdfPath)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(pdfPath) { Verb = "print", UseShellExecute = true });
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(pdfPath) { UseShellExecute = true });
+        }
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>Settings in %LOCALAPPDATA%\Brasscribe\Play\settings.json (the app runs unpackaged).</summary>

@@ -39,6 +39,10 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     func loadComposition() -> Composition? { try? Composition.decode(Data(contentsOf: compositionURL)) }
     func musicXML() throws -> String { try String(contentsOf: scoreURL, encoding: .utf8) }
 
+    func saveMusicXML(_ xml: String) throws {
+        try Data(xml.utf8).write(to: scoreURL, options: .atomic)
+    }
+
     func save() throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let enc = JSONEncoder()

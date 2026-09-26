@@ -1,7 +1,10 @@
 package no.brasscribe.play
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Build
+import java.net.InetAddress
 import io.ktor.client.engine.okhttp.OkHttp
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.engine.FixtureEngineApi
@@ -56,6 +59,12 @@ class EngineSettings(context: Context) {
  */
 class AppContainer(private val context: Context) {
     val settings = EngineSettings(context)
+    private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
+
+    /** The first-run screen (three points and Get started) has been seen. */
+    var firstRunDone: Boolean
+        get() = prefs.getBoolean("first_run_done", false)
+        set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
 
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.
@@ -78,20 +87,43 @@ class AppContainer(private val context: Context) {
     private var cachedEngine: Pair<String, EngineApi>? = null
 
     fun engine(): EngineApi? {
-        val key = if (usingFixture) "fixture" else "${settings.url}|${settings.token}|${settings.paired}"
+        val network = lanNetwork(settings.url)
+        val key = if (usingFixture) "fixture" else "${settings.url}|${settings.token}|${settings.paired}|${network?.networkHandle}"
         cachedEngine?.takeIf { it.first == key }?.let { return it.second }
         val api: EngineApi = when {
             usingFixture -> FixtureEngineApi(fixtureSource!!, stageSeconds = 0.7)
-            settings.paired -> KtorEngineApi(settings.url, OkHttp.create(), settings.token)
+            settings.paired -> KtorEngineApi(settings.url, httpEngine(network), settings.token)
             else -> return null
         }
         cachedEngine = key to api
         return api
     }
 
-    fun newEngineClient(url: String): KtorEngineApi = KtorEngineApi(url, OkHttp.create())
+    fun newEngineClient(url: String): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)))
 
-    fun engineLabel(): String = if (usingFixture) "sample" else settings.url.removePrefix("http://").removePrefix("https://")
+    private fun httpEngine(network: Network?) = OkHttp.create {
+        if (network != null) config { socketFactory(network.socketFactory) }
+    }
+
+    /**
+     * The network whose link owns a private engine address. When Wi-Fi is weak, Android can make mobile
+     * data the default network, and a LAN address sent there never arrives.
+     */
+    @Suppress("DEPRECATION")
+    private fun lanNetwork(url: String): Network? {
+        val host = runCatching { java.net.URI(url).host?.removeSurrounding("[", "]") }.getOrNull() ?: return null
+        if (!host.contains(':') && !host.matches(Regex("""\d{1,3}(\.\d{1,3}){3}"""))) return null
+        val address = runCatching { InetAddress.getByName(host) }.getOrNull() ?: return null
+        if (!address.isSiteLocalAddress && !address.isLinkLocalAddress) return null
+        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
+        return cm.allNetworks.firstOrNull { n ->
+            cm.getLinkProperties(n)?.routes?.any { it.destination.prefixLength > 0 && it.matches(address) } == true
+        }
+    }
+
+    val discovery by lazy { EngineDiscovery(context) }
+
+    fun engineLabel(): String = if (usingFixture) context.getString(R.string.demo_label) else settings.url.removePrefix("http://").removePrefix("https://")
 
     /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */
     val hasPitchModel: Boolean by lazy { runCatching { context.assets.open(MODEL_ASSET).close() }.isSuccess }

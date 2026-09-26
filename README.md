@@ -51,7 +51,7 @@ pixi run brasscribe profiles  # the four transcription profiles
 pixi run studio               # serves Studio on http://127.0.0.1:8765/ and opens a browser
 ```
 
-`pixi run studio --no-browser --port 8799` leaves the browser alone. `pixi run serve --lan` binds `0.0.0.0` and prints a LAN URL and a 6-digit pairing code for phones on the same network. Without a browser:
+`pixi run studio --no-browser --port 8799` leaves the browser alone. `pixi run serve --lan` binds `0.0.0.0`, prints a LAN URL and a 6-digit pairing code for phones on the same network, and advertises the engine over Bonjour/mDNS as `_brasscribe._tcp` so the Play apps list it in Settings (`--no-advertise` turns that off). Without a browser:
 
 ```sh
 curl -s http://127.0.0.1:8765/v1/health
@@ -110,7 +110,30 @@ dotnet test tests/Brasscribe.Play.Core.Tests -c Release
 dotnet build src/Brasscribe.Play -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64
 ```
 
-To point an app at a LAN engine, start it with `pixi run serve --lan` and enter the printed pairing code in the app.
+To point an app at a LAN engine, start it with `pixi run serve --lan`, pick it from the list in the app's settings (or type the printed address) and enter the pairing code. Guest and corporate Wi-Fi often block mDNS between devices; typing the address still works there. Set `BRASSCRIBE_TOKEN` to keep apps paired across engine restarts.
+
+## CI/CD
+
+Each native component builds and tests on its own GitHub Actions workflow; every run uploads its build as a downloadable artifact.
+
+| Workflow | Builds and tests | Artifact |
+| --- | --- | --- |
+| [ci](.github/workflows/ci.yml) | Engine + music unit tests, OpenAPI spec check, CPU benchmark gate | `bench-ci` (benchmark JSON) |
+| [core](.github/workflows/core.yml) | Rust workspace tests, `brasscribe-core` CLI (Linux, macOS, Windows) | `brasscribe-core-<platform>` |
+| [android](.github/workflows/android.yml) | Unit tests, lint, debug + unsigned release APKs | `android-apks` |
+| [apple](.github/workflows/apple.yml) | Package + app tests (macOS, iOS Simulator), macOS app build | `apple-macos-app` |
+| [windows](.github/workflows/windows.yml) | Core tests, WinUI 3 app build, Axe.Windows accessibility scan | `windows-app` |
+| [pages](.github/workflows/pages.yml) | Deploys `site/` to GitHub Pages | — |
+
+Download an artifact from a run: open the workflow's page above, pick a run, and its **Artifacts** section at the bottom lists the files (GitHub Actions → the workflow → a run → Artifacts). Artifacts expire after 90 days.
+
+### Releases
+
+Pushing a tag matching `v<major>.<minor>.<patch>` (e.g. `v0.2.0`, `v1.0.0-beta.1`) runs [release](.github/workflows/release.yml), which builds `core`, `android`, `apple` and `windows` and publishes a [GitHub release](../../releases) with each artifact attached as a zip, plus auto-generated release notes:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
 
 ## Configuration
 

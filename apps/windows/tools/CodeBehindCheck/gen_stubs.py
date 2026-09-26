@@ -27,6 +27,19 @@ for old in out.glob("*.g.cs"):
 X = "{http://schemas.microsoft.com/winfx/2006/xaml}"
 DEFAULT = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 PRIMITIVES = {"ToggleButton", "RepeatButton", "Thumb", "FlyoutBase"}
+# Elements outside Microsoft.UI.Xaml.Controls.
+NAMESPACES = {
+    **{t: "Microsoft.UI.Xaml.Documents" for t in ("Run", "Span", "Bold", "Italic", "Underline", "LineBreak", "Hyperlink", "Paragraph")},
+    **{t: "Microsoft.UI.Xaml.Shapes" for t in ("Rectangle", "Ellipse", "Path", "Line", "Polyline", "Polygon")},
+    **{t: "Microsoft.UI.Xaml.Media" for t in ("SolidColorBrush", "FontFamily", "ThemeShadow", "TranslateTransform", "ScaleTransform")},
+    **{t: "Microsoft.UI.Xaml.Media.Imaging" for t in ("BitmapImage", "SvgImageSource")},
+    **{t: "Microsoft.UI.Xaml.Media.Animation" for t in ("TransitionCollection", "EntranceThemeTransition", "ContentThemeTransition",
+                                                       "NavigationThemeTransition", "DrillInNavigationTransitionInfo",
+                                                       "SuppressNavigationTransitionInfo")},
+    **{t: "Microsoft.UI.Xaml.Input" for t in ("KeyboardAccelerator",)},
+    **{t: "Microsoft.UI.Xaml" for t in ("Application", "Window", "ResourceDictionary", "Setter", "Style", "DataTemplate",
+                                          "VisualStateManager", "VisualState", "VisualStateGroup", "AdaptiveTrigger")},
+}
 ATTACHED_OWNERS = {
     "Grid": "Microsoft.UI.Xaml.Controls.Grid",
     "Canvas": "Microsoft.UI.Xaml.Controls.Canvas",
@@ -35,6 +48,8 @@ ATTACHED_OWNERS = {
     "AutomationProperties": "Microsoft.UI.Xaml.Automation.AutomationProperties",
 }
 SKIP_ATTRS = {"Style"}  # resource references: value not checkable here
+# Resource entries (values, not elements with members to check).
+SKIP_TAGS = {"StaticResource", "ThemeResource", "Thickness", "CornerRadius", "Color", "String", "Double", "Boolean"}
 
 
 def csharp_type(tag, prefixes):
@@ -42,12 +57,8 @@ def csharp_type(tag, prefixes):
     if ns == DEFAULT:
         if local in PRIMITIVES:
             return f"Microsoft.UI.Xaml.Controls.Primitives.{local}"
-        if local in ("Application", "Window", "ResourceDictionary", "Setter", "Style", "DataTemplate"):
-            return f"Microsoft.UI.Xaml.{local}"
-        if local == "KeyboardAccelerator":
-            return "Microsoft.UI.Xaml.Input.KeyboardAccelerator"
-        if local == "FontFamily":
-            return "Microsoft.UI.Xaml.Media.FontFamily"
+        if local in NAMESPACES:
+            return f"{NAMESPACES[local]}.{local}"
         return f"Microsoft.UI.Xaml.Controls.{local}"
     if ns.startswith("using:"):
         return f"{ns[6:]}.{local}"
@@ -114,6 +125,8 @@ for f in sorted(app.rglob("*.xaml")):
         if "." in tag_local:  # property element, e.g. Grid.RowDefinitions
             for child in el:
                 visit(child, ctx)
+            return
+        if tag_local in SKIP_TAGS:
             return
         t = csharp_type(el.tag, prefixes)
         data_type = el.get(X + "DataType")

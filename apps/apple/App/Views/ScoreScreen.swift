@@ -6,9 +6,11 @@ import SwiftUI
 /// only this), repeat, speed, count-in, metronome, play-along and band-or-recording with
 /// synced video.
 struct ScoreScreen: View {
+    @Environment(AppModel.self) private var app
     let piece: Piece
     @State private var model: PracticeModel?
     @State private var error: String?
+    @State private var editingPitches = false
 
     var body: some View {
         Group {
@@ -24,11 +26,28 @@ struct ScoreScreen: View {
             }
         }
         .pageBackground()
-        .navigationTitle(piece.title)
+        .navigationTitle(app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        #else
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { editingPitches = true } label: { Label("Correct notes", systemImage: "pencil.and.outline") }
+                    .accessibilityIdentifier("correctNotes")
+            }
+        }
+        .sheet(isPresented: $editingPitches) {
+            PitchCorrectionView(piece: piece) {
+                app.refresh()
+                model?.stopAll()
+                do {
+                    let refreshed = try PracticeModel(piece: piece)
+                    refreshed.start()
+                    model = refreshed
+                    error = nil
+                } catch let e { self.error = e.localizedDescription }
+            }
+        }
         .task {
             guard model == nil else { return }
             do {

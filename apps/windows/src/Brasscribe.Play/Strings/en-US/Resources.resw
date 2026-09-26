@@ -40,13 +40,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutText.Text" xml:space="preserve">
-    <value>Brasscribe Play is a non-commercial project. Notation and synth: alphaTab (MPL-2.0). Transcription models run in the Brasscribe engine; MuScriptor weights are CC BY-NC 4.0 and are downloaded by you.</value>
+    <value>Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1).</value>
   </data>
   <data name="AdLibNotice.Text" xml:space="preserve">
-    <value>Some passages are in free time (ad lib.). They are written by feel, not on a strict beat.</value>
+    <value>Some bars have no steady beat (ad lib.). Their rhythms are approximate.</value>
   </data>
   <data name="AppCaptureUnavailable.Text" xml:space="preserve">
-    <value>Recording a single app needs Windows 11. You can still record everything this PC plays.</value>
+    <value>Needs Windows 11. You can still record everything this PC plays.</value>
   </data>
   <data name="AppPicker.Header" xml:space="preserve">
     <value>App to record</value>
@@ -57,20 +57,11 @@
   <data name="AppPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Apps that play sound right now are listed first</value>
   </data>
-  <data name="AppTitle.Text" xml:space="preserve">
-    <value>Brasscribe Play</value>
-  </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Brasscribe Play</value>
   </data>
-  <data name="ApplyOutputButton.Content" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="ApplyOutputButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Arrange again with these choices</value>
-  </data>
   <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Go back to the previous screen (Alt+Left)</value>
+    <value>Go back (Alt+Left)</value>
   </data>
   <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Back</value>
@@ -78,8 +69,14 @@
   <data name="BackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Back</value>
   </data>
+  <data name="Back_FullScore" xml:space="preserve">
+    <value>Full score</value>
+  </data>
+  <data name="Back_Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
   <data name="CancelDialog_Content" xml:space="preserve">
-    <value>The work done so far is kept by the engine, so starting again is quicker.</value>
+    <value>The recording stays in Your scores, so you can start again.</value>
   </data>
   <data name="CancelDialog_Keep" xml:space="preserve">
     <value>Keep going</value>
@@ -88,64 +85,73 @@
     <value>Stop</value>
   </data>
   <data name="CancelDialog_Title" xml:space="preserve">
-    <value>Stop the transcription?</value>
+    <value>Stop making this score?</value>
   </data>
   <data name="CancelTranscriptionButton.Content" xml:space="preserve">
     <value>Cancel</value>
   </data>
   <data name="CancelTranscriptionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Stop the transcription</value>
+    <value>Stop making this score (asks first)</value>
   </data>
   <data name="CaptureNotice.Title" xml:space="preserve">
-    <value>Nothing is being recorded</value>
+    <value>Nothing was heard</value>
+  </data>
+  <data name="CheckThemButton.Content" xml:space="preserve">
+    <value>Check them</value>
+  </data>
+  <data name="CheckThemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Go through the notes marked ? one at a time</value>
+  </data>
+  <data name="ChooseOutputItem.Text" xml:space="preserve">
+    <value>How should the score be?…</value>
   </data>
   <data name="ClearLoopButton.Content" xml:space="preserve">
-    <value>Clear loop</value>
+    <value>Stop repeating</value>
   </data>
   <data name="ClearLoopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Play without a loop</value>
+    <value>Play on without repeating (L)</value>
   </data>
-  <data name="ConcertPitchSwitch.Header" xml:space="preserve">
+  <data name="ConcertChoice.Content" xml:space="preserve">
     <value>Concert pitch</value>
   </data>
-  <data name="ConcertPitchSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Show sounding pitch instead of written pitch</value>
+  <data name="ConcertChoice.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Concert is how it sounds on a piano.</value>
   </data>
   <data name="ConnectButton.Content" xml:space="preserve">
     <value>Connect</value>
   </data>
   <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Check the engine and pair with the code if it asks for one</value>
+    <value>Open Brasscribe on your computer and choose Pair a device, then type the code here</value>
   </data>
   <data name="ContinueButton.Content" xml:space="preserve">
     <value>Continue</value>
   </data>
   <data name="ContinueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Start the transcription. Choose what the recording is first.</value>
+    <value>Make the score. Choose what the recording is first.</value>
   </data>
-  <data name="CountInToggle.Content" xml:space="preserve">
+  <data name="CountInLabel.Text" xml:space="preserve">
     <value>Count-in</value>
   </data>
-  <data name="CountInToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Count one bar before playing (K)</value>
+  <data name="CountInToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Count-in</value>
+  </data>
+  <data name="CountInToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>One bar of clicks before the music starts.</value>
   </data>
   <data name="DecodingProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Reading the file</value>
-  </data>
-  <data name="DifficultyBox.Header" xml:space="preserve">
-    <value>Difficulty</value>
   </data>
   <data name="DifficultyEasier.Content" xml:space="preserve">
     <value>Easier</value>
   </data>
   <data name="DifficultyFaithful.Content" xml:space="preserve">
-    <value>Faithful</value>
+    <value>As played</value>
   </data>
   <data name="DifficultyStandard.Content" xml:space="preserve">
-    <value>Standard</value>
+    <value>A bit easier</value>
   </data>
-  <data name="DrmNote.Text" xml:space="preserve">
-    <value>Windows does not let apps record protected (DRM) playback, such as some streaming services. Brasscribe tells you when that happens instead of recording silence.</value>
+  <data name="DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Computers running Brasscribe on this network</value>
   </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
     <value>{0} min {1} s</value>
@@ -154,40 +160,115 @@
     <value>{0} s</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
-    <value>Engine address</value>
+    <value>Details for the band's tech person: address</value>
   </data>
   <data name="EngineAddressBox.PlaceholderText" xml:space="preserve">
     <value>http://127.0.0.1:8765</value>
   </data>
+  <data name="ErrorSteps.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>What to do</value>
+  </data>
+  <data name="Error_ChooseAnother" xml:space="preserve">
+    <value>Choose another recording</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Details" xml:space="preserve">
+    <value>Start it with: brasscribe serve. Settings shows the address it uses. The message was: {0}</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Reason" xml:space="preserve">
+    <value>Your recording is safe. Full-band scores are made on your computer, and it isn't answering.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step1" xml:space="preserve">
+    <value>Check that the computer is on and on the same network.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step2" xml:space="preserve">
+    <value>Open Brasscribe on the computer.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step3" xml:space="preserve">
+    <value>Choose Try again.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Title" xml:space="preserve">
+    <value>Can't reach Brasscribe on your computer</value>
+  </data>
+  <data name="Error_DetailsHeading" xml:space="preserve">
+    <value>Details for the band's tech person</value>
+  </data>
+  <data name="Error_ScoreFailed_Reason" xml:space="preserve">
+    <value>Your recording is safe. Something stopped Brasscribe on your computer while it worked.</value>
+  </data>
+  <data name="Error_ScoreFailed_Step1" xml:space="preserve">
+    <value>Choose Try again. It often works the second time.</value>
+  </data>
+  <data name="Error_ScoreFailed_Step2" xml:space="preserve">
+    <value>If it stops again, try a shorter recording.</value>
+  </data>
+  <data name="Error_ScoreFailed_Title" xml:space="preserve">
+    <value>The score couldn't be made</value>
+  </data>
+  <data name="Error_TryAgain" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="ExportAsHeading.Text" xml:space="preserve">
+    <value>AS</value>
+  </data>
   <data name="ExportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Save the score, a part, MIDI, audio or the talking score (Ctrl+E)</value>
+    <value>Print your part, or save the score, parts, audio or MIDI (Ctrl+P)</value>
   </data>
   <data name="ExportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Export</value>
+    <value>Share or print</value>
   </data>
   <data name="ExportButtonLabel.Text" xml:space="preserve">
-    <value>Export</value>
+    <value>Share or print</value>
+  </data>
+  <data name="ExportConductor.Content" xml:space="preserve">
+    <value>Conductor's score</value>
   </data>
   <data name="ExportDialog.CloseButtonText" xml:space="preserve">
-    <value>Close</value>
+    <value>Cancel</value>
   </data>
   <data name="ExportDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Print…</value>
+  </data>
+  <data name="ExportDialog.SecondaryButtonText" xml:space="preserve">
     <value>Save…</value>
   </data>
   <data name="ExportDialog.Title" xml:space="preserve">
-    <value>Export</value>
+    <value>Share or print</value>
   </data>
-  <data name="ExportFormatList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Format</value>
+  <data name="ExportEveryPart.Content" xml:space="preserve">
+    <value>Every part</value>
   </data>
-  <data name="ExportPartBox.Header" xml:space="preserve">
-    <value>Part</value>
+  <data name="ExportEveryPartTip.Text" xml:space="preserve">
+    <value>Every part: one PDF per player.</value>
+  </data>
+  <data name="ExportMarksNote.Text" xml:space="preserve">
+    <value>Notes Brasscribe wasn't sure about keep their “?” marks.</value>
+  </data>
+  <data name="ExportScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>What to share or print</value>
+  </data>
+  <data name="ExportWhatHeading.Text" xml:space="preserve">
+    <value>WHAT</value>
+  </data>
+  <data name="Export_Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Export_Audio_For" xml:space="preserve">
+    <value>MP3 of the score, to practise with</value>
+  </data>
+  <data name="Export_Braille" xml:space="preserve">
+    <value>Braille music</value>
+  </data>
+  <data name="Export_Braille_For" xml:space="preserve">
+    <value>BRF file for a braille display or embosser</value>
   </data>
   <data name="Export_Done" xml:space="preserve">
-    <value>Saved {0} as {1}</value>
+    <value>Saved {0}</value>
+  </data>
+  <data name="Export_DoneMany" xml:space="preserve">
+    <value>Saved {0} files in {1}</value>
   </data>
   <data name="Export_Failed" xml:space="preserve">
-    <value>Could not save: {0}</value>
+    <value>Couldn't save: {0}</value>
   </data>
   <data name="Export_Format_Audio" xml:space="preserve">
     <value>Audio (MP3)</value>
@@ -202,10 +283,13 @@
     <value>MusicXML, one part</value>
   </data>
   <data name="Export_Format_MusicXmlScore" xml:space="preserve">
-    <value>MusicXML, full score</value>
+    <value>MusicXML, conductor's score</value>
   </data>
   <data name="Export_Format_Pdf" xml:space="preserve">
     <value>PDF</value>
+  </data>
+  <data name="Export_Format_PdfPart" xml:space="preserve">
+    <value>PDF, one part</value>
   </data>
   <data name="Export_Format_TalkingScoreHtml" xml:space="preserve">
     <value>Talking score, web page</value>
@@ -213,17 +297,104 @@
   <data name="Export_Format_TalkingScoreText" xml:space="preserve">
     <value>Talking score, plain text</value>
   </data>
+  <data name="Export_Midi" xml:space="preserve">
+    <value>MIDI</value>
+  </data>
+  <data name="Export_Midi_For" xml:space="preserve">
+    <value>For other music apps</value>
+  </data>
+  <data name="Export_MusicXml" xml:space="preserve">
+    <value>MusicXML</value>
+  </data>
+  <data name="Export_MusicXml_For" xml:space="preserve">
+    <value>Edit in MuseScore, Sibelius or Dorico</value>
+  </data>
+  <data name="Export_Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="Export_Pdf_For" xml:space="preserve">
+    <value>For printing and the music stand</value>
+  </data>
+  <data name="Export_Printing" xml:space="preserve">
+    <value>Sent to the printer</value>
+  </data>
   <data name="Export_Reason_NeedsEngine" xml:space="preserve">
-    <value>Needs the engine that made this score.</value>
+    <value>Needs Brasscribe on your computer, which made this score.</value>
   </data>
   <data name="Export_Reason_NoScore" xml:space="preserve">
     <value>Open or make a score first.</value>
   </data>
-  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>5 percent faster (=)</value>
+  <data name="Export_SaveMany" xml:space="preserve">
+    <value>Save {0} files…</value>
   </data>
-  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Faster</value>
+  <data name="Export_SaveOne" xml:space="preserve">
+    <value>Save…</value>
+  </data>
+  <data name="Export_Scope_Conductor" xml:space="preserve">
+    <value>Conductor's score</value>
+  </data>
+  <data name="Export_Scope_MyPart" xml:space="preserve">
+    <value>{0} (you)</value>
+  </data>
+  <data name="Export_SummaryMany" xml:space="preserve">
+    <value>{0} files</value>
+  </data>
+  <data name="Export_SummaryOne" xml:space="preserve">
+    <value>{0} file</value>
+  </data>
+  <data name="Export_TalkingScore" xml:space="preserve">
+    <value>Talking score</value>
+  </data>
+  <data name="Export_TalkingScore_For" xml:space="preserve">
+    <value>Text a screen reader can read aloud</value>
+  </data>
+  <data name="FindEnginesButton.Content" xml:space="preserve">
+    <value>Find on this network</value>
+  </data>
+  <data name="FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Look for computers running Brasscribe on the same network</value>
+  </data>
+  <data name="FinishLater_Confirm" xml:space="preserve">
+    <value>Finish later</value>
+  </data>
+  <data name="FinishLater_Keep" xml:space="preserve">
+    <value>Keep checking</value>
+  </data>
+  <data name="FinishLater_Title" xml:space="preserve">
+    <value>Finish checking later?</value>
+  </data>
+  <data name="FirstRunHeadingBrass.Text" xml:space="preserve">
+    <value>any recording.</value>
+  </data>
+  <data name="FirstRunHeadingLead.Text" xml:space="preserve">
+    <value>Scores for your band, from </value>
+  </data>
+  <data name="FirstRunPoint1Body.Text" xml:space="preserve">
+    <value>Play the piece, record a rehearsal, or open a file you have.</value>
+  </data>
+  <data name="FirstRunPoint1Title.Text" xml:space="preserve">
+    <value>Record or open</value>
+  </data>
+  <data name="FirstRunPoint2Body.Text" xml:space="preserve">
+    <value>Notes Brasscribe isn't sure about get a “?”. A boxed “?” means very unsure. You decide.</value>
+  </data>
+  <data name="FirstRunPoint2Title.Text" xml:space="preserve">
+    <value>Check the marked notes</value>
+  </data>
+  <data name="FirstRunPoint3Body.Text" xml:space="preserve">
+    <value>Mute your part, slow it down, repeat the hard bars.</value>
+  </data>
+  <data name="FirstRunPoint3Title.Text" xml:space="preserve">
+    <value>Practise with the band</value>
+  </data>
+  <data name="FirstRunPrivacy.Text" xml:space="preserve">
+    <value>Recordings stay on this PC and your own computer.</value>
+  </data>
+  <data name="GetStartedButton.Content" xml:space="preserve">
+    <value>Get started</value>
+  </data>
+  <data name="GetStartedButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Go to Home</value>
   </data>
   <data name="GoToBarBox.Header" xml:space="preserve">
     <value>Bar number</value>
@@ -240,26 +411,77 @@
   <data name="GoToBarItem.Text" xml:space="preserve">
     <value>Go to bar…</value>
   </data>
+  <data name="HearBand.Content" xml:space="preserve">
+    <value>Hear the band</value>
+  </data>
+  <data name="HearBand.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Play the score</value>
+  </data>
+  <data name="HearChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hear</value>
+  </data>
+  <data name="HearRecording.Content" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="HearRecording.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Play the recording from the same place (O)</value>
+  </data>
   <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Show every keyboard shortcut (F1)</value>
   </data>
   <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Keyboard shortcuts</value>
+    <value>Help and keyboard shortcuts</value>
   </data>
   <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Keyboard shortcuts</value>
+    <value>Help and keyboard shortcuts</value>
+  </data>
+  <data name="HomeDropFormats.Text" xml:space="preserve">
+    <value>MP3, WAV, M4A, MP4 and most other formats, or a MusicXML score</value>
+  </data>
+  <data name="HomeDropTitle.Text" xml:space="preserve">
+    <value>Drop an audio or video file here</value>
+  </data>
+  <data name="HomeEmpty.Text" xml:space="preserve">
+    <value>Your scores will appear here.</value>
+  </data>
+  <data name="HomeHeadingBrass.Text" xml:space="preserve">
+    <value>a score.</value>
+  </data>
+  <data name="HomeHeadingLead.Text" xml:space="preserve">
+    <value>Turn a recording into </value>
+  </data>
+  <data name="HomeIntro.Text" xml:space="preserve">
+    <value>Play it, record it, or open a file. Brasscribe writes the parts for your band.</value>
+  </data>
+  <data name="HomeScoresHeading.Text" xml:space="preserve">
+    <value>YOUR SCORES</value>
   </data>
   <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Open an audio file, a video file or a MusicXML score (Ctrl+O)</value>
+    <value>Open an audio or video file, or a MusicXML score (Ctrl+O)</value>
   </data>
   <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Import audio or video</value>
+    <value>Open a recording</value>
   </data>
   <data name="ImportButtonLabel.Text" xml:space="preserve">
-    <value>Import audio or video</value>
+    <value>Open a recording…</value>
   </data>
-  <data name="KeyBox.Header" xml:space="preserve">
-    <value>Key (concert pitch)</value>
+  <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Choose the key before this one</value>
+  </data>
+  <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous key</value>
+  </data>
+  <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous key</value>
+  </data>
+  <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Choose the key after this one</value>
+  </data>
+  <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next key</value>
+  </data>
+  <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next key</value>
   </data>
   <data name="Key_Ab" xml:space="preserve">
     <value>A♭ major</value>
@@ -288,38 +510,56 @@
   <data name="Key_G" xml:space="preserve">
     <value>G major</value>
   </data>
+  <data name="KindCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="KindCancelButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Back to Home, the recording is kept</value>
+  </data>
   <data name="KindHeading.Text" xml:space="preserve">
     <value>What is this?</value>
   </data>
   <data name="KindIntro.Text" xml:space="preserve">
-    <value>Choose what the recording is. The answer decides how it is transcribed.</value>
+    <value>Your answer decides how Brasscribe listens. It never guesses.</value>
   </data>
-  <data name="KindOptions.Header" xml:space="preserve">
-    <value>Recording type</value>
+  <data name="KindNotSure.Text" xml:space="preserve">
+    <value>Not sure? Choose Brass band. You can change it later.</value>
+  </data>
+  <data name="KindOptions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>What is this recording?</value>
   </data>
   <data name="Kind_BrassBand_Description" xml:space="preserve">
-    <value>A brass band or brass ensemble.</value>
+    <value>A whole band playing together, with no other instruments.</value>
   </data>
   <data name="Kind_BrassBand_Label" xml:space="preserve">
     <value>Brass band</value>
   </data>
   <data name="Kind_OrchestraWithSoloist_Description" xml:space="preserve">
-    <value>A soloist in front of an orchestra or backing track.</value>
+    <value>You get the solo part, plus the accompaniment arranged for brass band.</value>
   </data>
   <data name="Kind_OrchestraWithSoloist_Label" xml:space="preserve">
-    <value>Orchestra with soloist</value>
+    <value>Soloist with orchestra or band</value>
   </data>
   <data name="Kind_PopRock_Description" xml:space="preserve">
-    <value>A band with vocals, guitar, bass and drums.</value>
+    <value>Singing, guitars, keys, bass and drums.</value>
   </data>
   <data name="Kind_PopRock_Label" xml:space="preserve">
     <value>Pop or rock</value>
   </data>
   <data name="Kind_Solo_Description" xml:space="preserve">
-    <value>One brass player, alone.</value>
+    <value>One player on their own, like you practising the cornet.</value>
   </data>
   <data name="Kind_Solo_Label" xml:space="preserve">
-    <value>Solo instrument</value>
+    <value>One instrument</value>
+  </data>
+  <data name="Kind_SourceLine" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Kind_WhereComputer" xml:space="preserve">
+    <value>Made by Brasscribe on your computer. Nothing goes online.</value>
+  </data>
+  <data name="Kind_WhereThisPc" xml:space="preserve">
+    <value>Made on this PC. Nothing goes online.</value>
   </data>
   <data name="LanguageBox.Header" xml:space="preserve">
     <value>App language</value>
@@ -330,119 +570,245 @@
   <data name="LanguageSystem.Content" xml:space="preserve">
     <value>Same as Windows</value>
   </data>
+  <data name="LegendUncertain.Text" xml:space="preserve">
+    <value>Uncertain</value>
+  </data>
+  <data name="LegendVeryUncertain.Text" xml:space="preserve">
+    <value>Very uncertain</value>
+  </data>
   <data name="LevelMeter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Input level</value>
   </data>
-  <data name="LineupBox.Header" xml:space="preserve">
-    <value>Lineup</value>
+  <data name="LibraryHeading.Text" xml:space="preserve">
+    <value>YOUR SCORES</value>
   </data>
-  <data name="LineupFull.Content" xml:space="preserve">
+  <data name="LibraryNav.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Your scores</value>
+  </data>
+  <data name="Library_FullBand" xml:space="preserve">
     <value>Full band</value>
   </data>
-  <data name="LineupMinimal.Content" xml:space="preserve">
-    <value>Minimal band</value>
+  <data name="Library_OnePart" xml:space="preserve">
+    <value>One part</value>
+  </data>
+  <data name="Library_SmallBand" xml:space="preserve">
+    <value>Small band</value>
+  </data>
+  <data name="Library_Subtitle" xml:space="preserve">
+    <value>{0} · {1} bars · {2}</value>
+  </data>
+  <data name="Library_ToCheck" xml:space="preserve">
+    <value>{0} notes to check</value>
+  </data>
+  <data name="Library_ToCheckOne" xml:space="preserve">
+    <value>{0} note to check</value>
+  </data>
+  <data name="Library_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Which band?</value>
+  </data>
+  <data name="LineupFullBody.Text" xml:space="preserve">
+    <value>About 25 players</value>
+  </data>
+  <data name="LineupFullChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Full brass band</value>
+  </data>
+  <data name="LineupFullTitle.Text" xml:space="preserve">
+    <value>Full brass band</value>
+  </data>
+  <data name="LineupSmallBody.Text" xml:space="preserve">
+    <value>10–15 players, parts doubled up</value>
+  </data>
+  <data name="LineupSmallChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Small band</value>
+  </data>
+  <data name="LineupSmallTitle.Text" xml:space="preserve">
+    <value>Small band</value>
   </data>
   <data name="LinkNote.Text" xml:space="preserve">
-    <value>Links such as YouTube are not downloaded. Play the video and record it, or import a file you have.</value>
-  </data>
-  <data name="ListenBarButton.Content" xml:space="preserve">
-    <value>Listen to bar</value>
-  </data>
-  <data name="ListenBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Play the current bar, looped (P)</value>
+    <value>Links to streaming sites can't be downloaded. Play the music and record it instead.</value>
   </data>
   <data name="ListenToBarItem.Text" xml:space="preserve">
     <value>Listen to this bar</value>
   </data>
-  <data name="LoopEndBox.Header" xml:space="preserve">
-    <value>to bar</value>
+  <data name="LoopEndBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Repeat to bar</value>
   </data>
   <data name="LoopEndItem.Text" xml:space="preserve">
-    <value>Loop ends here</value>
+    <value>Repeat to here</value>
   </data>
-  <data name="LoopStartBox.Header" xml:space="preserve">
-    <value>Loop from bar</value>
+  <data name="LoopStartBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Repeat from bar</value>
   </data>
   <data name="LoopStartItem.Text" xml:space="preserve">
-    <value>Loop starts here</value>
-  </data>
-  <data name="MarkCheckedButton.Content" xml:space="preserve">
-    <value>Mark as checked</value>
-  </data>
-  <data name="MarkCheckedButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>The note is right; stop marking it uncertain (C)</value>
+    <value>Repeat from here</value>
   </data>
   <data name="MarkCheckedItem.Text" xml:space="preserve">
-    <value>Mark as checked</value>
+    <value>Keep this note</value>
   </data>
-  <data name="MetronomeToggle.Content" xml:space="preserve">
+  <data name="MetronomeLabel.Text" xml:space="preserve">
     <value>Metronome</value>
   </data>
-  <data name="MetronomeToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Click on every beat (T)</value>
+  <data name="MetronomeToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Metronome</value>
+  </data>
+  <data name="MetronomeToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>A click on every beat.</value>
   </data>
   <data name="Mixer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Mixer</value>
+    <value>Parts: mute or hear alone</value>
   </data>
   <data name="MixerHeading.Text" xml:space="preserve">
-    <value>Parts</value>
+    <value>PARTS</value>
+  </data>
+  <data name="MixerMuteLabel.Text" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="MixerNote.Text" xml:space="preserve">
+    <value>Your part is muted so you can play along. “Only this” plays one part alone.</value>
+  </data>
+  <data name="MixerSoloLabel.Text" xml:space="preserve">
+    <value>Only this</value>
+  </data>
+  <data name="MixerYourPart.Text" xml:space="preserve">
+    <value>your part</value>
   </data>
   <data name="Mixer_Mute" xml:space="preserve">
     <value>Mute {0}</value>
   </data>
   <data name="Mixer_Solo" xml:space="preserve">
-    <value>Solo {0}</value>
+    <value>Only this: {0}</value>
+  </data>
+  <data name="MuteMyPartLabel.Text" xml:space="preserve">
+    <value>Mute my part</value>
+  </data>
+  <data name="MuteMyPartToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mute my part</value>
+  </data>
+  <data name="MuteMyPartToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Your part is silent so you can play it.</value>
+  </data>
+  <data name="NewScoreButton.Content" xml:space="preserve">
+    <value>New score</value>
+  </data>
+  <data name="NewScoreButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Open or record a new recording</value>
+  </data>
+  <data name="NewScoreLabel.Text" xml:space="preserve">
+    <value>New score</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Go to the bar after</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next bar</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next bar</value>
+  </data>
+  <data name="OutputBackButton.Content" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="OutputBackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Back to the score as it is</value>
+  </data>
+  <data name="OutputBandHeading.Text" xml:space="preserve">
+    <value>Which band?</value>
+  </data>
+  <data name="OutputHardHeading.Text" xml:space="preserve">
+    <value>How hard?</value>
+  </data>
+  <data name="OutputHardTip.Text" xml:space="preserve">
+    <value>Easier keeps the tune but avoids high notes and fast runs.</value>
   </data>
   <data name="OutputHeading.Text" xml:space="preserve">
-    <value>Choose output</value>
+    <value>How should the score be?</value>
   </data>
-  <data name="OutputOptionsButton.Content" xml:space="preserve">
-    <value>Output</value>
+  <data name="OutputIntro.Text" xml:space="preserve">
+    <value>You can change this later. Nothing is lost.</value>
   </data>
-  <data name="OutputOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Lineup, difficulty and key</value>
+  <data name="OutputKeyHeading.Text" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="OutputOverline.Text" xml:space="preserve">
+    <value>LAST STEP</value>
   </data>
   <data name="Output_Failed" xml:space="preserve">
-    <value>Could not arrange: {0}</value>
+    <value>Couldn't arrange it: {0}</value>
+  </data>
+  <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
+    <value>As recorded · concert pitch</value>
+  </data>
+  <data name="Output_KeyConcertDetail" xml:space="preserve">
+    <value>Concert pitch</value>
   </data>
   <data name="Output_NeedsCore" xml:space="preserve">
-    <value>Arranging on this PC needs the Brasscribe core library, which is not installed.</value>
+    <value>Arranging on this PC needs Brasscribe's arranger, which isn't installed.</value>
   </data>
   <data name="Output_NeedsEngine" xml:space="preserve">
-    <value>Difficulty and key are set by the transcription engine; open a score it made to change them.</value>
+    <value>How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.</value>
   </data>
   <data name="Output_Ready" xml:space="preserve">
-    <value>Arrangement ready</value>
+    <value>The score is ready</value>
   </data>
   <data name="Output_Rearranging" xml:space="preserve">
-    <value>Arranging again with the new choices</value>
+    <value>Arranging again with your choices</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Pairing code</value>
   </data>
   <data name="PairingCodeBox.PlaceholderText" xml:space="preserve">
-    <value>Shown by the engine on the other computer</value>
+    <value>The six digits your computer shows</value>
   </data>
-  <data name="PartPicker.Header" xml:space="preserve">
-    <value>Show</value>
+  <data name="PartPageNote.Text" xml:space="preserve">
+    <value>Written down by Brasscribe. Check the notes marked ? before the rehearsal.</value>
+  </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Edit score title</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Edit score title</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Couldn't rename {0}</value>
+  </data>
+  <data name="PitchDownButton.Content" xml:space="preserve">
+    <value>Lower by a semitone</value>
+  </data>
+  <data name="PitchDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lower pitch by one semitone</value>
+  </data>
+  <data name="PitchUpButton.Content" xml:space="preserve">
+    <value>Raise by a semitone</value>
+  </data>
+  <data name="PitchUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Raise pitch by one semitone</value>
+  </data>
+  <data name="PitchSaveNote.Text" xml:space="preserve">
+    <value>Pitch changes are saved to this score immediately.</value>
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>The full score or one part in written pitch</value>
+    <value>All parts, or one part as a page (P)</value>
   </data>
-  <data name="PipButton.Content" xml:space="preserve">
-    <value>Picture in picture</value>
+  <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Parts</value>
   </data>
-  <data name="PipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Show the original video in a small window on top</value>
+  <data name="PipItem.Text" xml:space="preserve">
+    <value>Video in its own window</value>
   </data>
   <data name="Pip_Title" xml:space="preserve">
     <value>Original video</value>
   </data>
-  <data name="PlayAlongToggle.Content" xml:space="preserve">
-    <value>Play along</value>
-  </data>
-  <data name="PlayAlongToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Mute your part and play it yourself, with a count-in</value>
+  <data name="PitchChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pitch</value>
   </data>
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Space in the score, Ctrl+Shift+Space anywhere</value>
@@ -456,6 +822,9 @@
   <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Player</value>
   </data>
+  <data name="Player_BarBeat" xml:space="preserve">
+    <value>Bar {0}, beat {1}</value>
+  </data>
   <data name="Player_CountInOff" xml:space="preserve">
     <value>Count-in off</value>
   </data>
@@ -463,13 +832,13 @@
     <value>Count-in on</value>
   </data>
   <data name="Player_LoopOff" xml:space="preserve">
-    <value>No loop</value>
+    <value>Not repeating</value>
   </data>
   <data name="Player_LoopSet" xml:space="preserve">
-    <value>Loop set, bars {0} to {1}</value>
+    <value>Repeating bars {0} to {1}</value>
   </data>
   <data name="Player_LoopStartAt" xml:space="preserve">
-    <value>Loop starts at bar {0}</value>
+    <value>Repeat starts at bar {0}</value>
   </data>
   <data name="Player_MetronomeOff" xml:space="preserve">
     <value>Metronome off</value>
@@ -481,61 +850,97 @@
     <value>{0} muted</value>
   </data>
   <data name="Player_NotReady" xml:space="preserve">
-    <value>Playback is not ready: no sound set is loaded.</value>
+    <value>The sound isn't ready yet: no instrument sounds are loaded.</value>
+  </data>
+  <data name="Player_Of" xml:space="preserve">
+    <value>of {0}</value>
   </data>
   <data name="Player_PlayAlongOff" xml:space="preserve">
-    <value>Play along off</value>
+    <value>Your part plays again</value>
   </data>
   <data name="Player_PlayAlongOn" xml:space="preserve">
-    <value>Play along: {0} muted</value>
+    <value>{0} muted so you can play along</value>
   </data>
   <data name="Player_Position" xml:space="preserve">
     <value>Bar {0} of {1}</value>
   </data>
   <data name="Player_Soloed" xml:space="preserve">
-    <value>{0} solo</value>
+    <value>Only {0}</value>
   </data>
   <data name="Player_Speed" xml:space="preserve">
     <value>Speed {0} percent</value>
+  </data>
+  <data name="Player_Tempo" xml:space="preserve">
+    <value>♩ = {0}</value>
+  </data>
+  <data name="Player_TempoFaster" xml:space="preserve">
+    <value>♩ = {0} (faster than {1})</value>
+  </data>
+  <data name="Player_TempoSlowed" xml:space="preserve">
+    <value>♩ = {0} (slowed from {1})</value>
   </data>
   <data name="Player_Unmuted" xml:space="preserve">
     <value>{0} on</value>
   </data>
   <data name="Player_Unsoloed" xml:space="preserve">
-    <value>{0} solo off</value>
+    <value>All parts again</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Go to the bar before</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous bar</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous bar</value>
   </data>
   <data name="ReadBarItem.Text" xml:space="preserve">
-    <value>Read bar</value>
+    <value>Read the bar</value>
+  </data>
+  <data name="RecordAppBody.Text" xml:space="preserve">
+    <value>Only the app you choose, not other sounds</value>
   </data>
   <data name="RecordAppButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Record the chosen app and nothing else</value>
   </data>
   <data name="RecordAppButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Record only this app</value>
+    <value>Record this app</value>
   </data>
   <data name="RecordAppButtonLabel.Text" xml:space="preserve">
-    <value>Record only this app</value>
+    <value>Record this app</value>
   </data>
-  <data name="RecordHeading.Text" xml:space="preserve">
-    <value>Record</value>
+  <data name="RecordAppCard.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Choose the app to record, and nothing else is recorded</value>
+  </data>
+  <data name="RecordAppCard.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Record one app</value>
+  </data>
+  <data name="RecordAppTitle.Text" xml:space="preserve">
+    <value>Record one app</value>
+  </data>
+  <data name="RecordMicBody.Text" xml:space="preserve">
+    <value>Play your part in the room</value>
   </data>
   <data name="RecordMicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Record yourself or the room (Ctrl+Shift+R)</value>
+    <value>Play your part in the room (Ctrl+Shift+R)</value>
   </data>
   <data name="RecordMicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Record with the microphone</value>
   </data>
-  <data name="RecordMicButtonLabel.Text" xml:space="preserve">
+  <data name="RecordMicTitle.Text" xml:space="preserve">
     <value>Record with the microphone</value>
   </data>
+  <data name="RecordSystemBody.Text" xml:space="preserve">
+    <value>Sound from another app on this PC</value>
+  </data>
   <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Record everything the speakers play</value>
+    <value>Record everything this PC plays</value>
   </data>
   <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Record what this PC plays</value>
+    <value>Record what's playing</value>
   </data>
-  <data name="RecordSystemButtonLabel.Text" xml:space="preserve">
-    <value>Record what this PC plays</value>
+  <data name="RecordSystemTitle.Text" xml:space="preserve">
+    <value>Record what's playing</value>
   </data>
   <data name="RecordingTime.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Recording time</value>
@@ -550,25 +955,127 @@
     <value>Look again for apps that play sound</value>
   </data>
   <data name="RefreshAppsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Refresh the app list</value>
+    <value>Look for apps again</value>
   </data>
   <data name="RefreshAppsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Refresh the app list</value>
+    <value>Look for apps again</value>
+  </data>
+  <data name="RepeatBarsLabel.Text" xml:space="preserve">
+    <value>Repeat bars</value>
+  </data>
+  <data name="RepeatToLabel.Text" xml:space="preserve">
+    <value>to</value>
+  </data>
+  <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The note is right; its “?” goes (K)</value>
+  </data>
+  <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Keep, go to next</value>
+  </data>
+  <data name="ReviewKeepLabel.Text" xml:space="preserve">
+    <value>Keep, go to next</value>
+  </data>
+  <data name="ReviewKeys.Text" xml:space="preserve">
+    <value>Space listens · K keeps · arrows move</value>
+  </data>
+  <data name="ReviewLegend.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>“?” means uncertain. A boxed “?” means very uncertain.</value>
+  </data>
+  <data name="ReviewList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Notes to check</value>
+  </data>
+  <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Plays the bar from the recording, looped (Space)</value>
+  </data>
+  <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Listen to this bar</value>
+  </data>
+  <data name="ReviewListenLabel.Text" xml:space="preserve">
+    <value>Listen to this bar</value>
+  </data>
+  <data name="ReviewSkipButton.Content" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="ReviewSkipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Leave this note marked and go to the next</value>
+  </data>
+  <data name="ReviewSnippet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>The bars around the note</value>
+  </data>
+  <data name="Review_AllDone" xml:space="preserve">
+    <value>Every note is checked</value>
+  </data>
+  <data name="Review_BarHeading" xml:space="preserve">
+    <value>Bar {0}</value>
+  </data>
+  <data name="Review_Count" xml:space="preserve">
+    <value>{0} notes to check</value>
+  </data>
+  <data name="Review_CountOne" xml:space="preserve">
+    <value>{0} note to check</value>
+  </data>
+  <data name="Review_FinishConfirm" xml:space="preserve">
+    <value>{0} notes keep their ? marks. You can check them any time from the score with “Check them”.</value>
+  </data>
+  <data name="Review_FinishConfirmOne" xml:space="preserve">
+    <value>{0} note keeps its ? mark. You can check it any time from the score with “Check them”.</value>
+  </data>
+  <data name="Review_FinishLater" xml:space="preserve">
+    <value>Finish later ({0} left)</value>
+  </data>
+  <data name="Review_Kept" xml:space="preserve">
+    <value>Kept bar {0}. {1} left</value>
+  </data>
+  <data name="Review_LevelUncertain" xml:space="preserve">
+    <value>Uncertain: listen to the original and the score side by side.</value>
+  </data>
+  <data name="Review_LevelVeryUncertain" xml:space="preserve">
+    <value>Very uncertain: listen to the original and the score side by side.</value>
+  </data>
+  <data name="Review_ListItem" xml:space="preserve">
+    <value>Bar {0} · {1}</value>
+  </data>
+  <data name="Review_ListItemUncertain" xml:space="preserve">
+    <value>Bar {0}, {1}, uncertain</value>
+  </data>
+  <data name="Review_ListItemVeryUncertain" xml:space="preserve">
+    <value>Bar {0}, {1}, very uncertain</value>
+  </data>
+  <data name="Review_NoteConcert" xml:space="preserve">
+    <value>Concert {0}</value>
+  </data>
+  <data name="Review_NoteWritten" xml:space="preserve">
+    <value>Written {0}</value>
+  </data>
+  <data name="Review_Overline" xml:space="preserve">
+    <value>{0} of {1} · {2}</value>
+  </data>
+  <data name="ScoreCards.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Your scores</value>
   </data>
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Arrows move by note, Ctrl+arrows by beat and bar, Ctrl+Shift+arrows by part. U finds uncertain notes. Tab leaves the score.</value>
+    <value>Arrows move by note, Ctrl+arrows by beat and bar, Ctrl+Shift+arrows by part. U finds notes marked ?. Tab leaves the score.</value>
   </data>
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score</value>
   </data>
+  <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Score tools</value>
+  </data>
+  <data name="Score_AsWritten" xml:space="preserve">
+    <value>As written</value>
+  </data>
+  <data name="Score_AsWrittenFor" xml:space="preserve">
+    <value>As written for {0}</value>
+  </data>
   <data name="Score_Checked" xml:space="preserve">
-    <value>Checked. {0} left</value>
+    <value>Kept. {0} left</value>
   </data>
   <data name="Score_ControlType" xml:space="preserve">
     <value>score</value>
   </data>
   <data name="Score_FullScore" xml:space="preserve">
-    <value>Full score</value>
+    <value>All parts</value>
   </data>
   <data name="Score_ListeningOriginal" xml:space="preserve">
     <value>Playing bar {0} from the recording</value>
@@ -576,8 +1083,11 @@
   <data name="Score_ListeningScore" xml:space="preserve">
     <value>Playing bar {0}</value>
   </data>
+  <data name="Score_LoopLabel" xml:space="preserve">
+    <value>Repeat {0}–{1}</value>
+  </data>
   <data name="Score_NoOriginal" xml:space="preserve">
-    <value>No recording to switch to: this score was opened without one.</value>
+    <value>There's no recording to hear: this score was opened without one.</value>
   </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0} part.</value>
@@ -586,13 +1096,28 @@
     <value>Playing the recording from bar {0}</value>
   </data>
   <data name="Score_SwitchedToScore" xml:space="preserve">
-    <value>Playing the score</value>
+    <value>Playing the band</value>
   </data>
   <data name="Score_UncertainLeft" xml:space="preserve">
-    <value>{0} uncertain notes to check</value>
+    <value>{0} notes marked ? (boxed ? = very unsure)</value>
+  </data>
+  <data name="Score_UncertainLeftOne" xml:space="preserve">
+    <value>{0} note marked ? (boxed ? = very unsure)</value>
   </data>
   <data name="Score_Zoom" xml:space="preserve">
     <value>Zoom {0} percent</value>
+  </data>
+  <data name="Screen_ChooseOutput" xml:space="preserve">
+    <value>How should the score be?</value>
+  </data>
+  <data name="Screen_Error" xml:space="preserve">
+    <value>Something went wrong</value>
+  </data>
+  <data name="Screen_FirstRun" xml:space="preserve">
+    <value>Welcome</value>
+  </data>
+  <data name="Screen_Review" xml:space="preserve">
+    <value>Check the notes</value>
   </data>
   <data name="Screen_Score" xml:space="preserve">
     <value>Score</value>
@@ -601,25 +1126,25 @@
     <value>What is this?</value>
   </data>
   <data name="Screen_Start" xml:space="preserve">
-    <value>Start</value>
+    <value>Home</value>
   </data>
   <data name="Screen_Transcribing" xml:space="preserve">
-    <value>Transcribing</value>
+    <value>Making the score</value>
   </data>
   <data name="SetLoopButton.Content" xml:space="preserve">
-    <value>Set loop</value>
+    <value>Repeat</value>
   </data>
   <data name="SetLoopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Loop the bars you typed (L)</value>
+    <value>Plays these bars over and over (L)</value>
   </data>
   <data name="SettingsAboutHeading.Text" xml:space="preserve">
     <value>About</value>
   </data>
   <data name="SettingsAccessibilityHeading.Text" xml:space="preserve">
-    <value>Accessibility</value>
+    <value>Display and keyboard</value>
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Language, keyboard, talking score and engine (Ctrl+,)</value>
+    <value>Language, keyboard, reading aloud and Brasscribe on your computer (Ctrl+,)</value>
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Settings</value>
@@ -634,22 +1159,37 @@
     <value>Settings</value>
   </data>
   <data name="SettingsEngineHeading.Text" xml:space="preserve">
-    <value>Transcription engine</value>
+    <value>Brasscribe on your computer</value>
   </data>
   <data name="SettingsLanguageHeading.Text" xml:space="preserve">
     <value>Language</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
-    <value>built-in (the native core is not installed)</value>
+    <value>built in (the full arranger isn't installed)</value>
   </data>
   <data name="Settings_CoreVersion" xml:space="preserve">
-    <value>Core library: {0}</value>
+    <value>Arranger on this PC: {0}</value>
+  </data>
+  <data name="Settings_Engine_Chosen" xml:space="preserve">
+    <value>Using {0}. Type the six-digit code it shows, then choose Connect.</value>
   </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
-    <value>Connected to engine {0}, running on {1}</value>
+    <value>Connected to Brasscribe {0} on your computer ({1})</value>
+  </data>
+  <data name="Settings_Engine_FoundMany" xml:space="preserve">
+    <value>Found {0} computers running Brasscribe. Choose one.</value>
+  </data>
+  <data name="Settings_Engine_FoundOne" xml:space="preserve">
+    <value>Found {0}. Choose it to use it.</value>
   </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
-    <value>The engine asks for a pairing code. Type the code it shows.</value>
+    <value>Your computer asks for a pairing code. Type the six digits it shows.</value>
+  </data>
+  <data name="Settings_Engine_NoneFound" xml:space="preserve">
+    <value>No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.</value>
+  </data>
+  <data name="Settings_Engine_Searching" xml:space="preserve">
+    <value>Looking for Brasscribe on your network…</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Next or previous bar</value>
@@ -658,7 +1198,7 @@
     <value>Next or previous beat</value>
   </data>
   <data name="Shortcut_Checked" xml:space="preserve">
-    <value>Mark as checked</value>
+    <value>Keep the note</value>
   </data>
   <data name="Shortcut_Close" xml:space="preserve">
     <value>Close a dialog or leave the score</value>
@@ -667,7 +1207,7 @@
     <value>Count-in, metronome</value>
   </data>
   <data name="Shortcut_Export" xml:space="preserve">
-    <value>Export</value>
+    <value>Share or print</value>
   </data>
   <data name="Shortcut_FirstLast" xml:space="preserve">
     <value>First or last bar</value>
@@ -679,16 +1219,16 @@
     <value>Keyboard shortcuts</value>
   </data>
   <data name="Shortcut_Import" xml:space="preserve">
-    <value>Import a file</value>
+    <value>Open a recording</value>
   </data>
   <data name="Shortcut_Leave" xml:space="preserve">
     <value>Leave the score</value>
   </data>
   <data name="Shortcut_Loop" xml:space="preserve">
-    <value>Loop start, loop end, loop on or off</value>
+    <value>Repeat from, repeat to, repeat on or off</value>
   </data>
   <data name="Shortcut_MuteSolo" xml:space="preserve">
-    <value>Mute or solo the current part</value>
+    <value>Mute the part, or only this part</value>
   </data>
   <data name="Shortcut_Note" xml:space="preserve">
     <value>Next or previous note</value>
@@ -718,16 +1258,16 @@
     <value>Slower, faster, normal speed</value>
   </data>
   <data name="Shortcut_SwitchSource" xml:space="preserve">
-    <value>Switch between score and recording</value>
+    <value>Hear the band or the recording</value>
   </data>
   <data name="Shortcut_TalkingScore" xml:space="preserve">
-    <value>Switch between notation and talking score</value>
+    <value>Read aloud, or back to the notes</value>
   </data>
   <data name="Shortcut_Uncertain" xml:space="preserve">
-    <value>Next or previous uncertain note</value>
+    <value>Next or previous note marked ?</value>
   </data>
   <data name="Shortcut_WhereAmI" xml:space="preserve">
-    <value>Where am I (full detail)</value>
+    <value>Where am I (everything)</value>
   </data>
   <data name="Shortcut_Zoom" xml:space="preserve">
     <value>Zoom out, zoom in, reset zoom</value>
@@ -744,68 +1284,59 @@
   <data name="Shortcuts_Score" xml:space="preserve">
     <value>In the score</value>
   </data>
+  <data name="ShowScoreButton.Content" xml:space="preserve">
+    <value>Show the score</value>
+  </data>
+  <data name="ShowScoreButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Arranges again only if you changed a choice</value>
+  </data>
   <data name="SingleKeySwitch.Header" xml:space="preserve">
     <value>Single-key shortcuts in the score</value>
   </data>
   <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Keys such as U, R and P. Arrows always work.</value>
   </data>
-  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>5 percent slower (-)</value>
-  </data>
-  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Slower</value>
-  </data>
-  <data name="SourceToggle.Content" xml:space="preserve">
-    <value>Original</value>
-  </data>
-  <data name="SourceToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Switch between the score and the original recording at the same place (O)</value>
-  </data>
-  <data name="SpeedSlider.Header" xml:space="preserve">
+  <data name="SpeedLabel.Text" xml:space="preserve">
     <value>Speed</value>
   </data>
   <data name="SpeedSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>25 to 150 percent, without changing pitch</value>
+    <value>25 to 150 percent, without changing the pitch</value>
+  </data>
+  <data name="SpeedSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Speed</value>
   </data>
   <data name="StartError.Title" xml:space="preserve">
-    <value>That did not work</value>
-  </data>
-  <data name="StartHeading.Text" xml:space="preserve">
-    <value>Make a brass-band score</value>
-  </data>
-  <data name="StartIntro.Text" xml:space="preserve">
-    <value>Import a recording or a video, or record what you hear. Brasscribe writes it out for brass band.</value>
+    <value>That didn't work</value>
   </data>
   <data name="Start_Error_AppCaptureUnsupported" xml:space="preserve">
-    <value>Recording a single app needs Windows 11.</value>
+    <value>Recording one app needs Windows 11. Record everything this PC plays instead.</value>
   </data>
   <data name="Start_Error_Capture" xml:space="preserve">
-    <value>Recording could not start: {0}</value>
+    <value>Recording couldn't start: {0}</value>
   </data>
   <data name="Start_Error_ChooseApp" xml:space="preserve">
     <value>Choose the app to record first.</value>
   </data>
   <data name="Start_Error_Decode" xml:space="preserve">
-    <value>{0} could not be read. Try another file.</value>
+    <value>{0} can't be read. Try another file, or record it instead.</value>
   </data>
   <data name="Start_Error_Link" xml:space="preserve">
-    <value>Links are not downloaded. Play the video and record it, or import a file.</value>
+    <value>Links to streaming sites can't be downloaded. Play the music and record it instead.</value>
   </data>
   <data name="Start_Error_MicrophonePermission" xml:space="preserve">
     <value>Brasscribe may not use the microphone. Allow it in Windows Settings, Privacy, Microphone.</value>
   </data>
   <data name="Start_Error_Score" xml:space="preserve">
-    <value>{0} could not be opened as a score.</value>
+    <value>{0} can't be opened as a score.</value>
   </data>
   <data name="Start_Error_TooShort" xml:space="preserve">
     <value>The recording is shorter than a second. Try again.</value>
   </data>
   <data name="Start_Error_Unsupported" xml:space="preserve">
-    <value>{0} is not an audio, video or MusicXML file.</value>
+    <value>{0} can't be opened. Try an MP3, WAV, M4A or MP4 file, or a MusicXML score.</value>
   </data>
   <data name="Start_Imported" xml:space="preserve">
-    <value>Imported {0}, {1}</value>
+    <value>Opened {0}, {1}</value>
   </data>
   <data name="Start_Level_Good" xml:space="preserve">
     <value>Input level, good</value>
@@ -820,13 +1351,13 @@
     <value>Input level, too loud</value>
   </data>
   <data name="Start_Notice_NothingPlaying" xml:space="preserve">
-    <value>Only silence is arriving. Check that something is playing. Protected (DRM) playback cannot be recorded.</value>
+    <value>Only silence is arriving. Check that something is playing. Streaming apps usually block recording.</value>
   </data>
   <data name="Start_Notice_SilenceWhilePlaying" xml:space="preserve">
-    <value>The app is playing, but Windows gives Brasscribe only silence. This happens with protected (DRM) playback, which cannot be recorded.</value>
+    <value>The app is playing, but Brasscribe hears only silence. Streaming apps usually block recording. Open a file instead, or record with the microphone.</value>
   </data>
   <data name="Start_Notice_TooLoud" xml:space="preserve">
-    <value>The input is too loud and distorts. Turn the volume down a little.</value>
+    <value>The sound is too loud and distorts. Turn the volume down a little.</value>
   </data>
   <data name="Start_RecordingName" xml:space="preserve">
     <value>Recording</value>
@@ -837,15 +1368,6 @@
   <data name="Start_RecordingStopped" xml:space="preserve">
     <value>Recording stopped, {0}</value>
   </data>
-  <data name="StopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Stop playback</value>
-  </data>
-  <data name="StopButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Stop</value>
-  </data>
-  <data name="StopButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Stop</value>
-  </data>
   <data name="StopRecordingButton.Content" xml:space="preserve">
     <value>Stop recording</value>
   </data>
@@ -853,31 +1375,31 @@
     <value>Stop and continue with the recording (Ctrl+Shift+R)</value>
   </data>
   <data name="TalkingList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Talking score</value>
+    <value>Read aloud</value>
   </data>
-  <data name="TalkingScoreToggle.Content" xml:space="preserve">
-    <value>Talking score</value>
+  <data name="TalkingScoreToggle.Text" xml:space="preserve">
+    <value>Read aloud</value>
   </data>
   <data name="TalkingScoreToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Show the score as text, one line per note (Ctrl+T)</value>
+    <value>Describes the score in words for a screen reader (Ctrl+T)</value>
   </data>
-  <data name="TranscribeBackButton.Content" xml:space="preserve">
-    <value>Back to the choices</value>
+  <data name="Title_CheckNotes" xml:space="preserve">
+    <value>{0} · Check the notes</value>
   </data>
-  <data name="TranscribeBackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Choose again or check the engine settings, the recording is kept</value>
+  <data name="Title_ScoreSubtitle" xml:space="preserve">
+    <value>{0} · {1} bars</value>
   </data>
-  <data name="TranscribeErrorBar.Title" xml:space="preserve">
-    <value>Transcription stopped</value>
-  </data>
-  <data name="TranscribeHeading.Text" xml:space="preserve">
-    <value>Transcribing</value>
+  <data name="TranscribeLeaveNote.Text" xml:space="preserve">
+    <value>Brasscribe will tell you when the score is ready.</value>
   </data>
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Transcription progress</value>
+    <value>Making the score</value>
+  </data>
+  <data name="Transcribe_CancelConfirm" xml:space="preserve">
+    <value>Stop making this score? The recording stays in Your scores.</value>
   </data>
   <data name="Transcribe_Cancelled" xml:space="preserve">
-    <value>Transcription cancelled</value>
+    <value>Stopped. The recording is kept.</value>
   </data>
   <data name="Transcribe_Device" xml:space="preserve">
     <value>Running on {0}</value>
@@ -886,28 +1408,31 @@
     <value>The score is ready</value>
   </data>
   <data name="Transcribe_Error" xml:space="preserve">
-    <value>Transcription stopped: {0}</value>
+    <value>Stopped: {0}</value>
   </data>
   <data name="Transcribe_Eta_Hours" xml:space="preserve">
-    <value>About {0} hours left (estimate)</value>
+    <value>About {0} hours left</value>
   </data>
   <data name="Transcribe_Eta_Minutes" xml:space="preserve">
-    <value>About {0} minutes left (estimate)</value>
+    <value>About {0} minutes left</value>
   </data>
   <data name="Transcribe_Eta_UnderMinute" xml:space="preserve">
-    <value>Less than a minute left (estimate)</value>
+    <value>Less than a minute left</value>
   </data>
   <data name="Transcribe_Eta_Unknown" xml:space="preserve">
-    <value>Estimating the time left</value>
+    <value>Working out the time left</value>
   </data>
   <data name="Transcribe_Failed" xml:space="preserve">
-    <value>The transcription failed</value>
+    <value>The score couldn't be made</value>
+  </data>
+  <data name="Transcribe_Overline" xml:space="preserve">
+    <value>Step {0} of {1} · {2}</value>
   </data>
   <data name="Transcribe_ProgressAnnouncement" xml:space="preserve">
     <value>{0} percent. {1}. {2}</value>
   </data>
   <data name="Transcribe_Rearranging" xml:space="preserve">
-    <value>Arranging again with the new choices</value>
+    <value>Arranging again with your choices</value>
   </data>
   <data name="Transcribe_Stage_Arrange" xml:space="preserve">
     <value>Arranging for brass band</value>
@@ -916,7 +1441,7 @@
     <value>Finding the beat</value>
   </data>
   <data name="Transcribe_Stage_Engrave" xml:space="preserve">
-    <value>Engraving the score</value>
+    <value>Laying out the pages</value>
   </data>
   <data name="Transcribe_Stage_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
@@ -925,37 +1450,79 @@
     <value>Separating the instruments</value>
   </data>
   <data name="Transcribe_Stage_Upload" xml:space="preserve">
-    <value>Sending the recording to the engine</value>
+    <value>Getting the recording ready</value>
   </data>
   <data name="Transcribe_Stage_Working" xml:space="preserve">
     <value>Working</value>
   </data>
   <data name="Transcribe_Started" xml:space="preserve">
-    <value>Transcribing {0} as {1}</value>
+    <value>Making a score of {0} as {1}</value>
   </data>
-  <data name="TransposeBox.Header" xml:space="preserve">
-    <value>Transpose, semitones</value>
+  <data name="Transcribe_StepCurrent" xml:space="preserve">
+    <value>{0}, now</value>
+  </data>
+  <data name="Transcribe_StepDone" xml:space="preserve">
+    <value>{0}, done</value>
+  </data>
+  <data name="Transcribe_StepPending" xml:space="preserve">
+    <value>{0}, to come</value>
+  </data>
+  <data name="Transcribe_Step_Arrange" xml:space="preserve">
+    <value>Arranging for brass band</value>
+  </data>
+  <data name="Transcribe_Step_Beats" xml:space="preserve">
+    <value>Finding the beat</value>
+  </data>
+  <data name="Transcribe_Step_Layout" xml:space="preserve">
+    <value>Laying out the pages</value>
+  </data>
+  <data name="Transcribe_Step_Notes" xml:space="preserve">
+    <value>Writing down the notes</value>
+  </data>
+  <data name="Transcribe_Step_Ready" xml:space="preserve">
+    <value>Getting the recording ready</value>
+  </data>
+  <data name="Transcribe_Step_Separate" xml:space="preserve">
+    <value>Separating the instruments</value>
+  </data>
+  <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
+    <value>Separating the soloist from the band</value>
   </data>
   <data name="VerbosityBox.Header" xml:space="preserve">
-    <value>Talking score detail</value>
+    <value>How much “Read aloud” says</value>
   </data>
   <data name="VerbosityBrief.Content" xml:space="preserve">
     <value>Brief</value>
   </data>
   <data name="VerbosityFull.Content" xml:space="preserve">
-    <value>Full</value>
+    <value>Everything</value>
   </data>
   <data name="VerbosityStandard.Content" xml:space="preserve">
     <value>Standard</value>
   </data>
+  <data name="VideoToggle.Text" xml:space="preserve">
+    <value>Show video</value>
+  </data>
   <data name="VideoView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Original video</value>
   </data>
-  <data name="ZoomBox.Header" xml:space="preserve">
-    <value>Zoom, percent</value>
+  <data name="ViewMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Read aloud, show video, how the score should be</value>
+  </data>
+  <data name="ViewMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="ViewMenuLabel.Text" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="WrittenChoice.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Written is what you read on your part.</value>
   </data>
   <data name="ZoomBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Notation size from 50 to 400 percent</value>
+  </data>
+  <data name="ZoomBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom, percent</value>
   </data>
   <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Larger notation (Ctrl+=)</value>

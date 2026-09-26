@@ -11,7 +11,7 @@
     <RootNamespace>Brasscribe.Play</RootNamespace>
     <AssemblyName>BrasscribePlay</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\..\design\dist\icons\windows\Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
@@ -42,7 +42,20 @@
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
-    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The design system (design/): theme, display face and app icons are linked from design/dist,
+       never copied, so a token change reaches the app on the next build. -->
+  <PropertyGroup>
+    <DesignDir>..\..\..\..\design\</DesignDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Page Include="$(DesignDir)dist\windows\BrasscribeTheme.xaml" Link="Themes\BrasscribeTheme.xaml" />
+    <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The brass italic of the display face ("a score.") is its own font file, not a slanted Regular. -->
+    <Content Include="$(DesignDir)brand\fonts\InstrumentSerif-Italic.ttf" Link="Assets\Fonts\InstrumentSerif-Italic.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)brand\logo\mark-brass.svg" Link="Assets\Brand\mark-brass.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

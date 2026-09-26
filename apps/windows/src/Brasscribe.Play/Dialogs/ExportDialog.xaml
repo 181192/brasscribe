@@ -6,24 +6,57 @@
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
     x:Uid="ExportDialog"
     DefaultButton="Primary"
-    PrimaryButtonClick="OnExport">
+    CornerRadius="{StaticResource BcRadiusXl}"
+    PrimaryButtonStyle="{StaticResource PrimaryButtonStyle}"
+    SecondaryButtonStyle="{StaticResource SecondaryButtonStyle}"
+    PrimaryButtonClick="OnPrint"
+    SecondaryButtonClick="OnSave">
 
-    <StackPanel Spacing="12" MinWidth="360">
-        <!-- Formats as a list: arrows move, unavailable ones stay listed with the reason. -->
-        <ListView x:Name="FormatList" x:Uid="ExportFormatList" ItemsSource="{x:Bind ViewModel.Formats}" SelectionMode="Single"
-                  SelectionChanged="OnFormatChanged" MaxHeight="360">
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="vm:ExportChoice">
-                    <StackPanel Padding="0,6" Spacing="2" AutomationProperties.Name="{x:Bind Label}"
-                                AutomationProperties.HelpText="{x:Bind Reason}">
-                        <TextBlock Text="{x:Bind Label}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBlock Text="{x:Bind Reason}" Style="{StaticResource MutedStyle}" Visibility="{x:Bind vm:Screens.HasText(Reason)}" />
-                    </StackPanel>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-        <ComboBox x:Name="PartBox" x:Uid="ExportPartBox" ItemsSource="{x:Bind ViewModel.Parts}" DisplayMemberPath="Name"
-                  SelectionChanged="OnPartChanged" HorizontalAlignment="Stretch" />
-        <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+    <!-- "Share or print": your own part as a PDF by default; Print is the primary. -->
+    <ContentDialog.TitleTemplate>
+        <DataTemplate>
+            <TextBlock Text="{Binding}" Style="{StaticResource ScreenHeadingStyle}" FontSize="34" LineHeight="42" />
+        </DataTemplate>
+    </ContentDialog.TitleTemplate>
+
+    <StackPanel Spacing="10" MinWidth="520">
+        <TextBlock x:Uid="ExportWhatHeading" Style="{StaticResource OverlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+        <Border Style="{StaticResource SegmentGroupStyle}" HorizontalAlignment="Left" x:Uid="ExportScope">
+            <StackPanel Orientation="Horizontal" Spacing="3">
+                <RadioButton x:Name="MyPartChoice" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked" Tag="0"
+                             Content="{x:Bind ViewModel.MyPartLabel, Mode=OneWay}" />
+                <RadioButton x:Name="EveryPartChoice" x:Uid="ExportEveryPart" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
+                             Checked="OnScopeChecked" Tag="1" />
+                <RadioButton x:Name="ConductorChoice" x:Uid="ExportConductor" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
+                             Checked="OnScopeChecked" Tag="2" />
+            </StackPanel>
+        </Border>
+        <TextBlock x:Uid="ExportEveryPartTip" Style="{StaticResource MutedStyle}" FontSize="12" />
+
+        <TextBlock x:Uid="ExportAsHeading" Style="{StaticResource OverlineStyle}" Margin="0,12,0,0" AutomationProperties.HeadingLevel="Level2" />
+        <Border BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource BcRadiusLg}"
+                Background="{ThemeResource BcSurfaceRaisedBrush}">
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Formats}" IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ExportChoice">
+                        <Border BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1" Padding="14,6">
+                            <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" IsEnabled="{x:Bind Available}"
+                                      AutomationProperties.Name="{x:Bind Label}" AutomationProperties.HelpText="{x:Bind Detail}">
+                                <StackPanel Spacing="1" Padding="4,2,0,2">
+                                    <TextBlock Text="{x:Bind Label}" Style="{StaticResource LabelStyle}" FontSize="16" />
+                                    <TextBlock Text="{x:Bind Detail}" Style="{StaticResource MutedStyle}" />
+                                </StackPanel>
+                            </CheckBox>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <TextBlock x:Uid="ExportMarksNote" Style="{StaticResource MutedStyle}" />
+        <Grid Margin="0,8,0,0">
+            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.Summary, Mode=OneWay}" />
+        </Grid>
+        <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                   AutomationProperties.LiveSetting="Polite" />
     </StackPanel>
 </ContentDialog>

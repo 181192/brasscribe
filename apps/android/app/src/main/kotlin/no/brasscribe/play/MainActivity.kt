@@ -15,6 +15,9 @@ import androidx.core.content.IntentCompat
 import no.brasscribe.play.ui.AboutScreen
 import no.brasscribe.play.ui.CompanionScreen
 import no.brasscribe.play.ui.ExportScreen
+import no.brasscribe.play.ui.FirstRunScreen
+import no.brasscribe.play.ui.ProblemScreen
+import no.brasscribe.play.ui.SettingsScreen
 import no.brasscribe.play.ui.HomeScreen
 import no.brasscribe.play.ui.OutputScreen
 import no.brasscribe.play.ui.ProfileScreen
@@ -58,6 +61,7 @@ fun PlayRoot(vm: PlayViewModel) {
     val stack by vm.screen.collectAsState()
     BackHandler(enabled = stack.size > 1) { vm.back() }
     when (stack.last()) {
+        Screen.FIRST_RUN -> FirstRunScreen(vm)
         Screen.HOME -> HomeScreen(vm)
         Screen.RECORD -> RecordScreen(vm)
         Screen.PROFILE -> ProfileScreen(vm)
@@ -68,5 +72,7 @@ fun PlayRoot(vm: PlayViewModel) {
         Screen.EXPORT -> ExportScreen(vm)
         Screen.COMPANION -> CompanionScreen(vm)
         Screen.ABOUT -> AboutScreen(vm)
+        Screen.SETTINGS -> SettingsScreen(vm)
+        Screen.PROBLEM -> ProblemScreen(vm)
     }
 }

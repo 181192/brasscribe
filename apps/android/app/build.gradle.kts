@@ -111,15 +111,35 @@ val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
     filePermissions { user { read = true; write = true } }
 }
 
+/*
+ * The Brasscribe design system (design/dist, generated from design/tokens): the Compose theme and icon
+ * enum are compiled from design/dist/android/kotlin as they are; the icon drawables, the display face
+ * and the launcher icons are synced into one generated res folder (res/font may hold only fonts, so the
+ * font's licence goes to the assets instead).
+ */
+val designDist = File(repoRoot, "design/dist")
+val designRes = tasks.register<Sync>("syncDesignResources") {
+    into(layout.buildDirectory.dir("generated/brasscribe/design/res"))
+    from(File(designDist, "android/res")) { exclude("font/OFL.txt") }
+    from(File(designDist, "icons/android/res"))
+}
+val designLicence = tasks.register<Sync>("syncDesignLicence") {
+    into(layout.buildDirectory.dir("generated/brasscribe/design/assets/licences"))
+    from(File(designDist, "android/res/font")) { include("OFL.txt"); rename { "instrument-serif-OFL.txt" } }
+}
+
 androidComponents {
     onVariants { variant ->
+        variant.sources.kotlin?.addStaticSourceDirectory(File(designDist, "android/kotlin").path)
+        variant.sources.res?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/res").get().asFile.path)
+        variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/assets").get().asFile.path)
         variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/models").get().asFile.path)
         if (variant.buildType == "debug") {
             variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/fixtures").get().asFile.path)
         }
     }
 }
-tasks.named("preBuild") { dependsOn(modelAssets, fixtureAssets) }
+tasks.named("preBuild") { dependsOn(modelAssets, fixtureAssets, designRes, designLicence) }
 
 dependencies {
     implementation(project(":model"))

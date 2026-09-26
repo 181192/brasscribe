@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var status: String?
     @State private var busy = false
     @State private var modelTick = 0
+    @State private var browser = EngineBrowser()
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
 
     var body: some View {
@@ -18,6 +19,15 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
+                    ForEach(browser.engines) { engine in
+                        Button { Task { await choose(engine) } } label: {
+                            Label(engine.name, systemImage: BrasscribeIcon.computer.systemName)
+                        }
+                        .disabled(busy)
+                    }
+                    if browser.engines.isEmpty {
+                        Text("Looking for Brasscribe on your network…").foregroundStyle(Color.Brasscribe.textMuted)
+                    }
                     TextField(text: $code) { Text("Six-digit code") }
                         .textContentType(.oneTimeCode)
                         #if os(iOS)
@@ -27,14 +37,17 @@ struct SettingsView: View {
                     Button("Check the connection") { Task { await check() } }.disabled(busy)
                     if let status { Text(status).font(Font.Brasscribe.callout) }
                     DisclosureGroup {
-                        Text("On the computer, start Brasscribe with “brasscribe serve --host 0.0.0.0”. It shows the pairing code and the address.")
+                        Text("On the computer, start Brasscribe with “brasscribe serve --lan”. It shows the pairing code, and this device finds it on the same network.")
                             .font(Font.Brasscribe.callout)
+                        if let problem = browser.problem {
+                            Text(problem).font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                        }
                         TextField(text: $app.companionURL) { Text("Address") }
                             .textContentType(.URL)
                             .autocorrectionDisabled()
                     } label: { Text("Details for the band's tech person") }
                 } header: { Text("Brasscribe on your computer") } footer: {
-                    Text("Open Brasscribe on your computer and choose Pair a phone. Type the six digits it shows.")
+                    Text("Open Brasscribe on your computer. When it's on the same network it's listed here: choose it, then type the six digits it shows.")
                 }
 
                 Section {
@@ -88,6 +101,17 @@ struct SettingsView: View {
             #endif
         }
         .frame(minWidth: 480, minHeight: 520)
+        .onAppear { browser.start() }
+        .onDisappear { browser.stop() }
+    }
+
+    func choose(_ engine: EngineBrowser.Engine) async {
+        busy = true; defer { busy = false }
+        do {
+            let url = try await browser.resolve(engine)
+            app.companionURL = url.absoluteString
+            status = String(localized: "Found \(engine.name). Type the six digits it shows to pair.")
+        } catch { status = String(localized: "\(engine.name) didn't answer. Check that it's still open.") }
     }
 
     var modelStatus: String {

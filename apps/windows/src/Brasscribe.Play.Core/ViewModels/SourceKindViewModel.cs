@@ -32,8 +32,11 @@ public sealed partial class SourceKindViewModel : ObservableObject
         [SourceKind.PopRock] = "pop-rock",
     };
 
+    private readonly IStrings _s;
+
     public SourceKindViewModel(IStrings s)
     {
+        _s = s;
         foreach (var (kind, profile) in Profiles)
             Options.Add(new SourceKindOption(kind, profile, s[$"Kind_{kind}_Label"], s[$"Kind_{kind}_Description"]));
     }
@@ -70,5 +73,22 @@ public sealed partial class SourceKindViewModel : ObservableObject
 
     private bool CanContinue() => Selected is { IsAvailable: true } && Source is not null;
 
-    partial void OnSourceChanged(SourceAudio? value) => ContinueCommand.NotifyCanExecuteChanged();
+    partial void OnSourceChanged(SourceAudio? value)
+    {
+        ContinueCommand.NotifyCanExecuteChanged();
+        SourceLine = value is null ? "" : _s.Format("Kind_SourceLine", value.DisplayName, DurationText(value.Duration));
+    }
+
+    /// <summary>"Mikkel.m4a · 4 min 12 s".</summary>
+    [ObservableProperty] public partial string SourceLine { get; set; } = "";
+
+    /// <summary>Where the score is made: "Made on this PC. Nothing goes online."</summary>
+    [ObservableProperty] public partial string WhereText { get; set; } = "";
+
+    /// <summary>Sets <see cref="WhereText"/> for the engine address: this PC, or your other computer.</summary>
+    public void SetWhere(Uri engine) =>
+        WhereText = _s[engine.IsLoopback ? "Kind_WhereThisPc" : "Kind_WhereComputer"];
+
+    private string DurationText(TimeSpan d) =>
+        d.TotalMinutes >= 1 ? _s.Format("Duration_MinutesSeconds", (int)d.TotalMinutes, d.Seconds) : _s.Format("Duration_Seconds", Math.Max(1, (int)Math.Round(d.TotalSeconds)));
 }

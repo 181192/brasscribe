@@ -13,6 +13,10 @@ import alphaTab.midi.MidiFile
 import alphaTab.midi.MidiFileGenerator
 import alphaTab.midi.NoteOffEvent
 import alphaTab.midi.NoteOnEvent
+import alphaTab.model.BeatStyle
+import alphaTab.model.BeatSubElement
+import alphaTab.model.NoteStyle
+import alphaTab.model.NoteSubElement
 import alphaTab.model.Score
 import alphaTab.model.Track
 import alphaTab.synth.PlaybackRange
@@ -33,6 +37,9 @@ data class ScoreUiState(
     val soloed: Set<Int> = emptySet(),
     val playing: Boolean = false,
     val bar: Int = 1,
+    /** Beat within the bar (1-based) and the bar's beat count, for the beat counter. */
+    val beat: Int = 1,
+    val beatsInBar: Int = 4,
     val totalBars: Int = 1,
     val speed: Int = 100,
     val loop: IntRange? = null,
@@ -105,7 +112,13 @@ class ScoreController(
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
         view.api.postRenderFinished.on { applyVolumes() }
 
-        view.api.playedBeatChanged.on { beat -> _state.value = _state.value.copy(bar = beat.voice.bar.index.toInt() + 1) }
+        view.api.playedBeatChanged.on { beat ->
+            val mb = beat.voice.bar.masterBar
+            val beats = mb.timeSignatureNumerator.toInt().coerceAtLeast(1)
+            val beatTicks = 960.0 * 4 / mb.timeSignatureDenominator.coerceAtLeast(1.0)
+            val n = (beat.playbackStart / beatTicks).toInt() + 1
+            _state.value = _state.value.copy(bar = beat.voice.bar.index.toInt() + 1, beat = n.coerceIn(1, beats), beatsInBar = beats)
+        }
         view.api.error.on { e -> _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName) }
         view.api.midiEventsPlayed.on { e ->
             if (no.brasscribe.play.BuildConfig.DEBUG) for (ev in e.events) if (ev is NoteOnEvent) notesPerChannel.merge(ev.channel.toInt(), 1, Int::plus)
@@ -123,8 +136,9 @@ class ScoreController(
     /** Parses MusicXML (or any format alphaTab reads) and renders the given tracks (default: the first). */
     fun load(bytes: ByteArray, pick: (List<String>) -> Set<Int> = { setOf(0) }) {
         try {
-            val s = ScoreLoader.loadScoreFromBytes(Uint8Array(bytes.asUByteArray()), view.settings)
+            val s = ScoreLoader.loadScoreFromBytes(Uint8Array(markVeryUncertain(bytes).asUByteArray()), view.settings)
             score = s
+            colourUncertainty(s)
             s.tracks.forEach { t -> writtenTransposition[t.index.toInt()] = t.staves[0].displayTranspositionPitch }
             // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
             val names = (0 until s.tracks.length.toInt()).map { i ->
@@ -268,7 +282,15 @@ class ScoreController(
         if (range == null) {
             view.api.playbackRange = null
             view.api.isLooping = false
+            runCatching { view.api.clearPlaybackRangeHighlight() }
         } else {
+            // The loop tint over the looped bars (loop-tint), drawn by alphaTab's selection layer.
+            runCatching {
+                val staff = s.tracks[_state.value.shown.minOrNull() ?: 0].staves[0]
+                val first = staff.bars[(range.first - 1).coerceIn(0, staff.bars.length.toInt() - 1)].voices[0].beats[0]
+                val lastVoice = staff.bars[(range.last - 1).coerceIn(0, staff.bars.length.toInt() - 1)].voices[0]
+                view.api.highlightPlaybackRange(first, lastVoice.beats[lastVoice.beats.length.toInt() - 1])
+            }
             val bars = s.masterBars
             val first = bars[(range.first - 1).coerceIn(0, bars.length.toInt() - 1)]
             val lastIndex = range.last.coerceIn(1, bars.length.toInt())
@@ -342,20 +364,58 @@ class ScoreController(
      * which is unreadable on the dark and high-contrast surfaces, so paper and ink are set explicitly.
      * Colours are ARGB ints (PlayTokens through Color.toArgb).
      */
-    fun setNotationColors(paper: Int, ink: Int, staff: Int, cursor: Int) {
-        view.setBackgroundColor(paper)
-        view.beatCursorFillColor = cursor
-        view.barCursorFillColor = (cursor and 0x00FFFFFF) or (0x2E shl 24)
+    fun setNotationColors(p: ScorePalette) {
+        palette = p
+        view.setBackgroundColor(p.paper)
+        view.beatCursorFillColor = p.cursor
+        // The cursor views sit over the notation, so the tints are translucent colours that read as
+        // the token tint over the paper (cursor-tint: the cursor at 20 %; loop-tint for the loop).
+        view.barCursorFillColor = if (p.highContrast) 0 else (p.cursor and 0x00FFFFFF) or (0x33 shl 24)
+        view.selectionFillColor = if (p.highContrast) 0 else overlayFor(p.loopTint, p.paper, 0.45)
         view.settings.display.resources.apply {
-            mainGlyphColor = ink.toAlphaTabColor()
-            secondaryGlyphColor = ink.toAlphaTabColor()
-            scoreInfoColor = ink.toAlphaTabColor()
-            staffLineColor = staff.toAlphaTabColor()
-            barSeparatorColor = staff.toAlphaTabColor()
-            barNumberColor = staff.toAlphaTabColor()
+            mainGlyphColor = p.ink.toAlphaTabColor()
+            secondaryGlyphColor = p.ink.toAlphaTabColor()
+            scoreInfoColor = p.ink.toAlphaTabColor()
+            staffLineColor = p.staff.toAlphaTabColor()
+            barSeparatorColor = p.staff.toAlphaTabColor()
+            barNumberColor = p.staff.toAlphaTabColor()
         }
         view.api.updateSettings()
+        score?.let { colourUncertainty(it) }
         if (_state.value.loaded) render()
+    }
+
+    private var palette: ScorePalette? = null
+
+    /**
+     * Uncertain notes carry a "?" above them (MusicXML <words>) and, below 0.4 confidence, a boxed
+     * "?" (enclosure="rectangle"), which alphaTab does not draw. The boxed one becomes U+2370, the
+     * boxed question mark, so it keeps its shape in the score.
+     */
+    private fun markVeryUncertain(bytes: ByteArray): ByteArray {
+        val xml = bytes.toString(Charsets.UTF_8)
+        if (!xml.contains("enclosure=\"rectangle\"")) return bytes
+        return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
+    }
+
+    /** Colours each marked note (head, stem, flags, accidentals) and its mark: uncertain or very uncertain. */
+    private fun colourUncertainty(s: Score) {
+        val p = palette ?: return
+        val uncertain = p.uncertain.toAlphaTabColor()
+        val very = p.veryUncertain.toAlphaTabColor()
+        for (t in 0 until s.tracks.length.toInt()) for (st in s.tracks[t].staves) for (bar in st.bars) for (voice in bar.voices) {
+            for (beat in voice.beats) {
+                val colour = when (beat.text?.trim()) { "?" -> uncertain; BOXED_QUESTION -> very; else -> null } ?: continue
+                beat.style = BeatStyle().apply {
+                    for (e in listOf(BeatSubElement.Effects, BeatSubElement.StandardNotationEffects, BeatSubElement.StandardNotationStem,
+                        BeatSubElement.StandardNotationFlags)) colors.set(e, colour)
+                }
+                for (n in beat.notes) n.style = NoteStyle().apply {
+                    for (e in listOf(NoteSubElement.StandardNotationNoteHead, NoteSubElement.StandardNotationAccidentals,
+                        NoteSubElement.StandardNotationEffects)) colors.set(e, colour)
+                }
+            }
+        }
     }
 
     /**
@@ -408,6 +468,22 @@ class ScoreController(
         RealisticSynth.allOff()
         runCatching { view.api.stop() }
     }
+}
+
+/** Theme colours of the notation (design tokens, ARGB). */
+data class ScorePalette(
+    val paper: Int, val ink: Int, val staff: Int, val cursor: Int, val uncertain: Int, val veryUncertain: Int,
+    val loopTint: Int, val highContrast: Boolean,
+)
+
+private const val BOXED_QUESTION = "\u2370"
+private val VERY_UNCERTAIN_WORDS = Regex("""<words\b[^>]*enclosure="rectangle"[^>]*>\?</words>""")
+
+/** A colour with [alpha] that, drawn over [paper], gives [tint]. */
+fun overlayFor(tint: Int, paper: Int, alpha: Double): Int {
+    fun ch(c: Int, shift: Int) = (c shr shift) and 0xFF
+    fun solve(shift: Int) = ((ch(tint, shift) - ch(paper, shift) * (1 - alpha)) / alpha).toInt().coerceIn(0, 255)
+    return ((alpha * 255).toInt() shl 24) or (solve(16) shl 16) or (solve(8) shl 8) or solve(0)
 }
 
 private fun Int.toAlphaTabColor() = alphaTab.model.Color(

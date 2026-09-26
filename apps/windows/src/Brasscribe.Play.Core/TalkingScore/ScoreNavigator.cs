@@ -172,6 +172,13 @@ public sealed class ScoreNavigator
         }
     }
 
+    /// <summary>Moves to one event (the review list).</summary>
+    public NavigationResult GoToEvent(int part, int barIndex, int eventIndex)
+    {
+        if (part < 0 || part >= _doc.Parts.Count || barIndex < 0 || barIndex >= _doc.Parts[part].Bars.Count) return Stay(Text);
+        return Go(part, barIndex, eventIndex);
+    }
+
     /// <summary>Marks the current note as checked; returns the number of uncertain notes left in the score.</summary>
     public int MarkChecked()
     {

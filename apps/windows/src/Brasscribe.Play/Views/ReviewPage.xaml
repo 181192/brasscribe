@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Brasscribe.Play.Views.ReviewPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    NavigationCacheMode="Required">
+
+    <Page.KeyboardAccelerators>
+        <!-- Space listens, K keeps (single keys only while no text box has focus). -->
+        <KeyboardAccelerator Key="K" Invoked="OnKeepKey" />
+        <KeyboardAccelerator Key="Space" Invoked="OnListenKey" />
+    </Page.KeyboardAccelerators>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- The notes to check, by part then bar; kept ones show a check. -->
+        <Border Background="{ThemeResource BcSurfaceBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,1,0">
+            <Grid RowSpacing="8" Padding="12,20,12,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Spacing="8" Padding="12,0">
+                    <TextBlock Style="{StaticResource OverlineStyle}" Text="{x:Bind ViewModel.CountHeading, Mode=OneWay}"
+                               AutomationProperties.HeadingLevel="Level2" />
+                    <!-- The legend: "?" uncertain, boxed "?" very uncertain. -->
+                    <StackPanel Orientation="Horizontal" Spacing="16" x:Uid="ReviewLegend">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Uid="LegendUncertain" Style="{StaticResource MutedStyle}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border BorderBrush="{ThemeResource BcVeryUncertainBrush}" BorderThickness="1.5" CornerRadius="2" Width="18" Height="18">
+                                <TextBlock Text="?" FontWeight="Bold" FontSize="12" Foreground="{ThemeResource BcVeryUncertainBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock x:Uid="LegendVeryUncertain" Style="{StaticResource MutedStyle}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+                <ListView x:Name="NoteList" x:Uid="ReviewList" Grid.Row="1" SelectionMode="Single" SelectionChanged="OnNoteSelected">
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate x:DataType="vm:ReviewGroup">
+                                    <TextBlock Text="{x:Bind PartName}" Style="{StaticResource OverlineStyle}" AutomationProperties.HeadingLevel="Level3" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ReviewItem">
+                            <StackPanel Orientation="Horizontal" Spacing="12" MinHeight="40" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
+                                <Grid Width="18" Height="18" VerticalAlignment="Center">
+                                    <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                              Visibility="{x:Bind IsKept, Mode=OneWay}" />
+                                    <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" HorizontalAlignment="Center"
+                                               Visibility="{x:Bind vm:Screens.UncertainOpen(IsKept, IsVeryUncertain), Mode=OneWay}" />
+                                    <Border BorderBrush="{ThemeResource BcVeryUncertainBrush}" BorderThickness="1.5" CornerRadius="2"
+                                            Visibility="{x:Bind vm:Screens.VeryUncertainOpen(IsKept, IsVeryUncertain), Mode=OneWay}">
+                                        <TextBlock Text="?" FontWeight="Bold" FontSize="12" Foreground="{ThemeResource BcVeryUncertainBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </Grid>
+                                <TextBlock Text="{x:Bind ListName}" Style="{StaticResource BodyStyle}" FontSize="15" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+
+        <!-- One note at a time. -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="880" Padding="40,36,40,32" Spacing="12" HorizontalAlignment="Stretch">
+                <TextBlock Style="{StaticResource OverlineStyle}" Text="{x:Bind ViewModel.Overline, Mode=OneWay}" />
+                <TextBlock x:Name="Heading" Style="{StaticResource ScreenHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True"
+                           Text="{x:Bind ViewModel.Heading, Mode=OneWay}" />
+                <!-- The bars around the note, drawn with the same "?" marks as the score. -->
+                <Border Style="{StaticResource CardStyle}" Padding="16" MinHeight="180">
+                    <Image x:Name="Snippet" x:Uid="ReviewSnippet" Stretch="Uniform" MaxHeight="220" HorizontalAlignment="Left" />
+                </Border>
+                <Grid ColumnSpacing="16" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <TextBlock Style="{StaticResource BcTitle2TextBlockStyle}" Foreground="{ThemeResource BcTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                            <Button x:Uid="PitchDownButton" Command="{x:Bind ViewModel.LowerPitchCommand}" />
+                            <Button x:Uid="PitchUpButton" Command="{x:Bind ViewModel.RaisePitchCommand}" />
+                        </StackPanel>
+                        <TextBlock x:Uid="PitchSaveNote" Style="{StaticResource MutedStyle}" />
+                    </StackPanel>
+                    <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{x:Bind ViewModel.ListenCommand}" VerticalAlignment="Top">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
+                            <TextBlock x:Uid="ReviewListenLabel" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+                <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,16" />
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="ReviewKeys" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
+                    <Button x:Name="FinishLaterButton" Grid.Column="1" Style="{StaticResource PlainButtonStyle}" Click="OnFinishLater"
+                            Content="{x:Bind ViewModel.FinishLaterText, Mode=OneWay}" />
+                    <Button x:Name="SkipButton" x:Uid="ReviewSkipButton" Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{x:Bind ViewModel.SkipCommand}" />
+                    <Button x:Name="KeepButton" x:Uid="ReviewKeepButton" Grid.Column="3" Style="{StaticResource PrimaryButtonStyle}"
+                            Command="{x:Bind ViewModel.KeepCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource BcIconMarkChecked}" FontSize="16" />
+                            <TextBlock x:Uid="ReviewKeepLabel" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

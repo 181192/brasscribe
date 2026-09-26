@@ -23,6 +23,10 @@ struct NotationView: View {
                         }
                     }
                     .padding(.vertical, BrasscribeDesign.Space.s2)
+                    // The pages are engraved to this width. Pinning it here keeps the
+                    // fixed-width pages from raising the window's minimum size.
+                    .frame(width: max(0, geo.size.width), alignment: .topLeading)
+                    .clipped()
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
                 }
