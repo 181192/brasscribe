@@ -10,6 +10,10 @@ reference notes are quantized on the beats and scored:
   meter_match       the bar length in quarters equals the score's (the tracked beat's length
                     in quarters is estimated from the notated positions, so a tracker running at
                     half or double speed is not penalised twice)
+  parts_losing_notes parts where the grid after meter inference keeps fewer notes apart (one voice,
+                    monophonic quantization) than before: must be 0
+Extra cases (--case NAME=REFERENCE_DIR): a clip with beats-small0.beats, layers/solo-sw.mid and an
+expected time signature, e.g. the on-device reference clip (entertainer=../data/runs/apple/entertainer-ref:2/4).
 
     uv run python -W ignore -m brasscribe_eval.solo_meter_bench ../data/runs/music-core/solo-beats
 """
@@ -23,35 +27,32 @@ from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.beats import clean_beats_gated, meter_of
+from brasscribe_music.beats import clean_beats_gated, kept_notes, labels_on, solo_meter
 from brasscribe_music.freetime import unstable_runs
 from brasscribe_music.quantize import TICKS_PER_BEAT, choose_level, quantize
 
 BEAT_QUARTERS = (0.5, 1.0, 1.5, 2.0, 3.0)
-USE_POSITIONS = True
 
 
 def _bar_grid(b: np.ndarray, onsets: np.ndarray, durations: np.ndarray, infer: bool):
+    """The solo path's bar grid, as arrange_layers_song builds it (infer=False: before meter inference)."""
     pos = b[:, 1].astype(int)
     down = pos == 1
     gaps = np.diff(np.where(down)[0])
-    bpb = int(Counter(gaps).most_common(1)[0][0]) if len(gaps) else 1
+    label_bpb = int(Counter(gaps).most_common(1)[0][0]) if len(gaps) else 1
+    bpb = label_bpb
     times = b[:, 0]
-    if infer:
-        m = meter_of(times, down, onsets, durations, positions=pos if USE_POSITIONS else None)
-        bpb, first = m.beats_per_bar, m.first_downbeat
-        inferred = not m.from_labels
-        if m.times is not None:
-            times = m.times
-    else:
-        first, inferred = int(np.argmax(down)), False
-    if not inferred:  # an inferred meter has already fitted the grid to its bar phase
-        cb = clean_beats_gated(times, down, bpb, skip=unstable_runs(times), onsets=onsets)
-        if cb.applied:
-            times, first = cb.times, cb.phase(bpb)
+    cb = clean_beats_gated(times, down, bpb, skip=unstable_runs(times), onsets=onsets)
+    times, first = cb.times, cb.phase(bpb)
     lvl = choose_level(times, onsets)
     if len(lvl) != len(times):
         bpb, first = bpb * 2, first * 2
+    inferred = False
+    if infer and label_bpb < 2:
+        grid_pos = labels_on(lvl, b[:, 0], pos)
+        m = solo_meter(lvl, grid_pos == 1, grid_pos, bpb, first, onsets, durations)
+        if not m.from_labels:
+            lvl, bpb, first, inferred = m.times, m.beats_per_bar, m.first_downbeat, True
     return lvl, bpb, first, inferred
 
 
@@ -77,17 +78,40 @@ def score_part(notes: list[dict], b: np.ndarray, time_sig: str, infer: bool) -> 
             else Fraction(n["quarter"]).limit_denominator(48) % bar_q
         ours = (Fraction(x).limit_denominator(48) % bpb) * Fraction(beat_q).limit_denominator(4)
         ok += abs(float(ours % bar_q - ref)) < 1e-3
-    return {"notes": len(notes), "bar_position_acc": ok / max(1, len(notes)), "meter_match": ours_bar_q == bar_q,
+    return {"notes": len(notes), "kept_notes": kept_notes(times, on, du),
+            "bar_position_acc": ok / max(1, len(notes)), "meter_match": ours_bar_q == bar_q,
             "beats_per_bar": bpb, "beat_quarters": beat_q, "inferred": inferred,
             "downbeat_rate": round(float(np.mean(b[:, 1] == 1)), 2)}
+
+
+def clip_case(ref_dir: Path, expect: str) -> dict:
+    """An on-device reference clip: bars from its small0 beats and SwiftF0 notes, and the expected meter."""
+    import pretty_midi
+
+    b = np.loadtxt(ref_dir / "beats-small0.beats", ndmin=2)
+    pm = pretty_midi.PrettyMIDI(str(ref_dir / "layers" / "solo-sw.mid"))
+    notes = sorted(((n.start, n.end - n.start) for i in pm.instruments for n in i.notes))
+    on, du = np.array([o for o, _ in notes]), np.array([d for _, d in notes])
+    before = _bar_grid(b, on, du, False)
+    after = _bar_grid(b, on, du, True)
+    num = int(expect.split("/")[0])
+    return {"expected": expect, "beats_per_bar": {"before": before[1], "after": after[1]},
+            "meter_ok": after[1] == num, "kept_notes": {"before": kept_notes(before[0], on, du),
+                                                        "after": kept_notes(after[0], on, du)}}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("root", type=Path, help="solo_beats.py output (urmp/, choralebricks/)")
     ap.add_argument("--list", action="store_true", help="print every part")
+    ap.add_argument("--case", action="append", default=[], metavar="NAME=DIR:METER",
+                    help="an on-device reference clip and its expected time signature")
     args = ap.parse_args()
     summary = {}
+    for c in args.case:
+        name, _, rest = c.partition("=")
+        d, _, meter = rest.rpartition(":")
+        summary[f"case:{name}"] = clip_case(Path(d), meter)
     for set_dir in sorted(p for p in args.root.iterdir() if p.is_dir()):
         rows = []
         for song in sorted(p for p in set_dir.iterdir() if (p / "reference.json").exists()):
@@ -118,6 +142,8 @@ def main() -> None:
             "meter_match": {k: round(float(np.mean([r[i]["meter_match"] for r in rows])), 3)
                             for i, k in ((3, "before"), (4, "after"))},
             "parts_worse": sum(r[4]["bar_position_acc"] < r[3]["bar_position_acc"] - 0.01 for r in rows),
+            # Invariant: meter inference never merges notes (one voice quantized on the grid before and after).
+            "parts_losing_notes": sum(r[4]["kept_notes"] < r[3]["kept_notes"] for r in rows),
         }
     print(json.dumps(summary, indent=1))
 

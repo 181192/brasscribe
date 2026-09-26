@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import pytest
 import numpy as np
 
 from brasscribe_music.beats import clean_beats
@@ -103,3 +106,70 @@ def test_track_bar_phase_drops_an_inserted_and_restores_a_missed_beat():
     s_miss = np.delete(strength, 10)
     out, first = track_bar_phase(t_miss, s_miss, 4)
     assert len(out) == 40 and np.allclose(out, t)
+
+
+REF = Path(__file__).resolve().parents[2] / "data" / "runs" / "apple" / "entertainer-ref"
+
+
+def _grid(b, on, du, infer):
+    """The solo path's grid as arrange_layers_song builds it (cleanup, level choice, then solo_meter)."""
+    from collections import Counter
+
+    from brasscribe_music.beats import clean_beats_gated, labels_on, solo_meter
+    from brasscribe_music.freetime import unstable_runs
+    from brasscribe_music.quantize import choose_level
+
+    pos = b[:, 1].astype(int)
+    gaps = np.diff(np.where(pos == 1)[0])
+    bpb = int(Counter(gaps).most_common(1)[0][0]) if len(gaps) else 1
+    cb = clean_beats_gated(b[:, 0], pos == 1, bpb, skip=unstable_runs(b[:, 0]), onsets=on)
+    times, first = cb.times, cb.phase(bpb)
+    lvl = choose_level(times, on)
+    if len(lvl) != len(times):
+        bpb, first = bpb * 2, first * 2
+    if infer and (not len(gaps) or Counter(gaps).most_common(1)[0][0] < 2):
+        gp = labels_on(lvl, b[:, 0], pos)
+        m = solo_meter(lvl, gp == 1, gp, bpb, first, on, du)
+        if not m.from_labels:
+            return m.times, m.beats_per_bar
+    return lvl, bpb
+
+
+@pytest.mark.skipif(not (REF / "beats-small0.beats").exists(), reason="on-device reference clip not available")
+def test_entertainer_clip_is_two_four_and_keeps_every_note():
+    from music21 import converter
+
+    from brasscribe_music.beats import kept_notes
+
+    b = np.loadtxt(REF / "beats-small0.beats", ndmin=2)
+    flat = converter.parse(REF / "layers" / "solo-sw.mid").flatten()
+    notes = sorted((e["offsetSeconds"], e["durationSeconds"]) for e in flat.secondsMap
+                   if getattr(e["element"], "isNote", False) or getattr(e["element"], "isChord", False))
+    on, du = np.array([o for o, _ in notes]), np.array([d for _, d in notes])
+    before, bpb0 = _grid(b, on, du, False)
+    after, bpb1 = _grid(b, on, du, True)
+    assert bpb1 == 2  # the Entertainer is in 2/4
+    assert kept_notes(after, on, du) == kept_notes(before, on, du)
+
+
+def test_solo_meter_never_merges_notes():
+    from brasscribe_music.beats import kept_notes, solo_meter
+
+    rng = np.random.default_rng(0)
+    for _ in range(20):
+        t = np.cumsum(rng.uniform(0.3, 0.7, 60))
+        on = np.sort(rng.uniform(t[0], t[-1], 90))
+        du = rng.uniform(0.05, 0.4, 90)
+        pos = rng.integers(1, 3, 60)
+        m = solo_meter(t, pos == 1, pos, 1, 0, on, du)
+        grid = m.times if m.times is not None else t
+        assert kept_notes(grid, on, du) >= kept_notes(t, on, du)
+
+
+def test_weak_evidence_keeps_the_grids_bars():
+    from brasscribe_music.beats import solo_meter
+
+    t = np.arange(40) * 0.5
+    lab = np.ones(40, bool)
+    m = solo_meter(t, lab, np.ones(40, int), 2, 0, t, np.full(40, 0.2))  # every beat identical: no evidence
+    assert m.from_labels and m.beats_per_bar == 2

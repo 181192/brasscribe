@@ -352,3 +352,54 @@ def track_bar_phase(beat_times: np.ndarray, strength: np.ndarray, beats_per_bar:
         pos.append(states[k])
     first = next((i for i, p in enumerate(pos) if p == 0), 0)
     return np.array(out), first
+
+
+# ---------------------------------------------------------------- the solo path's bar grid
+
+MIN_METER_STRENGTH = 0.15  # inferred meters with a weaker phase contrast keep the grid's own bars
+
+
+def labels_on(new_times: np.ndarray, old_times: np.ndarray, labels: np.ndarray, fill=0) -> np.ndarray:
+    """Carry per-beat labels from one beat grid to another (nearest beat within a tenth of a beat)."""
+    old, new = np.asarray(old_times, float), np.asarray(new_times, float)
+    out = np.full(len(new), fill, dtype=np.asarray(labels).dtype)
+    if len(old) < 2 or not len(new):
+        return out
+    tol = 0.1 * float(np.median(np.diff(old)))
+    k = np.clip(np.searchsorted(old, new), 1, len(old) - 1)
+    near = np.where(np.abs(old[k - 1] - new) <= np.abs(old[k] - new), k - 1, k)
+    hit = np.abs(old[near] - new) <= tol
+    out[hit] = np.asarray(labels)[near[hit]]
+    return out
+
+
+def kept_notes(times: np.ndarray, onsets: np.ndarray, durations: np.ndarray) -> int:
+    """Notes of one voice that keep an onset of their own when quantized on `times`."""
+    from .quantize import quantize
+
+    notes = [{"pitch": 60, "onset": float(o), "offset": float(o + max(d, 1e-3))} for o, d in zip(onsets, durations)]
+    return len(quantize(notes, times, monophonic=True, auto_level=False)) if len(times) >= 2 and notes else 0
+
+
+def solo_meter(times: np.ndarray, downbeat: np.ndarray, positions: np.ndarray, beats_per_bar: int,
+               first_downbeat: int, onsets: np.ndarray, durations: np.ndarray) -> Meter:
+    """Bars for a beat grid whose downbeat labels do not give bars (most common gap under 2 beats).
+
+    `times` is the final grid (after cleanup and metrical-level choice) with the
+    tracker's labels carried onto it; `beats_per_bar` and `first_downbeat` are
+    what the grid gives without inference. The inferred meter replaces them
+    only when its phase contrast reaches MIN_METER_STRENGTH; below that the
+    grid's own bars are kept. Fitting the grid to the tracked phase must not
+    merge notes: if the fitted grid keeps fewer notes apart than the input grid
+    (one voice, as the solo is quantized), the input grid is kept and only the
+    phase is taken from it.
+    """
+    downbeat = np.asarray(downbeat, bool)
+    m = infer_meter(times, onsets, durations, downbeat, positions=positions)
+    if m.strength < MIN_METER_STRENGTH:
+        return Meter(beats_per_bar, first_downbeat, True)
+    if m.times is not None and kept_notes(m.times, onsets, durations) < kept_notes(times, onsets, durations):
+        phase = downbeat.astype(float) if downbeat.min() != downbeat.max() else beat_strengths(times, onsets, durations)
+        _, first = track_bar_phase(times, phase, m.beats_per_bar, jump_cost=1e9)
+        return Meter(m.beats_per_bar, first, False, m.compound, m.strength, np.asarray(times, float))
+    return m
