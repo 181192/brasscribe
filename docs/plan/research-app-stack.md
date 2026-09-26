@@ -82,7 +82,7 @@ MPS needs macOS 14+ and an MPS-enabled build ([PyTorch MPS](https://docs.pytorch
 
 ## 5. Accessibility
 
-**Norway, in force now** (Lovdata consolidated text, last changed 2021-12-21, in effect 2022-02-01 ([FOR-2013-06-21-732](https://lovdata.no/dokument/SF/forskrift/2013-06-21-732))):
+**Norway, in force now** (Lovdata consolidated text, amended by FOR-2021-12-21 (in effect 2022-02-01) and later by FOR-2023-01-17-87 ([FOR-2013-06-21-732](https://lovdata.no/dokument/SF/forskrift/2013-06-21-732))):
 - **§4, private sector:** WCAG 2.0 A+AA, except 1.2.3, 1.2.4 and 1.2.5.
 - **§4b, public sector:** EN 301 549 V3.2.1, which means WCAG 2.1.
 

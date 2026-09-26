@@ -2,7 +2,13 @@
 
 All pitches are MIDI numbers. Ranges are *sounding* (concert) pitch, taken from
 MuseScore's instruments.xml: `pro` is its professional range (hard limit),
-`comfortable` its amateur range (soft preference). Transposition follows the
+`comfortable` its amateur range (what a player can play; range checks use it).
+`reading` is narrower: where the arranger places notes by preference, so parts
+stay off the ledger lines, and `reading_limit` bounds its placement (the
+extreme reading range). They are the written comfort and extreme ranges of
+qa/tools/musicxml_readability.py (RANGES) at concert pitch, e.g. cornet and horn
+from written A3 rather than the bottom valve note F♯3, E♭/B♭ Bass up to written
+D5; heuristic defaults still to be confirmed by players. Transposition follows the
 MuseScore/MusicXML convention: `chromatic` is sounding minus written, so
 written = sounding - chromatic. Everything here is deterministic; nothing
 about transposition or range should ever be left to a model.
@@ -40,6 +46,16 @@ class Instrument:
     musescore_id: str
     section: str
     sound: str = ""  # MusicXML <instrument-sound> id (MuseScore sound library naming)
+    reading: tuple[int, int] | None = None  # sounding, preferred placement (easy to read); default comfortable
+    reading_limit: tuple[int, int] | None = None  # sounding, placement never goes past this; default pro
+
+    @property
+    def preferred(self) -> tuple[int, int]:
+        return self.reading or self.comfortable
+
+    @property
+    def placement_limit(self) -> tuple[int, int]:
+        return self.reading_limit or self.pro
 
     def written(self, sounding: int) -> int:
         return sounding - self.chromatic
@@ -71,25 +87,25 @@ class Instrument:
 R = Role
 _INSTRUMENTS = [
     Instrument("eb-soprano-cornet", "Soprano Cornet in E♭", "Sop. Cnt.", 3, 2, "treble", (57, 87), (57, 84),
-               frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano"),
+               frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano", reading=(63, 84)),
     Instrument("bb-cornet", "Cornet in B♭", "Cnt.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet"),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 84)),
     Instrument("flugelhorn", "Flugelhorn in B♭", "Flug.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn"),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn", reading=(55, 77)),
     Instrument("eb-tenor-horn", "Tenor Horn in E♭", "Hn.", -9, -5, "treble", (45, 75), (45, 72),
-               frozenset({R.COUNTERMELODY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.MELODY, R.SOLO}), 60, "eb-alto-horn", "horns", "brass.alto-horn"),
+               frozenset({R.COUNTERMELODY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.MELODY, R.SOLO}), 60, "eb-alto-horn", "horns", "brass.alto-horn", reading=(48, 70)),
     Instrument("baritone", "Baritone in B♭", "Bar.", -14, -8, "treble", (40, 70), (40, 67),
-               frozenset({R.INNER_HARMONY, R.COUNTERMELODY, R.RHYTHMIC_SUPPORT}), 58, "baritone-horn-treble", "baritones", "brass.baritone-horn"),
+               frozenset({R.INNER_HARMONY, R.COUNTERMELODY, R.RHYTHMIC_SUPPORT}), 58, "baritone-horn-treble", "baritones", "brass.baritone-horn", reading=(43, 65)),
     Instrument("tenor-trombone", "Trombone in B♭", "Tbn.", -14, -8, "treble", (36, 74), (40, 71),
-               frozenset({R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.COUNTERMELODY, R.MELODY}), 57, "trombone-treble", "trombones", "brass.trombone"),
+               frozenset({R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.COUNTERMELODY, R.MELODY}), 57, "trombone-treble", "trombones", "brass.trombone", reading=(43, 67), reading_limit=(40, 72)),
     Instrument("bass-trombone", "Bass Trombone", "B. Tbn.", 0, 0, "bass", (21, 77), (32, 65),
-               frozenset({R.BASS, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT}), 57, "bass-trombone", "trombones", "brass.trombone.bass"),
+               frozenset({R.BASS, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT}), 57, "bass-trombone", "trombones", "brass.trombone.bass", reading=(36, 60), reading_limit=(28, 65)),
     Instrument("euphonium", "Euphonium in B♭", "Euph.", -14, -8, "treble", (34, 74), (40, 70),
-               frozenset({R.COUNTERMELODY, R.MELODY, R.SOLO, R.INNER_HARMONY, R.BASS}), 58, "euphonium-treble", "euphoniums", "brass.euphonium"),
+               frozenset({R.COUNTERMELODY, R.MELODY, R.SOLO, R.INNER_HARMONY, R.BASS}), 58, "euphonium-treble", "euphoniums", "brass.euphonium", reading=(40, 67), reading_limit=(34, 72)),
     Instrument("eb-bass", "E♭ Tuba", "E♭ Bass", -21, -12, "treble", (24, 72), (26, 64),
-               frozenset({R.BASS, R.PEDAL, R.RHYTHMIC_SUPPORT}), 58, "eb-tuba-treble", "basses", "brass.tuba"),
+               frozenset({R.BASS, R.PEDAL, R.RHYTHMIC_SUPPORT}), 58, "eb-tuba-treble", "basses", "brass.tuba", reading=(33, 53), reading_limit=(27, 58)),
     Instrument("bb-bass", "B♭ Tuba", "B♭ Bass", -26, -15, "treble", (22, 72), (28, 58),
-               frozenset({R.BASS, R.PEDAL}), 58, "bb-tuba-treble", "basses", "brass.tuba"),
+               frozenset({R.BASS, R.PEDAL}), 58, "bb-tuba-treble", "basses", "brass.tuba", reading=(28, 48), reading_limit=(22, 53)),
 ]
 PERCUSSION = Instrument("drum-kit", "Drum Kit", "Dr.", 0, 0, "percussion", (0, 127), (0, 127),
                         frozenset({R.RHYTHMIC_SUPPORT}), 0, "drumset", "percussion", "drum.group.set")
@@ -102,6 +118,11 @@ class Part:
     name: str
     instrument: Instrument
     players: int = 1
+    short: str = ""  # staff label after the first system; distinct per part (default: the instrument's)
+
+    @property
+    def abbreviation(self) -> str:
+        return self.short or self.instrument.short
 
 
 @dataclass
@@ -113,30 +134,30 @@ class Lineup:
         return next(p for p in self.parts if p.name == name)
 
 
-def _p(name: str, inst: str, players: int = 1) -> Part:
-    return Part(name, INSTRUMENTS[inst], players)
+def _p(name: str, inst: str, players: int = 1, short: str = "") -> Part:
+    return Part(name, INSTRUMENTS[inst], players, short)
 
 
 # Standard British/Norwegian contest band, in conventional score order.
 BRASS_BAND = Lineup("Brass band", [
-    _p("Soprano Cornet", "eb-soprano-cornet"),
-    _p("Solo Cornet", "bb-cornet", 4),
-    _p("Repiano Cornet", "bb-cornet"),
-    _p("2nd Cornet", "bb-cornet", 2),
-    _p("3rd Cornet", "bb-cornet", 2),
-    _p("Flugelhorn", "flugelhorn"),
-    _p("Solo Horn", "eb-tenor-horn"),
-    _p("1st Horn", "eb-tenor-horn"),
-    _p("2nd Horn", "eb-tenor-horn"),
-    _p("1st Baritone", "baritone"),
-    _p("2nd Baritone", "baritone"),
-    _p("1st Trombone", "tenor-trombone"),
-    _p("2nd Trombone", "tenor-trombone"),
-    _p("Bass Trombone", "bass-trombone"),
-    _p("Euphonium", "euphonium", 2),
-    _p("E♭ Bass", "eb-bass", 2),
-    _p("B♭ Bass", "bb-bass", 2),
-    _p("Percussion", "drum-kit"),
+    _p("Soprano Cornet", "eb-soprano-cornet", 1, "Sop. Cnt."),
+    _p("Solo Cornet", "bb-cornet", 4, "Solo Cnt."),
+    _p("Repiano Cornet", "bb-cornet", 1, "Rep."),
+    _p("2nd Cornet", "bb-cornet", 2, "2nd Cnt."),
+    _p("3rd Cornet", "bb-cornet", 2, "3rd Cnt."),
+    _p("Flugelhorn", "flugelhorn", 1, "Flug."),
+    _p("Solo Horn", "eb-tenor-horn", 1, "Solo Hn."),
+    _p("1st Horn", "eb-tenor-horn", 1, "1st Hn."),
+    _p("2nd Horn", "eb-tenor-horn", 1, "2nd Hn."),
+    _p("1st Baritone", "baritone", 1, "1st Bar."),
+    _p("2nd Baritone", "baritone", 1, "2nd Bar."),
+    _p("1st Trombone", "tenor-trombone", 1, "1st Tbn."),
+    _p("2nd Trombone", "tenor-trombone", 1, "2nd Tbn."),
+    _p("Bass Trombone", "bass-trombone", 1, "B. Tbn."),
+    _p("Euphonium", "euphonium", 2, "Euph."),
+    _p("E♭ Bass", "eb-bass", 2, "E♭ Bass"),
+    _p("B♭ Bass", "bb-bass", 2, "B♭ Bass"),
+    _p("Percussion", "drum-kit", 1, "Perc."),
 ])
 
 # Reduced ensemble for the first arranger milestone.

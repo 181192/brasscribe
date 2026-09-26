@@ -1,0 +1,15 @@
+**/.pixi
+**/.venv
+**/__pycache__
+**/.pytest_cache
+data
+models
+ml/adapters/mega53/msst
+capture
+docs
+apps
+core
+studio
+**/*.wav
+**/*.flac
+**/*.mp3

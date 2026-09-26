@@ -1,0 +1,25 @@
+[project]
+name = "brasscribe-conformance"
+version = "0.1.0"
+description = "Runs the Python reference and the Rust core on identical inputs and diffs the outputs"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "brasscribe-music",
+    "lxml==6.1.3",
+    "mido==1.3.3",
+    "mir-eval==0.8.2",
+    "music21==10.5.0",
+    "numpy==2.5.3",
+    "pandas==3.0.6",
+    "partitura==1.9.0",
+    "pretty-midi==0.2.11.post0",
+    "pyyaml==6.0.3",
+    "scipy==1.18.1",
+    "soundfile==0.14.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+brasscribe-music = { path = "../../music", editable = true }

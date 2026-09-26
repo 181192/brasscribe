@@ -1,0 +1,119 @@
+using AlphaTab.Core.EcmaScript;
+using AlphaTab.Midi;
+using AlphaTab.Model;
+using AlphaTab.Rendering.Utils;
+using Brasscribe.Play.Core.TalkingScore;
+
+namespace Brasscribe.Play.Core.Playback;
+
+public readonly record struct Box(double X, double Y, double W, double H)
+{
+    public static Box From(Bounds b) => new(b.X, b.Y, b.W, b.H);
+}
+
+/// <summary>
+/// Where things are on the rendered score, from alphaTab's bounds lookup: the focused talking-score
+/// event, the playback cursor, bar ranges for loop and ad lib bands, and uncertain noteheads.
+/// </summary>
+public static class ScoreGeometry
+{
+    private const double AlphaTabTicksPerQuarter = 960;
+
+    public static Beat? BeatAt(Score score, int track, int barIndex, int tsTick)
+    {
+        if (track < 0 || track >= score.Tracks.Count) return null;
+        var staff = score.Tracks[track].Staves.FirstOrDefault();
+        if (staff is null || barIndex < 0 || barIndex >= staff.Bars.Count) return null;
+        var voice = staff.Bars[barIndex].Voices.FirstOrDefault();
+        if (voice is null || voice.Beats.Count == 0) return null;
+        double tick = tsTick * AlphaTabTicksPerQuarter / MusicXmlTalkingScoreBuilder.TicksPerQuarter;
+        return voice.Beats.LastOrDefault(b => b.PlaybackStart <= tick + 0.5) ?? voice.Beats[0];
+    }
+
+    /// <summary>Bounds of the beat under the talking-score cursor, or of its bar.</summary>
+    public static Box? FocusBox(Score score, BoundsLookup bounds, int track, int barIndex, int tsTick)
+    {
+        var beat = BeatAt(score, track, barIndex, tsTick);
+        if (beat is not null && bounds.FindBeat(beat) is { } bb) return Box.From(bb.VisualBounds);
+        return BarBox(bounds, barIndex, track);
+    }
+
+    /// <summary>Bar area for one track (or the whole system when track is null).</summary>
+    public static Box? BarBox(BoundsLookup bounds, int barIndex, int? track = null)
+    {
+        var mb = bounds.FindMasterBarByIndex(barIndex);
+        if (mb is null) return null;
+        if (track is { } t)
+        {
+            var bar = mb.Bars.FirstOrDefault(b => b.Bar?.Staff?.Track is { } tr && (int)tr.Index == t);
+            if (bar is not null) return Box.From(bar.VisualBounds);
+        }
+        return Box.From(mb.VisualBounds);
+    }
+
+    /// <summary>One box per system line a bar range spans (for loop and ad lib bands).</summary>
+    public static IReadOnlyList<Box> RangeBoxes(BoundsLookup bounds, int firstBar, int lastBar)
+    {
+        var boxes = new List<Box>();
+        Box? current = null;
+        double lineY = double.NaN;
+        for (int i = firstBar; i <= lastBar; i++)
+        {
+            var mb = bounds.FindMasterBarByIndex(i);
+            if (mb is null) continue;
+            var r = Box.From(mb.VisualBounds);
+            if (current is { } c && Math.Abs(r.Y - lineY) < 1)
+            {
+                current = c with { W = r.X + r.W - c.X };
+            }
+            else
+            {
+                if (current is { } done) boxes.Add(done);
+                current = r;
+                lineY = r.Y;
+            }
+        }
+        if (current is { } last) boxes.Add(last);
+        return boxes;
+    }
+
+    /// <summary>Playback cursor at a MIDI tick: a line at the beat and the bar it is in.</summary>
+    public static (Box Beat, Box Bar)? Cursor(MidiTickLookup lookup, BoundsLookup bounds, IEnumerable<int> tracks, double tick)
+    {
+        var set = new Set<double>();
+        foreach (var t in tracks) set.Add(t);
+        var found = lookup.FindBeat(set, tick, null!);
+        if (found?.Beat is not { } beat || bounds.FindBeat(beat) is not { } bb) return null;
+        var bar = bounds.FindMasterBarByIndex(beat.Voice.Bar.Index);
+        var beatBox = Box.From(bb.VisualBounds);
+        var barBox = bar is null ? beatBox : Box.From(bar.VisualBounds);
+        return (beatBox with { W = 3, Y = barBox.Y, H = barBox.H }, barBox);
+    }
+
+    /// <summary>Noteheads of uncertain notes with their level.</summary>
+    public static IReadOnlyList<(Box Head, Scores.Certainty Level)> UncertainHeads(Score score, BoundsLookup bounds, TalkingScoreDocument ts, IEnumerable<int> tracks)
+    {
+        var result = new List<(Box, Scores.Certainty)>();
+        foreach (int t in tracks)
+        {
+            if (t >= ts.Parts.Count) continue;
+            var part = ts.Parts[t];
+            for (int b = 0; b < part.Bars.Count; b++)
+            {
+                foreach (var ev in part.Bars[b].Events)
+                {
+                    if (ev.Confidence is not { } c || ev.Checked) continue;
+                    var level = Scores.Note.CertaintyOf(c);
+                    if (level == Scores.Certainty.Confident) continue;
+                    var beat = BeatAt(score, t, b, ev.Tick);
+                    if (beat is null || bounds.FindBeat(beat) is not { } bb) continue;
+                    if (bb.Notes is { Count: > 0 } notes)
+                        foreach (var n in notes) result.Add((Box.From(n.NoteHeadBounds), level));
+                    else
+                        result.Add((Box.From(bb.VisualBounds), level));
+                }
+            }
+        }
+        return result;
+    }
+}

@@ -1,0 +1,10 @@
+[package]
+name = "brasscribe-core"
+description = "Symbolic core of brasscribe: Composition model, quantizer, spelling, harmony, arrangers, voting and MusicXML writer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Brasscribe.Play.Dialogs.SettingsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Uid="SettingsDialog"
+    DefaultButton="Close">
+    <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" MinWidth="420">
+            <TextBlock x:Uid="SettingsLanguageHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <ComboBox x:Name="LanguageBox" x:Uid="LanguageBox" SelectionChanged="OnLanguageChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="LanguageSystem" Tag="system" />
+                <ComboBoxItem Content="English" Tag="en-US" />
+                <ComboBoxItem Content="Norsk bokmål" Tag="nb-NO" />
+            </ComboBox>
+            <TextBlock x:Uid="LanguageRestartNote" Style="{StaticResource MutedStyle}" />
+
+            <TextBlock x:Uid="SettingsAccessibilityHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <ToggleSwitch x:Uid="SingleKeySwitch" IsOn="{x:Bind ViewModel.SingleKeyShortcuts, Mode=TwoWay}" />
+            <ToggleSwitch x:Uid="ReduceMotionSwitch" IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}" />
+            <ComboBox x:Name="VerbosityBox" x:Uid="VerbosityBox" SelectionChanged="OnVerbosityChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="VerbosityBrief" />
+                <ComboBoxItem x:Uid="VerbosityStandard" />
+                <ComboBoxItem x:Uid="VerbosityFull" />
+            </ComboBox>
+
+            <TextBlock x:Uid="SettingsEngineHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <TextBox x:Uid="EngineAddressBox" Text="{x:Bind ViewModel.EngineAddress, Mode=TwoWay}" InputScope="Url" />
+            <TextBox x:Uid="PairingCodeBox" Text="{x:Bind ViewModel.PairingCode, Mode=TwoWay}" InputScope="Number" />
+            <Button x:Uid="ConnectButton" Style="{StaticResource ActionButtonStyle}" Click="OnConnect" />
+            <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.EngineStatus, Mode=OneWay}" />
+
+            <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
+            <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

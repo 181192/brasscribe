@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Brasscribe.Play.Dialogs.ExportDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    x:Uid="ExportDialog"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OnExport">
+
+    <StackPanel Spacing="12" MinWidth="360">
+        <!-- Formats as a list: arrows move, unavailable ones stay listed with the reason. -->
+        <ListView x:Name="FormatList" x:Uid="ExportFormatList" ItemsSource="{x:Bind ViewModel.Formats}" SelectionMode="Single"
+                  SelectionChanged="OnFormatChanged" MaxHeight="360">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ExportChoice">
+                    <StackPanel Padding="0,6" Spacing="2" AutomationProperties.Name="{x:Bind Label}"
+                                AutomationProperties.HelpText="{x:Bind Reason}">
+                        <TextBlock Text="{x:Bind Label}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind Reason}" Style="{StaticResource MutedStyle}" Visibility="{x:Bind vm:Screens.HasText(Reason)}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <ComboBox x:Name="PartBox" x:Uid="ExportPartBox" ItemsSource="{x:Bind ViewModel.Parts}" DisplayMemberPath="Name"
+                  SelectionChanged="OnPartChanged" HorizontalAlignment="Stretch" />
+        <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+    </StackPanel>
+</ContentDialog>

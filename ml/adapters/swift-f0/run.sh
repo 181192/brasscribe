@@ -1,5 +1,5 @@
 #!/bin/sh
 # Adapter contract: run.sh <input.wav> <output.mid>  (monophonic lines only)
-set -eu
+# Runs ../run_adapter.py, the cross-platform runner (uv project by default, pixi with BRASSCRIBE_ADAPTER_RUNNER=pixi).
 here=$(cd "$(dirname "$0")" && pwd)
-uv run --project "$here" python "$here/transcribe.py" "$1" "$2" >/dev/null
+exec "${BRASSCRIBE_PYTHON:-python3}" "$here/../run_adapter.py" swift-f0 "$@"

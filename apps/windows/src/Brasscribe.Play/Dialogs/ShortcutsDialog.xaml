@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Brasscribe.Play.Dialogs.ShortcutsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Uid="ShortcutsDialog"
+    DefaultButton="Close">
+    <!-- The published shortcut list (EN 301 549 12.1), filled from the resource strings. -->
+    <ScrollViewer MaxHeight="520" VerticalScrollBarVisibility="Auto">
+        <StackPanel x:Name="Sections" Spacing="4" MinWidth="420" />
+    </ScrollViewer>
+</ContentDialog>

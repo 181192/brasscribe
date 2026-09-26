@@ -9,6 +9,8 @@ It also reports which instrument sound MuseScore assigned to each part.
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import re
 import subprocess
@@ -37,15 +39,19 @@ def _merge_ties(part) -> list[int]:
 
 def check(xml: Path, comp_json: Path) -> bool:
     re_xml = xml.with_name(xml.stem + ".mscore.musicxml")
-    re_xml.unlink(missing_ok=True)
-    subprocess.run(["mscore", "-o", str(re_xml), str(xml)], capture_output=True)
-    if not re_xml.exists():
+    if not musescore.convert(xml, re_xml):
         raise SystemExit("MuseScore did not re-export the file")
     raw = re_xml.read_text()
     sounds = dict(zip([norm(n) for n in re.findall(r"<part-name>([^<]*)</part-name>", raw)],
                       re.findall(r"<instrument-sound>([^<]+)</instrument-sound>", raw)))
     comp = Composition.from_json(comp_json)
-    arr = arrange_layers(comp) if any(v.layer for v in comp.voices) else arrange(comp)
+    opts = comp.arrangement or {}
+    if any(v.layer for v in comp.voices):
+        from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
+        lineup = MINIMAL_BAND if opts.get("lineup") == "minimal" else BRASS_BAND
+        arr = arrange_layers(comp, lineup, difficulty=opts.get("difficulty", "faithful"))
+    else:
+        arr = arrange(comp)
     want = {norm(k): [n.pitch for n in sorted(v, key=lambda n: n.start)] for k, v in arr.parts.items()}
     back = converter.parse(re_xml).toSoundingPitch()
     ok = True

@@ -1,8 +1,5 @@
 #!/bin/sh
 # Adapter contract: run.sh <input.wav> <output.mid>
-set -eu
+# Runs ../run_adapter.py, the cross-platform runner (uv project by default, pixi with BRASSCRIBE_ADAPTER_RUNNER=pixi).
 here=$(cd "$(dirname "$0")" && pwd)
-tmp=$(mktemp -d)
-uv run --project "$here" basic-pitch "$tmp" "$1" >/dev/null 2>&1
-mv "$tmp"/*.mid "$2"
-rmdir "$tmp"
+exec "${BRASSCRIBE_PYTHON:-python3}" "$here/../run_adapter.py" basic-pitch "$@"

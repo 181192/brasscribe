@@ -8,6 +8,8 @@ harmonic rhythm. Beats come from Beat This!; tick 0 is the first downbeat.
 
 from __future__ import annotations
 
+from brasscribe_music import musescore
+
 import argparse
 import subprocess
 from collections import Counter
@@ -39,6 +41,7 @@ def main() -> None:
     ap.add_argument("--harmony", type=Path, nargs="+", required=True)
     ap.add_argument("--out", type=Path, required=True, help="output directory")
     ap.add_argument("--title", default="Draft")
+    ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF export")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -84,8 +87,9 @@ def main() -> None:
     arr = arrange(comp)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     pdf = xml.with_suffix(".pdf")
-    pdf.unlink(missing_ok=True)
-    subprocess.run(["mscore", "-o", str(pdf), str(xml)], capture_output=True)
+    if not args.no_render:
+        pdf.unlink(missing_ok=True)
+        musescore.convert(xml, pdf)
     print(f"{len(melody)} melody / {len(bass)} bass / {len(harm)} harmony notes, {len(arr.warnings)} warnings")
     print(xml, pdf if pdf.exists() else "(no PDF)")
 

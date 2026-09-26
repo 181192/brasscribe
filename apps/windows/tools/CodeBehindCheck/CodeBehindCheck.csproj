@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Type-checks Brasscribe.Play's C# (code-behind, services, composition root) without the WinUI XAML
+    compiler, which only runs on Windows. gen_stubs.py writes the members the XAML compiler would
+    generate; run ./check.sh. The real app build (XAML, x:Bind, PRI, packaging) happens on Windows CI.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(BrasscribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(BrasscribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <OutputType>Library</OutputType>
+    <UseWinUI>true</UseWinUI>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Brasscribe.Play</RootNamespace>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AppDir>$(MSBuildThisFileDirectory)../../src/Brasscribe.Play</AppDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(AppDir)/**/*.cs" Exclude="$(AppDir)/obj/**;$(AppDir)/bin/**" />
+    <Compile Include="$(IntermediateOutputPath)stubs/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(AppDir)/../Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
+    <ProjectReference Include="$(AppDir)/../Brasscribe.Play.Audio.Windows/Brasscribe.Play.Audio.Windows.csproj" />
+    <ProjectReference Include="$(AppDir)/../Brasscribe.Play.Controls/Brasscribe.Play.Controls.csproj" />
+  </ItemGroup>
+  <Target Name="GenerateXamlStubs" BeforeTargets="CoreCompile;BeforeBuild">
+    <Exec Command="python3 &quot;$(MSBuildThisFileDirectory)gen_stubs.py&quot; &quot;$(AppDir)&quot; &quot;$(IntermediateOutputPath)stubs&quot;" />
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)stubs/*.cs" />
+      <Compile Include="$(IntermediateOutputPath)stubs/*.cs" />
+    </ItemGroup>
+  </Target>
+</Project>
