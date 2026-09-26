@@ -641,6 +641,16 @@
         }
       }
     },
+    "Loop current bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjenta gjeldende takt"
+          }
+        }
+      }
+    },
     "Loop current bar: L": {
       "localizations": {
         "nb": {
@@ -931,6 +941,16 @@
         }
       }
     },
+    "Original or score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original eller partitur"
+          }
+        }
+      }
+    },
     "Original recording": {
       "localizations": {
         "nb": {
@@ -1087,6 +1107,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spill med (demp min stemme)"
+          }
+        }
+      }
+    },
+    "Play or pause": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill av eller pause"
           }
         }
       }

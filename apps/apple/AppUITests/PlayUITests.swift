@@ -26,11 +26,23 @@ func soundFont() -> String? {
 final class PlayUITests: XCTestCase {
     var app: XCUIApplication!
 
+    /// Launch and make sure there is a window. On macOS a relaunched app is not always
+    /// activated, and SwiftUI then opens no window; File > New Window (Cmd-N) opens one.
+    func launchApp() {
+        app.launch()
+        #if os(macOS)
+        if !app.windows.firstMatch.waitForExistence(timeout: 5) {
+            app.activate()
+            if !app.windows.firstMatch.waitForExistence(timeout: 3) { app.typeKey("n", modifierFlags: .command) }
+        }
+        #endif
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         guard let dir = fixtureDir() else { throw XCTSkip("golden Mikkel fixture not found") }
         app = XCUIApplication()
-        app.launchArguments = ["-reset", "-open-demo-score"]
+        app.launchArguments = ["-reset", "-open-demo-score", "-ApplePersistenceIgnoreState", "YES"]
         app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
         if let sf = soundFont() { app.launchEnvironment["BRASSCRIBE_SOUNDFONT"] = sf }
         // the realistic brass-band tier, when sounds/ and its built instruments are present
@@ -38,7 +50,7 @@ final class PlayUITests: XCTestCase {
         if FileManager.default.fileExists(atPath: root.appending(path: "sounds/mapping.json").path) {
             app.launchEnvironment["BRASSCRIBE_SOUNDS"] = root.path
         }
-        app.launch()
+        launchApp()
     }
 
     /// Loads the Mikkel score, checks the notation exposes bars to VoiceOver, and plays
@@ -70,18 +82,18 @@ final class PlayUITests: XCTestCase {
     /// Home → "What is this?" → progress → Review → score, with the demo transcription service.
     func testDemoFlowThroughReview() throws {
         app.terminate()
-        app.launchArguments = ["-reset", "-demo-service", "-fast"]
-        app.launch()
-        let demo = app.buttons["demo"]
+        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES"]
+        launchApp()
+        let demo = app.descendants(matching: .any)["demo"].firstMatch
         XCTAssertTrue(demo.waitForExistence(timeout: 20))
         demo.tap()
-        let transcribe = app.buttons["transcribe"]
+        let transcribe = app.descendants(matching: .any)["transcribe"].firstMatch
         XCTAssertTrue(transcribe.waitForExistence(timeout: 10))
         XCTAssertFalse(transcribe.isEnabled, "the app never guesses the profile")
-        app.buttons["profile-orchestra-with-soloist"].tap()
+        app.descendants(matching: .any)["profile-orchestra-with-soloist"].firstMatch.tap()
         XCTAssertTrue(transcribe.isEnabled)
         transcribe.tap()
-        let open = app.buttons["openScore"]
+        let open = app.descendants(matching: .any)["openScore"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 60), "review should follow the transcription")
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "review"
@@ -108,8 +120,15 @@ final class PlayUITests: XCTestCase {
         XCTAssertEqual(position.value as? String, "3")
         app.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
         XCTAssertEqual(position.value as? String, "2")
-        app.typeKey("]", modifierFlags: [])
-        XCTAssertTrue((speed.value as? String)?.contains("105") == true, "\(String(describing: speed.value))")
+        app.typeKey(".", modifierFlags: [])
+        // iOS reports the slider's accessibility value text, macOS its number
+        let raised = NSPredicate { _, _ in
+            if let s = speed.value as? String { return s.contains("105") }
+            if let n = speed.value as? NSNumber { return n.doubleValue == 105 }
+            return false
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: raised, object: nil)], timeout: 3), .completed,
+                       "\(String(describing: speed.value))")
         app.typeKey(" ", modifierFlags: [])
         XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 5))
         app.typeKey(" ", modifierFlags: [])
@@ -125,16 +144,16 @@ final class PlayUITests: XCTestCase {
             throw XCTSkip("needs the URMP clip and models/converted")
         }
         app.terminate()
-        app.launchArguments = ["-reset"]
+        app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES"]
         app.launchEnvironment["BRASSCRIBE_OPEN_AUDIO"] = clip.path
         app.launchEnvironment["BRASSCRIBE_MODELS"] = models
         app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"   // no computer
-        app.launch()
-        let solo = app.buttons["profile-solo"]
+        launchApp()
+        let solo = app.descendants(matching: .any)["profile-solo"].firstMatch
         XCTAssertTrue(solo.waitForExistence(timeout: 20))
         solo.tap()
-        app.buttons["transcribe"].tap()
-        let open = app.buttons["openScore"]
+        app.descendants(matching: .any)["transcribe"].firstMatch.tap()
+        let open = app.descendants(matching: .any)["openScore"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 120), "on-device transcription should reach Review")
         open.tap()
         let staff = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-' AND label CONTAINS 'Solo Cornet'")).firstMatch
@@ -152,7 +171,7 @@ final class PlayUITests: XCTestCase {
         guard FileManager.default.fileExists(atPath: video.path) else { throw XCTSkip("needs data/runs/apple/mikkel-20s.mp4") }
         app.terminate()
         app.launchEnvironment["BRASSCRIBE_VIDEO"] = video.path
-        app.launch()
+        launchApp()
         let pip = app.buttons["pipButton"]
         XCTAssertTrue(pip.waitForExistence(timeout: 30), "picture-in-picture control")
         let available = NSPredicate { _, _ in pip.isEnabled }

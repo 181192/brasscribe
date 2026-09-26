@@ -5,6 +5,9 @@ import TranscriptionKit
 @main
 struct BrasscribePlayApp: App {
     @State private var app = AppModel()
+    #if os(macOS)
+    @NSApplicationDelegateAdaptor(MacLaunch.self) private var launch
+    #endif
 
     init() {
         if ProcessInfo.processInfo.arguments.contains("-reset") {
@@ -22,6 +25,8 @@ struct BrasscribePlayApp: App {
         }
         #if os(macOS)
         .defaultSize(width: 1280, height: 900)
+        // always open a fresh window; a restored "no windows" state left the UI tests with none
+        .restorationBehavior(.disabled)
         .commands { PlaybackCommands() }
         #endif
     }
@@ -54,7 +59,6 @@ struct RootView: View {
             Alert(title: Text(a.title), message: Text(a.message), dismissButton: .default(Text("OK")))
         }
         .onAppear {
-            FileHandle.standardError.write(Data("root appeared \(ProcessInfo.processInfo.arguments)\n".utf8))
             if ProcessInfo.processInfo.arguments.contains("-open-demo-score") { openDemoScore() }
             // UI tests: start from a recording as if it had just been imported
             if let a = ProcessInfo.processInfo.environment["BRASSCRIBE_OPEN_AUDIO"], FileManager.default.fileExists(atPath: a) {
@@ -82,32 +86,52 @@ struct RootView: View {
 
 #if os(macOS)
 /// Menu commands mirror the transport shortcuts so they are discoverable and documented.
+/// On macOS these menu items carry the shortcuts, so they work wherever keyboard focus is.
 struct PlaybackCommands: Commands {
+    @FocusedValue(\.practice) private var model
+
     var body: some Commands {
         CommandMenu(Text("Playback")) {
-            Text("Play or pause: Space")
-            Text("Previous / next bar: ← / →")
-            Text("Loop current bar: L")
-            Text("Slower / faster: [ / ]")
-            Text("Count-in: C · Metronome: M · Play along: A")
-            Text("Original / score: O")
+            Button("Play or pause") { model?.togglePlay() }.keyboardShortcut(.space, modifiers: [])
+            Button("Previous bar") { model?.previousBar() }.keyboardShortcut(.leftArrow, modifiers: [])
+            Button("Next bar") { model?.nextBar() }.keyboardShortcut(.rightArrow, modifiers: [])
+            Divider()
+            Button("Loop current bar") { model?.toggleLoopCurrentBar() }.keyboardShortcut("l", modifiers: [])
+            Button("Slower") { model?.changeSpeed(by: -5) }.keyboardShortcut(",", modifiers: [])
+            Button("Faster") { model?.changeSpeed(by: 5) }.keyboardShortcut(".", modifiers: [])
+            Divider()
+            Button("Count-in") { model?.countIn.toggle() }.keyboardShortcut("c", modifiers: [])
+            Button("Metronome") { model?.metronome.toggle() }.keyboardShortcut("m", modifiers: [])
+            Button("Play along") { model?.playAlong.toggle() }.keyboardShortcut("a", modifiers: [])
+            Button("Original or score") { model?.hearOriginal.toggle() }.keyboardShortcut("o", modifiers: [])
         }
     }
 }
 #endif
 
-/// Accent with at least 4.5:1 contrast against light and dark bars (the system blue on a
-/// grey toolbar fails the accessibility audit on iPad).
-enum Palette {
-    static let accent = Color(light: Color(red: 0.0, green: 0.33, blue: 0.72), dark: Color(red: 0.45, green: 0.72, blue: 1.0))
-}
-
-extension Color {
-    init(light: Color, dark: Color) {
-        #if os(iOS)
-        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light) })
-        #else
-        self.init(nsColor: NSColor(name: nil) { $0.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(dark) : NSColor(light) })
-        #endif
+struct PracticeKey: FocusedValueKey { typealias Value = PracticeModel }
+extension FocusedValues {
+    var practice: PracticeModel? {
+        get { self[PracticeKey.self] }
+        set { self[PracticeKey.self] = newValue }
     }
 }
+
+#if os(macOS)
+
+/// SwiftUI opens the first window only once the app is active. Launched in the background
+/// (from a script, or relaunched by a UI test) it stayed windowless, so activate at launch.
+final class MacLaunch: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        // If still no window (activation can be refused for background launches), ask the
+        // WindowGroup for one through the standard New Window action.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if !NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) {
+                NSApp.sendAction(#selector(NSResponder.newWindowForTab(_:)), to: nil, from: nil)
+            }
+        }
+    }
+}
+#endif

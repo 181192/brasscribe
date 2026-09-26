@@ -41,7 +41,7 @@ Tests locate the golden output through the `data/` link or `BRASSCRIBE_FIXTURES`
 | ← / → | Previous / next bar |
 | L | Loop the current bar (again to stop) |
 | Shift-L | Loop the from–to bar range |
-| [ / ] | Slower / faster (5 % steps, 25–150 %) |
+| , / . | Slower / faster (5 % steps, 25–150 %); comma and full stop sit on the same keys on English and Norwegian keyboards |
 | C / M / A | Count-in / metronome / play along (mutes your part) |
 | O | Original recording ↔ score, at the same place |
 | ⌘+ / ⌘- | Zoom |
