@@ -8,6 +8,9 @@
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
 //! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
+//! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
+//! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--text FILE] [--html FILE]
+//!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! ```
 
 use std::collections::HashMap;
@@ -152,49 +155,9 @@ fn wav_if(p: &Path) -> R<Option<Audio>> {
     if !p.exists() {
         return Ok(None);
     }
-    read_wav(&read(p)?).map(Some).map_err(|e| format!("{}: {e}", p.display()))
+    Audio::from_wav(&read(p)?).map(Some).map_err(|e| format!("{}: {e}", p.display()))
 }
 
-/// WAV (PCM 16/24/32-bit or float32) as float32 samples scaled like libsndfile.
-fn read_wav(b: &[u8]) -> R<Audio> {
-    if b.len() < 12 || &b[0..4] != b"RIFF" || &b[8..12] != b"WAVE" {
-        return Err("not a RIFF/WAVE file".into());
-    }
-    let u16le = |i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
-    let u32le = |i: usize| u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
-    let mut i = 12;
-    let (mut fmt, mut channels, mut rate, mut bits) = (0u16, 0usize, 0u32, 0u16);
-    let mut data: Option<&[u8]> = None;
-    while i + 8 <= b.len() {
-        let id = &b[i..i + 4];
-        let len = u32le(i + 4) as usize;
-        let body = &b[i + 8..(i + 8 + len).min(b.len())];
-        if id == b"fmt " {
-            fmt = u16le(i + 8);
-            channels = u16le(i + 10) as usize;
-            rate = u32le(i + 12);
-            bits = u16le(i + 22);
-            if fmt == 0xFFFE && len >= 26 {
-                fmt = u16le(i + 32); // sub-format GUID starts with the format code
-            }
-        } else if id == b"data" {
-            data = Some(body);
-        }
-        i += 8 + len + (len & 1);
-    }
-    let data = data.ok_or("no data chunk")?;
-    let samples: Vec<f32> = match (fmt, bits) {
-        (1, 16) => data.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]]) as f32 * (1.0 / 32768.0)).collect(),
-        (1, 24) => data
-            .chunks_exact(3)
-            .map(|c| (((c[2] as i32) << 24) | ((c[1] as i32) << 16) | ((c[0] as i32) << 8)) as f32 * (1.0 / 2147483648.0))
-            .collect(),
-        (1, 32) => data.chunks_exact(4).map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f32 * (1.0 / 2147483648.0)).collect(),
-        (3, 32) => data.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect(),
-        other => return Err(format!("unsupported WAV format {other:?}")),
-    };
-    Ok(Audio { samples, channels: channels.max(1), sample_rate: rate })
-}
 
 fn run(cmd: &str, a: &Args) -> R<()> {
     let title = a.opt("title").unwrap_or_else(|| "Draft".into());
@@ -268,6 +231,50 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         "normalize" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
             write(Path::new(&a.one("out")?), &comp.to_json_string())
+        }
+        "humanize" => {
+            use brasscribe_core::humanize::{humanize, Performance, ScoreNote, Timing};
+            let notes: Vec<ScoreNote> = serde_json::from_slice(&read(Path::new(&a.one("notes")?))?).map_err(|e| e.to_string())?;
+            let perf = match a.opt("composition") {
+                Some(c) => Some(Performance::from_json_str(&String::from_utf8_lossy(&read(Path::new(&c))?))?),
+                None => None,
+            };
+            let timing = match a.opt("timing").as_deref() {
+                None | Some("score") => Timing::Score,
+                Some("performed") => Timing::Performed,
+                Some(t) => return Err(format!("unknown timing {t}")),
+            };
+            let player = a.one("player")?.parse::<i64>().map_err(|e| e.to_string())?;
+            let seed = a.opt("seed").unwrap_or_else(|| "brasscribe".into());
+            let h = humanize(&notes, &a.one("part")?, player, &seed, perf.as_ref(), timing)?;
+            write(Path::new(&a.one("out")?), &h.to_json_string())
+        }
+        "talking-score" => {
+            use brasscribe_core::talking_score as ts;
+            let xml = String::from_utf8_lossy(&read(Path::new(&a.one("musicxml")?))?).into_owned();
+            let comp: Option<Value> = match a.opt("composition") {
+                Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
+                None => None,
+            };
+            let doc = ts::build(&xml, comp.as_ref())?;
+            let d = ts::Settings::default();
+            let settings = ts::Settings {
+                lang: a.opt("lang").unwrap_or(d.lang),
+                pitch_mode: a.opt("pitch-mode").unwrap_or(d.pitch_mode),
+                verbosity: a.opt("verbosity").unwrap_or(d.verbosity),
+                octave_style: a.opt("octave-style").unwrap_or(d.octave_style),
+                announce_confident: a.has("announce-confident"),
+            };
+            if let Some(p) = a.opt("json") {
+                write(Path::new(&p), &brasscribe_core::pyjson::dumps(&doc))?;
+            }
+            if let Some(p) = a.opt("text") {
+                write(Path::new(&p), &ts::to_text(&doc, &settings, None))?;
+            }
+            if let Some(p) = a.opt("html") {
+                write(Path::new(&p), &ts::to_html(&doc, &settings, None))?;
+            }
+            Ok(())
         }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);

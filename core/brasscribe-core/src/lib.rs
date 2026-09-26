@@ -17,6 +17,7 @@ pub mod consensus;
 pub mod durations;
 pub mod freetime;
 pub mod harmony;
+pub mod humanize;
 pub mod instruments;
 pub mod lines;
 pub mod midi;
@@ -29,6 +30,7 @@ pub mod pyjson;
 pub mod quantize;
 pub mod rhythm_spelling;
 pub mod spelling;
+pub mod talking_score;
 
 pub use model::Composition;
 

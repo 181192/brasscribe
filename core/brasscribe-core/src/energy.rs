@@ -21,6 +21,47 @@ pub struct Audio {
 }
 
 impl Audio {
+    /// WAV (PCM 16/24/32-bit or float32) as float32 samples scaled like libsndfile.
+    pub fn from_wav(b: &[u8]) -> Result<Audio, String> {
+        if b.len() < 12 || &b[0..4] != b"RIFF" || &b[8..12] != b"WAVE" {
+            return Err("not a RIFF/WAVE file".into());
+        }
+        let u16le = |i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
+        let u32le = |i: usize| u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
+        let mut i = 12;
+        let (mut fmt, mut channels, mut rate, mut bits) = (0u16, 0usize, 0u32, 0u16);
+        let mut data: Option<&[u8]> = None;
+        while i + 8 <= b.len() {
+            let id = &b[i..i + 4];
+            let len = u32le(i + 4) as usize;
+            let body = &b[i + 8..(i + 8 + len).min(b.len())];
+            if id == b"fmt " {
+                fmt = u16le(i + 8);
+                channels = u16le(i + 10) as usize;
+                rate = u32le(i + 12);
+                bits = u16le(i + 22);
+                if fmt == 0xFFFE && len >= 26 {
+                    fmt = u16le(i + 32); // sub-format GUID starts with the format code
+                }
+            } else if id == b"data" {
+                data = Some(body);
+            }
+            i += 8 + len + (len & 1);
+        }
+        let data = data.ok_or("no data chunk")?;
+        let samples: Vec<f32> = match (fmt, bits) {
+            (1, 16) => data.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]]) as f32 * (1.0 / 32768.0)).collect(),
+            (1, 24) => data
+                .chunks_exact(3)
+                .map(|c| (((c[2] as i32) << 24) | ((c[1] as i32) << 16) | ((c[0] as i32) << 8)) as f32 * (1.0 / 2147483648.0))
+                .collect(),
+            (1, 32) => data.chunks_exact(4).map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f32 * (1.0 / 2147483648.0)).collect(),
+            (3, 32) => data.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect(),
+            other => return Err(format!("unsupported WAV format {other:?}")),
+        };
+        Ok(Audio { samples, channels: channels.max(1), sample_rate: rate })
+    }
+
     pub fn frames(&self) -> usize {
         self.samples.len() / self.channels.max(1)
     }

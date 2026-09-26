@@ -22,6 +22,7 @@ import sys
 import time
 from pathlib import Path
 
+from . import extras
 from .canon import json_equal, musicxml_equal
 from .cases import REPO, Case, all_cases, synth_layers
 
@@ -61,6 +62,9 @@ def outputs_of(ref_dir: Path, kind: str) -> list[str]:
     names = set(OUTPUTS[kind])
     if ref_dir.exists():
         for p in ref_dir.rglob("*"):
+            rel = p.relative_to(ref_dir)
+            if rel.parts[0] in ("talking", "humanize"):  # compared by extras
+                continue
             if p.is_file() and p.suffix not in IGNORED and ".mscore." not in p.name:
                 names.add(str(p.relative_to(ref_dir)))
     return sorted(names)
@@ -137,6 +141,7 @@ def main() -> None:
     ap.add_argument("--skip-rust", action="store_true")
     ap.add_argument("--musescore", action="store_true")
     ap.add_argument("--report", type=Path)
+    ap.add_argument("--no-extras", action="store_true", help="skip the talking-score and humanize checks")
     args = ap.parse_args()
     cases = all_cases(args.work, args.only)
     binary = None if args.skip_rust else rust_bin()
@@ -162,6 +167,8 @@ def main() -> None:
         rows = compare(py, rs, names) if p.returncode == 0 else [("rust", False, p.stderr[-2000:])]
         if case.kind in ("layers", "song", "bench") and p.returncode == 0:
             rows += from_composition(binary, py, rs)
+            if not args.no_extras:
+                rows += extras.talking_rows(binary, py, py, rs) + extras.humanize_rows(binary, py, py, rs)
         if case.golden is not None and p.returncode == 0:
             gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists()]
             rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
