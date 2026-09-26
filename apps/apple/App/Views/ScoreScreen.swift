@@ -38,6 +38,7 @@ struct PracticeView: View {
     @State private var showTalking = false
     @State private var showExport = false
     @State private var showVideo = true
+    @FocusState private var focused: Bool
     @Environment(\.horizontalSizeClass) private var hsize
 
     var body: some View {
@@ -60,6 +61,14 @@ struct PracticeView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(model.piece.title))
+        // The score's scroll view takes arrow keys for scrolling, so bar navigation is
+        // handled here, on the focused practice screen, before it reaches the scroll view.
+        .focusable()
+        .focusEffectDisabled()
+        .focused($focused)
+        .onAppear { focused = true }
+        .onKeyPress(.rightArrow) { model.nextBar(); return .handled }
+        .onKeyPress(.leftArrow) { model.previousBar(); return .handled }
         .sheet(isPresented: $showMixer) { MixerView(model: model) }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
         .sheet(isPresented: $showExport) { ExportView(model: model) }
