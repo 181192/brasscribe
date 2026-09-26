@@ -22,4 +22,14 @@ for abi in arm64-v8a x86_64; do
     --skip_tests --parallel --compile_no_warning_as_error --skip_submodule_sync \
     --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF
 done
-echo "Assemble the AAR from build-*/MinSizeRel/java/build/android (see ORT's tools/ci_build/github/android)"
+# Each ABI build writes a release AAR with only its own jni/<abi>; merge the second ABI's native
+# libraries into the first one's AAR.
+aar_of() { echo "$work/build-$1/MinSizeRel/java/build/android/outputs/aar/onnxruntime-release.aar"; }
+merge="$work/aar"
+rm -rf "$merge" && mkdir -p "$merge"
+(cd "$merge" && unzip -q "$(aar_of arm64-v8a)" && unzip -q -o "$(aar_of x86_64)" 'jni/*')
+out="$here/../../third_party/onnxruntime"
+mkdir -p "$out"
+rm -f "$out/onnxruntime-android-reduced.aar"
+(cd "$merge" && zip -q -r -X "$out/onnxruntime-android-reduced.aar" .)
+unzip -l "$out/onnxruntime-android-reduced.aar" | grep 'libonnxruntime.so'

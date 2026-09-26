@@ -19,7 +19,7 @@ Some inputs come from outside git and are used only when present:
 |---|---|---|
 | `models/converted/{swift-f0/swift-f0-window.onnx, basic-pitch/nmp-b1.onnx, beat-this/beat-this-small0.onnx}` | `convert/` (all MIT) | Bundled in every build: the offline solo (SwiftF0 spine, Basic Pitch confirmation, Beat This! small beats). Without SwiftF0, "On this phone" is disabled; without the other two, notes stay unconfirmed and the grid is a steady tempo |
 | `core-bridge/src/main/jniLibs/` | `scripts/build-core.sh` (cargo-ndk, arm64-v8a + x86_64) | The Rust core. Without it `AppContainer.core` is the Kotlin fallback. The JVM tests of `core-bridge` load the host build (`cargo build --release -p brasscribe-ffi` in `core/`) and skip without it |
-| `third_party/onnxruntime/onnxruntime-android-reduced.aar` | `scripts/ort/build-reduced-ort.sh` | Reduced-operator ONNX Runtime 1.30.0 (only the kernels of the three models, `scripts/ort/ops.config`). Without it the full Maven build is used |
+| `third_party/onnxruntime/onnxruntime-android-reduced.aar` | `scripts/ort/build-reduced-ort.sh <work dir>` (builds both ABIs, then merges them into the AAR) | Reduced-operator ONNX Runtime 1.30.0 (only the kernels of the three models, `scripts/ort/ops.config`). Without it the full Maven build is used |
 | `data/golden/mikkel-arranged-band/` | the golden output | Debug builds only: the built-in sample engine ("Open the Mikkel sample"). JVM tests that need it skip themselves when it is missing |
 | `third_party/sfizz` | `scripts/fetch-sfizz.sh` (sfizz 1.2.3) | The realistic playback tier. Without it the native library builds a stub and the tier is shown as unavailable. You can also pass `-Pbrasscribe.sfizzDir=<checkout>` |
 
@@ -91,7 +91,7 @@ Some inputs come from outside git and are used only when present:
 
 The first run found two real problems, both fixed: an unlabelled empty live region, and part names that alphaTab stores with no-break spaces.
 
-The flow tests need the golden fixtures, so they need a debug build made with `data/` present. The export test shares MusicXML, PDF, MIDI and the talking-score HTML and checks the files. `audio/src/androidTest/.../RealisticSynthTest.kt` renders sfizz offline. For the SFZ case, pass `-Pandroid.testInstrumentationRunnerArguments.sfz=/data/local/tmp/sounds/cornet-a/cornet-a-sus.sfz` after pushing an instrument there.
+The flow tests need the golden fixtures, so they need a debug build made with `data/` present. The export test shares MusicXML, PDF, MIDI, the talking-score HTML and the braille file and checks them; its talking-score check (every part, such as "Solo Horn") needs the Rust core, so build `core-bridge/src/main/jniLibs` first (`scripts/build-core.sh`). `audio/src/androidTest/.../RealisticSynthTest.kt` renders sfizz offline. For the SFZ case, pass `-Pandroid.testInstrumentationRunnerArguments.sfz=/data/local/tmp/sounds/cornet-a/cornet-a-sus.sfz` after pushing an instrument there.
 
 Checked by hand on the emulator (screenshots in `docs/screenshots/`):
 - the share sheet and "Open with" for WAV and MP4

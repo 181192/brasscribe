@@ -108,6 +108,7 @@ class ScoreController(
         view.api.playedBeatChanged.on { beat -> _state.value = _state.value.copy(bar = beat.voice.bar.index.toInt() + 1) }
         view.api.error.on { e -> _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName) }
         view.api.midiEventsPlayed.on { e ->
+            if (no.brasscribe.play.BuildConfig.DEBUG) for (ev in e.events) if (ev is NoteOnEvent) notesPerChannel.merge(ev.channel.toInt(), 1, Int::plus)
             // Without humanization (no core) the realistic tier follows alphaTab's own note events.
             if (!_state.value.realistic || humanizedReady) return@on
             for (ev in e.events) {
@@ -224,8 +225,15 @@ class ScoreController(
         render()
     }
 
+    /** Debug builds count the note-ons alphaTab plays per MIDI channel and log them on pause. */
+    private val notesPerChannel = java.util.TreeMap<Int, Int>()
+
     fun togglePlay() {
         applyVolumes()
+        if (no.brasscribe.play.BuildConfig.DEBUG) {
+            if (_state.value.playing) android.util.Log.i("BrasscribePlay", "note-ons per channel: $notesPerChannel")
+            else if (!_state.value.realistic) { notesPerChannel.clear(); view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn) }
+        }
         if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
         view.api.playPause()
     }

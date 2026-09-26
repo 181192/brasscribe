@@ -265,6 +265,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                         stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, arrangeMs, container.core.name))
                 soloTake = take
                 if (arranged != null) {
+                    // Kept for inspection (adb pull): the last on-device arrangement, as the core wrote it.
+                    runCatching { getApplication<Application>().getExternalFilesDir("runs")?.resolve("last-solo-composition.json")?.writeText(arranged.compositionJson) }
                     TranscriptionResult(arranged.composition, arranged.musicXml, Profile.SOLO, onDevice = true, compositionJson = arranged.compositionJson)
                 } else {
                     // Without the Rust core: the Kotlin grid and a single solo part.
@@ -293,6 +295,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 val updated = when {
                     r.onDevice && take != null -> withContext(Dispatchers.Default) {
                         container.core.arrangeSolo(take, opts.toCore())?.let {
+                            runCatching { getApplication<Application>().getExternalFilesDir("runs")?.resolve("last-solo-composition.json")?.writeText(it.compositionJson) }
                             r.copy(composition = it.composition, musicXml = it.musicXml, compositionJson = it.compositionJson,
                                 appliedTranspose = opts.keyShift)
                         }
