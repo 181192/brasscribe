@@ -23,7 +23,7 @@ from brasscribe_music.arranger import arrange_layers
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.beats import clean_beats_gated
+from brasscribe_music.beats import clean_beats_gated, downbeat_rate, labels_on, solo_meter
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
 from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
 from brasscribe_music.keys import key_plan, semitones_to
@@ -124,9 +124,10 @@ def main() -> None:
             {"stem_minus_mix_db": check.stem_minus_mix_db, "failed": check.failed, "quiet_windows": check.quiet_windows}))
         del audio
 
-    b = np.loadtxt(args.beats)
+    b = np.loadtxt(args.beats, ndmin=2)
     pos = b[:, 1].astype(int)
-    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
+    gaps = np.diff(np.where(pos == 1)[0])
+    beats_per_bar = Counter(gaps).most_common(1)[0][0] if len(gaps) else 1
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
     down = pos == 1
     raw_times = b[:, 0]
@@ -144,6 +145,21 @@ def main() -> None:
     if doubled:
         beats_per_bar *= 2
         first_down *= 2
+    if Counter(gaps).most_common(1)[0][0] < 2 if len(gaps) else True:
+        # The tracker's downbeat labels give no bars (small0 on one instrument labels most beats as
+        # downbeats): infer the meter and bar phase on the final grid from the labels' periodicity and
+        # the solo's note accents, unless the evidence is too weak (then the grid's own bars stay).
+        solo_notes = pitched(L / "solo-sw.mid") or pitched(L / "solo-mus.mid")
+        grid_pos = labels_on(times, b[:, 0], pos)
+        meter = solo_meter(times, grid_pos == 1, grid_pos, int(beats_per_bar), first_down,
+                           np.array([n["onset"] for n in solo_notes]), np.array([n["offset"] - n["onset"] for n in solo_notes]))
+        if not meter.from_labels:
+            times, beats_per_bar, first_down = meter.times, meter.beats_per_bar, meter.first_downbeat
+            down = (np.arange(len(times)) - first_down) % beats_per_bar == 0
+            doubled = False  # the labels are replaced by the inferred bars
+            print(f"meter inferred: {beats_per_bar} beats per bar, downbeat labels on {downbeat_rate(pos == 1):.0%} of beats")
+        else:
+            print(f"meter kept ({beats_per_bar} beats per bar): too little evidence to infer one")
     plan = None
     if not args.no_free_time:
         plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else down,
