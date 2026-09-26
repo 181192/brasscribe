@@ -1,133 +1,177 @@
+import AVFoundation
 import ScoreKit
 import SwiftUI
 import TranscriptionKit
-import UniformTypeIdentifiers
 
-struct HomeView: View {
+/// "What is this?": four choices, nothing pre-selected, then Continue. The choice decides
+/// how Brasscribe listens; the score options are the band, how hard, and the key.
+struct SourceView: View {
     @Environment(AppModel.self) private var app
-
-    var body: some View {
-        @Bindable var app = app
-        List {
-            Section {
-                Button { app.importing = true } label: {
-                    Label("Import audio or video", systemImage: "square.and.arrow.down")
-                }
-                .accessibilityIdentifier("import")
-                Button { app.showRecorder = true } label: { Label("Record with the microphone", systemImage: "mic") }
-                    .accessibilityIdentifier("record")
-                #if os(macOS)
-                Button { app.showCapture = true } label: { Label("Record sound playing on this Mac", systemImage: "speaker.wave.2") }
-                    .accessibilityIdentifier("capture")
-                #endif
-                if app.fixtureDirectory != nil {
-                    Button { app.startDemo() } label: { Label("Try the demo (Mikkel)", systemImage: "music.note.list") }
-                        .accessibilityIdentifier("demo")
-                }
-            } header: { Text("New score") } footer: {
-                Text("Links to streaming sites can't be downloaded. Play the music and record it, or import a file you have.")
-            }
-
-            Section {
-                if app.pieces.isEmpty {
-                    Text("Your scores appear here.").foregroundStyle(.secondary)
-                }
-                ForEach(app.pieces) { p in
-                    NavigationLink(value: Route.score(p)) {
-                        VStack(alignment: .leading) {
-                            Text(p.title).font(.headline)
-                            Text(p.created, style: .date).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    .contextMenu {
-                        Button { app.path.append(.review(p)) } label: { Label("Review", systemImage: "checklist") }
-                        Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: "trash") }
-                    }
-                    .accessibilityIdentifier("piece-\(p.title)")
-                }
-                .onDelete { idx in idx.map { app.pieces[$0] }.forEach(app.delete) }
-            } header: { Text("Scores") }
-        }
-        .navigationTitle(Text("Brasscribe Play"))
-        .toolbar {
-            ToolbarItem { Button { app.showSettings = true } label: { Label("Settings", systemImage: "gear") } }
-        }
-        .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml]) { result in
-            if case .success(let url) = result { Task { await app.accept(url: url) } }
-        }
-    }
-}
-
-/// "What is this?" — the choice picks the pipeline profile; nothing is preselected.
-/// Then the output: lineup, difficulty and key.
-struct SourceSheet: View {
-    @Environment(AppModel.self) private var app
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var hsize
     let source: PendingSource
     @State private var profile: SourceProfile?
     @State private var output = OutputChoice()
+    @State private var duration: String?
+    @State private var showOptions = false
+
+    private var wide: Bool {
+        #if os(macOS)
+        true
+        #else
+        hsize == .regular
+        #endif
+    }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    ForEach(SourceProfile.allCases) { p in
-                        Button { profile = p } label: {
-                            HStack {
-                                Image(systemName: p.symbol).frame(width: 28)
-                                VStack(alignment: .leading) {
-                                    Text(p.title).font(.headline)
-                                    Text(p.detail).font(.caption).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if profile == p { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(profile == p ? .isSelected : [])
-                        .accessibilityIdentifier("profile-\(p.rawValue)")
-                    }
-                } header: { Text("What is this?") } footer: {
-                    Text("This decides how the music is taken apart. Brasscribe never guesses.")
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                if let meta {
+                    HelperLine(systemImage: BrasscribeIcon.file.systemName, text: meta)
                 }
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    DisplayTitle(text: String(localized: "What is this?"))
+                    Text("Your answer decides how Brasscribe listens. It never guesses.")
+                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                }
+                LazyVGrid(columns: wide ? [GridItem(.flexible(), spacing: Space.s4), GridItem(.flexible(), spacing: Space.s4)] : [GridItem(.flexible())],
+                          spacing: Space.s4) {
+                    ForEach(SourceProfile.allCases) { p in choice(p) }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text("What is this?"))
+                Text("Not sure? Choose Brass band.")
+                    .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
 
-                Section {
-                    Picker(selection: $output.lineup) {
-                        Text("Full brass band").tag(Lineup.fullBand)
-                        Text("Small band").tag(Lineup.minimalBand)
-                    } label: { Text("Lineup") }
+                options
+                whereItRuns
+                if !wide { Color.clear.frame(height: Space.s2) }
+            }
+            .padding(.horizontal, wide ? Space.s8 : Space.s5)
+            .padding(.vertical, Space.s6)
+            .readingColumn()
+        }
+        .pageBackground()
+        .safeAreaInset(edge: .bottom) { actions }
+        .navigationTitle(Text(source.title))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .task { duration = await Self.duration(of: source.audioURL) }
+    }
+
+    private var meta: String? {
+        let bits = [source.name, duration].compactMap { $0 }
+        return bits.isEmpty ? nil : bits.joined(separator: " · ")
+    }
+
+    private func choice(_ p: SourceProfile) -> some View {
+        let on = profile == p
+        return Button { profile = p } label: {
+            HStack(alignment: .top, spacing: Space.s3) {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text(p.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                    Text(p.detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: Space.s2)
+                Image(systemName: on ? "largecircle.fill.circle" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                    .accessibilityHidden(true)
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
+                                                                            lineWidth: on ? 2 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: Radius.lg))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? [.isSelected] : [])
+        .accessibilityIdentifier("profile-\(p.rawValue)")
+    }
+
+    /// Which band, how hard, and the key. Folded away: the defaults suit most recordings.
+    private var options: some View {
+        DisclosureGroup(isExpanded: $showOptions) {
+            VStack(alignment: .leading, spacing: Space.s4) {
+                Picker(selection: $output.lineup) {
+                    Text("Full brass band").tag(Lineup.fullBand)
+                    Text("Small band").tag(Lineup.minimalBand)
+                } label: { Text("Which band?") }
+                VStack(alignment: .leading, spacing: Space.s1) {
                     Picker(selection: $output.difficulty) {
-                        Text("Faithful").tag(Difficulty.faithful)
+                        Text("As played").tag(Difficulty.faithful)
                         Text("Standard").tag(Difficulty.standard)
                         Text("Easier").tag(Difficulty.easier)
-                    } label: { Text("Difficulty") }
-                    Picker(selection: $output.keyFifths) {
-                        Text("Original key").tag(Int?.none)
-                        ForEach(-6...6, id: \.self) { f in Text(KeyNames.name(fifths: f)).tag(Int?.some(f)) }
-                    } label: { Text("Key (concert)") }
-                    .accessibilityIdentifier("keyPicker")
-                } header: { Text("Score") } footer: {
-                    Text(profile == .solo && app.soloOnDevice
-                         ? String(localized: "Solos are transcribed on this device. Other recordings go to your computer.")
-                         : String(localized: "Your computer arranges the score with these choices."))
+                    } label: { Text("How hard?") }
+                    Text("Easier keeps the tune but avoids high notes and fast runs.")
+                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                 }
+                Picker(selection: $output.keyFifths) {
+                    Text("Original key").tag(Int?.none)
+                    ForEach(-6...6, id: \.self) { f in Text(KeyNames.name(fifths: f)).tag(Int?.some(f)) }
+                } label: { Text("Key") }
+                .accessibilityIdentifier("keyPicker")
             }
-            .formStyle(.grouped)
-            .navigationTitle(Text(source.title))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { app.pending = nil } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Transcribe") {
-                        guard let profile else { return }
-                        app.startTranscription(source, profile: profile, output: output)
-                    }
-                    .disabled(profile == nil)
-                    .accessibilityIdentifier("transcribe")
+            .pickerStyle(.menu)
+            .padding(.top, Space.s3)
+        } label: {
+            Text("Score options").font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+        }
+        .tint(Color.Brasscribe.text)
+        .card()
+    }
+
+    private var whereItRuns: some View {
+        HStack(spacing: Space.s3) {
+            IconWell(systemName: BrasscribeIcon.computer.systemName)
+            Text(app.whereItRuns(for: profile))
+                .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Space.s2)
+            #if os(macOS)
+            SettingsLink { Text("Change") }.buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+            #else
+            Button { app.showSettings = true } label: { Text("Change") }.buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+            #endif
+        }
+        .card()
+    }
+
+    private var actions: some View {
+        let cont = Button {
+            guard let profile else { return }
+            app.startTranscription(source, profile: profile, output: output)
+        } label: { Text("Continue") }
+            .disabled(profile == nil)
+            .accessibilityIdentifier("transcribe")
+            .accessibilityHint(profile == nil ? Text("Choose one to continue.") : Text(""))
+        return VStack(spacing: Space.s2) {
+            if profile == nil {
+                Text("Choose one to continue.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .accessibilityHidden(true)
+            }
+            if wide {
+                HStack(spacing: Space.s3) {
+                    Spacer()
+                    Button { app.path.removeLast() } label: { Text("Cancel") }.buttonStyle(.plainText)
+                        .keyboardShortcut(.cancelAction)
+                    cont.buttonStyle(.primary).keyboardShortcut(.defaultAction)
                 }
+            } else {
+                cont.buttonStyle(.primaryWide)
             }
         }
-        .frame(minWidth: 460, minHeight: 560)
+        .padding(.horizontal, wide ? Space.s8 : Space.s5)
+        .padding(.vertical, Space.s3)
+        .readingColumn()
+        .background(Color.Brasscribe.bg.opacity(0.95))
+    }
+
+    static func duration(of url: URL) async -> String? {
+        guard let d = try? await AVURLAsset(url: url).load(.duration), d.seconds.isFinite, d.seconds > 0 else { return nil }
+        return Duration.seconds(d.seconds.rounded()).formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated))
     }
 }
 
@@ -136,24 +180,25 @@ extension SourceProfile {
         switch self {
         case .solo: return String(localized: "One instrument")
         case .brassBand: return String(localized: "Brass band")
-        case .orchestraWithSoloist: return String(localized: "Orchestra or band with a soloist")
+        case .orchestraWithSoloist: return String(localized: "Soloist with orchestra or band")
         case .popRock: return String(localized: "Pop or rock")
         }
     }
     var detail: String {
         switch self {
-        case .solo: return String(localized: "A single player, for example you practising.")
-        case .brassBand: return String(localized: "A brass band playing together.")
-        case .orchestraWithSoloist: return String(localized: "A soloist in front of an orchestra or band.")
-        case .popRock: return String(localized: "Vocals or lead with bass, drums and keys.")
+        case .solo: return String(localized: "One player on their own, like you practising the cornet.")
+        case .brassBand: return String(localized: "A whole band playing together, with no other instruments.")
+        case .orchestraWithSoloist: return String(localized: "You get the solo part, plus the accompaniment arranged for brass band.")
+        case .popRock: return String(localized: "Singing, guitars, keys, bass and drums.")
         }
     }
-    var symbol: String {
+    /// For the library row: "Brass band · 64 bars · Today".
+    var shortTitle: String {
         switch self {
-        case .solo: return "person"
-        case .brassBand: return "person.3"
-        case .orchestraWithSoloist: return "person.2.wave.2"
-        case .popRock: return "guitars"
+        case .solo: return String(localized: "One instrument")
+        case .brassBand: return String(localized: "Brass band")
+        case .orchestraWithSoloist: return String(localized: "Soloist with band")
+        case .popRock: return String(localized: "Pop or rock")
         }
     }
 }
@@ -168,48 +213,149 @@ enum KeyNames {
     }
 }
 
-/// Plain-language progress with estimated time and cancel.
+/// The steps in plain words, the current one as the heading, a percentage and the time
+/// left, and Cancel (with a confirmation). Announced at most every 10 % or 10 s.
 struct TranscribeView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.horizontalSizeClass) private var hsize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let jobID: UUID
+    @State private var confirmCancel = false
+    @State private var lastAnnounced: (fraction: Double, at: Date) = (0, .distantPast)
+
+    private var wide: Bool {
+        #if os(macOS)
+        true
+        #else
+        hsize == .regular
+        #endif
+    }
 
     var body: some View {
-        if let job = app.jobs[jobID] {
-            VStack(spacing: 20) {
-                Spacer()
-                ProgressView(value: job.progress.fraction) {
-                    Text(job.progress.stage.plain).font(.title3)
-                } currentValueLabel: {
-                    Text(eta(job.progress)).monospacedDigit()
-                }
-                .frame(maxWidth: 480)
-                .accessibilityIdentifier("transcriptionProgress")
-                Text("Transcribing on \(job.service.displayName)").font(.caption).foregroundStyle(.secondary)
+        Group {
+            if let job = app.jobs[jobID] {
                 if let f = job.failure {
-                    Text(f).foregroundStyle(.red).multilineTextAlignment(.center)
-                    Button("Back") { app.path.removeLast() }
-                } else if job.cancelled {
-                    Text("Cancelled.")
-                    Button("Back") { app.path.removeLast() }
+                    failed(job, reason: f)
                 } else {
-                    Button(role: .cancel) { job.cancel() } label: { Text("Cancel") }
-                        .keyboardShortcut(.cancelAction)
-                        .accessibilityIdentifier("cancelTranscription")
+                    progress(job)
                 }
-                Spacer()
+            } else {
+                ProgressView()
             }
-            .padding()
-            .navigationTitle(job.source.title)
-            .onChange(of: job.progress.stage) { _, s in AccessibilityNotifier.announce(s.plain) }
-        } else {
-            ProgressView()
+        }
+        .pageBackground()
+        .navigationTitle(app.jobs[jobID]?.source.title ?? "")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    private func steps(for job: TranscriptionJob) -> [StageKind] {
+        var s: [StageKind] = []
+        if job.service is CompanionService { s.append(.uploading) }
+        s.append(.preparing)
+        s.append(.findingBeat)
+        if job.profile != .solo { s.append(.separating) }
+        s += [.transcribing, .arranging, .engraving]
+        return s
+    }
+
+    @ViewBuilder private func progress(_ job: TranscriptionJob) -> some View {
+        let steps = steps(for: job)
+        let current = steps.firstIndex(of: job.progress.stage) ?? 0
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                BrandMark(size: 40)
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    SectionLabel(wide ? String(localized: "Step \(current + 1) of \(steps.count) · \(job.profile.title)")
+                                      : String(localized: "Step \(current + 1) of \(steps.count)"))
+                    DisplayTitle(text: job.progress.stage.plain)
+                }
+                VStack(spacing: Space.s2) {
+                    ProgressView(value: job.progress.fraction)
+                        .tint(Color.Brasscribe.brass)
+                        .animation(reduceMotion ? nil : BrasscribeDesign.Motion.animation(reduceMotion: false), value: job.progress.fraction)
+                        .accessibilityLabel(Text(job.progress.stage.plain))
+                        .accessibilityValue(Text("\(percentText(job.progress.fraction * 100)), \(eta(job.progress))"))
+                        .accessibilityIdentifier("transcriptionProgress")
+                    HStack {
+                        Text(percentText(job.progress.fraction * 100)).monospacedDigit()
+                        Spacer()
+                        Text(eta(job.progress))
+                    }
+                    .font(Font.Brasscribe.callout)
+                    .foregroundStyle(Color.Brasscribe.textMuted)
+                    .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: Space.s4) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { i, s in
+                        HStack(spacing: Space.s3) {
+                            Image(systemName: i < current ? "checkmark.circle.fill" : i == current ? "smallcircle.filled.circle" : "circle")
+                                .font(.title2)
+                                .foregroundStyle(i <= current ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                                .accessibilityHidden(true)
+                            Text(s.plain)
+                                .font(i == current ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                                .foregroundStyle(i == current ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue(i < current ? Text("Done") : i == current ? Text("Now") : Text("Next"))
+                    }
+                }
+                NoticeBox(systemImage: BrasscribeIcon.computer.systemName,
+                          text: "\(app.whereItRuns(for: job.profile)) " + String(localized: "You can leave this screen. Brasscribe will tell you when the score is ready."))
+            }
+            .padding(.horizontal, wide ? Space.s8 : Space.s5)
+            .padding(.vertical, Space.s6)
+            .readingColumn()
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                if wide { Spacer() }
+                Button { confirmCancel = true } label: { Text("Cancel") }
+                    .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide))
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier("cancelTranscription")
+            }
+            .padding(.horizontal, wide ? Space.s8 : Space.s5)
+            .padding(.vertical, Space.s3)
+            .readingColumn()
+        }
+        .confirmationDialog(String(localized: "Stop making this score?"), isPresented: $confirmCancel, titleVisibility: .visible) {
+            Button(String(localized: "Stop"), role: .destructive) { job.cancel(); app.goHome() }
+            Button(String(localized: "Keep going"), role: .cancel) {}
+        } message: { Text("You can start again from the recording.") }
+        .onChange(of: job.progress.stage) { _, s in announce(s.plain, fraction: job.progress.fraction, force: true) }
+        .onChange(of: job.progress.fraction) { _, f in announce(nil, fraction: f, force: false) }
+    }
+
+    /// Announce the step when it changes, and the percentage at most every 10 % or 10 s.
+    private func announce(_ step: String?, fraction: Double, force: Bool) {
+        let now = Date()
+        guard force || fraction - lastAnnounced.fraction >= 0.1 || now.timeIntervalSince(lastAnnounced.at) >= 10 else { return }
+        lastAnnounced = (fraction, now)
+        AccessibilityNotifier.announce([step, percentText(fraction * 100)].compactMap { $0 }.joined(separator: ", "))
+    }
+
+    private func failed(_ job: TranscriptionJob, reason: String) -> some View {
+        ProblemContent(title: String(localized: "The score couldn't be made"),
+                       lead: nil,
+                       reasons: [String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
+                       hint: nil, detail: reason) {
+            Button { app.startTranscription(job.source, profile: job.profile, output: job.output) } label: {
+                Label("Try again", systemImage: BrasscribeIcon.retry.systemName)
+            }
+            .buttonStyle(.primaryWide)
+            Button { app.goHome() } label: { Text("Back to Home") }
+                .buttonStyle(SecondaryButtonStyle(fullWidth: true))
         }
     }
 
     func eta(_ p: TranscriptionProgress) -> String {
-        guard let s = p.etaSeconds else { return String(localized: "Estimating time…") }
+        guard let s = p.etaSeconds else { return String(localized: "Working out the time left…") }
         if s < 60 { return String(localized: "Less than a minute left") }
-        return String(localized: "About \(Int((s / 60).rounded())) min left")
+        let m = Int((s / 60).rounded())
+        return m == 1 ? String(localized: "About 1 minute left") : String(localized: "About \(m) minutes left")
     }
 }
 
@@ -218,100 +364,111 @@ extension StageKind {
         switch self {
         case .uploading: return String(localized: "Sending the recording")
         case .preparing: return String(localized: "Getting the recording ready")
-        case .separating: return String(localized: "Separating the instruments")
+        case .separating: return String(localized: "Separating the soloist from the band")
         case .findingBeat: return String(localized: "Finding the beat")
         case .transcribing: return String(localized: "Writing down the notes")
         case .arranging: return String(localized: "Arranging for brass band")
-        case .engraving: return String(localized: "Engraving the score")
+        case .engraving: return String(localized: "Laying out the pages")
         case .rendering: return String(localized: "Making the audio")
         case .working: return String(localized: "Working")
         }
     }
 }
 
-/// Review before practising: uncertain notes per bar (colour and shape), free-time
-/// passages as ad lib, and "listen to this bar" from the original and the score.
-struct ReviewView: View {
+/// A problem with its way forward (mockups/png/error-*).
+struct ProblemView: View {
     @Environment(AppModel.self) private var app
-    let piece: Piece
-    @State private var model: PracticeModel?
+    let problem: Problem
 
     var body: some View {
-        Group {
-            if let model {
-                List {
-                    Section {
-                        LabeledContent { Text("\(model.score.parts.count)") } label: { Text("Parts") }
-                        LabeledContent { Text("\(model.score.measures.count)") } label: { Text("Bars") }
-                        LabeledContent { Text("\(uncertainBars(model).count)") } label: { Text("Bars with uncertain notes") }
-                        HStack(spacing: 6) {
-                            Diamond().stroke(Color(red: 0.835, green: 0.369, blue: 0), lineWidth: 1.5).frame(width: 10, height: 10)
-                            Text("Uncertain notes are marked with an open diamond and an orange colour.")
-                                .font(.caption)
-                        }
-                        .accessibilityElement(children: .combine)
-                    }
-                    if let free = model.composition?.freeTimeBeats, !free.isEmpty {
-                        Section {
-                            ForEach(Array(free.enumerated()), id: \.offset) { _, r in
-                                let a = model.score.position(atTick: Int(r.lowerBound * 960)).bar
-                                let b = model.score.position(atTick: Int(r.upperBound * 960)).bar
-                                Text("Bars \(a)–\(b): ad lib (free time)").italic()
-                            }
-                        } header: { Text("Free time") } footer: {
-                            Text("The performer did not keep a steady beat here, so rhythms are approximate.")
-                        }
-                    }
-                    Section {
-                        ForEach(uncertainBars(model), id: \.self) { bar in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(model.barLabel(bar)).font(.headline)
-                                    Text("\(model.uncertainCount(bar: bar)) uncertain notes").font(.caption)
-                                }
-                                Spacer()
-                                Button { model.listen(toBar: bar, original: true) } label: { Label("Original", systemImage: "waveform") }
-                                    .disabled(!model.hasOriginal)
-                                Button { model.listen(toBar: bar, original: false) } label: { Label("Score", systemImage: "music.note") }
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityElement(children: .contain)
-                        }
-                    } header: { Text("Listen to uncertain bars") }
-                }
-                .toolbar {
-                    if let comp = model.composition {
-                        ToolbarItem {
-                            Menu {
-                                Button("Full brass band") { rearrange(comp, .fullBand, model) }
-                                Button("Small band") { rearrange(comp, .minimalBand, model) }
-                            } label: { Label("Arrange again on this device", systemImage: "arrow.triangle.2.circlepath") }
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Open score") { model.stopAll(); app.path.append(.score(piece)) }
-                            .accessibilityIdentifier("openScore")
-                    }
-                }
-            } else { ProgressView() }
+        ProblemContent(title: problem.title, lead: problem.lead, reasons: problem.reasons, hint: problem.hint, detail: problem.detail) {
+            ForEach(Array(problem.actions.enumerated()), id: \.offset) { i, a in
+                let button = Button { run(a) } label: { label(a) }
+                if i == 0 { button.buttonStyle(.primaryWide) } else { button.buttonStyle(SecondaryButtonStyle(fullWidth: true)) }
+            }
         }
-        .navigationTitle(Text("Review"))
-        .task {
-            if model == nil, let m = try? PracticeModel(piece: piece) { m.start(); model = m }
-        }
-        .onDisappear { model?.stopAll() }
+        .navigationTitle(Text(problem.title))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar(removing: .title)
     }
 
-    func rearrange(_ comp: Composition, _ lineup: Lineup, _ m: PracticeModel) {
-        m.stopAll()
-        do {
-            try app.arrangeOnDevice(comp, title: piece.title + (lineup == .minimalBand ? " (small band)" : ""), lineup: lineup,
-                                    original: piece.originalURL, video: piece.videoURL)
-        } catch { app.alert = .message(String(localized: "Couldn't arrange on this device."), error.localizedDescription) }
+    @ViewBuilder private func label(_ a: Problem.Action) -> some View {
+        switch a {
+        case .importFile:
+            if case .cantOpenFile = problem { Label("Choose another file", systemImage: BrasscribeIcon.importFile.systemName) }
+            else { Label("Open a recording instead", systemImage: BrasscribeIcon.importFile.systemName) }
+        case .recordMic: Label("Record with the microphone", systemImage: BrasscribeIcon.recordMic.systemName)
+        case .home: Text("Back to Home")
+        }
     }
 
-    func uncertainBars(_ m: PracticeModel) -> [Int] {
-        m.score.measures.indices.filter { m.uncertainCount(bar: $0) > 0 }
+    private func run(_ a: Problem.Action) {
+        app.goHome()
+        switch a {
+        case .importFile: app.importing = true
+        case .recordMic: app.showRecorder = true
+        case .home: break
+        }
+    }
+}
+
+/// Title (what happened), one or two reasons, an optional hint, the recovery buttons, and
+/// the technical detail folded under "Details for the band's tech person".
+struct ProblemContent<Actions: View>: View {
+    let title: String
+    let lead: String?
+    let reasons: [String]
+    let hint: String?
+    let detail: String?
+    @ViewBuilder let actions: Actions
+    @Environment(\.horizontalSizeClass) private var hsize
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                Image(systemName: BrasscribeIcon.error.systemName)
+                    .font(.title)
+                    .foregroundStyle(Color.Brasscribe.error)
+                    .frame(width: 56, height: 56)
+                    .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.lg))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.border))
+                    .accessibilityHidden(true)
+                DisplayTitle(text: title)
+                if let lead { Text(lead).font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text) }
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    ForEach(reasons, id: \.self) { r in
+                        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                            Text(verbatim: "•").accessibilityHidden(true)
+                            Text(r).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .font(Font.Brasscribe.body)
+                        .foregroundStyle(reasons.count > 1 || lead != nil ? Color.Brasscribe.textMuted : Color.Brasscribe.text)
+                    }
+                }
+                if let hint { NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: hint) }
+                if let detail {
+                    DisclosureGroup {
+                        Text(detail).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
+                            .padding(.top, Space.s2)
+                    } label: { Text("Details for the band's tech person").font(Font.Brasscribe.callout) }
+                    .tint(Color.Brasscribe.text)
+                }
+            }
+            .padding(.horizontal, Space.s5)
+            .padding(.vertical, Space.s6)
+            .readingColumn()
+        }
+        .pageBackground()
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: Space.s3) { actions }
+                .padding(.horizontal, Space.s5)
+                .padding(.vertical, Space.s3)
+                .frame(maxWidth: 480)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .onAppear { AccessibilityNotifier.announce(title) }
     }
 }
 

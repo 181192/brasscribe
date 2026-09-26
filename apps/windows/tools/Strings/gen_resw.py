@@ -117,7 +117,7 @@ name("ReviewSnippet", "The bars around the note", "Taktene rundt tonen")
 name("ReviewListenButton", "Listen to this bar", "Lytt til denne takten"); help_("ReviewListenButton", "Plays the bar from the recording, looped (Space)", "Spiller takten fra opptaket i løkke (Mellomrom)")
 prop("ReviewListenLabel", "Text", "Listen to this bar", "Lytt til denne takten")
 name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
-name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the score is arranged again", "Velg hva tonen skal være; partituret arrangeres på nytt")
+name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the whole score follows", "Velg hva tonen skal være; hele partituret følger med")
 prop("ReviewChangeNoteLabel", "Text", "Change note…", "Endre tonen …")
 prop("ReviewKeys", "Text", "Space listens · K keeps · arrows move", "Mellomrom lytter · K beholder · piltastene flytter")
 text_button("ReviewSkipButton", "Skip", "Hopp over", "Leave this note marked and go to the next", "La tonen være merket og gå til neste")
@@ -344,14 +344,7 @@ code = {
     "Review_ScopeAll": ("All parts ({0})", "Alle stemmer ({0})"),
     "Review_Accompaniment": ("Accompaniment", "Akkompagnement"),
     "Review_MyPartDone": ("Your part is checked. Now the other parts.", "Stemmen din er sjekket. Nå de andre stemmene."),
-    "Review_LevelUncertainHint": ("Uncertain: it could also be {0}. Listen to the original and the score side by side.", "Usikker: det kan også være {0}. Lytt til opptaket og partituret side om side."),
-    "Review_LevelVeryUncertainHint": ("Very uncertain: it could also be {0}. Listen to the original and the score side by side.", "Svært usikker: det kan også være {0}. Lytt til opptaket og partituret side om side."),
-    "Review_Changed": ("Bar {0} changed to {1}. Arranging again.", "Takt {0} endret til {1}. Arrangerer på nytt."),
-    "Review_AltHeard": ("heard by another listening", "hørt av en annen lytting"),
-    "Review_AltSemitoneDown": ("a semitone lower", "et halvtonetrinn lavere"),
-    "Review_AltSemitoneUp": ("a semitone higher", "et halvtonetrinn høyere"),
-    "Review_AltOctaveDown": ("an octave lower", "en oktav lavere"),
-    "Review_AltOctaveUp": ("an octave higher", "en oktav høyere"),
+    "Review_Changed": ("Changed to {0}", "Endret til {0}"),
     "Review_ListItem": ("Bar {0} · {1}", "Takt {0} · {1}"),
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),
@@ -500,6 +493,45 @@ code = {
 }
 for k, (en, nb) in code.items():
     add(k, en, nb)
+
+
+# ---- added with the evidence review and score editing (kept in step with the .resw) ----
+add('ChangeNote_Down', 'Down a semitone', 'En halvtone ned')
+add('ChangeNote_Heard', 'What each transcriber heard', 'Hva hver transkriberer hørte')
+add('ChangeNote_Save', 'Save', 'Lagre')
+add('ChangeNote_Title', 'Change note', 'Endre tone')
+add('ChangeNote_Up', 'Up a semitone', 'En halvtone opp')
+add('DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'Computers running Brasscribe on this network', 'Datamaskiner som kjører Brasscribe på dette nettverket')
+add('EditTitleItem.Text', 'Edit score title', 'Endre partiturnavn')
+add('FindEnginesButton.Content', 'Find on this network', 'Finn på dette nettverket')
+add('FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText', 'Look for computers running Brasscribe on the same network', 'Se etter datamaskiner som kjører Brasscribe på samme nettverk')
+add('Library_DeleteFailed', "Couldn't delete {0}. Is your computer on?", 'Kunne ikke slette {0}. Er datamaskinen på?')
+add('Library_Deleted', 'Deleted {0}', 'Slettet {0}')
+add('Library_OnComputer', '{0} · On your computer', '{0} · På datamaskinen din')
+add('ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'How sure Brasscribe is', 'Hvor sikker Brasscribe er')
+add('ReviewHeardHeading.Text', 'What each transcriber heard', 'Hva hver transkriberer hørte')
+add('ReviewHowSure.Text', 'How sure Brasscribe is', 'Hvor sikker Brasscribe er')
+add('Review_HeardNothing', 'No note', 'Ingen tone')
+add('Review_HeardSame', 'Same, {0}', 'Samme, {0}')
+add('Review_LevelAlternative', '{0}: it could also be {1}.', '{0}: det kan også være {1}.')
+add('Review_WordUncertain', 'Uncertain', 'Usikker')
+add('Review_WordVeryUncertain', 'Very uncertain', 'Svært usikker')
+add('ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'Score options', 'Valg for partituret')
+add('ScoreOptions_CheckNotes', 'Check the notes', 'Sjekk tonene')
+add('ScoreOptions_Delete', 'Delete', 'Slett')
+add('ScoreOptions_DeleteComputer', 'The score is removed from your computer.', 'Partituret fjernes fra datamaskinen din.')
+add('ScoreOptions_DeleteThisPc', 'The score is removed from this PC.', 'Partituret fjernes fra denne PC-en.')
+add('ScoreOptions_DeleteTitle', 'Delete “{0}”?', 'Slette «{0}»?')
+add('ScoreOptions_EditTitle', 'Edit title', 'Endre navn')
+add('Score_CancelTitle', 'Cancel', 'Avbryt')
+add('Score_EditTitle', 'Edit score title', 'Endre partiturnavn')
+add('Score_RenameFailed', "Couldn't rename {0}", 'Kunne ikke endre navn på {0}')
+add('Score_SaveTitle', 'Save', 'Lagre')
+add('Settings_Engine_Chosen', 'Using {0}. Type the six-digit code it shows, then choose Connect.', 'Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.')
+add('Settings_Engine_FoundMany', 'Found {0} computers running Brasscribe. Choose one.', 'Fant {0} datamaskiner som kjører Brasscribe. Velg én.')
+add('Settings_Engine_FoundOne', 'Found {0}. Choose it to use it.', 'Fant {0}. Velg den for å bruke den.')
+add('Settings_Engine_NoneFound', 'No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.', 'Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.')
+add('Settings_Engine_Searching', 'Looking for Brasscribe on your network…', 'Ser etter Brasscribe på nettverket …')
 
 HEADER = """<?xml version="1.0" encoding="utf-8"?>
 <root>

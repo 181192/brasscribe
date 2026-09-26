@@ -159,7 +159,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.All(b, n => Assert.InRange(n.NoteVelocity, 1, 127));
     }
 
-    /// <summary>"Change note…" on the golden: the change goes into the Composition and the arranged score has it.</summary>
+    /// <summary>"Change note…" on the golden: the change goes into the Composition and the whole score is arranged again.</summary>
     [Fact]
     public void A_changed_note_is_arranged_again_with_its_new_pitch()
     {
@@ -174,30 +174,27 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         var score = new ViewModels.ScoreViewModel(bridge, new ViewModels.PlayerViewModel(player, quiet, strings, new InlineUi()), quiet, strings);
         var composition = bridge.ParseComposition(File.ReadAllText(json));
         score.Load(File.ReadAllText(xmlPath), composition);
-        var review = new ViewModels.ReviewViewModel(score, quiet, strings) { CanArrange = true };
+        int arranged = 0;
+        score.Rearrange = c => { arranged++; return bridge.ArrangeMusicXml(c, "layers"); };
+        var review = new ViewModels.ReviewViewModel(score, quiet, strings);
         review.Load();
         int before = review.AllItems.Count;
-        var item = review.Current!;
-        Assert.True(item.IsMine); // the solo part comes first
-        var source = Review.NoteAlternatives.SourceOf(composition, item.Event);
-        Assert.NotNull(source);
-        int oldPitch = source.Value.Note.Pitch;
-        ViewModels.NoteChange? change = null;
-        review.NoteChanged += (_, c) => change = c;
-        review.ChangeNoteCommand.Execute(new Review.NoteAlternative(1, "x", Review.AlternativeKind.Semitone));
-        Assert.NotNull(change);
-        Assert.Equal(oldPitch + 1, source.Value.Note.Pitch);
-        Assert.Equal(1.0, source.Value.Note.Confidence);
-
-        var xml = bridge.ArrangeMusicXml(composition, "layers")!;
-        score.Load(xml, composition);
+        Assert.True(review.Current!.IsMine); // the solo part comes first
+        var item = review.Items.First(i => i.Event.CompositionVoiceId is not null);
+        review.Select(item);
+        var ev = item.Event;
+        var note = composition.Voices.First(v => v.Id == ev.CompositionVoiceId).Notes.First(n => n.Start == ev.CompositionNoteStart);
+        int oldPitch = note.Pitch;
+        Assert.True(review.ChangeNote(1));
+        Assert.Equal(1, arranged);
+        Assert.Equal(oldPitch + 1, note.Pitch);
+        Assert.Equal(1.0, note.Confidence);
         review.Load();
-        Assert.Equal(before - 1, review.AllItems.Count);
-        var doc = score.Document!;
-        var moved = doc.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
-            .FirstOrDefault(e => e.TimeS is { } t && Math.Abs(t - source.Value.Note.OnsetS!.Value) < 0.01 && e.Concert is { } c
-                                 && Announcer.Midi(c) % 12 == (oldPitch + 1) % 12);
+        Assert.True(review.AllItems.Count < before);
+        var moved = score.Document!.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
+            .FirstOrDefault(e => e.CompositionVoiceId == ev.CompositionVoiceId && e.CompositionNoteStart == ev.CompositionNoteStart);
         Assert.NotNull(moved);
+        Assert.Equal((oldPitch + 1) % 12, Announcer.Midi(moved.Concert!) % 12);
         Assert.False(moved.IsUncertain);
         log.WriteLine($"changed bar {item.BarNumber} from {oldPitch} to {oldPitch + 1}; {before} → {review.AllItems.Count} notes to check");
     }

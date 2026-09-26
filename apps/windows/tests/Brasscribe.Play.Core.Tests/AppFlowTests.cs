@@ -128,6 +128,86 @@ public class AppFlowTests
     }
 
     [Fact]
+    public async Task Computer_scores_list_rename_open_with_evidence_change_a_note_and_delete()
+    {
+        string title = "Remote tune";
+        bool gone = false;
+        string Job() => $$"""{"id":"j1","profile":"solo","status":"succeeded","created":{{DateTimeOffset.Now.ToUnixTimeSeconds()}},"stages":[],"audio_id":"a1","title":"{{title}}","outputs":["solo.musicxml","composition.json"]}""";
+        var engine = new FakeHandler((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+        {
+            ("GET", "/v1/jobs") => FakeHandler.Json(gone ? "[]" : $"[{Job()}]"),
+            ("GET", "/v1/jobs/j1") => FakeHandler.Json(Job()),
+            ("GET", "/v1/jobs/j1/composition") => FakeHandler.Json("""
+                {"title":"Remote tune","ticks_per_beat":480,"meters":[{"tick":0,"beats":4}],"keys":[{"tick":0,"fifths":0}],
+                 "voices":[{"id":"melody","role":"melody","notes":[{"pitch":68,"start":480,"dur":240,"confidence":0.3,"onset_s":0.44}]}]}
+                """),
+            ("GET", "/v1/jobs/j1/musicxml") => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"))) },
+            ("GET", "/v1/jobs/j1/evidence") => FakeHandler.Json("""
+                {"models":[{"model":"swift-f0","name":"SwiftF0"},{"model":"basic-pitch","name":"Basic Pitch"}],
+                 "notes":[{"voice":"melody","start":480,"pitch":68,"confidence":0.3,"onset_s":0.44,
+                   "models":[{"model":"swift-f0","name":"SwiftF0","pitch":68,"agrees":true},{"model":"basic-pitch","name":"Basic Pitch","pitch":70,"agrees":false}]}]}
+                """),
+            ("PATCH", "/v1/runs/j1") => Rename(r),
+            ("DELETE", "/v1/runs/j1") => Delete(),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+        });
+        HttpResponseMessage Rename(HttpRequestMessage r)
+        {
+            title = System.Text.Json.JsonDocument.Parse(r.Content!.ReadAsStringAsync().Result).RootElement.GetProperty("title").GetString()!;
+            return FakeHandler.Json(Job());
+        }
+        HttpResponseMessage Delete()
+        {
+            gone = true;
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        }
+        var library = new ScoreLibrary(Path.Combine(Path.GetTempPath(), "brasscribe-library-" + Guid.NewGuid().ToString("N")));
+        var (main, _) = Build(engine, library: library);
+
+        // "Your scores" lists the computer's finished score, with where it is.
+        await main.RefreshComputerScoresAsync();
+        var remote = Assert.Single(main.LibraryItems);
+        Assert.True(remote.OnComputer);
+        Assert.Equal("Remote tune", remote.Title);
+        Assert.Contains("On your computer", remote.Subtitle);
+
+        // Edit title renames it on the computer, and the list follows.
+        Assert.True(await main.RenameLibraryItemAsync(remote, "  Mikkel  "));
+        Assert.Equal("Mikkel", Assert.Single(main.LibraryItems).Title);
+
+        // Check the notes downloads it into this PC's library and opens the review with the evidence.
+        await main.OpenLibraryItemAsync(main.LibraryItems[0], review: true);
+        Assert.Equal(Screen.Review, main.Screen);
+        var local = Assert.Single(main.LibraryItems);
+        Assert.False(local.OnComputer);
+        var review = main.Review;
+        Assert.True(review.HasEvidence);
+        Assert.Equal("30%", review.ConfidenceText);
+        Assert.Equal("Very uncertain: it could also be a C.", review.LevelLine);
+        Assert.Equal([("SwiftF0", "Same, B♭", true), ("Basic Pitch", "C", false)], review.Heard.Select(h => (h.Name, h.Heard, h.Agrees)));
+        Assert.Equal(["SwiftF0: B♭", "Basic Pitch: C"], review.ChangeChoices().Select(c => c.Label));
+        Assert.Equal("C", review.ChangeLabel(2));
+
+        // Change note… to what Basic Pitch heard: the score, the Composition and the evidence follow, and the note is kept.
+        Assert.True(review.ChangeNote(2));
+        Assert.Equal(Screen.Score, main.Screen);
+        var entry = Assert.Single(library.Entries);
+        Assert.Contains("<step>C</step><octave>5</octave>", File.ReadAllText(entry.MusicXmlPath).Replace(" ", ""));
+        var saved = library.LoadEvidence(entry)!.Notes.Single();
+        Assert.Equal(70, saved.Pitch);
+        Assert.Equal([false, true], saved.Models.Select(m => m.Agrees));
+
+        // Delete on this PC brings back the computer's copy; Delete on that removes the run.
+        Assert.True(await main.DeleteLibraryItemAsync(local));
+        Assert.Empty(library.Entries);
+        Assert.Equal(Screen.Start, main.Screen);
+        Assert.True(Assert.Single(main.LibraryItems).OnComputer);
+        Assert.True(await main.DeleteLibraryItemAsync(main.LibraryItems[0]));
+        Assert.Empty(main.LibraryItems);
+        Assert.False(main.HasLibrary);
+    }
+
+    [Fact]
     public async Task First_run_then_import_choose_make_check_choose_output_and_score()
     {
         var library = new ScoreLibrary(Path.Combine(Path.GetTempPath(), "brasscribe-library-" + Guid.NewGuid().ToString("N")));

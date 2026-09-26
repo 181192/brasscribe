@@ -1,6 +1,5 @@
 using Brasscribe.Play.Core.Bridge;
 using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.ViewModels;
@@ -9,8 +8,8 @@ namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
 /// The second usability review's items: review triage (your part first, very unsure first, the
-/// count follows the scope, accompaniment last), "Change note…" alternatives and the hint, and the
-/// key shown as concert key plus the written key for the player's instrument.
+/// count follows the scope, accompaniment last), kept notes written to the Composition, and the key
+/// shown as concert key plus the written key for the player's instrument.
 /// </summary>
 [Collection(AlphaTabCollection.Name)]
 public class ReviewTriageTests
@@ -71,35 +70,26 @@ public class ReviewTriageTests
     }
 
     [Fact]
-    public void Alternatives_put_what_other_listenings_heard_first()
+    public void A_kept_note_is_kept_in_the_Composition_too()
     {
-        var note = new Note { Pitch = 67, Start = 0, Dur = 24, OnsetS = 10.0 };
-        IReadOnlyList<HeardNote> sw = [new(10.02, 69), new(12.0, 60)], mus = [new(9.97, 69)], bp = [new(10.01, 79)];
-        var alts = NoteAlternatives.For(note, writtenMidi: 69, keyFifths: 2, nb: false, [sw, mus, bp]);
-        Assert.Equal(new NoteAlternative(2, "B", AlternativeKind.OtherListening), alts[0]); // G heard as A by two listenings; written a tone up
-        Assert.DoesNotContain(alts, a => a.Kind == AlternativeKind.OtherListening && a.Semitones == 12); // an octave off is not "another note"
-        Assert.Equal([2, -1, 1, -12, 12], alts.Select(a => a.Semitones));
-        Assert.Equal("G♯", alts.Single(a => a.Semitones == -1).Name);
-        Assert.Equal("B♭", NoteAlternatives.For(note, 69, -1, false).Single(a => a.Semitones == 1).Name);
-        Assert.Equal("Ass", NoteAlternatives.Spell(68, -3, nb: true));
-    }
-
-    [Fact]
-    public void Midi_notes_are_read_with_their_seconds()
-    {
-        // One track, 480 ticks a quarter, 120 bpm: a C at 0 and a D at one quarter (0.5 s).
-        byte[] smf =
-        [
-            .. "MThd"u8, 0, 0, 0, 6, 0, 0, 0, 1, 0x01, 0xE0,
-            .. "MTrk"u8, 0, 0, 0, 24,
-            0x00, 0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20,
-            0x00, 0x90, 60, 90, 0x83, 0x60, 0x80, 60, 0,
-            0x00, 0x90, 62, 90,
-            0x00, 0xFF, 0x2F, 0x00,
-        ];
-        var notes = MidiNotes.Read(smf);
-        Assert.Equal([(0.0, 60), (0.5, 62)], notes.Select(n => (Math.Round(n.OnsetS, 3), n.Pitch)));
-        Assert.Empty(MidiNotes.Read([1, 2, 3]));
+        var strings = Strings();
+        var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        var score = new ScoreViewModel(new ManagedCoreBridge(), new PlayerViewModel(player, new Quiet(), strings, new Inline()), new Quiet(), strings);
+        var composition = new Composition { Title = "x" };
+        score.Load(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), composition);
+        var ev = score.Document!.Parts[0].Bars[0].Events.First(e => e.Written is not null);
+        var voice = new Voice { Id = "solo", Role = VoiceRole.Melody };
+        var note = new Note { Pitch = 70, Start = 0, Dur = 12, Confidence = 0.3 };
+        voice.Notes.Add(note);
+        composition.Voices.Add(voice);
+        ev.CompositionVoiceId = "solo";
+        ev.CompositionNoteStart = 0;
+        string? saved = null;
+        score.PersistEditedScore = (_, json) => saved = json;
+        score.KeepInComposition(ev);
+        Assert.Equal(1.0, note.Confidence);
+        Assert.NotNull(saved);
+        Assert.Contains("\"confidence\":1", saved);
     }
 
     [Fact]

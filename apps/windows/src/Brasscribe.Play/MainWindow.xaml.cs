@@ -118,6 +118,18 @@ public sealed partial class MainWindow : Window
         if (args.InvokedItemContainer?.DataContext is LibraryItem item) ViewModel.OpenLibraryItemCommand.Execute(item);
     }
 
+    private void OnLibraryItemOptions(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: LibraryItem item } button) ScoreOptions.Show(ViewModel, item, button);
+    }
+
+    private void OnLibraryItemContextRequested(UIElement sender, Microsoft.UI.Xaml.Input.ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement { DataContext: LibraryItem item } element) return;
+        args.Handled = true;
+        ScoreOptions.Show(ViewModel, item, element, args.TryGetPosition(element, out var point) ? point : null);
+    }
+
     private void OnImportAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;

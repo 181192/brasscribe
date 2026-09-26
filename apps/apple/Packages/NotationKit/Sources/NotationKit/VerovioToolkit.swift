@@ -54,6 +54,15 @@ public final class VerovioToolkit: @unchecked Sendable {
 
     public func getMEI() -> String { String(cString: vrvToolkit_getMEI(handle, "{}")) }
 
+    /// Restrict rendering to part of the loaded document, e.g. `{"measureRange": "14-15"}`; `{}` clears it.
+    @discardableResult
+    public func select(_ selection: [String: Any]) -> Bool {
+        guard let d = try? JSONSerialization.data(withJSONObject: selection), let s = String(data: d, encoding: .utf8) else { return false }
+        return vrvToolkit_select(handle, s)
+    }
+
+    public func redoLayout() { vrvToolkit_redoLayout(handle, "{}") }
+
     public func pageWithElement(_ id: String) -> Int { Int(vrvToolkit_getPageWithElement(handle, id)) }
 
     public func timemap() -> [TimemapEntry] {

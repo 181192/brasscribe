@@ -25,7 +25,7 @@ public sealed partial class TranscriptionStep(string key, string label) : Observ
 public enum TranscriptionFailure { None, ComputerUnreachable, Failed }
 
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
-    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null);
+    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null);
 
 /// <summary>
 /// Runs a transcription on the companion engine: upload, job, live progress in plain language with
@@ -221,8 +221,11 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             foreach (var st in Steps) { st.IsDone = true; st.IsCurrent = false; }
             StageText = _s["Transcribe_Done"];
             EtaText = "";
+            Evidence? evidence = null;
+            try { evidence = await engine.GetEvidenceAsync(job.Id, ct); }
+            catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
             _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
-            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options));
+            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence));
         }
         catch (OperationCanceledException)
         {

@@ -1,0 +1,98 @@
+name: core
+
+# Rust workspace (core/): tests on every OS the apps ship on, plus a check that the committed
+# UniFFI/C bindings match the code. With `release`, builds the brasscribe-core CLI instead.
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "core/**"
+      - "docs/accessibility/talking-score-vectors.json"
+      - ".github/workflows/core.yml"
+  pull_request:
+    paths: *paths
+  workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Build the CLI for download instead of running checks
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: dist-core-cli-linux-x86_64
+          - os: macos-26
+            artifact: dist-core-cli-macos-arm64
+          - os: windows-latest
+            artifact: dist-core-cli-windows-x86_64
+    name: ${{ inputs.release && 'build' || 'test' }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Test
+        if: ${{ !inputs.release }}
+        run: cargo test --release --locked --workspace
+
+      - name: Install cbindgen
+        if: ${{ !inputs.release && runner.os == 'Linux' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cbindgen
+
+      - name: Committed bindings are up to date
+        if: ${{ !inputs.release && runner.os == 'Linux' }}
+        run: |
+          scripts/bindings.sh >/dev/null
+          git diff --exit-code -- bindings swift android \
+            || { echo "::error::Bindings are stale; run core/scripts/bindings.sh and commit the result."; exit 1; }
+
+      # Archived here: artifact uploads do not keep the executable bit.
+      - name: Build the CLI
+        if: ${{ inputs.release }}
+        run: |
+          cargo build --release --locked -p brasscribe-cli
+          name="brasscribe-core-${{ matrix.artifact }}"; name="${name/dist-core-cli-/}"
+          mkdir -p "$RUNNER_TEMP/out"
+          if [ "$RUNNER_OS" = Windows ]; then
+            (cd target/release && 7z a -bd "$RUNNER_TEMP/out/$name.zip" brasscribe-core.exe >/dev/null)
+          else
+            tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release brasscribe-core
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.release }}
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ runner.temp }}/out/*
+          if-no-files-found: error
+

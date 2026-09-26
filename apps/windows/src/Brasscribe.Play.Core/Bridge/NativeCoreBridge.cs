@@ -76,8 +76,31 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         return CompositionJson.Parse(Take(normalised));
     }
 
-    public TalkingScoreDocument BuildTalkingScore(string musicXml, Composition? composition) =>
-        TalkingScoreJson.Parse(TalkingScoreDocumentJson(musicXml, composition is null ? null : CompositionJson.Serialize(composition)));
+    /// <summary>
+    /// The core's talking score, with the app's own links added from the managed reading of the same
+    /// MusicXML: which printed note each event is (for correcting it) and which Composition note is
+    /// behind it (for the evidence and for writing changes back). The two readings have the same
+    /// parts, bars and events; where they differ the links are left out.
+    /// </summary>
+    public TalkingScoreDocument BuildTalkingScore(string musicXml, Composition? composition)
+    {
+        var doc = TalkingScoreJson.Parse(TalkingScoreDocumentJson(musicXml, composition is null ? null : CompositionJson.Serialize(composition)));
+        var links = MusicXmlTalkingScoreBuilder.Build(musicXml, composition);
+        for (int p = 0; p < Math.Min(doc.Parts.Count, links.Parts.Count); p++)
+            for (int b = 0; b < Math.Min(doc.Parts[p].Bars.Count, links.Parts[p].Bars.Count); b++)
+            {
+                var (mine, theirs) = (doc.Parts[p].Bars[b].Events, links.Parts[p].Bars[b].Events);
+                if (mine.Count != theirs.Count) continue;
+                for (int e = 0; e < mine.Count; e++)
+                {
+                    if (mine[e].Kind != theirs[e].Kind || mine[e].Tick != theirs[e].Tick) continue;
+                    mine[e].MusicXmlNoteIndex = theirs[e].MusicXmlNoteIndex;
+                    mine[e].CompositionVoiceId = theirs[e].CompositionVoiceId;
+                    mine[e].CompositionNoteStart = theirs[e].CompositionNoteStart;
+                }
+            }
+        return doc;
+    }
 
     /// <summary>The talking-score document as the core writes it (spec §6 JSON).</summary>
     public string TalkingScoreDocumentJson(string musicXml, string? compositionJson)

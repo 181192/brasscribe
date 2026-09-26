@@ -21,9 +21,22 @@ public sealed partial class HomePage : Page, IScreenPage
         Main = (MainViewModel)e.Parameter;
         ViewModel = Main.Start;
         Bindings.Update();
+        _ = Main.RefreshComputerScoresAsync();
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+
+    private void OnScoreCardOptions(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: LibraryItem item } button) ScoreOptions.Show(Main, item, button);
+    }
+
+    private void OnScoreCardContextRequested(UIElement sender, Microsoft.UI.Xaml.Input.ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement { DataContext: LibraryItem item } element) return;
+        args.Handled = true;
+        ScoreOptions.Show(Main, item, element, args.TryGetPosition(element, out var point) ? point : null);
+    }
 
     private async void OnAppFlyoutOpened(object sender, object e)
     {

@@ -55,6 +55,38 @@ public class EngineClientTests
     }
 
     [Fact]
+    public async Task Lists_runs_reads_evidence_renames_and_deletes()
+    {
+        var (c, h) = Make((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+        {
+            ("GET", "/v1/jobs") => FakeHandler.Json($"[{JobJson}]"),
+            ("GET", "/v1/jobs/j1/evidence") => FakeHandler.Json("""
+                {"models":[{"model":"swift-f0","name":"SwiftF0"},{"model":"basic-pitch","name":"Basic Pitch"}],
+                 "notes":[{"voice":"melody","start":24,"pitch":67,"confidence":0.42,"onset_s":1.0,
+                   "models":[{"model":"swift-f0","name":"SwiftF0","pitch":67,"agrees":true},{"model":"basic-pitch","name":"Basic Pitch","pitch":69,"agrees":false}]}]}
+                """),
+            ("PATCH", "/v1/runs/j1") => FakeHandler.Json(JobJson.Replace("\"status\":\"running\"", "\"status\":\"succeeded\",\"title\":\"Mikkel\"")),
+            ("DELETE", "/v1/runs/j1") => new HttpResponseMessage(HttpStatusCode.NoContent),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+        });
+
+        var jobs = await c.ListJobsAsync();
+        var evidence = await c.GetEvidenceAsync("j1");
+        var renamed = await c.RenameRunAsync("j1", "Mikkel");
+        await c.DeleteRunAsync("j1");
+
+        Assert.Equal("j1", jobs.Single().Id);
+        var note = evidence.NoteAt("melody", 24, 55)!;
+        Assert.Equal(0.42, note.Confidence);
+        Assert.Equal(2, note.AlternativeShift);
+        Assert.Equal([67, 69], note.Models.Select(m => m.Pitch!.Value));
+        Assert.Equal("""{"title":"Mikkel"}""", h.Requests[2].Body);
+        Assert.Equal("Mikkel", renamed.Title);
+        Assert.Equal(HttpMethod.Delete, h.Requests[3].Request.Method);
+        Assert.Equal(evidence.Notes.Single().Pitch, Evidence.Parse(Evidence.Serialize(evidence))!.Notes.Single().Pitch);
+    }
+
+    [Fact]
     public async Task Rejected_pairing_code_is_a_plain_message()
     {
         var (c, _) = Make((_, _) => new HttpResponseMessage(HttpStatusCode.Forbidden));

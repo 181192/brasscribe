@@ -136,13 +136,13 @@ val AUDIO_TYPES = arrayOf("audio/*", "video/*")
 fun HomeScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val busy by vm.busy.collectAsState()
-    val result by vm.result.collectAsState()
-    val source by vm.source.collectAsState()
-    val checked by vm.checked.collectAsState()
+    val scores by vm.scores.collectAsState()
+    val opening by vm.openingScore.collectAsState()
     val c = BrasscribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
     val recorder = rememberRecorder(vm)
+    LaunchedEffect(Unit) { vm.refreshComputerScores() }
 
     Scaffold(containerColor = c.bg) { padding ->
         Column(
@@ -187,26 +187,21 @@ fun HomeScreen(vm: PlayViewModel) {
                 }
             }
             InfoNote(stringResource(R.string.home_links_tip), boxed = false)
-            val r = result
-            if (r != null) {
+            if (scores.isNotEmpty()) {
                 SectionLabel(stringResource(R.string.home_your_scores))
-                val comp = r.composition
-                val left = remember(r, checked) {
-                    comp?.voices.orEmpty().sumOf { v ->
-                        val done = checked[v.id].orEmpty()
-                        partViewFor(comp!!, v.id, done, vm.container.core).events
-                            .count { it.note != null && it.uncertainty != Uncertainty.CONFIDENT && it.index !in done }
-                    }
-                }
                 RowGroup {
-                    ListRow(
-                        comp?.title?.ifBlank { null } ?: source?.name ?: stringResource(R.string.score_title),
-                        { vm.navigate(Screen.SCORE) },
-                        subtitle = listOfNotNull(
-                            stringResource(if (r.profile == no.brasscribe.play.engine.Profile.SOLO) R.string.lineup_solo else R.string.lineup_full),
-                            left.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.notes_to_check, it, it) },
-                        ).joinToString(" · "),
-                    )
+                    scores.forEachIndexed { index, entry ->
+                        if (index > 0) RowDivider()
+                        ListRow(
+                            entry.title,
+                            { vm.openEntry(entry) },
+                            subtitle = if (opening == entry.id) stringResource(R.string.opening_score) else scoreSubtitle(entry),
+                            icon = if (entry.onComputer) R.drawable.ic_bc_computer else R.drawable.ic_bc_score,
+                            chevron = false,
+                            enabled = opening == null,
+                            trailing = { ScoreOptionsButton(vm, entry) },
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(BrasscribeSpace.s4))

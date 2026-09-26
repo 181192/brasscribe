@@ -41,6 +41,21 @@ public interface IEngineClient
         throw new NotSupportedException("This engine client cannot read stage files.");
     /// <summary>Braille music (BRF) of the score, or of one part (1-based number or name).</summary>
     Task<Stream> DownloadBrailleAsync(string jobId, string? part = null, CancellationToken ct = default);
+
+    /// <summary>The engine's runs, newest first as the engine keeps them.</summary>
+    Task<IReadOnlyList<Job>> ListJobsAsync(CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot list runs.");
+
+    /// <summary>Confidence and what each transcriber heard at the uncertain notes.</summary>
+    Task<Evidence> GetEvidenceAsync(string jobId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot read evidence.");
+
+    /// <summary>Retitles a run: its manifest, Composition and MusicXML.</summary>
+    Task<Job> RenameRunAsync(string jobId, string title, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot rename runs.");
+
+    Task DeleteRunAsync(string jobId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot delete runs.");
 }
 
 /// <summary>
@@ -134,6 +149,32 @@ public sealed class EngineClient : IEngineClient
 
     public Task<Stream> GetStageFileAsync(string jobId, string stage, string name, CancellationToken ct = default) =>
         SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/stages/{Uri.EscapeDataString(stage)}/files/{Uri.EscapeDataString(name)}", ct);
+
+    public async Task<IReadOnlyList<Job>> ListJobsAsync(CancellationToken ct = default) =>
+        await SendJsonAsync(HttpMethod.Get, "v1/jobs", null, EngineJsonContext.Default.ListJob, ct).ConfigureAwait(false);
+
+    public Task<Evidence> GetEvidenceAsync(string jobId, CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Get, $"v1/jobs/{Uri.EscapeDataString(jobId)}/evidence", null, EngineJsonContext.Default.Evidence, ct);
+
+    public Task<Job> RenameRunAsync(string jobId, string title, CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Patch, $"v1/runs/{Uri.EscapeDataString(jobId)}",
+            JsonContent.Create(new RunUpdate(title), EngineJsonContext.Default.RunUpdate), EngineJsonContext.Default.Job, ct);
+
+    public async Task DeleteRunAsync(string jobId, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Delete, new Uri(BaseAddress, $"v1/runs/{Uri.EscapeDataString(jobId)}"));
+        Authorize(req);
+        HttpResponseMessage resp;
+        try
+        {
+            resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+        }
+        using (resp) await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Streams a job's events. When the connection drops before the job ends, it reconnects with

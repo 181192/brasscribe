@@ -1,0 +1,53 @@
+name: release
+
+# On a semver tag (v1.2.3, v1.2.3-beta.1): each platform workflow builds its distributables
+# (artifacts named dist-*, each holding ready-to-ship files) and they are attached to a GitHub
+# release. Tests are not re-run: tag a commit on main, where the checks already passed. A store
+# upload (Play, App Store, Microsoft Store) goes in as its own job that `needs:` the matching build
+# and downloads its dist-* artifact.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    uses: ./.github/workflows/core.yml
+    with:
+      release: true
+
+  android:
+    uses: ./.github/workflows/android.yml
+    with:
+      release: true
+
+  apple:
+    uses: ./.github/workflows/apple.yml
+    with:
+      release: true
+
+  windows:
+    uses: ./.github/workflows/windows.yml
+    with:
+      release: true
+
+  github:
+    name: publish GitHub release
+    needs: [core, android, apple, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: dist/*

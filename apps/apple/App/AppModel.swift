@@ -8,27 +8,36 @@ import TranscriptionKit
 import UniformTypeIdentifiers
 
 /// Something the user brought in, waiting for "What is this?".
-struct PendingSource: Identifiable, Equatable {
-    let id = UUID()
+struct PendingSource: Identifiable, Hashable {
+    var id = UUID()
     var audioURL: URL
     var videoURL: URL?
     var title: String
+    /// The file name shown above "What is this?" ("Mikkel.m4a"); nil for a new recording.
+    var name: String?
 }
 
 enum Route: Hashable {
+    case source(PendingSource)
     case transcribe(UUID)
     case review(Piece)
     case score(Piece)
+    case problem(Problem)
 }
 
 @Observable @MainActor
 final class AppModel {
-    var pieces: [Piece] = Piece.loadAll()
+    var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
+    /// "Your scores": this device's pieces and the computer's latest finished scores.
+    private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
+    private var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
+    var openingScore: String?
+    var renameTarget: ScoreEntry?
+    var deleteTarget: ScoreEntry?
     var path: [Route] = []
-    var pending: PendingSource?
     var jobs: [UUID: TranscriptionJob] = [:]
-    var alert: AppAlert?
     var showSettings = false
+    var showFirstRun = false
     var showRecorder = false
     var showCapture = false
     var importing = false
@@ -91,6 +100,113 @@ final class AppModel {
 
     func refresh() { pieces = Piece.loadAll() }
 
+    private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
+
+    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable.
+    func refreshComputerScores() async {
+        guard !useDemoService, let svc = service() as? CompanionService else { computerJobs = []; return }
+        if let jobs = try? await svc.jobs() { computerJobs = jobs }
+    }
+
+    func open(_ entry: ScoreEntry, review: Bool = false) {
+        switch entry.location {
+        case .local(let p): path = [review ? .review(p) : .score(p)]
+        case .computer(let jobID): Task { await download(jobID: jobID, title: entry.title, profile: entry.profile, review: review) }
+        }
+    }
+
+    /// Copy a computer score into this device's library, then open it.
+    private func download(jobID: String, title: String, profile: SourceProfile?, review: Bool) async {
+        guard let svc = service() as? CompanionService else { return }
+        openingScore = "job:\(jobID)"
+        defer { openingScore = nil }
+        do {
+            let xml = try await svc.artifact(.musicXML, jobID: jobID)
+            let comp = try? Composition.decode(try await svc.artifact(.composition, jobID: jobID))
+            let evidence = try? await svc.evidence(jobID: jobID)
+            let names = Set(computerJobs.first { $0.id == jobID }?.outputs ?? [])
+            let result = TranscriptionResult(jobID: jobID, composition: comp, musicXML: xml,
+                                             available: Set(ArtifactKind.allCases.filter { names.contains($0.engineName) }), evidence: evidence)
+            let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil)
+            refresh()
+            path = [review ? .review(p) : .score(p)]
+        } catch {
+            show(.cantOpenFile(error.localizedDescription))
+        }
+    }
+
+    func rename(_ entry: ScoreEntry, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        switch entry.location {
+        case .local(let p): rename(p, to: cleaned)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                do { try await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+                catch { show(.cantOpenFile(error.localizedDescription)) }
+            }
+        }
+    }
+
+    func delete(_ entry: ScoreEntry) {
+        switch entry.location {
+        case .local(let p): delete(p)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                try? await svc.deleteRun(jobID: jobID)
+                await refreshComputerScores()
+            }
+        }
+    }
+
+    func rename(_ piece: Piece, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, let index = pieces.firstIndex(where: { $0.id == piece.id }) else { return }
+        var updated = pieces[index]
+        updated.title = cleaned
+        do {
+            try updated.saveMusicXML(MusicXMLNoteEditor.replacingTitle(in: updated.musicXML(), with: cleaned))
+            try updated.save()
+            pieces[index] = updated
+            if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useDemoService {
+                Task { try? await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+            }
+        } catch {
+            show(.notAScore(error.localizedDescription))
+        }
+    }
+
+    /// Open "What is this?" for a new recording, closing any recorder sheet first.
+    func ask(_ src: PendingSource) {
+        showRecorder = false
+        showCapture = false
+        path.append(.source(src))
+    }
+
+    /// Show a problem with its way forward. The user's scores are never touched.
+    func show(_ p: Problem) {
+        showRecorder = false
+        showCapture = false
+        path.append(.problem(p))
+    }
+
+    func open(_ piece: Piece) { path = [.score(piece)] }
+    func goHome() { path = [] }
+
+    /// Where the listening happens, for "What is this?" and the transcribing screen.
+    func whereItRuns(for profile: SourceProfile?) -> String {
+        if let profile, service(for: profile) is OnDeviceSoloService { return String(localized: "On this device. Nothing goes online.") }
+        if useDemoService { return String(localized: "The demo runs on this device. Nothing goes online.") }
+        #if os(macOS)
+        if let host = URL(string: companionURL)?.host, ["localhost", "127.0.0.1"].contains(host) {
+            return String(localized: "Made on this Mac. Nothing goes online.")
+        }
+        #endif
+        return String(localized: "On your computer. Nothing goes online.")
+    }
+
     // MARK: sources
 
     /// Accept an imported or shared file. Video keeps its picture for the synced view;
@@ -105,7 +221,7 @@ final class AppModel {
                 let comp = try core.composition(fromJSON: try Data(contentsOf: url))
                 try arrangeOnDevice(comp, title: title, lineup: .fullBand, original: nil, video: nil)
             } catch {
-                alert = .message(String(localized: "This is not a score Brasscribe can read."), error.localizedDescription)
+                show(.notAScore(error.localizedDescription))
             }
             return
         }
@@ -115,7 +231,7 @@ final class AppModel {
         }
         let asset = AVURLAsset(url: url)
         if (try? await asset.load(.hasProtectedContent)) == true {
-            alert = .drm
+            show(.copyProtected)
             return
         }
         do {
@@ -123,17 +239,17 @@ final class AppModel {
             let hasVideo = !((try? await asset.loadTracks(withMediaType: .video)) ?? []).isEmpty
             if hasVideo {
                 let audio = try await MediaTools.extractAudio(from: local)
-                pending = PendingSource(audioURL: audio, videoURL: local, title: title)
+                ask(PendingSource(audioURL: audio, videoURL: local, title: title, name: url.lastPathComponent))
             } else {
-                pending = PendingSource(audioURL: local, title: title)
+                ask(PendingSource(audioURL: local, title: title, name: url.lastPathComponent))
             }
         } catch {
-            alert = .message(String(localized: "Couldn't open this file."), error.localizedDescription)
+            show(.cantOpenFile(error.localizedDescription))
         }
     }
 
     func acceptRecording(_ url: URL, title: String) {
-        pending = PendingSource(audioURL: url, title: title)
+        ask(PendingSource(audioURL: url, title: title))
     }
 
     private func copyToInbox(_ url: URL) throws -> URL {
@@ -153,18 +269,18 @@ final class AppModel {
             refresh()
             path.append(.score(p))
         } catch {
-            alert = .message(String(localized: "This is not a score Brasscribe can read."), error.localizedDescription)
+            show(.notAScore(error.localizedDescription))
         }
     }
 
     /// Start the demo: the golden Mikkel transcription served by the fixture service.
     func startDemo() {
         guard let original = originalForFixture ?? fixtureDirectory?.appending(path: "brass-band.mp3") else {
-            alert = .message(String(localized: "The demo recording is not available."), "")
+            show(.demoMissing)
             return
         }
         UserDefaults.standard.set(true, forKey: "useDemoService")
-        pending = PendingSource(audioURL: original, videoURL: videoForFixture, title: "Mikkel")
+        ask(PendingSource(audioURL: original, videoURL: videoForFixture, title: "Mikkel", name: original.lastPathComponent))
     }
 
     // MARK: transcription
@@ -172,8 +288,8 @@ final class AppModel {
     func startTranscription(_ src: PendingSource, profile: SourceProfile, output: OutputChoice) {
         let job = TranscriptionJob(source: src, profile: profile, output: output, service: service(for: profile))
         jobs[job.id] = job
-        pending = nil
-        path.append(.transcribe(job.id))
+        // the transcribing screen takes the place of "What is this?"
+        if case .source = path.last { path[path.count - 1] = .transcribe(job.id) } else { path.append(.transcribe(job.id)) }
         job.start { [weak self] result in
             guard let self else { return }
             do {
@@ -202,35 +318,6 @@ final class AppModel {
     func delete(_ p: Piece) {
         p.delete()
         refresh()
-    }
-}
-
-enum AppAlert: Identifiable, Equatable {
-    case drm
-    case silence
-    case message(String, String)
-    var id: String {
-        switch self {
-        case .drm: return "drm"
-        case .silence: return "silence"
-        case .message(let a, _): return a
-        }
-    }
-    var title: String {
-        switch self {
-        case .drm: return String(localized: "This recording is copy-protected")
-        case .silence: return String(localized: "Only silence was recorded")
-        case .message(let t, _): return t
-        }
-    }
-    var message: String {
-        switch self {
-        case .drm:
-            return String(localized: "Protected (DRM) music and video can't be recorded or imported. Play the piece yourself, or use a file you own without copy protection.")
-        case .silence:
-            return String(localized: "Nothing was heard. Either nothing was playing, recording permission was refused, or the app plays protected (DRM) audio, which the system does not let anyone record.")
-        case .message(_, let m): return m
-        }
     }
 }
 

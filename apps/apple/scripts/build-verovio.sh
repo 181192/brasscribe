@@ -38,7 +38,7 @@ build_slice() {
   local extra=()
   [ "$system" = iOS ] && extra+=(-DCMAKE_SYSTEM_NAME=iOS)
   cmake -S "$SRC/cmake" -B "$b" -G "Unix Makefiles" \
-    "${extra[@]}" \
+    ${extra[@]+"${extra[@]}"} \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_OSX_SYSROOT="$sysroot" \
     -DCMAKE_OSX_ARCHITECTURES="$archs" \

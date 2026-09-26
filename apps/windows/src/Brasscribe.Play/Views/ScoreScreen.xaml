@@ -84,6 +84,7 @@
                                 <FontIcon Glyph="{StaticResource BcIconTranspose}" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
+                        <MenuFlyoutItem x:Uid="EditTitleItem" Click="OnEditTitle" />
                     </MenuFlyout>
                 </DropDownButton.Flyout>
             </DropDownButton>

@@ -222,6 +222,10 @@ class RerunRequest(BaseModel):
     cold: list[str] = Field(default_factory=list, description="stages or kinds to run even on a cache hit, or 'all'")
 
 
+class RunUpdate(BaseModel):
+    title: str = Field(min_length=1, max_length=200, description="new title for the score")
+
+
 # ---------------------------------------------------------------- inspection
 
 
@@ -246,6 +250,32 @@ class StageArtifacts(BaseModel):
 class Reference(BaseModel):
     name: str
     files: list[FileRef]
+
+
+class ModelInfo(BaseModel):
+    model: str = Field(description="adapter id, e.g. basic-pitch")
+    name: str = Field(description="display name, e.g. Basic Pitch")
+
+
+class ModelHeard(ModelInfo):
+    pitch: int | None = Field(None, description="concert MIDI pitch this model heard at the note's onset; null: no note")
+    agrees: bool
+
+
+class NoteEvidence(BaseModel):
+    voice: str
+    start: int = Field(description="Composition tick of the note")
+    pitch: int = Field(description="concert MIDI pitch Brasscribe wrote")
+    confidence: float
+    onset_s: float | None = None
+    models: list[ModelHeard]
+
+
+class Evidence(BaseModel):
+    """What each transcriber heard at the notes Brasscribe is unsure about (confidence below 0.7)."""
+
+    models: list[ModelInfo]
+    notes: list[NoteEvidence]
 
 
 class PartComparison(BaseModel):

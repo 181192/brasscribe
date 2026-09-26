@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,11 +27,13 @@ import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.ProgressTracker
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
+import no.brasscribe.play.model.MusicXmlTitleEditor
 import no.brasscribe.play.model.PartSpec
 import no.brasscribe.play.model.TickMap
 import no.brasscribe.play.model.ArrangeOptions
 import no.brasscribe.play.model.SoloTake
 import no.brasscribe.play.model.TempoEstimator
+import no.brasscribe.play.model.VoiceRole
 import no.brasscribe.play.playback.ClipPlayer
 import java.io.File
 import java.util.zip.ZipInputStream
@@ -97,6 +100,8 @@ data class TranscriptionResult(
     val compositionJson: String? = null,
     /** Semitones the arrangement itself is transposed by (the rest of a key shift is display-only in alphaTab). */
     val appliedTranspose: Int = 0,
+    /** Confidence and what each transcriber heard at the uncertain notes. */
+    val evidence: no.brasscribe.play.engine.Evidence? = null,
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
@@ -124,6 +129,15 @@ data class Status(val text: String, val serial: Long = System.nanoTime())
 class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val container = (app as PlayApplication).container
     private val res = app.resources
+    private val scoreLibrary = SavedScoreLibrary(File(app.filesDir, "scores"))
+    val savedScores = MutableStateFlow(scoreLibrary.list())
+    private val computerJobs = MutableStateFlow<List<no.brasscribe.play.engine.Job>>(emptyList())
+    /** "Your scores": this phone's scores and the computer's latest finished ones, newest first. */
+    val scores: StateFlow<List<ScoreEntry>> = kotlinx.coroutines.flow.combine(savedScores, computerJobs) { local, jobs ->
+        ScoreEntry.merge(local, jobs)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, ScoreEntry.merge(scoreLibrary.list(), emptyList()))
+    val openingScore = MutableStateFlow<String?>(null)
+    private var currentSavedScoreId: String? = null
 
     private val backStack = MutableStateFlow(listOf(if (container.firstRunDone) Screen.HOME else Screen.FIRST_RUN))
     val screen: StateFlow<List<Screen>> = backStack.asStateFlow()
@@ -237,7 +251,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 require(xml.contains("score-partwise") || xml.contains("score-timewise")) { "not MusicXML" }
                 setSource(Source(name, SourceKind.SCORE, 0.0))
-                result.value = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = true)
+                val opened = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = true)
+                result.value = opened
+                saveCurrentScore(opened, name.substringBeforeLast('.'))
                 say(R.string.opened_score, name)
                 navigate(Screen.SCORE)
             } catch (e: Exception) {
@@ -277,6 +293,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun setSource(s: Source) {
         source.value = s
+        currentSavedScoreId = null
         result.value = null
         checked.value = emptyMap()
         renderedScoreAudio = null
@@ -311,6 +328,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
                 result.value = r
+                saveCurrentScore(r)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
                 say(R.string.transcribe_done)
                 replaceTop(Screen.REVIEW)
@@ -351,14 +369,20 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     .format(stats.audioSeconds, stats.swiftF0Notes, stats.basicPitchNotes, stats.beats, stats.beatSource, stats.downbeats,
                         stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, arrangeMs, container.core.name))
                 soloTake = take
+                val models = listOf(
+                    NoteEvidenceBuilder.ModelNotes("swift-f0", "SwiftF0", take.swiftF0),
+                    NoteEvidenceBuilder.ModelNotes("basic-pitch", "Basic Pitch", take.basicPitch),
+                )
                 if (arranged != null) {
                     // Kept for inspection (adb pull): the last on-device arrangement, as the core wrote it.
                     runCatching { getApplication<Application>().getExternalFilesDir("runs")?.resolve("last-solo-composition.json")?.writeText(arranged.compositionJson) }
-                    TranscriptionResult(arranged.composition, arranged.musicXml, Profile.SOLO, onDevice = true, compositionJson = arranged.compositionJson)
+                    TranscriptionResult(arranged.composition, arranged.musicXml, Profile.SOLO, onDevice = true, compositionJson = arranged.compositionJson,
+                        evidence = NoteEvidenceBuilder.build(arranged.composition, models))
                 } else {
                     // Without the Rust core: the Kotlin grid and a single solo part.
                     val c = container.core.quantizeSolo(take.swiftF0, TempoEstimator.estimate(take.swiftF0.map { it.onsetS }), title)
-                    TranscriptionResult(c, container.core.toMusicXml(c, listOf(PartSpec("solo", SOLO_PART_NAME, Instrument.CORNET))), Profile.SOLO, onDevice = true)
+                    TranscriptionResult(c, container.core.toMusicXml(c, listOf(PartSpec("solo", SOLO_PART_NAME, Instrument.CORNET))), Profile.SOLO, onDevice = true,
+                        evidence = NoteEvidenceBuilder.build(c, models))
                 }
             }
         }
@@ -390,7 +414,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     !r.onDevice && r.audioId != null -> rerunWithEngine(r, opts)
                     else -> null
                 }
-                if (updated != null) { result.value = updated; lastApplied = opts }
+                if (updated != null) { result.value = updated; saveCurrentScore(updated); lastApplied = opts }
                 say(R.string.arrangement_ready)
                 then()
             } catch (e: Exception) {
@@ -414,7 +438,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val final = engine.job(job.id)
         if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
         return r.copy(composition = engine.composition(job.id), musicXml = engine.musicXml(job.id), jobId = job.id,
-            engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift)
+            engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift,
+            evidence = runCatching { engine.evidence(job.id) }.getOrNull())
     }
 
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
@@ -446,7 +471,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
         return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audio.audioId,
-            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() })
+            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() },
+            evidence = runCatching { engine.evidence(created.id) }.getOrNull())
     }
 
     fun cancelTranscription() {
@@ -462,8 +488,148 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- Review ---------------------------------------------------------------------------------------
 
+    private fun saveCurrentScore(r: TranscriptionResult, title: String? = null) {
+        val scoreTitle = title?.takeIf(String::isNotBlank)
+            ?: r.composition?.title?.takeIf(String::isNotBlank)
+            ?: source.value?.name?.substringBeforeLast('.')
+            ?: res.getString(R.string.score_title)
+        val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
+            jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
+            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet())
+        currentSavedScoreId = saved.id
+        savedScores.value = scoreLibrary.list()
+    }
+
+    /** Fetch the computer's finished scores; keeps the phone's list when the computer can't be reached. */
+    fun refreshComputerScores() {
+        val engine = container.engine()?.takeIf { !container.usingFixture } ?: run { computerJobs.value = emptyList(); return }
+        viewModelScope.launch { runCatching { engine.jobs() }.onSuccess { computerJobs.value = it } }
+    }
+
+    fun openEntry(entry: ScoreEntry, review: Boolean = false) {
+        entry.saved?.let { openSavedScore(it, review); return }
+        val jobId = entry.jobId ?: return
+        val engine = container.engine() ?: return
+        openingScore.value = entry.id
+        viewModelScope.launch {
+            try {
+                val job = engine.job(jobId)
+                val r = TranscriptionResult(engine.composition(jobId), engine.musicXml(jobId),
+                    Profile.of(job.profile) ?: Profile.BRASS_BAND, onDevice = false, jobId = jobId, audioId = job.audioId,
+                    engineOutputs = job.outputs.toSet(), evidence = runCatching { engine.evidence(jobId) }.getOrNull())
+                source.value = Source(entry.title, SourceKind.SCORE, 0.0)
+                currentSavedScoreId = null
+                checked.value = emptyMap()
+                result.value = r
+                saveCurrentScore(r, entry.title)
+                backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
+            } catch (e: Exception) {
+                showProblem(Problem.FILE_UNREADABLE, e.message)
+            } finally {
+                openingScore.value = null
+            }
+        }
+    }
+
+    fun renameEntry(entry: ScoreEntry, title: String) {
+        val cleaned = title.trim()
+        if (cleaned.isEmpty()) return
+        entry.saved?.let { renameSavedScore(it.id, cleaned); return }
+        val jobId = entry.jobId ?: return
+        viewModelScope.launch {
+            runCatching { container.engine()?.renameRun(jobId, cleaned) }
+            refreshComputerScores()
+        }
+    }
+
+    fun deleteEntry(entry: ScoreEntry) {
+        entry.saved?.let { saved ->
+            scoreLibrary.delete(saved.id)
+            if (currentSavedScoreId == saved.id) currentSavedScoreId = null
+            savedScores.value = scoreLibrary.list()
+            return
+        }
+        val jobId = entry.jobId ?: return
+        viewModelScope.launch {
+            runCatching { container.engine()?.deleteRun(jobId) }
+            refreshComputerScores()
+        }
+    }
+
+    fun openSavedScore(saved: SavedScore, review: Boolean = false) {
+        currentSavedScoreId = saved.id
+        source.value = Source(saved.title, SourceKind.SCORE, 0.0)
+        result.value = TranscriptionResult(
+            composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
+            musicXml = saved.musicXml,
+            profile = Profile.entries.firstOrNull { it.id == saved.profile } ?: Profile.BRASS_BAND,
+            onDevice = saved.jobId == null,
+            jobId = saved.jobId,
+            compositionJson = saved.compositionJson,
+            evidence = saved.evidenceJson?.let {
+                runCatching { no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Evidence.serializer(), it) }.getOrNull()
+            },
+        )
+        checked.value = saved.checked.mapNotNull { key ->
+            key.substringAfterLast(':').toIntOrNull()?.let { key.substringBeforeLast(':') to it }
+        }.groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
+        backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
+    }
+
+    fun renameSavedScore(id: String, title: String): Boolean {
+        val cleaned = title.trim()
+        if (cleaned.isEmpty()) return false
+        val saved = scoreLibrary.list().firstOrNull { it.id == id } ?: return false
+        return runCatching {
+            val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
+            val compositionJson = composition?.let(container.core::encodeComposition)
+            val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked)
+            savedScores.value = scoreLibrary.list()
+            saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
+            if (currentSavedScoreId == id) {
+                result.value = result.value?.copy(composition = composition, musicXml = xml, compositionJson = compositionJson)
+                source.value = source.value?.copy(name = cleaned)
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
+        val current = result.value ?: return false
+        val composition = current.composition ?: return false
+        val voice = composition.voice(voiceId) ?: return false
+        val noteIndex = voice.notes.indexOfFirst { it.start == start && it.pitch == pitch }
+        if (noteIndex < 0) return false
+        val updatedVoice = voice.copy(notes = voice.notes.mapIndexed { index, note ->
+            if (index == noteIndex) note.copy(pitch = (note.pitch + semitones).coerceIn(0, 127)) else note
+        })
+        val updatedComposition = composition.copy(voices = composition.voices.map { if (it.id == voiceId) updatedVoice else it })
+        val parts = updatedComposition.voices.map { v ->
+            val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
+            PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
+        }
+        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, "auto") }.getOrNull()
+            ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
+            ?: return false
+        val newPitch = (pitch + semitones).coerceIn(0, 127)
+        // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
+        val evidence = current.evidence?.let { e ->
+            e.copy(notes = e.notes.map { n ->
+                if (n.voice == voiceId && n.start == start && n.pitch == pitch)
+                    n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
+            })
+        }
+        val updated = current.copy(composition = updatedComposition, musicXml = xml,
+            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence)
+        result.value = updated
+        saveCurrentScore(updated)
+        return true
+    }
+
     fun markChecked(voiceId: String, index: Int, remaining: Int) {
         checked.update { it + (voiceId to (it[voiceId].orEmpty() + index)) }
+        result.value?.let(::saveCurrentScore)
         say(R.string.checked_left, remaining)
     }
 

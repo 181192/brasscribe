@@ -14,7 +14,8 @@ public sealed record LibraryEntry(
     int Parts,
     int Bars,
     int NotesToCheck,
-    string? JobId = null);
+    string? JobId = null,
+    string? EvidencePath = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, WriteIndented = true)]
 [JsonSerializable(typeof(List<LibraryEntry>))]
@@ -44,7 +45,8 @@ public sealed class ScoreLibrary
     public event EventHandler? Changed;
 
     /// <summary>Stores a score Brasscribe made; the same job replaces its earlier entry.</summary>
-    public LibraryEntry AddMade(string title, string musicXml, Composition? composition, int parts, int bars, int notesToCheck, string? jobId)
+    public LibraryEntry AddMade(string title, string musicXml, Composition? composition, int parts, int bars, int notesToCheck, string? jobId,
+        Engine.Evidence? evidence = null)
     {
         string id = jobId is { Length: > 0 } ? Safe(jobId) : Guid.NewGuid().ToString("N")[..12];
         string dir = Path.Combine(_root, id);
@@ -57,7 +59,40 @@ public sealed class ScoreLibrary
             compPath = Path.Combine(dir, "composition.json");
             File.WriteAllText(compPath, CompositionJson.Serialize(composition));
         }
-        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId));
+        string? evidencePath = null;
+        if (evidence is not null)
+        {
+            evidencePath = Path.Combine(dir, "evidence.json");
+            File.WriteAllText(evidencePath, Engine.Evidence.Serialize(evidence));
+        }
+        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId, evidencePath));
+    }
+
+    /// <summary>Confidence and what each transcriber heard, when the score came with it.</summary>
+    public Engine.Evidence? LoadEvidence(LibraryEntry entry)
+    {
+        try
+        {
+            return entry.EvidencePath is { } p && File.Exists(p) ? Engine.Evidence.Parse(File.ReadAllText(p)) : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    public void SaveEvidence(string id, Engine.Evidence evidence)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0) return;
+        string path = _entries[i].EvidencePath ?? Path.Combine(Path.GetDirectoryName(_entries[i].MusicXmlPath)!, "evidence.json");
+        if (_entries[i].EvidencePath is null && !IsInside(path)) return; // an opened file: don't write beside it
+        WriteAtomically(path, Engine.Evidence.Serialize(evidence));
+        if (_entries[i].EvidencePath != path)
+        {
+            _entries[i] = _entries[i] with { EvidencePath = path };
+            Save();
+        }
     }
 
     /// <summary>Remembers a score file the player opened.</summary>
@@ -65,17 +100,6 @@ public sealed class ScoreLibrary
     {
         var existing = _entries.FirstOrDefault(e => string.Equals(e.MusicXmlPath, path, StringComparison.OrdinalIgnoreCase));
         return Put(new LibraryEntry(existing?.Id ?? Guid.NewGuid().ToString("N")[..12], title, path, null, DateTimeOffset.Now, parts, bars, notesToCheck));
-    }
-
-    /// <summary>Replaces a score's files after a change in the review (library-made scores only).</summary>
-    public void Update(string id, string musicXml, Composition composition, int notesToCheck)
-    {
-        int i = _entries.FindIndex(e => e.Id == id);
-        if (i < 0 || _entries[i].CompositionPath is not { } compPath) return;
-        File.WriteAllText(_entries[i].MusicXmlPath, musicXml);
-        File.WriteAllText(compPath, CompositionJson.Serialize(composition));
-        _entries[i] = _entries[i] with { NotesToCheck = notesToCheck, Updated = DateTimeOffset.Now };
-        Save();
     }
 
     /// <summary>Updates how many notes are still to check.</summary>
@@ -87,10 +111,54 @@ public sealed class ScoreLibrary
         Save();
     }
 
+    public void SaveMusicXml(string id, string musicXml, string? compositionJson = null)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0) return;
+        WriteAtomically(_entries[i].MusicXmlPath, musicXml);
+        if (compositionJson is not null && _entries[i].CompositionPath is { } compositionPath)
+        {
+            var composition = CompositionJson.Parse(compositionJson);
+            composition.Title = _entries[i].Title;
+            WriteAtomically(compositionPath, CompositionJson.Serialize(composition));
+        }
+        _entries[i] = _entries[i] with { Updated = DateTimeOffset.Now };
+        Save();
+    }
+
+    public void Rename(string id, string title)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0) return;
+        var entry = _entries[i];
+        WriteAtomically(entry.MusicXmlPath, MusicXmlNoteEditor.ReplaceTitle(File.ReadAllText(entry.MusicXmlPath), title));
+        if (entry.CompositionPath is { } compositionPath && File.Exists(compositionPath))
+        {
+            var composition = CompositionJson.Parse(File.ReadAllText(compositionPath));
+            composition.Title = title;
+            WriteAtomically(compositionPath, CompositionJson.Serialize(composition));
+        }
+        _entries[i] = entry with { Title = title, Updated = DateTimeOffset.Now };
+        Save();
+    }
+
+    /// <summary>Forgets a score; a score Brasscribe made is deleted with its folder, an opened file is left where it is.</summary>
     public void Remove(string id)
     {
-        if (_entries.RemoveAll(e => e.Id == id) > 0) Save();
+        var entry = _entries.FirstOrDefault(e => e.Id == id);
+        if (entry is null) return;
+        _entries.Remove(entry);
+        string dir = Path.GetDirectoryName(entry.MusicXmlPath)!;
+        if (IsInside(entry.MusicXmlPath) && !string.Equals(Path.GetFullPath(dir), Path.GetFullPath(_root), StringComparison.OrdinalIgnoreCase))
+        {
+            try { Directory.Delete(dir, recursive: true); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+        Save();
     }
+
+    private bool IsInside(string path) =>
+        Path.GetFullPath(path).StartsWith(Path.GetFullPath(_root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
     private LibraryEntry Put(LibraryEntry entry)
     {
@@ -120,6 +188,13 @@ public sealed class ScoreLibrary
         File.WriteAllText(tmp, JsonSerializer.Serialize(_entries, LibraryJsonContext.Default.ListLibraryEntry));
         File.Move(tmp, IndexPath, overwrite: true);
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static void WriteAtomically(string path, string contents)
+    {
+        string tmp = path + ".tmp";
+        File.WriteAllText(tmp, contents);
+        File.Move(tmp, path, overwrite: true);
     }
 
     private static string Safe(string id) => string.Concat(id.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_'));

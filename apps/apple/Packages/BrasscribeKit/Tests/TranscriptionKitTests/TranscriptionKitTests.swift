@@ -79,6 +79,24 @@ func goldenDir() -> URL? {
 
 // MARK: companion against a stubbed engine
 
+@Test func evidenceComparesModelsAtUncertainNotes() throws {
+    let json = """
+    {"title":"t","voices":[{"id":"melody","role":"melody","notes":[
+      {"pitch":67,"start":24,"dur":24,"confidence":0.5,"onset_s":1.0},
+      {"pitch":69,"start":48,"dur":24,"confidence":0.9,"onset_s":2.0}]}],
+     "meters":[{"tick":0,"beats":4}],"keys":[{"tick":0,"fifths":0,"mode":"major"}],"ticks_per_beat":24}
+    """
+    let e = NoteEvidence.build(composition: try Composition.decode(Data(json.utf8)), models: [
+        .init(model: "swift-f0", name: "SwiftF0", notes: [.init(onset: 1.02, offset: 1.4, pitch: 67)]),
+        .init(model: "basic-pitch", name: "Basic Pitch", notes: [.init(onset: 1.01, offset: 1.4, pitch: 48), .init(onset: 1.03, offset: 1.4, pitch: 69)]),
+    ])
+    let note = try #require(e.notes.first)
+    #expect(e.notes.count == 1 && note.confidence == 0.5)
+    #expect(note.models.map(\.pitch) == [67, 69] && note.models.map(\.agrees) == [true, false])
+    #expect(note.alternativeShift == 2)
+    #expect(e.note(atScoreTick: Score.ticksPerQuarter, concertPitch: 55, ticksPerBeat: 24) == note)
+}
+
 final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var requests: [URLRequest] = []
     nonisolated(unsafe) static var musicXML = Data("<score-partwise/>".utf8)
@@ -110,6 +128,14 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (200, Data("#A BRF".utf8), "text/plain")
             case ("GET", "/v1/jobs/j1/talking-score"):
                 return request.url!.query?.contains("format=text") == true ? (200, Data("Bar 1".utf8), "text/plain") : (400, Data(), "text/plain")
+            case ("GET", "/v1/jobs"):
+                return (200, Data(#"[{"id":"j2","profile":"brass-band","title":"Take","audio_id":"a1","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml"],"created":20}]"#.utf8), "application/json")
+            case ("GET", "/v1/jobs/j1/evidence"):
+                return (200, Data(#"{"models":[{"model":"basic-pitch","name":"Basic Pitch"}],"notes":[{"voice":"melody","start":24,"pitch":67,"confidence":0.5,"onset_s":1.0,"models":[{"model":"basic-pitch","name":"Basic Pitch","pitch":69,"agrees":false}]}]}"#.utf8), "application/json")
+            case ("PATCH", "/v1/runs/j1"):
+                return request.bodyStreamData.contains("Renamed") ? (200, Data(#"{"id":"j1","profile":"solo","status":"succeeded","progress":1,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json") : (422, Data(), "application/json")
+            case ("DELETE", "/v1/runs/j1"):
+                return (204, Data(), "application/json")
             default:
                 return (404, Data(#"{"detail":"not found"}"#.utf8), "application/json")
             }
@@ -172,5 +198,19 @@ extension URLRequest {
         #expect(upload.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("multipart/form-data; boundary=") == true)
         #expect(try await svc.artifact(.brailleBRF, jobID: "j1") == Data("#A BRF".utf8))
         #expect(try await svc.artifact(.talkingScore, jobID: "j1") == Data("Bar 1".utf8))
+    }
+
+    @Test func recentScoresEvidenceAndRunManagement() async throws {
+        StubEngine.requests = []
+        let svc = service()
+        let jobs = try await svc.jobs()
+        #expect(jobs.first?.title == "Take" && jobs.first?.audioID == "a1" && jobs.first?.created == 20)
+        let e = try await svc.evidence(jobID: "j1")
+        #expect(e.notes.first?.confidence == 0.5)
+        #expect(e.notes.first?.models.first == .init(model: "basic-pitch", name: "Basic Pitch", pitch: 69, agrees: false))
+        try await svc.rename(jobID: "j1", title: "Renamed")
+        try await svc.deleteRun(jobID: "j1")
+        #expect(StubEngine.requests.contains { $0.httpMethod == "PATCH" && $0.url?.path == "/v1/runs/j1" })
+        #expect(StubEngine.requests.contains { $0.httpMethod == "DELETE" && $0.url?.path == "/v1/runs/j1" })
     }
 }

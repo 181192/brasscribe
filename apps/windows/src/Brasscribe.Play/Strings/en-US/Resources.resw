@@ -96,6 +96,21 @@
   <data name="CaptureNotice.Title" xml:space="preserve">
     <value>Nothing was heard</value>
   </data>
+  <data name="ChangeNote_Down" xml:space="preserve">
+    <value>Down a semitone</value>
+  </data>
+  <data name="ChangeNote_Heard" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="ChangeNote_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ChangeNote_Title" xml:space="preserve">
+    <value>Change note</value>
+  </data>
+  <data name="ChangeNote_Up" xml:space="preserve">
+    <value>Up a semitone</value>
+  </data>
   <data name="CheckThemButton.Content" xml:space="preserve">
     <value>Check them</value>
   </data>
@@ -150,11 +165,17 @@
   <data name="DifficultyStandard.Content" xml:space="preserve">
     <value>A bit easier</value>
   </data>
+  <data name="DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Computers running Brasscribe on this network</value>
+  </data>
   <data name="Duration_MinutesSeconds" xml:space="preserve">
     <value>{0} min {1} s</value>
   </data>
   <data name="Duration_Seconds" xml:space="preserve">
     <value>{0} s</value>
+  </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Edit score title</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
     <value>Details for the band's tech person: address</value>
@@ -344,6 +365,12 @@
   </data>
   <data name="Export_TalkingScore_For" xml:space="preserve">
     <value>Text a screen reader can read aloud</value>
+  </data>
+  <data name="FindEnginesButton.Content" xml:space="preserve">
+    <value>Find on this network</value>
+  </data>
+  <data name="FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Look for computers running Brasscribe on the same network</value>
   </data>
   <data name="FinishLater_Confirm" xml:space="preserve">
     <value>Finish later</value>
@@ -552,8 +579,17 @@
   <data name="LibraryNav.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Your scores</value>
   </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Couldn't delete {0}. Is your computer on?</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Deleted {0}</value>
+  </data>
   <data name="Library_FullBand" xml:space="preserve">
     <value>Full band</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · On your computer</value>
   </data>
   <data name="Library_OnePart" xml:space="preserve">
     <value>One part</value>
@@ -910,13 +946,22 @@
     <value>to</value>
   </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Choose what the note should be; the score is arranged again</value>
+    <value>Choose what the note should be; the whole score follows</value>
   </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Change note…</value>
   </data>
   <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
     <value>Change note…</value>
+  </data>
+  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
+  </data>
+  <data name="ReviewHeardHeading.Text" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="ReviewHowSure.Text" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
   </data>
   <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>The note is right; its “?” goes (K)</value>
@@ -963,26 +1008,11 @@
   <data name="Review_AllDone" xml:space="preserve">
     <value>Every note is checked</value>
   </data>
-  <data name="Review_AltHeard" xml:space="preserve">
-    <value>heard by another listening</value>
-  </data>
-  <data name="Review_AltOctaveDown" xml:space="preserve">
-    <value>an octave lower</value>
-  </data>
-  <data name="Review_AltOctaveUp" xml:space="preserve">
-    <value>an octave higher</value>
-  </data>
-  <data name="Review_AltSemitoneDown" xml:space="preserve">
-    <value>a semitone lower</value>
-  </data>
-  <data name="Review_AltSemitoneUp" xml:space="preserve">
-    <value>a semitone higher</value>
-  </data>
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Bar {0}</value>
   </data>
   <data name="Review_Changed" xml:space="preserve">
-    <value>Bar {0} changed to {1}. Arranging again.</value>
+    <value>Changed to {0}</value>
   </data>
   <data name="Review_Count" xml:space="preserve">
     <value>{0} notes to check</value>
@@ -999,20 +1029,23 @@
   <data name="Review_FinishLater" xml:space="preserve">
     <value>Finish later ({0} left)</value>
   </data>
+  <data name="Review_HeardNothing" xml:space="preserve">
+    <value>No note</value>
+  </data>
+  <data name="Review_HeardSame" xml:space="preserve">
+    <value>Same, {0}</value>
+  </data>
   <data name="Review_Kept" xml:space="preserve">
     <value>Kept bar {0}. {1} left</value>
+  </data>
+  <data name="Review_LevelAlternative" xml:space="preserve">
+    <value>{0}: it could also be {1}.</value>
   </data>
   <data name="Review_LevelUncertain" xml:space="preserve">
     <value>Uncertain: listen to the original and the score side by side.</value>
   </data>
-  <data name="Review_LevelUncertainHint" xml:space="preserve">
-    <value>Uncertain: it could also be {0}. Listen to the original and the score side by side.</value>
-  </data>
   <data name="Review_LevelVeryUncertain" xml:space="preserve">
     <value>Very uncertain: listen to the original and the score side by side.</value>
-  </data>
-  <data name="Review_LevelVeryUncertainHint" xml:space="preserve">
-    <value>Very uncertain: it could also be {0}. Listen to the original and the score side by side.</value>
   </data>
   <data name="Review_ListItem" xml:space="preserve">
     <value>Bar {0} · {1}</value>
@@ -1044,6 +1077,12 @@
   <data name="Review_Triage" xml:space="preserve">
     <value>Check your part first: {0} notes in {1}, {2} very unsure</value>
   </data>
+  <data name="Review_WordUncertain" xml:space="preserve">
+    <value>Uncertain</value>
+  </data>
+  <data name="Review_WordVeryUncertain" xml:space="preserve">
+    <value>Very uncertain</value>
+  </data>
   <data name="ScoreCards.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Your scores</value>
   </data>
@@ -1052,6 +1091,27 @@
   </data>
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score</value>
+  </data>
+  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Score options</value>
+  </data>
+  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
+    <value>Check the notes</value>
+  </data>
+  <data name="ScoreOptions_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
+    <value>The score is removed from your computer.</value>
+  </data>
+  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
+    <value>The score is removed from this PC.</value>
+  </data>
+  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
+    <value>Delete “{0}”?</value>
+  </data>
+  <data name="ScoreOptions_EditTitle" xml:space="preserve">
+    <value>Edit title</value>
   </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score tools</value>
@@ -1062,11 +1122,17 @@
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>As written for {0}</value>
   </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="Score_Checked" xml:space="preserve">
     <value>Kept. {0} left</value>
   </data>
   <data name="Score_ControlType" xml:space="preserve">
     <value>score</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Edit score title</value>
   </data>
   <data name="Score_FullScore" xml:space="preserve">
     <value>All parts</value>
@@ -1085,6 +1151,12 @@
   </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0} part.</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Couldn't rename {0}</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Save</value>
   </data>
   <data name="Score_SwitchedToOriginal" xml:space="preserve">
     <value>Playing the recording from bar {0}</value>
@@ -1164,11 +1236,26 @@
   <data name="Settings_CoreVersion" xml:space="preserve">
     <value>Arranger on this PC: {0}</value>
   </data>
+  <data name="Settings_Engine_Chosen" xml:space="preserve">
+    <value>Using {0}. Type the six-digit code it shows, then choose Connect.</value>
+  </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
     <value>Connected to Brasscribe {0} on your computer ({1})</value>
   </data>
+  <data name="Settings_Engine_FoundMany" xml:space="preserve">
+    <value>Found {0} computers running Brasscribe. Choose one.</value>
+  </data>
+  <data name="Settings_Engine_FoundOne" xml:space="preserve">
+    <value>Found {0}. Choose it to use it.</value>
+  </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
     <value>Your computer asks for a pairing code. Type the six digits it shows.</value>
+  </data>
+  <data name="Settings_Engine_NoneFound" xml:space="preserve">
+    <value>No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.</value>
+  </data>
+  <data name="Settings_Engine_Searching" xml:space="preserve">
+    <value>Looking for Brasscribe on your network…</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Next or previous bar</value>
