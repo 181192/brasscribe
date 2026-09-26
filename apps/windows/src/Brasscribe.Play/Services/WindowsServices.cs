@@ -142,11 +142,35 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
 
     public MediaPlayer Player => _player;
     public bool HasMedia { get; private set; }
+    public bool HasVideo { get; private set; }
 
-    public void Open(string path)
+    public void Open(string path, bool hasVideo)
     {
         _player.Source = MediaSource.CreateFromUri(new Uri(path));
         HasMedia = true;
+        HasVideo = hasVideo;
+    }
+
+    public void Play() => _player.Play();
+
+    public void Pause()
+    {
+        _loopStart = _loopEnd = null;
+        _player.Pause();
+    }
+
+    public bool IsPlaying => _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+
+    public bool IsMuted
+    {
+        get => _player.IsMuted;
+        set => _player.IsMuted = value;
+    }
+
+    public double Rate
+    {
+        get => _player.PlaybackSession.PlaybackRate;
+        set => _player.PlaybackSession.PlaybackRate = value;
     }
 
     public void PlayRange(TimeSpan start, TimeSpan end, bool loop)

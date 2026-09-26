@@ -61,7 +61,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _result = r;
             Output.HasEngineJob = r.AudioId is not null;
-            if (r.Source.OriginalPath is { } original) Score.Original?.Open(original);
+            Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
             Score.Load(r.MusicXml, r.Composition);
             Screen = Screen.Score;
         };

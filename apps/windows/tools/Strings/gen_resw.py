@@ -92,6 +92,9 @@ prop("ConcertPitchSwitch", "Header", "Concert pitch", "Klingende tone"); help_("
 icon_button("ZoomOutButton", "Zoom out", "Zoom ut", "Smaller notation (Ctrl+-)", "Mindre noter (Ctrl+-)")
 prop("ZoomBox", "Header", "Zoom, percent", "Zoom, prosent"); help_("ZoomBox", "Notation size from 50 to 400 percent", "Notestørrelse fra 50 til 400 prosent")
 icon_button("ZoomInButton", "Zoom in", "Zoom inn", "Larger notation (Ctrl+=)", "Større noter (Ctrl+=)")
+text_button("SourceToggle", "Original", "Opptaket", "Switch between the score and the original recording at the same place (O)", "Bytt mellom partituret og opptaket på samme sted (O)")
+name("VideoView", "Original video", "Originalvideo")
+text_button("PipButton", "Picture in picture", "Bilde i bilde", "Show the original video in a small window on top", "Vis originalvideoen i et lite vindu øverst")
 text_button("TalkingScoreToggle", "Talking score", "Talende note", "Show the score as text, one line per note (Ctrl+T)", "Vis noten som tekst, én linje per note (Ctrl+T)")
 text_button("OutputOptionsButton", "Output", "Utgave", "Lineup, difficulty and key", "Besetning, vanskegrad og toneart")
 prop("OutputHeading", "Text", "Choose output", "Velg utgave")
@@ -231,6 +234,11 @@ code = {
     "Score_ListeningOriginal": ("Playing bar {0} from the recording", "Spiller takt {0} fra opptaket"),
     "Score_ListeningScore": ("Playing bar {0}", "Spiller takt {0}"),
     "Score_Zoom": ("Zoom {0} percent", "Zoom {0} prosent"),
+    "Score_NoOriginal": ("No recording to switch to: this score was opened without one.", "Ingen opptak å bytte til: partituret ble åpnet uten."),
+    "Score_SwitchedToOriginal": ("Playing the recording from bar {0}", "Spiller opptaket fra takt {0}"),
+    "Score_SwitchedToScore": ("Playing the score", "Spiller partituret"),
+    "Pip_Title": ("Original video", "Originalvideo"),
+    "Shortcut_SwitchSource": ("Switch between score and recording", "Bytt mellom partitur og opptak"),
     "Player_Position": ("Bar {0} of {1}", "Takt {0} av {1}"),
     "Player_LoopOff": ("No loop", "Ingen løkke"),
     "Player_LoopSet": ("Loop set, bars {0} to {1}", "Løkke satt, takt {0} til {1}"),

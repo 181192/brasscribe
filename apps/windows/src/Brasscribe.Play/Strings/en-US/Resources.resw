@@ -429,6 +429,15 @@
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>The full score or one part in written pitch</value>
   </data>
+  <data name="PipButton.Content" xml:space="preserve">
+    <value>Picture in picture</value>
+  </data>
+  <data name="PipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Show the original video in a small window on top</value>
+  </data>
+  <data name="Pip_Title" xml:space="preserve">
+    <value>Original video</value>
+  </data>
   <data name="PlayAlongToggle.Content" xml:space="preserve">
     <value>Play along</value>
   </data>
@@ -567,8 +576,17 @@
   <data name="Score_ListeningScore" xml:space="preserve">
     <value>Playing bar {0}</value>
   </data>
+  <data name="Score_NoOriginal" xml:space="preserve">
+    <value>No recording to switch to: this score was opened without one.</value>
+  </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0} part.</value>
+  </data>
+  <data name="Score_SwitchedToOriginal" xml:space="preserve">
+    <value>Playing the recording from bar {0}</value>
+  </data>
+  <data name="Score_SwitchedToScore" xml:space="preserve">
+    <value>Playing the score</value>
   </data>
   <data name="Score_UncertainLeft" xml:space="preserve">
     <value>{0} uncertain notes to check</value>
@@ -699,6 +717,9 @@
   <data name="Shortcut_Speed" xml:space="preserve">
     <value>Slower, faster, normal speed</value>
   </data>
+  <data name="Shortcut_SwitchSource" xml:space="preserve">
+    <value>Switch between score and recording</value>
+  </data>
   <data name="Shortcut_TalkingScore" xml:space="preserve">
     <value>Switch between notation and talking score</value>
   </data>
@@ -734,6 +755,12 @@
   </data>
   <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Slower</value>
+  </data>
+  <data name="SourceToggle.Content" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="SourceToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Switch between the score and the original recording at the same place (O)</value>
   </data>
   <data name="SpeedSlider.Header" xml:space="preserve">
     <value>Speed</value>
@@ -920,6 +947,9 @@
   </data>
   <data name="VerbosityStandard.Content" xml:space="preserve">
     <value>Standard</value>
+  </data>
+  <data name="VideoView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Original video</value>
   </data>
   <data name="ZoomBox.Header" xml:space="preserve">
     <value>Zoom, percent</value>

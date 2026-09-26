@@ -101,6 +101,10 @@ public sealed partial class ScoreScreen : UserControl
             case nameof(ScoreViewModel.IsLoaded) or nameof(ScoreViewModel.Title):
                 FillPartPicker();
                 QueueRender();
+                AttachVideo();
+                break;
+            case nameof(ScoreViewModel.HasVideo):
+                AttachVideo();
                 break;
             case nameof(ScoreViewModel.SelectedPartIndex) or nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
                 QueueRender();
@@ -242,6 +246,9 @@ public sealed partial class ScoreScreen : UserControl
     /// <summary>Playback cursor: a line per beat and a tint of the bar; follows by page turn when motion is reduced.</summary>
     private void OnPlaybackPosition(PlaybackPosition p)
     {
+        // While the score plays, the original video follows it (muted, at the score's speed).
+        if (ViewModel.HasVideo && ViewModel.ListeningTo == ListeningSource.Score)
+            _follower?.Follow(ViewModel.Player.Player.State, p.Tick, ViewModel.Player.Player.Speed);
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
         if (ScoreGeometry.Cursor(player.TickLookup, bounds, _tracks, p.Tick) is { } c)
         {
@@ -283,6 +290,40 @@ public sealed partial class ScoreScreen : UserControl
     }
 
     private void OnApplyOutput(object sender, RoutedEventArgs e) => Output.ApplyCommand.Execute(ViewModel.Composition);
+
+    private VideoWindow? _pip;
+    private VideoFollower? _follower;
+
+    private void OnSwitchSource(object sender, RoutedEventArgs e) => ViewModel.SwitchSource();
+
+    private Services.MediaPlayerOriginal? Media => ViewModel.Original as Services.MediaPlayerOriginal;
+
+    /// <summary>Shows the original video in the score screen once a score with a video loads.</summary>
+    private void AttachVideo()
+    {
+        _follower = ViewModel.Original is { } o && ViewModel.TimeMap is { } map ? new VideoFollower(o, map) : null;
+        if (Media is { } media && ViewModel.HasVideo && _pip is null) VideoView.SetMediaPlayer(media.Player);
+    }
+
+    private void OnPictureInPicture(object sender, RoutedEventArgs e)
+    {
+        if (Media is not { } media) return;
+        if (_pip is not null)
+        {
+            _pip.Close();
+            return;
+        }
+        VideoView.SetMediaPlayer(null);
+        _pip = new VideoWindow(media.Player, App.Strings["Pip_Title"]);
+        _pip.Closed += (_, _) =>
+        {
+            _pip?.Detach();
+            _pip = null;
+            VideoView.SetMediaPlayer(media.Player);
+            PipButton.Focus(FocusState.Programmatic);
+        };
+        _pip.Activate();
+    }
 
     private void OnDifficultyChanged(object sender, SelectionChangedEventArgs e)
     {

@@ -429,6 +429,15 @@
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Hele partituret eller én stemme i skrevet tone</value>
   </data>
+  <data name="PipButton.Content" xml:space="preserve">
+    <value>Bilde i bilde</value>
+  </data>
+  <data name="PipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Vis originalvideoen i et lite vindu øverst</value>
+  </data>
+  <data name="Pip_Title" xml:space="preserve">
+    <value>Originalvideo</value>
+  </data>
   <data name="PlayAlongToggle.Content" xml:space="preserve">
     <value>Spill med</value>
   </data>
@@ -567,8 +576,17 @@
   <data name="Score_ListeningScore" xml:space="preserve">
     <value>Spiller takt {0}</value>
   </data>
+  <data name="Score_NoOriginal" xml:space="preserve">
+    <value>Ingen opptak å bytte til: partituret ble åpnet uten.</value>
+  </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0}-stemmen.</value>
+  </data>
+  <data name="Score_SwitchedToOriginal" xml:space="preserve">
+    <value>Spiller opptaket fra takt {0}</value>
+  </data>
+  <data name="Score_SwitchedToScore" xml:space="preserve">
+    <value>Spiller partituret</value>
   </data>
   <data name="Score_UncertainLeft" xml:space="preserve">
     <value>{0} usikre noter å kontrollere</value>
@@ -699,6 +717,9 @@
   <data name="Shortcut_Speed" xml:space="preserve">
     <value>Saktere, raskere, normalt tempo</value>
   </data>
+  <data name="Shortcut_SwitchSource" xml:space="preserve">
+    <value>Bytt mellom partitur og opptak</value>
+  </data>
   <data name="Shortcut_TalkingScore" xml:space="preserve">
     <value>Bytt mellom noter og talende note</value>
   </data>
@@ -734,6 +755,12 @@
   </data>
   <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Saktere</value>
+  </data>
+  <data name="SourceToggle.Content" xml:space="preserve">
+    <value>Opptaket</value>
+  </data>
+  <data name="SourceToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Bytt mellom partituret og opptaket på samme sted (O)</value>
   </data>
   <data name="SpeedSlider.Header" xml:space="preserve">
     <value>Tempo</value>
@@ -920,6 +947,9 @@
   </data>
   <data name="VerbosityStandard.Content" xml:space="preserve">
     <value>Standard</value>
+  </data>
+  <data name="VideoView.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Originalvideo</value>
   </data>
   <data name="ZoomBox.Header" xml:space="preserve">
     <value>Zoom, prosent</value>

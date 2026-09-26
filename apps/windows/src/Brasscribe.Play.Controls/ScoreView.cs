@@ -389,6 +389,7 @@ public sealed partial class ScoreView : UserControl
         VirtualKey.K => ScoreKey.K,
         VirtualKey.T => ScoreKey.T,
         VirtualKey.G => ScoreKey.G,
+        VirtualKey.O => ScoreKey.O,
         VirtualKey.Number0 or VirtualKey.NumberPad0 => ScoreKey.D0,
         VirtualKey.Subtract => ScoreKey.Minus,
         VirtualKey.Add => ScoreKey.Plus,

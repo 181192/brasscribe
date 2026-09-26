@@ -243,6 +243,11 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         lock (Gate) _synth.TickPosition = mb.Start;
     }
 
+    public void SeekToTick(double tick)
+    {
+        lock (Gate) _synth.TickPosition = Math.Max(0, tick);
+    }
+
     public (int First, int Last)? Loop { get; private set; }
 
     public void SetLoop(int? firstBar, int? lastBar)

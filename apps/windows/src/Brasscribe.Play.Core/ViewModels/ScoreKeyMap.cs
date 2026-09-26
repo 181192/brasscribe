@@ -6,14 +6,14 @@ public enum ScoreCommand
     FirstBar, LastBar, NextUncertain, PreviousUncertain, MarkChecked, ReadBar, WhereAmI,
     PlayBar, PlayFrom, PlayPause, LoopStartHere, LoopEndHere, ToggleLoop,
     Slower, Faster, ResetSpeed, ToggleMute, ToggleSolo, ToggleCountIn, ToggleMetronome,
-    ZoomIn, ZoomOut, ZoomReset, GoToBar, LeaveScore,
+    ZoomIn, ZoomOut, ZoomReset, GoToBar, LeaveScore, SwitchSource,
 }
 
 /// <summary>Keys the score view reacts to, independent of the UI framework's key enum.</summary>
 public enum ScoreKey
 {
     Left, Right, Up, Down, Home, End, Space, Escape,
-    U, C, R, P, W, L, M, S, K, T, G,
+    U, C, R, P, W, L, M, S, K, T, G, O,
     OpenBracket, CloseBracket, Minus, Plus, D0,
 }
 
@@ -73,6 +73,7 @@ public static class ScoreKeyMap
             (ScoreKey.S, false) => ScoreCommand.ToggleSolo,
             (ScoreKey.K, false) => ScoreCommand.ToggleCountIn,
             (ScoreKey.T, false) => ScoreCommand.ToggleMetronome,
+            (ScoreKey.O, false) => ScoreCommand.SwitchSource,
             _ => null,
         };
     }
