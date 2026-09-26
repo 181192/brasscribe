@@ -90,7 +90,7 @@ public class CaptureAndExportTests
         Assert.False(options[ExportFormat.Pdf].Available);
         Assert.Equal(ExportService.ReasonNeedsEngine, options[ExportFormat.Pdf].UnavailableReasonKey);
         Assert.False(options[ExportFormat.Braille].Available);
-        Assert.Equal(ExportService.ReasonBrailleMissing, options[ExportFormat.Braille].UnavailableReasonKey);
+        Assert.Equal(ExportService.ReasonNeedsEngine, options[ExportFormat.Braille].UnavailableReasonKey);
 
         using var midi = new MemoryStream();
         await svc.ExportAsync(ExportFormat.Midi, sources, midi, null, new TalkingScoreSettings());

@@ -32,6 +32,8 @@ public interface IEngineClient
     Task<IReadOnlyList<Artifact>> ListArtifactsAsync(string jobId, CancellationToken ct = default);
     Task<Stream> DownloadAsync(string jobId, JobDownload what, CancellationToken ct = default);
     Task<Stream> GetArtifactAsync(string jobId, string name, CancellationToken ct = default);
+    /// <summary>Braille music (BRF) of the score, or of one part (1-based number or name).</summary>
+    Task<Stream> DownloadBrailleAsync(string jobId, string? part = null, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -113,6 +115,9 @@ public sealed class EngineClient : IEngineClient
         };
         return SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/{leaf}", ct);
     }
+
+    public Task<Stream> DownloadBrailleAsync(string jobId, string? part = null, CancellationToken ct = default) =>
+        SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/braille" + (part is null ? "" : $"?part={Uri.EscapeDataString(part)}"), ct);
 
     public Task<Stream> GetArtifactAsync(string jobId, string name, CancellationToken ct = default) =>
         SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/artifacts/{Uri.EscapeDataString(name)}", ct);

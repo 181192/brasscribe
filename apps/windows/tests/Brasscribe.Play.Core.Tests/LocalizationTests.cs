@@ -69,6 +69,7 @@ public partial class LocalizationTests
         foreach (var k in Enum.GetNames<InputBand>()) used.Add($"Start_Level_{k}");
         foreach (var k in Enum.GetNames<CaptureNoticeKind>()) used.Add($"Start_Notice_{k}");
         foreach (var k in Enum.GetNames<ExportFormat>()) used.Add($"Export_Format_{k}");
+        foreach (var k in OutputOptionsViewModel.Keys) used.Add(k is null ? "Key_AsRecorded" : $"Key_{k}");
 
         Assert.True(used.Count > 100, $"only {used.Count} keys found; the scan is broken");
         var missing = used.Where(k => !keys.Contains(k)).Order().ToList();
@@ -90,7 +91,7 @@ public partial class LocalizationTests
     private static partial Regex UidRegex();
 
     // Resource keys in code: "Prefix_Name" string literals with a known prefix.
-    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Shortcuts?)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
+    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Key|Shortcuts?)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
     private static partial Regex CodeKeyRegex();
 
     [GeneratedRegex(@"\{(\d+)[^}]*\}")]

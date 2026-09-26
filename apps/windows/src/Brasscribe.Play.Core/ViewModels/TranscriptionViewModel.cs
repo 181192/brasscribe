@@ -6,7 +6,8 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Brasscribe.Play.Core.ViewModels;
 
-public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source);
+public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
+    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null);
 
 /// <summary>
 /// Runs a transcription on the companion engine: upload, job, live progress in plain language with
@@ -49,7 +50,18 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string? DeviceText { get; set; }
 
-    public async Task RunAsync(SourceAudio source, SourceKindOption kind)
+    /// <summary>Uploads the source and transcribes it with the chosen profile and arrangement options.</summary>
+    public Task RunAsync(SourceAudio source, SourceKindOption kind, ArrangementOptions? options = null) =>
+        RunJobAsync(source, kind.Label, kind.Profile, options ?? ArrangementOptions.Default, audioId: null);
+
+    /// <summary>
+    /// Arranges an earlier transcription again with other options (lineup, difficulty, key). The engine
+    /// caches every stage by content, so only the arrangement and its exports run again.
+    /// </summary>
+    public Task RearrangeAsync(TranscriptionResult previous, ArrangementOptions options) =>
+        RunJobAsync(previous.Source, previous.Profile ?? "orchestra-with-soloist", previous.Profile ?? "", options, previous.AudioId);
+
+    private async Task RunJobAsync(SourceAudio source, string kindLabel, string profile, ArrangementOptions options, string? audioId)
     {
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -62,18 +74,23 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         Title = source.DisplayName;
         StageText = _s["Transcribe_Stage_Upload"];
         EtaText = _s["Transcribe_Eta_Unknown"];
-        _announcer.Announce(_s.Format("Transcribe_Started", source.DisplayName, kind.Label), AnnouncementKind.Important);
+        _announcer.Announce(audioId is null
+            ? _s.Format("Transcribe_Started", source.DisplayName, kindLabel)
+            : _s["Transcribe_Rearranging"], AnnouncementKind.Important);
         try
         {
             var health = await engine.GetHealthAsync(ct);
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
 
-            AudioRef audio;
-            await using (var file = File.OpenRead(source.WavPath))
-                audio = await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct);
+            if (audioId is null)
+            {
+                await using var file = File.OpenRead(source.WavPath);
+                audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
+            }
 
-            var job = await engine.CreateJobAsync(new JobCreate(audio.AudioId, kind.Profile, RenderAudio: true,
-                Title: Path.GetFileNameWithoutExtension(source.DisplayName)), ct);
+            var job = await engine.CreateJobAsync(new JobCreate(audioId, profile, RenderAudio: true,
+                Title: Path.GetFileNameWithoutExtension(source.DisplayName),
+                Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose), ct);
             _jobId = job.Id;
             estimator.Start();
 
@@ -104,7 +121,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             StageText = _s["Transcribe_Done"];
             EtaText = "";
             _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
-            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source));
+            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options));
         }
         catch (OperationCanceledException)
         {

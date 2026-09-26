@@ -20,7 +20,7 @@ public sealed partial class ShortcutsDialog : ContentDialog
             ("Shortcut_Bar", "Ctrl+↓ / Ctrl+↑"), ("Shortcut_Part", "Ctrl+Shift+↓ / Ctrl+Shift+↑"), ("Shortcut_FirstLast", "Home / End"),
             ("Shortcut_Uncertain", "U / Shift+U"), ("Shortcut_Checked", "C"), ("Shortcut_ReadBar", "R"),
             ("Shortcut_PlayBar", "P / Shift+P"), ("Shortcut_WhereAmI", "W"), ("Shortcut_Loop", "[ / ] / L"),
-            ("Shortcut_Speed", "- / = / 0"), ("Shortcut_MuteSolo", "M / S"), ("Shortcut_CountInMetronome", "K / T"),
+            ("Shortcut_Speed", "- / = / 0"), ("Shortcut_MuteSolo", "M / S"), ("Shortcut_CountInMetronome", "K / T"), ("Shortcut_SwitchSource", "O"),
             ("Shortcut_Zoom", "Ctrl+- / Ctrl+= / Ctrl+0"), ("Shortcut_Leave", "Tab / Shift+Tab / Esc"),
         ]),
     ];

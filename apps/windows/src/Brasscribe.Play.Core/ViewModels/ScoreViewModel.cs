@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Brasscribe.Play.Core.Bridge;
+using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.TalkingScore;
@@ -62,6 +63,54 @@ public sealed partial class ScoreViewModel : ObservableObject
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; } = true;
     [ObservableProperty] public partial bool HasFreeTime { get; set; }
 
+    /// <summary>The original is a video: the score screen shows it and offers picture-in-picture.</summary>
+    [ObservableProperty] public partial bool HasVideo { get; set; }
+
+    /// <summary>What the transport plays: the arranged score or the original recording.</summary>
+    [ObservableProperty] public partial ListeningSource ListeningTo { get; set; } = ListeningSource.Score;
+
+    /// <summary>Score ↔ recording time, when the score came with a Composition.</summary>
+    public ScoreTimeMap? TimeMap => Composition is { } c ? new ScoreTimeMap(c) : null;
+
+    public bool CanSwitchSource => Original is { HasMedia: true } && Composition is not null;
+
+    /// <summary>
+    /// Switches between the score and the original at the same musical position; playback carries on
+    /// in the other source if it was playing.
+    /// </summary>
+    [RelayCommand]
+    public void SwitchSource()
+    {
+        if (Original is not { HasMedia: true } original || TimeMap is not { } map)
+        {
+            _announcer.Announce(_s["Score_NoOriginal"]);
+            return;
+        }
+        var player = Player.Player;
+        if (ListeningTo == ListeningSource.Score)
+        {
+            bool playing = player.State == PlaybackState.Playing;
+            double seconds = map.SecondsAtTick(player.Position.Tick);
+            player.Pause();
+            original.IsMuted = false;
+            original.Rate = 1;
+            original.Position = TimeSpan.FromSeconds(seconds);
+            if (playing) original.Play();
+            ListeningTo = ListeningSource.Original;
+            _announcer.Announce(_s.Format("Score_SwitchedToOriginal", player.Position.BarIndex + 1));
+        }
+        else
+        {
+            bool playing = original.IsPlaying;
+            double tick = map.TickAtSeconds(original.Position.TotalSeconds);
+            original.Pause();
+            player.SeekToTick(tick);
+            if (playing) player.Play();
+            ListeningTo = ListeningSource.Score;
+            _announcer.Announce(_s["Score_SwitchedToScore"]);
+        }
+    }
+
     /// <summary>Lines of the talking-score view for the current part, one per event.</summary>
     public ObservableCollection<string> TalkingLines { get; } = [];
 
@@ -88,6 +137,8 @@ public sealed partial class ScoreViewModel : ObservableObject
         Player.Load(System.Text.Encoding.UTF8.GetBytes(musicXml));
         Player.PlayAlongPart = Player.Parts.FirstOrDefault(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase)) ?? Player.Parts.FirstOrDefault();
         IsLoaded = true;
+        HasVideo = Original?.HasVideo == true;
+        ListeningTo = ListeningSource.Score;
         UpdateUncertain();
         Sync(_nav.Text, announce: false);
         RebuildTalkingLines();
@@ -166,7 +217,14 @@ public sealed partial class ScoreViewModel : ObservableObject
             case ScoreCommand.WhereAmI: _announcer.Announce(_nav.WhereAmI()); break;
             case ScoreCommand.PlayBar: ListenToBar(); break;
             case ScoreCommand.PlayFrom: Player.PlayFrom(bar); break;
-            case ScoreCommand.PlayPause: Player.PlayPauseCommand.Execute(null); break;
+            case ScoreCommand.PlayPause:
+                if (ListeningTo == ListeningSource.Original && Original is { } o)
+                {
+                    if (o.IsPlaying) o.Pause(); else o.Play();
+                }
+                else Player.PlayPauseCommand.Execute(null);
+                break;
+            case ScoreCommand.SwitchSource: SwitchSource(); break;
             case ScoreCommand.LoopStartHere: Player.SetLoopStartAt(bar); break;
             case ScoreCommand.LoopEndHere: Player.SetLoopEndAt(bar); break;
             case ScoreCommand.ToggleLoop: Player.ToggleLoopCommand.Execute(null); break;

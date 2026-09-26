@@ -35,7 +35,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         Formats.Clear();
         foreach (var o in exports.Options(_sources))
         {
-            bool needsPart = o.Format is ExportFormat.MusicXmlPart;
+            bool needsPart = o.Format is ExportFormat.MusicXmlPart or ExportFormat.Braille;
             Formats.Add(new ExportChoice(o.Format, s[$"Export_Format_{o.Format}"], o.Available,
                 o.UnavailableReasonKey is null ? null : s[o.UnavailableReasonKey], needsPart));
         }

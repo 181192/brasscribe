@@ -11,4 +11,5 @@ public static class Screens
     public static bool HasText(string? value) => !string.IsNullOrEmpty(value);
     public static bool IsFullScore(int selectedPartIndex) => selectedPartIndex < 0;
     public static string Percent(double value) => $"{Math.Round(value)} %";
+    public static bool IsOriginal(Playback.ListeningSource source) => source == Playback.ListeningSource.Original;
 }

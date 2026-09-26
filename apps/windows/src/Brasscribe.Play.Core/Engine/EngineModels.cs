@@ -19,7 +19,17 @@ public sealed record JobCreate(
     bool AllowHeavy = true,
     string? Title = null,
     string? SourceId = null,
-    string? Path = null);
+    string? Path = null,
+    string Lineup = "full",
+    string Difficulty = "faithful",
+    string? Key = null,
+    int? Transpose = null);
+
+/// <summary>Arrangement choices a job can carry: lineup full|minimal, difficulty faithful|standard|easier, a target key or a transposition.</summary>
+public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null)
+{
+    public static readonly ArrangementOptions Default = new();
+}
 
 public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null);
 

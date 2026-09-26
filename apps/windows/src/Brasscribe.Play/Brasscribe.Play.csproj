@@ -46,9 +46,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Optional SoundFont and models are copied next to the exe when present (never committed). -->
-    <Content Include="..\..\..\..\data\sounds\built\**\*.sf2" Link="SoundFonts\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\data\sounds\built')" />
+    <!-- Sounds and models are copied next to the exe when present (never committed). The band
+         SoundFont (16-bit build) with its part map is the default; the per-instrument SoundFonts are the fallback. -->
+    <Content Include="..\..\..\..\data\sounds\band\brasscribe-band-16bit.sf2" Link="SoundFonts\brasscribe-band.sf2"
+             CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\data\sounds\band\brasscribe-band-16bit.sf2')" />
+    <Content Include="..\..\..\..\sounds\mapping.json" Link="SoundFonts\mapping.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\..\data\sounds\built\**\*.sf2" Link="SoundFonts\built\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\data\sounds\built') And !Exists('..\..\..\..\data\sounds\band\brasscribe-band-16bit.sf2')" />
     <Content Include="..\..\..\..\models\converted\swift-f0\*.onnx" Link="Models\%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\models\converted\swift-f0')" />
   </ItemGroup>
