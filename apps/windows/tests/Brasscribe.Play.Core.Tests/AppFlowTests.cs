@@ -276,7 +276,14 @@ public class AppFlowTests
         main.Output.Lineup = Lineup.MinimalBand;
         main.Output.Difficulty = Difficulty.Easier;
         main.Output.KeyIndex = Array.IndexOf(OutputOptionsViewModel.Keys, "Eb");
-        Assert.Equal("E♭ major", main.Output.KeyLabel);
+        Assert.Equal("E♭ major (concert)", main.Output.KeyLabel);
+        Assert.Equal("F major for B♭ instruments", main.Output.KeyDetail); // the part the player plays is in B♭
+        main.Output.KeyUpCommand.Execute(null);
+        Assert.Equal("E major (concert)", main.Output.KeyLabel);
+        main.Output.KeyDownCommand.Execute(null);
+        main.Output.KeyDownCommand.Execute(null);
+        Assert.Equal("D major (concert)", main.Output.KeyLabel);
+        main.Output.KeyUpCommand.Execute(null);
         await main.Output.ShowScoreCommand.ExecuteAsync(main.Score.Composition);
         await Until(() => engine.Requests.Count(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs") == 2);
         await Until(() => main.Screen is Screen.Score or Screen.Review && !main.Transcription.IsRunning);

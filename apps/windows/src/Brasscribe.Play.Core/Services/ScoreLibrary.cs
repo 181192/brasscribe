@@ -67,6 +67,17 @@ public sealed class ScoreLibrary
         return Put(new LibraryEntry(existing?.Id ?? Guid.NewGuid().ToString("N")[..12], title, path, null, DateTimeOffset.Now, parts, bars, notesToCheck));
     }
 
+    /// <summary>Replaces a score's files after a change in the review (library-made scores only).</summary>
+    public void Update(string id, string musicXml, Composition composition, int notesToCheck)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0 || _entries[i].CompositionPath is not { } compPath) return;
+        File.WriteAllText(_entries[i].MusicXmlPath, musicXml);
+        File.WriteAllText(compPath, CompositionJson.Serialize(composition));
+        _entries[i] = _entries[i] with { NotesToCheck = notesToCheck, Updated = DateTimeOffset.Now };
+        Save();
+    }
+
     /// <summary>Updates how many notes are still to check.</summary>
     public void SetNotesToCheck(string id, int count)
     {

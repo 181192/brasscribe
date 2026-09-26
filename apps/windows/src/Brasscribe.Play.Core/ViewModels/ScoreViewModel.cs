@@ -181,6 +181,18 @@ public sealed partial class ScoreViewModel : ObservableObject
         : ((Language == "nb" ? Document.Parts[SelectedPartIndex].InstrumentNb : null) ?? Document.Parts[SelectedPartIndex].Instrument
            ?? Document.Parts[SelectedPartIndex].Name).ToUpperInvariant();
 
+    /// <summary>The player's own part in the score (the one "Mute my part" silences), or -1 without parts.</summary>
+    public int MyPartIndex
+    {
+        get
+        {
+            if (Document is null || Document.Parts.Count == 0) return -1;
+            if (Player.PlayAlongPart is { } mine && Document.Parts.FindIndex(p => p.Name == mine.Name) is var i and >= 0) return i;
+            int solo = Document.Parts.FindIndex(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase) && !p.Percussion);
+            return solo >= 0 ? solo : 0;
+        }
+    }
+
     /// <summary>The part view: one part chosen, laid out as a page, with the player's own part muted.</summary>
     public bool IsPartView => SelectedPartIndex >= 0;
 

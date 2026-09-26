@@ -37,8 +37,51 @@ public sealed partial class ReviewPage : Page, IScreenPage
         ViewModel.CurrentChanged += OnCurrentChanged;
         _groups.Source = ViewModel.Groups;
         NoteList.ItemsSource = _groups.View;
+        ViewModel.PropertyChanged -= OnViewModelChanged;
+        ViewModel.PropertyChanged += OnViewModelChanged;
         Bindings.Update();
+        SyncScope();
         if (ViewModel.Current is { } current) OnCurrentChanged(this, current);
+    }
+
+    private bool _scopeSync;
+
+    private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ReviewViewModel.Scope)) SyncScope();
+    }
+
+    private void SyncScope()
+    {
+        _scopeSync = true;
+        MyPartScope.IsChecked = ViewModel.Scope == ReviewScope.MyPart;
+        AllPartsScope.IsChecked = ViewModel.Scope == ReviewScope.AllParts;
+        _scopeSync = false;
+    }
+
+    private void OnScopeChecked(object sender, RoutedEventArgs e)
+    {
+        if (_scopeSync) return;
+        ViewModel.Scope = ReferenceEquals(sender, AllPartsScope) ? ReviewScope.AllParts : ReviewScope.MyPart;
+    }
+
+    /// <summary>One item per alternative: "A" / "Heard by another listening", "G♯" / "A semitone lower", …</summary>
+    private void OnAlternativesOpening(object? sender, object e)
+    {
+        AlternativesMenu.Items.Clear();
+        var strings = App.Strings;
+        foreach (var alt in ViewModel.Alternatives)
+        {
+            string why = alt.Kind switch
+            {
+                AlternativeKind.OtherListening => strings["Review_AltHeard"],
+                AlternativeKind.Semitone => strings[alt.Semitones < 0 ? "Review_AltSemitoneDown" : "Review_AltSemitoneUp"],
+                _ => strings[alt.Semitones < 0 ? "Review_AltOctaveDown" : "Review_AltOctaveUp"],
+            };
+            var item = new MenuFlyoutItem { Text = $"{alt.Name} · {why}" };
+            item.Click += (_, _) => ViewModel.ChangeNoteCommand.Execute(alt);
+            AlternativesMenu.Items.Add(item);
+        }
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);

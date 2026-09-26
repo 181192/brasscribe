@@ -46,7 +46,8 @@ public sealed partial class MainViewModel : ObservableObject
         _engineFactory = engineFactory;
         _announcer = announcer;
         _s = strings;
-        Review = new ReviewViewModel(score, announcer, strings);
+        Review = new ReviewViewModel(score, announcer, strings) { CanArrange = core.IsNative, Listenings = ListeningsAsync };
+        Review.NoteChanged += (_, change) => ApplyNoteChange(change);
         Error = new ErrorViewModel(strings);
         Library = library;
         RefreshLibrary();
@@ -61,6 +62,14 @@ public sealed partial class MainViewModel : ObservableObject
             UpdateLibraryCount();
         };
         Output.ShowScoreRequested += (_, _) => Screen = Screen.Score;
+        Score.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(ScoreViewModel.Title) or nameof(ScoreViewModel.IsLoaded)) UpdateOutputContext();
+        };
+        Score.Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlayerViewModel.PlayAlongPart)) UpdateOutputContext();
+        };
         Error.Retry += async (_, _) =>
         {
             if (_lastChoice is { } choice)
@@ -210,6 +219,61 @@ public sealed partial class MainViewModel : ObservableObject
     private void NewScore()
     {
         if (!Transcription.IsRunning) Screen = Screen.Start;
+    }
+
+    private readonly Dictionary<Scores.VoiceRole, IReadOnlyList<IReadOnlyList<Brasscribe.Play.Core.Review.HeardNote>>> _listenings = [];
+
+    /// <summary>
+    /// The other transcriptions of a layer, from the job's layer files (solo: SwiftF0, MuScriptor and
+    /// Basic Pitch; bass; orchestra). Null when the score has none at hand.
+    /// </summary>
+    private async Task<IReadOnlyList<IReadOnlyList<Brasscribe.Play.Core.Review.HeardNote>>?> ListeningsAsync(Scores.VoiceRole role)
+    {
+        if (_listenings.TryGetValue(role, out var cached)) return cached;
+        if (Output.LayerSource is not { } source || await source(CancellationToken.None) is not { } inputs) return null;
+        int[] layers = role switch
+        {
+            Scores.VoiceRole.Melody => [0, 1, 2],
+            Scores.VoiceRole.Bass => [3],
+            Scores.VoiceRole.Harmony => [4],
+            _ => [],
+        };
+        var heard = layers.Where(i => i < inputs.Midi.Length).Select(i => Brasscribe.Play.Core.Review.MidiNotes.Read(inputs.Midi[i])).ToList();
+        _listenings[role] = heard;
+        return heard;
+    }
+
+    /// <summary>
+    /// A note changed in the review: the Composition already holds the new pitch, so the score is
+    /// arranged again here (the native core) with the same lineup, and the review goes on at the same bar.
+    /// </summary>
+    private void ApplyNoteChange(NoteChange change)
+    {
+        if (Score.Composition is not { } composition) return;
+        try
+        {
+            var xml = Core.ArrangeMusicXml(composition, Output.Lineup == Lineup.MinimalBand ? "minimal" : "layers");
+            if (xml is null) return;
+            var scope = Review.Scope;
+            Score.Load(xml, composition);
+            if (_libraryId is { } id) Library?.Update(id, xml, composition, Score.UncertainLeft);
+            Review.Load(scope);
+            var next = Review.Items.FirstOrDefault(i => !i.IsKept && (i.Part > change.Item.Part || i.Part == change.Item.Part && i.BarIndex >= change.Item.BarIndex));
+            if (next is not null) Review.Select(next);
+            if (Review.Items.Count == 0) Screen = _chooseOutputNext ? Screen.ChooseOutput : Screen.Score;
+        }
+        catch (Bridge.CoreBridgeException e)
+        {
+            _announcer.Announce(_s.Format("Output_Failed", e.Message), AnnouncementKind.Important);
+        }
+    }
+
+    /// <summary>The recorded key and the player's instrument, for "C major (concert) · D major for B♭ instruments".</summary>
+    private void UpdateOutputContext()
+    {
+        int mine = Score.MyPartIndex;
+        int? chromatic = mine >= 0 && Score.Document is { } doc ? doc.Parts[mine].Transpose.Chromatic : null;
+        Output.SetScoreContext(Score.Composition, chromatic);
     }
 
     private bool _chooseOutputNext;

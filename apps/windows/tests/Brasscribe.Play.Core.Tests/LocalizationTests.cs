@@ -69,7 +69,7 @@ public partial class LocalizationTests
         foreach (var k in Enum.GetNames<InputBand>()) used.Add($"Start_Level_{k}");
         foreach (var k in Enum.GetNames<CaptureNoticeKind>()) used.Add($"Start_Notice_{k}");
         foreach (var k in Enum.GetNames<ExportFormat>()) used.Add($"Export_Format_{k}");
-        foreach (var k in OutputOptionsViewModel.Keys) used.Add(k is null ? "Key_AsRecorded" : $"Key_{k}");
+        used.Add("Key_AsRecorded");
         foreach (var k in Enum.GetNames<ErrorKind>()) { used.Add($"Error_{k}_Title"); used.Add($"Error_{k}_Reason"); used.Add($"Error_{k}_Step1"); }
         foreach (var k in new[] { "Pdf", "MusicXml", "Audio", "Midi", "TalkingScore", "Braille" }) { used.Add($"Export_{k}"); used.Add($"Export_{k}_For"); }
         foreach (var profile in SourceKindViewModel.Profiles.Values)

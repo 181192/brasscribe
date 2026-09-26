@@ -116,6 +116,9 @@ name("ReviewList", "Notes to check", "Toner å sjekke")
 name("ReviewSnippet", "The bars around the note", "Taktene rundt tonen")
 name("ReviewListenButton", "Listen to this bar", "Lytt til denne takten"); help_("ReviewListenButton", "Plays the bar from the recording, looped (Space)", "Spiller takten fra opptaket i løkke (Mellomrom)")
 prop("ReviewListenLabel", "Text", "Listen to this bar", "Lytt til denne takten")
+name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
+name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the score is arranged again", "Velg hva tonen skal være; partituret arrangeres på nytt")
+prop("ReviewChangeNoteLabel", "Text", "Change note…", "Endre tonen …")
 prop("ReviewKeys", "Text", "Space listens · K keeps · arrows move", "Mellomrom lytter · K beholder · piltastene flytter")
 text_button("ReviewSkipButton", "Skip", "Hopp over", "Leave this note marked and go to the next", "La tonen være merket og gå til neste")
 name("ReviewKeepButton", "Keep, go to next", "Behold, gå til neste"); help_("ReviewKeepButton", "The note is right; its “?” goes (K)", "Tonen er riktig; «?» fjernes (K)")
@@ -139,8 +142,10 @@ prop("DifficultyStandard", "Content", "A bit easier", "Litt enklere")
 prop("DifficultyEasier", "Content", "Easier", "Enklere")
 prop("OutputHardTip", "Text", "Easier keeps the tune but avoids high notes and fast runs.", "Enklere beholder melodien, men unngår høye toner og raske løp.")
 prop("OutputKeyHeading", "Text", "Key", "Toneart")
-icon_button("KeyDownButton", "Previous key", "Forrige toneart", "Choose the key before this one", "Velg tonearten før denne")
-icon_button("KeyUpButton", "Next key", "Neste toneart", "Choose the key after this one", "Velg tonearten etter denne")
+name("KeyDownButton", "Lower", "Lavere"); tip("KeyDownButton", "A semitone lower", "Et halvtonetrinn lavere")
+prop("KeyDownLabel", "Text", "Lower", "Lavere")
+name("KeyUpButton", "Higher", "Høyere"); tip("KeyUpButton", "A semitone higher", "Et halvtonetrinn høyere")
+prop("KeyUpLabel", "Text", "Higher", "Høyere")
 text_button("OutputBackButton", "Back", "Tilbake", "Back to the score as it is", "Tilbake til partituret slik det er")
 text_button("ShowScoreButton", "Show the score", "Vis partituret", "Arranges again only if you changed a choice", "Arrangerer på nytt bare hvis du endret et valg")
 
@@ -334,6 +339,19 @@ code = {
     "CancelDialog_Keep": ("Keep going", "Fortsett"),
     "Review_CountOne": ("{0} note to check", "{0} tone å sjekke"),
     "Review_Count": ("{0} notes to check", "{0} toner å sjekke"),
+    "Review_Triage": ("Check your part first: {0} notes in {1}, {2} very unsure", "Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre"),
+    "Review_ScopeMine": ("Your part ({0})", "Stemmen din ({0})"),
+    "Review_ScopeAll": ("All parts ({0})", "Alle stemmer ({0})"),
+    "Review_Accompaniment": ("Accompaniment", "Akkompagnement"),
+    "Review_MyPartDone": ("Your part is checked. Now the other parts.", "Stemmen din er sjekket. Nå de andre stemmene."),
+    "Review_LevelUncertainHint": ("Uncertain: it could also be {0}. Listen to the original and the score side by side.", "Usikker: det kan også være {0}. Lytt til opptaket og partituret side om side."),
+    "Review_LevelVeryUncertainHint": ("Very uncertain: it could also be {0}. Listen to the original and the score side by side.", "Svært usikker: det kan også være {0}. Lytt til opptaket og partituret side om side."),
+    "Review_Changed": ("Bar {0} changed to {1}. Arranging again.", "Takt {0} endret til {1}. Arrangerer på nytt."),
+    "Review_AltHeard": ("heard by another listening", "hørt av en annen lytting"),
+    "Review_AltSemitoneDown": ("a semitone lower", "et halvtonetrinn lavere"),
+    "Review_AltSemitoneUp": ("a semitone higher", "et halvtonetrinn høyere"),
+    "Review_AltOctaveDown": ("an octave lower", "en oktav lavere"),
+    "Review_AltOctaveUp": ("an octave higher", "en oktav høyere"),
     "Review_ListItem": ("Bar {0} · {1}", "Takt {0} · {1}"),
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),
@@ -440,16 +458,10 @@ code = {
     "Output_NeedsEngine": ("How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.", "Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem."),
     "Output_Rearranging": ("Arranging again with your choices", "Arrangerer på nytt med valgene dine"),
     "Output_KeyAsRecordedDetail": ("As recorded · concert pitch", "Som i opptaket · klingende"),
+    "Output_KeyConcert": ("{0} (concert)", "{0} (klingende)"),
+    "Output_KeyWritten": ("{0} for {1} instruments", "{0} for {1}-instrumenter"),
     "Output_KeyConcertDetail": ("Concert pitch", "Klingende"),
     "Key_AsRecorded": ("As recorded", "Som i opptaket"),
-    "Key_Bb": ("B♭ major", "B-dur"),
-    "Key_Eb": ("E♭ major", "Ess-dur"),
-    "Key_F": ("F major", "F-dur"),
-    "Key_C": ("C major", "C-dur"),
-    "Key_Ab": ("A♭ major", "Ass-dur"),
-    "Key_G": ("G major", "G-dur"),
-    "Key_D": ("D major", "D-dur"),
-    "Key_Db": ("D♭ major", "Dess-dur"),
     "Output_NeedsCore": ("Arranging on this PC needs Brasscribe's arranger, which isn't installed.", "Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert."),
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Output_Failed": ("Couldn't arrange it: {0}", "Kunne ikke arrangere: {0}"),

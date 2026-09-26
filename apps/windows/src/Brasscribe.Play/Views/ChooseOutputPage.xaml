@@ -72,9 +72,12 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Uid="KeyDownButton" Style="{StaticResource SecondaryButtonStyle}" Width="52" Padding="0"
+                        <Button x:Uid="KeyDownButton" Style="{StaticResource SecondaryButtonStyle}" Padding="14,8"
                                 Command="{x:Bind ViewModel.KeyDownCommand}" IsEnabled="{x:Bind ViewModel.KeyAvailable, Mode=OneWay}">
-                            <FontIcon Glyph="&#xE738;" FontSize="14" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE738;" FontSize="12" />
+                                <TextBlock x:Uid="KeyDownLabel" />
+                            </StackPanel>
                         </Button>
                         <Border Grid.Column="1" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1" CornerRadius="{StaticResource BcRadiusMd}"
                                 Padding="14,8" Background="{ThemeResource BcSurfaceRaisedBrush}" AutomationProperties.LiveSetting="Polite"
@@ -84,9 +87,12 @@
                                 <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.KeyDetail, Mode=OneWay}" />
                             </StackPanel>
                         </Border>
-                        <Button x:Uid="KeyUpButton" Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}" Width="52" Padding="0"
+                        <Button x:Uid="KeyUpButton" Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}" Padding="14,8"
                                 Command="{x:Bind ViewModel.KeyUpCommand}" IsEnabled="{x:Bind ViewModel.KeyAvailable, Mode=OneWay}">
-                            <FontIcon Glyph="&#xE710;" FontSize="14" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE710;" FontSize="12" />
+                                <TextBlock x:Uid="KeyUpLabel" />
+                            </StackPanel>
                         </Button>
                     </Grid>
                     <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.UnavailableText, Mode=OneWay}"

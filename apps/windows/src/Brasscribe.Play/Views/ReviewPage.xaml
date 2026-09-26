@@ -28,6 +28,18 @@
                 <StackPanel Spacing="8" Padding="12,0">
                     <TextBlock Style="{StaticResource OverlineStyle}" Text="{x:Bind ViewModel.CountHeading, Mode=OneWay}"
                                AutomationProperties.HeadingLevel="Level2" />
+                    <!-- Triage: your part first (very unsure first); the count follows the choice. -->
+                    <TextBlock Style="{StaticResource BodyStyle}" FontSize="14" Text="{x:Bind ViewModel.TriageText, Mode=OneWay}"
+                               Visibility="{x:Bind ViewModel.HasMyPart, Mode=OneWay}" />
+                    <Border Style="{StaticResource SegmentGroupStyle}" HorizontalAlignment="Left" x:Uid="ReviewScope"
+                            Visibility="{x:Bind ViewModel.HasMyPart, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="3">
+                            <RadioButton x:Name="MyPartScope" GroupName="ReviewScope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked"
+                                         Content="{x:Bind ViewModel.MyPartScopeLabel, Mode=OneWay}" />
+                            <RadioButton x:Name="AllPartsScope" GroupName="ReviewScope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked"
+                                         Content="{x:Bind ViewModel.AllPartsScopeLabel, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
                     <!-- The legend: "?" uncertain, boxed "?" very uncertain. -->
                     <StackPanel Orientation="Horizontal" Spacing="16" x:Uid="ReviewLegend">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -94,13 +106,23 @@
                         <TextBlock Style="{StaticResource BcTitle2TextBlockStyle}" Foreground="{ThemeResource BcTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
                         <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" />
                     </StackPanel>
-                    <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{x:Bind ViewModel.ListenCommand}" VerticalAlignment="Top">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
-                            <TextBlock x:Uid="ReviewListenLabel" />
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                        <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{x:Bind ViewModel.ListenCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
+                                <TextBlock x:Uid="ReviewListenLabel" />
+                            </StackPanel>
+                        </Button>
+                        <!-- Change note…: what the other transcriptions heard first, then a semitone and an octave either side. -->
+                        <Button x:Name="ChangeNoteButton" x:Uid="ReviewChangeNoteButton" Style="{StaticResource ActionButtonStyle}" MinHeight="48"
+                                Padding="18,10" IsEnabled="{x:Bind ViewModel.CanChangeNote, Mode=OneWay}">
+                            <TextBlock x:Uid="ReviewChangeNoteLabel" />
+                            <Button.Flyout>
+                                <MenuFlyout x:Name="AlternativesMenu" Placement="BottomEdgeAlignedRight" Opening="OnAlternativesOpening" />
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
                 </Grid>
                 <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,16" />
                 <Grid ColumnSpacing="12">

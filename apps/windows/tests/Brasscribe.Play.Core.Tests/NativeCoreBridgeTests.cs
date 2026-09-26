@@ -159,6 +159,59 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.All(b, n => Assert.InRange(n.NoteVelocity, 1, 127));
     }
 
+    /// <summary>"Change note…" on the golden: the change goes into the Composition and the arranged score has it.</summary>
+    [Fact]
+    public void A_changed_note_is_arranged_again_with_its_new_pitch()
+    {
+        var bridge = Bridge();
+        var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
+        var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
+        if (bridge is null || xmlPath is null || json is null) return;
+        var strings = new Services.ReswStrings(Services.ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
+            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        var quiet = new QuietAnnouncer();
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        var score = new ViewModels.ScoreViewModel(bridge, new ViewModels.PlayerViewModel(player, quiet, strings, new InlineUi()), quiet, strings);
+        var composition = bridge.ParseComposition(File.ReadAllText(json));
+        score.Load(File.ReadAllText(xmlPath), composition);
+        var review = new ViewModels.ReviewViewModel(score, quiet, strings) { CanArrange = true };
+        review.Load();
+        int before = review.AllItems.Count;
+        var item = review.Current!;
+        Assert.True(item.IsMine); // the solo part comes first
+        var source = Review.NoteAlternatives.SourceOf(composition, item.Event);
+        Assert.NotNull(source);
+        int oldPitch = source.Value.Note.Pitch;
+        ViewModels.NoteChange? change = null;
+        review.NoteChanged += (_, c) => change = c;
+        review.ChangeNoteCommand.Execute(new Review.NoteAlternative(1, "x", Review.AlternativeKind.Semitone));
+        Assert.NotNull(change);
+        Assert.Equal(oldPitch + 1, source.Value.Note.Pitch);
+        Assert.Equal(1.0, source.Value.Note.Confidence);
+
+        var xml = bridge.ArrangeMusicXml(composition, "layers")!;
+        score.Load(xml, composition);
+        review.Load();
+        Assert.Equal(before - 1, review.AllItems.Count);
+        var doc = score.Document!;
+        var moved = doc.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
+            .FirstOrDefault(e => e.TimeS is { } t && Math.Abs(t - source.Value.Note.OnsetS!.Value) < 0.01 && e.Concert is { } c
+                                 && Announcer.Midi(c) % 12 == (oldPitch + 1) % 12);
+        Assert.NotNull(moved);
+        Assert.False(moved.IsUncertain);
+        log.WriteLine($"changed bar {item.BarNumber} from {oldPitch} to {oldPitch + 1}; {before} → {review.AllItems.Count} notes to check");
+    }
+
+    private sealed class QuietAnnouncer : Services.IAnnouncer
+    {
+        public void Announce(string text, Services.AnnouncementKind kind = Services.AnnouncementKind.Status) { }
+    }
+
+    private sealed class InlineUi : Services.IUiDispatcher
+    {
+        public void Post(Action action) => action();
+    }
+
     [Fact]
     public void Invalid_json_raises_a_core_error()
     {
