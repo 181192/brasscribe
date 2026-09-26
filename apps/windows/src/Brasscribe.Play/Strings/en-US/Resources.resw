@@ -780,20 +780,83 @@
   <data name="Score_RenameFailed" xml:space="preserve">
     <value>Couldn't rename {0}</value>
   </data>
-  <data name="PitchDownButton.Content" xml:space="preserve">
-    <value>Lower by a semitone</value>
+  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Score options</value>
   </data>
-  <data name="PitchDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Lower pitch by one semitone</value>
+  <data name="ScoreOptions_EditTitle" xml:space="preserve">
+    <value>Edit title</value>
   </data>
-  <data name="PitchUpButton.Content" xml:space="preserve">
-    <value>Raise by a semitone</value>
+  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
+    <value>Check the notes</value>
   </data>
-  <data name="PitchUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Raise pitch by one semitone</value>
+  <data name="ScoreOptions_Delete" xml:space="preserve">
+    <value>Delete</value>
   </data>
-  <data name="PitchSaveNote.Text" xml:space="preserve">
-    <value>Pitch changes are saved to this score immediately.</value>
+  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
+    <value>Delete “{0}”?</value>
+  </data>
+  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
+    <value>The score is removed from this PC.</value>
+  </data>
+  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
+    <value>The score is removed from your computer.</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · On your computer</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Deleted {0}</value>
+  </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Couldn't delete {0}. Is your computer on?</value>
+  </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Change note</value>
+  </data>
+  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
+    <value>Change note…</value>
+  </data>
+  <data name="ReviewHowSure.Text" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
+  </data>
+  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>How sure Brasscribe is</value>
+  </data>
+  <data name="ReviewHeardHeading.Text" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="Review_WordUncertain" xml:space="preserve">
+    <value>Uncertain</value>
+  </data>
+  <data name="Review_WordVeryUncertain" xml:space="preserve">
+    <value>Very uncertain</value>
+  </data>
+  <data name="Review_LevelAlternative" xml:space="preserve">
+    <value>{0}: it could also be {1}.</value>
+  </data>
+  <data name="Review_HeardSame" xml:space="preserve">
+    <value>Same, {0}</value>
+  </data>
+  <data name="Review_HeardNothing" xml:space="preserve">
+    <value>No note</value>
+  </data>
+  <data name="Review_Changed" xml:space="preserve">
+    <value>Changed to {0}</value>
+  </data>
+  <data name="ChangeNote_Title" xml:space="preserve">
+    <value>Change note</value>
+  </data>
+  <data name="ChangeNote_Down" xml:space="preserve">
+    <value>Down a semitone</value>
+  </data>
+  <data name="ChangeNote_Up" xml:space="preserve">
+    <value>Up a semitone</value>
+  </data>
+  <data name="ChangeNote_Heard" xml:space="preserve">
+    <value>What each transcriber heard</value>
+  </data>
+  <data name="ChangeNote_Save" xml:space="preserve">
+    <value>Save</value>
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>All parts, or one part as a page (P)</value>

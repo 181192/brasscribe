@@ -21,6 +21,14 @@ class SavedScoreLibraryTest {
             assertEquals("<score-partwise/>", library.list().single().musicXml)
             assertEquals("{\"title\":\"First take\"}", library.list().single().compositionJson)
             assertNull(library.rename("missing", "Unused"))
+
+            val fromComputer = library.save(null, "Take", "brass-band", "<x/>", null, jobId = "run-1", evidenceJson = "{}", checked = setOf("melody:3"))
+            val renamedComputer = library.rename(fromComputer.id, "Take 2")!!
+            assertEquals("run-1", renamedComputer.jobId)
+            assertEquals("{}", library.list().first { it.id == fromComputer.id }.evidenceJson)
+            assertEquals(setOf("melody:3"), library.list().first { it.id == fromComputer.id }.checked)
+            library.delete(fromComputer.id)
+            assertEquals(1, library.list().size)
         } finally {
             root.deleteRecursively()
         }

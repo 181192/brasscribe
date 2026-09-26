@@ -212,13 +212,19 @@
             "title": "Key"
           },
           "lineup": {
-            "default": "full",
-            "enum": [
-              "full",
-              "minimal"
+            "anyOf": [
+              {
+                "enum": [
+                  "full",
+                  "minimal"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Lineup",
-            "type": "string"
+            "title": "Lineup"
           },
           "profile": {
             "default": "orchestra-with-soloist",
@@ -527,6 +533,31 @@
         "title": "Dataset",
         "type": "object"
       },
+      "Evidence": {
+        "description": "What each transcriber heard at the notes Brasscribe is unsure about (confidence below 0.7).",
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelInfo"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteEvidence"
+            },
+            "title": "Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "models",
+          "notes"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
       "FileRef": {
         "properties": {
           "bytes": {
@@ -786,14 +817,26 @@
             "title": "Key"
           },
           "lineup": {
-            "default": "full",
-            "description": "full: the 18-part brass band; minimal: the 8-part minimal band",
-            "enum": [
-              "full",
-              "minimal"
+            "anyOf": [
+              {
+                "enum": [
+                  "full",
+                  "minimal"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Lineup",
-            "type": "string"
+            "description": "full: the 18-part brass band; minimal: the 8-part minimal band; default: the profile's (minimal for solo, full otherwise)",
+            "title": "Lineup"
+          },
+          "muscriptor": {
+            "default": true,
+            "description": "solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
+            "title": "Muscriptor",
+            "type": "boolean"
           },
           "path": {
             "anyOf": [
@@ -968,6 +1011,63 @@
         "title": "ModelFile",
         "type": "object"
       },
+      "ModelHeard": {
+        "properties": {
+          "agrees": {
+            "title": "Agrees",
+            "type": "boolean"
+          },
+          "model": {
+            "description": "adapter id, e.g. basic-pitch",
+            "title": "Model",
+            "type": "string"
+          },
+          "name": {
+            "description": "display name, e.g. Basic Pitch",
+            "title": "Name",
+            "type": "string"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "concert MIDI pitch this model heard at the note's onset; null: no note",
+            "title": "Pitch"
+          }
+        },
+        "required": [
+          "model",
+          "name",
+          "agrees"
+        ],
+        "title": "ModelHeard",
+        "type": "object"
+      },
+      "ModelInfo": {
+        "properties": {
+          "model": {
+            "description": "adapter id, e.g. basic-pitch",
+            "title": "Model",
+            "type": "string"
+          },
+          "name": {
+            "description": "display name, e.g. Basic Pitch",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "name"
+        ],
+        "title": "ModelInfo",
+        "type": "object"
+      },
       "Note": {
         "additionalProperties": true,
         "properties": {
@@ -1027,6 +1127,55 @@
           "dur"
         ],
         "title": "Note",
+        "type": "object"
+      },
+      "NoteEvidence": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelHeard"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "onset_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onset S"
+          },
+          "pitch": {
+            "description": "concert MIDI pitch Brasscribe wrote",
+            "title": "Pitch",
+            "type": "integer"
+          },
+          "start": {
+            "description": "Composition tick of the note",
+            "title": "Start",
+            "type": "integer"
+          },
+          "voice": {
+            "title": "Voice",
+            "type": "string"
+          }
+        },
+        "required": [
+          "voice",
+          "start",
+          "pitch",
+          "confidence",
+          "models"
+        ],
+        "title": "NoteEvidence",
         "type": "object"
       },
       "PairRequest": {
@@ -1294,6 +1443,22 @@
           "notes"
         ],
         "title": "RoundtripPart",
+        "type": "object"
+      },
+      "RunUpdate": {
+        "properties": {
+          "title": {
+            "description": "new title for the score",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "RunUpdate",
         "type": "object"
       },
       "Source": {
@@ -2897,6 +3062,65 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/evidence": {
+      "get": {
+        "description": "Per uncertain note: its confidence and the pitch each transcriber heard, for the apps' Check the notes.",
+        "operationId": "getJobEvidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Evidence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Evidence",
+        "tags": [
+          "results"
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/input": {
       "get": {
         "description": "The job's original input audio (for A/B listening).",
@@ -4147,6 +4371,79 @@
           }
         },
         "summary": "Delete Run",
+        "tags": [
+          "jobs"
+        ]
+      },
+      "patch": {
+        "description": "Rename a finished score: the title in its manifest, Composition and MusicXML.",
+        "operationId": "updateRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "unknown run"
+          },
+          "409": {
+            "description": "run is queued or running"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Run",
         "tags": [
           "jobs"
         ]

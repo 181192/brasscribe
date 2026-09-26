@@ -31,18 +31,25 @@ public static class MusicXmlNoteEditor
             .Where(n => n.Element(ns + "grace") is null && n.Element(ns + "cue") is null).ToList();
         if (noteIndex < 0 || noteIndex >= notes.Count) throw new ArgumentOutOfRangeException(nameof(noteIndex));
         var pitch = notes[noteIndex].Element(ns + "pitch") ?? throw new InvalidOperationException("Selected MusicXML note is not pitched");
-        int pitchClass = ((midi % 12) + 12) % 12;
-        var (step, alter) = (fifths < 0 ? Flats : Sharps)[pitchClass];
+        var spelled = Spell(midi, fifths);
         var stepElement = pitch.Element(ns + "step") ?? new XElement(ns + "step");
         var octaveElement = pitch.Element(ns + "octave") ?? new XElement(ns + "octave");
         pitch.Elements(ns + "alter").Remove();
-        stepElement.Value = step;
-        octaveElement.Value = ((midi - pitchClass) / 12 - 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        stepElement.Value = spelled.Step;
+        octaveElement.Value = spelled.Octave.ToString(System.Globalization.CultureInfo.InvariantCulture);
         pitch.Elements().Where(e => e.Name != ns + "step" && e.Name != ns + "octave").Remove();
         stepElement.Remove(); octaveElement.Remove();
         pitch.Add(stepElement);
-        if (alter != 0) pitch.Add(new XElement(ns + "alter", alter));
+        if (spelled.Alter != 0) pitch.Add(new XElement(ns + "alter", spelled.Alter));
         pitch.Add(octaveElement);
         return document.ToString(SaveOptions.DisableFormatting);
+    }
+
+    /// <summary>A MIDI pitch spelled with sharps, or with flats in flat keys.</summary>
+    public static TalkingScore.TsPitch Spell(int midi, int fifths)
+    {
+        int pitchClass = ((midi % 12) + 12) % 12;
+        var (step, alter) = (fifths < 0 ? Flats : Sharps)[pitchClass];
+        return new TalkingScore.TsPitch(step, alter, (midi - pitchClass) / 12 - 1);
     }
 }

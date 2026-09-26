@@ -58,6 +58,8 @@ data class JobCreate(
     val key: String? = null,
     /** Semitones, -11..11; exclusive with [key]. */
     val transpose: Int? = null,
+    /** Solo profile: confirm SwiftF0 with MuScriptor; false uses Basic Pitch, as on device. */
+    val muscriptor: Boolean = true,
 )
 
 @Serializable
@@ -121,6 +123,37 @@ data class Artifact(
     @SerialName("media_type") val mediaType: String,
     val url: String,
 )
+
+@Serializable
+data class ModelInfo(val model: String, val name: String)
+
+/** What one transcriber heard at a note: its concert pitch (null: no note there) and whether it agrees. */
+@Serializable
+data class ModelHeard(val model: String, val name: String, val agrees: Boolean, val pitch: Int? = null)
+
+@Serializable
+data class NoteEvidence(
+    val voice: String,
+    val start: Int,
+    val pitch: Int,
+    val confidence: Double,
+    val models: List<ModelHeard>,
+    @SerialName("onset_s") val onsetS: Double? = null,
+) {
+    /** The pitch the disagreeing models heard most often, as a shift from the written note. */
+    val alternativeShift: Int?
+        get() = models.filter { !it.agrees }.mapNotNull { it.pitch }.groupingBy { it }.eachCount()
+            .maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { -kotlin.math.abs(it.key - pitch) })?.key?.minus(pitch)
+}
+
+/** GET /v1/jobs/{id}/evidence: what each transcriber heard at the notes Brasscribe is unsure about. */
+@Serializable
+data class Evidence(val models: List<ModelInfo>, val notes: List<NoteEvidence>) {
+    companion object { val EMPTY = Evidence(emptyList(), emptyList()) }
+}
+
+@Serializable
+data class RunUpdate(val title: String)
 
 /** One Server-Sent Event of /v1/jobs/{id}/events (the `data:` payload). */
 @Serializable

@@ -107,6 +107,58 @@ public sealed partial class ReviewPage : Page, IScreenPage
         }
     }
 
+    /// <summary>
+    /// "Change note…": the note moved by semitones or to what a transcriber heard; Save writes the score
+    /// and keeps the note (the same on every platform).
+    /// </summary>
+    private async void OnChangeNote(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Current is null) return;
+        var strings = App.Strings;
+        int shift = 0;
+        var name = new TextBlock { Style = (Style)Application.Current.Resources["BcTitle1TextBlockStyle"], HorizontalAlignment = HorizontalAlignment.Center };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(name, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        var choices = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        void Update()
+        {
+            name.Text = ViewModel.ChangeLabel(shift);
+            foreach (var child in choices.Children.OfType<ToggleButton>()) child.IsChecked = (int)child.Tag == shift;
+        }
+        var down = new Button { Content = strings["ChangeNote_Down"], Style = (Style)Application.Current.Resources["SecondaryButtonStyle"] };
+        var up = new Button { Content = strings["ChangeNote_Up"], Style = (Style)Application.Current.Resources["SecondaryButtonStyle"] };
+        down.Click += (_, _) => { shift--; Update(); };
+        up.Click += (_, _) => { shift++; Update(); };
+        foreach (var choice in ViewModel.ChangeChoices())
+        {
+            var chip = new ToggleButton { Content = choice.Label, Tag = choice.Shift };
+            chip.Click += (_, _) => { shift = choice.Shift; Update(); };
+            choices.Children.Add(chip);
+        }
+        var content = new StackPanel { Spacing = 16, MinWidth = 360 };
+        content.Children.Add(name);
+        var steps = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
+        steps.Children.Add(down);
+        steps.Children.Add(up);
+        content.Children.Add(steps);
+        if (choices.Children.Count > 0)
+        {
+            content.Children.Add(new TextBlock { Text = strings["ChangeNote_Heard"], Style = (Style)Application.Current.Resources["OverlineStyle"] });
+            content.Children.Add(choices);
+        }
+        Update();
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = strings["ChangeNote_Title"],
+            Content = content,
+            PrimaryButtonText = strings["ChangeNote_Save"],
+            CloseButtonText = strings["Score_CancelTitle"],
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary) ViewModel.ChangeNote(shift);
+        else ChangeNoteButton.Focus(FocusState.Programmatic);
+    }
+
     /// <summary>K keeps and Space listens, only while single-key shortcuts are on (WCAG 2.1.4) and no text box or list item has focus.</summary>
     private bool SingleKeysAllowed(bool space) =>
         Main.Settings.SingleKeyShortcuts

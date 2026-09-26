@@ -82,6 +82,7 @@ struct RootView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
+        .scoreOptionDialogs()
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
         .sheet(isPresented: $app.showSettings) { SettingsView() }
         #if os(macOS)
@@ -162,16 +163,19 @@ struct LibrarySidebar: View {
                     .accessibilityIdentifier("sidebarHome")
                 SectionLabel(String(localized: "Your scores"))
                     .padding(.horizontal, Space.s3).padding(.top, Space.s5).padding(.bottom, Space.s1)
-                if app.pieces.isEmpty {
+                if app.scores.isEmpty {
                     Text("Your scores appear here.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                         .padding(.horizontal, Space.s3)
                 }
-                ForEach(app.pieces) { p in
-                    row(title: p.title, icon: BrasscribeIcon.score.systemName, selected: openPiece == p.id) { app.open(p) }
-                        .contextMenu {
-                            Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: BrasscribeIcon.delete.systemName) }
-                        }
-                        .accessibilityIdentifier("sidebar-\(p.title)")
+                ForEach(app.scores) { entry in
+                    HStack(spacing: Space.s1) {
+                        row(title: entry.title, icon: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName,
+                            selected: entry.piece?.id == openPiece && openPiece != nil) { app.open(entry) }
+                        if app.openingScore == entry.id { ProgressView().controlSize(.small) }
+                        ScoreOptionsMenu(entry: entry)
+                    }
+                    .contextMenu { ScoreOptionItems(entry: entry) }
+                    .accessibilityIdentifier("sidebar-\(entry.title)")
                 }
             }
             .padding(Space.s3)
@@ -180,6 +184,7 @@ struct LibrarySidebar: View {
         .background(Color.Brasscribe.surface)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Library"))
+        .task { await app.refreshComputerScores() }
         .navigationTitle(Text(verbatim: "Brasscribe Play"))
         #if os(macOS)
         .toolbar(removing: .title)

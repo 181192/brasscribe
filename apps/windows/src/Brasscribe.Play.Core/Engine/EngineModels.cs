@@ -23,7 +23,8 @@ public sealed record JobCreate(
     string Lineup = "full",
     string Difficulty = "faithful",
     string? Key = null,
-    int? Transpose = null);
+    int? Transpose = null,
+    bool Muscriptor = true);
 
 /// <summary>Arrangement choices a job can carry: lineup full|minimal, difficulty faithful|standard|easier, a target key or a transposition.</summary>
 public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null)
@@ -77,6 +78,42 @@ public sealed record PairRequest(string Code, string? DeviceName = null);
 
 public sealed record PairResponse(string Token);
 
+public sealed record ModelInfo(string Model, string Name);
+
+/// <summary>What one transcriber heard at a note: its concert pitch (null: no note there) and whether it agrees.</summary>
+public sealed record ModelHeard(string Model, string Name, bool Agrees, int? Pitch = null);
+
+/// <summary>An uncertain note: its confidence and what each transcriber heard at its onset.</summary>
+public sealed record NoteEvidence(string Voice, int Start, int Pitch, double Confidence, IReadOnlyList<ModelHeard> Models, double? OnsetS = null)
+{
+    /// <summary>The pitch the disagreeing transcribers heard most often, as a shift from the written note.</summary>
+    [JsonIgnore]
+    public int? AlternativeShift => Models.Where(m => !m.Agrees && m.Pitch is not null)
+        .GroupBy(m => m.Pitch!.Value)
+        .OrderByDescending(g => g.Count()).ThenBy(g => Math.Abs(g.Key - Pitch))
+        .Select(g => (int?)(g.Key - Pitch)).FirstOrDefault();
+}
+
+/// <summary>GET /v1/jobs/{id}/evidence: what each transcriber heard at the notes Brasscribe is unsure about.</summary>
+public sealed record Evidence(IReadOnlyList<ModelInfo> Models, IReadOnlyList<NoteEvidence> Notes)
+{
+    public static readonly Evidence Empty = new([], []);
+
+    /// <summary>The evidence for the note at <paramref name="start"/> in <paramref name="voice"/> with this pitch class.</summary>
+    public NoteEvidence? NoteAt(string voice, int start, int pitch) =>
+        Notes.FirstOrDefault(n => n.Voice == voice && n.Start == start && ((n.Pitch - pitch) % 12 + 12) % 12 == 0);
+
+    public static string Serialize(Evidence e) => JsonSerializer.Serialize(e, EngineJsonContext.Default.Evidence);
+
+    public static Evidence? Parse(string json)
+    {
+        try { return JsonSerializer.Deserialize(json, EngineJsonContext.Default.Evidence); }
+        catch (JsonException) { return null; }
+    }
+}
+
+public sealed record RunUpdate(string Title);
+
 /// <summary>One Server-Sent Event payload (the data: line). type is job, stage or log.</summary>
 public sealed record JobEvent(
     int Id,
@@ -105,4 +142,6 @@ public sealed record JobEvent(
 [JsonSerializable(typeof(PairResponse))]
 [JsonSerializable(typeof(JobEvent))]
 [JsonSerializable(typeof(Composition))]
+[JsonSerializable(typeof(Evidence))]
+[JsonSerializable(typeof(RunUpdate))]
 internal sealed partial class EngineJsonContext : JsonSerializerContext;

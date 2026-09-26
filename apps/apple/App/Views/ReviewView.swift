@@ -1,406 +1,289 @@
+import NotationKit
 import ScoreKit
-import TranscriptionKit
 import SwiftUI
+import TranscriptionKit
 
-/// Check the notes: one uncertain note at a time, with Listen, Skip and the primary
-/// "Keep, go to next". Leaving early is "Finish later (N left)" and confirms first; the
-/// score view's "Check them" line brings the musician back.
+/// "Check the notes" (design/system.md, Review list): one uncertain note at a time with its bars,
+/// how sure Brasscribe is, what each transcriber heard, Listen / Change note…, then Skip or Keep.
 struct ReviewView: View {
     @Environment(AppModel.self) private var app
-    @Environment(\.horizontalSizeClass) private var hsize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let piece: Piece
+
     @State private var model: PracticeModel?
+    @State private var xml = ""
     @State private var items: [ReviewItem] = []
     @State private var checked: Set<String> = []
-    @State private var skipped: Set<String> = []
-    @State private var currentID: String?
-    @State private var confirmLeave = false
-    @State private var showAll = false
-    @State private var filter: Filter = .mine
+    @State private var current: ReviewItem.ID?
+    @State private var evidence: NoteEvidence?
+    @State private var composition: Composition?
     @State private var changing: ReviewItem?
-    @State private var changeFailed = false
-    @State private var snippetVersion = 0
+    @State private var confirmLater = false
+    @State private var loadError: String?
+    @State private var filter: Filter = .mine
 
     /// Triage: your own part first (very unsure first), then the other parts, then all.
     enum Filter: Hashable { case mine, others, all }
-    @AccessibilityFocusState private var headingFocused: Bool
 
     private var wide: Bool {
         #if os(macOS)
         true
         #else
-        hsize == .regular
+        horizontalSizeClass == .regular
         #endif
     }
 
     /// Every note still to check, in every part.
-    private var allRemaining: [ReviewItem] { items.filter { !checked.contains($0.id) } }
-
+    private var allOpen: [ReviewItem] { items.filter { !checked.contains($0.id) } }
     private var myPartID: String? { model?.myPart }
 
-    /// The notes still to check under the chosen filter. In your part the very unsure come first.
-    private var remaining: [ReviewItem] {
+    /// The notes still to check under the chosen filter; in your part the very unsure come first.
+    private var open: [ReviewItem] {
         switch filter {
         case .mine:
-            return allRemaining.filter { $0.partID == myPartID }
+            return allOpen.filter { $0.partID == myPartID }
                 .sorted { ($0.level == .veryUncertain ? 0 : 1, $0.bar, $0.tick) < ($1.level == .veryUncertain ? 0 : 1, $1.bar, $1.tick) }
-        case .others: return allRemaining.filter { $0.partID != myPartID }
-        case .all: return allRemaining
+        case .others: return allOpen.filter { $0.partID != myPartID }
+        case .all: return allOpen
         }
     }
 
     private func count(_ f: Filter) -> Int {
         switch f {
-        case .mine: return allRemaining.filter { $0.partID == myPartID }.count
-        case .others: return allRemaining.filter { $0.partID != myPartID }.count
-        case .all: return allRemaining.count
+        case .mine: return allOpen.filter { $0.partID == myPartID }.count
+        case .others: return allOpen.filter { $0.partID != myPartID }.count
+        case .all: return allOpen.count
         }
     }
-    private var current: ReviewItem? {
-        if let currentID, let i = items.first(where: { $0.id == currentID }), !checked.contains(i.id) { return i }
-        return remaining.first { !skipped.contains($0.id) } ?? remaining.first
-    }
+
+    private var item: ReviewItem? { open.first { $0.id == current } ?? open.first }
 
     var body: some View {
         Group {
-            if let model {
-                if wide {
-                    HStack(spacing: 0) {
-                        sidebar(model)
-                            .frame(width: BrasscribeDesign.Size.sidebarWidth)
-                        Divider()
-                        ScrollView { detail(model).padding(Space.s8).readingColumn() }
-                    }
-                } else {
-                    ScrollView { detail(model).padding(.horizontal, Space.s5).padding(.vertical, Space.s4) }
-                        .safeAreaInset(edge: .bottom) { phoneActions(model) }
+            if let loadError {
+                ContentUnavailableView("Couldn't open the notes", systemImage: "exclamationmark.triangle", description: Text(loadError))
+            } else if model == nil {
+                ProgressView()
+            } else if allOpen.isEmpty {
+                allChecked
+            } else if wide {
+                HStack(spacing: 0) {
+                    noteList.frame(width: 280)
+                    Divider()
+                    ScrollView { detail.padding(Space.s8).readingColumn() }
                 }
             } else {
-                ProgressView()
+                ScrollView { VStack(alignment: .leading, spacing: Space.s5) { detail; stillToCheck }.padding(Space.s5) }
             }
         }
         .pageBackground()
-        .navigationTitle(Text(piece.title))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .navigationTitle(Text("\(piece.title) · Check the notes"))
         .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button {
-                    if allRemaining.isEmpty { finish() } else { confirmLeave = true }
-                } label: {
-                    Text(allRemaining.isEmpty ? String(localized: "Continue") : String(localized: "Finish later (\(allRemaining.count) left)"))
+            if !allOpen.isEmpty {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Finish later (\(allOpen.count) left)") { confirmLater = true }
+                        .accessibilityIdentifier("openScore")
                 }
-                .accessibilityIdentifier("openScore")
             }
         }
-        .alert(String(localized: "Finish checking later?"), isPresented: $confirmLeave) {
-            Button(String(localized: "Finish later")) { finish() }
-            Button(String(localized: "Keep checking"), role: .cancel) {}
+        .safeAreaInset(edge: .bottom) { if !allOpen.isEmpty, item != nil { actionBar } }
+        .alert("Finish checking later?", isPresented: $confirmLater) {
+            Button("Finish later") { finish() }
+            Button("Keep checking", role: .cancel) {}
         } message: {
-            Text(allRemaining.count == 1
-                 ? String(localized: "1 note keeps its ? mark. You can check it any time from the score: tap “Check them”.")
-                 : String(localized: "\(allRemaining.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”."))
+            Text("\(allOpen.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”.")
         }
-        .task {
-            guard model == nil, let m = try? PracticeModel(piece: piece) else { return }
-            m.start()
-            model = m
-            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
-            checked = piece.loadChecked()
-            if count(.mine) == 0 { filter = .all }
-            headingFocused = true
+        .sheet(item: $changing) { target in
+            ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { reload(keeping: target) }
         }
+        .task { load() }
         .onDisappear { model?.stopAll() }
-        .sheet(item: $changing) { c in
-            ChangeNoteSheet(current: pitchName(c, model!), options: changeOptions(c)) { delta in change(c, by: delta) }
-        }
-        .alert(String(localized: "The note couldn't be changed"), isPresented: $changeFailed) {
-            Button("OK") {}
-        } message: { Text("The score is as it was. Try again, or keep the note and fix it later.") }
-        .onKeyPress(.space) { if let c = current, let model { listen(c, model) }; return .handled }
-        .onKeyPress("k") { if let c = current { keep(c) }; return .handled }
-        .onKeyPress(.downArrow) { move(1); return .handled }
-        .onKeyPress(.upArrow) { move(-1); return .handled }
     }
 
-    // MARK: detail
+    // MARK: list
 
-    @ViewBuilder private func detail(_ model: PracticeModel) -> some View {
-        VStack(alignment: .leading, spacing: Space.s5) {
-            VStack(alignment: .leading, spacing: Space.s2) {
-                DisplayTitle(text: headline)
-                    .accessibilityFocused($headingFocused)
-                Text(subline(model))
-                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !allRemaining.isEmpty {
-                    Segmented(label: String(localized: "Which notes"), selection: $filter,
-                              options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
-                                        (Filter.others, String(localized: "Other parts (\(count(.others)))")),
-                                        (Filter.all, String(localized: "All parts (\(count(.all)))"))])
-                    .accessibilityIdentifier("reviewFilter")
-                }
-                if !items.isEmpty && !wide { UncertaintyLegend().font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted) }
-            }
-
-            if let c = current {
-                noteCard(c, model)
-                if wide { wideActions(c, model) }
-                if !wide { stillToCheck(model) }
-            } else if items.isEmpty {
-                NoticeBox(systemImage: BrasscribeIcon.done.systemName, text: String(localized: "Brasscribe was sure about every note."))
-            }
-
-            if let free = model.freeTimeBars.first {
-                HelperLine(systemImage: BrasscribeIcon.info.systemName, text: freeTimeText(free))
-            }
-            if wide {
-                Text("Keyboard: Space listens, K keeps, the arrow keys move between notes.")
-                    .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
-            }
-        }
-    }
-
-    private var headline: String {
-        if allRemaining.isEmpty { return String(localized: "Every note is checked") }
-        if filter == .mine, count(.mine) > 0 { return String(localized: "Check your part first") }
-        return remaining.count == 1 ? String(localized: "Check 1 note") : String(localized: "Check \(remaining.count) notes")
-    }
-
-    private func subline(_ model: PracticeModel) -> String {
-        if allRemaining.isEmpty { return String(localized: "Next, choose how the score should be.") }
-        if filter == .mine, let id = myPartID, let part = model.score.part(id: id), count(.mine) > 0 {
-            let n = count(.mine), v = remaining.filter { $0.level == .veryUncertain }.count
-            let notes = n == 1 ? String(localized: "1 note in \(part.displayName)") : String(localized: "\(n) notes in \(part.displayName)")
-            return v == 0 ? notes + "." : notes + ", " + (v == 1 ? String(localized: "1 very unsure, first.") : String(localized: "\(v) very unsure, first."))
-        }
-        return String(localized: "Brasscribe wasn't sure about these. Listen, then keep, change or skip each one.")
-    }
-
-    private func noteCard(_ c: ReviewItem, _ model: PracticeModel) -> some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(model.barLabel(c.bar)) · \(c.partName)").font(Font.Brasscribe.title2)
-                Spacer()
-                if let i = remaining.firstIndex(of: c) {
-                    Text("\(i + 1) of \(remaining.count)").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted).monospacedDigit()
-                }
-            }
-            BarSnippet(piece: piece, partID: c.partID, bar: c.bar, tick: c.tick)
-                .id(snippetVersion)
-            HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                UncertainMark(level: c.level)
-                Text("\(Text(noteText(c, model) + ".").foregroundStyle(Color.Brasscribe.text)) \(Text(c.level == .veryUncertain ? String(localized: "Very uncertain.") : String(localized: "Uncertain.")).foregroundStyle(Color.Brasscribe.textMuted))")
-                    .font(Font.Brasscribe.body)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if !wide {
-                ViewThatFits {
-                    HStack(spacing: Space.s3) { listenButtons(c, model) }
-                    VStack(spacing: Space.s3) { listenButtons(c, model) }
-                }
-            }
-        }
-        .card(padding: Space.s5)
-        .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder private func listenButtons(_ c: ReviewItem, _ model: PracticeModel) -> some View {
-        Button { listen(c, model) } label: { Label("Listen to bar", systemImage: BrasscribeIcon.listenBar.systemName) }
-            .buttonStyle(SecondaryButtonStyle(fullWidth: !wide, minHeight: 48))
-            .accessibilityHint(model.hasOriginal ? Text("Plays this bar from the recording, again and again.") : Text("Plays this bar from the score, again and again."))
-        Button { changing = c } label: { Text("Change note…") }
-            .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide, minHeight: 48))
-            .accessibilityIdentifier("changeNote")
-    }
-
-    private func wideActions(_ c: ReviewItem, _ model: PracticeModel) -> some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            HStack(spacing: Space.s3) { listenButtons(c, model) }
-            Divider().overlay(Color.Brasscribe.border)
-            HStack(spacing: Space.s3) {
-                Spacer()
-                Button { confirmLeave = true } label: { Text("Finish later (\(allRemaining.count) left)") }.buttonStyle(.plainText)
-                Button { skip(c) } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
-                    .buttonStyle(SecondaryButtonStyle(minHeight: 48))
-                Button { keep(c) } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
-                    .buttonStyle(.primary)
-                    .accessibilityIdentifier("keepNote")
-            }
-        }
-    }
-
-    private func phoneActions(_ model: PracticeModel) -> some View {
-        HStack(spacing: Space.s3) {
-            if let c = current {
-                Button { skip(c) } label: { Text("Skip") }
-                    .buttonStyle(SecondaryButtonStyle(minHeight: 52))
-                Button { keep(c) } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
-                    .buttonStyle(.primaryWide)
-                    .accessibilityIdentifier("keepNote")
-            } else {
-                Button { finish() } label: { Text("Continue") }.buttonStyle(.primaryWide)
-            }
-        }
-        .padding(.horizontal, Space.s5)
-        .padding(.vertical, Space.s3)
-        .background(Color.Brasscribe.bg.opacity(0.95))
-    }
-
-    @ViewBuilder private func stillToCheck(_ model: PracticeModel) -> some View {
-        let rest = remaining.filter { $0.id != current?.id }
-        if !rest.isEmpty {
-            VStack(alignment: .leading, spacing: Space.s3) {
-                SectionLabel(String(localized: "Still to check"))
-                VStack(spacing: 0) {
-                    let shown = showAll ? rest : Array(rest.prefix(3))
-                    ForEach(Array(shown.enumerated()), id: \.element.id) { i, item in
-                        if i > 0 { Divider().overlay(Color.Brasscribe.border) }
-                        Button { currentID = item.id } label: { row(item, model) }.buttonStyle(.plain)
-                    }
-                    if !showAll, rest.count > 3 {
-                        Divider().overlay(Color.Brasscribe.border)
-                        Button { showAll = true } label: {
-                            HStack {
-                                Text("+ \(rest.count - 3) more").font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                Spacer()
-                                Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Brasscribe.textMuted)
-                            }
-                            .padding(.horizontal, Space.s4).frame(minHeight: 56).contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .card(padding: 0)
-            }
-        }
-    }
-
-    private func row(_ item: ReviewItem, _ model: PracticeModel) -> some View {
-        HStack(spacing: Space.s3) {
-            Text(model.barLabel(item.bar)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-            Text("\(item.partName) · \(noteText(item, model))").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                .lineLimit(2)
-            Spacer(minLength: Space.s2)
-            UncertainMark(level: item.level)
-        }
-        .padding(.horizontal, Space.s4)
-        .frame(minHeight: 56)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(item.level == .veryUncertain ? Text("Very uncertain") : Text("Uncertain"))
-    }
-
-    // MARK: desktop sidebar
-
-    private func sidebar(_ model: PracticeModel) -> some View {
-        List(selection: Binding(get: { current?.id }, set: { currentID = $0 })) {
+    private var noteList: some View {
+        List(selection: Binding(get: { item?.id }, set: { current = $0 })) {
             Section {
-                UncertaintyLegend().font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                UncertaintyLegend().font(Font.Brasscribe.callout)
             } header: {
-                Text(remaining.count == 1 ? String(localized: "1 note to check") : String(localized: "\(remaining.count) notes to check"))
+                SectionLabel(items.count == 1 ? String(localized: "1 note to check") : String(localized: "\(items.count) notes to check"))
             }
-            ForEach(partsWithItems, id: \.self) { part in
-                Section {
-                    ForEach(items.filter { $0.partName == part }) { item in
-                        HStack(spacing: Space.s2) {
-                            if checked.contains(item.id) {
-                                Image(systemName: BrasscribeIcon.markChecked.systemName).foregroundStyle(Color.Brasscribe.textMuted)
-                                    .accessibilityLabel(Text("Kept"))
+            ForEach(Dictionary(grouping: items, by: \.partIndex).sorted { $0.key < $1.key }, id: \.key) { _, group in
+                Section(group[0].partName) {
+                    ForEach(group) { it in
+                        HStack(spacing: Space.s3) {
+                            if checked.contains(it.id) {
+                                Image(systemName: BrasscribeIcon.done.systemName).foregroundStyle(Color.Brasscribe.textMuted).frame(width: 24)
                             } else {
-                                UncertainMark(level: item.level)
+                                UncertainMark(level: it.level).frame(width: 24)
                             }
-                            Text("\(model.barLabel(item.bar)) · \(pitchName(item, model))")
-                                .foregroundStyle(checked.contains(item.id) ? Color.Brasscribe.textMuted : Color.Brasscribe.text)
+                            Text("\(barLabel(it)) · \(pitchName(it))")
+                                .foregroundStyle(checked.contains(it.id) ? Color.Brasscribe.textMuted : Color.Brasscribe.text)
                         }
-                        .tag(item.id)
+                        .frame(minHeight: 44)
+                        .tag(it.id)
+                        .accessibilityLabel(Text("\(barLabel(it)), \(pitchName(it)), \(levelWords(it))"))
                     }
-                } header: { Text(part) }
+                }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.Brasscribe.surface)
+        #if os(macOS)
+        .listStyle(.sidebar)
+        #endif
     }
 
-    private var partsWithItems: [String] {
-        var seen = Set<String>()
-        let names = items.map(\.partName).filter { seen.insert($0).inserted }
-        let mine = items.first { $0.partID == myPartID }?.partName
-        return (mine.map { [$0] } ?? []) + names.filter { $0 != mine }
+    private var stillToCheck: some View {
+        let rest = open.filter { $0.id != item?.id }
+        return Group {
+            if !rest.isEmpty {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    SectionLabel(String(localized: "Still to check"))
+                    VStack(spacing: 0) {
+                        ForEach(Array(rest.prefix(4).enumerated()), id: \.element.id) { i, it in
+                            if i > 0 { Divider().overlay(Color.Brasscribe.border) }
+                            Button { current = it.id } label: {
+                                HStack(spacing: Space.s3) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(barLabel(it)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                                        Text("\(it.partName) · \(noteWords(it))").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                    }
+                                    Spacer()
+                                    UncertainMark(level: it.level)
+                                }
+                                .padding(.horizontal, Space.s4).frame(minHeight: 60).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        if rest.count > 4 {
+                            Divider().overlay(Color.Brasscribe.border)
+                            Text("+ \(rest.count - 4) more").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                .padding(.horizontal, Space.s4).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                        }
+                    }
+                    .card(padding: 0)
+                }
+            }
+        }
+    }
+
+    // MARK: the note
+
+    @ViewBuilder private var detail: some View {
+        if let it = item, let model {
+            let index = (open.firstIndex { $0.id == it.id } ?? 0) + 1
+            VStack(alignment: .leading, spacing: Space.s4) {
+                triage
+                SectionLabel(String(localized: "\(index) of \(open.count) · \(it.partName)"))
+                DisplayTitle(text: barLabel(it))
+                BarSnippet(xml: xml, partID: it.partID, bar: it.bar, noteTick: it.tick, level: it.level, score: model.score)
+                    .card(padding: Space.s3)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text("Written \(noteWords(it))")
+                        .font(Font.Brasscribe.title2).foregroundStyle(Color.Brasscribe.text)
+                    Text(levelSentence(it))
+                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                EvidencePanel(note: evidenceFor(it), fifths: fifths(it), part: model.score.parts[it.partIndex])
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
+                    VStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
+                }
+            }
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    /// "Check your part first: 12 notes in Solo Cornet, 4 very unsure", and which notes to show.
+    private var triage: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            if filter == .mine, let id = myPartID, let part = model?.score.part(id: id), count(.mine) > 0 {
+                let n = count(.mine), v = open.filter { $0.level == .veryUncertain }.count
+                Text("Check your part first").font(Font.Brasscribe.title2).accessibilityAddTraits(.isHeader)
+                Text(v == 0 ? String(localized: "\(n) notes in \(part.displayName).")
+                            : String(localized: "\(n) notes in \(part.displayName), \(v) very unsure, first."))
+                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+            }
+            Segmented(label: String(localized: "Which notes"), selection: $filter,
+                      options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                                (Filter.others, String(localized: "Other parts (\(count(.others)))")),
+                                (Filter.all, String(localized: "All parts (\(count(.all)))"))])
+            .accessibilityIdentifier("reviewFilter")
+        }
+    }
+
+    private func listenButton(_ it: ReviewItem) -> some View {
+        Button { model?.listen(toBar: it.bar, original: true) } label: {
+            Label("Listen to this bar", systemImage: BrasscribeIcon.listenBar.systemName).frame(maxWidth: .infinity)
+        }
+        .buttonStyle(SecondaryButtonStyle(minHeight: 48))
+        .keyboardShortcut(.space, modifiers: [])
+    }
+
+    private func changeButton(_ it: ReviewItem) -> some View {
+        Button { model?.stopAll(); changing = it } label: {
+            Label("Change note…", systemImage: "pencil").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 48))
+        .accessibilityIdentifier("changeNote")
+    }
+
+    private var actionBar: some View {
+        HStack(spacing: Space.s3) {
+            if wide {
+                Text("Space listens · K keeps").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Spacer()
+            }
+            Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
+                .buttonStyle(SecondaryButtonStyle(fullWidth: !wide, minHeight: 48))
+            Button { keep() } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
+                .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
+                .keyboardShortcut("k", modifiers: [])
+                .accessibilityIdentifier("keepNext")
+        }
+        .padding(.horizontal, wide ? Space.s8 : Space.s5)
+        .padding(.vertical, Space.s3)
+        .background(Color.Brasscribe.bg.opacity(0.97))
+    }
+
+    private var allChecked: some View {
+        VStack(spacing: Space.s4) {
+            ContentUnavailableView("All notes checked", systemImage: BrasscribeIcon.done.systemName,
+                                   description: Text("The ? marks are gone. Your score is ready to practise."))
+            Button { finish() } label: { Text("Continue") }.buttonStyle(.primary)
+                .accessibilityIdentifier("openScore")
+        }
+        .padding(Space.s8)
     }
 
     // MARK: actions
 
-    /// A semitone and an octave either way, named as written on the part.
-    private func changeOptions(_ c: ReviewItem) -> [(delta: Int, title: String)] {
-        guard let model, let n = note(c, model), case .pitched(let p) = n.kind,
-              let part = model.score.part(id: c.partID) else { return [] }
-        let fifths = part.measureFifths.indices.contains(n.measureIndex) ? part.measureFifths[n.measureIndex] : part.writtenFifths
-        func name(_ d: Int) -> String { NoteWords.pitch(SpelledPitch.spelling(midi: p.midi + d, fifths: fifths)) }
-        return [(1, String(localized: "\(name(1)), a semitone higher")), (-1, String(localized: "\(name(-1)), a semitone lower")),
-                (12, String(localized: "\(name(12)), an octave higher")), (-12, String(localized: "\(name(-12)), an octave lower"))]
-    }
-
-    private func change(_ c: ReviewItem, by delta: Int) {
-        guard let model, let n = note(c, model), let part = model.score.part(id: c.partID) else { return }
-        let fifths = part.measureFifths.indices.contains(n.measureIndex) ? part.measureFifths[n.measureIndex] : part.writtenFifths
-        model.stopAll()
-        do {
-            try app.changeNote(piece, item: c, note: n, delta: delta, fifths: fifths)
-            checked.insert(c.id)
-            BarSnippet.forget(piece)
-            snippetVersion += 1
-            let m = try PracticeModel(piece: piece)
-            m.start()
-            self.model = m
-            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
-            advance(from: c)
-            piece.saveChecked(checked, remaining: allRemaining.count)
-            app.refresh()
-            AccessibilityNotifier.announce(String(localized: "Changed. The parts are arranged again."))
-        } catch {
-            changeFailed = true
-        }
-    }
-
-    private func listen(_ c: ReviewItem, _ model: PracticeModel) {
-        model.listen(toBar: c.bar, original: model.hasOriginal)
-    }
-
-    private func keep(_ c: ReviewItem) {
-        checked.insert(c.id)
-        advance(from: c)
-        piece.saveChecked(checked, remaining: allRemaining.count)
+    private func keep() {
+        guard let it = item else { return }
+        checked.insert(it.id)
+        piece.saveChecked(checked, remaining: allOpen.count)
         app.refresh()
-        if allRemaining.isEmpty { AccessibilityNotifier.announce(String(localized: "Every note is checked.")) }
+        advance(from: it)
     }
 
-    private func skip(_ c: ReviewItem) {
-        skipped.insert(c.id)
-        advance(from: c)
+    private func skip() { if let it = item { advance(from: it) } }
+
+    private func advance(from it: ReviewItem) {
+        model?.stopAll()
+        model?.setLoop(false)
+        if open.filter({ $0.id != it.id }).isEmpty, !allOpen.filter({ $0.id != it.id }).isEmpty { filter = .all }
+        let list = open
+        let i = list.firstIndex { $0.id == it.id } ?? 0
+        let after = i + 1 <= list.count ? Array(list[min(i + 1, list.count)...] + list[..<min(i, list.count)]) : list
+        current = after.first { !checked.contains($0.id) && $0.id != it.id }?.id
     }
 
-    private func advance(from c: ReviewItem) {
-        model?.stop()
-        if remaining.isEmpty, !allRemaining.isEmpty { filter = .all }
-        let rest = remaining
-        guard !rest.isEmpty else { currentID = nil; return }
-        let after = items.drop { $0.id != c.id }.dropFirst().first { !checked.contains($0.id) && !skipped.contains($0.id) }
-        currentID = (after ?? rest.first { !skipped.contains($0.id) } ?? rest.first)?.id
-    }
-
-    private func move(_ d: Int) {
-        let list = remaining
-        guard let c = current, let i = list.firstIndex(of: c) else { return }
-        let j = max(0, min(list.count - 1, i + d))
-        currentID = list[j].id
-    }
-
-    /// Back to the score if Review was opened from it, otherwise on to the score options.
+    /// Back to the score if Review was opened from it, otherwise on to "How should the score be?".
     private func finish() {
         model?.stopAll()
-        piece.saveChecked(checked, remaining: allRemaining.count)
+        piece.saveChecked(checked, remaining: allOpen.count)
         app.refresh()
         if app.path.count >= 2, case .score = app.path[app.path.count - 2] {
             app.path.removeLast()
@@ -411,281 +294,211 @@ struct ReviewView: View {
         }
     }
 
-    // MARK: text
+    // MARK: data
 
-    private func freeTimeText(_ r: ClosedRange<Int>) -> String {
-        r.count == 1 ? String(localized: "Bar \(r.lowerBound + 1) has no steady beat (ad lib.). Its rhythms are approximate.")
-                     : String(localized: "Bars \(r.lowerBound + 1)–\(r.upperBound + 1) have no steady beat (ad lib.). Their rhythms are approximate.")
-    }
-
-    private func note(_ c: ReviewItem, _ model: PracticeModel) -> ScoreNote? {
-        guard let part = model.score.part(id: c.partID), part.notes.indices.contains(c.noteIndex) else { return nil }
-        return part.notes[c.noteIndex]
-    }
-
-    private func pitchName(_ c: ReviewItem, _ model: PracticeModel) -> String {
-        guard let n = note(c, model), case .pitched(let p) = n.kind else { return "" }
-        return NoteWords.pitch(p)
-    }
-
-    /// "Written G, minim" (en-GB), "G, half note" (en-US), "Notert G, halvnote" (nb).
-    private func noteText(_ c: ReviewItem, _ model: PracticeModel) -> String {
-        guard let n = note(c, model), case .pitched(let p) = n.kind else { return "" }
-        let t = model.talking
-        let value = NoteWords.value(type: n.type ?? "", dots: n.dots) ?? t.durationName(type: n.type, dots: n.dots, ticks: n.durTicks)
-        return String(localized: "Written \(NoteWords.pitch(p)), \(value)")
-    }
-}
-
-/// Note names and values in the musician's words.
-enum NoteWords {
-    static var norwegian: Bool { ScoreLanguage.current == .norwegian }
-    static var american: Bool { Locale.current.region == .unitedStates }
-
-    static func pitch(_ p: SpelledPitch) -> String {
-        if norwegian {
-            switch (p.step, p.alter) {
-            case ("B", -1): return "B"
-            case ("B", 0): return "H"
-            case ("E", -1): return "Ess"
-            case ("A", -1): return "Ass"
-            case (let s, 1): return s + "iss"
-            case (let s, -1): return s + "ess"
-            case (let s, _): return s
-            }
+    private func load() {
+        guard model == nil else { return }
+        do {
+            let m = try PracticeModel(piece: piece)
+            m.start()
+            model = m
+            xml = try piece.musicXML()
+            composition = piece.loadComposition()
+            evidence = piece.loadEvidence()
+            checked = piece.loadChecked()
+            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
+            if count(.mine) == 0 { filter = .all }
+            piece.saveChecked(checked, remaining: allOpen.count)
+            app.refresh()
+        } catch {
+            loadError = error.localizedDescription
         }
-        let acc = ["-2": "𝄫", "-1": "♭", "1": "♯", "2": "𝄪"]["\(p.alter)"] ?? ""
-        return p.step + acc
     }
 
-    static func value(type: String, dots: Int) -> String? {
-        let gb = ["breve": String(localized: "breve"), "whole": String(localized: "semibreve"), "half": String(localized: "minim"),
-                  "quarter": String(localized: "crotchet"), "eighth": String(localized: "quaver"), "16th": String(localized: "semiquaver"),
-                  "32nd": String(localized: "demisemiquaver")]
-        guard !norwegian, !american, let base = gb[type] else { return nil }
-        return dots == 0 ? base : dots == 1 ? String(localized: "dotted \(base)") : String(localized: "double-dotted \(base)")
+    private func reload(keeping target: ReviewItem) {
+        model?.stopAll()
+        model = nil
+        load()
+        current = items.first { $0.partID == target.partID && $0.tick == target.tick }?.id ?? open.first?.id
+    }
+
+    // MARK: words
+
+    private func note(_ it: ReviewItem) -> ScoreNote? {
+        guard let part = model?.score.parts[safe: it.partIndex], part.notes.indices.contains(it.noteIndex) else { return nil }
+        return part.notes[it.noteIndex]
+    }
+
+    private func fifths(_ it: ReviewItem) -> Int {
+        guard let part = model?.score.parts[safe: it.partIndex] else { return 0 }
+        return part.measureFifths.indices.contains(it.bar) ? part.measureFifths[it.bar] : part.writtenFifths
+    }
+
+    private func evidenceFor(_ it: ReviewItem) -> NoteEvidence.Note? {
+        guard let n = note(it), let p = n.midiPitch else { return nil }
+        return evidence?.note(atScoreTick: n.startTick, concertPitch: p, ticksPerBeat: composition?.ticksPerBeat ?? 24)
+    }
+
+    private func barLabel(_ it: ReviewItem) -> String { model?.barLabel(it.bar) ?? "Bar \(it.bar + 1)" }
+
+    private func pitchName(_ it: ReviewItem) -> String {
+        guard let n = note(it), case .pitched(let p) = n.kind else { return "?" }
+        return ReviewWords.name(p)
+    }
+
+    private func noteWords(_ it: ReviewItem) -> String {
+        guard let n = note(it), let talk = model?.talking else { return pitchName(it) }
+        return "\(pitchName(it)), \(talk.durationName(type: n.type, dots: n.dots, ticks: n.durTicks))"
+    }
+
+    private func levelWords(_ it: ReviewItem) -> String {
+        it.level == .veryUncertain ? String(localized: "Very uncertain") : String(localized: "Uncertain")
+    }
+
+    /// "Very uncertain: it could also be an A." — the alternative comes from the transcribers that disagree.
+    private func levelSentence(_ it: ReviewItem) -> String {
+        guard let shift = evidenceFor(it)?.alternativeShift, let n = note(it), case .pitched(let p) = n.kind else {
+            return "\(levelWords(it)). " + String(localized: "Listen to the original and the score side by side.")
+        }
+        let alt = ReviewWords.name(SpelledPitch.spelling(midi: p.midi + shift, fifths: fifths(it)))
+        return "\(levelWords(it)): " + String(localized: "it could also be \(ReviewWords.withArticle(alt)).")
     }
 }
 
-/// "How should the score be?": which band, how hard, and the key. Nothing re-arranges
-/// until Show the score is pressed; unchanged choices open the score as it is.
-struct OutputView: View {
-    @Environment(AppModel.self) private var app
-    @Environment(\.horizontalSizeClass) private var hsize
-    let piece: Piece
-    @State private var lineup: Lineup = .fullBand
-    @State private var difficulty: Difficulty = .faithful
-    @State private var semitones = 0
-    @State private var recordedFifths: Int?
-    @State private var busy = false
-    @State private var failure: String?
-
-    private var wide: Bool {
-        #if os(macOS)
-        true
-        #else
-        hsize == .regular
-        #endif
-    }
+/// How sure Brasscribe is, and what each transcriber heard at this note.
+struct EvidencePanel: View {
+    let note: NoteEvidence.Note?
+    let fifths: Int
+    let part: Part
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.s6) {
-                VStack(alignment: .leading, spacing: Space.s2) {
-                    if wide { SectionLabel(String(localized: "Last step")) }
-                    DisplayTitle(text: String(localized: "How should the score be?"))
-                    Text("You can change this later. Nothing is lost.")
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+        if let note {
+            VStack(alignment: .leading, spacing: Space.s3) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("How sure Brasscribe is").font(Font.Brasscribe.headline)
+                    Spacer()
+                    Text(percentText(note.confidence * 100)).font(Font.Brasscribe.headline.monospacedDigit())
                 }
-                if wide {
-                    HStack(alignment: .top, spacing: Space.s8) {
-                        band.frame(maxWidth: .infinity)
-                        VStack(alignment: .leading, spacing: Space.s6) { hard; key }.frame(maxWidth: .infinity)
+                ProgressView(value: note.confidence)
+                    .tint(Color.Brasscribe.text)
+                    .accessibilityLabel(Text("How sure Brasscribe is"))
+                    .accessibilityValue(Text(percentText(note.confidence * 100)))
+                if !note.models.isEmpty {
+                    Divider().overlay(Color.Brasscribe.border)
+                    Text("What each transcriber heard").font(Font.Brasscribe.headline)
+                    ForEach(note.models, id: \.model) { m in
+                        HStack(spacing: Space.s3) {
+                            Image(systemName: m.agrees ? BrasscribeIcon.done.systemName : BrasscribeIcon.info.systemName)
+                                .foregroundStyle(Color.Brasscribe.textMuted)
+                                .frame(width: 20)
+                                .accessibilityHidden(true)
+                            Text(m.name).font(Font.Brasscribe.body)
+                            Spacer()
+                            Text(heardText(m)).font(Font.Brasscribe.body.weight(m.agrees ? .regular : .semibold))
+                        }
+                        .frame(minHeight: 32)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+            .card()
+        }
+    }
+
+    private func heardText(_ m: NoteEvidence.Heard) -> String {
+        guard let pitch = m.pitch else { return String(localized: "No note") }
+        let written = SpelledPitch.spelling(midi: pitch - part.transposeSemitones, fifths: fifths)
+        return m.agrees ? String(localized: "Same, \(ReviewWords.name(written))") : ReviewWords.name(written)
+    }
+}
+
+/// Two bars of the note's part, drawn like the score: ink notes, the "?" mark and an ink ring on the note.
+struct BarSnippet: View {
+    let xml: String
+    let partID: String
+    let bar: Int
+    let noteTick: Int
+    let level: UncertaintyLevel
+    let score: Score
+    @State private var page: ScoreRenderer.Page?
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        GeometryReader { geo in
+            Group {
+                if let page {
+                    Canvas { ctx, size in
+                        let doc = page.svg
+                        let s = min(1, size.width / max(1, doc.size.width))
+                        ctx.scaleBy(x: s, y: s)
+                        let ink = Color.Brasscribe.ink.resolve(in: ctx.environment).cgColor
+                        ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, keepDocumentColors: false) }
+                        if let id = targetNoteID(page), let f = doc.frames[id] {
+                            let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                            ctx.stroke(Path(roundedRect: f.insetBy(dx: -4, dy: -4), cornerRadius: 4), with: .color(.Brasscribe.focus), lineWidth: BrasscribeDesign.Score.focusWidth)
+                            // 1.6 staff spaces, above the staff, as in the score
+                            let lines = page.staffLines.values.first
+                            let space = max(3, (lines?.height ?? f.height * 4) / 4)
+                            let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
+                            let centre = CGPoint(x: f.midX, y: min(lines?.minY ?? f.minY, f.minY) - space * 0.5 - size * 0.6)
+                            ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: centre)
+                            if level == .veryUncertain {
+                                ctx.stroke(Path(roundedRect: CGRect(x: centre.x - size * 0.45, y: centre.y - size * 0.62, width: size * 0.9, height: size * 1.24),
+                                                cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
+                            }
+                        }
                     }
                 } else {
-                    band; hard; key
-                }
-                if let failure {
-                    NoticeBox(systemImage: BrasscribeIcon.error.systemName, text: failure)
+                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .padding(.horizontal, wide ? Space.s8 : Space.s5)
-            .padding(.vertical, Space.s6)
-            .frame(maxWidth: wide ? 880 : .infinity, alignment: .leading)
-            .frame(maxWidth: .infinity)
-        }
-        .pageBackground()
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: Space.s3) {
-                if wide {
-                    Spacer()
-                    Button { app.path.removeLast() } label: { Text("Back") }.buttonStyle(.plainText)
-                }
-                Button { Task { await show() } } label: {
-                    if busy { ProgressView().controlSize(.small).tint(Color.Brasscribe.onPrimary) } else { Text("Show the score") }
-                }
-                .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
-                .disabled(busy)
-                .keyboardShortcut(.defaultAction)
-                .accessibilityIdentifier("showScore")
-            }
-            .padding(.horizontal, wide ? Space.s8 : Space.s5)
-            .padding(.vertical, Space.s3)
-            .frame(maxWidth: wide ? 880 : .infinity)
-            .frame(maxWidth: .infinity)
-        }
-        .navigationTitle(Text(piece.title))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .task {
-            let chosen = piece.output ?? OutputChoice()
-            lineup = chosen.lineup
-            difficulty = chosen.difficulty
-            recordedFifths = piece.loadComposition()?.keys.first?.fifths
-            if let target = chosen.keyFifths, let from = recordedFifths { semitones = Self.semitones(from: from, to: target) }
-        }
-    }
-
-    private var band: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Which band?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
-            radio(String(localized: "Full brass band"), String(localized: "About 25 players"), lineup == .fullBand) { lineup = .fullBand }
-            radio(String(localized: "Small band"), String(localized: "10–15 players, parts doubled up"), lineup == .minimalBand) { lineup = .minimalBand }
-        }
-    }
-
-    private var hard: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("How hard?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
-            Segmented(label: String(localized: "How hard?"), selection: $difficulty,
-                      options: [(Difficulty.easier, String(localized: "Easier")), (Difficulty.standard, String(localized: "A bit easier")),
-                                (Difficulty.faithful, String(localized: "As played"))])
-            HelperLine(systemImage: BrasscribeIcon.info.systemName, text: String(localized: "Easier keeps the tune but avoids high notes and fast runs."))
-        }
-    }
-
-    private var key: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Key").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Space.s3) { lowerButton; keyBox; higherButton }
-                VStack(alignment: .leading, spacing: Space.s3) { keyBox; HStack(spacing: Space.s3) { lowerButton; higherButton } }
+            .task(id: "\(partID)-\(bar)-\(Int(geo.size.width))") {
+                let first = max(1, bar + 1), last = min(score.measures.count, bar + 2)
+                let xml = self.xml, partID = self.partID, width = geo.size.width
+                page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
             }
         }
+        .frame(height: 170)
     }
 
-    private var lowerButton: some View {
-        Button { semitones = max(-6, semitones - 1) } label: { Label("Lower", systemImage: "minus") }
-            .buttonStyle(SecondaryButtonStyle(minHeight: 48))
-            .help(Text("One semitone lower"))
-            .disabled(recordedFifths == nil || semitones <= -6)
+    /// The Verovio note at the reviewed onset: same order within the first bar as the parsed notes.
+    private func targetNoteID(_ page: ScoreRenderer.Page) -> String? {
+        guard let part = score.part(id: partID) else { return nil }
+        let inBar = part.notes.filter { $0.measureIndex == bar && !$0.isRest }
+        guard let i = inBar.firstIndex(where: { $0.startTick == noteTick }) else { return nil }
+        let ids = page.notesByStaff.values.first ?? []
+        return ids.indices.contains(i) ? ids[i] : nil
     }
+}
 
-    private var higherButton: some View {
-        Button { semitones = min(6, semitones + 1) } label: { Label("Higher", systemImage: "plus") }
-            .buttonStyle(SecondaryButtonStyle(minHeight: 48))
-            .help(Text("One semitone higher"))
-            .disabled(recordedFifths == nil || semitones >= 6)
-    }
+enum ReviewWords {
+    static var norwegian: Bool { ["nb", "no", "nn"].contains(Locale.current.language.languageCode?.identifier ?? "") }
 
-    private var keyBox: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(keyName).font(Font.Brasscribe.headline)
-            Text(keyDetail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, Space.s4)
-        .padding(.vertical, Space.s2)
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("keyPicker")
-        .accessibilityAdjustableAction { d in
-            if d == .increment { semitones = min(6, semitones + 1) } else if d == .decrement { semitones = max(-6, semitones - 1) }
-        }
-    }
-
-    private var targetFifths: Int? {
-        guard let from = recordedFifths else { return nil }
-        var f = from + 7 * semitones
-        while f > 6 { f -= 12 }
-        while f < -6 { f += 12 }
-        return f
-    }
-
-    private var keyName: String {
-        guard let f = targetFifths else { return String(localized: "As recorded") }
-        return String(localized: "\(KeyNames.name(fifths: f)) (concert)")
-    }
-
-    /// The same key as a B♭ and an E♭ player read it on their part.
-    private var writtenKeys: String? {
-        guard let f = targetFifths else { return nil }
-        func wrap(_ x: Int) -> Int { var v = x; while v > 6 { v -= 12 }; while v < -6 { v += 12 }; return v }
-        return String(localized: "\(KeyNames.name(fifths: wrap(f + 2))) for B♭ · \(KeyNames.name(fifths: wrap(f + 3))) for E♭ instruments")
-    }
-
-    private var keyDetail: String {
-        let change: String
-        switch semitones {
-        case 0: change = String(localized: "As recorded")
-        case 1: change = String(localized: "1 semitone up")
-        case -1: change = String(localized: "1 semitone down")
-        case let s where s > 0: change = String(localized: "\(s) semitones up")
-        default: change = String(localized: "\(-semitones) semitones down")
-        }
-        return [writtenKeys, change].compactMap { $0 }.joined(separator: " · ")
-    }
-
-    static func semitones(from: Int, to: Int) -> Int {
-        // the key change in semitones, -6…6, that turns `from` fifths into `to`
-        for s in -6...6 {
-            var f = from + 7 * s
-            while f > 6 { f -= 12 }
-            while f < -6 { f += 12 }
-            if f == to { return s }
-        }
-        return 0
-    }
-
-    private func radio(_ title: String, _ detail: String, _ on: Bool, _ pick: @escaping () -> Void) -> some View {
-        Button(action: pick) {
-            HStack(spacing: Space.s3) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                }
-                Spacer()
-                Image(systemName: on ? "largecircle.fill.circle" : "circle").font(.title2)
-                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
-                    .accessibilityHidden(true)
+    /// "B♭" in English; the German-derived Norwegian names in Norwegian (B♭ = B, B = H, E♭ = Ess, F♯ = Fiss).
+    static func name(_ p: SpelledPitch) -> String {
+        if norwegian {
+            let letter = p.step == "B" ? "H" : p.step
+            switch (p.step, p.alter) {
+            case ("B", -1): return "B"
+            case ("E", -1): return "Ess"
+            case ("A", -1): return "Ass"
+            case (_, -1): return letter + "ess"
+            case (_, 1): return letter + "iss"
+            case (_, 2): return letter + " dobbeltkryss"
+            case (_, -2): return letter + " dobbelt-b"
+            default: return letter
             }
-            .padding(Space.s4)
-            .frame(minHeight: 64)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: on ? 2 : 1))
-            .contentShape(RoundedRectangle(cornerRadius: Radius.lg))
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? [.isSelected] : [])
+        let accidental = p.alter == 1 ? "♯" : p.alter == -1 ? "♭" : p.alter == 2 ? "𝄪" : p.alter == -2 ? "𝄫" : ""
+        return "\(p.step)\(accidental)"
     }
 
-    private func show() async {
-        let choice = OutputChoice(lineup: lineup, difficulty: difficulty, keyFifths: semitones == 0 ? nil : targetFifths)
-        let before = piece.output ?? OutputChoice()
-        guard choice != before else { app.open(piece); return }
-        guard let comp = piece.loadComposition() else {
-            failure = String(localized: "This score can't be arranged again on this device. It opens as it is.")
-            app.open(piece)
-            return
-        }
-        busy = true
-        defer { busy = false }
-        do {
-            try app.rearrange(piece, composition: comp, output: choice)
-        } catch {
-            failure = String(localized: "The score couldn't be arranged this way. Try another choice.")
-        }
+    /// "an A", "a B" in English; Norwegian names the note bare.
+    static func withArticle(_ name: String) -> String {
+        norwegian ? name : (["A", "E", "F"].contains(String(name.prefix(1))) ? "an " : "a ") + name
     }
+}
+
+private extension Collection {
+    subscript(safe index: Index) -> Element? { indices.contains(index) ? self[index] : nil }
 }

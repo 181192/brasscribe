@@ -34,9 +34,12 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var originalURL: URL? { originalFile.map { folder.appending(path: $0) } }
     var videoURL: URL? { videoFile.map { folder.appending(path: $0) } }
     var metaURL: URL { folder.appending(path: "piece.json") }
+    var evidenceURL: URL { folder.appending(path: "evidence.json") }
 
     func loadScore() throws -> Score { try MusicXMLParser.parse(url: scoreURL) }
     func loadComposition() -> Composition? { try? Composition.decode(Data(contentsOf: compositionURL)) }
+    func loadEvidence() -> NoteEvidence? { try? JSONDecoder().decode(NoteEvidence.self, from: Data(contentsOf: evidenceURL)) }
+    func saveEvidence(_ e: NoteEvidence) { try? JSONEncoder().encode(e).write(to: evidenceURL, options: .atomic) }
     func musicXML() throws -> String { try String(contentsOf: scoreURL, encoding: .utf8) }
 
     func saveMusicXML(_ xml: String) throws {
@@ -70,6 +73,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try fm.createDirectory(at: p.folder, withIntermediateDirectories: true)
         try result.musicXML.write(to: p.scoreURL)
         if let c = result.composition { try JSONEncoder().encode(c).write(to: p.compositionURL) }
+        if let e = result.evidence { p.saveEvidence(e) }
         if let original {
             let name = "original." + (original.pathExtension.isEmpty ? "wav" : original.pathExtension)
             try? fm.removeItem(at: p.folder.appending(path: name))

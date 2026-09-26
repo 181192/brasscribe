@@ -1,8 +1,56 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
+    "" : {},
+    "%@ · %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@"
+          }
+        }
+      }
+    },
+    "%@ · Bar %lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Takt %lld"
+          }
+        }
+      }
+    },
+    "%@ · Check the notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Sjekk tonene"
+          }
+        }
+      }
+    },
+    "%@%lld · %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@%lld · %@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@"
+          }
+        }
+      }
     },
     "%lld" : {
       "localizations" : {
@@ -20,6 +68,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld %%"
+          }
+        }
+      }
+    },
+    "%lld notes keep their ? marks. You can check them any time from the score." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld toner beholder «?»-merkene. Du kan sjekke dem når som helst fra partituret."
+          }
+        }
+      }
+    },
+    "%lld notes to check" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld toner å sjekke"
+          }
+        }
+      }
+    },
+    "%lld of %lld · %@ · %lld left" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld av %lld · %@ · %lld igjen"
           }
         }
       }
@@ -50,6 +128,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld usikre noter"
+          }
+        }
+      }
+    },
+    "+ %lld more" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+ %lld til"
+          }
+        }
+      }
+    },
+    "1 note to check" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 tone å sjekke"
           }
         }
       }
@@ -110,6 +208,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adresse"
+          }
+        }
+      }
+    },
+    "All notes checked" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle tonene er sjekket"
           }
         }
       }
@@ -274,12 +382,42 @@
         }
       }
     },
+    "Change note" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre tone"
+          }
+        }
+      }
+    },
+    "Change note…" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre tone …"
+          }
+        }
+      }
+    },
     "Check connection" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sjekk tilkoblingen"
+          }
+        }
+      }
+    },
+    "Check the notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tonene"
           }
         }
       }
@@ -324,6 +462,16 @@
         }
       }
     },
+    "Couldn't open the notes" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne tonene"
+          }
+        }
+      }
+    },
     "Couldn't open the score" : {
       "localizations" : {
         "nb" : {
@@ -340,6 +488,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke åpne filen."
+          }
+        }
+      }
+    },
+    "Couldn't save the note" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre tonen"
           }
         }
       }
@@ -385,6 +543,16 @@
         }
       }
     },
+    "Delete %@?" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette %@?"
+          }
+        }
+      }
+    },
     "Difficulty" : {
       "localizations" : {
         "nb" : {
@@ -415,6 +583,16 @@
         }
       }
     },
+    "Down a semitone" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En halvtone ned"
+          }
+        }
+      }
+    },
     "Download models" : {
       "localizations" : {
         "nb" : {
@@ -431,6 +609,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enklere"
+          }
+        }
+      }
+    },
+    "Edit title" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre navn"
           }
         }
       }
@@ -515,6 +703,36 @@
         }
       }
     },
+    "Finish checking later?" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekke ferdig senere?"
+          }
+        }
+      }
+    },
+    "Finish later" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett senere"
+          }
+        }
+      }
+    },
+    "Finish later (%lld left)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett senere (%lld igjen)"
+          }
+        }
+      }
+    },
     "Found at %@. Type the six-digit code to pair." : {
       "localizations" : {
         "nb" : {
@@ -565,6 +783,16 @@
         }
       }
     },
+    "How sure Brasscribe is" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvor sikker Brasscribe er"
+          }
+        }
+      }
+    },
     "Import audio or video" : {
       "localizations" : {
         "nb" : {
@@ -585,6 +813,26 @@
         }
       }
     },
+    "it could also be %@." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "det kan også være %@."
+          }
+        }
+      }
+    },
+    "Keep checking" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk videre"
+          }
+        }
+      }
+    },
     "Keep the original key" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -592,6 +840,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Behold originaltonearten"
+          }
+        }
+      }
+    },
+    "Keep, go to next" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold, gå til neste"
           }
         }
       }
@@ -653,6 +911,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hør originalen"
+          }
+        }
+      }
+    },
+    "Listen to the original and the score side by side." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lytt til opptaket og partituret side om side."
+          }
+        }
+      }
+    },
+    "Listen to this bar" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lytt til denne takten"
           }
         }
       }
@@ -878,6 +1156,16 @@
         }
       }
     },
+    "No note" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen tone"
+          }
+        }
+      }
+    },
     "Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework." : {
       "localizations" : {
         "nb" : {
@@ -918,6 +1206,16 @@
         }
       }
     },
+    "On your computer" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På datamaskinen din"
+          }
+        }
+      }
+    },
     "One instrument" : {
       "localizations" : {
         "nb" : {
@@ -944,6 +1242,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpne partituret"
+          }
+        }
+      }
+    },
+    "Options for %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valg for %@"
           }
         }
       }
@@ -1391,6 +1699,26 @@
         }
       }
     },
+    "Same, %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samme, %@"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
     "Score" : {
       "localizations" : {
         "nb" : {
@@ -1457,6 +1785,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vis"
+          }
+        }
+      }
+    },
+    "Show the score" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis partituret"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
           }
         }
       }
@@ -1542,6 +1890,16 @@
         }
       }
     },
+    "Space listens · K keeps" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mellomrom lytter · K beholder"
+          }
+        }
+      }
+    },
     "Speed" : {
       "localizations" : {
         "nb" : {
@@ -1578,6 +1936,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start opptak"
+          }
+        }
+      }
+    },
+    "Still to check" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenstår å sjekke"
           }
         }
       }
@@ -1632,6 +2000,26 @@
         }
       }
     },
+    "The ? mark goes when you save. Changes are kept with this score." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«?»-merket forsvinner når du lagrer. Endringene lagres med partituret."
+          }
+        }
+      }
+    },
+    "The ? marks are gone. Your score is ready to practise." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«?»-merkene er borte. Partituret er klart til øving."
+          }
+        }
+      }
+    },
     "The demo recording is not available." : {
       "localizations" : {
         "nb" : {
@@ -1658,6 +2046,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Utøveren holdt ikke jevn puls her, så rytmene er omtrentlige."
+          }
+        }
+      }
+    },
+    "The score is removed from this device." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partituret fjernes fra denne enheten."
+          }
+        }
+      }
+    },
+    "The score is removed from your computer." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partituret fjernes fra datamaskinen din."
           }
         }
       }
@@ -1698,6 +2106,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dette opptaket er kopibeskyttet"
+          }
+        }
+      }
+    },
+    "Title" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navn"
           }
         }
       }
@@ -1772,6 +2190,16 @@
         }
       }
     },
+    "Uncertain" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usikker"
+          }
+        }
+      }
+    },
     "Uncertain notes" : {
       "localizations" : {
         "nb" : {
@@ -1792,12 +2220,32 @@
         }
       }
     },
+    "Up a semitone" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En halvtone opp"
+          }
+        }
+      }
+    },
     "Use the demo instead of a computer" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bruk demoen i stedet for en datamaskin"
+          }
+        }
+      }
+    },
+    "Very uncertain" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svært usikker"
           }
         }
       }
@@ -1822,12 +2270,32 @@
         }
       }
     },
+    "What each transcriber heard" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva hver transkriberer hørte"
+          }
+        }
+      }
+    },
     "What is this?" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hva er dette?"
+          }
+        }
+      }
+    },
+    "What the transcribers heard" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva transkriberne hørte"
           }
         }
       }
@@ -1862,6 +2330,26 @@
         }
       }
     },
+    "Written %@" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notert %@"
+          }
+        }
+      }
+    },
+    "Written %@%lld" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notert %@%lld"
+          }
+        }
+      }
+    },
     "Your computer" : {
       "localizations" : {
         "nb" : {
@@ -1878,6 +2366,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Datamaskinen din arrangerer partituret med disse valgene."
+          }
+        }
+      }
+    },
+    "Your scores" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partiturene dine"
+          }
+        }
+      }
+    },
+    "Your scores appear here after the first recording." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partiturene dine vises her etter det første opptaket."
           }
         }
       }

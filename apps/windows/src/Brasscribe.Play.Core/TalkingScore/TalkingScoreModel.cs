@@ -44,6 +44,8 @@ public sealed class TsEvent
     /// <summary>Ticks from the start of the bar (MusicXML divisions scaled to 24 per quarter).</summary>
     public int Tick { get; set; }
     public int MusicXmlNoteIndex { get; set; } = -1;
+    [JsonIgnore] public string? CompositionVoiceId { get; set; }
+    [JsonIgnore] public int? CompositionNoteStart { get; set; }
     /// <summary>Written length in ticks; not announced, used by navigation and highlighting.</summary>
     public int DurTicks { get; set; }
     public TsPos? Pos { get; set; }

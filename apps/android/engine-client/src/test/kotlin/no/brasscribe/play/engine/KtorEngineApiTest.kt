@@ -59,6 +59,30 @@ class KtorEngineApiTest {
     }
 
     @Test
+    fun evidenceRenameAndDelete() = runTest {
+        val seen = mutableListOf<String>()
+        val engine = MockEngine { req ->
+            seen += "${req.method.value} ${req.url.encodedPath}"
+            when (req.url.encodedPath) {
+                "/v1/jobs/r1/evidence" -> respond(
+                    """{"models":[{"model":"basic-pitch","name":"Basic Pitch"}],"notes":[{"voice":"melody","start":24,"pitch":67,
+                    "confidence":0.5,"onset_s":1.0,"models":[{"model":"basic-pitch","name":"Basic Pitch","pitch":69,"agrees":false}]}]}""",
+                    HttpStatusCode.OK, json)
+                "/v1/runs/r1" -> if (req.method == HttpMethod.Delete) respond("", HttpStatusCode.NoContent) else respond(job, HttpStatusCode.OK, json)
+                else -> respond("", HttpStatusCode.NotFound)
+            }
+        }
+        val api = KtorEngineApi("http://host", engine)
+        val note = api.evidence("r1").notes.single()
+        assertEquals(0.5, note.confidence, 0.0)
+        assertEquals(ModelHeard("basic-pitch", "Basic Pitch", false, 69), note.models.single())
+        assertEquals(2, note.alternativeShift)
+        api.renameRun("r1", "Rehearsal")
+        api.deleteRun("r1")
+        assertEquals(listOf("GET /v1/jobs/r1/evidence", "PATCH /v1/runs/r1", "DELETE /v1/runs/r1"), seen)
+    }
+
+    @Test
     fun streamsServerSentEventsUntilTerminal() = runTest {
         val stream = buildString {
             append(": keepalive\n\n")

@@ -32,7 +32,9 @@ class EngineContractTest {
         "ProfileInfo" to ProfileInfo.serializer(), "AudioRef" to AudioRef.serializer(), "JobCreate" to JobCreate.serializer(),
         "Job" to Job.serializer(), "StageState" to StageState.serializer(), "Artifact" to Artifact.serializer(),
         "Composition" to Composition.serializer(), "Voice" to Voice.serializer(), "Note" to Note.serializer(),
-        "Meter" to Meter.serializer(), "KeySig" to KeySig.serializer(),
+        "Meter" to Meter.serializer(), "KeySig" to KeySig.serializer(), "Evidence" to Evidence.serializer(),
+        "NoteEvidence" to NoteEvidence.serializer(), "ModelHeard" to ModelHeard.serializer(), "ModelInfo" to ModelInfo.serializer(),
+        "RunUpdate" to RunUpdate.serializer(),
     )
 
     @Test

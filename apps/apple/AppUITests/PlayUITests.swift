@@ -54,6 +54,8 @@ final class PlayUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["-reset", "-open-demo-score", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
+        // no computer: scores on a Brasscribe running on this Mac must not leak into the tests
+        app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"
         if let sf = soundFont() { app.launchEnvironment["BRASSCRIBE_SOUNDFONT"] = sf }
         // the realistic brass-band tier, when sounds/ and its built instruments are present
         let root = URL(fileURLWithPath: dir).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

@@ -55,3 +55,11 @@ func goldenDir() -> URL? {
     let lines = try #require(page.staffLines.values.first)
     #expect(abs(lines.height - 28.8) < 2, "\(lines)")
 }
+
+@Test(.enabled(if: goldenDir() != nil)) func reviewSnippetShowsOnePartAndTheChosenBars() throws {
+    let xml = try String(contentsOf: goldenDir()!.appending(path: "brass-band.musicxml"), encoding: .utf8)
+    let page = try #require(ScoreRenderer.snippet(musicXML: xml, partID: "P2", bars: 14...15, width: 640))
+    #expect(page.measureIDs.count == 2)
+    #expect(page.staffLines.count == 2, "one staff per bar of the one part")
+    #expect(page.svg.size.width <= 660)
+}
