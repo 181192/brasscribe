@@ -82,12 +82,16 @@ Regenerate with `python3 convert/summarize.py`. Latency = wall time for the audi
 | BS-RoFormer SW | ONNX fp16 core, ORT CPU | 336 MB | 0.9971 / 0.9922, SDR >= 6.7 dB | 162 s / 30 s | 22.5 GB | pass (see below) |
 | BS-RoFormer SW | Core ML fp16 (ALL -> GPU) | 335 MB | 1.0000 / 0.9990, SDR >= 27 dB | 6.3 s / 30 s | 3.9 GB | pass |
 | BS-RoFormer SW | ONNX fp32, ORT CoreML EP | 668 MB | — | — | — | **blocked** |
-| Mega-53 | see `reports/mega53.json` | | | | | |
-| MuScriptor | see `reports/muscriptor.json` | | | | | |
+| Mega-53 | ONNX fp32 core, ORT CPU (low-memory session) | 2.6 GB | 1.0000 / 1.0000, SDR >= 73 dB | 143 s / 30 s | 25.2 GB | pass |
+| Mega-53 | Core ML fp16 (ALL -> GPU) | 1.3 GB | 1.0000 / 0.9993, SDR >= 34 dB | 14.7 s / 30 s | 21.5 GB | pass |
+| Mega-53 | ONNX fp16 core (exported, 1.3 GB) | 1.3 GB | — | — | — | not run |
+| MuScriptor medium | ONNX prefill + decode-with-past, ORT CPU | 2 x 1.2 GB | 1.0000; 24/24 chunks token-identical | 51 s / 30 s (23 ms/token) | 4.1 GB | pass |
+| MuScriptor medium | same, ORT CoreML EP | | — | — | — | **blocked** |
 
 Separator F1 columns are SwiftF0 / Basic Pitch; Beat This columns are beat / downbeat.
 PyTorch CPU reference timings: Beat This small0 0.75 s / 60 s, HT-Demucs 8.4 s / 30 s,
-BS-RoFormer SW 63 s / 30 s.
+BS-RoFormer SW 63 s / 30 s, Mega-53 104 s / 30 s (14.7 GB), MuScriptor medium 34 s / 30 s
+(16 ms/token, 2.6 GB). Mega-53 Core ML load takes 55 s (first compile).
 
 ## What fails and why
 
@@ -105,6 +109,16 @@ BS-RoFormer SW 63 s / 30 s.
 - **BS-RoFormer SW on the ORT CoreML EP.** The process was killed by the OS (out of memory)
   while the EP compiled/ran the 13.4 s chunk. Core ML directly (coremltools) runs it on the
   GPU at ~10x the PyTorch CPU speed.
+- **Mega-53 ONNX fp16** was exported but not run: fp32 on ORT CPU already peaks at 25 GB
+  on this 48 GB machine, and fp16 on CPU needs more (see next point).
+- **MuScriptor on the CoreML EP.** The EP cannot build the dynamic-length prefill graph
+  ("unbounded dimension", then error -7 building the execution plan). Needs static-shape graphs:
+  a fixed-size KV cache with a length mask. On CPU the ONNX graphs are exact (identical tokens on
+  every chunk) but 1.5x slower than PyTorch CPU.
+- **MuScriptor on Core ML / MLX Swift: not attempted.** Core ML needs the same static KV-cache
+  rewrite (or a coremltools stateful model). MLX Swift has no port of this model: the transformer,
+  log-mel conditioner, MT3 detokeniser and prelude-forcing loop would have to be written in Swift
+  and the safetensors weights mapped.
 - **ONNX fp16 on CPU** is emulated by ORT: slower and larger in memory than fp32 on CPU, and its
   stems drift (SW SDR min 6.7 dB) although transcriptions still agree. fp16 ONNX is for GPU EPs
   (DirectML/CUDA/WebGPU), not verified here.

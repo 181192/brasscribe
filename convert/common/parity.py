@@ -213,10 +213,18 @@ def run_isolated(cmd: list[str], env: dict | None = None, timeout: float = 3600)
     return out
 
 
-def ort_session(path: Path, provider: str, compute_units: str = "ALL", verbose: bool = False, static_shapes: bool = True):
-    """ONNX Runtime session on CPU or the CoreML EP (ML Program format)."""
+def ort_session(path: Path, provider: str, compute_units: str = "ALL", verbose: bool = False, static_shapes: bool = True,
+                low_memory: bool = False):
+    """ONNX Runtime session on CPU or the CoreML EP (ML Program format).
+
+    low_memory turns off the CPU arena and memory-pattern planning, which otherwise keep
+    peak buffers for every intermediate of very large graphs.
+    """
     import onnxruntime as ort
     so = ort.SessionOptions()
+    if low_memory:
+        so.enable_cpu_mem_arena = False
+        so.enable_mem_pattern = False
     if verbose:
         so.log_severity_level = 1
     if provider == "coreml":

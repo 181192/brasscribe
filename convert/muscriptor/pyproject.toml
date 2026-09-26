@@ -1,0 +1,19 @@
+[project]
+name = "brasscribe-convert-muscriptor"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "mir-eval>=0.8",
+    "muscriptor>=0.3.0",
+    "onnx>=1.17",
+    "onnxruntime>=1.22",
+    "onnxscript>=0.3",
+    "pretty-midi>=0.2.10",
+    "soundfile>=0.13",
+    "soxr>=0.5",
+    "torch==2.7.0",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+package = false
