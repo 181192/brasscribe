@@ -110,6 +110,10 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         var generator = new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(_midi, false));
         generator.Generate();
         _lookup = generator.TickLookup;
+        HumanizedNotes = Humanizer is { } humanize
+            ? MidiHumanizer.Apply(_midi, Tracks.Select(t => new MidiHumanizer.Track(t.Index, t.Name, t.IsPercussion,
+                ChannelsOf(t.Index).Select(c => (int)c).ToList())).ToList(), humanize, PerformanceJson)
+            : 0;
         _muted.Clear();
         _solo.Clear();
         lock (Gate) _synth.LoadMidiFile(_midi);
@@ -125,6 +129,21 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     }
 
     public bool HasSoundFont => _soundFontLoaded;
+
+    /// <summary>
+    /// Humanizes the playback timing and velocity of each part when a score loads (the Rust core's
+    /// humanizer); null plays the score's exact timing. MIDI export always stays score-exact.
+    /// </summary>
+    public Humanize? Humanizer { get; set; }
+
+    /// <summary>Composition JSON of the score, so the humanizer can follow the recording's ensemble timing.</summary>
+    public string? PerformanceJson { get; set; }
+
+    /// <summary>Notes the humanizer moved in the loaded score.</summary>
+    public int HumanizedNotes { get; private set; }
+
+    /// <summary>The MIDI the synth plays (after humanization).</summary>
+    internal MidiFile? PlaybackMidi => _midi;
 
     /// <summary>Optional MIDI program per part name (0-based), applied when a score loads.</summary>
     public Func<string, int?>? ProgramMap { get; set; }

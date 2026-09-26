@@ -30,6 +30,8 @@ public sealed partial class ScoreViewModel : ObservableObject
         _announcer = announcer;
         _s = strings;
         Original = original;
+        // The native core humanizes playback; the managed fallback plays the score's exact timing.
+        if (core.IsNative && player.Player is Playback.AlphaTabScorePlayer alphaTab) alphaTab.Humanizer ??= core.Humanize;
     }
 
     public PlayerViewModel Player { get; }
@@ -134,6 +136,8 @@ public sealed partial class ScoreViewModel : ObservableObject
             int uncertain = p.Bars.Sum(b => b.Events.Count(e => e.IsUncertain && e.Tie is not { Stop: true }));
             Parts.Add(new ScorePartItem(i, Language == "nb" ? p.NameNb ?? p.Name : p.Name, Language == "nb" ? p.InstrumentNb ?? p.Instrument : p.Instrument, uncertain));
         }
+        if (Player.Player is Playback.AlphaTabScorePlayer alphaTabPlayer)
+            alphaTabPlayer.PerformanceJson = composition is null ? null : CompositionJson.Serialize(composition);
         Player.Load(System.Text.Encoding.UTF8.GetBytes(musicXml));
         Player.PlayAlongPart = Player.Parts.FirstOrDefault(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase)) ?? Player.Parts.FirstOrDefault();
         IsLoaded = true;

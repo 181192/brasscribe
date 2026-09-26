@@ -32,6 +32,13 @@ public interface IEngineClient
     Task<IReadOnlyList<Artifact>> ListArtifactsAsync(string jobId, CancellationToken ct = default);
     Task<Stream> DownloadAsync(string jobId, JobDownload what, CancellationToken ct = default);
     Task<Stream> GetArtifactAsync(string jobId, string name, CancellationToken ct = default);
+
+    /// <summary>Every stage of a run with its output files.</summary>
+    Task<IReadOnlyList<StageArtifacts>> ListStagesAsync(string jobId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot list stages.");
+
+    Task<Stream> GetStageFileAsync(string jobId, string stage, string name, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot read stage files.");
     /// <summary>Braille music (BRF) of the score, or of one part (1-based number or name).</summary>
     Task<Stream> DownloadBrailleAsync(string jobId, string? part = null, CancellationToken ct = default);
 }
@@ -121,6 +128,12 @@ public sealed class EngineClient : IEngineClient
 
     public Task<Stream> GetArtifactAsync(string jobId, string name, CancellationToken ct = default) =>
         SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/artifacts/{Uri.EscapeDataString(name)}", ct);
+
+    public async Task<IReadOnlyList<StageArtifacts>> ListStagesAsync(string jobId, CancellationToken ct = default) =>
+        await SendJsonAsync(HttpMethod.Get, $"v1/jobs/{Uri.EscapeDataString(jobId)}/stages", null, EngineJsonContext.Default.ListStageArtifacts, ct).ConfigureAwait(false);
+
+    public Task<Stream> GetStageFileAsync(string jobId, string stage, string name, CancellationToken ct = default) =>
+        SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/stages/{Uri.EscapeDataString(stage)}/files/{Uri.EscapeDataString(name)}", ct);
 
     /// <summary>
     /// Streams a job's events. When the connection drops before the job ends, it reconnects with

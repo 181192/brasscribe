@@ -35,6 +35,26 @@ public class TalkingScoreVectorTests
     [MemberData(nameof(All))]
     public void Matches_vector(string id, string lang)
     {
+        var v = Vector(id, lang);
+        Assert.Equal(v.Expected, Announcer.Announce(v.Part, v.Bar, v.Event, v.Context, v.Settings));
+    }
+
+    /// <summary>The same vectors through the Rust core, when BRASSCRIBE_FFI_PATH points at a built brasscribe_ffi.</summary>
+    [Theory]
+    [MemberData(nameof(All))]
+    public void Native_core_matches_vector(string id, string lang)
+    {
+        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return;
+        var core = Bridge.NativeCoreBridge.TryCreate();
+        Assert.NotNull(core);
+        var v = Vector(id, lang);
+        Assert.Equal(v.Expected, core.Announce(v.Part, v.Bar, v.Event, v.Context, v.Settings));
+    }
+
+    internal sealed record VectorCase(AnnouncePart Part, AnnounceBar Bar, TsEvent Event, AnnounceContext Context, TalkingScoreSettings Settings, string Expected);
+
+    internal static VectorCase Vector(string id, string lang)
+    {
         var c = Cases().Single(x => x!["id"]!.GetValue<string>() == id)!;
         var settingsNode = c["settings"]!;
         var settings = new TalkingScoreSettings(
@@ -82,8 +102,7 @@ public class TalkingScoreVectorTests
             TotalBars: 128);
 
         var ev = c["event"].Deserialize<TsEvent>(Snake)!;
-        string actual = Announcer.Announce(part, bar, ev, ctx, settings);
-        Assert.Equal(c["expected"]![lang]!.GetValue<string>(), actual);
+        return new VectorCase(part, bar, ev, ctx, settings, c["expected"]![lang]!.GetValue<string>());
     }
 
     [Theory]

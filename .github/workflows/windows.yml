@@ -5,10 +5,12 @@ on:
   push:
     paths:
       - "apps/windows/**"
+      - "core/**"
       - ".github/workflows/windows.yml"
   pull_request:
     paths:
       - "apps/windows/**"
+      - "core/**"
       - ".github/workflows/windows.yml"
   workflow_dispatch:
 
@@ -40,23 +42,40 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      # The Rust core as brasscribe_ffi.dll (MSVC host build). The app build copies it next to the exe.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Build the Rust core (brasscribe_ffi.dll)
+        working-directory: core
+        run: |
+          cargo build --release --locked -p brasscribe-ffi
+          $dll = Resolve-Path target/release/brasscribe_ffi.dll
+          "BRASSCRIBE_FFI_PATH=$dll" >> $env:GITHUB_ENV
+          Write-Host "Built $dll"
+
       - name: Restore
         run: dotnet restore Brasscribe.Play.slnx -p:Platform=x64
 
-      # Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts, native core) skip in CI.
+      # BRASSCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
+      # the default bridge). Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts) skip in CI.
       - name: Core tests
         run: >
           dotnet test tests/Brasscribe.Play.Core.Tests -c $env:CONFIGURATION
           --logger "trx;LogFileName=core.trx" --results-directory "$env:RUNNER_TEMP/test-results"
 
       - name: Build app (WinUI 3, unpackaged, x64)
-        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64
+        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH"
 
       - name: Locate the exe
         id: exe
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribePlay.exe was not built" }
+          if (-not (Test-Path (Join-Path $exe.DirectoryName "brasscribe_ffi.dll"))) { throw "brasscribe_ffi.dll is not next to the exe" }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
           Write-Host "Built $($exe.FullName)"
 

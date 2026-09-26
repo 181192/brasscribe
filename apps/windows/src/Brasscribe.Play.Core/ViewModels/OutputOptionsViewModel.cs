@@ -1,3 +1,4 @@
+using Brasscribe.Play.Core.Arrangement;
 using Brasscribe.Play.Core.Bridge;
 using Brasscribe.Play.Core.Engine;
 using Brasscribe.Play.Core.Services;
@@ -10,10 +11,10 @@ public enum Lineup { FullBand, MinimalBand }
 public enum Difficulty { Faithful, Standard, Easier }
 
 /// <summary>
-/// "Choose output": lineup, difficulty and key. With the engine job behind the score, Apply runs a
-/// new job on the same recording with these options (the engine reuses every cached stage, so only
-/// the arrangement runs again). Without an engine job, the Rust core can re-arrange the lineup on
-/// the device; difficulty and key need the engine.
+/// "Choose output": lineup, difficulty and key. Apply tries, in order: the Rust core on the device
+/// from the layered pipeline's stage files (all three options); a new engine job on the same
+/// recording (the engine reuses every cached stage, so only the arrangement runs again); the Rust
+/// core re-arranging the lineup of the Composition alone.
 /// </summary>
 public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer announcer, IStrings s) : ObservableObject
 {
@@ -31,10 +32,22 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     [NotifyPropertyChangedFor(nameof(DifficultyAvailable), nameof(KeyAvailable), nameof(UnavailableText))]
     public partial bool HasEngineJob { get; set; }
 
+    /// <summary>
+    /// Set by the app when the layered pipeline's stage files can be had (from the engine job or a
+    /// local folder); with the native core they arrange on the device.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DifficultyAvailable), nameof(KeyAvailable), nameof(UnavailableText), nameof(CanArrangeOnDevice))]
+    public partial Func<CancellationToken, Task<LayerInputs?>>? LayerSource { get; set; }
+
+    /// <summary>Title the on-device arrangement writes into the score.</summary>
+    public string Title { get; set; } = "Draft";
+
+    public bool CanArrangeOnDevice => core.IsNative && LayerSource is not null;
     public bool CanArrange => core.IsNative || HasEngineJob;
-    public bool DifficultyAvailable => HasEngineJob;
-    public bool KeyAvailable => HasEngineJob;
-    public string UnavailableText => HasEngineJob ? "" : s["Output_NeedsEngine"];
+    public bool DifficultyAvailable => HasEngineJob || CanArrangeOnDevice;
+    public bool KeyAvailable => HasEngineJob || CanArrangeOnDevice;
+    public string UnavailableText => DifficultyAvailable ? "" : s["Output_NeedsEngine"];
 
     [ObservableProperty] public partial string? StatusText { get; set; }
 
@@ -46,12 +59,16 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     /// <summary>Raised with the options when the engine should arrange again.</summary>
     public event EventHandler<ArrangementOptions>? RearrangeRequested;
 
-    /// <summary>Raised with MusicXML arranged on the device.</summary>
+    /// <summary>Raised with MusicXML arranged on the device from the Composition.</summary>
     public event EventHandler<string>? Arranged;
 
+    /// <summary>Raised with a score arranged on the device from the layer inputs (new MusicXML and Composition).</summary>
+    public event EventHandler<BandArrangement>? ArrangedBand;
+
     [RelayCommand]
-    private void Apply(Scores.Composition? composition)
+    private async Task Apply(Scores.Composition? composition)
     {
+        if (CanArrangeOnDevice && await TryArrangeOnDeviceAsync()) return;
         if (HasEngineJob)
         {
             StatusText = s["Output_Rearranging"];
@@ -79,5 +96,37 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
             StatusText = s.Format("Output_Failed", e.Message);
             announcer.Announce(StatusText, AnnouncementKind.Important);
         }
+    }
+
+    /// <summary>False when the layer inputs cannot be had, so the next way is tried.</summary>
+    private async Task<bool> TryArrangeOnDeviceAsync()
+    {
+        StatusText = s["Output_Rearranging"];
+        announcer.Announce(StatusText);
+        LayerInputs? inputs;
+        try
+        {
+            inputs = await LayerSource!(CancellationToken.None);
+        }
+        catch (Exception e) when (e is EngineException or IOException or InvalidDataException or NotSupportedException or UnauthorizedAccessException)
+        {
+            inputs = null;
+        }
+        if (inputs is null) return false;
+        try
+        {
+            var options = Options;
+            var band = await Task.Run(() => core.ArrangeLayersBand(inputs, Title, options));
+            if (band is null) return false;
+            StatusText = s["Output_Ready"];
+            announcer.Announce(StatusText, AnnouncementKind.Important);
+            ArrangedBand?.Invoke(this, band);
+        }
+        catch (CoreBridgeException e)
+        {
+            StatusText = s.Format("Output_Failed", e.Message);
+            announcer.Announce(StatusText, AnnouncementKind.Important);
+        }
+        return true;
     }
 }

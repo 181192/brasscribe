@@ -19,6 +19,8 @@ public class OpenApiContractTests
         ["Job"] = typeof(Job),
         ["StageState"] = typeof(StageState),
         ["Artifact"] = typeof(Artifact),
+        ["StageArtifacts"] = typeof(StageArtifacts),
+        ["FileRef"] = typeof(FileRef),
         ["ProfileInfo"] = typeof(ProfileInfo),
         ["PairRequest"] = typeof(PairRequest),
         ["PairResponse"] = typeof(PairResponse),
@@ -72,6 +74,8 @@ public class OpenApiContractTests
     [InlineData("/v1/jobs/{job_id}/composition", "get")]
     [InlineData("/v1/jobs/{job_id}/artifacts", "get")]
     [InlineData("/v1/jobs/{job_id}/artifacts/{name}", "get")]
+    [InlineData("/v1/jobs/{job_id}/stages", "get")]
+    [InlineData("/v1/jobs/{job_id}/stages/{stage}/files/{name}", "get")]
     [InlineData("/v1/jobs/{job_id}/musicxml", "get")]
     [InlineData("/v1/jobs/{job_id}/pdf", "get")]
     [InlineData("/v1/jobs/{job_id}/midi", "get")]
