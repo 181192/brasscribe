@@ -69,4 +69,8 @@ Screenshots go to `docs/screenshots/`.
   - `bs-beats`
 - `src/views/`: runs, one run (stage graph and inspector), compare, benchmarks, conversion parity, core conformance, datasets and models, and the score viewer.
 
-Colours come from `docs/accessibility/design-tokens.json`: light, dark and high contrast (`prefers-contrast: more`). Every colour is repeated by shape, pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
+Styling is the Brasscribe design system (`design/system.md` §7, the workbench variant). `src/styles.css` imports `design/dist/web/brasscribe.css`, `fonts.css` and `studio-compat.css`, which esbuild bundles into `assets/studio-style.css`. Icons come from `design/dist/web/icons.js`, and the lockup from `design/brand/logo`. The favicons come from `design/dist/icons/web`. After a token change, run `uv run design/tokens/build.py`, then `npm run build`.
+
+Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colours and reduced motion all come from the tokens. The notation takes its ink and staff colours from them too.
+
+Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.

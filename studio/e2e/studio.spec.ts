@@ -156,7 +156,8 @@ test("the Mikkel run: stage graph, score, play one bar, axe", async ({ page }) =
   await page.keyboard.press("]");
   await page.keyboard.press("l");
   for (let i = 0; i < 5; i++) await page.keyboard.press("-");
-  await expect(page.getByRole("button", { name: /Loop 9–11/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Stop repeating" })).toBeVisible();
+  await expect(page.locator("#main .score-status")).toContainText("Repeating bars 9–11");
   const speed = await page.evaluate(() => (document.querySelector("#main bs-score") as unknown as { api: { playbackSpeed: number } }).api.playbackSpeed);
   expect(speed).toBeCloseTo(0.75, 2);
 });
@@ -289,21 +290,56 @@ test("score viewer opens compressed MusicXML (.mxl)", async ({ page }, info) => 
   await expect(page.locator("#viewer-status")).toContainText("18 parts");
 });
 
-test("dark and high-contrast themes pass axe", async ({ page }) => {
+// Every view in every theme: light, dark, our high-contrast palette, and Norwegian.
+// Screenshots go to docs/screenshots/themes/<view>-<theme>.png (the viewport, as in the
+// design mockups) and <view>-<theme>-score.png for the score panel.
+const THEMES = [
+  { name: "light", media: { colorScheme: "light" as const, contrast: "no-preference" as const }, lang: "en" },
+  { name: "dark", media: { colorScheme: "dark" as const, contrast: "no-preference" as const }, lang: "en" },
+  { name: "contrast", media: { colorScheme: "light" as const, contrast: "more" as const }, lang: "en" },
+  { name: "nb", media: { colorScheme: "light" as const, contrast: "no-preference" as const }, lang: "nb" },
+];
+
+test("every view in light, dark, high contrast and Norwegian passes axe", async ({ page }) => {
+  test.setTimeout(900_000);
   const run = await mikkelRun(page);
-  for (const [name, media] of [["dark", { colorScheme: "dark" }], ["contrast", { contrast: "more" }]] as const) {
-    await page.emulateMedia(media);
-    for (const route of ["runs", `runs/${run.id}/score`, "compare", "bench"]) {
-      await page.goto(`/#/${route}`);
-      await page.reload();
-      await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 60_000 });
-      if (route.endsWith("score")) await waitRendered(page);
-      await page.waitForTimeout(300);
-      if (route === "runs") await shot(page, `runs-${name}`, false);
-      if (route.endsWith("score")) await page.locator("#main bs-score").screenshot({ path: join(shots, `run-score-${name}.png`) });
-      await axe(page, `${route} (${name})`);
+  const themes = join(shots, "themes");
+  mkdirSync(themes, { recursive: true });
+  const views: { name: string; route: string; score?: boolean; open?: boolean }[] = [
+    { name: "runs", route: "runs" },
+    { name: "run", route: `runs/${run.id}/score`, score: true },
+    { name: "run-roll", route: `runs/${run.id}/roll` },
+    { name: "run-beats", route: `runs/${run.id}/beats` },
+    { name: "run-manifest", route: `runs/${run.id}/manifest` },
+    { name: "viewer", route: "viewer", score: true, open: true },
+    { name: "compare", route: `compare?a=${run.id}&b=ref:mikkel-arranged-band` },
+    { name: "bench", route: "bench" },
+    { name: "parity", route: "parity" },
+    { name: "conformance", route: "conformance" },
+    { name: "registry", route: "registry" },
+  ];
+  for (const th of THEMES) {
+    await page.emulateMedia(th.media);
+    await page.goto("/#/runs");
+    await page.locator("#lang-select").selectOption(th.lang);
+    for (const v of views) {
+      await page.goto(`/#/${v.route}`);
+      if (v.open) {
+        await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+      }
+      await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 120_000 });
+      if (v.score) await waitRendered(page);
+      await page.waitForTimeout(700);
+      await page.screenshot({ path: join(themes, `${v.name}-${th.name}.png`) });
+      if (v.score) {
+        await page.locator("#main bs-score .score-view").scrollIntoViewIfNeeded();
+        await page.waitForTimeout(300);
+        await page.locator("#main bs-score").screenshot({ path: join(themes, `${v.name}-${th.name}-score.png`) });
+      }
+      await axe(page, `${v.name} (${th.name})`);
     }
   }
+  await page.locator("#lang-select").selectOption("en");
 });
 
 test("re-run from a manifest, follow it live, compare with the original", async ({ page }) => {
