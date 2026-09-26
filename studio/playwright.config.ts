@@ -13,6 +13,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
+    locale: "en-GB",
     baseURL: external ?? `http://127.0.0.1:${port}`,
     viewport: { width: 1440, height: 1000 },
     launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },

@@ -1,5 +1,6 @@
 // Small DOM helpers shared by the views.
 import { ApiError, MissingEndpoint } from "../api/client";
+import { locale, t } from "../i18n";
 
 type Child = Node | string | number | null | undefined | false | Child[];
 type Attrs = Record<string, string | number | boolean | null | undefined | EventListener>;
@@ -47,15 +48,15 @@ export function announce(message: string): void {
 export function errorNotice(err: unknown): HTMLElement {
   if (err instanceof MissingEndpoint) {
     return h("div", { class: "notice notice-missing", role: "note" },
-      h("strong", {}, "Not available from this engine. "),
-      "This panel needs ", h("code", {}, err.endpoint), ", which the engine does not serve yet.");
+      h("strong", {}, `${t("common.notAvailable")} `),
+      ...t("common.needsEndpoint", { endpoint: "\u0000" }).split("\u0000").flatMap((s, i) => (i ? [h("code", {}, err.endpoint), s] : [s])));
   }
   const msg = err instanceof ApiError ? `${err.status}: ${err.message}` : err instanceof Error ? err.message : String(err);
-  return h("div", { class: "notice notice-error", role: "alert" }, h("strong", {}, "Could not load. "), msg);
+  return h("div", { class: "notice notice-error", role: "alert" }, h("strong", {}, `${t("common.couldNotLoad")} `), msg);
 }
 
-export function loading(label = "Loading…"): HTMLElement {
-  return h("p", { class: "loading", role: "status" }, label);
+export function loading(label?: string): HTMLElement {
+  return h("p", { class: "loading", role: "status" }, label ?? t("common.loading"));
 }
 
 /** Render `load()` into `el`, showing a loading state and errors in place. */
@@ -75,7 +76,7 @@ export const fmt = {
   seconds(s: number | null | undefined): string {
     if (s === null || s === undefined) return "–";
     if (s < 1) return `${(s * 1000).toFixed(0)} ms`;
-    if (s < 60) return `${s.toFixed(1)} s`;
+    if (s < 60) return `${s.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s`;
     return `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`;
   },
   bytes(b: number | null | undefined): string {
@@ -92,14 +93,14 @@ export const fmt = {
   date(t: number | string | null | undefined): string {
     if (t === null || t === undefined) return "–";
     const d = typeof t === "number" ? new Date(t * 1000) : new Date(t);
-    return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    return d.toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" });
   },
   num(v: number | null | undefined, digits = 3): string {
-    return v === null || v === undefined || Number.isNaN(v) ? "–" : v.toFixed(digits);
+    return v === null || v === undefined || Number.isNaN(v) ? "–" : v.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
   },
   signed(v: number | null | undefined, digits = 3): string {
     if (v === null || v === undefined) return "–";
-    return `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toFixed(digits)}`;
+    return `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })}`;
   },
   hash(h: string | null | undefined): string {
     return h ? h.slice(0, 12) : "–";
@@ -114,7 +115,7 @@ export function pill(status: string): HTMLElement {
     running: "▶", started: "▶", queued: "…", pending: "…", skipped: "–", cancelled: "–", missing: "?", not_run: "–",
     improved: "↑", new: "+", warning: "!",
   };
-  return h("span", { class: `pill pill-${status}` }, h("span", { "aria-hidden": "true" }, icon[status] ?? "•"), " ", status.replace("_", " "));
+  return h("span", { class: `pill pill-${status}` }, h("span", { "aria-hidden": "true" }, icon[status] ?? "•"), " ", t(`status.${status}`) === `status.${status}` ? status.replace("_", " ") : t(`status.${status}`));
 }
 
 /** A table with a caption; rows are arrays of cells. */
@@ -124,7 +125,7 @@ export function table(caption: string, head: string[], rows: Child[][], opts: { 
       h("caption", { class: opts.hideCaption ? "visually-hidden" : "" }, caption),
       h("thead", {}, h("tr", {}, head.map((c) => h("th", { scope: "col" }, c)))),
       h("tbody", {}, rows.length ? rows.map((r) => h("tr", {}, r.map((c) => h("td", {}, c)))) :
-        h("tr", {}, h("td", { colspan: head.length }, "Nothing here yet.")))));
+        h("tr", {}, h("td", { colspan: head.length }, t("common.nothing"))))));
 }
 
 /** Accessible tabs with a roving tabindex (WAI-ARIA tabs pattern, manual activation). */

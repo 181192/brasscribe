@@ -173,7 +173,7 @@
           "higher_is_better": false
         },
         "urmp.uncomfortable": {
-          "value": 3.8,
+          "value": 1.0,
           "tolerance": 0.1,
           "higher_is_better": false
         },

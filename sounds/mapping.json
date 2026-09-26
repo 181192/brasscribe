@@ -407,6 +407,16 @@
           57,
           84
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 1,
+        "staccato_bank": 65,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 2
+        },
+        "channel_gain_db": -5.0
       }
     },
     "Solo Cornet": {
@@ -441,6 +451,16 @@
           52,
           79
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -7.0
       }
     },
     "Repiano Cornet": {
@@ -466,6 +486,16 @@
           52,
           79
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 2,
+        "staccato_bank": 66,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 3
+        },
+        "channel_gain_db": -5.0
       }
     },
     "2nd Cornet": {
@@ -494,6 +524,16 @@
           52,
           79
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 3,
+        "staccato_bank": 67,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 4
+        },
+        "channel_gain_db": -11.0
       }
     },
     "3rd Cornet": {
@@ -522,6 +562,16 @@
           52,
           79
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 4,
+        "staccato_bank": 68,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 5
+        },
+        "channel_gain_db": -11.0
       }
     },
     "Flugelhorn": {
@@ -547,6 +597,16 @@
           52,
           79
         ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 5,
+        "staccato_bank": 69,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 6
+        },
+        "channel_gain_db": -3.0
       }
     },
     "Solo Horn": {
@@ -572,6 +632,16 @@
           45,
           72
         ]
+      },
+      "band_soundfont": {
+        "program": 60,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 61,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -3.0
       }
     },
     "1st Horn": {
@@ -597,6 +667,16 @@
           45,
           72
         ]
+      },
+      "band_soundfont": {
+        "program": 60,
+        "bank": 1,
+        "staccato_bank": 65,
+        "musicxml": {
+          "midi-program": 61,
+          "midi-bank": 2
+        },
+        "channel_gain_db": -4.0
       }
     },
     "2nd Horn": {
@@ -622,6 +702,16 @@
           45,
           72
         ]
+      },
+      "band_soundfont": {
+        "program": 60,
+        "bank": 2,
+        "staccato_bank": 66,
+        "musicxml": {
+          "midi-program": 61,
+          "midi-bank": 3
+        },
+        "channel_gain_db": -4.0
       }
     },
     "1st Baritone": {
@@ -647,6 +737,16 @@
           40,
           67
         ]
+      },
+      "band_soundfont": {
+        "program": 58,
+        "bank": 3,
+        "staccato_bank": 67,
+        "musicxml": {
+          "midi-program": 59,
+          "midi-bank": 4
+        },
+        "channel_gain_db": -4.0
       }
     },
     "2nd Baritone": {
@@ -672,6 +772,16 @@
           40,
           67
         ]
+      },
+      "band_soundfont": {
+        "program": 58,
+        "bank": 4,
+        "staccato_bank": 68,
+        "musicxml": {
+          "midi-program": 59,
+          "midi-bank": 5
+        },
+        "channel_gain_db": -4.0
       }
     },
     "1st Trombone": {
@@ -697,6 +807,16 @@
           40,
           71
         ]
+      },
+      "band_soundfont": {
+        "program": 57,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 58,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -4.0
       }
     },
     "2nd Trombone": {
@@ -722,6 +842,16 @@
           40,
           71
         ]
+      },
+      "band_soundfont": {
+        "program": 57,
+        "bank": 1,
+        "staccato_bank": 65,
+        "musicxml": {
+          "midi-program": 58,
+          "midi-bank": 2
+        },
+        "channel_gain_db": -4.0
       }
     },
     "Bass Trombone": {
@@ -747,6 +877,16 @@
           32,
           65
         ]
+      },
+      "band_soundfont": {
+        "program": 57,
+        "bank": 2,
+        "staccato_bank": 66,
+        "musicxml": {
+          "midi-program": 58,
+          "midi-bank": 3
+        },
+        "channel_gain_db": -4.0
       }
     },
     "Euphonium": {
@@ -775,6 +915,16 @@
           40,
           70
         ]
+      },
+      "band_soundfont": {
+        "program": 58,
+        "bank": 2,
+        "staccato_bank": 66,
+        "musicxml": {
+          "midi-program": 59,
+          "midi-bank": 3
+        },
+        "channel_gain_db": 0.0
       }
     },
     "E♭ Bass": {
@@ -803,6 +953,16 @@
           26,
           64
         ]
+      },
+      "band_soundfont": {
+        "program": 58,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 59,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -1.0
       }
     },
     "B♭ Bass": {
@@ -831,6 +991,16 @@
           28,
           58
         ]
+      },
+      "band_soundfont": {
+        "program": 58,
+        "bank": 1,
+        "staccato_bank": 65,
+        "musicxml": {
+          "midi-program": 59,
+          "midi-bank": 2
+        },
+        "channel_gain_db": -1.0
       }
     },
     "Percussion": {
@@ -857,8 +1027,25 @@
           0,
           127
         ]
+      },
+      "band_soundfont": {
+        "program": 0,
+        "bank": 128,
+        "channel": 10,
+        "musicxml": {
+          "midi-channel": 10,
+          "midi-program": 1
+        },
+        "note": "General MIDI Standard kit from MS Basic (MIT), GM drum note numbers.",
+        "channel_gain_db": -9.5
       }
     }
   },
-  "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback."
+  "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback.",
+  "band_soundfont": {
+    "file": "data/sounds/band/brasscribe-band.sf2",
+    "about": "One SoundFont for the whole band, built by sounds/band.py. Every brass part has its own sustain preset at (bank, program) and a staccato preset at (staccato_bank = bank + 64, program). The program is the part's General MIDI program from music/src/brasscribe_music/instruments.py (gm_program), so a GM player that ignores banks still plays the right family; bank 0 of each program is the section principal (Solo Cornet, 1st Trombone, E-flat Bass, Solo Horn), which is also what a bank-less lookup finds. Percussion is bank 128 program 0 on MIDI channel 10. MusicXML numbers are 1-based: <midi-program> = program + 1, <midi-bank> = bank + 1.",
+    "layering": "A part whose players use more than one target (the cornet desks) layers those targets in its preset, detuned by +-3 cents, so one MIDI channel sounds like a section; the second voice adds about 3 dB, which channel_gain_db compensates.",
+    "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine."
+  }
 }

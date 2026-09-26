@@ -88,6 +88,11 @@ export const api = {
   pdfUrl: (id: string) => url(`/v1/jobs/${enc(id)}/pdf`),
   inputAudioUrl: (id: string) => url(`/v1/jobs/${enc(id)}/input`),
   cancel: (id: string) => send<Job>("DELETE", `/v1/jobs/${enc(id)}`),
+  /** Remove a finished run's files (the artifact cache is kept). */
+  deleteRun: async (id: string): Promise<void> => {
+    const r = await fetch(url(`/v1/runs/${enc(id)}`), { method: "DELETE" });
+    if (!r.ok) await fail(r, "DELETE /v1/runs/{id}");
+  },
   uploadAndRun: (file: File, profile: string, title?: string) => {
     const fd = new FormData();
     fd.append("file", file);

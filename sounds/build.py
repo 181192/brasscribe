@@ -287,7 +287,10 @@ def main() -> None:
                   f" (raw {a['raw_layers']}), rr max {max(s['rr'] for s in a['samples'])}, loops {loops},"
                   f" regions {len(a['regions'])}{' [from sustain]' if a['derived_from_sustain'] else ''}")
         summary[tid] = {"range": t["range"], "sfz": [f"{tid}/{tid}-sus.sfz", f"{tid}/{tid}-stac.sfz"], "sf2": f"{tid}/{tid}.sf2"}
-    (BUILT / "targets.json").write_text(json.dumps(summary, indent=1))
+    index = BUILT / "targets.json"
+    merged = json.loads(index.read_text()) if index.exists() else {}
+    merged.update(summary)  # building a subset keeps the other targets listed
+    index.write_text(json.dumps(merged, indent=1))
 
 
 if __name__ == "__main__":

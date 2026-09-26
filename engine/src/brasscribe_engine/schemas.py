@@ -7,6 +7,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled"]
+Lineup = Literal["full", "minimal"]
+Difficulty = Literal["faithful", "standard", "easier"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -51,6 +53,13 @@ class JobCreate(BaseModel):
     title: str | None = None
     render_audio: bool = Field(True, description="also render an MP3 of the score")
     allow_heavy: bool = Field(True, description="allow heavy models to run on cache misses")
+    lineup: Lineup = Field("full", description="full: the 18-part brass band; minimal: the 8-part minimal band")
+    difficulty: Difficulty = Field("faithful", description="faithful keeps every transcribed note; standard and "
+                                                           "easier simplify rhythms and ranges")
+    key: str | None = Field(None, description="target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] "
+                                              "(-2, -2:minor); the arrangement is transposed to it")
+    transpose: int | None = Field(None, ge=-11, le=11, description="transpose the arrangement by this many semitones "
+                                                                  "(instead of key)")
 
 
 class StageState(BaseModel):
