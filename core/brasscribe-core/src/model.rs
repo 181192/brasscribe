@@ -143,6 +143,31 @@ pub struct Composition {
     pub ticks_per_beat: i64,
     #[serde(default)]
     pub free_regions: Vec<FreeRegion>,
+    /// Dynamic markings per textural layer.
+    #[serde(default)]
+    pub dynamics: Vec<Dynamic>,
+    /// Rehearsal marks at bar lines.
+    #[serde(default)]
+    pub sections: Vec<Section>,
+    /// Options the arrangement was made with (lineup, difficulty,
+    /// transpose_semitones); absent = the defaults.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrangement: Option<Value>,
+}
+
+/// A dynamic marking (pp, p, mp, mf, f, ff) for one textural layer from `tick` on.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Dynamic {
+    pub tick: i64,
+    pub layer: String,
+    pub mark: String,
+}
+
+/// A rehearsal mark: section `label` (A, B, ...) starts at `tick` (a bar line).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Section {
+    pub tick: i64,
+    pub label: String,
 }
 
 fn tpb() -> i64 {
@@ -180,6 +205,21 @@ impl Composition {
         }
         diffs.sort_by(|a, b| a.partial_cmp(b).unwrap());
         60.0 / diffs[diffs.len() / 2]
+    }
+
+    /// The whole piece `semitones` higher at concert pitch (drums and tick positions unchanged).
+    pub fn transposed(&self, semitones: i32) -> Composition {
+        let mut c = self.clone();
+        for v in c.voices.iter_mut() {
+            if v.layer.as_deref() == Some("drums") || v.role == VoiceRole::Rhythm {
+                continue;
+            }
+            for n in v.notes.iter_mut() {
+                n.pitch += semitones;
+            }
+        }
+        c.keys = c.keys.iter().map(|k| crate::keys::transposed_key(k, semitones)).collect();
+        c
     }
 
     pub fn to_value(&self) -> Value {

@@ -5,6 +5,7 @@
 
 pub mod beams;
 pub mod duration;
+pub mod parts;
 pub mod pitch;
 pub mod score;
 pub mod xml;

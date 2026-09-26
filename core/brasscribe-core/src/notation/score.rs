@@ -12,6 +12,7 @@ use super::beams::{get_beams, BDir, BeamInput, BeamSequence, Beams, BT};
 use super::duration::{DType, Dur, Rat, TupletType};
 use super::pitch::{altered_names, transpose, transpose_key, update_accidental_display, P};
 use super::xml::El as X;
+use crate::rhythm_spelling::{is_value, pieces};
 use crate::instruments::Instrument;
 use crate::quantize::QNote;
 use crate::spelling::{key_of, spell};
@@ -27,11 +28,15 @@ pub struct PartSpec {
     pub clef: String,
     /// Transposing band instrument; None = concert-pitch part.
     pub instrument: Option<&'static Instrument>,
+    /// Staff label after the first system (default: the instrument's).
+    pub abbreviation: Option<String>,
+    /// (tick, marking) changes of this part's layer.
+    pub dynamics: Vec<(i64, String)>,
 }
 
 impl PartSpec {
     pub fn concert(name: &str, notes: Vec<QNote>, clef: &str) -> PartSpec {
-        PartSpec { name: name.into(), notes, clef: clef.into(), instrument: None }
+        PartSpec { name: name.into(), notes, clef: clef.into(), instrument: None, abbreviation: None, dynamics: Vec::new() }
     }
 }
 
@@ -56,6 +61,10 @@ pub struct ScoreSpec {
     /// Part name -> MusicXML <instrument-sound>.
     pub sounds: Vec<(String, String)>,
     pub free_spans: Vec<FreeSpan>,
+    /// Key changes after the first key: (tick, fifths), at bar lines.
+    pub key_changes: Vec<(i64, i32)>,
+    /// Rehearsal marks (tick, label), shown on the top part.
+    pub rehearsal: Vec<(i64, String)>,
     pub encoding_date: String,
 }
 
@@ -95,7 +104,8 @@ pub struct Elem {
     pub beams: Beams,
     /// Some(true) = up.
     pub stem: Option<bool>,
-    pub color: bool,
+    /// Colour of an uncertain note (on its attack).
+    pub color: Option<&'static str>,
     pub staccato: bool,
     pub fermata: bool,
 }
@@ -130,8 +140,22 @@ impl Elem {
 
 #[derive(Clone, Debug, PartialEq)]
 enum Dir {
-    Words(String),
+    /// Text; (placement above, boxed).
+    Words(String, bool, bool),
     Metro(i64),
+    Rehearsal(String),
+    Dynamic(String),
+}
+
+impl Dir {
+    /// Class sort order of the corresponding notation object.
+    fn class_order(&self) -> i32 {
+        match self {
+            Dir::Words(..) | Dir::Rehearsal(_) => -30,
+            Dir::Metro(_) => 1,
+            Dir::Dynamic(_) => 10,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -140,6 +164,8 @@ struct Measure {
     dirs: Vec<(Rat, Dir)>,
     barline: Option<&'static str>,
     tuplets: Option<bool>,
+    /// Key signature at the start of this measure (the first measure, and key changes).
+    key: Option<i32>,
 }
 
 impl Measure {
@@ -178,6 +204,7 @@ enum ClefKind {
 #[derive(Clone, Debug)]
 struct Part {
     name: String,
+    abbreviation: Option<String>,
     inst: Option<&'static Instrument>,
     clef: ClefKind,
     fifths: Option<i32>,
@@ -231,6 +258,38 @@ fn notatable_end(start: i64, end: i64) -> i64 {
     cands.into_iter().filter(|&c| c > start).min_by_key(|&c| ((c - end).abs(), c)).unwrap()
 }
 
+/// [a, b) splits into plain, dotted or triplet values within each beat (no
+/// 2-tick fragments, which can only be written as nested tuplets).
+fn clean_span(a: i64, b: i64) -> bool {
+    b > a && pieces(a, b, TPB).iter().all(|&(x, y)| is_value(y - x))
+}
+
+/// The end nearest `end` for which the note and the rest after it are both clean spans.
+fn clean_end(start: i64, end: i64, nxt: Option<i64>) -> i64 {
+    let ok = |e: i64| clean_span(start, e) && (nxt.is_none() || nxt == Some(e) || clean_span(e, nxt.unwrap()));
+    if ok(end) {
+        return end;
+    }
+    let hi = nxt.unwrap_or(end + TPB);
+    let mut cands: Vec<i64> = Vec::new();
+    for g in [6i64, 8] {
+        let mut e = g * (crate::py::floordiv(start, g) + 1);
+        while e <= hi {
+            cands.push(e);
+            e += g;
+        }
+    }
+    if let Some(n) = nxt {
+        if n != 0 {
+            cands.push(n);
+        }
+    }
+    cands.sort();
+    cands.dedup();
+    cands.sort_by_key(|&e| ((e - end).abs(), -e));
+    cands.into_iter().find(|&e| ok(e)).unwrap_or(end)
+}
+
 /// Group by start tick; make the line non-overlapping.
 fn events(notes: &[QNote]) -> Vec<Event> {
     let mut groups: BTreeMap<i64, Vec<&QNote>> = BTreeMap::new();
@@ -243,9 +302,11 @@ fn events(notes: &[QNote]) -> Vec<Event> {
         let g = &groups[s];
         let mut end = g.iter().map(|q| q.end).min().unwrap();
         end = notatable_end(*s, end);
-        if i + 1 < starts.len() {
-            end = end.min(starts[i + 1]);
+        let nxt = starts.get(i + 1).copied();
+        if let Some(n) = nxt {
+            end = end.min(n);
         }
+        end = clean_end(*s, end, nxt);
         let mut ps: Vec<i32> = g.iter().map(|q| q.pitch).collect();
         ps.sort();
         ps.dedup();
@@ -278,6 +339,62 @@ fn drum(p: i32) -> (u8, i32, &'static str) {
 
 fn py_round_bpm(bpm: f64) -> i64 {
     crate::py::round_int(bpm)
+}
+
+/// Uncertainty encoding: colour plus a "?" above the attack, boxed below VERY_UNCERTAIN.
+pub const UNCERTAIN_COLOUR: &str = "#0063A6";
+pub const VERY_UNCERTAIN_COLOUR: &str = "#B04A00";
+pub const VERY_UNCERTAIN: f64 = 0.4;
+/// A part re-entering after this many empty bars gets its dynamic again.
+pub const RESTATE_AFTER_BARS: i64 = 2;
+
+/// The layer's dynamics on this part's notes: at the first note at or after each
+/// change, and again when the part re-enters after RESTATE_AFTER_BARS empty bars.
+fn place_dynamics(spec: &PartSpec, bar: i64) -> Vec<(i64, String)> {
+    if spec.dynamics.is_empty() || spec.notes.is_empty() {
+        return Vec::new();
+    }
+    let mut starts: Vec<i64> = spec.notes.iter().map(|q| q.start).collect();
+    starts.sort();
+    starts.dedup();
+    let mut ends: HashMap<i64, i64> = HashMap::new();
+    for q in &spec.notes {
+        let e = ends.entry(q.start).or_insert(q.start);
+        *e = (*e).max(q.end);
+    }
+    let mut changes = spec.dynamics.clone();
+    changes.sort();
+    let mark_at = |tick: i64| -> Option<String> {
+        let mut m = None;
+        for (t, mk) in &changes {
+            if *t <= tick {
+                m = Some(mk.clone());
+            }
+        }
+        m
+    };
+    let mut placed: BTreeMap<i64, String> = BTreeMap::new();
+    for (i, (t, mk)) in changes.iter().enumerate() {
+        let nxt = changes.get(i + 1).map(|c| c.0);
+        if let Some(&first) = starts.iter().find(|&&s| s >= *t && nxt.map_or(true, |n| s < n)) {
+            placed.insert(first, mk.clone());
+        }
+    }
+    if !placed.contains_key(&starts[0]) {
+        placed.insert(starts[0], mark_at(starts[0]).unwrap_or_else(|| changes[0].1.clone()));
+    }
+    let mut prev_end: Option<i64> = None;
+    for &s in &starts {
+        if let Some(pe) = prev_end {
+            if s - pe >= RESTATE_AFTER_BARS * bar && !placed.contains_key(&s) {
+                if let Some(m) = mark_at(s) {
+                    placed.insert(s, m);
+                }
+            }
+        }
+        prev_end = Some(prev_end.unwrap_or(0).max(ends[&s]));
+    }
+    placed.into_iter().collect()
 }
 
 fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
@@ -320,95 +437,148 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
     let mut parts = Vec::new();
     for (pi, p) in spec.parts.iter().enumerate() {
         let drums = is_drums(p);
-        let mut dirs: Vec<(i64, u8, Dir)> = Vec::new();
+        // (tick, class order, insertion) -> direction
+        let mut dirs: Vec<(i64, i32, usize, Dir)> = Vec::new();
+        let push = |dirs: &mut Vec<(i64, i32, usize, Dir)>, t: i64, d: Dir| {
+            let n = dirs.len();
+            dirs.push((t, d.class_order(), n, d));
+        };
+        let mut key_changes: Vec<(i64, i32)> = Vec::new();
+        if !drums {
+            for &(tick, f) in &spec.key_changes {
+                if tick - spec.pickup_ticks > 0 {
+                    key_changes.push((tick - spec.pickup_ticks, f));
+                }
+            }
+        }
         if pi == 0 && !opens_free {
-            dirs.push((0, 1, Dir::Metro(py_round_bpm(spec.bpm))));
+            push(&mut dirs, 0, Dir::Metro(py_round_bpm(spec.bpm)));
         }
         for sp in &spec.free_spans {
             let (a, b) = (sp.start - spec.pickup_ticks, sp.end - spec.pickup_ticks);
             if a >= 0 {
-                dirs.push((a, 0, Dir::Words(sp.label.clone())));
+                push(&mut dirs, a, Dir::Words(sp.label.clone(), false, false));
                 if pi == 0 {
-                    dirs.push((a, 1, Dir::Metro(py_round_bpm(sp.bpm))));
+                    push(&mut dirs, a, Dir::Metro(py_round_bpm(sp.bpm)));
                 }
             }
             if 0 <= b && b < total {
-                dirs.push((b, 0, Dir::Words("a tempo".into())));
+                push(&mut dirs, b, Dir::Words("a tempo".into(), false, false));
                 if pi == 0 {
-                    dirs.push((b, 1, Dir::Metro(py_round_bpm(spec.bpm))));
+                    push(&mut dirs, b, Dir::Metro(py_round_bpm(spec.bpm)));
                 }
             }
         }
-        // stable: offset, then class order (text before tempo), then insertion
-        dirs.sort_by_key(|d| (d.0, d.1));
+        if pi == 0 {
+            for (tick, label) in &spec.rehearsal {
+                if 0 <= tick - spec.pickup_ticks && tick - spec.pickup_ticks < total {
+                    push(&mut dirs, tick - spec.pickup_ticks, Dir::Rehearsal(label.clone()));
+                }
+            }
+        }
+        for (s, mk) in place_dynamics(p, bar) {
+            if s - spec.pickup_ticks >= 0 {
+                push(&mut dirs, s - spec.pickup_ticks, Dir::Dynamic(mk));
+            }
+        }
 
         let mut flat_els: Vec<Elem> = Vec::new();
-        let rest = |ids: &mut Ids, from: i64, to: i64| Elem {
-            id: ids.next(),
-            off: Rat::new(from, TPB),
-            dur: Dur::from_ql(Rat::new(to - from, TPB)),
-            kind: Kind::Rest,
-            beams: Vec::new(),
-            stem: None,
-            color: false,
-            staccato: false,
-            fermata: false,
+        let rest = |ids: &mut Ids, out: &mut Vec<Elem>, from: i64, to: i64| {
+            for (x, y) in pieces(from, to, bar) {
+                out.push(Elem {
+                    id: ids.next(),
+                    off: Rat::new(x, TPB),
+                    dur: Dur::from_ql(Rat::new(y - x, TPB)),
+                    kind: Kind::Rest,
+                    beams: Vec::new(),
+                    stem: None,
+                    color: None,
+                    staccato: false,
+                    fermata: false,
+                });
+            }
         };
         let mut cursor = 0i64;
         for ev in &part_events[pi] {
             let tick = ev.start;
             let start = ev.start - spec.pickup_ticks;
-            let end = ev.end - spec.pickup_ticks;
+            let mut end = ev.end - spec.pickup_ticks;
             if start < 0 {
                 continue;
             }
             if start > cursor {
-                flat_els.push(rest(ids, cursor, start));
+                rest(ids, &mut flat_els, cursor, start);
             }
-            let kind = if drums {
-                let mut heads: Vec<i32> = ev.pitches.clone();
-                heads.sort();
-                heads.dedup();
-                let us: Vec<Unp> = heads
-                    .iter()
-                    .map(|&m| {
-                        let (step, octave, head) = drum(m);
-                        Unp { step, octave, head, tie: None }
-                    })
-                    .collect();
-                if us.len() == 1 {
-                    Kind::Unp(us[0])
+            let mut segs = pieces(start, end, bar);
+            if drums {
+                // A drum hit has no meaningful length: its first readable value, then rest.
+                segs.truncate(1);
+                end = segs[0].1;
+            }
+            let n = segs.len();
+            for (i, &(a, b)) in segs.iter().enumerate() {
+                let tie = if n > 1 { Some(if i == 0 { Tie::Start } else if i == n - 1 { Tie::Stop } else { Tie::Continue }) } else { None };
+                let kind = if drums {
+                    let mut heads: Vec<i32> = ev.pitches.clone();
+                    heads.sort();
+                    heads.dedup();
+                    let us: Vec<Unp> = heads
+                        .iter()
+                        .map(|&m| {
+                            let (step, octave, head) = drum(m);
+                            Unp { step, octave, head, tie: None }
+                        })
+                        .collect();
+                    if us.len() == 1 {
+                        Kind::Unp(us[0])
+                    } else {
+                        Kind::PChord(us)
+                    }
                 } else {
-                    Kind::PChord(us)
+                    let sp: Vec<P> = ev.pitches.iter().map(|&m| spelled[&(pi, tick, m)]).collect();
+                    if sp.len() == 1 {
+                        Kind::Note(sp[0], tie)
+                    } else {
+                        Kind::Chord(sp.into_iter().map(|p| (p, tie)).collect())
+                    }
+                };
+                let mut color = None;
+                if ev.conf < spec.low_confidence && i == 0 {
+                    let very = ev.conf < VERY_UNCERTAIN;
+                    color = Some(if very { VERY_UNCERTAIN_COLOUR } else { UNCERTAIN_COLOUR });
+                    if !drums {
+                        push(&mut dirs, a, Dir::Words("?".into(), true, very));
+                    }
                 }
-            } else {
-                let sp: Vec<P> = ev.pitches.iter().map(|&m| spelled[&(pi, tick, m)]).collect();
-                if sp.len() == 1 {
-                    Kind::Note(sp[0], None)
-                } else {
-                    Kind::Chord(sp.into_iter().map(|p| (p, None)).collect())
-                }
-            };
-            flat_els.push(Elem {
-                id: ids.next(),
-                off: Rat::new(start, TPB),
-                dur: Dur::from_ql(Rat::new(end - start, TPB)),
-                kind,
-                beams: Vec::new(),
-                stem: None,
-                color: ev.conf < spec.low_confidence,
-                staccato: !drums && ev.arts.contains("staccato"),
-                fermata: !drums && ev.arts.contains("fermata"),
-            });
+                flat_els.push(Elem {
+                    id: ids.next(),
+                    off: Rat::new(a, TPB),
+                    dur: Dur::from_ql(Rat::new(b - a, TPB)),
+                    kind,
+                    beams: Vec::new(),
+                    stem: None,
+                    color,
+                    staccato: !drums && i == 0 && ev.arts.contains("staccato"),
+                    fermata: !drums && i == n - 1 && ev.arts.contains("fermata"),
+                });
+            }
             cursor = end;
         }
         if cursor < total {
-            flat_els.push(rest(ids, cursor, total));
+            rest(ids, &mut flat_els, cursor, total);
         }
+        // stable: offset, then class order, then insertion
+        dirs.sort_by_key(|d| (d.0, d.1, d.2));
 
         // measures (bar lines every `bar`, at least one bar, up to the last element)
         let bar_ql = Rat::int(spec.beats_per_bar);
-        let o_max = flat_els.iter().map(|e| e.end()).chain(dirs.iter().map(|d| Rat::new(d.0, TPB))).max().unwrap_or(Rat::ZERO);
+        let o_max = flat_els
+            .iter()
+            .map(|e| e.end())
+            .chain(dirs.iter().map(|d| Rat::new(d.0, TPB)))
+            .chain(key_changes.iter().map(|k| Rat::new(k.0, TPB)))
+            .max()
+            .unwrap_or(Rat::ZERO);
         let mut n_measures = 1usize;
         let mut o = bar_ql;
         while o < o_max {
@@ -416,18 +586,27 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
             o = o + bar_ql;
         }
         let mut measures: Vec<Measure> =
-            (0..n_measures).map(|_| Measure { els: Vec::new(), dirs: Vec::new(), barline: None, tuplets: None }).collect();
+            (0..n_measures).map(|_| Measure { els: Vec::new(), dirs: Vec::new(), barline: None, tuplets: None, key: None }).collect();
+        let index = |off: Rat| -> usize { ((off / bar_ql).n.div_euclid((off / bar_ql).d)) as usize };
         for mut e in flat_els {
-            let k = ((e.off / bar_ql).n.div_euclid((e.off / bar_ql).d)) as usize;
+            let k = index(e.off);
             // makeNotation works on a deep copy, but these durations have not been
             // expanded into components yet, so they keep counting as inferred.
             e.off = e.off - bar_ql * Rat::int(k as i64);
             measures[k].els.push(e);
         }
-        for (t, _, d) in dirs {
+        for (t, _, _, d) in dirs {
             let off = Rat::new(t, TPB);
-            let k = ((off / bar_ql).n.div_euclid((off / bar_ql).d)) as usize;
+            let k = index(off);
             measures[k].dirs.push((off - bar_ql * Rat::int(k as i64), d));
+        }
+        if !drums {
+            measures[0].key = Some(fifths);
+            for (t, f) in key_changes {
+                // key changes sit on bar lines
+                let k = index(Rat::new(t, TPB));
+                measures[k].key = Some(f);
+            }
         }
         measures.last_mut().unwrap().barline = Some("final");
         let clef = if drums {
@@ -437,7 +616,14 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
         } else {
             ClefKind::Treble
         };
-        parts.push(Part { name: p.name.clone(), inst: p.instrument, clef, fifths: if drums { None } else { Some(fifths) }, measures });
+        parts.push(Part {
+            name: p.name.clone(),
+            abbreviation: p.abbreviation.clone(),
+            inst: p.instrument,
+            clef,
+            fifths: if drums { None } else { Some(fifths) },
+            measures,
+        });
     }
     (parts, total)
 }
@@ -458,17 +644,39 @@ fn tie_pitch_set(e: &Elem) -> Option<HashSet<(u8, i32, i32)>> {
     }
 }
 
+/// (step, alter) names of the major scale of a key signature.
+fn scale_names(fifths: i32) -> Vec<(u8, i32)> {
+    let altered = altered_names(fifths);
+    (0..7u8).map(|st| altered.iter().rev().find(|(s, _)| *s == st).copied().unwrap_or((st, 0))).collect()
+}
+
 fn make_accidentals(part: &mut Part) {
-    let altered = part.fifths.map(altered_names).unwrap_or_default();
+    let mut ks_last: Option<i32> = None;
     let mut tie_set: Option<HashSet<(u8, i32, i32)>> = None;
     let mut past_measure: Vec<P> = Vec::new();
     for i in 0..part.measures.len() {
+        let mkey = part.measures[i].key;
         if i > 0 {
-            past_measure = part.measures[i - 1].els.iter().flat_map(|e| e.pitches()).collect();
+            let prev: Vec<P> = part.measures[i - 1].els.iter().flat_map(|e| e.pitches()).collect();
+            if mkey.is_none() {
+                past_measure = prev;
+            } else if let Some(last) = ks_last {
+                // Only the chromatic pitches of the previous measure carry over a key change.
+                let diatonic = scale_names(last);
+                past_measure = prev.into_iter().filter(|p| !diatonic.contains(&p.name())).collect();
+            }
             if let Some(last) = part.measures[i - 1].els.iter().rev().find(|e| !e.is_rest()) {
                 tie_set = tie_pitch_set(last);
+                if tie_set.is_some() && mkey.is_some() {
+                    // The reference compares names with octave against names without: nothing survives.
+                    tie_set = Some(HashSet::new());
+                }
             }
         }
+        if mkey.is_some() {
+            ks_last = mkey;
+        }
+        let altered = ks_last.map(altered_names).unwrap_or_default();
         let mut ts = tie_set.take().unwrap_or_default();
         let mut past: Vec<P> = Vec::new();
         for e in part.measures[i].els.iter_mut() {
@@ -837,6 +1045,9 @@ fn to_written(part: &mut Part) {
         part.fifths = Some(transpose_key(f, steps, semis));
     }
     for m in part.measures.iter_mut() {
+        if let Some(f) = m.key {
+            m.key = Some(transpose_key(f, steps, semis));
+        }
         for e in m.els.iter_mut() {
             match &mut e.kind {
                 Kind::Note(p, _) => *p = transpose(p, steps, semis),
@@ -864,7 +1075,37 @@ fn deep_copy(parts: &mut [Part]) {
 // ---------------------------------------------------------------------------
 // XML
 
-const COLOR: &str = "#D0021B";
+/// Written E#, B#, Fb, Cb and double accidentals become the plain enharmonic
+/// (flats stay flats, sharps sharps): spelling runs at concert pitch, and
+/// transposing a part can turn a sensible name into F## or E# on the page.
+fn plain_spellings(part: &mut Part) {
+    const SHARP: [(u8, i32); 12] = [(0, 0), (0, 1), (1, 0), (2, -1), (2, 0), (3, 0), (3, 1), (4, 0), (5, -1), (5, 0), (6, -1), (6, 0)];
+    const FLAT: [(u8, i32); 12] = [(0, 0), (1, -1), (1, 0), (2, -1), (2, 0), (3, 0), (4, -1), (4, 0), (5, -1), (5, 0), (6, -1), (6, 0)];
+    let fix = |p: &mut P| {
+        let alter = p.alter();
+        let awkward = matches!((p.step, alter), (2, 1) | (6, 1) | (3, -1) | (0, -1));
+        if alter.abs() >= 2 || awkward {
+            let midi = p.ps();
+            let (step, a) = (if alter < 0 { FLAT } else { SHARP })[midi.rem_euclid(12) as usize];
+            let mut q = P::new(step, a, crate::py::floordiv(midi as i64, 12) as i32 - 1);
+            q.octave += crate::py::floordiv((midi - q.ps()) as i64, 12) as i32;
+            *p = q;
+        }
+    };
+    for m in part.measures.iter_mut() {
+        for e in m.els.iter_mut() {
+            match &mut e.kind {
+                Kind::Note(p, _) => fix(p),
+                Kind::Chord(v) => {
+                    for (p, _) in v.iter_mut() {
+                        fix(p);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
 
 fn duration_el(ql: Rat) -> X {
     X::text("duration", (Rat::int(DIVISIONS) * ql).round_even().to_string())
@@ -973,8 +1214,8 @@ enum Head<'a> {
 /// One <note> element (index > 0 inside a chord gets <chord/>).
 fn note_xml(e: &Elem, head: Head, tie: Option<Tie>, index: usize, full_rest: bool, member_notehead: &'static str) -> X {
     let mut n = X::new("note");
-    if e.color {
-        n.set("color", COLOR);
+    if let Some(c) = e.color {
+        n.set("color", c);
     }
     if index > 0 {
         n.push(X::new("chord"));
@@ -1032,10 +1273,10 @@ fn note_xml(e: &Elem, head: Head, tie: Option<Tie>, index: usize, full_rest: boo
             n.push(X::text("stem", if up { "up" } else { "down" }));
         }
     }
-    if !matches!(head, Head::Rest) && (member_notehead != "normal" || e.color) {
+    if !matches!(head, Head::Rest) && (member_notehead != "normal" || e.color.is_some()) {
         let mut nh = X::text("notehead", member_notehead).attr("parentheses", "no");
-        if e.color {
-            nh.set("color", COLOR);
+        if let Some(c) = e.color {
+            nh.set("color", c);
         }
         n.push(nh);
     }
@@ -1083,19 +1324,73 @@ fn elem_xml(e: &Elem, bar: Rat, out: &mut Vec<X>) {
     }
 }
 
-fn dir_xml(d: &Dir) -> X {
+/// A <direction>; `offset` in divisions when it does not sit at the current position.
+fn dir_xml(d: &Dir, offset: Option<i64>) -> X {
+    let off = |x: &mut X, sound: bool| {
+        if let Some(o) = offset {
+            let mut e = X::text("offset", o.to_string());
+            if sound {
+                e.set("sound", "yes");
+            }
+            x.push(e);
+        }
+    };
     match d {
-        Dir::Words(w) => X::new("direction").child(X::new("direction-type").child(X::text("words", w.clone()))),
-        Dir::Metro(n) => X::new("direction")
-            .child(
+        Dir::Words(w, above, boxed) => {
+            let mut words = X::text("words", w.clone());
+            if *boxed {
+                words.set("enclosure", "rectangle");
+            }
+            let mut x = X::new("direction").child(X::new("direction-type").child(words));
+            if *above {
+                x.set("placement", "above");
+            }
+            off(&mut x, false);
+            x
+        }
+        Dir::Metro(n) => {
+            let mut x = X::new("direction").child(
                 X::new("direction-type").child(
                     X::new("metronome")
                         .attr("parentheses", "no")
                         .child(X::text("beat-unit", "quarter"))
                         .child(X::text("per-minute", n.to_string())),
                 ),
-            )
-            .child(X::new("sound").attr("tempo", n.to_string())),
+            );
+            off(&mut x, true);
+            x.push(X::new("sound").attr("tempo", n.to_string()));
+            x
+        }
+        Dir::Rehearsal(l) => {
+            let mut x = X::new("direction").child(
+                X::new("direction-type").child(X::text("rehearsal", l.clone()).attr("halign", "center").attr("valign", "middle")),
+            );
+            off(&mut x, true);
+            x
+        }
+        Dir::Dynamic(m) => {
+            let volume = match m.as_str() {
+                "pppppp" => 0.02,
+                "ppppp" => 0.05,
+                "pppp" => 0.1,
+                "ppp" => 0.15,
+                "pp" => 0.25,
+                "p" => 0.35,
+                "mp" => 0.45,
+                "mf" => 0.55,
+                "f" => 0.7,
+                "ff" => 0.85,
+                "fff" => 0.9,
+                "ffff" => 0.95,
+                _ => 0.99,
+            };
+            let mut x = X::new("direction").child(
+                X::new("direction-type").child(X::new("dynamics").attr("default-x", "-36").attr("default-y", "-80").child(X::new(m))),
+            );
+            off(&mut x, true);
+            x.push(X::new("sound").attr("dynamics", ((volume * 127.0) as i64).to_string()));
+            x
+        }
     }
 }
 
@@ -1121,9 +1416,14 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
     let mut px = X::new("part").attr("id", format!("P{}", idx + 1));
     for (mi, m) in part.measures.iter().enumerate() {
         let mut mx = X::new("measure").attr("implicit", "no").attr("number", (mi + 1).to_string());
+        if mi > 0 {
+            if let Some(f) = m.key {
+                mx.push(X::new("attributes").child(X::new("key").child(X::text("fifths", f.to_string()))));
+            }
+        }
         if mi == 0 {
             let mut at = X::new("attributes").child(X::text("divisions", DIVISIONS.to_string()));
-            if let Some(f) = part.fifths {
+            if let Some(f) = m.key {
                 at.push(X::new("key").child(X::text("fifths", f.to_string())));
             }
             at.push(X::new("time").child(X::text("beats", bpb.to_string())).child(X::text("beat-type", "4")));
@@ -1142,12 +1442,20 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
         offsets.sort();
         offsets.dedup();
         let mut children = Vec::new();
+        let mut cur = Rat::ZERO;
         for o in offsets {
+            if o > cur && m.els.iter().any(|e| e.off == o) {
+                let fwd = (Rat::int(DIVISIONS) * (o - cur)).round_even();
+                children.push(X::new("forward").child(X::text("duration", fwd.to_string())));
+                cur = o;
+            }
             for (_, d) in m.dirs.iter().filter(|d| d.0 == o) {
-                children.push(dir_xml(d));
+                let off = if o == cur { None } else { Some(((o - cur) * Rat::int(DIVISIONS)).to_f64() as i64) };
+                children.push(dir_xml(d, off));
             }
             for e in m.els.iter().filter(|e| e.off == o) {
                 elem_xml(e, bar, &mut children);
+                cur = cur + e.dur.ql;
             }
         }
         mx.children.extend(children);
@@ -1199,7 +1507,7 @@ fn midi_channels(parts: &[Part]) -> Vec<i64> {
 fn score_part_xml(part: &Part, idx: usize, channel: i64, sounds: &[(String, String)]) -> X {
     let mut sp = X::new("score-part").attr("id", format!("P{}", idx + 1)).child(X::text("part-name", part.name.clone()));
     if let Some(inst) = part.inst {
-        sp.push(X::text("part-abbreviation", inst.short));
+        sp.push(X::text("part-abbreviation", part.abbreviation.clone().unwrap_or_else(|| inst.short.to_string())));
         let iid = format!("I{}", idx + 1);
         let mut si = X::new("score-instrument").attr("id", iid.clone()).child(X::text("instrument-name", inst.name));
         if inst.is_percussion() {
@@ -1218,8 +1526,28 @@ fn score_part_xml(part: &Part, idx: usize, channel: i64, sounds: &[(String, Stri
     sp
 }
 
+pub const XML_HEAD: &str = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE score-partwise  PUBLIC \"-//Recordare//DTD MusicXML 4.0 Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">\n";
+
+pub fn to_string(root: &X) -> String {
+    let mut out = String::from(XML_HEAD);
+    root.write(0, &mut out);
+    out
+}
+
 /// Build the score and write it as MusicXML (written pitch for transposing parts).
 pub fn write_score(spec: &ScoreSpec) -> String {
+    to_string(&build_score_xml(spec))
+}
+
+/// The score and its individual parts ((file name, MusicXML) in score order).
+pub fn write_score_with_parts(spec: &ScoreSpec) -> (String, Vec<(String, String)>) {
+    let root = build_score_xml(spec);
+    let parts = super::parts::split_parts(&root).into_iter().map(|(n, d)| (n, to_string(&d))).collect();
+    (to_string(&root), parts)
+}
+
+/// Build the score as an element tree.
+pub fn build_score_xml(spec: &ScoreSpec) -> X {
     let mut ids = Ids(0);
     let (mut parts, _total) = build_parts(spec, &mut ids);
     let bar = Rat::int(spec.beats_per_bar);
@@ -1258,6 +1586,9 @@ pub fn write_score(spec: &ScoreSpec) -> String {
         for part in parts.iter_mut() {
             to_written(part);
         }
+    }
+    for part in parts.iter_mut() {
+        plain_spellings(part);
     }
     // export: the exporter's own copy and notation pass
     deep_copy(&mut parts);
@@ -1305,12 +1636,133 @@ pub fn write_score(spec: &ScoreSpec) -> String {
     for (i, p) in parts.iter().enumerate() {
         root.push(part_xml(p, i, spec.beats_per_bar));
     }
-    let mut out = String::from(
-        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE score-partwise  PUBLIC \"-//Recordare//DTD MusicXML 4.0 Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">\n",
-    );
-    root.write(0, &mut out);
-    out
+    if !spec.sounds.is_empty() {
+        band_midi(&mut root);
+    }
+    root
 }
 
 #[allow(dead_code)]
 fn _unused(_: DType) {}
+
+// ---------------------------------------------------------------------------
+// MIDI setup for the band SoundFont
+
+/// Percussion instruments by written position and notehead, as General MIDI notes.
+const DRUM_SOUNDS: [(&str, &str, i64, &str); 13] = [
+    ("F4", "normal", 36, "Bass Drum"),
+    ("C5", "normal", 38, "Snare Drum"),
+    ("C5", "x", 37, "Side Stick"),
+    ("A4", "normal", 43, "Floor Tom"),
+    ("D5", "normal", 47, "Low-Mid Tom"),
+    ("E5", "normal", 50, "High Tom"),
+    ("G5", "x", 42, "Closed Hi-Hat"),
+    ("D4", "x", 44, "Pedal Hi-Hat"),
+    ("G5", "circle-x", 46, "Open Hi-Hat"),
+    ("A5", "x", 49, "Crash Cymbal"),
+    ("F5", "x", 51, "Ride Cymbal"),
+    ("F5", "diamond", 53, "Ride Bell"),
+    ("B5", "x", 54, "Tambourine"),
+];
+const DRUM_CHANNEL: i64 = 10;
+
+fn drum_sound(pos: &str, head: &str) -> (i64, &'static str) {
+    let hit = DRUM_SOUNDS.iter().find(|d| d.0 == pos && d.1 == head).unwrap_or(&DRUM_SOUNDS[12]);
+    (hit.2, hit.3)
+}
+
+fn attr_of<'a>(e: &'a X, k: &str) -> Option<&'a str> {
+    e.attrs.iter().find(|(n, _)| n == k).map(|(_, v)| v.as_str())
+}
+
+fn child_text(e: &X, tag: &str) -> Option<String> {
+    e.children.iter().find(|c| c.name == tag).map(|c| c.text.clone().unwrap_or_default())
+}
+
+fn has_descendant(e: &X, tag: &str) -> bool {
+    e.children.iter().any(|c| c.name == tag || has_descendant(c, tag))
+}
+
+/// Every drum note gets `<instrument id>`; returns the GM notes used with their names.
+fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
+    for c in e.children.iter_mut() {
+        if c.name == "note" {
+            if let Some(u) = c.children.iter().find(|x| x.name == "unpitched") {
+                let pos = format!("{}{}", child_text(u, "display-step").unwrap_or_else(|| "None".into()), child_text(u, "display-octave").unwrap_or_else(|| "None".into()));
+                let head = child_text(c, "notehead").filter(|h| !h.is_empty()).unwrap_or_else(|| "normal".into());
+                let (gm, label) = drum_sound(&pos, &head);
+                match used.iter_mut().find(|(g, _)| *g == gm) {
+                    Some(x) => x.1 = label,
+                    None => used.push((gm, label)),
+                }
+                // Schema order: ..., duration, tie*, instrument, voice, type, ...
+                let after = c.children.iter().rposition(|x| ["unpitched", "duration", "tie", "chord", "grace", "cue"].contains(&x.name.as_str()));
+                let at = after.map(|i| i + 1).unwrap_or(0);
+                c.children.insert(at, X::new("instrument").attr("id", format!("{base}-{gm}")));
+            }
+        }
+        tag_drum_notes(c, base, used);
+    }
+}
+
+/// Pitched parts: their preset's <midi-bank> and a channel of their own in
+/// score order, skipping the drum channel; past 15 parts the channels continue
+/// on MIDI port 2. Percussion: one score-instrument per drum sound used, on
+/// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
+/// every note.
+fn band_midi(root: &mut X) {
+    let banks: Vec<(&'static str, i64)> = crate::instruments::brass_band().parts.iter().filter_map(|p| p.midi_bank.map(|b| (p.name, b))).collect();
+    let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
+    let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
+    let mut k = 0usize;
+    for si in 0..root.children[pl].children.len() {
+        if root.children[pl].children[si].name != "score-part" {
+            continue;
+        }
+        let pid = attr_of(&root.children[pl].children[si], "id").unwrap_or("").to_string();
+        let part_idx = root.children.iter().position(|c| c.name == "part" && attr_of(c, "id") == Some(pid.as_str()));
+        if let Some(pi) = part_idx.filter(|&pi| has_descendant(&root.children[pi], "unpitched")) {
+            let sp = &root.children[pl].children[si];
+            let base = sp.children.iter().find(|c| c.name == "score-instrument").and_then(|c| attr_of(c, "id")).unwrap_or("").to_string();
+            let mut used = Vec::new();
+            tag_drum_notes(&mut root.children[pi], &base, &mut used);
+            used.sort_by_key(|u| u.0);
+            let sp = &mut root.children[pl].children[si];
+            sp.children.retain(|c| !["score-instrument", "midi-instrument", "midi-device"].contains(&c.name.as_str()));
+            for (gm, label) in &used {
+                sp.push(X::new("score-instrument").attr("id", format!("{base}-{gm}")).child(X::text("instrument-name", *label)).child(X::text("instrument-sound", "drum.group.set")));
+            }
+            for (gm, _) in &used {
+                sp.push(
+                    X::new("midi-instrument")
+                        .attr("id", format!("{base}-{gm}"))
+                        .child(X::text("midi-channel", DRUM_CHANNEL.to_string()))
+                        .child(X::text("midi-unpitched", (gm + 1).to_string())),
+                );
+            }
+            continue;
+        }
+        let sp = &mut root.children[pl].children[si];
+        let name = child_text(sp, "part-name").unwrap_or_default().trim().to_string();
+        let Some(mi) = sp.children.iter().position(|c| c.name == "midi-instrument") else { continue };
+        let (port, channel) = (k / channels.len(), k % channels.len());
+        k += 1;
+        let mi_id = attr_of(&sp.children[mi], "id").unwrap_or("").to_string();
+        {
+            let m = &mut sp.children[mi];
+            match m.children.iter().position(|c| c.name == "midi-channel") {
+                Some(ci) => m.children[ci].text = Some(channels[channel].to_string()),
+                None => m.children.insert(0, X::text("midi-channel", channels[channel].to_string())),
+            }
+            if let Some((_, bank)) = banks.iter().find(|(n, _)| *n == name) {
+                if !m.children.iter().any(|c| c.name == "midi-bank") {
+                    let after = m.children.iter().rposition(|c| c.name == "midi-channel" || c.name == "midi-name");
+                    m.children.insert(after.map(|i| i + 1).unwrap_or(0), X::text("midi-bank", bank.to_string()));
+                }
+            }
+        }
+        if port > 0 {
+            sp.children.insert(mi, X::new("midi-device").attr("id", mi_id).attr("port", (port + 1).to_string()));
+        }
+    }
+}

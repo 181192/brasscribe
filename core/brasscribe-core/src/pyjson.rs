@@ -7,11 +7,53 @@ use crate::py::float_repr;
 
 pub fn dumps(v: &Value) -> String {
     let mut out = String::new();
-    write(v, 0, &mut out);
+    write(v, 0, true, &mut out);
     out
 }
 
-fn write(v: &Value, level: usize, out: &mut String) {
+/// `json.dumps(obj, ensure_ascii=False, indent=1)`.
+pub fn dumps_utf8(v: &Value) -> String {
+    let mut out = String::new();
+    write(v, 0, false, &mut out);
+    out
+}
+
+/// `json.dumps(obj)` without indentation (", " and ": " separators).
+pub fn dumps_compact(v: &Value) -> String {
+    let mut out = String::new();
+    compact(v, &mut out);
+    out
+}
+
+fn compact(v: &Value, out: &mut String) {
+    match v {
+        Value::Array(a) => {
+            out.push('[');
+            for (i, x) in a.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(", ");
+                }
+                compact(x, out);
+            }
+            out.push(']');
+        }
+        Value::Object(m) => {
+            out.push('{');
+            for (i, (k, x)) in m.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(", ");
+                }
+                write_str(k, out);
+                out.push_str(": ");
+                compact(x, out);
+            }
+            out.push('}');
+        }
+        other => write(other, 0, true, out),
+    }
+}
+
+fn write(v: &Value, level: usize, ascii: bool, out: &mut String) {
     match v {
         Value::Null => out.push_str("null"),
         Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
@@ -24,7 +66,7 @@ fn write(v: &Value, level: usize, out: &mut String) {
                 out.push_str(&float_repr(n.as_f64().unwrap()));
             }
         }
-        Value::String(s) => write_str(s, out),
+        Value::String(s) => write_str_as(s, ascii, out),
         Value::Array(a) => {
             if a.is_empty() {
                 out.push_str("[]");
@@ -36,7 +78,7 @@ fn write(v: &Value, level: usize, out: &mut String) {
                     out.push(',');
                 }
                 newline(level + 1, out);
-                write(x, level + 1, out);
+                write(x, level + 1, ascii, out);
             }
             newline(level, out);
             out.push(']');
@@ -52,9 +94,9 @@ fn write(v: &Value, level: usize, out: &mut String) {
                     out.push(',');
                 }
                 newline(level + 1, out);
-                write_str(k, out);
+                write_str_as(k, ascii, out);
                 out.push_str(": ");
-                write(x, level + 1, out);
+                write(x, level + 1, ascii, out);
             }
             newline(level, out);
             out.push('}');
@@ -70,6 +112,10 @@ fn newline(level: usize, out: &mut String) {
 }
 
 fn write_str(s: &str, out: &mut String) {
+    write_str_as(s, true, out)
+}
+
+fn write_str_as(s: &str, ascii: bool, out: &mut String) {
     out.push('"');
     for c in s.chars() {
         match c {
@@ -80,7 +126,7 @@ fn write_str(s: &str, out: &mut String) {
             '\t' => out.push_str("\\t"),
             '\u{8}' => out.push_str("\\b"),
             '\u{c}' => out.push_str("\\f"),
-            c if (c as u32) < 0x20 || (c as u32) > 0x7e => {
+            c if (c as u32) < 0x20 || (ascii && (c as u32) > 0x7e) => {
                 let mut buf = [0u16; 2];
                 for u in c.encode_utf16(&mut buf) {
                     out.push_str(&format!("\\u{:04x}", u));

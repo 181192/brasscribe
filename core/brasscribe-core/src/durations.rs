@@ -127,7 +127,17 @@ pub struct Written {
     pub staccato: bool,
 }
 
-fn readable(performed: f64, room: Option<i64>) -> i64 {
+/// Log-length units: prefer a slightly off length to a 16th tied over a beat.
+pub const STUB_PENALTY: f64 = 0.35;
+
+/// The written note would cross a beat and end on a 16th tied from it.
+fn stub(start: i64, end: i64) -> bool {
+    let b = TICKS_PER_BEAT;
+    let e = crate::py::pymod(end, b);
+    crate::py::floordiv(start, b) != crate::py::floordiv(end - 1, b) && (e == 6 || e == 18) && e < end - start
+}
+
+fn readable(performed: f64, room: Option<i64>, start: i64) -> i64 {
     let mut cands: Vec<i64> = READABLE.iter().copied().filter(|&c| room.map_or(true, |r| c <= r)).collect();
     if let Some(r) = room {
         if !cands.contains(&r) && r <= READABLE[READABLE.len() - 1] {
@@ -138,7 +148,7 @@ fn readable(performed: f64, room: Option<i64>) -> i64 {
         return room.filter(|&r| r != 0).unwrap_or(1).max(1);
     }
     let p = performed.max(1.0);
-    let key = |c: i64| ((c as f64 / p).ln().abs(), -c);
+    let key = |c: i64| ((c as f64 / p).ln().abs() + if stub(start, start + c) { STUB_PENALTY } else { 0.0 }, -c);
     let mut best = cands[0];
     for &c in &cands[1..] {
         let (kb, kc) = (key(best), key(c));
@@ -149,10 +159,23 @@ fn readable(performed: f64, room: Option<i64>) -> i64 {
     best
 }
 
+/// Part-writing choices of [`written_durations`] (both 0 by default).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct WriteOptions {
+    /// Write every note whose next onset is at most this far away (ticks) up to it.
+    pub hold_within: i64,
+    /// The shortest value a detached note gets (ticks).
+    pub min_detached: i64,
+}
+
 /// Written length and staccato flag per note of one voice (chords share an
 /// onset), in input order. Performed length comes from onset_s/offset_s through
 /// `bm` when given, else from the quantized start/end.
 pub fn written_durations(notes: &[QNote], bm: Option<&BeatMap>) -> Vec<Written> {
+    written_durations_with(notes, bm, WriteOptions::default())
+}
+
+pub fn written_durations_with(notes: &[QNote], bm: Option<&BeatMap>, o: WriteOptions) -> Vec<Written> {
     if notes.is_empty() {
         return Vec::new();
     }
@@ -173,8 +196,15 @@ pub fn written_durations(notes: &[QNote], bm: Option<&BeatMap>) -> Vec<Written> 
         .map(|(q, p)| {
             let room = nxt(q.start).map(|n| n - q.start);
             let dur = match room {
-                Some(r) if p >= LEGATO_RATIO * r as f64 && r as f64 - p <= MAX_HELD_GAP => r,
-                _ => readable(p, room),
+                Some(r) if r <= o.hold_within || (p >= LEGATO_RATIO * r as f64 && r as f64 - p <= MAX_HELD_GAP) => r,
+                _ => {
+                    let d = readable(p, room, q.start);
+                    if d < o.min_detached {
+                        room.map_or(o.min_detached, |r| o.min_detached.min(r))
+                    } else {
+                        d
+                    }
+                }
             };
             Written { dur, performed: p, staccato: p < STACCATO_RATIO * dur as f64 }
         })
@@ -182,9 +212,13 @@ pub fn written_durations(notes: &[QNote], bm: Option<&BeatMap>) -> Vec<Written> 
 }
 
 /// Set each note's end to its written length; returns (note, Written) pairs sorted by start.
-pub fn apply_written(mut notes: Vec<QNote>, bm: Option<&BeatMap>) -> Vec<(QNote, Written)> {
+pub fn apply_written(notes: Vec<QNote>, bm: Option<&BeatMap>) -> Vec<(QNote, Written)> {
+    apply_written_with(notes, bm, WriteOptions::default())
+}
+
+pub fn apply_written_with(mut notes: Vec<QNote>, bm: Option<&BeatMap>, o: WriteOptions) -> Vec<(QNote, Written)> {
     notes.sort_by_key(|q| q.start);
-    let res = written_durations(&notes, bm);
+    let res = written_durations_with(&notes, bm, o);
     notes
         .into_iter()
         .zip(res)

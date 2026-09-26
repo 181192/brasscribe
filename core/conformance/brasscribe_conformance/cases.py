@@ -17,6 +17,30 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
+# SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
+MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
+
+
+MIKKEL_VARIANTS = [
+    ("layers-standard", ["--difficulty", "standard"]),
+    ("layers-easier", ["--difficulty", "easier"]),
+    ("layers-minimal-easier", ["--lineup", "minimal", "--difficulty", "easier"]),
+    ("layers-key-bb", ["--key", "Bb"]),
+    ("layers-transpose-down-3", ["--transpose", "-3"]),
+]
+
+
+def mikkel_contour() -> Path | None:
+    """The contour next to the repro layers, else the engine cache's copy with the golden's hash."""
+    import hashlib
+
+    here = DATA / "mikkel/repro/layers/solo-sw.contour.npz"
+    if here.exists():
+        return here
+    for p in sorted((DATA / "cache/objects").glob("*/*/files/solo-sw.contour.npz")):
+        if hashlib.sha256(p.read_bytes()).hexdigest().startswith(MIKKEL_CONTOUR_SHA):
+            return p
+    return None
 
 
 @dataclass
@@ -44,6 +68,11 @@ def synth_layers(song: Path, out: Path) -> Path:
         "bass-mus.mid": song / "muscriptor-medium.mid",
         "orchestra-mus.mid": song / "basic-pitch.mid",
         "drums-mus.mid": song / "muscriptor-medium.mid",
+        # the mix stands in for every layer's audio (energy gate, separation check, dynamics, sections)
+        "solo.wav": song / "mix.wav",
+        "bass.wav": song / "mix.wav",
+        "drums.wav": song / "mix.wav",
+        "orchestra.wav": song / "mix.wav",
     }
     for name, p in src.items():
         link = out / name
@@ -54,10 +83,12 @@ def synth_layers(song: Path, out: Path) -> Path:
 
 
 def all_cases(work: Path, only: str | None = None) -> list[Case]:
-    cases = [Case("mikkel/layers", "layers",
-                  {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
-                   "contour": DATA / "runs/music-core/mikkel/solo-sw.contour.npz"},
-                  golden=DATA / "golden/mikkel-arranged-band")]
+    mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
+              **({"contour": c} if (c := mikkel_contour()) else {})}
+    cases = [Case("mikkel/layers", "layers", mikkel, golden=DATA / "golden/mikkel-arranged-band")]
+    # Arrangement options (lineup, difficulty, key) against the Python reference.
+    for stage, options in MIKKEL_VARIANTS:
+        cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}))
     for eval_set in sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()):
         for song in sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists()):
             base = f"{eval_set.name}/{song.name}"

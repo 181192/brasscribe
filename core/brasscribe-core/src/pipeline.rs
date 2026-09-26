@@ -11,18 +11,25 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 
-use crate::arranger::{arrange, arrange_layers, Arrangement};
+use crate::arranger::{arrange, Arrangement};
+use crate::beats::clean_beats_gated;
 use crate::consensus::{cluster, consensus, Sources};
+use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
+use crate::dynamics::{layer_dynamics, Bar};
+use crate::energy::{gate, Audio, Envelope, GATE_DB};
+use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
 use crate::harmony::{harmony_slots, slots_to_notes};
+use crate::keys::{key_plan, CHANGE_PENALTY};
 use crate::lines::{line, MIN_DUR};
 use crate::midi::{MidiFile, RawNote};
-use crate::model::{Composition, KeySig, Meter, Note, Voice, VoiceRole, TICKS_PER_BEAT};
+use crate::model::{Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
 use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
+use crate::notation::score::write_score_with_parts;
 use crate::py;
-use crate::durations::{apply_written, contour_offsets, Contour, SEPARATED_STEM};
-use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, FreeTimePlan};
 use crate::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, BeatMap, QNote};
+use crate::separation::{check_stem, FAIL_DB as SEPARATION_FAIL_DB};
 use crate::spelling::key_of;
+use crate::structure::{bar_features, letters, section_starts};
 
 /// A beat table as written by the beat tracker: time in seconds and position in the bar (1 = downbeat).
 #[derive(Debug, Clone, PartialEq)]
@@ -118,9 +125,13 @@ pub struct BandResult {
     pub composition: Composition,
     pub arrangement: Arrangement,
     pub musicxml: String,
+    /// Individual parts: (file name, MusicXML), for the layered arrangement.
+    pub parts: Vec<(String, String)>,
+    /// `separation-check.json` text, when the layer audio was given.
+    pub separation_check: Option<String>,
 }
 
-/// Transcribed layers of one recording.
+/// Transcribed layers of one recording, with the layers' audio where available.
 #[derive(Debug, Clone)]
 pub struct Layers {
     pub solo_sw: MidiFile,
@@ -129,6 +140,10 @@ pub struct Layers {
     pub bass: MidiFile,
     pub orchestra: MidiFile,
     pub drums: MidiFile,
+    pub solo_audio: Option<Audio>,
+    pub bass_audio: Option<Audio>,
+    pub drums_audio: Option<Audio>,
+    pub orchestra_audio: Option<Audio>,
 }
 
 /// (hits, lines): short notes sharing an attack with >= 2 others are chordal hits.
@@ -150,12 +165,30 @@ pub struct LayersOptions {
     pub no_free_time: bool,
     /// Notate free-time passages at this BPM instead of estimating one.
     pub free_tempo: Option<f64>,
+    /// Keep layer notes where the layer's audio is silent.
+    pub no_gate: bool,
+    /// Use the tracked beats as they are.
+    pub no_beat_cleanup: bool,
+    /// One key signature for the whole piece.
+    pub single_key: bool,
+    /// "band" (= "full", the 18-part contest band) or "minimal" (8 parts); empty = band.
+    pub lineup: String,
+    /// "faithful" (default when empty), "standard" or "easier".
+    pub difficulty: String,
+    /// Target concert key of the first key signature: Bb, F#, Am or FIFTHS[:MODE].
+    pub key: Option<String>,
+    /// Transpose the whole arrangement by this many semitones (instead of `key`).
+    pub transpose: Option<i32>,
 }
+
+/// Detached notes are written as (staccato) 8ths in band parts, not 16ths and rests.
+pub const PART_HOLD_WITHIN: i64 = TICKS_PER_BEAT / 2;
 
 /// One voice with written durations from its performed lengths (held vs detached, staccato).
 fn written_line(qnotes: Vec<QNote>, times: &[f64], pickup: i64, source: &str) -> Result<Vec<Note>, String> {
     let bm = BeatMap::new(times)?;
-    Ok(apply_written(qnotes, Some(&bm))
+    let o = WriteOptions { hold_within: PART_HOLD_WITHIN, min_detached: PART_HOLD_WITHIN };
+    Ok(apply_written_with(qnotes, Some(&bm), o)
         .into_iter()
         .map(|(q, w)| {
             let mut n = to_notes(std::slice::from_ref(&q), pickup, source).remove(0);
@@ -168,36 +201,91 @@ fn written_line(qnotes: Vec<QNote>, times: &[f64], pickup: i64, source: &str) ->
         .collect())
 }
 
+/// Solo stem against the mix of all layers (the orchestra is the residual, so they sum to it).
+fn separation(l: &Layers) -> Option<String> {
+    let (s, b, d, o) = (l.solo_audio.as_ref()?, l.bass_audio.as_ref()?, l.drums_audio.as_ref()?, l.orchestra_audio.as_ref()?);
+    let all = [s, b, d, o];
+    let n_min = all.iter().map(|a| a.frames()).min().unwrap();
+    let ch = s.channels;
+    if all.iter().any(|a| a.channels != ch) {
+        return None;
+    }
+    let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
+    let mut mix = take(s);
+    for a in [b, d, o] {
+        for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
+            *m += *v;
+        }
+    }
+    let c = check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB);
+    Some(c.to_json_string())
+}
+
 /// Solo-with-band arrangement from textural layers.
+///
+/// Order: energy gate of the layer notes, separation check, gated beat cleanup,
+/// metrical level, free time, written durations (solo contour), key plan,
+/// dynamics, rehearsal marks, clipping and fermatas, arrangement, score, parts.
 ///
 /// The solo is SwiftF0's line confirmed by MuScriptor and Basic Pitch (3 sources
 /// 0.98, 2 sources 0.91, SwiftF0 alone 0.54; notes without SwiftF0 are dropped).
 /// The orchestra residual is split by what the notes do: short notes attacked
 /// together with two or more others are brass-choir hits, the rest strings.
-/// Free-time passages get synthetic beats and proportional notation; solo and
-/// bass get written lengths from their performed lengths.
 pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+    let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
+    if !crate::difficulty::MODES.contains(&difficulty) {
+        return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
+    }
+    let lineup_name = match opts.lineup.as_str() {
+        "" | "band" | "full" => "band",
+        "minimal" => "minimal",
+        other => return Err(format!("unknown lineup {other}")),
+    };
+    if opts.key.is_some() && opts.transpose.is_some() {
+        return Err("give a key or a transposition, not both".into());
+    }
     let solo_mus = layers.solo_mus.pitched();
     let solo_bp = layers.solo_bp.pitched();
-    let bass_raw = layers.bass.pitched();
-    let orch_raw = layers.orchestra.pitched();
-    let drum_raw = layers.drums.drums();
+    let mut bass_raw = layers.bass.pitched();
+    let mut orch_raw = layers.orchestra.pitched();
+    let mut drum_raw = layers.drums.drums();
     let solo_sw = layers.solo_sw.pitched();
+    if !opts.no_gate {
+        // Drop notes a layer's transcriber found where that layer is (nearly) silent.
+        for (raw, audio) in [(&mut bass_raw, &layers.bass_audio), (&mut orch_raw, &layers.orchestra_audio), (&mut drum_raw, &layers.drums_audio)] {
+            if let Some(a) = audio {
+                let (kept, _) = gate(std::mem::take(raw), &Envelope::of(a), GATE_DB);
+                *raw = kept;
+            }
+        }
+    }
+    let separation_check = separation(layers);
 
     let mut bpb = beats.beats_per_bar()?;
-    let mut first_down = beats.first_downbeat();
     let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
-    let mut times = choose_level(&beats.times, &onsets);
-    let doubled = times.len() != beats.times.len();
+    let mut down: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
+    let mut raw_times = beats.times.clone();
+    let mut first_down;
+    if !opts.no_beat_cleanup {
+        // Restore missed and remove inserted beats (outside free time); the bar phase
+        // follows the majority of the tracker's downbeat labels.
+        let cb = clean_beats_gated(&raw_times, &down, bpb, &unstable_runs(&raw_times), Some(&onsets));
+        first_down = cb.phase(bpb);
+        raw_times = cb.times;
+        down = cb.downbeat;
+    } else {
+        first_down = down.iter().position(|&d| d).unwrap_or(0) as i64;
+    }
+    let mut times = choose_level(&raw_times, &onsets);
+    let doubled = times.len() != raw_times.len();
     if doubled {
         bpb *= 2;
         first_down *= 2;
     }
     let mut plan: Option<FreeTimePlan> = None;
     if !opts.no_free_time {
-        let downs: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
         let sw_onsets: Vec<f64> = solo_sw.iter().map(|n| n.onset).collect();
-        let p = plan_free_time(&times, &onsets, bpb, first_down, if doubled { None } else { Some(&downs) }, opts.free_tempo, Some(&sw_onsets));
+        let p = plan_free_time(&times, &onsets, bpb, first_down, if doubled { None } else { Some(&down) }, opts.free_tempo, Some(&sw_onsets));
         times = p.beat_times.clone();
         first_down = p.first_downbeat;
         plan = Some(p);
@@ -285,7 +373,17 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     };
     let tonal: Vec<&Note> = solo.iter().chain(bass.iter()).chain(lines.iter()).collect();
     let fifths = tonal_key(&tonal);
-    let comp = Composition {
+    let bar_ticks = bpb * TICKS_PER_BEAT;
+    let keys = if opts.single_key {
+        vec![KeySig { tick: 0, fifths, mode: "major".into() }]
+    } else {
+        // Key changes where the music modulates (a change must pay for itself over several bars).
+        let mut sl: Vec<Note> = solo.clone();
+        sl.extend(lines.iter().cloned());
+        let penalty = crate::difficulty::key_change_penalty(difficulty).unwrap_or(CHANGE_PENALTY);
+        key_plan(&sl, bar_ticks, penalty, &bass).keys
+    };
+    let mut comp = Composition {
         title: title.into(),
         voices: vec![
             voice("solo", VoiceRole::Melody, solo.clone(), "trumpet/cornet", "solo"),
@@ -295,18 +393,74 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             voice("drums", VoiceRole::Rhythm, drums, "drum kit", "drums"),
         ],
         meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
-        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        keys,
         beat_times: times,
         first_downbeat: first_down,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: regions,
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        arrangement: None,
     };
-    let arrangement = arrange_layers(&comp);
-    let musicxml = write_score(&band_score(&arrangement, &comp));
-    Ok(BandResult { composition: comp, arrangement, musicxml })
+    // Dynamics per layer from its own loudness, per bar.
+    let bm = BeatMap::new(&comp.beat_times)?;
+    let n_bars = py::floordiv(comp.end_tick(), bar_ticks) + 1;
+    let edges: Vec<f64> = (0..=n_bars).map(|k| bm.to_seconds((k * bpb + first_down) as f64)).collect();
+    let bars: Vec<Bar> = (0..n_bars as usize).map(|k| (k as i64 * bar_ticks, edges[k], edges[k + 1])).collect();
+    let envs: Vec<(&str, Envelope)> = [("solo", &layers.solo_audio), ("orchestra", &layers.orchestra_audio), ("bass", &layers.bass_audio), ("drums", &layers.drums_audio)]
+        .into_iter()
+        .filter_map(|(n, a)| a.as_ref().map(|a| (n, Envelope::of(a))))
+        .collect();
+    for (layer, wav) in [("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")] {
+        if let Some((_, env)) = envs.iter().find(|(n, _)| *n == wav) {
+            comp.dynamics.extend(layer_dynamics(env, &bars).into_iter().map(|(t, m)| Dynamic { tick: t, layer: layer.into(), mark: m }));
+        }
+    }
+    // Rehearsal letters where the layers' energy changes, and where free time ends.
+    if !envs.is_empty() {
+        let e: Vec<&Envelope> = envs.iter().map(|(_, e)| e).collect();
+        let forced: Vec<i64> = comp.free_regions.iter().map(|r| py::floordiv(r.end, bar_ticks)).collect();
+        let starts = section_starts(&bar_features(&e, &bars), &forced);
+        comp.sections = starts.iter().zip(letters(starts.len())).map(|(b, l)| Section { tick: b * bar_ticks, label: l }).collect();
+    }
+    // Arrangement options: lineup, difficulty, transposition to a concert key.
+    let shift = match (&opts.transpose, &opts.key) {
+        (Some(t), _) => *t,
+        (None, Some(k)) => crate::keys::semitones_to(&comp.keys[0], k)?,
+        _ => 0,
+    };
+    if shift != 0 {
+        comp = comp.transposed(shift);
+    }
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 {
+        let mut a = serde_json::Map::new();
+        a.insert("lineup".into(), lineup_name.into());
+        a.insert("difficulty".into(), difficulty.into());
+        a.insert("transpose_semitones".into(), shift.into());
+        comp.arrangement = Some(serde_json::Value::Object(a));
+    }
+    let lineup = if lineup_name == "band" { crate::instruments::brass_band() } else { crate::instruments::minimal_band() };
+    let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
+    let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
 }
 
-/// Transcriptions for the minimal-band song arrangement.
+/// Arrange an existing Composition the way it was made: the layered arranger
+/// when its voices carry layers (with the lineup and difficulty recorded in
+/// `arrangement`), else the minimal arranger.
+pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
+    if !comp.voices.iter().any(|v| v.layer.is_some()) {
+        return Ok(arrange(comp));
+    }
+    let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
+    let lineup = match opt("lineup").as_deref() {
+        Some("minimal") => crate::instruments::minimal_band(),
+        _ => crate::instruments::brass_band(),
+    };
+    let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
+    crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
+}
+
 #[derive(Debug, Clone)]
 pub struct SongInputs {
     pub melody: MidiFile,
@@ -363,10 +517,13 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
         first_downbeat: first_down,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        arrangement: None,
     };
     let arrangement = arrange(&comp);
     let musicxml = write_score(&band_score(&arrangement, &comp));
-    Ok(BandResult { composition: comp, arrangement, musicxml })
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
 }
 
 /// Draft lead sheet: melody + bass lines as concert-pitch staves, first downbeat at bar 1.
@@ -389,6 +546,8 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         key_fifths: None,
         sounds: Vec::new(),
         free_spans: Vec::new(),
+        key_changes: Vec::new(),
+        rehearsal: Vec::new(),
         encoding_date: String::new(),
     };
     Ok(write_score(&spec))
@@ -450,6 +609,9 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         first_downbeat: 0,
         ticks_per_beat: TICKS_PER_BEAT,
         free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        arrangement: None,
     })
 }
 
@@ -458,7 +620,7 @@ pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, S
     let comp = composition_from_reference(reference, title)?;
     let arrangement = arrange(&comp);
     let musicxml = write_score(&band_score(&arrangement, &comp));
-    Ok(BandResult { composition: comp, arrangement, musicxml })
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
 }
 
 /// Reference notes (with "quarter") quantized on a beat table, as rows for comparison.
