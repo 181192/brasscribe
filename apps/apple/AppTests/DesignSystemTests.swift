@@ -23,7 +23,13 @@ import Testing
     }
 
     @Test func appIconIsCompiled() {
+        #if os(iOS)
+        let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any]
+        let primary = icons?["CFBundlePrimaryIcon"] as? [String: Any]
+        #expect(primary?["CFBundleIconName"] as? String == "AppIcon")
+        #else
         #expect(Bundle.main.object(forInfoDictionaryKey: "CFBundleIconName") as? String == "AppIcon")
+        #endif
     }
 
     @Test func markAndLicenceAreBundled() {

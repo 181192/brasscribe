@@ -187,6 +187,43 @@ struct ChipLabel: View {
     }
 }
 
+/// A segmented choice in the warm greys: the chosen segment is raised with an edge. No
+/// accent colour, so it never reads as the primary. Each segment is at least 44 pt tall.
+struct Segmented<Value: Hashable>: View {
+    let label: String
+    @Binding var selection: Value
+    let options: [(value: Value, title: String)]
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, o in
+                let on = o.value == selection
+                Button { selection = o.value } label: {
+                    Text(o.title)
+                        .font(on ? Font.Brasscribe.label : Font.Brasscribe.body)
+                        .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                        .padding(.horizontal, Space.s3)
+                        .frame(minHeight: 40)
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Brasscribe.surfaceRaised)
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Brasscribe.borderStrong))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? [.isSelected] : [])
+            }
+        }
+        .padding(2)
+        .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+        .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(label))
+    }
+}
+
 // MARK: surfaces
 
 /// A 40 pt icon well in `secondary`, for list rows and cards.
@@ -293,6 +330,7 @@ struct Lockup: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: product ? "Brasscribe Play" : "Brasscribe"))
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -329,8 +367,8 @@ struct UncertaintyLegend: View {
     }
 
     @ViewBuilder private var items: some View {
-        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Uncertain") }
-        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very uncertain") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Brasscribe wasn't sure") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very unsure") }
     }
 }
 

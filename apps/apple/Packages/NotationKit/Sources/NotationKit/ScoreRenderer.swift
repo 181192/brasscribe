@@ -58,10 +58,19 @@ public final class ScoreRenderer: @unchecked Sendable {
     /// note colour means uncertain (0.4–0.7, and the older single-level red).
     public static let veryUncertainColor = (red: 0xB0, green: 0x4A, blue: 0x00)
 
-    public init?(musicXML: String, resourcePath: String? = VerovioToolkit.defaultResourcePath()) {
+    /// - Parameter keepQuestionMarks: let Verovio engrave the "?" directions itself (for
+    ///   printed pages); on screen the app draws them in the note colour instead.
+    public init?(musicXML: String, keepQuestionMarks: Bool = false, resourcePath: String? = VerovioToolkit.defaultResourcePath()) {
         guard let tk = VerovioToolkit(resourcePath: resourcePath) else { return nil }
         toolkit = tk
-        self.musicXML = Self.removingQuestionMarks(musicXML)
+        self.musicXML = keepQuestionMarks ? musicXML : Self.removingQuestionMarks(musicXML)
+    }
+
+    /// The MusicXML without any uncertainty marking: no "?" directions and no note colours.
+    public static func removingUncertainty(_ xml: String) -> String {
+        let plain = removingQuestionMarks(xml)
+        guard let re = try? NSRegularExpression(pattern: ##"\s(?:color|fill)="#[0-9A-Fa-f]{6}""##) else { return plain }
+        return re.stringByReplacingMatches(in: plain, range: NSRange(plain.startIndex..., in: plain), withTemplate: "")
     }
 
     /// The MusicXML carries a "?" words direction at each uncertain attack. The app draws

@@ -46,11 +46,7 @@ struct HomeView: View {
             }
             #endif
             ToolbarItemGroup(placement: .primaryAction) {
-                #if os(macOS)
-                SettingsLink { Label("Settings", systemImage: BrasscribeIcon.settings.systemName) }
-                #else
                 Button { app.showSettings = true } label: { Label("Settings", systemImage: BrasscribeIcon.settings.systemName) }
-                #endif
             }
         }
         .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml]) { result in

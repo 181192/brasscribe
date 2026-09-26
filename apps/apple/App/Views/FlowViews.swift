@@ -4,7 +4,7 @@ import SwiftUI
 import TranscriptionKit
 
 /// "What is this?": four choices, nothing pre-selected, then Continue. The choice decides
-/// how Brasscribe listens; the score options are the band, how hard, and the key.
+/// how Brasscribe listens. The band, how hard and the key come after the review.
 struct SourceView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
@@ -12,7 +12,6 @@ struct SourceView: View {
     @State private var profile: SourceProfile?
     @State private var output = OutputChoice()
     @State private var duration: String?
-    @State private var showOptions = false
 
     private var wide: Bool {
         #if os(macOS)
@@ -42,7 +41,6 @@ struct SourceView: View {
                 Text("Not sure? Choose Brass band.")
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
 
-                options
                 whereItRuns
                 if !wide { Color.clear.frame(height: Space.s2) }
             }
@@ -91,38 +89,6 @@ struct SourceView: View {
         .accessibilityIdentifier("profile-\(p.rawValue)")
     }
 
-    /// Which band, how hard, and the key. Folded away: the defaults suit most recordings.
-    private var options: some View {
-        DisclosureGroup(isExpanded: $showOptions) {
-            VStack(alignment: .leading, spacing: Space.s4) {
-                Picker(selection: $output.lineup) {
-                    Text("Full brass band").tag(Lineup.fullBand)
-                    Text("Small band").tag(Lineup.minimalBand)
-                } label: { Text("Which band?") }
-                VStack(alignment: .leading, spacing: Space.s1) {
-                    Picker(selection: $output.difficulty) {
-                        Text("As played").tag(Difficulty.faithful)
-                        Text("Standard").tag(Difficulty.standard)
-                        Text("Easier").tag(Difficulty.easier)
-                    } label: { Text("How hard?") }
-                    Text("Easier keeps the tune but avoids high notes and fast runs.")
-                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                }
-                Picker(selection: $output.keyFifths) {
-                    Text("Original key").tag(Int?.none)
-                    ForEach(-6...6, id: \.self) { f in Text(KeyNames.name(fifths: f)).tag(Int?.some(f)) }
-                } label: { Text("Key") }
-                .accessibilityIdentifier("keyPicker")
-            }
-            .pickerStyle(.menu)
-            .padding(.top, Space.s3)
-        } label: {
-            Text("Score options").font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-        }
-        .tint(Color.Brasscribe.text)
-        .card()
-    }
-
     private var whereItRuns: some View {
         HStack(spacing: Space.s3) {
             IconWell(systemName: BrasscribeIcon.computer.systemName)
@@ -130,11 +96,7 @@ struct SourceView: View {
                 .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: Space.s2)
-            #if os(macOS)
-            SettingsLink { Text("Change") }.buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
-            #else
             Button { app.showSettings = true } label: { Text("Change") }.buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
-            #endif
         }
         .card()
     }

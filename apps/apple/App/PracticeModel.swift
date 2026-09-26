@@ -25,7 +25,14 @@ final class PracticeModel {
     private var layoutGeneration = 0
 
     // View settings
-    var shownPart: String? { didSet { if shownPart != oldValue { relayout() } } }
+    /// Showing your own part alone is the part view: "Mute my part" comes on, so you play it.
+    var shownPart: String? {
+        didSet {
+            guard shownPart != oldValue else { return }
+            if shownPart != nil, shownPart == myPart { playAlong = true }
+            relayout()
+        }
+    }
     var pitchMode: PitchMode = .written { didSet { if pitchMode != oldValue { relayout() } } }
     var zoom: CGFloat = 1 { didSet { if zoom != oldValue { relayout() } } }
     var viewWidth: CGFloat = 820

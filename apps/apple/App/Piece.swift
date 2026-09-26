@@ -16,6 +16,8 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var remoteArtifacts: [ArtifactKind]
     /// Folder with engine outputs when the piece came from the fixture service.
     var fixtureDirectory: String?
+    /// The band, difficulty and key the score is arranged for.
+    var output: OutputChoice?
     /// Summary for the library: number of bars, and uncertain notes still to check.
     var bars: Int?
     var toCheck: Int?
@@ -56,9 +58,10 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
 
     /// Store a finished transcription with its source media.
     static func create(title: String, profile: SourceProfile?, result: TranscriptionResult,
-                       original: URL?, video: URL?, fixtureDirectory: URL?) throws -> Piece {
+                       original: URL?, video: URL?, fixtureDirectory: URL?, output: OutputChoice? = nil) throws -> Piece {
         var p = Piece(id: UUID(), title: title, created: Date(), profile: profile, originalFile: nil, videoFile: nil,
-                      remoteJobID: result.jobID, remoteArtifacts: Array(result.available), fixtureDirectory: fixtureDirectory?.path)
+                      remoteJobID: result.jobID, remoteArtifacts: Array(result.available), fixtureDirectory: fixtureDirectory?.path,
+                      output: output)
         let fm = FileManager.default
         try fm.createDirectory(at: p.folder, withIntermediateDirectories: true)
         try result.musicXML.write(to: p.scoreURL)

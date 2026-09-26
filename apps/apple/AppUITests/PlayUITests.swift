@@ -38,11 +38,21 @@ final class PlayUITests: XCTestCase {
         #endif
     }
 
+    /// Review → confirm "Finish later" when notes are left → "How should the score be?" → Show the score.
+    func leaveReview(_ open: XCUIElement) {
+        open.tap()
+        let finish = app.buttons.matching(NSPredicate(format: "label == 'Finish later'")).firstMatch
+        if finish.waitForExistence(timeout: 3) { finish.tap() }
+        let show = app.descendants(matching: .any)["showScore"].firstMatch
+        XCTAssertTrue(show.waitForExistence(timeout: 10), "How should the score be? follows the review")
+        show.tap()
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         guard let dir = fixtureDir() else { throw XCTSkip("golden Mikkel fixture not found") }
         app = XCUIApplication()
-        app.launchArguments = ["-reset", "-open-demo-score", "-ApplePersistenceIgnoreState", "YES"]
+        app.launchArguments = ["-reset", "-open-demo-score", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
         if let sf = soundFont() { app.launchEnvironment["BRASSCRIBE_SOUNDFONT"] = sf }
         // the realistic brass-band tier, when sounds/ and its built instruments are present
@@ -82,7 +92,7 @@ final class PlayUITests: XCTestCase {
     /// Home → "What is this?" → progress → Review → score, with the demo transcription service.
     func testDemoFlowThroughReview() throws {
         app.terminate()
-        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES"]
+        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         launchApp()
         let demo = app.descendants(matching: .any)["demo"].firstMatch
         XCTAssertTrue(demo.waitForExistence(timeout: 20))
@@ -99,11 +109,11 @@ final class PlayUITests: XCTestCase {
         shot.name = "review"
         shot.lifetime = .keepAlways
         add(shot)
-        open.tap()
+        leaveReview(open)
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
     }
 
-    /// Documented shortcuts: → / ← move by bar, ] raises the speed, space plays and pauses.
+    /// Documented shortcuts: → / ← move by bar, . raises the speed, space plays and pauses.
     func testKeyboardShortcuts() throws {
         #if os(iOS)
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("hardware-keyboard shortcuts are tested on iPad and Mac") }
@@ -144,7 +154,7 @@ final class PlayUITests: XCTestCase {
             throw XCTSkip("needs the URMP clip and models/converted")
         }
         app.terminate()
-        app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES"]
+        app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         app.launchEnvironment["BRASSCRIBE_OPEN_AUDIO"] = clip.path
         app.launchEnvironment["BRASSCRIBE_MODELS"] = models
         app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"   // no computer
@@ -155,7 +165,7 @@ final class PlayUITests: XCTestCase {
         app.descendants(matching: .any)["transcribe"].firstMatch.tap()
         let open = app.descendants(matching: .any)["openScore"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 120), "on-device transcription should reach Review")
-        open.tap()
+        leaveReview(open)
         let staff = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-' AND label CONTAINS 'Solo Cornet'")).firstMatch
         XCTAssertTrue(staff.waitForExistence(timeout: 60))
         let shot = XCTAttachment(screenshot: app.screenshot())
@@ -208,12 +218,22 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
         let staves = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'"))
         XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 60))
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertGreaterThan(staves.count, 1, "the full score shows every part")
+        }
+        #else
         XCTAssertGreaterThan(staves.count, 1, "the full score shows every part")
+        #endif
 
         let picker = app.descendants(matching: .any)["partPicker"].firstMatch
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
         picker.tap()
+        #if os(macOS)
+        app.menuItems["Solo Cornet"].tap()
+        #else
         app.descendants(matching: .any)["Solo Cornet"].firstMatch.tap()
+        #endif
 
         let solo = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-' AND label CONTAINS 'Solo Cornet'")).firstMatch
@@ -221,7 +241,11 @@ final class PlayUITests: XCTestCase {
         XCTAssertEqual(app.state, .runningForeground)
 
         picker.tap()
+    #if os(macOS)
+    app.menuItems["All parts"].tap()
+    #else
         app.descendants(matching: .any)["All parts"].firstMatch.tap()
+    #endif
         XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 30))
         XCTAssertEqual(app.state, .runningForeground)
     }
@@ -238,11 +262,13 @@ final class PlayUITests: XCTestCase {
             let line = "AUDIT \(issue.auditType) | \(issue.compactDescription) | \(issue.element?.identifier ?? "") \(issue.element?.label ?? "") type=\(issue.element?.elementType.rawValue ?? 0) frame=\(issue.element?.frame ?? .zero)"
             issues.append(line)
             print(line)
-            // Not ours: the system menu bar and SwiftUI's unlabeled window hosting group
-            // (a group spanning the whole window). Both are listed in the report.
+            // Not ours: the system menu bar, and SwiftUI's unlabeled hosting groups: the
+            // window group, and on macOS the sidebar and inspector columns (groups as tall as
+            // the window). All are listed in the report.
             let window = self.app.windows.firstMatch.frame
-            let systemOwned = issue.element?.elementType == .menuBar || (issue.element?.frame.minY ?? 1) == 0
-                || (issue.element?.elementType == .group && (issue.element?.frame.width ?? 0) >= window.width - 1)
+            let f = issue.element?.frame ?? .zero
+            let systemOwned = issue.element?.elementType == .menuBar || f.minY == 0
+                || (issue.element?.elementType == .group && (f.width >= window.width - 1 || f.height >= window.height - 60))
             if (issue.auditType == .sufficientElementDescription || issue.auditType == .hitRegion), !systemOwned {
                 blocking.append(line)
             }

@@ -31,7 +31,11 @@ struct NotationView: View {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
                     model.viewWidth = geo.size.width - 16
-                    if model.viewWidth < 600, model.shownPart == nil { model.shownPart = model.myPart } else { model.relayout() }
+                    if model.viewWidth < 600, model.shownPart == nil, LaunchOptions.screen != "score" {
+                        model.shownPart = model.myPart
+                    } else {
+                        model.relayout()
+                    }
                 }
                 .onChange(of: geo.size.width) { _, w in
                     if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
@@ -114,7 +118,7 @@ private struct PageView: View {
         let adLib = model.freeTimeBars
         let highContrast = contrast == .increased
         let loopLabel = loop.map { l in
-            l.count == 1 ? String(localized: "Loop \(l.lowerBound + 1)") : String(localized: "Loop \(l.lowerBound + 1)–\(l.upperBound + 1)")
+            l.count == 1 ? String(localized: "Repeat \(l.lowerBound + 1)") : String(localized: "Repeat \(l.lowerBound + 1)–\(l.upperBound + 1)")
         }
         ZStack(alignment: .topLeading) {
             Canvas(opaque: false, rendersAsynchronously: false) { ctx, _ in
