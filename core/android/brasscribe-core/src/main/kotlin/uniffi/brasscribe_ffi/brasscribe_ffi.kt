@@ -30,6 +30,7 @@ import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -674,6 +675,8 @@ internal object IntegrityCheckingUniffiLib {
     }
 
     internal fun ensureInitialized() = Unit
+    external fun uniffi_brasscribe_ffi_checksum_func_arrange_layers_band(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_arrange_layers_song(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_arrange_musicxml(
@@ -688,11 +691,49 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_instruments(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_layers_song_defaults(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_normalize_composition(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_quantize_notes(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_spell_pitches(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_humanize_part(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_humanize_uniform(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_talking_announce_json(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_talking_settings_default(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_announce(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_title(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_constructor_performance_new(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new(
     ): Int
     external fun ffi_brasscribe_ffi_uniffi_contract_version(
     ): Int
@@ -702,6 +743,11 @@ internal object IntegrityCheckingUniffiLib {
 
 internal object UniffiLib {
     
+    // The Cleaner for the whole library
+    internal val CLEANER: UniffiCleaner by lazy {
+        UniffiCleaner.create()
+    }
+    
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "brasscribe_ffi"))
@@ -709,6 +755,44 @@ internal object UniffiLib {
     }
 
     internal fun ensureInitialized() = Unit
+    external fun uniffi_brasscribe_ffi_fn_clone_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_brasscribe_ffi_fn_free_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_brasscribe_ffi_fn_constructor_performance_new(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_brasscribe_ffi_fn_clone_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_brasscribe_ffi_fn_free_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(`musicxml`: RustBuffer.ByValue,`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_announce(`ptr`: Long,`cursor`: RustBuffer.ByValue,`context`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,`byBar`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(`ptr`: Long,`part`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(`ptr`: Long,`cursor`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(`ptr`: Long,`part`: Int,`bar`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(`ptr`: Long,`cursor`: RustBuffer.ByValue,`unit`: RustBuffer.ByValue,`forward`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(`ptr`: Long,`part`: Int,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_title(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun uniffi_brasscribe_ffi_fn_func_arrange_layers_band(`layers`: RustBuffer.ByValue,`stems`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_arrange_layers_song(`layers`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`soloContour`: RustBuffer.ByValue,`freeTime`: Byte,`freeTempo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml(`compositionJson`: RustBuffer.ByValue,`arranger`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -723,11 +807,21 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_instruments(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_layers_song_defaults(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_normalize_composition(`json`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_quantize_notes(`notes`: RustBuffer.ByValue,`beatTimes`: RustBuffer.ByValue,`monophonic`: Byte,`autoLevel`: Byte,`fillGapTicks`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_spell_pitches(`onsetsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_humanize_part(`notes`: RustBuffer.ByValue,`part`: RustBuffer.ByValue,`player`: Long,`seed`: RustBuffer.ByValue,`performance`: RustBuffer.ByValue,`performedTiming`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_humanize_uniform(`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Double
+    external fun uniffi_brasscribe_ffi_fn_func_talking_announce_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_talking_settings_default(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_brasscribe_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -848,7 +942,10 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() and 0xFFFF) != 55670) {
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_layers_band() and 0xFFFF) != 61376) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() and 0xFFFF) != 48207) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() and 0xFFFF) != 31318) {
@@ -869,6 +966,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_instruments() and 0xFFFF) != 47666) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_layers_song_defaults() and 0xFFFF) != 21711) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_normalize_composition() and 0xFFFF) != 7581) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -876,6 +976,60 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 24205) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 14286) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_uniform() and 0xFFFF) != 7064) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_talking_announce_json() and 0xFFFF) != 20530) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_talking_settings_default() and 0xFFFF) != 26489) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_announce() and 0xFFFF) != 13383) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count() and 0xFFFF) != 6184) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at() and 0xFFFF) != 52304) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count() and 0xFFFF) != 10745) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate() and 0xFFFF) != 14235) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines() and 0xFFFF) != 37878) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names() and 0xFFFF) != 19770) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_title() and 0xFFFF) != 46621) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html() and 0xFFFF) != 6389) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json() and 0xFFFF) != 42481) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text() and 0xFFFF) != 55243) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars() and 0xFFFF) != 39156) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_constructor_performance_new() and 0xFFFF) != 63810) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new() and 0xFFFF) != 57677) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -970,6 +1124,93 @@ object UniffiWithHandle
  * @suppress
  * */
 object NoHandle
+/**
+ * The cleaner interface for Object finalization code to run.
+ * This is the entry point to any implementation that we're using.
+ *
+ * The cleaner registers objects and returns cleanables, so now we are
+ * defining a `UniffiCleaner` with a `UniffiClenaer.Cleanable` to abstract the
+ * different implmentations available at compile time.
+ *
+ * @suppress
+ */
+interface UniffiCleaner {
+    interface Cleanable {
+        fun clean()
+    }
+
+    fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable
+
+    companion object
+}
+
+// The fallback Jna cleaner, which is available for both Android, and the JVM.
+private class UniffiJnaCleaner : UniffiCleaner {
+    private val cleaner = com.sun.jna.internal.Cleaner.getCleaner()
+
+    override fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable =
+        UniffiJnaCleanable(cleaner.register(value, cleanUpTask))
+}
+
+private class UniffiJnaCleanable(
+    private val cleanable: com.sun.jna.internal.Cleaner.Cleanable,
+) : UniffiCleaner.Cleanable {
+    override fun clean() = cleanable.clean()
+}
+
+
+// We decide at uniffi binding generation time whether we were
+// using Android or not.
+// There are further runtime checks to chose the correct implementation
+// of the cleaner.
+private fun UniffiCleaner.Companion.create(): UniffiCleaner =
+    try {
+        // For safety's sake: if the library hasn't been run in android_cleaner = true
+        // mode, but is being run on Android, then we still need to think about
+        // Android API versions.
+        // So we check if java.lang.ref.Cleaner is there, and use that…
+        java.lang.Class.forName("java.lang.ref.Cleaner")
+        JavaLangRefCleaner()
+    } catch (e: ClassNotFoundException) {
+        // … otherwise, fallback to the JNA cleaner.
+        UniffiJnaCleaner()
+    }
+
+private class JavaLangRefCleaner : UniffiCleaner {
+    val cleaner = java.lang.ref.Cleaner.create()
+
+    override fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable =
+        JavaLangRefCleanable(cleaner.register(value, cleanUpTask))
+}
+
+private class JavaLangRefCleanable(
+    val cleanable: java.lang.ref.Cleaner.Cleanable
+) : UniffiCleaner.Cleanable {
+    override fun clean() = cleanable.clean()
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterUInt: FfiConverter<UInt, Int> {
+    override fun lift(value: Int): UInt {
+        return value.toUInt()
+    }
+
+    override fun read(buf: ByteBuffer): UInt {
+        return lift(buf.getInt())
+    }
+
+    override fun lower(value: UInt): Int {
+        return value.toInt()
+    }
+
+    override fun allocationSize(value: UInt) = 4UL
+
+    override fun write(value: UInt, buf: ByteBuffer) {
+        buf.putInt(value.toInt())
+    }
+}
 
 /**
  * @suppress
@@ -991,6 +1232,29 @@ public object FfiConverterInt: FfiConverter<Int, Int> {
 
     override fun write(value: Int, buf: ByteBuffer) {
         buf.putInt(value)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterULong: FfiConverter<ULong, Long> {
+    override fun lift(value: Long): ULong {
+        return value.toULong()
+    }
+
+    override fun read(buf: ByteBuffer): ULong {
+        return lift(buf.getLong())
+    }
+
+    override fun lower(value: ULong): Long {
+        return value.toLong()
+    }
+
+    override fun allocationSize(value: ULong) = 8UL
+
+    override fun write(value: ULong, buf: ByteBuffer) {
+        buf.putLong(value.toLong())
     }
 }
 
@@ -1140,6 +1404,822 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 }
 
 
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
+ * What a Composition says about how the music was played (performed beat
+ * map, per-tick ensemble deviations, voices). Build once, use for every part.
+ */
+public interface PerformanceInterface {
+    
+    companion object
+}
+
+/**
+ * What a Composition says about how the music was played (performed beat
+ * map, per-tick ensemble deviations, voices). Build once, use for every part.
+ */
+open class Performance: Disposable, AutoCloseable, PerformanceInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+    constructor(`compositionJson`: kotlin.String) :
+        this(UniffiWithHandle, 
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_constructor_performance_new(
+    
+        
+        FfiConverterString.lower(`compositionJson`),_status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_brasscribe_ffi_fn_free_performance(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_brasscribe_ffi_fn_clone_performance(handle, status)
+        }
+    }
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePerformance: FfiConverter<Performance, Long> {
+    override fun lower(value: Performance): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): Performance {
+        return Performance(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): Performance {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: Performance) = 8UL
+
+    override fun write(value: Performance, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
+ * A TalkingScore document (spec §6), built once per score.
+ */
+public interface TalkingScoreInterface {
+    
+    /**
+     * The announcement at `cursor`, arriving from `context`. `by_bar`: the
+     * user navigated by bar. The caller then stores the new context:
+     * {part name, bar number, pitch mode}.
+     */
+    fun `announce`(`cursor`: TalkingCursor, `context`: TalkingContext, `settings`: TalkingSettings, `byBar`: kotlin.Boolean): kotlin.String
+    
+    fun `barCount`(`part`: kotlin.UInt): kotlin.UInt
+    
+    /**
+     * The context an announcement at `cursor` leaves behind.
+     */
+    fun `contextAt`(`cursor`: TalkingCursor, `settings`: TalkingSettings): TalkingContext
+    
+    fun `eventCount`(`part`: kotlin.UInt, `bar`: kotlin.UInt): kotlin.UInt
+    
+    /**
+     * One step from `cursor`; None at either end.
+     */
+    fun `navigate`(`cursor`: TalkingCursor, `unit`: TalkingUnit, `forward`: kotlin.Boolean): TalkingCursor?
+    
+    /**
+     * Every bar of a part with its announcements, as the export reads them.
+     */
+    fun `partLines`(`part`: kotlin.UInt, `settings`: TalkingSettings): List<TalkingBarLines>
+    
+    fun `partNames`(): List<kotlin.String>
+    
+    fun `title`(): kotlin.String
+    
+    /**
+     * HTML export (all parts when `parts` is None).
+     */
+    fun `toHtml`(`settings`: TalkingSettings, `parts`: List<kotlin.UInt>?): kotlin.String
+    
+    /**
+     * The document as JSON (spec §6 shape).
+     */
+    fun `toJson`(): kotlin.String
+    
+    /**
+     * Plain-text export (all parts when `parts` is None).
+     */
+    fun `toText`(`settings`: TalkingSettings, `parts`: List<kotlin.UInt>?): kotlin.String
+    
+    fun `totalBars`(): kotlin.UInt
+    
+    companion object
+}
+
+/**
+ * A TalkingScore document (spec §6), built once per score.
+ */
+open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+    /**
+     * From partwise MusicXML text plus the Composition JSON when known
+     * (confidence, sources, performed time, free regions).
+     */
+    constructor(`musicxml`: kotlin.String, `compositionJson`: kotlin.String?) :
+        this(UniffiWithHandle, 
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(
+    
+        
+        FfiConverterString.lower(`musicxml`),
+        FfiConverterOptionalString.lower(`compositionJson`),_status)
+}
+    )
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_brasscribe_ffi_fn_free_talkingscore(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_brasscribe_ffi_fn_clone_talkingscore(handle, status)
+        }
+    }
+
+    
+    /**
+     * The announcement at `cursor`, arriving from `context`. `by_bar`: the
+     * user navigated by bar. The caller then stores the new context:
+     * {part name, bar number, pitch mode}.
+     */
+    @Throws(CoreException::class)override fun `announce`(`cursor`: TalkingCursor, `context`: TalkingContext, `settings`: TalkingSettings, `byBar`: kotlin.Boolean): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_announce(
+        it,
+        
+        FfiConverterTypeTalkingCursor.lower(`cursor`),
+        FfiConverterTypeTalkingContext.lower(`context`),
+        FfiConverterTypeTalkingSettings.lower(`settings`),
+        FfiConverterBoolean.lower(`byBar`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `barCount`(`part`: kotlin.UInt): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(
+        it,
+        
+        FfiConverterUInt.lower(`part`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The context an announcement at `cursor` leaves behind.
+     */override fun `contextAt`(`cursor`: TalkingCursor, `settings`: TalkingSettings): TalkingContext {
+            return FfiConverterTypeTalkingContext.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(
+        it,
+        
+        FfiConverterTypeTalkingCursor.lower(`cursor`),
+        FfiConverterTypeTalkingSettings.lower(`settings`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `eventCount`(`part`: kotlin.UInt, `bar`: kotlin.UInt): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(
+        it,
+        
+        FfiConverterUInt.lower(`part`),
+        FfiConverterUInt.lower(`bar`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * One step from `cursor`; None at either end.
+     */override fun `navigate`(`cursor`: TalkingCursor, `unit`: TalkingUnit, `forward`: kotlin.Boolean): TalkingCursor? {
+            return FfiConverterOptionalTypeTalkingCursor.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(
+        it,
+        
+        FfiConverterTypeTalkingCursor.lower(`cursor`),
+        FfiConverterTypeTalkingUnit.lower(`unit`),
+        FfiConverterBoolean.lower(`forward`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Every bar of a part with its announcements, as the export reads them.
+     */override fun `partLines`(`part`: kotlin.UInt, `settings`: TalkingSettings): List<TalkingBarLines> {
+            return FfiConverterSequenceTypeTalkingBarLines.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(
+        it,
+        
+        FfiConverterUInt.lower(`part`),
+        FfiConverterTypeTalkingSettings.lower(`settings`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `partNames`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `title`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_title(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * HTML export (all parts when `parts` is None).
+     */override fun `toHtml`(`settings`: TalkingSettings, `parts`: List<kotlin.UInt>?): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(
+        it,
+        
+        FfiConverterTypeTalkingSettings.lower(`settings`),
+        FfiConverterOptionalSequenceUInt.lower(`parts`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The document as JSON (spec §6 shape).
+     */override fun `toJson`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Plain-text export (all parts when `parts` is None).
+     */override fun `toText`(`settings`: TalkingSettings, `parts`: List<kotlin.UInt>?): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(
+        it,
+        
+        FfiConverterTypeTalkingSettings.lower(`settings`),
+        FfiConverterOptionalSequenceUInt.lower(`parts`),_status)
+}
+    }
+    )
+    }
+    
+
+    override fun `totalBars`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingScore: FfiConverter<TalkingScore, Long> {
+    override fun lower(value: TalkingScore): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): TalkingScore {
+        return TalkingScore(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): TalkingScore {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: TalkingScore) = 8UL
+
+    override fun write(value: TalkingScore, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+
+/**
+ * Everything the band arrangement writes.
+ */
+data class BandOutput (
+    var `compositionJson`: kotlin.String
+    , 
+    var `musicxml`: kotlin.String
+    , 
+    var `parts`: List<PartScore>
+    , 
+    /**
+     * `separation-check.json` text, when stems were given.
+     */
+    var `separationCheckJson`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeBandOutput: FfiConverterRustBuffer<BandOutput> {
+    override fun read(buf: ByteBuffer): BandOutput {
+        return BandOutput(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceTypePartScore.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: BandOutput) = (
+            FfiConverterString.allocationSize(value.`compositionJson`) +
+            FfiConverterString.allocationSize(value.`musicxml`) +
+            FfiConverterSequenceTypePartScore.allocationSize(value.`parts`) +
+            FfiConverterOptionalString.allocationSize(value.`separationCheckJson`)
+    )
+
+    override fun write(value: BandOutput, buf: ByteBuffer) {
+            FfiConverterString.write(value.`compositionJson`, buf)
+            FfiConverterString.write(value.`musicxml`, buf)
+            FfiConverterSequenceTypePartScore.write(value.`parts`, buf)
+            FfiConverterOptionalString.write(value.`separationCheckJson`, buf)
+    }
+}
+
+
 
 /**
  * A note on the tick grid (24 ticks per beat).
@@ -1187,6 +2267,113 @@ public object FfiConverterTypeGridNote: FfiConverterRustBuffer<GridNote> {
             FfiConverterLong.write(value.`start`, buf)
             FfiConverterLong.write(value.`end`, buf)
             FfiConverterDouble.write(value.`confidence`, buf)
+    }
+}
+
+
+
+data class HumanizeStats (
+    /**
+     * Composition voice the part matched, if any.
+     */
+    var `voice`: kotlin.String?
+    , 
+    var `ownTiming`: kotlin.ULong
+    , 
+    var `ensembleTiming`: kotlin.ULong
+    , 
+    var `jitterOnly`: kotlin.ULong
+    , 
+    var `lagMs`: kotlin.Double
+    , 
+    var `detuneCents`: kotlin.Double
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHumanizeStats: FfiConverterRustBuffer<HumanizeStats> {
+    override fun read(buf: ByteBuffer): HumanizeStats {
+        return HumanizeStats(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterDouble.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HumanizeStats) = (
+            FfiConverterOptionalString.allocationSize(value.`voice`) +
+            FfiConverterULong.allocationSize(value.`ownTiming`) +
+            FfiConverterULong.allocationSize(value.`ensembleTiming`) +
+            FfiConverterULong.allocationSize(value.`jitterOnly`) +
+            FfiConverterDouble.allocationSize(value.`lagMs`) +
+            FfiConverterDouble.allocationSize(value.`detuneCents`)
+    )
+
+    override fun write(value: HumanizeStats, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`voice`, buf)
+            FfiConverterULong.write(value.`ownTiming`, buf)
+            FfiConverterULong.write(value.`ensembleTiming`, buf)
+            FfiConverterULong.write(value.`jitterOnly`, buf)
+            FfiConverterDouble.write(value.`lagMs`, buf)
+            FfiConverterDouble.write(value.`detuneCents`, buf)
+    }
+}
+
+
+
+data class HumanizedPart (
+    var `notes`: List<PlayedNote>
+    , 
+    /**
+     * Detune for the whole player in cents (one pitch bend at the start).
+     */
+    var `detuneCents`: kotlin.Double
+    , 
+    var `stats`: HumanizeStats
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHumanizedPart: FfiConverterRustBuffer<HumanizedPart> {
+    override fun read(buf: ByteBuffer): HumanizedPart {
+        return HumanizedPart(
+            FfiConverterSequenceTypePlayedNote.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterTypeHumanizeStats.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HumanizedPart) = (
+            FfiConverterSequenceTypePlayedNote.allocationSize(value.`notes`) +
+            FfiConverterDouble.allocationSize(value.`detuneCents`) +
+            FfiConverterTypeHumanizeStats.allocationSize(value.`stats`)
+    )
+
+    override fun write(value: HumanizedPart, buf: ByteBuffer) {
+            FfiConverterSequenceTypePlayedNote.write(value.`notes`, buf)
+            FfiConverterDouble.write(value.`detuneCents`, buf)
+            FfiConverterTypeHumanizeStats.write(value.`stats`, buf)
     }
 }
 
@@ -1386,6 +2573,179 @@ public object FfiConverterTypeLayerMidi: FfiConverterRustBuffer<LayerMidi> {
 
 
 /**
+ * WAV file bytes of the separated stems (PCM 16/24/32-bit or float32). Each is
+ * optional; the energy gate, separation check, dynamics and rehearsal marks
+ * use whichever are given.
+ */
+data class LayerStems (
+    var `solo`: kotlin.ByteArray? = null 
+    , 
+    var `bass`: kotlin.ByteArray? = null 
+    , 
+    var `drums`: kotlin.ByteArray? = null 
+    , 
+    var `orchestra`: kotlin.ByteArray? = null 
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLayerStems: FfiConverterRustBuffer<LayerStems> {
+    override fun read(buf: ByteBuffer): LayerStems {
+        return LayerStems(
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LayerStems) = (
+            FfiConverterOptionalByteArray.allocationSize(value.`solo`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`bass`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`drums`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`orchestra`)
+    )
+
+    override fun write(value: LayerStems, buf: ByteBuffer) {
+            FfiConverterOptionalByteArray.write(value.`solo`, buf)
+            FfiConverterOptionalByteArray.write(value.`bass`, buf)
+            FfiConverterOptionalByteArray.write(value.`drums`, buf)
+            FfiConverterOptionalByteArray.write(value.`orchestra`, buf)
+    }
+}
+
+
+
+/**
+ * Options of the solo-with-band arrangement (defaults: everything on).
+ */
+data class LayersSongOptions (
+    /**
+     * SwiftF0 contour of the solo stem: where sustained solo notes really end.
+     */
+    var `soloContour`: SoloContour?
+    , 
+    /**
+     * Detect free-time (ad lib.) passages.
+     */
+    var `freeTime`: kotlin.Boolean
+    , 
+    /**
+     * Notate free-time passages at this BPM instead of estimating one.
+     */
+    var `freeTempo`: kotlin.Double?
+    , 
+    /**
+     * Drop layer notes where the layer's stem is silent.
+     */
+    var `gate`: kotlin.Boolean
+    , 
+    /**
+     * Clean up the tracked beats (tempo agreement, downbeat phase).
+     */
+    var `beatCleanup`: kotlin.Boolean
+    , 
+    /**
+     * Allow key changes (otherwise one key for the whole piece).
+     */
+    var `keyChanges`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSongOptions> {
+    override fun read(buf: ByteBuffer): LayersSongOptions {
+        return LayersSongOptions(
+            FfiConverterOptionalTypeSoloContour.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalDouble.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LayersSongOptions) = (
+            FfiConverterOptionalTypeSoloContour.allocationSize(value.`soloContour`) +
+            FfiConverterBoolean.allocationSize(value.`freeTime`) +
+            FfiConverterOptionalDouble.allocationSize(value.`freeTempo`) +
+            FfiConverterBoolean.allocationSize(value.`gate`) +
+            FfiConverterBoolean.allocationSize(value.`beatCleanup`) +
+            FfiConverterBoolean.allocationSize(value.`keyChanges`)
+    )
+
+    override fun write(value: LayersSongOptions, buf: ByteBuffer) {
+            FfiConverterOptionalTypeSoloContour.write(value.`soloContour`, buf)
+            FfiConverterBoolean.write(value.`freeTime`, buf)
+            FfiConverterOptionalDouble.write(value.`freeTempo`, buf)
+            FfiConverterBoolean.write(value.`gate`, buf)
+            FfiConverterBoolean.write(value.`beatCleanup`, buf)
+            FfiConverterBoolean.write(value.`keyChanges`, buf)
+    }
+}
+
+
+
+/**
+ * One part of the band as its own MusicXML file.
+ */
+data class PartScore (
+    var `fileName`: kotlin.String
+    , 
+    var `musicxml`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePartScore: FfiConverterRustBuffer<PartScore> {
+    override fun read(buf: ByteBuffer): PartScore {
+        return PartScore(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PartScore) = (
+            FfiConverterString.allocationSize(value.`fileName`) +
+            FfiConverterString.allocationSize(value.`musicxml`)
+    )
+
+    override fun write(value: PartScore, buf: ByteBuffer) {
+            FfiConverterString.write(value.`fileName`, buf)
+            FfiConverterString.write(value.`musicxml`, buf)
+    }
+}
+
+
+
+/**
  * A performed note (seconds).
  */
 data class PerformedNote (
@@ -1431,6 +2791,129 @@ public object FfiConverterTypePerformedNote: FfiConverterRustBuffer<PerformedNot
             FfiConverterDouble.write(value.`onset`, buf)
             FfiConverterDouble.write(value.`offset`, buf)
             FfiConverterOptionalDouble.write(value.`confidence`, buf)
+    }
+}
+
+
+
+data class PlayedNote (
+    var `start`: kotlin.Double
+    , 
+    var `end`: kotlin.Double
+    , 
+    var `pitch`: kotlin.Int
+    , 
+    var `velocity`: kotlin.Long
+    , 
+    var `staccato`: kotlin.Boolean
+    , 
+    /**
+     * Timing came from the Composition (not jitter alone).
+     */
+    var `fromComposition`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePlayedNote: FfiConverterRustBuffer<PlayedNote> {
+    override fun read(buf: ByteBuffer): PlayedNote {
+        return PlayedNote(
+            FfiConverterDouble.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterInt.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PlayedNote) = (
+            FfiConverterDouble.allocationSize(value.`start`) +
+            FfiConverterDouble.allocationSize(value.`end`) +
+            FfiConverterInt.allocationSize(value.`pitch`) +
+            FfiConverterLong.allocationSize(value.`velocity`) +
+            FfiConverterBoolean.allocationSize(value.`staccato`) +
+            FfiConverterBoolean.allocationSize(value.`fromComposition`)
+    )
+
+    override fun write(value: PlayedNote, buf: ByteBuffer) {
+            FfiConverterDouble.write(value.`start`, buf)
+            FfiConverterDouble.write(value.`end`, buf)
+            FfiConverterInt.write(value.`pitch`, buf)
+            FfiConverterLong.write(value.`velocity`, buf)
+            FfiConverterBoolean.write(value.`staccato`, buf)
+            FfiConverterBoolean.write(value.`fromComposition`, buf)
+    }
+}
+
+
+
+/**
+ * One part note: score position in Composition ticks (24 per beat) plus its
+ * score-tempo seconds. `pitch` is concert MIDI.
+ */
+data class ScoreNote (
+    var `tick`: kotlin.Long
+    , 
+    var `durTick`: kotlin.Long
+    , 
+    var `startS`: kotlin.Double
+    , 
+    var `endS`: kotlin.Double
+    , 
+    var `pitch`: kotlin.Int
+    , 
+    var `velocity`: kotlin.Long
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeScoreNote: FfiConverterRustBuffer<ScoreNote> {
+    override fun read(buf: ByteBuffer): ScoreNote {
+        return ScoreNote(
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterInt.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ScoreNote) = (
+            FfiConverterLong.allocationSize(value.`tick`) +
+            FfiConverterLong.allocationSize(value.`durTick`) +
+            FfiConverterDouble.allocationSize(value.`startS`) +
+            FfiConverterDouble.allocationSize(value.`endS`) +
+            FfiConverterInt.allocationSize(value.`pitch`) +
+            FfiConverterLong.allocationSize(value.`velocity`)
+    )
+
+    override fun write(value: ScoreNote, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`tick`, buf)
+            FfiConverterLong.write(value.`durTick`, buf)
+            FfiConverterDouble.write(value.`startS`, buf)
+            FfiConverterDouble.write(value.`endS`, buf)
+            FfiConverterInt.write(value.`pitch`, buf)
+            FfiConverterLong.write(value.`velocity`, buf)
     }
 }
 
@@ -1569,6 +3052,204 @@ public object FfiConverterTypeSpelledPitch: FfiConverterRustBuffer<SpelledPitch>
 
 
 
+data class TalkingBarLines (
+    var `heading`: kotlin.String
+    , 
+    var `lines`: List<kotlin.String>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingBarLines: FfiConverterRustBuffer<TalkingBarLines> {
+    override fun read(buf: ByteBuffer): TalkingBarLines {
+        return TalkingBarLines(
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TalkingBarLines) = (
+            FfiConverterString.allocationSize(value.`heading`) +
+            FfiConverterSequenceString.allocationSize(value.`lines`)
+    )
+
+    override fun write(value: TalkingBarLines, buf: ByteBuffer) {
+            FfiConverterString.write(value.`heading`, buf)
+            FfiConverterSequenceString.write(value.`lines`, buf)
+    }
+}
+
+
+
+/**
+ * What the previous announcement left behind (all None at the start).
+ */
+data class TalkingContext (
+    var `part`: kotlin.String? = null 
+    , 
+    var `bar`: kotlin.Long? = null 
+    , 
+    var `pitchMode`: kotlin.String? = null 
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingContext: FfiConverterRustBuffer<TalkingContext> {
+    override fun read(buf: ByteBuffer): TalkingContext {
+        return TalkingContext(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalLong.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TalkingContext) = (
+            FfiConverterOptionalString.allocationSize(value.`part`) +
+            FfiConverterOptionalLong.allocationSize(value.`bar`) +
+            FfiConverterOptionalString.allocationSize(value.`pitchMode`)
+    )
+
+    override fun write(value: TalkingContext, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`part`, buf)
+            FfiConverterOptionalLong.write(value.`bar`, buf)
+            FfiConverterOptionalString.write(value.`pitchMode`, buf)
+    }
+}
+
+
+
+/**
+ * Indices of part, bar and event in the document.
+ */
+data class TalkingCursor (
+    var `part`: kotlin.UInt
+    , 
+    var `bar`: kotlin.UInt
+    , 
+    var `event`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingCursor: FfiConverterRustBuffer<TalkingCursor> {
+    override fun read(buf: ByteBuffer): TalkingCursor {
+        return TalkingCursor(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TalkingCursor) = (
+            FfiConverterUInt.allocationSize(value.`part`) +
+            FfiConverterUInt.allocationSize(value.`bar`) +
+            FfiConverterUInt.allocationSize(value.`event`)
+    )
+
+    override fun write(value: TalkingCursor, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`part`, buf)
+            FfiConverterUInt.write(value.`bar`, buf)
+            FfiConverterUInt.write(value.`event`, buf)
+    }
+}
+
+
+
+data class TalkingSettings (
+    /**
+     * "en" or "nb".
+     */
+    var `lang`: kotlin.String
+    , 
+    /**
+     * "written" or "concert".
+     */
+    var `pitchMode`: kotlin.String
+    , 
+    /**
+     * "brief", "standard" or "full".
+     */
+    var `verbosity`: kotlin.String
+    , 
+    /**
+     * "scientific" or "helmholtz" (nb only).
+     */
+    var `octaveStyle`: kotlin.String
+    , 
+    /**
+     * In full verbosity, say "confident" for notes at or above 0.7.
+     */
+    var `announceConfident`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingSettings: FfiConverterRustBuffer<TalkingSettings> {
+    override fun read(buf: ByteBuffer): TalkingSettings {
+        return TalkingSettings(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TalkingSettings) = (
+            FfiConverterString.allocationSize(value.`lang`) +
+            FfiConverterString.allocationSize(value.`pitchMode`) +
+            FfiConverterString.allocationSize(value.`verbosity`) +
+            FfiConverterString.allocationSize(value.`octaveStyle`) +
+            FfiConverterBoolean.allocationSize(value.`announceConfident`)
+    )
+
+    override fun write(value: TalkingSettings, buf: ByteBuffer) {
+            FfiConverterString.write(value.`lang`, buf)
+            FfiConverterString.write(value.`pitchMode`, buf)
+            FfiConverterString.write(value.`verbosity`, buf)
+            FfiConverterString.write(value.`octaveStyle`, buf)
+            FfiConverterBoolean.write(value.`announceConfident`, buf)
+    }
+}
+
+
+
 
 
 sealed class CoreException: kotlin.Exception() {
@@ -1659,6 +3340,86 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
 
 
 
+enum class TalkingUnit {
+    
+    /**
+     * Next event in the part, skipping tie continuations.
+     */
+    NOTE,
+    /**
+     * First event of the next bar.
+     */
+    BAR,
+    /**
+     * Same time position in the next part.
+     */
+    PART,
+    /**
+     * Next note with confidence below 0.7 that has not been checked.
+     */
+    UNCERTAIN;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTalkingUnit: FfiConverterRustBuffer<TalkingUnit> {
+    override fun read(buf: ByteBuffer) = try {
+        TalkingUnit.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: TalkingUnit) = 4UL
+
+    override fun write(value: TalkingUnit, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
+    override fun read(buf: ByteBuffer): kotlin.Long? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterLong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Long?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterLong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Long?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterLong.write(value, buf)
+        }
+    }
+}
+
+
+
+
 /**
  * @suppress
  */
@@ -1684,6 +3445,38 @@ public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?>
         } else {
             buf.put(1)
             FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
+    override fun read(buf: ByteBuffer): kotlin.String? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterString.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.String?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterString.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.String?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterString.write(value, buf)
         }
     }
 }
@@ -1726,6 +3519,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypePerformance: FfiConverterRustBuffer<Performance?> {
+    override fun read(buf: ByteBuffer): Performance? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypePerformance.read(buf)
+    }
+
+    override fun allocationSize(value: Performance?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypePerformance.allocationSize(value)
+        }
+    }
+
+    override fun write(value: Performance?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypePerformance.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeSoloContour: FfiConverterRustBuffer<SoloContour?> {
     override fun read(buf: ByteBuffer): SoloContour? {
         if (buf.get().toInt() == 0) {
@@ -1748,6 +3573,98 @@ public object FfiConverterOptionalTypeSoloContour: FfiConverterRustBuffer<SoloCo
         } else {
             buf.put(1)
             FfiConverterTypeSoloContour.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeTalkingCursor: FfiConverterRustBuffer<TalkingCursor?> {
+    override fun read(buf: ByteBuffer): TalkingCursor? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeTalkingCursor.read(buf)
+    }
+
+    override fun allocationSize(value: TalkingCursor?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeTalkingCursor.allocationSize(value)
+        }
+    }
+
+    override fun write(value: TalkingCursor?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeTalkingCursor.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceUInt: FfiConverterRustBuffer<List<kotlin.UInt>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.UInt>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceUInt.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.UInt>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceUInt.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<kotlin.UInt>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceUInt: FfiConverterRustBuffer<List<kotlin.UInt>> {
+    override fun read(buf: ByteBuffer): List<kotlin.UInt> {
+        val len = buf.getInt()
+        return List<kotlin.UInt>(len) {
+            FfiConverterUInt.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.UInt>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterUInt.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.UInt>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterUInt.write(it, buf)
         }
     }
 }
@@ -1804,6 +3721,34 @@ public object FfiConverterSequenceDouble: FfiConverterRustBuffer<List<kotlin.Dou
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterDouble.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
+    override fun read(buf: ByteBuffer): List<kotlin.String> {
+        val len = buf.getInt()
+        return List<kotlin.String>(len) {
+            FfiConverterString.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.String>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterString.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.String>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterString.write(it, buf)
         }
     }
 }
@@ -1898,6 +3843,34 @@ public object FfiConverterSequenceTypeInstrumentInfo: FfiConverterRustBuffer<Lis
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypePartScore: FfiConverterRustBuffer<List<PartScore>> {
+    override fun read(buf: ByteBuffer): List<PartScore> {
+        val len = buf.getInt()
+        return List<PartScore>(len) {
+            FfiConverterTypePartScore.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PartScore>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePartScore.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PartScore>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePartScore.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer<List<PerformedNote>> {
     override fun read(buf: ByteBuffer): List<PerformedNote> {
         val len = buf.getInt()
@@ -1916,6 +3889,62 @@ public object FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer<List
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypePerformedNote.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePlayedNote: FfiConverterRustBuffer<List<PlayedNote>> {
+    override fun read(buf: ByteBuffer): List<PlayedNote> {
+        val len = buf.getInt()
+        return List<PlayedNote>(len) {
+            FfiConverterTypePlayedNote.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PlayedNote>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePlayedNote.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PlayedNote>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePlayedNote.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeScoreNote: FfiConverterRustBuffer<List<ScoreNote>> {
+    override fun read(buf: ByteBuffer): List<ScoreNote> {
+        val len = buf.getInt()
+        return List<ScoreNote>(len) {
+            FfiConverterTypeScoreNote.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ScoreNote>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeScoreNote.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ScoreNote>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeScoreNote.write(it, buf)
         }
     }
 }
@@ -1947,9 +3976,58 @@ public object FfiConverterSequenceTypeSpelledPitch: FfiConverterRustBuffer<List<
         }
     }
 }
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<List<TalkingBarLines>> {
+    override fun read(buf: ByteBuffer): List<TalkingBarLines> {
+        val len = buf.getInt()
+        return List<TalkingBarLines>(len) {
+            FfiConverterTypeTalkingBarLines.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<TalkingBarLines>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeTalkingBarLines.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<TalkingBarLines>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeTalkingBarLines.write(it, buf)
+        }
+    }
+}
         /**
-         * Solo-with-band arrangement from layer transcriptions and a beat table
-         * (`time position` per line, position 1 = downbeat).
+         * Solo-with-band arrangement from layer transcriptions, the stems' audio and
+         * a beat table (`time position` per line, position 1 = downbeat): the score,
+         * every part, the Composition and the separation check.
+         */
+    @Throws(CoreException::class) fun `arrangeLayersBand`(`layers`: LayerMidi, `stems`: LayerStems, `beatsText`: kotlin.String, `title`: kotlin.String, `options`: LayersSongOptions): BandOutput {
+            return FfiConverterTypeBandOutput.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_layers_band(
+    
+        
+        FfiConverterTypeLayerMidi.lower(`layers`),
+        FfiConverterTypeLayerStems.lower(`stems`),
+        FfiConverterString.lower(`beatsText`),
+        FfiConverterString.lower(`title`),
+        FfiConverterTypeLayersSongOptions.lower(`options`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Solo-with-band arrangement from layer transcriptions and a beat table,
+         * without stems (no energy gate, dynamics or rehearsal marks).
          */
     @Throws(CoreException::class) fun `arrangeLayersSong`(`layers`: LayerMidi, `beatsText`: kotlin.String, `title`: kotlin.String, `soloContour`: SoloContour?, `freeTime`: kotlin.Boolean, `freeTempo`: kotlin.Double?): SongOutput {
             return FfiConverterTypeSongOutput.lift(
@@ -2064,6 +4142,19 @@ public object FfiConverterSequenceTypeSpelledPitch: FfiConverterRustBuffer<List<
     
 
         /**
+         * Default options of [`arrange_layers_band`].
+         */ fun `layersSongDefaults`(): LayersSongOptions {
+            return FfiConverterTypeLayersSongOptions.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_layers_song_defaults(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
          * Parse and re-serialise a Composition (the canonical composition.json text).
          */
     @Throws(CoreException::class) fun `normalizeComposition`(`json`: kotlin.String): kotlin.String {
@@ -2108,6 +4199,72 @@ public object FfiConverterSequenceTypeSpelledPitch: FfiConverterRustBuffer<List<
         
         FfiConverterSequenceDouble.lower(`onsetsBeats`),
         FfiConverterSequenceInt.lower(`pitches`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Humanize one player's notes. `performed_timing` follows the recording's
+         * rubato (needs `performance`); otherwise the score tempo is kept.
+         */
+    @Throws(CoreException::class) fun `humanizePart`(`notes`: List<ScoreNote>, `part`: kotlin.String, `player`: kotlin.Long, `seed`: kotlin.String, `performance`: Performance?, `performedTiming`: kotlin.Boolean): HumanizedPart {
+            return FfiConverterTypeHumanizedPart.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_humanize_part(
+    
+        
+        FfiConverterSequenceTypeScoreNote.lower(`notes`),
+        FfiConverterString.lower(`part`),
+        FfiConverterLong.lower(`player`),
+        FfiConverterString.lower(`seed`),
+        FfiConverterOptionalTypePerformance.lower(`performance`),
+        FfiConverterBoolean.lower(`performedTiming`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * U(key) in [0, 1): the keyed uniform the humanizer draws from.
+         */ fun `humanizeUniform`(`key`: kotlin.String): kotlin.Double {
+            return FfiConverterDouble.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_humanize_uniform(
+    
+        
+        FfiConverterString.lower(`key`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Announce one event given as JSON, outside a document: `request` is
+         * `{"part": {...}, "bar": {...}, "event": {...}, "context": {...}, "settings": {...}, "by_bar": false}`
+         * (see `talking_score::bar_from_json` for the bar fields). This is the form
+         * the conformance vectors take.
+         */
+    @Throws(CoreException::class) fun `talkingAnnounceJson`(`request`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_talking_announce_json(
+    
+        
+        FfiConverterString.lower(`request`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Default settings (English, written pitch, standard verbosity).
+         */ fun `talkingSettingsDefault`(): TalkingSettings {
+            return FfiConverterTypeTalkingSettings.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_talking_settings_default(
+    
+        _status)
 }
     )
     }

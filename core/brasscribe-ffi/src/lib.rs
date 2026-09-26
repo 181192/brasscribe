@@ -119,9 +119,13 @@ fn midi(b: &[u8]) -> Result<MidiFile, CoreError> {
 /// use whichever are given.
 #[derive(Debug, Clone, Default, uniffi::Record)]
 pub struct LayerStems {
+    #[uniffi(default = None)]
     pub solo: Option<Vec<u8>>,
+    #[uniffi(default = None)]
     pub bass: Option<Vec<u8>>,
+    #[uniffi(default = None)]
     pub drums: Option<Vec<u8>>,
+    #[uniffi(default = None)]
     pub orchestra: Option<Vec<u8>>,
 }
 

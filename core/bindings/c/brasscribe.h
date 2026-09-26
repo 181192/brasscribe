@@ -45,9 +45,12 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 //
 // `options_json` may be null (defaults) or
 // `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
-//   "free_time": true, "free_tempo": null}`: the SwiftF0 contour of the solo
-// stem (where sustained notes end), free-time detection on/off, and a fixed
-// BPM for free-time passages.
+//   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
+//   "key_changes": true}`: the SwiftF0 contour of the solo stem (where
+// sustained notes end), free-time detection on/off, a fixed BPM for free-time
+// passages, the energy gate, beat cleanup and key changes. Without stems the
+// gate, dynamics and rehearsal marks have nothing to read; see
+// [`bc_arrange_layers_band`].
 int32_t bc_arrange_layers_song(const uint8_t *const *midi,
                                const uintptr_t *midi_len,
                                const char *beats_text,
@@ -61,6 +64,75 @@ int32_t bc_arrange_layers_song(const uint8_t *const *midi,
 // `{"onsets": [beats...], "pitches": [midi...]}`; writes
 // `[{"step": "F", "alter": 1, "octave": 4}, ...]`.
 int32_t bc_spell_json(const char *request, char **out, char **err);
+
+// Like [`bc_arrange_layers_song`], plus the stems' audio: `wav` and `wav_len`
+// hold four WAV files (solo, bass, drums, orchestra; a null pointer = not
+// given). Writes one JSON object to `*out`:
+// `{"composition": "<composition.json text>", "musicxml": "...",
+//   "parts": [{"file_name": "...", "musicxml": "..."}], "separation_check": "<json text>" | null}`.
+int32_t bc_arrange_layers_band(const uint8_t *const *midi,
+                               const uintptr_t *midi_len,
+                               const uint8_t *const *wav,
+                               const uintptr_t *wav_len,
+                               const char *beats_text,
+                               const char *title,
+                               const char *options,
+                               char **out,
+                               char **err);
+
+// Humanize one player's notes. `request` is JSON
+// `{"notes": [{"tick", "dur_tick", "start_s", "end_s", "pitch", "velocity"}...],
+//   "part": "Solo Cornet", "player": 0, "seed": "brasscribe",
+//   "timing": "score" | "performed", "composition": {...} | null}`;
+// writes `{"notes": [{"start", "end", "pitch", "velocity", "staccato",
+// "from_composition"}...], "detune": cents, "stats": {...}}`.
+int32_t bc_humanize_json(const char *request, char **out, char **err);
+
+// Build a talking score from MusicXML and (optionally, may be null) the
+// Composition JSON. Writes a handle to `*out`; release with
+// [`bc_talking_score_free`].
+int32_t bc_talking_score_new(const char *musicxml,
+                             const char *composition_json,
+                             struct BcTalkingScore **out,
+                             char **err);
+
+// Release a talking score. Null is ignored.
+void bc_talking_score_free(struct BcTalkingScore *ts);
+
+// The document as JSON (spec §6 shape).
+int32_t bc_talking_score_json(const struct BcTalkingScore *ts, char **out, char **err);
+
+// Announce at a cursor. `request`: `{"cursor": {"part", "bar", "event"},
+// "context": {"part", "bar", "pitch_mode"}, "settings": {"lang", "pitch_mode",
+// "verbosity", "octave_style", "announce_confident"}, "by_bar": false}`.
+// Writes `{"text": "...", "context": {...}}`: the announcement and the
+// context it leaves behind.
+int32_t bc_talking_score_announce(const struct BcTalkingScore *ts,
+                                  const char *request,
+                                  char **out,
+                                  char **err);
+
+// One navigation step. `request`: `{"cursor": {...}, "unit": "note" | "bar" |
+// "part" | "uncertain", "forward": true}`. Writes the new cursor as JSON, or
+// `null` at either end of the score.
+int32_t bc_talking_score_navigate(const struct BcTalkingScore *ts,
+                                  const char *request,
+                                  char **out,
+                                  char **err);
+
+// Export the talking score. `format`: "text" or "html"; `settings_json` may be
+// null (defaults).
+int32_t bc_talking_score_export(const struct BcTalkingScore *ts,
+                                const char *format,
+                                const char *settings_json,
+                                char **out,
+                                char **err);
+
+// Announce one event outside a document (the conformance-vector form):
+// `{"part": {...}, "bar": {...}, "event": {...}, "context": {...}, "settings": {...}, "by_bar": false}`.
+int32_t bc_talking_announce_json(const char *request,
+                                 char **out,
+                                 char **err);
 
 #ifdef __cplusplus
 }  // extern "C"

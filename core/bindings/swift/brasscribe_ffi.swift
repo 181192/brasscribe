@@ -465,6 +465,22 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
@@ -474,6 +490,22 @@ fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     }
 
     public static func write(_ value: Int32, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
+    typealias FfiType = UInt64
+    typealias SwiftType = UInt64
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt64 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
@@ -599,6 +631,522 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 }
 
 
+
+
+/**
+ * What a Composition says about how the music was played (performed beat
+ * map, per-tick ensemble deviations, voices). Build once, use for every part.
+ */
+public protocol PerformanceProtocol: AnyObject, Sendable {
+    
+}
+/**
+ * What a Composition says about how the music was played (performed beat
+ * map, per-tick ensemble deviations, voices). Build once, use for every part.
+ */
+open class Performance: PerformanceProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
+
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_brasscribe_ffi_fn_clone_performance(self.handle, $0) }
+    }
+public convenience init(compositionJson: String)throws  {
+    let handle =
+        try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_constructor_performance_new(
+        FfiConverterString.lower(compositionJson),uniffiCallStatus
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
+
+    deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
+        try! rustCall { uniffi_brasscribe_ffi_fn_free_performance(handle, $0) }
+    }
+
+    
+
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePerformance: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = Performance
+
+    public static func lift(_ handle: UInt64) throws -> Performance {
+        return Performance(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: Performance) -> UInt64 {
+        return value.uniffiCloneHandle()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Performance {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+    public static func write(_ value: Performance, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePerformance_lift(_ handle: UInt64) throws -> Performance {
+    return try FfiConverterTypePerformance.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePerformance_lower(_ value: Performance) -> UInt64 {
+    return FfiConverterTypePerformance.lower(value)
+}
+
+
+
+
+
+
+/**
+ * A TalkingScore document (spec §6), built once per score.
+ */
+public protocol TalkingScoreProtocol: AnyObject, Sendable {
+    
+    /**
+     * The announcement at `cursor`, arriving from `context`. `by_bar`: the
+     * user navigated by bar. The caller then stores the new context:
+     * {part name, bar number, pitch mode}.
+     */
+    func announce(cursor: TalkingCursor, context: TalkingContext, settings: TalkingSettings, byBar: Bool) throws  -> String
+    
+    func barCount(part: UInt32)  -> UInt32
+    
+    /**
+     * The context an announcement at `cursor` leaves behind.
+     */
+    func contextAt(cursor: TalkingCursor, settings: TalkingSettings)  -> TalkingContext
+    
+    func eventCount(part: UInt32, bar: UInt32)  -> UInt32
+    
+    /**
+     * One step from `cursor`; None at either end.
+     */
+    func navigate(cursor: TalkingCursor, unit: TalkingUnit, forward: Bool)  -> TalkingCursor?
+    
+    /**
+     * Every bar of a part with its announcements, as the export reads them.
+     */
+    func partLines(part: UInt32, settings: TalkingSettings)  -> [TalkingBarLines]
+    
+    func partNames()  -> [String]
+    
+    func title()  -> String
+    
+    /**
+     * HTML export (all parts when `parts` is None).
+     */
+    func toHtml(settings: TalkingSettings, parts: [UInt32]?)  -> String
+    
+    /**
+     * The document as JSON (spec §6 shape).
+     */
+    func toJson()  -> String
+    
+    /**
+     * Plain-text export (all parts when `parts` is None).
+     */
+    func toText(settings: TalkingSettings, parts: [UInt32]?)  -> String
+    
+    func totalBars()  -> UInt32
+    
+}
+/**
+ * A TalkingScore document (spec §6), built once per score.
+ */
+open class TalkingScore: TalkingScoreProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
+
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_brasscribe_ffi_fn_clone_talkingscore(self.handle, $0) }
+    }
+    /**
+     * From partwise MusicXML text plus the Composition JSON when known
+     * (confidence, sources, performed time, free regions).
+     */
+public convenience init(musicxml: String, compositionJson: String?)throws  {
+    let handle =
+        try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(
+        FfiConverterString.lower(musicxml),
+        FfiConverterOptionString.lower(compositionJson),uniffiCallStatus
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
+
+    deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
+        try! rustCall { uniffi_brasscribe_ffi_fn_free_talkingscore(handle, $0) }
+    }
+
+    
+
+    
+    /**
+     * The announcement at `cursor`, arriving from `context`. `by_bar`: the
+     * user navigated by bar. The caller then stores the new context:
+     * {part name, bar number, pitch mode}.
+     */
+open func announce(cursor: TalkingCursor, context: TalkingContext, settings: TalkingSettings, byBar: Bool)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_announce(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeTalkingCursor_lower(cursor),
+        FfiConverterTypeTalkingContext_lower(context),
+        FfiConverterTypeTalkingSettings_lower(settings),
+        FfiConverterBool.lower(byBar),uniffiCallStatus
+    )
+})
+}
+    
+open func barCount(part: UInt32) -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(part),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * The context an announcement at `cursor` leaves behind.
+     */
+open func contextAt(cursor: TalkingCursor, settings: TalkingSettings) -> TalkingContext  {
+    return try!  FfiConverterTypeTalkingContext_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeTalkingCursor_lower(cursor),
+        FfiConverterTypeTalkingSettings_lower(settings),uniffiCallStatus
+    )
+})
+}
+    
+open func eventCount(part: UInt32, bar: UInt32) -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(part),
+        FfiConverterUInt32.lower(bar),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * One step from `cursor`; None at either end.
+     */
+open func navigate(cursor: TalkingCursor, unit: TalkingUnit, forward: Bool) -> TalkingCursor?  {
+    return try!  FfiConverterOptionTypeTalkingCursor.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeTalkingCursor_lower(cursor),
+        FfiConverterTypeTalkingUnit_lower(unit),
+        FfiConverterBool.lower(forward),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Every bar of a part with its announcements, as the export reads them.
+     */
+open func partLines(part: UInt32, settings: TalkingSettings) -> [TalkingBarLines]  {
+    return try!  FfiConverterSequenceTypeTalkingBarLines.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(part),
+        FfiConverterTypeTalkingSettings_lower(settings),uniffiCallStatus
+    )
+})
+}
+    
+open func partNames() -> [String]  {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func title() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_title(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * HTML export (all parts when `parts` is None).
+     */
+open func toHtml(settings: TalkingSettings, parts: [UInt32]?) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeTalkingSettings_lower(settings),
+        FfiConverterOptionSequenceUInt32.lower(parts),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * The document as JSON (spec §6 shape).
+     */
+open func toJson() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Plain-text export (all parts when `parts` is None).
+     */
+open func toText(settings: TalkingSettings, parts: [UInt32]?) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeTalkingSettings_lower(settings),
+        FfiConverterOptionSequenceUInt32.lower(parts),uniffiCallStatus
+    )
+})
+}
+    
+open func totalBars() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingScore: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = TalkingScore
+
+    public static func lift(_ handle: UInt64) throws -> TalkingScore {
+        return TalkingScore(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: TalkingScore) -> UInt64 {
+        return value.uniffiCloneHandle()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingScore {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+    public static func write(_ value: TalkingScore, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingScore_lift(_ handle: UInt64) throws -> TalkingScore {
+    return try FfiConverterTypeTalkingScore.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingScore_lower(_ value: TalkingScore) -> UInt64 {
+    return FfiConverterTypeTalkingScore.lower(value)
+}
+
+
+
+
+/**
+ * Everything the band arrangement writes.
+ */
+public struct BandOutput: Equatable, Hashable {
+    public var compositionJson: String
+    public var musicxml: String
+    public var parts: [PartScore]
+    /**
+     * `separation-check.json` text, when stems were given.
+     */
+    public var separationCheckJson: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(compositionJson: String, musicxml: String, parts: [PartScore], 
+        /**
+         * `separation-check.json` text, when stems were given.
+         */separationCheckJson: String?) {
+        self.compositionJson = compositionJson
+        self.musicxml = musicxml
+        self.parts = parts
+        self.separationCheckJson = separationCheckJson
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension BandOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBandOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BandOutput {
+        return
+            try BandOutput(
+                compositionJson: FfiConverterString.read(from: &buf), 
+                musicxml: FfiConverterString.read(from: &buf), 
+                parts: FfiConverterSequenceTypePartScore.read(from: &buf), 
+                separationCheckJson: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: BandOutput, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.compositionJson, into: &buf)
+        FfiConverterString.write(value.musicxml, into: &buf)
+        FfiConverterSequenceTypePartScore.write(value.parts, into: &buf)
+        FfiConverterOptionString.write(value.separationCheckJson, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBandOutput_lift(_ buf: RustBuffer) throws -> BandOutput {
+    return try FfiConverterTypeBandOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBandOutput_lower(_ value: BandOutput) -> RustBuffer {
+    return FfiConverterTypeBandOutput.lower(value)
+}
+
+
 /**
  * A note on the tick grid (24 ticks per beat).
  */
@@ -661,6 +1209,146 @@ public func FfiConverterTypeGridNote_lift(_ buf: RustBuffer) throws -> GridNote 
 #endif
 public func FfiConverterTypeGridNote_lower(_ value: GridNote) -> RustBuffer {
     return FfiConverterTypeGridNote.lower(value)
+}
+
+
+public struct HumanizeStats: Equatable, Hashable {
+    /**
+     * Composition voice the part matched, if any.
+     */
+    public var voice: String?
+    public var ownTiming: UInt64
+    public var ensembleTiming: UInt64
+    public var jitterOnly: UInt64
+    public var lagMs: Double
+    public var detuneCents: Double
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Composition voice the part matched, if any.
+         */voice: String?, ownTiming: UInt64, ensembleTiming: UInt64, jitterOnly: UInt64, lagMs: Double, detuneCents: Double) {
+        self.voice = voice
+        self.ownTiming = ownTiming
+        self.ensembleTiming = ensembleTiming
+        self.jitterOnly = jitterOnly
+        self.lagMs = lagMs
+        self.detuneCents = detuneCents
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension HumanizeStats: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHumanizeStats: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HumanizeStats {
+        return
+            try HumanizeStats(
+                voice: FfiConverterOptionString.read(from: &buf), 
+                ownTiming: FfiConverterUInt64.read(from: &buf), 
+                ensembleTiming: FfiConverterUInt64.read(from: &buf), 
+                jitterOnly: FfiConverterUInt64.read(from: &buf), 
+                lagMs: FfiConverterDouble.read(from: &buf), 
+                detuneCents: FfiConverterDouble.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HumanizeStats, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.voice, into: &buf)
+        FfiConverterUInt64.write(value.ownTiming, into: &buf)
+        FfiConverterUInt64.write(value.ensembleTiming, into: &buf)
+        FfiConverterUInt64.write(value.jitterOnly, into: &buf)
+        FfiConverterDouble.write(value.lagMs, into: &buf)
+        FfiConverterDouble.write(value.detuneCents, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHumanizeStats_lift(_ buf: RustBuffer) throws -> HumanizeStats {
+    return try FfiConverterTypeHumanizeStats.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHumanizeStats_lower(_ value: HumanizeStats) -> RustBuffer {
+    return FfiConverterTypeHumanizeStats.lower(value)
+}
+
+
+public struct HumanizedPart: Equatable, Hashable {
+    public var notes: [PlayedNote]
+    /**
+     * Detune for the whole player in cents (one pitch bend at the start).
+     */
+    public var detuneCents: Double
+    public var stats: HumanizeStats
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(notes: [PlayedNote], 
+        /**
+         * Detune for the whole player in cents (one pitch bend at the start).
+         */detuneCents: Double, stats: HumanizeStats) {
+        self.notes = notes
+        self.detuneCents = detuneCents
+        self.stats = stats
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension HumanizedPart: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHumanizedPart: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HumanizedPart {
+        return
+            try HumanizedPart(
+                notes: FfiConverterSequenceTypePlayedNote.read(from: &buf), 
+                detuneCents: FfiConverterDouble.read(from: &buf), 
+                stats: FfiConverterTypeHumanizeStats.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: HumanizedPart, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypePlayedNote.write(value.notes, into: &buf)
+        FfiConverterDouble.write(value.detuneCents, into: &buf)
+        FfiConverterTypeHumanizeStats.write(value.stats, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHumanizedPart_lift(_ buf: RustBuffer) throws -> HumanizedPart {
+    return try FfiConverterTypeHumanizedPart.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHumanizedPart_lower(_ value: HumanizedPart) -> RustBuffer {
+    return FfiConverterTypeHumanizedPart.lower(value)
 }
 
 
@@ -898,6 +1586,239 @@ public func FfiConverterTypeLayerMidi_lower(_ value: LayerMidi) -> RustBuffer {
 
 
 /**
+ * WAV file bytes of the separated stems (PCM 16/24/32-bit or float32). Each is
+ * optional; the energy gate, separation check, dynamics and rehearsal marks
+ * use whichever are given.
+ */
+public struct LayerStems: Equatable, Hashable {
+    public var solo: Data?
+    public var bass: Data?
+    public var drums: Data?
+    public var orchestra: Data?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(solo: Data? = nil, bass: Data? = nil, drums: Data? = nil, orchestra: Data? = nil) {
+        self.solo = solo
+        self.bass = bass
+        self.drums = drums
+        self.orchestra = orchestra
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension LayerStems: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLayerStems: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LayerStems {
+        return
+            try LayerStems(
+                solo: FfiConverterOptionData.read(from: &buf), 
+                bass: FfiConverterOptionData.read(from: &buf), 
+                drums: FfiConverterOptionData.read(from: &buf), 
+                orchestra: FfiConverterOptionData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LayerStems, into buf: inout [UInt8]) {
+        FfiConverterOptionData.write(value.solo, into: &buf)
+        FfiConverterOptionData.write(value.bass, into: &buf)
+        FfiConverterOptionData.write(value.drums, into: &buf)
+        FfiConverterOptionData.write(value.orchestra, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLayerStems_lift(_ buf: RustBuffer) throws -> LayerStems {
+    return try FfiConverterTypeLayerStems.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLayerStems_lower(_ value: LayerStems) -> RustBuffer {
+    return FfiConverterTypeLayerStems.lower(value)
+}
+
+
+/**
+ * Options of the solo-with-band arrangement (defaults: everything on).
+ */
+public struct LayersSongOptions: Equatable, Hashable {
+    /**
+     * SwiftF0 contour of the solo stem: where sustained solo notes really end.
+     */
+    public var soloContour: SoloContour?
+    /**
+     * Detect free-time (ad lib.) passages.
+     */
+    public var freeTime: Bool
+    /**
+     * Notate free-time passages at this BPM instead of estimating one.
+     */
+    public var freeTempo: Double?
+    /**
+     * Drop layer notes where the layer's stem is silent.
+     */
+    public var gate: Bool
+    /**
+     * Clean up the tracked beats (tempo agreement, downbeat phase).
+     */
+    public var beatCleanup: Bool
+    /**
+     * Allow key changes (otherwise one key for the whole piece).
+     */
+    public var keyChanges: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * SwiftF0 contour of the solo stem: where sustained solo notes really end.
+         */soloContour: SoloContour?, 
+        /**
+         * Detect free-time (ad lib.) passages.
+         */freeTime: Bool, 
+        /**
+         * Notate free-time passages at this BPM instead of estimating one.
+         */freeTempo: Double?, 
+        /**
+         * Drop layer notes where the layer's stem is silent.
+         */gate: Bool, 
+        /**
+         * Clean up the tracked beats (tempo agreement, downbeat phase).
+         */beatCleanup: Bool, 
+        /**
+         * Allow key changes (otherwise one key for the whole piece).
+         */keyChanges: Bool) {
+        self.soloContour = soloContour
+        self.freeTime = freeTime
+        self.freeTempo = freeTempo
+        self.gate = gate
+        self.beatCleanup = beatCleanup
+        self.keyChanges = keyChanges
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension LayersSongOptions: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LayersSongOptions {
+        return
+            try LayersSongOptions(
+                soloContour: FfiConverterOptionTypeSoloContour.read(from: &buf), 
+                freeTime: FfiConverterBool.read(from: &buf), 
+                freeTempo: FfiConverterOptionDouble.read(from: &buf), 
+                gate: FfiConverterBool.read(from: &buf), 
+                beatCleanup: FfiConverterBool.read(from: &buf), 
+                keyChanges: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LayersSongOptions, into buf: inout [UInt8]) {
+        FfiConverterOptionTypeSoloContour.write(value.soloContour, into: &buf)
+        FfiConverterBool.write(value.freeTime, into: &buf)
+        FfiConverterOptionDouble.write(value.freeTempo, into: &buf)
+        FfiConverterBool.write(value.gate, into: &buf)
+        FfiConverterBool.write(value.beatCleanup, into: &buf)
+        FfiConverterBool.write(value.keyChanges, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLayersSongOptions_lift(_ buf: RustBuffer) throws -> LayersSongOptions {
+    return try FfiConverterTypeLayersSongOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLayersSongOptions_lower(_ value: LayersSongOptions) -> RustBuffer {
+    return FfiConverterTypeLayersSongOptions.lower(value)
+}
+
+
+/**
+ * One part of the band as its own MusicXML file.
+ */
+public struct PartScore: Equatable, Hashable {
+    public var fileName: String
+    public var musicxml: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(fileName: String, musicxml: String) {
+        self.fileName = fileName
+        self.musicxml = musicxml
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension PartScore: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePartScore: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PartScore {
+        return
+            try PartScore(
+                fileName: FfiConverterString.read(from: &buf), 
+                musicxml: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PartScore, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.fileName, into: &buf)
+        FfiConverterString.write(value.musicxml, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePartScore_lift(_ buf: RustBuffer) throws -> PartScore {
+    return try FfiConverterTypePartScore.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePartScore_lower(_ value: PartScore) -> RustBuffer {
+    return FfiConverterTypePartScore.lower(value)
+}
+
+
+/**
  * A performed note (seconds).
  */
 public struct PerformedNote: Equatable, Hashable {
@@ -959,6 +1880,156 @@ public func FfiConverterTypePerformedNote_lift(_ buf: RustBuffer) throws -> Perf
 #endif
 public func FfiConverterTypePerformedNote_lower(_ value: PerformedNote) -> RustBuffer {
     return FfiConverterTypePerformedNote.lower(value)
+}
+
+
+public struct PlayedNote: Equatable, Hashable {
+    public var start: Double
+    public var end: Double
+    public var pitch: Int32
+    public var velocity: Int64
+    public var staccato: Bool
+    /**
+     * Timing came from the Composition (not jitter alone).
+     */
+    public var fromComposition: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(start: Double, end: Double, pitch: Int32, velocity: Int64, staccato: Bool, 
+        /**
+         * Timing came from the Composition (not jitter alone).
+         */fromComposition: Bool) {
+        self.start = start
+        self.end = end
+        self.pitch = pitch
+        self.velocity = velocity
+        self.staccato = staccato
+        self.fromComposition = fromComposition
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension PlayedNote: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePlayedNote: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlayedNote {
+        return
+            try PlayedNote(
+                start: FfiConverterDouble.read(from: &buf), 
+                end: FfiConverterDouble.read(from: &buf), 
+                pitch: FfiConverterInt32.read(from: &buf), 
+                velocity: FfiConverterInt64.read(from: &buf), 
+                staccato: FfiConverterBool.read(from: &buf), 
+                fromComposition: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PlayedNote, into buf: inout [UInt8]) {
+        FfiConverterDouble.write(value.start, into: &buf)
+        FfiConverterDouble.write(value.end, into: &buf)
+        FfiConverterInt32.write(value.pitch, into: &buf)
+        FfiConverterInt64.write(value.velocity, into: &buf)
+        FfiConverterBool.write(value.staccato, into: &buf)
+        FfiConverterBool.write(value.fromComposition, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePlayedNote_lift(_ buf: RustBuffer) throws -> PlayedNote {
+    return try FfiConverterTypePlayedNote.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePlayedNote_lower(_ value: PlayedNote) -> RustBuffer {
+    return FfiConverterTypePlayedNote.lower(value)
+}
+
+
+/**
+ * One part note: score position in Composition ticks (24 per beat) plus its
+ * score-tempo seconds. `pitch` is concert MIDI.
+ */
+public struct ScoreNote: Equatable, Hashable {
+    public var tick: Int64
+    public var durTick: Int64
+    public var startS: Double
+    public var endS: Double
+    public var pitch: Int32
+    public var velocity: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(tick: Int64, durTick: Int64, startS: Double, endS: Double, pitch: Int32, velocity: Int64) {
+        self.tick = tick
+        self.durTick = durTick
+        self.startS = startS
+        self.endS = endS
+        self.pitch = pitch
+        self.velocity = velocity
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension ScoreNote: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeScoreNote: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ScoreNote {
+        return
+            try ScoreNote(
+                tick: FfiConverterInt64.read(from: &buf), 
+                durTick: FfiConverterInt64.read(from: &buf), 
+                startS: FfiConverterDouble.read(from: &buf), 
+                endS: FfiConverterDouble.read(from: &buf), 
+                pitch: FfiConverterInt32.read(from: &buf), 
+                velocity: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ScoreNote, into buf: inout [UInt8]) {
+        FfiConverterInt64.write(value.tick, into: &buf)
+        FfiConverterInt64.write(value.durTick, into: &buf)
+        FfiConverterDouble.write(value.startS, into: &buf)
+        FfiConverterDouble.write(value.endS, into: &buf)
+        FfiConverterInt32.write(value.pitch, into: &buf)
+        FfiConverterInt64.write(value.velocity, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeScoreNote_lift(_ buf: RustBuffer) throws -> ScoreNote {
+    return try FfiConverterTypeScoreNote.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeScoreNote_lower(_ value: ScoreNote) -> RustBuffer {
+    return FfiConverterTypeScoreNote.lower(value)
 }
 
 
@@ -1144,6 +2215,278 @@ public func FfiConverterTypeSpelledPitch_lower(_ value: SpelledPitch) -> RustBuf
 }
 
 
+public struct TalkingBarLines: Equatable, Hashable {
+    public var heading: String
+    public var lines: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(heading: String, lines: [String]) {
+        self.heading = heading
+        self.lines = lines
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TalkingBarLines: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingBarLines: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingBarLines {
+        return
+            try TalkingBarLines(
+                heading: FfiConverterString.read(from: &buf), 
+                lines: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TalkingBarLines, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.heading, into: &buf)
+        FfiConverterSequenceString.write(value.lines, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingBarLines_lift(_ buf: RustBuffer) throws -> TalkingBarLines {
+    return try FfiConverterTypeTalkingBarLines.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingBarLines_lower(_ value: TalkingBarLines) -> RustBuffer {
+    return FfiConverterTypeTalkingBarLines.lower(value)
+}
+
+
+/**
+ * What the previous announcement left behind (all None at the start).
+ */
+public struct TalkingContext: Equatable, Hashable {
+    public var part: String?
+    public var bar: Int64?
+    public var pitchMode: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(part: String? = nil, bar: Int64? = nil, pitchMode: String? = nil) {
+        self.part = part
+        self.bar = bar
+        self.pitchMode = pitchMode
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TalkingContext: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingContext: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingContext {
+        return
+            try TalkingContext(
+                part: FfiConverterOptionString.read(from: &buf), 
+                bar: FfiConverterOptionInt64.read(from: &buf), 
+                pitchMode: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TalkingContext, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.part, into: &buf)
+        FfiConverterOptionInt64.write(value.bar, into: &buf)
+        FfiConverterOptionString.write(value.pitchMode, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingContext_lift(_ buf: RustBuffer) throws -> TalkingContext {
+    return try FfiConverterTypeTalkingContext.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingContext_lower(_ value: TalkingContext) -> RustBuffer {
+    return FfiConverterTypeTalkingContext.lower(value)
+}
+
+
+/**
+ * Indices of part, bar and event in the document.
+ */
+public struct TalkingCursor: Equatable, Hashable {
+    public var part: UInt32
+    public var bar: UInt32
+    public var event: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(part: UInt32, bar: UInt32, event: UInt32) {
+        self.part = part
+        self.bar = bar
+        self.event = event
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TalkingCursor: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingCursor: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingCursor {
+        return
+            try TalkingCursor(
+                part: FfiConverterUInt32.read(from: &buf), 
+                bar: FfiConverterUInt32.read(from: &buf), 
+                event: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TalkingCursor, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.part, into: &buf)
+        FfiConverterUInt32.write(value.bar, into: &buf)
+        FfiConverterUInt32.write(value.event, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingCursor_lift(_ buf: RustBuffer) throws -> TalkingCursor {
+    return try FfiConverterTypeTalkingCursor.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingCursor_lower(_ value: TalkingCursor) -> RustBuffer {
+    return FfiConverterTypeTalkingCursor.lower(value)
+}
+
+
+public struct TalkingSettings: Equatable, Hashable {
+    /**
+     * "en" or "nb".
+     */
+    public var lang: String
+    /**
+     * "written" or "concert".
+     */
+    public var pitchMode: String
+    /**
+     * "brief", "standard" or "full".
+     */
+    public var verbosity: String
+    /**
+     * "scientific" or "helmholtz" (nb only).
+     */
+    public var octaveStyle: String
+    /**
+     * In full verbosity, say "confident" for notes at or above 0.7.
+     */
+    public var announceConfident: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * "en" or "nb".
+         */lang: String, 
+        /**
+         * "written" or "concert".
+         */pitchMode: String, 
+        /**
+         * "brief", "standard" or "full".
+         */verbosity: String, 
+        /**
+         * "scientific" or "helmholtz" (nb only).
+         */octaveStyle: String, 
+        /**
+         * In full verbosity, say "confident" for notes at or above 0.7.
+         */announceConfident: Bool) {
+        self.lang = lang
+        self.pitchMode = pitchMode
+        self.verbosity = verbosity
+        self.octaveStyle = octaveStyle
+        self.announceConfident = announceConfident
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension TalkingSettings: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingSettings: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingSettings {
+        return
+            try TalkingSettings(
+                lang: FfiConverterString.read(from: &buf), 
+                pitchMode: FfiConverterString.read(from: &buf), 
+                verbosity: FfiConverterString.read(from: &buf), 
+                octaveStyle: FfiConverterString.read(from: &buf), 
+                announceConfident: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TalkingSettings, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.lang, into: &buf)
+        FfiConverterString.write(value.pitchMode, into: &buf)
+        FfiConverterString.write(value.verbosity, into: &buf)
+        FfiConverterString.write(value.octaveStyle, into: &buf)
+        FfiConverterBool.write(value.announceConfident, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingSettings_lift(_ buf: RustBuffer) throws -> TalkingSettings {
+    return try FfiConverterTypeTalkingSettings.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingSettings_lower(_ value: TalkingSettings) -> RustBuffer {
+    return FfiConverterTypeTalkingSettings.lower(value)
+}
+
+
 public 
 enum CoreError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
 
@@ -1234,6 +2577,122 @@ public func FfiConverterTypeCoreError_lower(_ value: CoreError) -> RustBuffer {
     return FfiConverterTypeCoreError.lower(value)
 }
 
+
+
+public enum TalkingUnit: Equatable, Hashable {
+    
+    /**
+     * Next event in the part, skipping tie continuations.
+     */
+    case note
+    /**
+     * First event of the next bar.
+     */
+    case bar
+    /**
+     * Same time position in the next part.
+     */
+    case part
+    /**
+     * Next note with confidence below 0.7 that has not been checked.
+     */
+    case uncertain
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension TalkingUnit: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTalkingUnit: FfiConverterRustBuffer {
+    typealias SwiftType = TalkingUnit
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TalkingUnit {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .note
+        
+        case 2: return .bar
+        
+        case 3: return .part
+        
+        case 4: return .uncertain
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: TalkingUnit, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .note:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .bar:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .part:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .uncertain:
+            writeInt(&buf, Int32(4))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingUnit_lift(_ buf: RustBuffer) throws -> TalkingUnit {
+    return try FfiConverterTypeTalkingUnit.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTalkingUnit_lower(_ value: TalkingUnit) -> RustBuffer {
+    return FfiConverterTypeTalkingUnit.lower(value)
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
+    typealias SwiftType = Int64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1253,6 +2712,30 @@ fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterDouble.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+    typealias SwiftType = String?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -1285,6 +2768,30 @@ fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypePerformance: FfiConverterRustBuffer {
+    typealias SwiftType = Performance?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypePerformance.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypePerformance.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeSoloContour: FfiConverterRustBuffer {
     typealias SwiftType = SoloContour?
 
@@ -1303,6 +2810,79 @@ fileprivate struct FfiConverterOptionTypeSoloContour: FfiConverterRustBuffer {
         case 1: return try FfiConverterTypeSoloContour.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeTalkingCursor: FfiConverterRustBuffer {
+    typealias SwiftType = TalkingCursor?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTalkingCursor.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTalkingCursor.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionSequenceUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = [UInt32]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceUInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceUInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = [UInt32]
+
+    public static func write(_ value: [UInt32], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterUInt32.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UInt32] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UInt32]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterUInt32.read(from: &buf))
+        }
+        return seq
     }
 }
 
@@ -1351,6 +2931,31 @@ fileprivate struct FfiConverterSequenceDouble: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterDouble.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -1434,6 +3039,31 @@ fileprivate struct FfiConverterSequenceTypeInstrumentInfo: FfiConverterRustBuffe
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypePartScore: FfiConverterRustBuffer {
+    typealias SwiftType = [PartScore]
+
+    public static func write(_ value: [PartScore], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePartScore.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PartScore] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PartScore]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePartScore.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer {
     typealias SwiftType = [PerformedNote]
 
@@ -1451,6 +3081,56 @@ fileprivate struct FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypePerformedNote.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypePlayedNote: FfiConverterRustBuffer {
+    typealias SwiftType = [PlayedNote]
+
+    public static func write(_ value: [PlayedNote], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePlayedNote.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PlayedNote] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PlayedNote]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePlayedNote.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeScoreNote: FfiConverterRustBuffer {
+    typealias SwiftType = [ScoreNote]
+
+    public static func write(_ value: [ScoreNote], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeScoreNote.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ScoreNote] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ScoreNote]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeScoreNote.read(from: &buf))
         }
         return seq
     }
@@ -1480,9 +3160,51 @@ fileprivate struct FfiConverterSequenceTypeSpelledPitch: FfiConverterRustBuffer 
         return seq
     }
 }
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer {
+    typealias SwiftType = [TalkingBarLines]
+
+    public static func write(_ value: [TalkingBarLines], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTalkingBarLines.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TalkingBarLines] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TalkingBarLines]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTalkingBarLines.read(from: &buf))
+        }
+        return seq
+    }
+}
 /**
- * Solo-with-band arrangement from layer transcriptions and a beat table
- * (`time position` per line, position 1 = downbeat).
+ * Solo-with-band arrangement from layer transcriptions, the stems' audio and
+ * a beat table (`time position` per line, position 1 = downbeat): the score,
+ * every part, the Composition and the separation check.
+ */
+public func arrangeLayersBand(layers: LayerMidi, stems: LayerStems, beatsText: String, title: String, options: LayersSongOptions)throws  -> BandOutput  {
+    return try  FfiConverterTypeBandOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_arrange_layers_band(
+        FfiConverterTypeLayerMidi_lower(layers),
+        FfiConverterTypeLayerStems_lower(stems),
+        FfiConverterString.lower(beatsText),
+        FfiConverterString.lower(title),
+        FfiConverterTypeLayersSongOptions_lower(options),uniffiCallStatus
+    )
+})
+}
+/**
+ * Solo-with-band arrangement from layer transcriptions and a beat table,
+ * without stems (no energy gate, dynamics or rehearsal marks).
  */
 public func arrangeLayersSong(layers: LayerMidi, beatsText: String, title: String, soloContour: SoloContour?, freeTime: Bool, freeTempo: Double?)throws  -> SongOutput  {
     return try  FfiConverterTypeSongOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
@@ -1573,6 +3295,16 @@ public func instruments() -> [InstrumentInfo]  {
 })
 }
 /**
+ * Default options of [`arrange_layers_band`].
+ */
+public func layersSongDefaults() -> LayersSongOptions  {
+    return try!  FfiConverterTypeLayersSongOptions_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_layers_song_defaults(uniffiCallStatus
+    )
+})
+}
+/**
  * Parse and re-serialise a Composition (the canonical composition.json text).
  */
 public func normalizeComposition(json: String)throws  -> String  {
@@ -1611,6 +3343,58 @@ public func spellPitches(onsetsBeats: [Double], pitches: [Int32]) -> [SpelledPit
     )
 })
 }
+/**
+ * Humanize one player's notes. `performed_timing` follows the recording's
+ * rubato (needs `performance`); otherwise the score tempo is kept.
+ */
+public func humanizePart(notes: [ScoreNote], part: String, player: Int64, seed: String, performance: Performance?, performedTiming: Bool)throws  -> HumanizedPart  {
+    return try  FfiConverterTypeHumanizedPart_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_humanize_part(
+        FfiConverterSequenceTypeScoreNote.lower(notes),
+        FfiConverterString.lower(part),
+        FfiConverterInt64.lower(player),
+        FfiConverterString.lower(seed),
+        FfiConverterOptionTypePerformance.lower(performance),
+        FfiConverterBool.lower(performedTiming),uniffiCallStatus
+    )
+})
+}
+/**
+ * U(key) in [0, 1): the keyed uniform the humanizer draws from.
+ */
+public func humanizeUniform(key: String) -> Double  {
+    return try!  FfiConverterDouble.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_humanize_uniform(
+        FfiConverterString.lower(key),uniffiCallStatus
+    )
+})
+}
+/**
+ * Announce one event given as JSON, outside a document: `request` is
+ * `{"part": {...}, "bar": {...}, "event": {...}, "context": {...}, "settings": {...}, "by_bar": false}`
+ * (see `talking_score::bar_from_json` for the bar fields). This is the form
+ * the conformance vectors take.
+ */
+public func talkingAnnounceJson(request: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_talking_announce_json(
+        FfiConverterString.lower(request),uniffiCallStatus
+    )
+})
+}
+/**
+ * Default settings (English, written pitch, standard verbosity).
+ */
+public func talkingSettingsDefault() -> TalkingSettings  {
+    return try!  FfiConverterTypeTalkingSettings_lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_talking_settings_default(uniffiCallStatus
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -1627,7 +3411,10 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() != 55670) {
+    if (uniffi_brasscribe_ffi_checksum_func_arrange_layers_band() != 61376) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() != 48207) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() != 31318) {
@@ -1648,6 +3435,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_instruments() != 47666) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_brasscribe_ffi_checksum_func_layers_song_defaults() != 21711) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_brasscribe_ffi_checksum_func_normalize_composition() != 7581) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1655,6 +3445,60 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 24205) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_humanize_part() != 14286) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_humanize_uniform() != 7064) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_talking_announce_json() != 20530) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_talking_settings_default() != 26489) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_announce() != 13383) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count() != 6184) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at() != 52304) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count() != 10745) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate() != 14235) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines() != 37878) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names() != 19770) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_title() != 46621) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html() != 6389) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json() != 42481) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text() != 55243) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars() != 39156) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_constructor_performance_new() != 63810) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new() != 57677) {
         return InitializationResult.apiChecksumMismatch
     }
 

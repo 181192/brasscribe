@@ -39,8 +39,11 @@ pub fn talking_settings_default() -> TalkingSettings {
 /// What the previous announcement left behind (all None at the start).
 #[derive(Debug, Clone, Default, uniffi::Record)]
 pub struct TalkingContext {
+    #[uniffi(default = None)]
     pub part: Option<String>,
+    #[uniffi(default = None)]
     pub bar: Option<i64>,
+    #[uniffi(default = None)]
     pub pitch_mode: Option<String>,
 }
 
