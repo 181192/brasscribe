@@ -1,7 +1,7 @@
 // Score viewer: open a MusicXML file from disk (or a run's score) and play it.
 import { fetchText } from "../api/client";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, h } from "../ui/dom";
+import { announce, clear, errorNotice, filePicker, h } from "../ui/dom";
 
 export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   const input = h("input", { type: "file", id: "open-musicxml", accept: ".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/xml" });
@@ -34,7 +34,7 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   clear(root,
     h("h1", {}, t("viewer.title")),
     h("p", {}, t("viewer.intro")),
-    h("div", { class: "row" }, h("label", { for: "open-musicxml" }, t("viewer.file")), input,
+    h("div", { class: "row" }, h("label", { for: "open-musicxml" }, t("viewer.file")), filePicker(input),
       h("span", { class: "hint" }, t("viewer.shortcut"), h("kbd", {}, "Ctrl"), "/", h("kbd", {}, "⌘"), " + ", h("kbd", {}, "O"))),
     status,
     holder);

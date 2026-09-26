@@ -159,6 +159,56 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.All(b, n => Assert.InRange(n.NoteVelocity, 1, 127));
     }
 
+    /// <summary>"Change note…" on the golden: the change goes into the Composition and the whole score is arranged again.</summary>
+    [Fact]
+    public void A_changed_note_is_arranged_again_with_its_new_pitch()
+    {
+        var bridge = Bridge();
+        var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
+        var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
+        if (bridge is null || xmlPath is null || json is null) return;
+        var strings = new Services.ReswStrings(Services.ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
+            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        var quiet = new QuietAnnouncer();
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        var score = new ViewModels.ScoreViewModel(bridge, new ViewModels.PlayerViewModel(player, quiet, strings, new InlineUi()), quiet, strings);
+        var composition = bridge.ParseComposition(File.ReadAllText(json));
+        score.Load(File.ReadAllText(xmlPath), composition);
+        int arranged = 0;
+        score.Rearrange = c => { arranged++; return bridge.ArrangeMusicXml(c, "layers"); };
+        var review = new ViewModels.ReviewViewModel(score, quiet, strings);
+        review.Load();
+        int before = review.AllItems.Count;
+        Assert.True(review.Current!.IsMine); // the solo part comes first
+        var item = review.Items.First(i => i.Event.CompositionVoiceId is not null);
+        review.Select(item);
+        var ev = item.Event;
+        var note = composition.Voices.First(v => v.Id == ev.CompositionVoiceId).Notes.First(n => n.Start == ev.CompositionNoteStart);
+        int oldPitch = note.Pitch;
+        Assert.True(review.ChangeNote(1));
+        Assert.Equal(1, arranged);
+        Assert.Equal(oldPitch + 1, note.Pitch);
+        Assert.Equal(1.0, note.Confidence);
+        review.Load();
+        Assert.True(review.AllItems.Count < before);
+        var moved = score.Document!.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
+            .FirstOrDefault(e => e.CompositionVoiceId == ev.CompositionVoiceId && e.CompositionNoteStart == ev.CompositionNoteStart);
+        Assert.NotNull(moved);
+        Assert.Equal((oldPitch + 1) % 12, Announcer.Midi(moved.Concert!) % 12);
+        Assert.False(moved.IsUncertain);
+        log.WriteLine($"changed bar {item.BarNumber} from {oldPitch} to {oldPitch + 1}; {before} → {review.AllItems.Count} notes to check");
+    }
+
+    private sealed class QuietAnnouncer : Services.IAnnouncer
+    {
+        public void Announce(string text, Services.AnnouncementKind kind = Services.AnnouncementKind.Status) { }
+    }
+
+    private sealed class InlineUi : Services.IUiDispatcher
+    {
+        public void Post(Action action) => action();
+    }
+
     [Fact]
     public void Invalid_json_raises_a_core_error()
     {

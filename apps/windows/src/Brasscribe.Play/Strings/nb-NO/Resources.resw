@@ -96,6 +96,21 @@
   <data name="CaptureNotice.Title" xml:space="preserve">
     <value>Ingenting ble hørt</value>
   </data>
+  <data name="ChangeNote_Down" xml:space="preserve">
+    <value>En halvtone ned</value>
+  </data>
+  <data name="ChangeNote_Heard" xml:space="preserve">
+    <value>Hva hver transkriberer hørte</value>
+  </data>
+  <data name="ChangeNote_Save" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="ChangeNote_Title" xml:space="preserve">
+    <value>Endre tone</value>
+  </data>
+  <data name="ChangeNote_Up" xml:space="preserve">
+    <value>En halvtone opp</value>
+  </data>
   <data name="CheckThemButton.Content" xml:space="preserve">
     <value>Sjekk dem</value>
   </data>
@@ -158,6 +173,9 @@
   </data>
   <data name="Duration_Seconds" xml:space="preserve">
     <value>{0} s</value>
+  </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Endre partiturnavn</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
     <value>Detaljer for den tekniske i bandet: adresse</value>
@@ -465,50 +483,26 @@
   <data name="ImportButtonLabel.Text" xml:space="preserve">
     <value>Åpne et opptak …</value>
   </data>
-  <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Velg tonearten før denne</value>
-  </data>
   <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Forrige toneart</value>
+    <value>Lavere</value>
   </data>
   <data name="KeyDownButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Forrige toneart</value>
+    <value>Et halvtonetrinn lavere</value>
   </data>
-  <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Velg tonearten etter denne</value>
+  <data name="KeyDownLabel.Text" xml:space="preserve">
+    <value>Lavere</value>
   </data>
   <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Neste toneart</value>
+    <value>Høyere</value>
   </data>
   <data name="KeyUpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Neste toneart</value>
+    <value>Et halvtonetrinn høyere</value>
   </data>
-  <data name="Key_Ab" xml:space="preserve">
-    <value>Ass-dur</value>
+  <data name="KeyUpLabel.Text" xml:space="preserve">
+    <value>Høyere</value>
   </data>
   <data name="Key_AsRecorded" xml:space="preserve">
     <value>Som i opptaket</value>
-  </data>
-  <data name="Key_Bb" xml:space="preserve">
-    <value>B-dur</value>
-  </data>
-  <data name="Key_C" xml:space="preserve">
-    <value>C-dur</value>
-  </data>
-  <data name="Key_D" xml:space="preserve">
-    <value>D-dur</value>
-  </data>
-  <data name="Key_Db" xml:space="preserve">
-    <value>Dess-dur</value>
-  </data>
-  <data name="Key_Eb" xml:space="preserve">
-    <value>Ess-dur</value>
-  </data>
-  <data name="Key_F" xml:space="preserve">
-    <value>F-dur</value>
-  </data>
-  <data name="Key_G" xml:space="preserve">
-    <value>G-dur</value>
   </data>
   <data name="KindCancelButton.Content" xml:space="preserve">
     <value>Avbryt</value>
@@ -585,8 +579,17 @@
   <data name="LibraryNav.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Partiturene dine</value>
   </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Kunne ikke slette {0}. Er datamaskinen på?</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Slettet {0}</value>
+  </data>
   <data name="Library_FullBand" xml:space="preserve">
     <value>Fullt band</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · På datamaskinen din</value>
   </data>
   <data name="Library_OnePart" xml:space="preserve">
     <value>Én stemme</value>
@@ -741,8 +744,14 @@
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>Som i opptaket · klingende</value>
   </data>
+  <data name="Output_KeyConcert" xml:space="preserve">
+    <value>{0} (klingende)</value>
+  </data>
   <data name="Output_KeyConcertDetail" xml:space="preserve">
     <value>Klingende</value>
+  </data>
+  <data name="Output_KeyWritten" xml:space="preserve">
+    <value>{0} for {1}-instrumenter</value>
   </data>
   <data name="Output_NeedsCore" xml:space="preserve">
     <value>Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert.</value>
@@ -764,99 +773,6 @@
   </data>
   <data name="PartPageNote.Text" xml:space="preserve">
     <value>Skrevet ned av Brasscribe. Sjekk tonene merket ? før øvelsen.</value>
-  </data>
-  <data name="EditTitleItem.Text" xml:space="preserve">
-    <value>Endre partiturnavn</value>
-  </data>
-  <data name="Score_EditTitle" xml:space="preserve">
-    <value>Endre partiturnavn</value>
-  </data>
-  <data name="Score_SaveTitle" xml:space="preserve">
-    <value>Lagre</value>
-  </data>
-  <data name="Score_CancelTitle" xml:space="preserve">
-    <value>Avbryt</value>
-  </data>
-  <data name="Score_RenameFailed" xml:space="preserve">
-    <value>Kunne ikke endre navn på {0}</value>
-  </data>
-  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Valg for partituret</value>
-  </data>
-  <data name="ScoreOptions_EditTitle" xml:space="preserve">
-    <value>Endre navn</value>
-  </data>
-  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
-    <value>Sjekk tonene</value>
-  </data>
-  <data name="ScoreOptions_Delete" xml:space="preserve">
-    <value>Slett</value>
-  </data>
-  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
-    <value>Slette «{0}»?</value>
-  </data>
-  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
-    <value>Partituret fjernes fra denne PC-en.</value>
-  </data>
-  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
-    <value>Partituret fjernes fra datamaskinen din.</value>
-  </data>
-  <data name="Library_OnComputer" xml:space="preserve">
-    <value>{0} · På datamaskinen din</value>
-  </data>
-  <data name="Library_Deleted" xml:space="preserve">
-    <value>Slettet {0}</value>
-  </data>
-  <data name="Library_DeleteFailed" xml:space="preserve">
-    <value>Kunne ikke slette {0}. Er datamaskinen på?</value>
-  </data>
-  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Endre tone</value>
-  </data>
-  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
-    <value>Endre tone …</value>
-  </data>
-  <data name="ReviewHowSure.Text" xml:space="preserve">
-    <value>Hvor sikker Brasscribe er</value>
-  </data>
-  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Hvor sikker Brasscribe er</value>
-  </data>
-  <data name="ReviewHeardHeading.Text" xml:space="preserve">
-    <value>Hva hver transkriberer hørte</value>
-  </data>
-  <data name="Review_WordUncertain" xml:space="preserve">
-    <value>Usikker</value>
-  </data>
-  <data name="Review_WordVeryUncertain" xml:space="preserve">
-    <value>Svært usikker</value>
-  </data>
-  <data name="Review_LevelAlternative" xml:space="preserve">
-    <value>{0}: det kan også være {1}.</value>
-  </data>
-  <data name="Review_HeardSame" xml:space="preserve">
-    <value>Samme, {0}</value>
-  </data>
-  <data name="Review_HeardNothing" xml:space="preserve">
-    <value>Ingen tone</value>
-  </data>
-  <data name="Review_Changed" xml:space="preserve">
-    <value>Endret til {0}</value>
-  </data>
-  <data name="ChangeNote_Title" xml:space="preserve">
-    <value>Endre tone</value>
-  </data>
-  <data name="ChangeNote_Down" xml:space="preserve">
-    <value>En halvtone ned</value>
-  </data>
-  <data name="ChangeNote_Up" xml:space="preserve">
-    <value>En halvtone opp</value>
-  </data>
-  <data name="ChangeNote_Heard" xml:space="preserve">
-    <value>Hva hver transkriberer hørte</value>
-  </data>
-  <data name="ChangeNote_Save" xml:space="preserve">
-    <value>Lagre</value>
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Alle stemmer, eller én stemme som side (P)</value>
@@ -1029,6 +945,24 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>til</value>
   </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Velg hva tonen skal være; hele partituret følger med</value>
+  </data>
+  <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Endre tonen …</value>
+  </data>
+  <data name="ReviewChangeNoteLabel.Text" xml:space="preserve">
+    <value>Endre tonen …</value>
+  </data>
+  <data name="ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hvor sikker Brasscribe er</value>
+  </data>
+  <data name="ReviewHeardHeading.Text" xml:space="preserve">
+    <value>Hva hver transkriberer hørte</value>
+  </data>
+  <data name="ReviewHowSure.Text" xml:space="preserve">
+    <value>Hvor sikker Brasscribe er</value>
+  </data>
   <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Tonen er riktig; «?» fjernes (K)</value>
   </data>
@@ -1056,6 +990,9 @@
   <data name="ReviewListenLabel.Text" xml:space="preserve">
     <value>Lytt til denne takten</value>
   </data>
+  <data name="ReviewScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hvilke toner som skal sjekkes</value>
+  </data>
   <data name="ReviewSkipButton.Content" xml:space="preserve">
     <value>Hopp over</value>
   </data>
@@ -1065,11 +1002,17 @@
   <data name="ReviewSnippet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Taktene rundt tonen</value>
   </data>
+  <data name="Review_Accompaniment" xml:space="preserve">
+    <value>Akkompagnement</value>
+  </data>
   <data name="Review_AllDone" xml:space="preserve">
     <value>Alle tonene er sjekket</value>
   </data>
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Takt {0}</value>
+  </data>
+  <data name="Review_Changed" xml:space="preserve">
+    <value>Endret til {0}</value>
   </data>
   <data name="Review_Count" xml:space="preserve">
     <value>{0} toner å sjekke</value>
@@ -1086,8 +1029,17 @@
   <data name="Review_FinishLater" xml:space="preserve">
     <value>Fortsett senere ({0} igjen)</value>
   </data>
+  <data name="Review_HeardNothing" xml:space="preserve">
+    <value>Ingen tone</value>
+  </data>
+  <data name="Review_HeardSame" xml:space="preserve">
+    <value>Samme, {0}</value>
+  </data>
   <data name="Review_Kept" xml:space="preserve">
     <value>Beholdt takt {0}. {1} igjen</value>
+  </data>
+  <data name="Review_LevelAlternative" xml:space="preserve">
+    <value>{0}: det kan også være {1}.</value>
   </data>
   <data name="Review_LevelUncertain" xml:space="preserve">
     <value>Usikker: lytt til opptaket og partituret side om side.</value>
@@ -1104,6 +1056,9 @@
   <data name="Review_ListItemVeryUncertain" xml:space="preserve">
     <value>Takt {0}, {1}, svært usikker</value>
   </data>
+  <data name="Review_MyPartDone" xml:space="preserve">
+    <value>Stemmen din er sjekket. Nå de andre stemmene.</value>
+  </data>
   <data name="Review_NoteConcert" xml:space="preserve">
     <value>Klingende {0}</value>
   </data>
@@ -1112,6 +1067,21 @@
   </data>
   <data name="Review_Overline" xml:space="preserve">
     <value>{0} av {1} · {2}</value>
+  </data>
+  <data name="Review_ScopeAll" xml:space="preserve">
+    <value>Alle stemmer ({0})</value>
+  </data>
+  <data name="Review_ScopeMine" xml:space="preserve">
+    <value>Stemmen din ({0})</value>
+  </data>
+  <data name="Review_Triage" xml:space="preserve">
+    <value>Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre</value>
+  </data>
+  <data name="Review_WordUncertain" xml:space="preserve">
+    <value>Usikker</value>
+  </data>
+  <data name="Review_WordVeryUncertain" xml:space="preserve">
+    <value>Svært usikker</value>
   </data>
   <data name="ScoreCards.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Partiturene dine</value>
@@ -1122,6 +1092,27 @@
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Partitur</value>
   </data>
+  <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Valg for partituret</value>
+  </data>
+  <data name="ScoreOptions_CheckNotes" xml:space="preserve">
+    <value>Sjekk tonene</value>
+  </data>
+  <data name="ScoreOptions_Delete" xml:space="preserve">
+    <value>Slett</value>
+  </data>
+  <data name="ScoreOptions_DeleteComputer" xml:space="preserve">
+    <value>Partituret fjernes fra datamaskinen din.</value>
+  </data>
+  <data name="ScoreOptions_DeleteThisPc" xml:space="preserve">
+    <value>Partituret fjernes fra denne PC-en.</value>
+  </data>
+  <data name="ScoreOptions_DeleteTitle" xml:space="preserve">
+    <value>Slette «{0}»?</value>
+  </data>
+  <data name="ScoreOptions_EditTitle" xml:space="preserve">
+    <value>Endre navn</value>
+  </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Verktøy for partituret</value>
   </data>
@@ -1131,11 +1122,17 @@
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>Notert for {0}</value>
   </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
   <data name="Score_Checked" xml:space="preserve">
     <value>Beholdt. {0} igjen</value>
   </data>
   <data name="Score_ControlType" xml:space="preserve">
     <value>partitur</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Endre partiturnavn</value>
   </data>
   <data name="Score_FullScore" xml:space="preserve">
     <value>Alle stemmer</value>
@@ -1154,6 +1151,12 @@
   </data>
   <data name="Score_PartShown" xml:space="preserve">
     <value>{0}-stemmen.</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Lagre</value>
   </data>
   <data name="Score_SwitchedToOriginal" xml:space="preserve">
     <value>Spiller opptaket fra takt {0}</value>

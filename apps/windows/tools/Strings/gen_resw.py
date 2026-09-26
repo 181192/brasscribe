@@ -116,6 +116,9 @@ name("ReviewList", "Notes to check", "Toner å sjekke")
 name("ReviewSnippet", "The bars around the note", "Taktene rundt tonen")
 name("ReviewListenButton", "Listen to this bar", "Lytt til denne takten"); help_("ReviewListenButton", "Plays the bar from the recording, looped (Space)", "Spiller takten fra opptaket i løkke (Mellomrom)")
 prop("ReviewListenLabel", "Text", "Listen to this bar", "Lytt til denne takten")
+name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
+name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the whole score follows", "Velg hva tonen skal være; hele partituret følger med")
+prop("ReviewChangeNoteLabel", "Text", "Change note…", "Endre tonen …")
 prop("ReviewKeys", "Text", "Space listens · K keeps · arrows move", "Mellomrom lytter · K beholder · piltastene flytter")
 text_button("ReviewSkipButton", "Skip", "Hopp over", "Leave this note marked and go to the next", "La tonen være merket og gå til neste")
 name("ReviewKeepButton", "Keep, go to next", "Behold, gå til neste"); help_("ReviewKeepButton", "The note is right; its “?” goes (K)", "Tonen er riktig; «?» fjernes (K)")
@@ -139,8 +142,10 @@ prop("DifficultyStandard", "Content", "A bit easier", "Litt enklere")
 prop("DifficultyEasier", "Content", "Easier", "Enklere")
 prop("OutputHardTip", "Text", "Easier keeps the tune but avoids high notes and fast runs.", "Enklere beholder melodien, men unngår høye toner og raske løp.")
 prop("OutputKeyHeading", "Text", "Key", "Toneart")
-icon_button("KeyDownButton", "Previous key", "Forrige toneart", "Choose the key before this one", "Velg tonearten før denne")
-icon_button("KeyUpButton", "Next key", "Neste toneart", "Choose the key after this one", "Velg tonearten etter denne")
+name("KeyDownButton", "Lower", "Lavere"); tip("KeyDownButton", "A semitone lower", "Et halvtonetrinn lavere")
+prop("KeyDownLabel", "Text", "Lower", "Lavere")
+name("KeyUpButton", "Higher", "Høyere"); tip("KeyUpButton", "A semitone higher", "Et halvtonetrinn høyere")
+prop("KeyUpLabel", "Text", "Higher", "Høyere")
 text_button("OutputBackButton", "Back", "Tilbake", "Back to the score as it is", "Tilbake til partituret slik det er")
 text_button("ShowScoreButton", "Show the score", "Vis partituret", "Arranges again only if you changed a choice", "Arrangerer på nytt bare hvis du endret et valg")
 
@@ -334,6 +339,12 @@ code = {
     "CancelDialog_Keep": ("Keep going", "Fortsett"),
     "Review_CountOne": ("{0} note to check", "{0} tone å sjekke"),
     "Review_Count": ("{0} notes to check", "{0} toner å sjekke"),
+    "Review_Triage": ("Check your part first: {0} notes in {1}, {2} very unsure", "Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre"),
+    "Review_ScopeMine": ("Your part ({0})", "Stemmen din ({0})"),
+    "Review_ScopeAll": ("All parts ({0})", "Alle stemmer ({0})"),
+    "Review_Accompaniment": ("Accompaniment", "Akkompagnement"),
+    "Review_MyPartDone": ("Your part is checked. Now the other parts.", "Stemmen din er sjekket. Nå de andre stemmene."),
+    "Review_Changed": ("Changed to {0}", "Endret til {0}"),
     "Review_ListItem": ("Bar {0} · {1}", "Takt {0} · {1}"),
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),
@@ -440,16 +451,10 @@ code = {
     "Output_NeedsEngine": ("How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.", "Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem."),
     "Output_Rearranging": ("Arranging again with your choices", "Arrangerer på nytt med valgene dine"),
     "Output_KeyAsRecordedDetail": ("As recorded · concert pitch", "Som i opptaket · klingende"),
+    "Output_KeyConcert": ("{0} (concert)", "{0} (klingende)"),
+    "Output_KeyWritten": ("{0} for {1} instruments", "{0} for {1}-instrumenter"),
     "Output_KeyConcertDetail": ("Concert pitch", "Klingende"),
     "Key_AsRecorded": ("As recorded", "Som i opptaket"),
-    "Key_Bb": ("B♭ major", "B-dur"),
-    "Key_Eb": ("E♭ major", "Ess-dur"),
-    "Key_F": ("F major", "F-dur"),
-    "Key_C": ("C major", "C-dur"),
-    "Key_Ab": ("A♭ major", "Ass-dur"),
-    "Key_G": ("G major", "G-dur"),
-    "Key_D": ("D major", "D-dur"),
-    "Key_Db": ("D♭ major", "Dess-dur"),
     "Output_NeedsCore": ("Arranging on this PC needs Brasscribe's arranger, which isn't installed.", "Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert."),
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Output_Failed": ("Couldn't arrange it: {0}", "Kunne ikke arrangere: {0}"),
@@ -488,6 +493,45 @@ code = {
 }
 for k, (en, nb) in code.items():
     add(k, en, nb)
+
+
+# ---- added with the evidence review and score editing (kept in step with the .resw) ----
+add('ChangeNote_Down', 'Down a semitone', 'En halvtone ned')
+add('ChangeNote_Heard', 'What each transcriber heard', 'Hva hver transkriberer hørte')
+add('ChangeNote_Save', 'Save', 'Lagre')
+add('ChangeNote_Title', 'Change note', 'Endre tone')
+add('ChangeNote_Up', 'Up a semitone', 'En halvtone opp')
+add('DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'Computers running Brasscribe on this network', 'Datamaskiner som kjører Brasscribe på dette nettverket')
+add('EditTitleItem.Text', 'Edit score title', 'Endre partiturnavn')
+add('FindEnginesButton.Content', 'Find on this network', 'Finn på dette nettverket')
+add('FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText', 'Look for computers running Brasscribe on the same network', 'Se etter datamaskiner som kjører Brasscribe på samme nettverk')
+add('Library_DeleteFailed', "Couldn't delete {0}. Is your computer on?", 'Kunne ikke slette {0}. Er datamaskinen på?')
+add('Library_Deleted', 'Deleted {0}', 'Slettet {0}')
+add('Library_OnComputer', '{0} · On your computer', '{0} · På datamaskinen din')
+add('ReviewConfidence.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'How sure Brasscribe is', 'Hvor sikker Brasscribe er')
+add('ReviewHeardHeading.Text', 'What each transcriber heard', 'Hva hver transkriberer hørte')
+add('ReviewHowSure.Text', 'How sure Brasscribe is', 'Hvor sikker Brasscribe er')
+add('Review_HeardNothing', 'No note', 'Ingen tone')
+add('Review_HeardSame', 'Same, {0}', 'Samme, {0}')
+add('Review_LevelAlternative', '{0}: it could also be {1}.', '{0}: det kan også være {1}.')
+add('Review_WordUncertain', 'Uncertain', 'Usikker')
+add('Review_WordVeryUncertain', 'Very uncertain', 'Svært usikker')
+add('ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name', 'Score options', 'Valg for partituret')
+add('ScoreOptions_CheckNotes', 'Check the notes', 'Sjekk tonene')
+add('ScoreOptions_Delete', 'Delete', 'Slett')
+add('ScoreOptions_DeleteComputer', 'The score is removed from your computer.', 'Partituret fjernes fra datamaskinen din.')
+add('ScoreOptions_DeleteThisPc', 'The score is removed from this PC.', 'Partituret fjernes fra denne PC-en.')
+add('ScoreOptions_DeleteTitle', 'Delete “{0}”?', 'Slette «{0}»?')
+add('ScoreOptions_EditTitle', 'Edit title', 'Endre navn')
+add('Score_CancelTitle', 'Cancel', 'Avbryt')
+add('Score_EditTitle', 'Edit score title', 'Endre partiturnavn')
+add('Score_RenameFailed', "Couldn't rename {0}", 'Kunne ikke endre navn på {0}')
+add('Score_SaveTitle', 'Save', 'Lagre')
+add('Settings_Engine_Chosen', 'Using {0}. Type the six-digit code it shows, then choose Connect.', 'Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.')
+add('Settings_Engine_FoundMany', 'Found {0} computers running Brasscribe. Choose one.', 'Fant {0} datamaskiner som kjører Brasscribe. Velg én.')
+add('Settings_Engine_FoundOne', 'Found {0}. Choose it to use it.', 'Fant {0}. Velg den for å bruke den.')
+add('Settings_Engine_NoneFound', 'No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.', 'Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.')
+add('Settings_Engine_Searching', 'Looking for Brasscribe on your network…', 'Ser etter Brasscribe på nettverket …')
 
 HEADER = """<?xml version="1.0" encoding="utf-8"?>
 <root>

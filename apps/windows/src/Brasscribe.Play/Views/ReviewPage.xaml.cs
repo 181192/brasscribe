@@ -37,8 +37,32 @@ public sealed partial class ReviewPage : Page, IScreenPage
         ViewModel.CurrentChanged += OnCurrentChanged;
         _groups.Source = ViewModel.Groups;
         NoteList.ItemsSource = _groups.View;
+        ViewModel.PropertyChanged -= OnViewModelChanged;
+        ViewModel.PropertyChanged += OnViewModelChanged;
         Bindings.Update();
+        SyncScope();
         if (ViewModel.Current is { } current) OnCurrentChanged(this, current);
+    }
+
+    private bool _scopeSync;
+
+    private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ReviewViewModel.Scope)) SyncScope();
+    }
+
+    private void SyncScope()
+    {
+        _scopeSync = true;
+        MyPartScope.IsChecked = ViewModel.Scope == ReviewScope.MyPart;
+        AllPartsScope.IsChecked = ViewModel.Scope == ReviewScope.AllParts;
+        _scopeSync = false;
+    }
+
+    private void OnScopeChecked(object sender, RoutedEventArgs e)
+    {
+        if (_scopeSync) return;
+        ViewModel.Scope = ReferenceEquals(sender, AllPartsScope) ? ReviewScope.AllParts : ReviewScope.MyPart;
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
