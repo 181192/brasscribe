@@ -1,0 +1,13 @@
+# Converted models and working audio live under models/converted/ in the main checkout.
+*.onnx
+*.onnx.data
+*.mlpackage/
+*.mlmodelc/
+*.tflite
+*.ckpt
+*.pt
+*.th
+*.safetensors
+*.wav
+*.flac
+*.mid

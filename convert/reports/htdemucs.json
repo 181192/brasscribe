@@ -1,0 +1,886 @@
+{
+ "model": "htdemucs",
+ "device": "Apple M5 Pro",
+ "threshold_f1": 0.98,
+ "reference": {
+  "runtime": "PyTorch CPU fp32",
+  "model": "demucs.pretrained htdemucs (single model)",
+  "pipeline": "demucs.apply.apply_model(shifts=0, split=True, overlap=0.25)"
+ },
+ "graph_boundary": "STFT/_magnitude and _mask/iSTFT run on the host; the core is the rest of HTDemucs.forward",
+ "metric": "stem SDR vs PyTorch stem; note F1 (50 ms onsets) of SwiftF0 and Basic Pitch on converted vs PyTorch 'other' and 'bass' stems; gate on both note F1s",
+ "clips": [
+  "choralebricks-brass4/Bach_IchStehAnDeinerKrippe [0.0s +30.0s]",
+  "urmp-brass/05_Entertainer_tpt_tpt [0.0s +30.0s]",
+  "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba [0.0s +30.0s]",
+  "mikkel/excerpt-60s [60.0s +30.0s]"
+ ],
+ "artifacts": {
+  "htdemucs-core-fp16.mlpackage": {
+   "size_bytes": 107982124,
+   "sha256": "6e7b0185905313767e9fae294abbdf9e5449fb895179ae6642cbb35051a1554d"
+  },
+  "htdemucs-core-fp32.mlpackage": {
+   "size_bytes": 215229067,
+   "sha256": "4f7ca731fd8d565276ec95459af5a398e628b61b1925be6542fe02ee4e460e55"
+  },
+  "htdemucs-core.onnx": {
+   "size_bytes": 174264716,
+   "sha256": "327f12ee8c777c62edd48683c06768465a6c2f617605795d2619bb678b6ad061"
+  }
+ },
+ "parity": {
+  "onnx-ort-cpu": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 68.19,
+     "bass": 49.33,
+     "other": 105.39,
+     "vocals": 73.51
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 69.36,
+     "bass": 51.16,
+     "other": 114.07,
+     "vocals": 72.68
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 65.17,
+     "bass": 75.98,
+     "other": 83.26,
+     "vocals": 63.47
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 82.61,
+     "bass": 81.25,
+     "other": 87.63,
+     "vocals": 67.01
+    }
+   },
+   "sdr_db_min": 49.33,
+   "sdr_db_median": 73.095,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1222,
+    "matched": 1222,
+    "p": 1.0,
+    "r": 0.9991823385118561,
+    "f1": 0.9995910020449897,
+    "min_f1": 0.9931972789115647,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9932
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "onnx-ort-coreml": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 84.61,
+     "bass": 83.34,
+     "other": 130.75,
+     "vocals": 83.01
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 80.62,
+     "bass": 81.87,
+     "other": 130.45,
+     "vocals": 87.73
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 87.09,
+     "bass": 120.1,
+     "other": 125.67,
+     "vocals": 85.34
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 115.48,
+     "bass": 123.15,
+     "other": 125.09,
+     "vocals": 80.15
+    }
+   },
+   "sdr_db_min": 80.15,
+   "sdr_db_median": 87.41,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1223,
+    "matched": 1223,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "coreml-fp32-CPU_ONLY": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 82.45,
+     "bass": 69.44,
+     "other": 124.95,
+     "vocals": 81.07
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 79.43,
+     "bass": 68.6,
+     "other": 128.62,
+     "vocals": 85.47
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 83.37,
+     "bass": 97.7,
+     "other": 104.24,
+     "vocals": 81.87
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 106.69,
+     "bass": 106.77,
+     "other": 112.65,
+     "vocals": 77.99
+    }
+   },
+   "sdr_db_min": 68.6,
+   "sdr_db_median": 84.42,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1222,
+    "matched": 1222,
+    "p": 1.0,
+    "r": 0.9991823385118561,
+    "f1": 0.9995910020449897,
+    "min_f1": 0.9931972789115647,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9932
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "coreml-fp32-CPU_AND_GPU": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 84.55,
+     "bass": 83.3,
+     "other": 130.49,
+     "vocals": 82.95
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 80.57,
+     "bass": 81.84,
+     "other": 130.25,
+     "vocals": 87.7
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 87.0,
+     "bass": 120.33,
+     "other": 125.73,
+     "vocals": 85.26
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 114.81,
+     "bass": 121.12,
+     "other": 124.7,
+     "vocals": 80.06
+    }
+   },
+   "sdr_db_min": 80.06,
+   "sdr_db_median": 87.35,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1223,
+    "matched": 1223,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "coreml-fp32-ALL": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 84.55,
+     "bass": 83.3,
+     "other": 130.49,
+     "vocals": 82.95
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 80.57,
+     "bass": 81.84,
+     "other": 130.25,
+     "vocals": 87.7
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 87.0,
+     "bass": 120.33,
+     "other": 125.73,
+     "vocals": 85.26
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 114.81,
+     "bass": 121.12,
+     "other": 124.7,
+     "vocals": 80.06
+    }
+   },
+   "sdr_db_min": 80.06,
+   "sdr_db_median": 87.35,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1223,
+    "matched": 1223,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "coreml-fp16-CPU_AND_GPU": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 23.99,
+     "bass": 22.89,
+     "other": 66.41,
+     "vocals": 16.96
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 19.32,
+     "bass": 20.24,
+     "other": 66.08,
+     "vocals": 21.49
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 26.09,
+     "bass": 59.57,
+     "other": 63.62,
+     "vocals": 19.18
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 53.17,
+     "bass": 60.66,
+     "other": 61.75,
+     "vocals": 13.37
+    }
+   },
+   "sdr_db_min": 13.37,
+   "sdr_db_median": 25.04,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1228,
+    "matched": 1207,
+    "p": 0.9828990228013029,
+    "r": 0.9869174161896974,
+    "f1": 0.9849041207670339,
+    "min_f1": 0.8666666666666667,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.8667
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9967
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9571
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9922
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9859
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9948
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  },
+  "coreml-fp16-CPU_AND_NE": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 12.22,
+     "bass": 15.0,
+     "other": 57.7,
+     "vocals": 13.02
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 8.36,
+     "bass": 13.66,
+     "other": 57.98,
+     "vocals": 17.05
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 14.49,
+     "bass": 39.61,
+     "other": 45.91,
+     "vocals": 14.37
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 42.1,
+     "bass": 48.11,
+     "other": 51.68,
+     "vocals": 4.66
+    }
+   },
+   "sdr_db_min": 4.66,
+   "sdr_db_median": 16.025,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 384,
+    "p": 0.9922480620155039,
+    "r": 0.9922480620155039,
+    "f1": 0.9922480620155039,
+    "min_f1": 0.9841269841269841,
+    "min_clip": "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1223,
+    "matched": 1164,
+    "p": 0.9517579721995094,
+    "r": 0.9517579721995094,
+    "f1": 0.9517579721995094,
+    "min_f1": 0.7439024390243903,
+    "min_clip": "urmp-brass/05_Entertainer_tpt_tpt:bass",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.991
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.7552
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9934
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.7439
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 0.9841,
+     "basic_pitch": 0.9843
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 0.9863,
+     "basic_pitch": 0.9437
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 0.9892,
+     "basic_pitch": 0.9845
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 0.9855,
+     "basic_pitch": 0.9375
+    }
+   }
+  },
+  "coreml-fp16-ALL": {
+   "sdr_db": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+     "drums": 23.99,
+     "bass": 22.89,
+     "other": 66.41,
+     "vocals": 16.96
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt": {
+     "drums": 19.32,
+     "bass": 20.24,
+     "other": 66.08,
+     "vocals": 21.49
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+     "drums": 26.09,
+     "bass": 59.57,
+     "other": 63.62,
+     "vocals": 19.18
+    },
+    "mikkel/excerpt-60s": {
+     "drums": 53.17,
+     "bass": 60.66,
+     "other": 61.75,
+     "vocals": 13.37
+    }
+   },
+   "sdr_db_min": 13.37,
+   "sdr_db_median": 25.04,
+   "swift_f0_note_f1": {
+    "n_ref": 387,
+    "n_est": 387,
+    "matched": 387,
+    "p": 1.0,
+    "r": 1.0,
+    "f1": 1.0,
+    "min_f1": 1.0,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+    "n_clips": 8
+   },
+   "basic_pitch_note_f1": {
+    "n_ref": 1223,
+    "n_est": 1228,
+    "matched": 1207,
+    "p": 0.9828990228013029,
+    "r": 0.9869174161896974,
+    "f1": 0.9849041207670339,
+    "min_f1": 0.8666666666666667,
+    "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+    "n_clips": 8
+   },
+   "per_stem_f1": {
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    },
+    "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.8667
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9967
+    },
+    "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9571
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9922
+    },
+    "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9859
+    },
+    "mikkel/excerpt-60s:other": {
+     "swift_f0": 1.0,
+     "basic_pitch": 0.9948
+    },
+    "mikkel/excerpt-60s:bass": {
+     "swift_f0": 1.0,
+     "basic_pitch": 1.0
+    }
+   }
+  }
+ },
+ "benchmarks": {
+  "torch-cpu": {
+   "backend": "torch-cpu",
+   "audio_s": 30.0,
+   "load_s": 1.0399017500458285,
+   "median_s": 8.36271635448793,
+   "min_s": 7.730231042020023,
+   "runs": 2,
+   "rtf": 0.27875721181626434,
+   "peak_rss_mb": 1741.578125,
+   "baseline_rss_mb": 177.171875,
+   "model_rss_mb": 1564.40625
+  },
+  "onnx-ort-cpu": {
+   "backend": "onnx-ort-cpu",
+   "audio_s": 30.0,
+   "load_s": 0.882515708100982,
+   "median_s": 3.7125666875508614,
+   "min_s": 3.580405500018969,
+   "runs": 2,
+   "rtf": 0.12375222291836205,
+   "peak_rss_mb": 4328.796875,
+   "baseline_rss_mb": 177.21875,
+   "model_rss_mb": 4151.578125
+  },
+  "onnx-ort-coreml": {
+   "backend": "onnx-ort-coreml",
+   "audio_s": 30.0,
+   "load_s": 37.0580099580111,
+   "median_s": 1.5869758754852228,
+   "min_s": 1.5607482090126723,
+   "runs": 2,
+   "rtf": 0.052899195849507426,
+   "peak_rss_mb": 2421.265625,
+   "baseline_rss_mb": 178.796875,
+   "model_rss_mb": 2242.46875,
+   "coreml_ep": {
+    "partitions": 26,
+    "nodes_total": 1459,
+    "nodes_on_coreml": 1434
+   }
+  },
+  "coreml-fp32-CPU_ONLY": {
+   "backend": "coreml-fp32-CPU_ONLY",
+   "audio_s": 30.0,
+   "load_s": 1.3693341249600053,
+   "median_s": 3.6551635005162098,
+   "min_s": 3.52771804202348,
+   "runs": 2,
+   "rtf": 0.12183878335054033,
+   "peak_rss_mb": 1544.703125,
+   "baseline_rss_mb": 295.6875,
+   "model_rss_mb": 1249.015625
+  },
+  "coreml-fp32-CPU_AND_GPU": {
+   "backend": "coreml-fp32-CPU_AND_GPU",
+   "audio_s": 30.0,
+   "load_s": 1.3832820829702541,
+   "median_s": 0.9389412919408642,
+   "min_s": 0.9373074589530006,
+   "runs": 2,
+   "rtf": 0.031298043064695476,
+   "peak_rss_mb": 1295.3125,
+   "baseline_rss_mb": 295.046875,
+   "model_rss_mb": 1000.265625
+  },
+  "coreml-fp32-ALL": {
+   "backend": "coreml-fp32-ALL",
+   "audio_s": 30.0,
+   "load_s": 1.5113864580634981,
+   "median_s": 0.9407827289542183,
+   "min_s": 0.93560837500263,
+   "runs": 2,
+   "rtf": 0.031359424298473944,
+   "peak_rss_mb": 1295.015625,
+   "baseline_rss_mb": 294.703125,
+   "model_rss_mb": 1000.3125
+  },
+  "coreml-fp16-CPU_AND_GPU": {
+   "backend": "coreml-fp16-CPU_AND_GPU",
+   "audio_s": 30.0,
+   "load_s": 2.00382891704794,
+   "median_s": 0.634334062517155,
+   "min_s": 0.6310325410449877,
+   "runs": 2,
+   "rtf": 0.021144468750571833,
+   "peak_rss_mb": 768.9375,
+   "baseline_rss_mb": 297.078125,
+   "model_rss_mb": 471.859375
+  },
+  "coreml-fp16-CPU_AND_NE": {
+   "backend": "coreml-fp16-CPU_AND_NE",
+   "audio_s": 30.0,
+   "load_s": 8.688625250011683,
+   "median_s": 15.31255302100908,
+   "min_s": 14.0903054169612,
+   "runs": 2,
+   "rtf": 0.510418434033636,
+   "peak_rss_mb": 6666.25,
+   "baseline_rss_mb": 295.0625,
+   "model_rss_mb": 6371.1875
+  },
+  "coreml-fp16-ALL": {
+   "backend": "coreml-fp16-ALL",
+   "audio_s": 30.0,
+   "load_s": 3.85961945890449,
+   "median_s": 0.5503177704522386,
+   "min_s": 0.5414750409545377,
+   "runs": 2,
+   "rtf": 0.01834392568174129,
+   "peak_rss_mb": 1218.671875,
+   "baseline_rss_mb": 295.75,
+   "model_rss_mb": 922.921875
+  }
+ },
+ "coreml_compute_plan": {
+  "fp32-CPU_ONLY": {
+   "MLCPU": 1670
+  },
+  "fp32-CPU_AND_GPU": {
+   "MLGPU": 1670
+  },
+  "fp32-CPU_AND_NE": {
+   "MLCPU": 1670
+  },
+  "fp32-ALL": {
+   "MLGPU": 1670
+  },
+  "fp16-CPU_ONLY": {
+   "MLCPU": 1670
+  },
+  "fp16-CPU_AND_GPU": {
+   "MLGPU": 1670
+  },
+  "fp16-CPU_AND_NE": {
+   "MLCPU": 1668
+  },
+  "fp16-ALL": {
+   "MLGPU": 1670
+  }
+ },
+ "pass": {
+  "onnx-ort-cpu": true,
+  "onnx-ort-coreml": true,
+  "coreml-fp32-CPU_ONLY": true,
+  "coreml-fp32-CPU_AND_GPU": true,
+  "coreml-fp32-ALL": true,
+  "coreml-fp16-CPU_AND_GPU": true,
+  "coreml-fp16-CPU_AND_NE": false,
+  "coreml-fp16-ALL": true
+ },
+ "pass_all": false,
+ "versions": {
+  "python": "3.12.14",
+  "macos": "26.6.2",
+  "machine": "arm64",
+  "demucs": "4.1.0",
+  "torch": "2.7.0",
+  "onnxruntime": "1.30.0",
+  "coremltools": "9.0",
+  "swift-f0": "0.3.0",
+  "mir_eval": "0.8.2"
+ },
+ "command": "cd convert/demucs && uv run python convert.py && uv run python parity.py"
+}
