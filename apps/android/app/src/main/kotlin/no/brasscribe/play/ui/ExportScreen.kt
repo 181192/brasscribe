@@ -35,6 +35,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.export.ExportFile
 import no.brasscribe.play.export.ExportFormat
+import no.brasscribe.play.export.ExportScope
 import no.brasscribe.play.export.Exporter
 
 private val LABELS = mapOf(
@@ -67,6 +68,16 @@ fun ExportScreen(vm: PlayViewModel) {
     var chosen by rememberSaveable { mutableStateOf(setOf(if (ExportFormat.PDF in available) ExportFormat.PDF else ExportFormat.MUSICXML).map { it.name }.toSet()) }
     val formats = order.filter { it.name in chosen && it in available }
     var pendingSave by remember { mutableStateOf<List<ExportFile>>(emptyList()) }
+    // What: the player's own part first (the part on screen), every part, or the conductor's score.
+    val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
+    val shown = vm.scoreController?.state?.value?.shown
+    val myPart = shown?.singleOrNull() ?: defaultPart(partNames)
+    val manyParts = partNames.size > 1
+    var what by rememberSaveable { mutableStateOf(if (manyParts) ExportScope.MY_PART else ExportScope.CONDUCTOR) }
+    val myName = PartNames.display(partNames.getOrElse(myPart) { "" })
+    val fileCount = formats.sumOf { f ->
+        if (f == ExportFormat.AUDIO || f == ExportFormat.MIDI || !exporter.perPart(r, f) || what != ExportScope.EVERY_PART) 1 else partNames.size
+    }
 
     val saveTree = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         val files = pendingSave
@@ -82,9 +93,9 @@ fun ExportScreen(vm: PlayViewModel) {
             val comp = r.composition
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val files = withContext(Dispatchers.Default) {
-                formats.map { f -> exporter.build(r, f, vm.container.engine(), vm.scoreController?.let { sc -> { sc.midiBytes() } }, parts, currentLang()) }
+                exporter.buildAll(r, formats, what, myPart, partNames, vm.container.engine(), vm.scoreController?.let { sc -> { sc.midiBytes() } }, parts, currentLang())
             }
-            vm.say(R.string.exported, files.joinToString { it.file.name })
+            vm.say(R.string.exported, files.joinToString { it.file.nameWithoutExtension })
             then(files)
         } catch (e: Exception) {
             vm.say(R.string.export_failed, e.message ?: e.javaClass.simpleName)
@@ -93,11 +104,12 @@ fun ExportScreen(vm: PlayViewModel) {
 
     val print = ExportFormat.PDF in formats
     PlayScaffold(
-        title = r.composition?.title?.ifBlank { null } ?: source?.name, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
+        title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
             if (print) PrimaryButton(stringResource(R.string.export_print), {
-                make { files -> files.firstOrNull { it.format == ExportFormat.PDF }?.let { exporter.print(context as Activity, it) } }
-            }, icon = R.drawable.ic_bc_print)
+                // Every part: one print job per player's PDF, as on Windows.
+                make { files -> files.filter { it.format == ExportFormat.PDF }.forEach { exporter.print(context as Activity, it) } }
+            }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" })
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 val share = stringResource(R.string.export_share)
                 val save = stringResource(R.string.export_save)
@@ -107,12 +119,21 @@ fun ExportScreen(vm: PlayViewModel) {
                 OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, Modifier.weight(1f), enabled = formats.isNotEmpty(), icon = R.drawable.ic_bc_folder)
             }
             Text(
-                pluralStringResource(R.plurals.export_count, formats.size, formats.size),
+                pluralStringResource(R.plurals.export_count, fileCount, fileCount),
                 style = MaterialTheme.typography.bodySmall, color = c.textMuted,
             )
         },
     ) {
         ScreenTitle(stringResource(R.string.export_title))
+        if (manyParts) {
+            SectionLabel(stringResource(R.string.export_what))
+            ChoiceGroup(3) {
+                ChoiceCard(stringResource(R.string.export_scope_my_part, myName), null, what == ExportScope.MY_PART, true, 0) { what = ExportScope.MY_PART }
+                ChoiceCard(stringResource(R.string.export_scope_every_part), stringResource(R.string.export_scope_every_part_tip),
+                    what == ExportScope.EVERY_PART, true, 1) { what = ExportScope.EVERY_PART }
+                ChoiceCard(stringResource(R.string.export_scope_conductor), null, what == ExportScope.CONDUCTOR, true, 2) { what = ExportScope.CONDUCTOR }
+            }
+        }
         SectionLabel(stringResource(R.string.export_formats))
         RowGroup {
             order.forEachIndexed { i, f ->
@@ -120,10 +141,16 @@ fun ExportScreen(vm: PlayViewModel) {
                 val ok = f in available
                 val (label, desc) = LABELS.getValue(f)
                 val on = f.name in chosen && ok
+                val wholeOnly = manyParts && what != ExportScope.CONDUCTOR && ok && !exporter.perPart(r, f)
                 ListRow(
                     stringResource(label),
                     onClick = null,
-                    subtitle = if (ok) stringResource(desc) else stringResource(if (f == ExportFormat.BRAILLE) R.string.export_braille_unavailable else R.string.export_needs_engine),
+                    subtitle = when {
+                        !ok && r.changedOnPhone && f != ExportFormat.MIDI -> stringResource(R.string.export_made_before_change)
+                        !ok -> stringResource(if (f == ExportFormat.BRAILLE) R.string.export_braille_unavailable else R.string.export_needs_engine)
+                        wholeOnly -> stringResource(R.string.export_whole_score_only, stringResource(desc))
+                        else -> stringResource(desc)
+                    },
                     enabled = ok,
                     chevron = false,
                     modifier = Modifier.toggleable(on, enabled = ok, role = Role.Checkbox) { v -> chosen = if (v) chosen + f.name else chosen - f.name },

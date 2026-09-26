@@ -94,7 +94,7 @@ class FixtureEngineApi(
                 seconds = stageSeconds, fraction = fraction, device = "cpu"))
             jobs[jobId] = job(jobId).copy(progress = fraction)
         }
-        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = OUTPUTS)
+        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputs)
         send(JobEvent(id, "job", run = jobId, time = now(), status = "succeeded"))
     }
 
@@ -104,13 +104,21 @@ class FixtureEngineApi(
     override suspend fun pdf(jobId: String): ByteArray = file("brass-band.pdf")
     override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
 
-    override suspend fun artifacts(jobId: String): List<Artifact> = OUTPUTS.mapNotNull { name ->
-        source.read(name)?.let { Artifact(name, it.size.toLong(), MEDIA.getValue(name), "/v1/jobs/$jobId/artifacts/$name") }
+    override suspend fun artifacts(jobId: String): List<Artifact> = outputs.mapNotNull { name ->
+        source.read(name)?.let { Artifact(name, it.size.toLong(), mediaOf(name), "/v1/jobs/$jobId/artifacts/$name") }
+    }
+
+    /** The score's files plus the golden per-part files that are packaged (parts/NN-Name.pdf|brf|musicxml). */
+    private val outputs: List<String> by lazy {
+        OUTPUTS + PART_NAMES.flatMapIndexed { i, n ->
+            listOf("pdf", "brf", "musicxml").map { "parts/%02d-%s.%s".format(i + 1, n, it) }
+        }.filter { source.read(it) != null }
     }
 
     override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
     override suspend fun braille(jobId: String, part: String?): ByteArray =
-        file(if (part == null) "brass-band.brf" else throw EngineException(404, "the fixture has only the score's braille"))
+        file(if (part == null) "brass-band.brf" else part.toIntOrNull()?.let { n -> PART_NAMES.getOrNull(n - 1)?.let { "parts/%02d-%s.brf".format(n, it) } }
+            ?: throw EngineException(404, "no part $part"))
 
     override suspend fun talkingScore(jobId: String, format: String, lang: String, part: String?, pitchMode: String?, verbosity: String): String =
         throw EngineException(404, "the fixture has no talking score; the app builds it with the core")
@@ -131,6 +139,17 @@ class FixtureEngineApi(
 
     companion object {
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
+        /** The golden score's parts in order, as their file names spell them. */
+        val PART_NAMES = listOf(
+            "Soprano-Cornet", "Solo-Cornet", "Repiano-Cornet", "2nd-Cornet", "3rd-Cornet", "Flugelhorn", "Solo-Horn", "1st-Horn", "2nd-Horn",
+            "1st-Baritone", "2nd-Baritone", "1st-Trombone", "2nd-Trombone", "Bass-Trombone", "Euphonium", "Eb-Bass", "Bb-Bass", "Percussion",
+        )
+
+        fun mediaOf(name: String): String = MEDIA[name] ?: when (name.substringAfterLast('.')) {
+            "pdf" -> "application/pdf"; "brf" -> "text/plain"; "musicxml" -> "application/vnd.recordare.musicxml+xml"
+            else -> "application/octet-stream"
+        }
+
         private val MEDIA = mapOf(
             "composition.json" to "application/json", "brass-band.musicxml" to "application/vnd.recordare.musicxml+xml",
             "brass-band.pdf" to "application/pdf", "brass-band.mp3" to "audio/mpeg", "brass-band.brf" to "text/plain",

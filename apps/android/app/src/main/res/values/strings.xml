@@ -391,4 +391,11 @@
     <string name="key_shifted">%1$s from the recording</string>
     <string name="demo_label">the built-in demo</string>
     <string name="view_menu">View</string>
+    <string name="export_what">What</string>
+    <string name="export_scope_my_part">%1$s (you)</string>
+    <string name="export_scope_every_part">Every part</string>
+    <string name="export_scope_every_part_tip">One PDF per player.</string>
+    <string name="export_scope_conductor">Conductor's score</string>
+    <string name="export_whole_score_only">%1$s · the whole score</string>
+    <string name="export_made_before_change">Made before your changes. Brasscribe on your computer makes it again.</string>
 </resources>

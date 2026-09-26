@@ -389,4 +389,11 @@
     <string name="key_shifted">%1$s fra opptaket</string>
     <string name="demo_label">det innebygde eksempelet</string>
     <string name="view_menu">Visning</string>
+    <string name="export_what">Hva</string>
+    <string name="export_scope_my_part">%1$s (deg)</string>
+    <string name="export_scope_every_part">Alle stemmer</string>
+    <string name="export_scope_every_part_tip">Én PDF per musiker.</string>
+    <string name="export_scope_conductor">Dirigentpartitur</string>
+    <string name="export_whole_score_only">%1$s · hele partituret</string>
+    <string name="export_made_before_change">Laget før endringene dine. Brasscribe på datamaskinen lager den på nytt.</string>
 </resources>

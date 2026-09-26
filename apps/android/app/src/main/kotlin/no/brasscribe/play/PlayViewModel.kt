@@ -102,6 +102,8 @@ data class TranscriptionResult(
     val appliedTranspose: Int = 0,
     /** Confidence and what each transcriber heard at the uncertain notes. */
     val evidence: no.brasscribe.play.engine.Evidence? = null,
+    /** A note was changed on the phone: the engine's PDF, braille and audio still show the old one. */
+    val changedOnPhone: Boolean = false,
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
@@ -609,7 +611,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
             PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
         }
-        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, "auto") }.getOrNull()
+        // The same arranger as the score came from: the golden Composition re-arranges to the golden score.
+        val arranger = if (output.value.lineup == Lineup.MINIMAL) "minimal" else "auto"
+        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, arranger) }.getOrNull()
             ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
             ?: return false
         val newPitch = (pitch + semitones).coerceIn(0, 127)
@@ -621,7 +625,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         val updated = current.copy(composition = updatedComposition, musicXml = xml,
-            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence)
+            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence, changedOnPhone = true)
         result.value = updated
         saveCurrentScore(updated)
         return true
