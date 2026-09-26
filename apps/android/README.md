@@ -41,6 +41,15 @@ Some inputs come from outside git and are used only when present:
 - **On-device models.** SwiftF0, Basic Pitch and Beat This! small run on ONNX Runtime (one runtime for all three; Basic Pitch's TFLite would need LiteRT as a second runtime). Parity with upstream, JVM tests: SwiftF0 0.00 cents and 36/36 notes; Basic Pitch note F1 1.000 (synthetic and URMP March); Beat This beat/downbeat F1 1.000/1.000 on clicks and URMP, 1.000/0.986 on Mikkel 60–120 s.
 - **The offline solo** (`pitch/SoloPipeline.kt`) is the engine's rule through the layered arranger with only a solo layer: SwiftF0 is the spine, Basic Pitch fills both confirmation slots (MuScriptor's too), the SwiftF0 contour gives written durations, Beat This the beats. Each layer's MIDI is written at its adapter's resolution (SwiftF0 480, Basic Pitch 220 ticks per beat at 120 bpm), so onsets round like the reference. On the URMP Entertainer trumpet clip (`data/runs/apple/entertainer-ref`, minimal lineup) it matches the reference note for note: 77 notes, 33 bars, F1 1.000 on pitch, start and duration (`OnDeviceSoloTest`).
 
+## Design system
+
+The app wears the Brasscribe design system (`design/`, generated into `design/dist/`):
+- **Wiring** (`app/build.gradle.kts`): the Compose theme and icon enum compile straight from `design/dist/android/kotlin`; `syncDesignResources` syncs the `ic_bc_*` icons, Instrument Serif and the adaptive launcher icon (with its monochrome layer) from `design/dist/android/res` and `design/dist/icons/android/res` into one generated res folder, and the font licence goes to the assets. Nothing is hand-copied, so a token change is a rebuild.
+- **Theme** (`ui/theme/Theme.kt`): `PlayTheme` is `BrasscribeTheme` with the display face. Primary is ink (paper in dark); the cursor purple, the uncertainty colours and the loop tint are for the score only. Instrument Serif is used only for `displaySmall` (36 sp screen titles) and the wordmark; everything else is Roboto, in sp, so it follows the font scale.
+- **Components** (`ui/Common.kt`): one `PrimaryButton` per screen (52 dp, 12 dp corners, pinned above the navigation bar), tonal/outline/plain buttons, list-row groups with icon wells, practice chips (on = tonal fill, ink edge and a tick), the info note, the brand mark, and the "?" / boxed "?" mark.
+- **Screens** follow `design/mockups/png/*phone*` in the Material idiom: first run, Home (one primary, the other ways in as rows), What is this? (choice cards, "where it runs" with Change), making the score (the steps, brass progress, a confirmed Cancel), Check N notes (one note at a time, Keep and Skip, Finish later with a confirm), How should the score be?, the score with its toolbar and a player that wraps and never clips, Share or print (Print as the primary), errors with a way forward, and Settings.
+- **The score** colours each uncertain note (head, stem, flags, accidentals) and its "?" from the tokens; a very uncertain note's boxed "?" (MusicXML `enclosure="rectangle"`, which alphaTab ignores) becomes U+2370 ⍰. The bar under the cursor gets the cursor tint and the loop range the loop tint (alphaTab's highlight layer).
+
 ## Features and where they live
 
 - **Inputs** (`ui/HomeScreen.kt`, `capture/CaptureService.kt`, `audio/`):
@@ -51,9 +60,9 @@ Some inputs come from outside git and are used only when present:
   - other apps' playback through AudioPlaybackCapture. Play shows an opt-out and DRM notice first, asks for MediaProjection consent, and runs a foreground service of type `mediaProjection` (type `microphone` for mic recording). After 5 s of silence it shows "Nothing is coming through…". Android offers no API that reports an app's opt-out, so silence is the signal.
 - **"What is this?"** picks the engine profile: `solo`, `brass-band`, `orchestra-with-soloist` or `pop-rock`. For a solo it also asks where to transcribe: on the phone (offline) or on the companion engine.
 - **Transcription** shows a plain-language step, percent, "step n of m", time left and Cancel. A cancel also cancels the engine job.
-- **Review** colours uncertain notes with the tokens from `docs/accessibility/design-tokens.json` and gives each level a shape: an open ring when uncertain; brackets and a filled ring when very uncertain. Each note is one TalkBack item. It speaks the talking-score announcement and has these custom actions:
+- **Review** (Check N notes) marks uncertain notes with the design tokens and a shape, as in the score: a "?" above an uncertain note and a boxed "?" above a very uncertain one. One note is checked at a time (Keep, go to next; Skip); Finish later asks first and the score keeps a "N notes marked ? · Check them" line to come back. Every note is also one TalkBack item that speaks the talking-score announcement, with these custom actions:
   - Listen to this bar: plays the original bar, then the score's bar, looped
-  - Mark as checked
+  - Keep
   - Next uncertain note
 - **Output**: lineup (full, minimal, solo part), difficulty (faithful, standard, easier) and key. On-device results are re-arranged by the core; engine results become a new engine job with `lineup`, `difficulty` and `transpose` (the cache reuses every model stage; the MP3 render is skipped for re-arrangements). Without either, only the display choices remain and the key shift is applied in alphaTab.
 - **Score** uses alphaTab 1.8.4 (`net.alphatab:alphaTab`, MPL-2.0) with:
@@ -95,7 +104,7 @@ The first run found two real problems, both fixed: an unlabelled empty live regi
 
 The flow tests need the golden fixtures, so they need a debug build made with `data/` present. The export test shares MusicXML, PDF, MIDI, the talking-score HTML and the braille file and checks them; its talking-score check (every part, such as "Solo Horn") needs the Rust core, so build `core-bridge/src/main/jniLibs` first (`scripts/build-core.sh`). `audio/src/androidTest/.../RealisticSynthTest.kt` renders sfizz offline. For the SFZ case, pass `-Pandroid.testInstrumentationRunnerArguments.sfz=/data/local/tmp/sounds/cornet-a/cornet-a-sus.sfz` after pushing an instrument there.
 
-Checked by hand on the emulator (screenshots in `docs/screenshots/`):
+Screenshots of the design (light, dark, bokmål and 200% text) are in `docs/screenshots/design/`; the ones from before the design system are in `docs/screenshots/before-design/`. Checked by hand on the emulator:
 - the share sheet and "Open with" for WAV and MP4
 - capture of the phone's own playback, with MediaProjection consent and the silence notice
 - the microphone: starts and stops, but emulator input is silent

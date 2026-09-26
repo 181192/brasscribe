@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
@@ -53,6 +54,8 @@ class PlayFlowA11yTest {
     fun setUp() {
         rule.enableAccessibilityChecks()
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        // A fresh install opens on the first-run screen once.
+        if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
     }
 
     private fun waitFor(matcher: SemanticsMatcher, ms: Long = 20_000) =
@@ -63,21 +66,23 @@ class PlayFlowA11yTest {
 
     @Test
     fun homeButtonsAreLargeLabelledTargets() {
-        for (label in listOf("Import audio or video", "Record with the microphone", "Record sound playing on this phone", "Open the Mikkel sample")) {
-            rule.onNodeWithText(label).assertHeightIsAtLeast(48.dp)
+        for (label in listOf("Open a recording", "Record with the microphone", "Record what's playing", "Try the demo")) {
+            val h = rule.onNodeWithText(label).fetchSemanticsNode().boundsInRoot.height / rule.density.density
+            assertTrue("$label is $h dp", h >= 48f)
         }
-        rule.onNode(isHeading() and hasText("Companion engine")).assertExists()
+        rule.onNode(isHeading() and hasText("Turn a recording into", substring = true)).assertExists()
+        rule.onNodeWithContentDescription("Settings").assertHeightIsAtLeast(48.dp)
         rule.onRoot().tryPerformAccessibilityChecks()
     }
 
     @Test
     fun sampleFlowFromWhatIsThisToScore() {
-        rule.onNodeWithText("Open the Mikkel sample").performClick()
+        rule.onNodeWithText("Try the demo").performClick()
 
         // What is this? Four radio options, Continue disabled until one is chosen.
         rule.onNode(isHeading() and hasText("What is this?")).assertExists()
         rule.onNodeWithText("Continue").assertIsNotEnabled()
-        val option = rule.onNode(hasText("Orchestra with soloist", substring = false) and
+        val option = rule.onNode(hasText("Soloist with orchestra or band", substring = false) and
             SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton), useUnmergedTree = false)
         option.performClick()
         option.assertIsSelected()
@@ -86,13 +91,13 @@ class PlayFlowA11yTest {
         rule.onNodeWithText("Continue").assertIsEnabled().performClick()
 
         // Transcribing: a progress bar with range info and a label.
-        waitFor(hasContentDescription("Transcription progress"))
-        val bar = rule.onNode(hasContentDescription("Transcription progress"), useUnmergedTree = true).fetchSemanticsNode()
+        waitFor(hasContentDescription("Progress"))
+        val bar = rule.onNode(hasContentDescription("Progress"), useUnmergedTree = true).fetchSemanticsNode()
         assertTrue(bar.config.contains(SemanticsProperties.ProgressBarRangeInfo))
         rule.onNodeWithText("Cancel").assertExists()
 
         // Review: the golden solo has uncertain notes, each announced with its uncertainty.
-        waitFor(isHeading() and hasText("Check the transcription"), 60_000)
+        waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
         val uncertain = rule.onAllNodes(SemanticsMatcher("announces uncertain") { n ->
             n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.endsWith(", uncertain") } == true
         }).fetchSemanticsNodes()
@@ -108,12 +113,13 @@ class PlayFlowA11yTest {
         assertTrue("ad lib entries: $adLib", adLib <= 1)
         assertTrue(first.customAction("Listen to this bar") != null)
         assertTrue(first.customAction("Next uncertain note") != null)
-        rule.runOnUiThread { first.customAction("Mark as checked")!!.action() }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Checked.", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.runOnUiThread { first.customAction("Keep")!!.action() }
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Kept.", substring = true).fetchSemanticsNodes().isNotEmpty() }
 
-        // Output, then the score with bar and part navigation as custom actions.
-        rule.onNodeWithText("Choose output").performClick()
-        rule.onNode(isHeading() and hasText("Choose output")).assertExists()
+        // Finish later asks first; then Output, then the score with bar and part navigation as custom actions.
+        rule.onNodeWithText("Finish later (", substring = true).assertHeightIsAtLeast(48.dp).performClick()
+        rule.onNodeWithText("Finish later").performClick()
+        rule.onNode(isHeading() and hasText("How should the score be?")).assertExists()
         rule.onNodeWithText("Show the score").performClick()
         waitFor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "score-view"))
         rule.waitUntil(20_000) {
@@ -141,55 +147,63 @@ class PlayFlowA11yTest {
     /** Full screen on a music stand: the score alone, with only the transport left. */
     @Test
     fun fullScreenLeavesOnlyTheScoreAndTheTransport() {
-        rule.onNodeWithText("Open the Mikkel sample").performClick()
-        rule.onNodeWithText("Orchestra with soloist").performClick()
+        rule.onNodeWithText("Try the demo").performClick()
+        rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
-        waitFor(isHeading() and hasText("Check the transcription"), 60_000)
-        rule.onNodeWithText("Choose output").performClick()
+        waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
+        rule.onNodeWithText("Finish later (", substring = true).performClick()
+        rule.onNodeWithText("Finish later").performClick()
         rule.onNodeWithText("Show the score").performClick()
         waitFor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "score-view"))
 
-        rule.onNodeWithTag("performance").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("More").performClick()
+        rule.onNodeWithTag("performance").performClick()
         rule.waitForIdle()
 
         // The score and the transport stay; every other control goes.
         rule.onNodeWithTag("score-view").assertExists()
         rule.onNodeWithTag("play").assertExists().assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("performance-exit").assertExists().assertHeightIsAtLeast(48.dp)
-        for (gone in listOf("Export", "Parts", "Zoom in", "Set loop", "Metronome", "Count-in", "Text")) {
+        for (gone in listOf("Read aloud", "Metronome", "Count-in", "Mute my part", "Speed 100%")) {
             rule.onAllNodesWithText(gone).assertCountEquals(0)
         }
         rule.onRoot().tryPerformAccessibilityChecks()
 
         rule.onNodeWithTag("performance-exit").performClick()
         rule.waitForIdle()
-        rule.onNodeWithText("Export").assertExists()
+        rule.onNodeWithContentDescription("Share or print").assertExists()
         rule.onNodeWithTag("score-view").assertExists()
     }
 
     @Test
-    fun exportsEveryFormatIncludingBraille() {        rule.onNodeWithText("Open the Mikkel sample").performClick()
-        rule.onNodeWithText("Orchestra with soloist").performClick()
+    fun exportsEveryFormatIncludingBraille() {
+        rule.onNodeWithText("Try the demo").performClick()
+        rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
-        waitFor(isHeading() and hasText("Check the transcription"), 60_000)
-        rule.onNodeWithText("Choose output").performClick()
+        waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
+        rule.onNodeWithText("Finish later (", substring = true).performClick()
+        rule.onNodeWithText("Finish later").performClick()
         rule.onNodeWithText("Show the score").performClick()
-        waitFor(hasText("Export"))
-        rule.onNodeWithText("Export").performClick()
-        for (f in listOf("MusicXML, full score", "PDF", "MIDI", "Audio (MP3)", "Talking score (text)", "Braille music (BRF)")) {
-            rule.onNode(isHeading() and hasText(f)).assertExists()
+        waitFor(hasContentDescription("Share or print"))
+        rule.onNodeWithContentDescription("Share or print").performClick()
+        rule.onNode(isHeading() and hasText("Share or print")).assertExists()
+        // PDF is chosen by default (the review's P1: print your part); add the other formats.
+        rule.onNode(hasText("PDF") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).assertExists()
+        for (f in listOf("MusicXML", "MIDI", "Talking score", "Braille music")) {
+            rule.onNode(hasText(f) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).performClick()
         }
+        rule.onNodeWithText("Print").assertHeightIsAtLeast(48.dp)
 
-        // Share builds each file (MusicXML, PDF, alphaTab MIDI, talking-score HTML), then opens the chooser.
+        // One Share builds every chosen file (MusicXML, PDF, alphaTab MIDI, talking-score HTML, BRF), then opens the chooser.
         val exports = rule.activity.cacheDir.resolve("exports")
-        for ((i, ext) in listOf(0 to "musicxml", 1 to "pdf", 2 to "mid", 4 to "html", 5 to "brf")) {
-            rule.onAllNodesWithText("Share")[i].performClick()
-            rule.waitUntil(15_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } }
-            Thread.sleep(1500)
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-                .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
-            rule.waitForIdle()
+        rule.onNodeWithTag("share").performClick()
+        for (ext in listOf("musicxml", "pdf", "mid", "html", "brf")) {
+            rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } }
         }
+        Thread.sleep(1500)
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        rule.waitForIdle()
         val midi = exports.listFiles()!!.first { it.extension == "mid" }.readBytes()
         assertEquals("MThd", String(midi, 0, 4))
         val html = exports.listFiles()!!.first { it.extension == "html" }.readText()
@@ -199,6 +213,6 @@ class PlayFlowA11yTest {
         // North American Braille ASCII with CRLF lines; the music lines fit 40 cells (the title may not).
         val lines = brf.split("\r\n")
         assertTrue("BRF", brf.length > 1000 && lines.size > 50 && lines.count { it.length <= 40 } >= lines.size * 9 / 10)
-        rule.onNodeWithText("Exported", substring = true).assertExists()
+        rule.onNodeWithText("Ready:", substring = true).assertExists()
     }
 }

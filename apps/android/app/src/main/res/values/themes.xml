@@ -2,6 +2,6 @@
 <resources>
     <!-- Window theme only; the UI is Compose Material 3 (see ui/theme). -->
     <style name="Theme.BrasscribePlay" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">#FFFBFAF7</item>
     </style>
 </resources>
