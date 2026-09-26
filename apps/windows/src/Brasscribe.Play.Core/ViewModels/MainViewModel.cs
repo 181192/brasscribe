@@ -10,13 +10,17 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Brasscribe.Play.Core.ViewModels;
 
-public enum Screen { Start, SourceKind, Transcribing, Score }
+/// <summary>The screens of the Play flow (design/system.md §3). The part view is the score screen with one part chosen.</summary>
+public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, Error, ChooseOutput }
 
 /// <summary>
 /// The flow of the app: start (import or record) → "What is this?" → transcription → score.
 /// Owns the child view models and the engine client; the WinUI shell binds <see cref="Screen"/> to
 /// its navigation and moves keyboard focus to each screen's heading.
 /// </summary>
+/// <summary>A row of "Your scores".</summary>
+public sealed record LibraryItem(string Id, string Title, string Subtitle);
+
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IAnnouncer _announcer;
@@ -28,7 +32,8 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(
         StartViewModel start, SourceKindViewModel kind, TranscriptionViewModel transcription, ScoreViewModel score,
         ExportViewModel export, OutputOptionsViewModel output, SettingsViewModel settings,
-        Func<Uri, string?, IEngineClient> engineFactory, IAnnouncer announcer, IStrings strings, ICoreBridge core)
+        Func<Uri, string?, IEngineClient> engineFactory, IAnnouncer announcer, IStrings strings, ICoreBridge core,
+        ScoreLibrary? library = null)
     {
         Start = start;
         Kind = kind;
@@ -41,17 +46,50 @@ public sealed partial class MainViewModel : ObservableObject
         _engineFactory = engineFactory;
         _announcer = announcer;
         _s = strings;
+        Review = new ReviewViewModel(score, announcer, strings);
+        Error = new ErrorViewModel(strings);
+        Library = library;
+        RefreshLibrary();
+        if (library is not null) library.Changed += (_, _) => RefreshLibrary();
+        Screen = settings.FirstRunDone ? Screen.Start : Screen.FirstRun;
+
+        // After a new score: check the notes, then "How should the score be?", then the score.
+        Review.Finished += (_, _) =>
+        {
+            Screen = _chooseOutputNext ? Screen.ChooseOutput : Screen.Score;
+            _chooseOutputNext = false;
+            UpdateLibraryCount();
+        };
+        Output.ShowScoreRequested += (_, _) => Screen = Screen.Score;
+        Error.Retry += async (_, _) =>
+        {
+            if (_lastChoice is { } choice)
+            {
+                Screen = Screen.Transcribing;
+                await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
+            }
+            else Screen = Screen.Start;
+        };
+        Error.Alternative += (_, _) => Screen = Screen.Start;
+        Transcription.FailedWith += (_, failure) =>
+        {
+            Error.Show(failure == TranscriptionFailure.ComputerUnreachable ? ErrorKind.ComputerUnreachable : ErrorKind.ScoreFailed,
+                Transcription.ErrorText);
+            Screen = Screen.Error;
+        };
 
         Start.SourceReady += async (_, src) =>
         {
             Kind.Source = src;
             Kind.Selected = null;
+            Kind.SetWhere(Settings.EngineUri);
             Screen = Screen.SourceKind;
             await Kind.RefreshFromEngineAsync(Engine);
         };
         Start.ScoreOpened += (_, path) => OpenScoreFile(path);
         Kind.Chosen += async (_, choice) =>
         {
+            _lastChoice = choice;
             _result = null;
             Screen = Screen.Transcribing;
             await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
@@ -60,22 +98,34 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Transcription.Completed += (_, r) =>
         {
+            bool rearranged = _result is not null && r.AudioId is not null && r.AudioId == _result.AudioId;
             _result = r;
             Output.HasEngineJob = r.AudioId is not null;
+            Output.Applied = r.Options ?? ArrangementOptions.Default;
             Output.Title = r.Composition.Title;
             Output.LayerSource = r.JobId is { Length: > 0 } jobId && LayerCacheRoot is { } cache
                 ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
                 : null;
             Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
             Score.Load(r.MusicXml, r.Composition);
-            Screen = Screen.Score;
+            _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
+                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId).Id;
+            OpenReviewOrScore(rearranged);
         };
         Transcription.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TranscriptionViewModel.IsRunning)) BackCommand.NotifyCanExecuteChanged();
         };
-        Output.Arranged += (_, xml) => Score.Load(xml, Score.Composition);
-        Output.ArrangedBand += (_, band) => Score.Load(band.MusicXml, core.ParseComposition(band.CompositionJson));
+        Output.Arranged += (_, xml) =>
+        {
+            Score.Load(xml, Score.Composition);
+            Screen = Screen.Score;
+        };
+        Output.ArrangedBand += (_, band) =>
+        {
+            Score.Load(band.MusicXml, core.ParseComposition(band.CompositionJson));
+            Screen = Screen.Score;
+        };
         Output.RearrangeRequested += async (_, options) =>
         {
             if (_result is not { } previous) return;
@@ -106,6 +156,105 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Folder for layer inputs fetched from engine jobs (on-device re-arrangement); null disables it.</summary>
     public string? LayerCacheRoot { get; set; }
 
+    public ReviewViewModel Review { get; }
+    public ErrorViewModel Error { get; }
+    public ScoreLibrary? Library { get; }
+
+    /// <summary>"Your scores" in the sidebar and on Home, newest first.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<LibraryItem> LibraryItems { get; } = [];
+
+    private (SourceAudio Source, SourceKindOption Kind)? _lastChoice;
+    private string? _libraryId;
+
+    /// <summary>First run: "Get started" goes Home and the screen is not shown again.</summary>
+    [RelayCommand]
+    private void GetStarted()
+    {
+        Settings.FirstRunDone = true;
+        Screen = Screen.Start;
+    }
+
+    /// <summary>"Check them" on the score, and the end of making a score with notes marked ?.</summary>
+    [RelayCommand]
+    private void CheckNotes()
+    {
+        Review.Load();
+        if (Review.Items.Count == 0) return;
+        Screen = Screen.Review;
+    }
+
+    [RelayCommand]
+    private void OpenLibraryItem(LibraryItem? item)
+    {
+        if (item is null || Library?.Entries.FirstOrDefault(e => e.Id == item.Id) is not { } entry) return;
+        try
+        {
+            string xml = File.ReadAllText(entry.MusicXmlPath);
+            var composition = entry.CompositionPath is { } c && File.Exists(c) ? Core.ParseComposition(File.ReadAllText(c)) : null;
+            _result = null;
+            _libraryId = entry.Id;
+            Output.HasEngineJob = false;
+            Output.LayerSource = null;
+            Score.Load(xml, composition);
+            Screen = Screen.Score;
+        }
+        catch (Exception e) when (e is IOException or FormatException or System.Xml.XmlException or UnauthorizedAccessException
+                                   or System.Text.Json.JsonException or Bridge.CoreBridgeException)
+        {
+            Start.ErrorText = _s.Format("Start_Error_Score", entry.Title);
+            _announcer.Announce(Start.ErrorText, AnnouncementKind.Important);
+        }
+    }
+
+    [RelayCommand]
+    private void NewScore()
+    {
+        if (!Transcription.IsRunning) Screen = Screen.Start;
+    }
+
+    private bool _chooseOutputNext;
+
+    /// <summary>
+    /// A new score: check the notes, then "How should the score be?". A score arranged again with new
+    /// choices: its notes to check, then straight to the score (the choice was just made).
+    /// </summary>
+    private void OpenReviewOrScore(bool rearranged)
+    {
+        Review.Load();
+        _chooseOutputNext = !rearranged && Review.Items.Count > 0;
+        Screen = Review.Items.Count > 0 ? Screen.Review : rearranged ? Screen.Score : Screen.ChooseOutput;
+    }
+
+    /// <summary>"How should the score be?" from the score's View menu.</summary>
+    [RelayCommand]
+    private void ChooseOutput() => Screen = Screen.ChooseOutput;
+
+    private void UpdateLibraryCount()
+    {
+        if (_libraryId is { } id) Library?.SetNotesToCheck(id, Score.UncertainLeft);
+    }
+
+    /// <summary>"Your scores" has entries (else Home shows the empty state).</summary>
+    [ObservableProperty] public partial bool HasLibrary { get; set; }
+
+    private void RefreshLibrary()
+    {
+        LibraryItems.Clear();
+        HasLibrary = Library is { Entries.Count: > 0 };
+        if (Library is null) return;
+        foreach (var e in Library.Entries.Take(20))
+            LibraryItems.Add(new LibraryItem(e.Id, e.Title, LibrarySubtitle(e)));
+    }
+
+    private string LibrarySubtitle(LibraryEntry e)
+    {
+        string lineup = _s[e.Parts <= 1 ? "Library_OnePart" : e.Parts <= 6 ? "Library_SmallBand" : "Library_FullBand"];
+        string when = e.Updated.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
+            : e.Updated.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
+        string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
+        return _s.Format("Library_Subtitle", lineup, e.Bars, when) + check;
+    }
+
     public IEngineClient Engine => _engine ??= _engineFactory(Settings.EngineUri, Settings.EngineToken);
 
     [ObservableProperty]
@@ -124,6 +273,8 @@ public sealed partial class MainViewModel : ObservableObject
             Output.HasEngineJob = false;
             Output.LayerSource = null;
             Score.Load(xml, null);
+            _libraryId = Library?.AddOpened(path, Score.Title is { Length: > 0 } t ? t : Path.GetFileNameWithoutExtension(path),
+                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft).Id;
             Screen = Screen.Score;
         }
         catch (Exception e) when (e is IOException or FormatException or System.Xml.XmlException or UnauthorizedAccessException)
@@ -147,13 +298,25 @@ public sealed partial class MainViewModel : ObservableObject
             Screen.SourceKind => Screen.Start,
             // After a failure: back to the score being re-arranged, or to the choice with the source kept.
             Screen.Transcribing => _result is not null ? Screen.Score : Screen.SourceKind,
+            // The part view goes back to the full score; the full score goes Home.
+            Screen.Score when Score.SelectedPartIndex >= 0 => BackToFullScore(),
             Screen.Score => Screen.Start,
+            Screen.Review => Screen.Score,
+            Screen.ChooseOutput => Screen.Score,
+            Screen.Error => Screen.Start,
             _ => Screen,
         };
     }
 
+    private Screen BackToFullScore()
+    {
+        Score.SelectedPartIndex = -1;
+        return Screen.Score;
+    }
+
     /// <summary>Back works everywhere except while a transcription runs (Cancel is the way out then).</summary>
-    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score || Screen == Screen.Transcribing && !Transcription.IsRunning;
+    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score or Screen.Review or Screen.Error or Screen.ChooseOutput
+                                || Screen == Screen.Transcribing && !Transcription.IsRunning;
 
     /// <summary>For tests: the last transcription result.</summary>
     public TranscriptionResult? LastResult => _result;

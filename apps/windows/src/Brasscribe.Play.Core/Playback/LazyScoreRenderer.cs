@@ -40,7 +40,8 @@ public sealed class LazyScoreRenderer : IDisposable
     public int Generation => Volatile.Read(ref _generation);
 
     /// <summary>Lays out the score for the given tracks. <paramref name="prepare"/> runs first on the worker (styling, transposition display).</summary>
-    public Task<ScoreLayout> LayoutAsync(Score score, IReadOnlyList<int> tracks, double width, double scale, LayoutMode mode, Action<Score>? prepare = null)
+    public Task<ScoreLayout> LayoutAsync(Score score, IReadOnlyList<int> tracks, double width, double scale, LayoutMode mode, Action<Score>? prepare = null,
+        Review.UncertaintyPalette? theme = null)
     {
         int generation = Interlocked.Increment(ref _generation);
         return Run(() =>
@@ -54,6 +55,8 @@ public sealed class LazyScoreRenderer : IDisposable
             settings.Display.Scale = Math.Clamp(scale, 0.5, 4.0);
             settings.Display.LayoutMode = mode;
             settings.Player.EnableCursor = false;
+            if (theme is not null) ScoreStyler.ApplyTheme(settings, theme);
+            ScoreStyler.HideHeader(settings); // the screen shows the title itself
             var renderer = new ScoreRenderer(settings) { Width = width };
             var pages = new List<ScorePageSlot>();
             double totalW = 0, totalH = 0;
@@ -76,6 +79,21 @@ public sealed class LazyScoreRenderer : IDisposable
             return new ScoreLayout(generation, totalW, totalH, pages, renderer.BoundsLookup);
         });
     }
+
+    /// <summary>
+    /// One PNG of a few bars of one part with the design overlays (the review snippet). Runs on the
+    /// renderer's thread like everything else that touches alphaTab.
+    /// </summary>
+    public Task<byte[]> SnippetAsync(Score score, int track, int firstBar, int barCount, double scale,
+        Review.UncertaintyPalette theme, Func<RenderOutput, IReadOnlyList<OverlayItem>> overlay, Action<Score>? prepare = null) => Run(() =>
+    {
+        prepare?.Invoke(score);
+        var service = new ScoreRenderService("skia", scale, pageLayout: false).WithTheme(theme);
+        var output = service.Render(score, [track], 100000);
+        var view = ScorePreview.BarsViewport(output, firstBar - 1, firstBar - 2 + barCount);
+        try { return ScorePreview.Compose(output, overlay(output), theme, pad: 16, viewport: view); }
+        finally { ScoreRenderService.Release(output); }
+    });
 
     /// <summary>PNG of one page of the current layout; null when a newer layout replaced it.</summary>
     public Task<byte[]?> RenderPageAsync(int generation, string pageId) => Run(() =>

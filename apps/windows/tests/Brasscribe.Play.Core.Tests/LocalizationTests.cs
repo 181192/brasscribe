@@ -70,6 +70,10 @@ public partial class LocalizationTests
         foreach (var k in Enum.GetNames<CaptureNoticeKind>()) used.Add($"Start_Notice_{k}");
         foreach (var k in Enum.GetNames<ExportFormat>()) used.Add($"Export_Format_{k}");
         foreach (var k in OutputOptionsViewModel.Keys) used.Add(k is null ? "Key_AsRecorded" : $"Key_{k}");
+        foreach (var k in Enum.GetNames<ErrorKind>()) { used.Add($"Error_{k}_Title"); used.Add($"Error_{k}_Reason"); used.Add($"Error_{k}_Step1"); }
+        foreach (var k in new[] { "Pdf", "MusicXml", "Audio", "Midi", "TalkingScore", "Braille" }) { used.Add($"Export_{k}"); used.Add($"Export_{k}_For"); }
+        foreach (var profile in SourceKindViewModel.Profiles.Values)
+            foreach (var k in TranscriptionViewModel.StepKeys(profile)) used.Add($"Transcribe_Step_{k}");
 
         Assert.True(used.Count > 100, $"only {used.Count} keys found; the scan is broken");
         var missing = used.Where(k => !keys.Contains(k)).Order().ToList();
@@ -87,11 +91,11 @@ public partial class LocalizationTests
     private static List<int> Placeholders(string s) =>
         PlaceholderRegex().Matches(s).Select(m => int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)).Distinct().Order().ToList();
 
-    [GeneratedRegex("x:Uid=\"([A-Za-z]+)\"")]
+    [GeneratedRegex("x:Uid=\"([A-Za-z0-9]+)\"")]
     private static partial Regex UidRegex();
 
     // Resource keys in code: "Prefix_Name" string literals with a known prefix.
-    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Key|Shortcuts?)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
+    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Key|Shortcuts?|Review|Library|Error|Back|Title|FinishLater)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
     private static partial Regex CodeKeyRegex();
 
     [GeneratedRegex(@"\{(\d+)[^}]*\}")]

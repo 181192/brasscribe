@@ -90,10 +90,10 @@ public static class ScoreGeometry
         return (beatBox with { W = 3, Y = barBox.Y, H = barBox.H }, barBox);
     }
 
-    /// <summary>Noteheads of uncertain notes with their level.</summary>
-    public static IReadOnlyList<(Box Head, Scores.Certainty Level)> UncertainHeads(Score score, BoundsLookup bounds, TalkingScoreDocument ts, IEnumerable<int> tracks)
+    /// <summary>Noteheads of uncertain notes with their level and the top of their staff.</summary>
+    public static IReadOnlyList<UncertainHead> UncertainHeads(Score score, BoundsLookup bounds, TalkingScoreDocument ts, IEnumerable<int> tracks)
     {
-        var result = new List<(Box, Scores.Certainty)>();
+        var result = new List<UncertainHead>();
         foreach (int t in tracks)
         {
             if (t >= ts.Parts.Count) continue;
@@ -107,13 +107,29 @@ public static class ScoreGeometry
                     if (level == Scores.Certainty.Confident) continue;
                     var beat = BeatAt(score, t, b, ev.Tick);
                     if (beat is null || bounds.FindBeat(beat) is not { } bb) continue;
+                    double staffTop = bb.BarBounds?.VisualBounds is { } bar ? bar.Y : bb.VisualBounds.Y;
                     if (bb.Notes is { Count: > 0 } notes)
-                        foreach (var n in notes) result.Add((Box.From(n.NoteHeadBounds), level));
+                        foreach (var n in notes) result.Add(new UncertainHead(Box.From(n.NoteHeadBounds), level, staffTop));
                     else
-                        result.Add((Box.From(bb.VisualBounds), level));
+                        result.Add(new UncertainHead(Box.From(bb.VisualBounds), level, staffTop));
                 }
             }
         }
-        return result;
+        return ScoreOverlay.OnePerBeat(result);
+    }
+
+    /// <summary>
+    /// The ad lib regions of the score as overlay input: the bars of each free-time region, one box per
+    /// system line. The arranged score engraves the words itself.
+    /// </summary>
+    public static IReadOnlyList<AdlibRegion> AdlibRegions(BoundsLookup bounds, TalkingScoreDocument ts)
+    {
+        var regions = new List<AdlibRegion>();
+        foreach (var r in ts.FreeRegions)
+        {
+            var boxes = RangeBoxes(bounds, r.StartBar - 1, r.EndBar - 1);
+            if (boxes.Count > 0) regions.Add(new AdlibRegion(boxes));
+        }
+        return regions;
     }
 }

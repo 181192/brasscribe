@@ -329,6 +329,26 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         return bytes;
     }
 
+    public (int Beat, int Beats) BeatAt(PlaybackPosition position)
+    {
+        if (_score is null || _lookup is null || position.BarIndex < 0 || position.BarIndex >= _lookup.MasterBars.Count) return (1, 4);
+        var mb = _score.MasterBars[position.BarIndex];
+        int beats = Math.Max(1, (int)mb.TimeSignatureNumerator);
+        double beatTicks = 960 * 4 / Math.Max(1, mb.TimeSignatureDenominator);
+        double into = position.Tick - _lookup.MasterBars[position.BarIndex].Start;
+        return (Math.Clamp((int)(into / beatTicks) + 1, 1, beats), beats);
+    }
+
+    public double? TempoAt(int barIndex)
+    {
+        if (_score is null || _score.MasterBars.Count == 0) return null;
+        double? tempo = _score.Tempo > 0 ? _score.Tempo : null;
+        for (int i = 0; i <= Math.Min(barIndex, _score.MasterBars.Count - 1); i++)
+            foreach (var a in _score.MasterBars[i].TempoAutomations)
+                tempo = a.Value;
+        return tempo;
+    }
+
     /// <summary>Tick range of a bar, for highlighting and "listen to this bar".</summary>
     public (double Start, double End)? BarTicks(int barIndex) =>
         _lookup is null || barIndex < 0 || barIndex >= _lookup.MasterBars.Count

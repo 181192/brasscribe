@@ -53,4 +53,10 @@ public interface IScorePlayer : IDisposable
 
     /// <summary>Standard MIDI file of the score as played (for the MIDI export).</summary>
     byte[] ExportMidi();
+
+    /// <summary>The beat (1-based) at a position and the beats in its bar.</summary>
+    (int Beat, int Beats) BeatAt(PlaybackPosition position) => (1, 4);
+
+    /// <summary>The written tempo (quarter notes per minute) of a bar, when the score marks one.</summary>
+    double? TempoAt(int barIndex) => null;
 }

@@ -38,6 +38,28 @@ public sealed class ScoreRenderService
         set => Settings.Display.Scale = Math.Clamp(value, 0.5, 4.0);
     }
 
+    /// <summary>Glyph, staff and bar-line colours of a theme.</summary>
+    public ScoreRenderService WithTheme(Review.UncertaintyPalette palette)
+    {
+        ScoreStyler.ApplyTheme(Settings, palette);
+        return this;
+    }
+
+    /// <summary>No title, subtitle or credits above the music (the app shows its own page header).</summary>
+    public ScoreRenderService WithoutHeader()
+    {
+        ScoreStyler.HideHeader(Settings);
+        return this;
+    }
+
+    /// <summary>Renders only bars <paramref name="first"/> (1-based) to first + count - 1.</summary>
+    public ScoreRenderService WithBars(int first, int count)
+    {
+        Settings.Display.StartBar = Math.Max(1, first);
+        Settings.Display.BarCount = Math.Max(1, count);
+        return this;
+    }
+
     public RenderOutput Render(Score score, IReadOnlyList<int> trackIndexes, double width)
     {
         var renderer = new ScoreRenderer(Settings) { Width = width };
@@ -79,9 +101,10 @@ public sealed class ScoreRenderService
 }
 
 /// <summary>
-/// Paints uncertainty onto alphaTab's model before rendering: colour per level and, for very
-/// uncertain notes, a parenthesised (ghost) notehead, so the level survives greyscale printing.
-/// The ring beside uncertain noteheads is drawn by the view from the note bounds.
+/// Paints the notation in the theme's colours before rendering: glyphs in <c>ink</c>, staff and bar
+/// lines in <c>staff</c>, and uncertain notes (head, accidentals, stem and flag) in the colour of their
+/// level. The shape that carries the level (a "?" above the note, boxed below 0.4) is drawn over the
+/// notation from the note bounds (<see cref="ScoreOverlay"/>); noteheads keep their normal shape.
 /// </summary>
 public static class ScoreStyler
 {
@@ -90,6 +113,19 @@ public static class ScoreStyler
     /// <summary>Returns how many noteheads were styled.</summary>
     public static int ApplyUncertainty(Score score, TalkingScoreDocument ts, UncertaintyPalette palette)
     {
+        // The arranged MusicXML carries its own marks for print ("?" words above the note, note colours).
+        // On screen the overlay draws them, and a note the player kept loses its mark, so the file's
+        // versions are removed first.
+        foreach (var track in score.Tracks)
+            foreach (var staff in track.Staves)
+                foreach (var bar in staff.Bars)
+                    foreach (var voice in bar.Voices)
+                        foreach (var beat in voice.Beats)
+                        {
+                            if (beat.Text?.Trim() == "?") beat.Text = null!;
+                            beat.Style = null!;
+                            foreach (var note in beat.Notes) note.Style = null!;
+                        }
         int styled = 0;
         for (int t = 0; t < Math.Min(score.Tracks.Count, ts.Parts.Count); t++)
         {
@@ -109,18 +145,40 @@ public static class ScoreStyler
                     var beat = voice.Beats.FirstOrDefault(x => Math.Abs(x.PlaybackStart - tick) < 1);
                     if (beat is null) continue;
                     var rgb = level == Scores.Certainty.VeryUncertain ? palette.VeryUncertain : palette.Uncertain;
+                    beat.Style = new BeatStyle();
+                    beat.Style.Colors.Set(BeatSubElement.StandardNotationStem, ToColor(rgb));
+                    beat.Style.Colors.Set(BeatSubElement.StandardNotationFlags, ToColor(rgb));
                     foreach (var note in beat.Notes)
                     {
                         note.Style = new NoteStyle();
                         note.Style.Colors.Set(NoteSubElement.StandardNotationNoteHead, ToColor(rgb));
                         note.Style.Colors.Set(NoteSubElement.StandardNotationAccidentals, ToColor(rgb));
-                        if (level == Scores.Certainty.VeryUncertain) note.IsGhost = true;
                         styled++;
                     }
                 }
             }
         }
         return styled;
+    }
+
+    /// <summary>Hides the score's title block; the screen puts the title in the display face itself.</summary>
+    public static void HideHeader(Settings settings)
+    {
+        foreach (var e in new[] { NotationElement.ScoreTitle, NotationElement.ScoreSubTitle, NotationElement.ScoreArtist, NotationElement.ScoreAlbum,
+                     NotationElement.ScoreWords, NotationElement.ScoreMusic, NotationElement.ScoreWordsAndMusic, NotationElement.ScoreCopyright })
+            settings.Notation.Elements.Set(e, false);
+    }
+
+    /// <summary>Glyph, staff and bar-line colours of the theme, for a renderer's settings.</summary>
+    public static void ApplyTheme(Settings settings, UncertaintyPalette palette)
+    {
+        var r = settings.Display.Resources;
+        r.MainGlyphColor = ToColor(palette.Ink);
+        r.SecondaryGlyphColor = ToColor(palette.TextMuted);
+        r.StaffLineColor = ToColor(palette.Staff);
+        r.BarSeparatorColor = ToColor(palette.Staff);
+        r.BarNumberColor = ToColor(palette.TextMuted);
+        r.ScoreInfoColor = ToColor(palette.Ink);
     }
 
     private static Color ToColor(Rgb c) => new(c.R, c.G, c.B, 255);

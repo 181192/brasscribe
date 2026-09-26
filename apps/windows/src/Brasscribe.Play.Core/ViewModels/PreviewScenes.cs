@@ -1,0 +1,70 @@
+using Brasscribe.Play.Core.Playback;
+
+namespace Brasscribe.Play.Core.ViewModels;
+
+/// <summary>
+/// Puts the app on one screen with sample content, without a recording or Brasscribe on your
+/// computer: for screenshots of every screen (the CI workflow starts the app with --show NAME) and
+/// for looking at a screen while working on it. The score screens use a MusicXML score passed in.
+/// </summary>
+public static class PreviewScenes
+{
+    public static readonly string[] Names =
+        ["first-run", "home", "what-is-this", "transcribing", "review", "choose-output", "score", "part", "export", "error"];
+
+    /// <summary>Shows <paramref name="scene"/>. Returns false for an unknown name or a score scene without a score.</summary>
+    public static bool Show(MainViewModel main, string scene, string? scorePath)
+    {
+        var sample = new SourceAudio(Path.Combine(Path.GetTempPath(), "Mikkel.m4a"), "Mikkel.m4a", new TimeSpan(0, 4, 12), null, false);
+        if (scene != "first-run") main.Settings.FirstRunDone = true;
+        switch (scene)
+        {
+            case "first-run":
+                main.Screen = Screen.FirstRun;
+                return true;
+            case "home":
+                main.Screen = Screen.Start;
+                return true;
+            case "what-is-this":
+                main.Kind.Source = sample;
+                main.Kind.SetWhere(main.Settings.EngineUri);
+                main.Kind.Selected = main.Kind.Options.FirstOrDefault(o => o.Kind == SourceKind.OrchestraWithSoloist);
+                main.Screen = Screen.SourceKind;
+                return true;
+            case "transcribing":
+                main.Kind.SetWhere(main.Settings.EngineUri);
+                main.Transcription.ShowProgress("Mikkel", "orchestra-with-soloist",
+                    main.Kind.Options.First(o => o.Kind == SourceKind.OrchestraWithSoloist).Label, "Notes", 62, TimeSpan.FromMinutes(2));
+                main.Screen = Screen.Transcribing;
+                return true;
+            case "error":
+                main.Transcription.ShowProgress("Mikkel", "orchestra-with-soloist", "", "Ready", 0, null);
+                main.Error.Show(ErrorKind.ComputerUnreachable, "The engine at http://127.0.0.1:8765/ could not be reached.");
+                main.Screen = Screen.Error;
+                return true;
+        }
+        if (scorePath is null || !File.Exists(scorePath) || !Names.Contains(scene)) return false;
+        main.OpenScoreFile(scorePath);
+        switch (scene)
+        {
+            case "review":
+                main.CheckNotesCommand.Execute(null);
+                break;
+            case "choose-output":
+                main.Screen = Screen.ChooseOutput;
+                break;
+            case "part":
+                main.Score.SelectedPartIndex = 0;
+                break;
+            case "score" or "export":
+                if (main.Score.Player.BarCount >= 2)
+                {
+                    main.Score.Player.LoopStart = 2;
+                    main.Score.Player.LoopEnd = Math.Min(3, main.Score.Player.BarCount);
+                    main.Score.Player.SetLoopCommand.Execute(null);
+                }
+                break;
+        }
+        return true;
+    }
+}

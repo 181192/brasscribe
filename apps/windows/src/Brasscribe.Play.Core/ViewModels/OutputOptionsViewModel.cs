@@ -25,7 +25,39 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     [ObservableProperty] public partial Difficulty Difficulty { get; set; } = Difficulty.Faithful;
 
     /// <summary>Index into <see cref="Keys"/>.</summary>
-    [ObservableProperty] public partial int KeyIndex { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyLabel), nameof(KeyDetail))]
+    public partial int KeyIndex { get; set; }
+
+    /// <summary>"B♭ major", or "As recorded".</summary>
+    public string KeyLabel => s[Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } k ? $"Key_{k}" : "Key_AsRecorded"];
+
+    /// <summary>"As recorded · concert pitch" / "concert pitch".</summary>
+    public string KeyDetail => KeyIndex == 0 ? s["Output_KeyAsRecordedDetail"] : s["Output_KeyConcertDetail"];
+
+    [RelayCommand]
+    private void KeyDown() => KeyIndex = (KeyIndex + Keys.Length - 1) % Keys.Length;
+
+    [RelayCommand]
+    private void KeyUp() => KeyIndex = (KeyIndex + 1) % Keys.Length;
+
+    /// <summary>The options the shown score was arranged with; "Show the score" arranges only when these change.</summary>
+    public ArrangementOptions Applied { get; set; } = ArrangementOptions.Default;
+
+    /// <summary>Raised when the score can be shown as it is (nothing changed).</summary>
+    public event EventHandler? ShowScoreRequested;
+
+    /// <summary>"Show the score": arranges again only when a choice changed (WCAG 3.2.2), otherwise just shows it.</summary>
+    [RelayCommand]
+    private async Task ShowScore(Scores.Composition? composition)
+    {
+        if (Options == Applied)
+        {
+            ShowScoreRequested?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        await ApplyCommand.ExecuteAsync(composition);
+    }
 
     /// <summary>Set by the app when the score came from an engine job it can re-run.</summary>
     [ObservableProperty]
@@ -73,6 +105,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         {
             StatusText = s["Output_Rearranging"];
             announcer.Announce(StatusText);
+            Applied = Options;
             RearrangeRequested?.Invoke(this, Options);
             return;
         }
@@ -87,6 +120,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         {
             var xml = core.ArrangeMusicXml(composition, Lineup == Lineup.MinimalBand ? "minimal" : "layers");
             if (xml is null) return;
+            Applied = Options with { Difficulty = Applied.Difficulty, Key = Applied.Key };
             StatusText = s["Output_Ready"];
             announcer.Announce(StatusText, AnnouncementKind.Important);
             Arranged?.Invoke(this, xml);
@@ -118,6 +152,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
             var options = Options;
             var band = await Task.Run(() => core.ArrangeLayersBand(inputs, Title, options));
             if (band is null) return false;
+            Applied = options;
             StatusText = s["Output_Ready"];
             announcer.Announce(StatusText, AnnouncementKind.Important);
             ArrangedBand?.Invoke(this, band);

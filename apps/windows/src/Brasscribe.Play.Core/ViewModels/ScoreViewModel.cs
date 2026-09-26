@@ -161,9 +161,41 @@ public sealed partial class ScoreViewModel : ObservableObject
         RebuildTalkingLines();
     }
 
+    /// <summary>The original video is shown beside the score (View ▾ Show video).</summary>
+    [ObservableProperty] public partial bool ShowVideo { get; set; } = true;
+
+    /// <summary>"As written for B♭" for the chosen part's instrument, "As written" for all parts or a part in C.</summary>
+    public string WrittenLabel
+    {
+        get
+        {
+            if (Document is null || SelectedPartIndex < 0 || SelectedPartIndex >= Document.Parts.Count) return _s["Score_AsWritten"];
+            int pc = ((Document.Parts[SelectedPartIndex].Transpose.Chromatic % 12) + 12) % 12;
+            string? key = pc switch { 10 => "B♭", 3 => "E♭", 5 => "F", 9 => "A", 2 => "D", 7 => "G", _ => null };
+            return key is null ? _s["Score_AsWritten"] : _s.Format("Score_AsWrittenFor", key);
+        }
+    }
+
+    /// <summary>"SOLO CORNET IN B♭", the part view's page header.</summary>
+    public string PartHeader => Document is null || SelectedPartIndex < 0 || SelectedPartIndex >= Document.Parts.Count ? ""
+        : ((Language == "nb" ? Document.Parts[SelectedPartIndex].InstrumentNb : null) ?? Document.Parts[SelectedPartIndex].Instrument
+           ?? Document.Parts[SelectedPartIndex].Name).ToUpperInvariant();
+
+    /// <summary>The part view: one part chosen, laid out as a page, with the player's own part muted.</summary>
+    public bool IsPartView => SelectedPartIndex >= 0;
+
     partial void OnSelectedPartIndexChanged(int value)
     {
+        OnPropertyChanged(nameof(IsPartView));
+        OnPropertyChanged(nameof(WrittenLabel));
+        OnPropertyChanged(nameof(PartHeader));
         if (_nav is null || value < 0) return;
+        if (value < Player.Parts.Count)
+        {
+            if (Player.MuteMyPart) Player.MuteMyPart = false; // unmute the part that was yours
+            Player.PlayAlongPart = Player.Parts[value];
+            Player.MuteMyPart = true;
+        }
         _nav.GoToPart(value);
         var part = Document!.Parts[value];
         string name = Language == "nb" ? part.NameNb ?? part.Name : part.Name;
@@ -262,6 +294,24 @@ public sealed partial class ScoreViewModel : ObservableObject
         else _announcer.Announce(r.Text, AnnouncementKind.Important);
     }
 
+    /// <summary>Puts the talking-score cursor on one event, without announcing it (the review screen speaks for itself).</summary>
+    public void FocusEvent(int part, int barIndex, int eventIndex)
+    {
+        if (_nav is null) return;
+        var r = _nav.GoToEvent(part, barIndex, eventIndex);
+        if (r.Moved) Sync(r.Text, announce: false);
+    }
+
+    /// <summary>Marks the note under the cursor as checked without announcing (the caller does).</summary>
+    public int KeepCurrent()
+    {
+        if (_nav is null) return 0;
+        int left = _nav.MarkChecked();
+        UpdateUncertain();
+        Announcement = _nav.Text;
+        return left;
+    }
+
     [RelayCommand]
     private void MarkChecked()
     {
@@ -321,10 +371,13 @@ public sealed partial class ScoreViewModel : ObservableObject
         if (announce) _announcer.Announce(text);
     }
 
+    /// <summary>Recounts the notes still marked ? (after the review screen kept some).</summary>
+    public void RefreshUncertain() => UpdateUncertain();
+
     private void UpdateUncertain()
     {
         UncertainLeft = _nav?.UncertainCount ?? 0;
-        UncertainText = _s.Format("Score_UncertainLeft", UncertainLeft);
+        UncertainText = _s.Format(UncertainLeft == 1 ? "Score_UncertainLeftOne" : "Score_UncertainLeft", UncertainLeft);
     }
 
     private void RebuildTalkingLines()

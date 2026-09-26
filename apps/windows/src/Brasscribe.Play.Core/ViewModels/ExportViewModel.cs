@@ -9,78 +9,253 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Brasscribe.Play.Core.ViewModels;
 
-public sealed record ExportChoice(ExportFormat Format, string Label, bool Available, string? Reason, bool NeedsPart);
+/// <summary>What to share or print: the conductor's score, one PDF per player, or the player's own part.</summary>
+public enum ExportScope { MyPart, EveryPart, Conductor }
 
-/// <summary>Export dialog: pick a format (and a part where it applies), then a save location.</summary>
-public sealed partial class ExportViewModel(ExportService exports, IFileDialogs dialogs, IAnnouncer announcer, IStrings s) : ObservableObject
+/// <summary>A format row: name, what it is for, whether it can be made now.</summary>
+public sealed partial class ExportChoice : ObservableObject
+{
+    public ExportChoice(string key, string label, string description, bool available, string? reason)
+    {
+        Key = key;
+        Label = label;
+        Description = description;
+        Available = available;
+        Reason = reason;
+    }
+
+    /// <summary>Pdf, MusicXml, Audio, Midi, TalkingScore or Braille.</summary>
+    public string Key { get; }
+    public string Label { get; }
+    public string Description { get; }
+    public bool Available { get; }
+    public string? Reason { get; }
+    public string Detail => Available ? Description : Reason ?? Description;
+
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+}
+
+/// <summary>
+/// "Share or print" (design/reviews/usability-review.md P1-5): it starts with the player's own part
+/// as a PDF, the thing most players want. Scope and formats are chosen with labelled toggles; the
+/// primary action prints the PDF, and "Save" writes every chosen file (to a folder when there are
+/// several). Uncertain notes keep their "?" marks in every file.
+/// </summary>
+public sealed partial class ExportViewModel(ExportService exports, IFileDialogs dialogs, IAnnouncer announcer, IStrings s, IPrinter? printer = null)
+    : ObservableObject
 {
     private ExportSources? _sources;
     private TalkingScoreSettings _settings = new();
+    private int _myPart;
+    private int _partCount;
 
     public ObservableCollection<ExportChoice> Formats { get; } = [];
     public ObservableCollection<ScorePartItem> Parts { get; } = [];
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
-    public partial ExportChoice? SelectedFormat { get; set; }
+    [NotifyPropertyChangedFor(nameof(Summary), nameof(SaveLabel), nameof(FileCount))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(PrintCommand))]
+    public partial ExportScope Scope { get; set; } = ExportScope.MyPart;
 
-    [ObservableProperty] public partial ScorePartItem? SelectedPart { get; set; }
+    /// <summary>"Solo Cornet (you)".</summary>
+    [ObservableProperty] public partial string MyPartLabel { get; set; } = "";
     [ObservableProperty] public partial string? StatusText { get; set; }
-    [ObservableProperty] public partial bool IsExporting { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(PrintCommand))]
+    public partial bool IsExporting { get; set; }
+
+    public int FileCount => Formats.Where(f => f.IsSelected && f.Available).Sum(f => FilesFor(f.Key));
+    public string SaveLabel => FileCount <= 1 ? s["Export_SaveOne"] : s.Format("Export_SaveMany", FileCount);
+    public string Summary => s.Format(FileCount == 1 ? "Export_SummaryOne" : "Export_SummaryMany", FileCount);
+    public bool CanPrintNow => printer is { CanPrint: true } && Formats.Any(f => f.Key == "Pdf" && f.Available);
 
     public void Prepare(ScoreViewModel score, AlphaTabScorePlayer? player, IEngineClient? engine, string? jobId, IReadOnlyCollection<string>? outputs)
     {
         _sources = new ExportSources(score.MusicXml, score.Document, player, engine, jobId, outputs);
         _settings = new TalkingScoreSettings(score.Language, score.ConcertPitch ? PitchMode.Concert : PitchMode.Written);
-        Formats.Clear();
-        foreach (var o in exports.Options(_sources))
-        {
-            bool needsPart = o.Format is ExportFormat.MusicXmlPart or ExportFormat.Braille;
-            Formats.Add(new ExportChoice(o.Format, s[$"Export_Format_{o.Format}"], o.Available,
-                o.UnavailableReasonKey is null ? null : s[o.UnavailableReasonKey], needsPart));
-        }
         Parts.Clear();
         foreach (var p in score.Parts) Parts.Add(p);
-        SelectedPart = score.SelectedPartIndex >= 0 && score.SelectedPartIndex < Parts.Count ? Parts[score.SelectedPartIndex] : Parts.FirstOrDefault();
-        SelectedFormat = Formats.FirstOrDefault(f => f.Available);
+        _partCount = Parts.Count;
+        _myPart = score.SelectedPartIndex >= 0 ? score.SelectedPartIndex
+            : score.Player.PlayAlongPart is { } mine ? Math.Max(0, Parts.ToList().FindIndex(p => p.Name == mine.Name)) : 0;
+        MyPartLabel = Parts.Count > 0 ? s.Format("Export_Scope_MyPart", Parts[Math.Clamp(_myPart, 0, Parts.Count - 1)].Name) : s["Export_Scope_Conductor"];
+
+        var options = exports.Options(_sources).ToDictionary(o => o.Format);
+        Formats.Clear();
+        void Add(string key, params ExportFormat[] formats)
+        {
+            var available = formats.Select(f => options[f]).FirstOrDefault(o => o.Available);
+            var any = options[formats[0]];
+            var choice = new ExportChoice(key, s[$"Export_{key}"], s[$"Export_{key}_For"], available is not null,
+                available is null && any.UnavailableReasonKey is { } r ? s[r] : null);
+            choice.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(ExportChoice.IsSelected)) return;
+                OnPropertyChanged(nameof(FileCount));
+                OnPropertyChanged(nameof(SaveLabel));
+                OnPropertyChanged(nameof(Summary));
+                SaveCommand.NotifyCanExecuteChanged();
+            };
+            Formats.Add(choice);
+        }
+        Add("Pdf", ExportFormat.Pdf, ExportFormat.PdfPart);
+        Add("MusicXml", ExportFormat.MusicXmlScore, ExportFormat.MusicXmlPart);
+        Add("Audio", ExportFormat.Audio);
+        Add("Midi", ExportFormat.Midi);
+        Add("TalkingScore", ExportFormat.TalkingScoreHtml);
+        Add("Braille", ExportFormat.Braille);
+        // Your own part as a PDF, or as MusicXML when no PDF can be made here.
+        var first = Formats.FirstOrDefault(f => f.Key == "Pdf" && f.Available) ?? Formats.FirstOrDefault(f => f.Key == "MusicXml" && f.Available);
+        if (first is not null) first.IsSelected = true;
+        Scope = ExportScope.MyPart;
         StatusText = null;
+        OnPropertyChanged(nameof(CanPrintNow));
+        OnPropertyChanged(nameof(FileCount));
+        OnPropertyChanged(nameof(SaveLabel));
+        OnPropertyChanged(nameof(Summary));
     }
 
-    private bool CanExport() => SelectedFormat is { Available: true } && !IsExporting;
+    /// <summary>The files a format makes for the scope (audio and MIDI are always one file).</summary>
+    private int FilesFor(string key) => key is "Audio" or "Midi" ? 1 : Scope == ExportScope.EveryPart ? Math.Max(1, _partCount) : 1;
 
-    [RelayCommand(CanExecute = nameof(CanExport))]
-    private async Task ExportAsync()
+    /// <summary>What to write: format, part (null = whole score) and file name.</summary>
+    internal IReadOnlyList<(ExportFormat Format, int? Part, string FileName)> Plan()
     {
-        if (_sources is null || SelectedFormat is null) return;
-        var option = exports.Options(_sources).Single(o => o.Format == SelectedFormat.Format);
-        string partName = SelectedPart?.Name ?? "";
-        string baseName = Sanitize(_sources.TalkingScore?.Title ?? "score");
-        if (SelectedFormat.NeedsPart && partName.Length > 0) baseName += " - " + Sanitize(partName);
+        if (_sources is null) return [];
+        var options = exports.Options(_sources).ToDictionary(o => o.Format);
+        string title = Sanitize(_sources.TalkingScore?.Title ?? "score");
+        var parts = Scope switch
+        {
+            ExportScope.EveryPart => Enumerable.Range(0, _partCount).Select(i => (int?)i).ToList(),
+            ExportScope.MyPart when _partCount > 0 => [_myPart],
+            _ => new List<int?> { null },
+        };
+        var plan = new List<(ExportFormat, int?, string)>();
+        foreach (var f in Formats.Where(f => f.IsSelected && f.Available))
+        {
+            switch (f.Key)
+            {
+                case "Audio": plan.Add((ExportFormat.Audio, null, $"{title}.mp3")); break;
+                case "Midi": plan.Add((ExportFormat.Midi, null, $"{title}.mid")); break;
+                default:
+                    foreach (var part in parts)
+                    {
+                        var format = (f.Key, part) switch
+                        {
+                            ("Pdf", null) => ExportFormat.Pdf,
+                            ("Pdf", _) when options[ExportFormat.PdfPart].Available => ExportFormat.PdfPart,
+                            ("Pdf", _) => ExportFormat.Pdf,
+                            ("MusicXml", null) => ExportFormat.MusicXmlScore,
+                            ("MusicXml", _) => ExportFormat.MusicXmlPart,
+                            ("TalkingScore", _) => ExportFormat.TalkingScoreHtml,
+                            _ => ExportFormat.Braille,
+                        };
+                        string name = part is { } i && i < Parts.Count ? $"{title} - {Sanitize(Parts[i].Name)}" : title;
+                        plan.Add((format, part, name + options[format].Extension));
+                    }
+                    break;
+            }
+        }
+        return plan;
+    }
 
-        var target = await dialogs.PickSaveAsync(baseName + option.Extension, option.Extension, SelectedFormat.Label);
-        if (target is null) return;
+    private bool CanSave() => FileCount > 0 && !IsExporting;
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private async Task SaveAsync()
+    {
+        if (_sources is null) return;
+        var plan = Plan();
+        if (plan.Count == 0) return;
         IsExporting = true;
         try
         {
-            await using (target.Stream)
-                await exports.ExportAsync(SelectedFormat.Format, _sources, target.Stream,
-                    SelectedFormat.NeedsPart || SelectedFormat.Format is ExportFormat.TalkingScoreHtml or ExportFormat.TalkingScoreText
-                        ? SelectedPart?.Index : null,
-                    _settings);
-            StatusText = s.Format("Export_Done", SelectedFormat.Label, target.DisplayName);
-            announcer.Announce(StatusText, AnnouncementKind.Important);
+            if (plan.Count == 1)
+            {
+                var (format, part, fileName) = plan[0];
+                var option = exports.Options(_sources).Single(o => o.Format == format);
+                var target = await dialogs.PickSaveAsync(fileName, option.Extension, s[$"Export_{KeyOf(format)}"]);
+                if (target is null) return;
+                await using (target.Stream)
+                    await exports.ExportAsync(format, _sources, target.Stream, part, _settings);
+                Done(s.Format("Export_Done", target.DisplayName));
+                return;
+            }
+            var folder = await dialogs.PickFolderAsync();
+            if (folder is null) return;
+            foreach (var (format, part, fileName) in plan)
+            {
+                await using var stream = File.Create(Path.Combine(folder, fileName));
+                await exports.ExportAsync(format, _sources, stream, part, _settings);
+            }
+            Done(s.Format("Export_DoneMany", plan.Count, folder));
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            StatusText = s.Format("Export_Failed", e.Message);
-            announcer.Announce(StatusText, AnnouncementKind.Important);
+            Done(s.Format("Export_Failed", e.Message));
         }
         finally
         {
             IsExporting = false;
-            ExportCommand.NotifyCanExecuteChanged();
         }
     }
+
+    private bool CanPrint() => CanPrintNow && !IsExporting;
+
+    /// <summary>Prints the PDF of the chosen scope (every part: each part's PDF).</summary>
+    [RelayCommand(CanExecute = nameof(CanPrint))]
+    private async Task PrintAsync()
+    {
+        if (_sources is null || printer is null) return;
+        IsExporting = true;
+        try
+        {
+            var pdf = Formats.First(f => f.Key == "Pdf");
+            bool wasSelected = pdf.IsSelected;
+            var only = Formats.Where(f => f.IsSelected).ToList();
+            foreach (var f in only) f.IsSelected = false;
+            pdf.IsSelected = true;
+            var plan = Plan();
+            foreach (var f in only) f.IsSelected = true;
+            pdf.IsSelected = wasSelected;
+
+            string dir = Path.Combine(Path.GetTempPath(), "Brasscribe", "print");
+            Directory.CreateDirectory(dir);
+            foreach (var (format, part, fileName) in plan)
+            {
+                string path = Path.Combine(dir, fileName);
+                await using (var stream = File.Create(path))
+                    await exports.ExportAsync(format, _sources, stream, part, _settings);
+                await printer.PrintAsync(path);
+            }
+            Done(s["Export_Printing"]);
+        }
+        catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            Done(s.Format("Export_Failed", e.Message));
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    private void Done(string text)
+    {
+        StatusText = text;
+        announcer.Announce(text, AnnouncementKind.Important);
+    }
+
+    private static string KeyOf(ExportFormat f) => f switch
+    {
+        ExportFormat.Pdf or ExportFormat.PdfPart => "Pdf",
+        ExportFormat.MusicXmlScore or ExportFormat.MusicXmlPart => "MusicXml",
+        ExportFormat.Audio => "Audio",
+        ExportFormat.Midi => "Midi",
+        ExportFormat.Braille => "Braille",
+        _ => "TalkingScore",
+    };
 
     private static string Sanitize(string name)
     {

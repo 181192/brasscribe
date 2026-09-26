@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Brasscribe.Play.Views.ChooseOutputPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    NavigationCacheMode="Required">
+
+    <!-- "How should the score be?": three questions, and nothing is arranged again until Show the score. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="900" Padding="40,36,40,32" Spacing="12" HorizontalAlignment="Center">
+            <TextBlock x:Uid="OutputOverline" Style="{StaticResource OverlineStyle}" />
+            <TextBlock x:Name="Heading" x:Uid="OutputHeading" Style="{StaticResource ScreenHeadingStyle}"
+                       AutomationProperties.HeadingLevel="Level1" IsTabStop="True" />
+            <TextBlock x:Uid="OutputIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,24" />
+
+            <Grid ColumnSpacing="32" RowSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Which band? -->
+                <StackPanel Spacing="12">
+                    <TextBlock x:Uid="OutputBandHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+                    <RadioButtons x:Name="LineupChoices" x:Uid="LineupChoices" SelectionChanged="OnLineupChanged">
+                        <RadioButton x:Name="FullBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"
+                                     x:Uid="LineupFullChoice">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="LineupFullTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
+                                <TextBlock x:Uid="LineupFullBody" Style="{StaticResource MutedStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="SmallBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12"
+                                     x:Uid="LineupSmallChoice">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="LineupSmallTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
+                                <TextBlock x:Uid="LineupSmallBody" Style="{StaticResource MutedStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+                    </RadioButtons>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Spacing="12">
+                    <!-- How hard? Three segments: As played / A bit easier / Easier. -->
+                    <TextBlock x:Uid="OutputHardHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+                    <Border Style="{StaticResource SegmentGroupStyle}" HorizontalAlignment="Stretch">
+                        <Grid ColumnSpacing="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <RadioButton x:Name="EasierChoice" x:Uid="DifficultyEasier" Grid.Column="0" GroupName="Difficulty" Style="{StaticResource SegmentRadioStyle}"
+                                         Checked="OnDifficultyChecked" Tag="2" IsEnabled="{x:Bind ViewModel.DifficultyAvailable, Mode=OneWay}" />
+                            <RadioButton x:Name="StandardChoice" x:Uid="DifficultyStandard" Grid.Column="1" GroupName="Difficulty" Style="{StaticResource SegmentRadioStyle}"
+                                         Checked="OnDifficultyChecked" Tag="1" IsEnabled="{x:Bind ViewModel.DifficultyAvailable, Mode=OneWay}" />
+                            <RadioButton x:Name="FaithfulChoice" x:Uid="DifficultyFaithful" Grid.Column="2" GroupName="Difficulty" Style="{StaticResource SegmentRadioStyle}"
+                                         Checked="OnDifficultyChecked" Tag="0" IsEnabled="{x:Bind ViewModel.DifficultyAvailable, Mode=OneWay}" />
+                        </Grid>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                        <TextBlock x:Uid="OutputHardTip" Style="{StaticResource MutedStyle}" MaxWidth="360" />
+                    </StackPanel>
+
+                    <!-- Key: − and + around the key's name. -->
+                    <TextBlock x:Uid="OutputKeyHeading" Style="{StaticResource HeadlineStyle}" Margin="0,12,0,0" AutomationProperties.HeadingLevel="Level2" />
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Uid="KeyDownButton" Style="{StaticResource SecondaryButtonStyle}" Width="52" Padding="0"
+                                Command="{x:Bind ViewModel.KeyDownCommand}" IsEnabled="{x:Bind ViewModel.KeyAvailable, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE738;" FontSize="14" />
+                        </Button>
+                        <Border Grid.Column="1" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1" CornerRadius="{StaticResource BcRadiusMd}"
+                                Padding="14,8" Background="{ThemeResource BcSurfaceRaisedBrush}" AutomationProperties.LiveSetting="Polite"
+                                AutomationProperties.Name="{x:Bind ViewModel.KeyLabel, Mode=OneWay}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource LabelStyle}" FontSize="16" Text="{x:Bind ViewModel.KeyLabel, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.KeyDetail, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+                        <Button x:Uid="KeyUpButton" Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}" Width="52" Padding="0"
+                                Command="{x:Bind ViewModel.KeyUpCommand}" IsEnabled="{x:Bind ViewModel.KeyAvailable, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE710;" FontSize="14" />
+                        </Button>
+                    </Grid>
+                    <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.UnavailableText, Mode=OneWay}"
+                               Visibility="{x:Bind vm:Screens.HasText(ViewModel.UnavailableText), Mode=OneWay}" />
+                </StackPanel>
+            </Grid>
+
+            <Grid ColumnSpacing="12" Margin="0,32,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource MutedStyle}" VerticalAlignment="Center" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+                <Button x:Uid="OutputBackButton" Grid.Column="1" Style="{StaticResource PlainButtonStyle}" Click="OnBack" />
+                <Button x:Name="ShowScoreButton" x:Uid="ShowScoreButton" Grid.Column="2" Style="{StaticResource PrimaryButtonStyle}" Click="OnShowScore" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

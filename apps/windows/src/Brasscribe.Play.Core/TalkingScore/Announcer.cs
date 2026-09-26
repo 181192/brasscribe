@@ -189,6 +189,23 @@ public static class Announcer
     }
 
     /// <summary>Display names for transcription sources; unknown names pass through.</summary>
+    /// <summary>A note as the review screen shows it: "G, half note", "F♯, quarter note" · "Fiss, fjerdedelsnote".</summary>
+    public static string NoteLabel(TsEvent ev, TalkingScoreSettings s)
+    {
+        var pitch = s.PitchMode == PitchMode.Concert ? ev.Concert ?? ev.Written : ev.Written ?? ev.Concert;
+        if (ev.Kind == EventKind.Chord && ev.Pitches is { Count: > 0 } chord)
+            pitch = s.PitchMode == PitchMode.Concert ? chord[^1].Concert : chord[^1].Written;
+        string name = pitch is null ? "" : PitchLabel(pitch, s.Nb);
+        string type = ev.Type is { } t ? (s.Nb ? NbLexicon.TypeName(t, false) : EnLexicon.TypeName(t, false)) : "";
+        if (ev.Dots > 0 && type.Length > 0) type = (s.Nb ? "punktert " : "dotted ") + type;
+        return name.Length == 0 ? type : type.Length == 0 ? name : $"{name}, {type}";
+    }
+
+    /// <summary>A pitch name without its octave: "F♯", "B♭" · Norwegian "Fiss", "B".</summary>
+    public static string PitchLabel(TsPitch p, bool nb) => nb
+        ? NbLexicon.Name(p.Step, p.Alter)
+        : p.Step + p.Alter switch { 2 => "𝄪", 1 => "♯", -1 => "♭", -2 => "𝄫", _ => "" };
+
     public static string SourceName(string source) => source.ToLowerInvariant() switch
     {
         "swiftf0" or "swift-f0" => "SwiftF0",
@@ -347,7 +364,7 @@ internal sealed class EnLexicon : Lexicon
         return $"{p.Step}{acc} {p.Octave}";
     }
 
-    private static string TypeName(string type, bool brief) => type switch
+    internal static string TypeName(string type, bool brief) => type switch
     {
         "breve" => brief ? "double whole" : "double whole note",
         "whole" => brief ? "whole" : "whole note",
@@ -496,7 +513,7 @@ internal sealed class NbLexicon : Lexicon
         return $"{name} {p.Octave}";
     }
 
-    private static string TypeName(string type, bool brief) => type switch
+    internal static string TypeName(string type, bool brief) => type switch
     {
         "breve" => "brevis",
         "whole" => brief ? "hel" : "helnote",
