@@ -80,7 +80,13 @@ pub(crate) fn arrange_impl(composition_json: &str, arranger: &str) -> Result<Str
         "auto" | "" => comp.voices.iter().any(|v| v.layer.is_some()),
         other => return Err(invalid(format!("unknown arranger {other}"))),
     };
-    let arr = if layered { arrange_layers(&comp) } else { arrange(&comp) };
+    let arr = if layered && comp.arrangement.is_some() {
+        pipeline::arrange_composition(&comp).map_err(invalid)?
+    } else if layered {
+        arrange_layers(&comp)
+    } else {
+        arrange(&comp)
+    };
     Ok(write_score(&band_score(&arr, &comp)))
 }
 
@@ -144,11 +150,30 @@ pub struct LayersSongOptions {
     pub beat_cleanup: bool,
     /// Allow key changes (otherwise one key for the whole piece).
     pub key_changes: bool,
+    /// "band" (the 18-part contest band) or "minimal" (8 parts).
+    pub lineup: String,
+    /// "faithful", "standard" or "easier".
+    pub difficulty: String,
+    /// Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+    pub key: Option<String>,
+    /// Transpose the whole arrangement by this many semitones (instead of `key`).
+    pub transpose: Option<i32>,
 }
 
 impl Default for LayersSongOptions {
     fn default() -> Self {
-        LayersSongOptions { solo_contour: None, free_time: true, free_tempo: None, gate: true, beat_cleanup: true, key_changes: true }
+        LayersSongOptions {
+            solo_contour: None,
+            free_time: true,
+            free_tempo: None,
+            gate: true,
+            beat_cleanup: true,
+            key_changes: true,
+            lineup: "band".into(),
+            difficulty: "faithful".into(),
+            key: None,
+            transpose: None,
+        }
     }
 }
 
@@ -194,6 +219,10 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
         no_gate: !o.gate,
         no_beat_cleanup: !o.beat_cleanup,
         single_key: !o.key_changes,
+        lineup: o.lineup,
+        difficulty: o.difficulty,
+        key: o.key,
+        transpose: o.transpose,
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {

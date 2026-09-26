@@ -93,9 +93,12 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// `options_json` may be null (defaults) or
 /// `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
 ///   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
-///   "key_changes": true}`: the SwiftF0 contour of the solo stem (where
+///   "key_changes": true, "lineup": "band" | "minimal",
+///   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
+///   "transpose": null}`: the SwiftF0 contour of the solo stem (where
 /// sustained notes end), free-time detection on/off, a fixed BPM for free-time
-/// passages, the energy gate, beat cleanup and key changes. Without stems the
+/// passages, the energy gate, beat cleanup, key changes, the lineup, the
+/// difficulty and a transposition (to a concert key or by semitones). Without stems the
 /// gate, dynamics and rehearsal marks have nothing to read; see
 /// [`bc_arrange_layers_band`].
 #[no_mangle]
@@ -184,6 +187,10 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
         gate: flag("gate"),
         beat_cleanup: flag("beat_cleanup"),
         key_changes: flag("key_changes"),
+        lineup: opts.get("lineup").and_then(|v| v.as_str()).unwrap_or("band").to_string(),
+        difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
+        key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
+        transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
     }
 }
 

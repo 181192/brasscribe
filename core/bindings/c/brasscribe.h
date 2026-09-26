@@ -46,9 +46,12 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 // `options_json` may be null (defaults) or
 // `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
 //   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
-//   "key_changes": true}`: the SwiftF0 contour of the solo stem (where
+//   "key_changes": true, "lineup": "band" | "minimal",
+//   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
+//   "transpose": null}`: the SwiftF0 contour of the solo stem (where
 // sustained notes end), free-time detection on/off, a fixed BPM for free-time
-// passages, the energy gate, beat cleanup and key changes. Without stems the
+// passages, the energy gate, beat cleanup, key changes, the lineup, the
+// difficulty and a transposition (to a concert key or by semitones). Without stems the
 // gate, dynamics and rehearsal marks have nothing to read; see
 // [`bc_arrange_layers_band`].
 int32_t bc_arrange_layers_song(const uint8_t *const *midi,

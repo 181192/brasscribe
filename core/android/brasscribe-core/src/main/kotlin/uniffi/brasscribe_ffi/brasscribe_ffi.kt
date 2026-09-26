@@ -2658,6 +2658,26 @@ data class LayersSongOptions (
      * Allow key changes (otherwise one key for the whole piece).
      */
     var `keyChanges`: kotlin.Boolean
+    , 
+    /**
+     * "band" (the 18-part contest band) or "minimal" (8 parts).
+     */
+    var `lineup`: kotlin.String
+    , 
+    /**
+     * "faithful", "standard" or "easier".
+     */
+    var `difficulty`: kotlin.String
+    , 
+    /**
+     * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+     */
+    var `key`: kotlin.String?
+    , 
+    /**
+     * Transpose the whole arrangement by this many semitones (instead of `key`).
+     */
+    var `transpose`: kotlin.Int?
     
 ){
     
@@ -2680,6 +2700,10 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalInt.read(buf),
         )
     }
 
@@ -2689,7 +2713,11 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalDouble.allocationSize(value.`freeTempo`) +
             FfiConverterBoolean.allocationSize(value.`gate`) +
             FfiConverterBoolean.allocationSize(value.`beatCleanup`) +
-            FfiConverterBoolean.allocationSize(value.`keyChanges`)
+            FfiConverterBoolean.allocationSize(value.`keyChanges`) +
+            FfiConverterString.allocationSize(value.`lineup`) +
+            FfiConverterString.allocationSize(value.`difficulty`) +
+            FfiConverterOptionalString.allocationSize(value.`key`) +
+            FfiConverterOptionalInt.allocationSize(value.`transpose`)
     )
 
     override fun write(value: LayersSongOptions, buf: ByteBuffer) {
@@ -2699,6 +2727,10 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterBoolean.write(value.`gate`, buf)
             FfiConverterBoolean.write(value.`beatCleanup`, buf)
             FfiConverterBoolean.write(value.`keyChanges`, buf)
+            FfiConverterString.write(value.`lineup`, buf)
+            FfiConverterString.write(value.`difficulty`, buf)
+            FfiConverterOptionalString.write(value.`key`, buf)
+            FfiConverterOptionalInt.write(value.`transpose`, buf)
     }
 }
 
@@ -3384,6 +3416,38 @@ public object FfiConverterTypeTalkingUnit: FfiConverterRustBuffer<TalkingUnit> {
 }
 
 
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalInt: FfiConverterRustBuffer<kotlin.Int?> {
+    override fun read(buf: ByteBuffer): kotlin.Int? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterInt.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Int?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterInt.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Int?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterInt.write(value, buf)
+        }
+    }
+}
 
 
 

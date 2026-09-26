@@ -1680,6 +1680,22 @@ public struct LayersSongOptions: Equatable, Hashable {
      * Allow key changes (otherwise one key for the whole piece).
      */
     public var keyChanges: Bool
+    /**
+     * "band" (the 18-part contest band) or "minimal" (8 parts).
+     */
+    public var lineup: String
+    /**
+     * "faithful", "standard" or "easier".
+     */
+    public var difficulty: String
+    /**
+     * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+     */
+    public var key: String?
+    /**
+     * Transpose the whole arrangement by this many semitones (instead of `key`).
+     */
+    public var transpose: Int32?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1701,13 +1717,29 @@ public struct LayersSongOptions: Equatable, Hashable {
          */beatCleanup: Bool, 
         /**
          * Allow key changes (otherwise one key for the whole piece).
-         */keyChanges: Bool) {
+         */keyChanges: Bool, 
+        /**
+         * "band" (the 18-part contest band) or "minimal" (8 parts).
+         */lineup: String, 
+        /**
+         * "faithful", "standard" or "easier".
+         */difficulty: String, 
+        /**
+         * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+         */key: String?, 
+        /**
+         * Transpose the whole arrangement by this many semitones (instead of `key`).
+         */transpose: Int32?) {
         self.soloContour = soloContour
         self.freeTime = freeTime
         self.freeTempo = freeTempo
         self.gate = gate
         self.beatCleanup = beatCleanup
         self.keyChanges = keyChanges
+        self.lineup = lineup
+        self.difficulty = difficulty
+        self.key = key
+        self.transpose = transpose
     }
 
     
@@ -1731,7 +1763,11 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
                 freeTempo: FfiConverterOptionDouble.read(from: &buf), 
                 gate: FfiConverterBool.read(from: &buf), 
                 beatCleanup: FfiConverterBool.read(from: &buf), 
-                keyChanges: FfiConverterBool.read(from: &buf)
+                keyChanges: FfiConverterBool.read(from: &buf), 
+                lineup: FfiConverterString.read(from: &buf), 
+                difficulty: FfiConverterString.read(from: &buf), 
+                key: FfiConverterOptionString.read(from: &buf), 
+                transpose: FfiConverterOptionInt32.read(from: &buf)
         )
     }
 
@@ -1742,6 +1778,10 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
         FfiConverterBool.write(value.gate, into: &buf)
         FfiConverterBool.write(value.beatCleanup, into: &buf)
         FfiConverterBool.write(value.keyChanges, into: &buf)
+        FfiConverterString.write(value.lineup, into: &buf)
+        FfiConverterString.write(value.difficulty, into: &buf)
+        FfiConverterOptionString.write(value.key, into: &buf)
+        FfiConverterOptionInt32.write(value.transpose, into: &buf)
     }
 }
 
@@ -2668,6 +2708,30 @@ public func FfiConverterTypeTalkingUnit_lower(_ value: TalkingUnit) -> RustBuffe
     return FfiConverterTypeTalkingUnit.lower(value)
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
+    typealias SwiftType = Int32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
