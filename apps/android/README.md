@@ -17,7 +17,9 @@ Some inputs come from outside git and are used only when present:
 
 | Input | From | Used for |
 |---|---|---|
-| `models/converted/swift-f0/swift-f0-window.onnx` | `models/convert` | Bundled in every build: offline solo transcription. Without it, "On this phone" is disabled |
+| `models/converted/{swift-f0/swift-f0-window.onnx, basic-pitch/nmp-b1.onnx, beat-this/beat-this-small0.onnx}` | `convert/` (all MIT) | Bundled in every build: the offline solo (SwiftF0 spine, Basic Pitch confirmation, Beat This! small beats). Without SwiftF0, "On this phone" is disabled; without the other two, notes stay unconfirmed and the grid is a steady tempo |
+| `core-bridge/src/main/jniLibs/` | `scripts/build-core.sh` (cargo-ndk, arm64-v8a + x86_64) | The Rust core. Without it `AppContainer.core` is the Kotlin fallback. The JVM tests of `core-bridge` load the host build (`cargo build --release -p brasscribe-ffi` in `core/`) and skip without it |
+| `third_party/onnxruntime/onnxruntime-android-reduced.aar` | `scripts/ort/build-reduced-ort.sh` | Reduced-operator ONNX Runtime 1.30.0 (only the kernels of the three models, `scripts/ort/ops.config`). Without it the full Maven build is used |
 | `data/golden/mikkel-arranged-band/` | the golden output | Debug builds only: the built-in sample engine ("Open the Mikkel sample"). JVM tests that need it skip themselves when it is missing |
 | `third_party/sfizz` | `scripts/fetch-sfizz.sh` (sfizz 1.2.3) | The realistic playback tier. Without it the native library builds a stub and the tier is shown as unavailable. You can also pass `-Pbrasscribe.sfizzDir=<checkout>` |
 
@@ -27,15 +29,17 @@ Some inputs come from outside git and are used only when present:
 |---|---|---|
 | `model` | Kotlin/JVM | Composition JSON model (tolerant of new fields), tick map (bars and recording seconds, including the golden file's negative `first_downbeat`), spelling and brass-band transpositions, `PartView`, a monophonic MusicXML writer, a solo quantizer with key and tempo estimates, and the talking-score announcer. `CoreBridge` is the seam for the Rust core |
 | `engine-client` | Kotlin/JVM | Ktor client for `engine/openapi.json` (pairing, upload, jobs, SSE progress, results), `ProgressTracker` for the time left, and `FixtureEngineApi` (the golden Mikkel output with timed stage events) |
-| `pitch` | Kotlin/JVM | SwiftF0 on ONNX Runtime (the `ai.onnxruntime` API: the Android build in the app, the desktop build in tests), a port of `segment_notes`, the resampler, `SoloTranscriber` |
+| `pitch` | Kotlin/JVM | SwiftF0, Basic Pitch and Beat This! small on ONNX Runtime (the `ai.onnxruntime` API: the Android build in the app, the desktop build in tests), with their host code ported (SwiftF0 windows and `segment_notes`; Basic Pitch windowing and note decoding; Beat This log-mel, chunking and minimal postprocessor), the resampler, and `SoloPipeline` |
+| `core-bridge` | Android library | `RustCoreBridge`: the UniFFI Kotlin bindings from `core/android` plus `libbrasscribe_ffi.so`, behind `CoreBridge` |
 | `audio` | Android library with NDK | Decoding audio and video with MediaExtractor/MediaCodec, WAV, microphone capture through Oboe/AAudio, AudioPlaybackCapture, sfizz playback through an Oboe output stream |
 | `app` | Android app | Compose UI, capture foreground service, alphaTab score, exports |
 
 ## Seams
 
-- **CoreBridge** (`model/.../CoreBridge.kt`). `KotlinCoreBridge` implements it for now: decode and encode, solo quantize, key, MusicXML for app-made parts, and talking-score announcements. Once the Rust core ships its UniFFI Kotlin bindings and jniLibs, add a `UniffiCoreBridge` behind the same interface and switch it in `AppContainer.core`. The talking-score vectors test (`TalkingScoreVectorsTest`) can then run against both.
+- **CoreBridge** (`model/.../CoreBridge.kt`). `RustCoreBridge` (core-bridge) is the default: ps13 spelling, the layered arranger for solo takes with lineup, difficulty, key and transposition, the announcer (all 25 talking-score vectors pass through it, EN and NB), the per-part talking score of arranged MusicXML, and humanization. `KotlinCoreBridge` is the fallback when the native library is missing; it has no arranger, per-part talking score or humanization.
 - **Engine client.** The client is hand-written. `openapi-generator` 7.25.0 (kotlin, jvm-ktor, kotlinx_serialization) produced code that does not compile for this spec: `additionalProperties: true` became `HashMap<String, Any>()()`, numbers became `@Contextual BigDecimal`, and the SSE stream was typed as a JSON body. `EngineContractTest` compares the client with the vendored `engine-client/openapi.json`: operationIds, every property, required fields and enums. Refresh the spec with `./gradlew :engine-client:syncOpenApi` once `engine/` is in the same checkout.
-- **On-device models.** SwiftF0 runs on ONNX Runtime Mobile. LiteRT is not used because no TFLite export exists. Other models (Basic Pitch, Beat This!) can be added with the same session code once `models/convert` has parity reports for them.
+- **On-device models.** SwiftF0, Basic Pitch and Beat This! small run on ONNX Runtime (one runtime for all three; Basic Pitch's TFLite would need LiteRT as a second runtime). Parity with upstream, JVM tests: SwiftF0 0.00 cents and 36/36 notes; Basic Pitch note F1 1.000 (synthetic and URMP March); Beat This beat/downbeat F1 1.000/1.000 on clicks and URMP, 1.000/0.986 on Mikkel 60–120 s.
+- **The offline solo** (`pitch/SoloPipeline.kt`) is the engine's rule through the layered arranger with only a solo layer: SwiftF0 is the spine, Basic Pitch fills both confirmation slots (MuScriptor's too), the SwiftF0 contour gives written durations, Beat This the beats. Each layer's MIDI is written at its adapter's resolution (SwiftF0 480, Basic Pitch 220 ticks per beat at 120 bpm), so onsets round like the reference. On the URMP Entertainer trumpet clip (`data/runs/apple/entertainer-ref`, minimal lineup) it matches the reference note for note: 77 notes, 33 bars, F1 1.000 on pitch, start and duration (`OnDeviceSoloTest`).
 
 ## Features and where they live
 
@@ -51,7 +55,7 @@ Some inputs come from outside git and are used only when present:
   - Listen to this bar: plays the original bar, then the score's bar, looped
   - Mark as checked
   - Next uncertain note
-- **Output**: lineup, difficulty and key. The engine API (0.1.0) has no lineup or difficulty parameters, so the other difficulty levels are shown disabled with the reason. The key shift transposes playback and notation in alphaTab.
+- **Output**: lineup (full, minimal, solo part), difficulty (faithful, standard, easier) and key. On-device results are re-arranged by the core; engine results become a new engine job with `lineup`, `difficulty` and `transpose` (the cache reuses every model stage; the MP3 render is skipped for re-arrangements). Without either, only the display choices remain and the key shift is applied in alphaTab.
 - **Score** uses alphaTab 1.8.4 (`net.alphatab:alphaTab`, MPL-2.0) with:
   - cursor
   - page layout
@@ -64,13 +68,15 @@ Some inputs come from outside git and are used only when present:
   - zoom from 50 to 400%
 
   Reduced motion (animator scale 0) turns off the animated cursor and scrolls by page. For screen readers, the notation view is one item. It announces the title, the part and "bar n of m", and has the custom actions Next/Previous bar, Next/Previous part and Play this bar. The Text tab is the talking score: one item per event, with Next/Previous bar, Read bar and Play this bar.
-- **Realistic sound**: alphaTab's note events drive sfizz while alphaTab's own instruments are muted. Its metronome and count-in stay on. Each part loads `sounds/<instrument>/<instrument>-sus.sfz` from the app's external files. Copy the folders that `sounds/build.py` writes, for example with `adb push data/sounds/built/cornet-a /sdcard/Android/data/no.brasscribe.play/files/sounds/`. Parts without an installed instrument play a test tone.
+- **Band SoundFont**: every part gets its own MIDI channel (drums on channel 10; alphaTab's own two-channels-per-track numbering wraps past 16 and shares presets), its preset at (bank, program) and its `channel_gain_db` from `sounds/mapping.json` (bundled as an asset), and the importer's per-beat instrument and bank changes are removed. The SoundFont itself is read from the app's `sounds/` folder. The full `brasscribe-band.sf2` runs alphaTab out of Java heap (its synth keeps every sample as floats: OutOfMemoryError at the 576 MB large heap with the 149 MB 16-bit file), so `scripts/mobile_soundfont.py` makes `brasscribe-band-mobile.sf2`: the same presets and kit, sustain only, first layer, 22.05 kHz, 58.6 MB. It loads in about 0.1 s.
+- **Realistic sound**: every pitched part plays an SFZ instrument through sfizz on its own channel with its band balance, humanized by the core (per player lag, timing and velocity, the soloist leading) and scheduled into the sfizz output sample-accurately (`score/HumanizedPlayer.kt`, 250 ms lookahead, following alphaTab's position and speed). Percussion stays on alphaTab's kit, as in the reference renderer. Each part loads `sounds/<instrument>/<instrument>-sus.sfz`; parts without one play a test tone.
+- **Installing sounds**: the app creates `Android/data/no.brasscribe.play/files/sounds/<instrument>/samples` on first start. Files copied in with adb land readable only inside folders the app created, so copy into those, for example `adb push data/sounds/built/cornet-a/. /sdcard/Android/data/no.brasscribe.play/files/sounds/cornet-a/` and the SoundFont into `sounds/`.
 - **Exports** go through the share sheet or "Save to Files":
   - MusicXML
   - PDF and MP3, from the engine
   - MIDI, generated by alphaTab from the loaded score
-  - talking-score text, as HTML with a heading per part and bar
-  - braille (BRF), listed but disabled, because the engine has no BRF output yet
+  - talking-score HTML from the core's talking score of the arranged score (every part)
+  - braille (BRF) from the engine (`getBraille`); the core does not write braille
 - **Languages**: English and bokmål (`values-nb`), with per-app language through the generated locale config. Lint fails on a missing translation.
 
 ## Accessibility tests
@@ -100,8 +106,7 @@ The TalkBack acceptance script (`qa/screen-reader-scripts/talkback-android.md`) 
 
 ## Known limits
 
-- **Spelling.** Chromatic notes are spelled by a key-based rule in Kotlin. In a sharp key the review shows A♯ where the golden MusicXML has B♭. The ps13 speller in the Rust core replaces this.
-- **Talking score on the full band.** In the Text tab it reads the transcribed layers (solo, bass and so on) from the Composition, not the 18 arranged parts. Per-part talking scores need the arrangement in the TalkingScore JSON (spec §6) from the core.
-- **Realistic tier timing.** Note events come from alphaTab's `midiEventsPlayed` and follow its synth buffer (500 ms by default). Timing against the cursor has not been measured.
-- **APK size.** ONNX Runtime's full Android build takes 33 MB of the 48.6 MB arm64 release APK. A reduced-operator ONNX Runtime build for SwiftF0 alone is the obvious cut. Its size is not measured.
+- **Realistic tier sync.** The humanized schedule follows alphaTab's position events and a wall clock. The offset between the sfizz output and the cursor has not been measured.
+- **alphaTab 1.8.4 on Android** has three more bugs worked around here: `api.loadSoundFont(ByteArray)` returns false for the same `when` reason as `load` (the app hands the bytes to `api.player` directly); registering on `api.midiLoaded` recurses forever in `AlphaSynthWebWorkerApi.loadedMidiInfo` (the app re-applies channel volumes on `postRenderFinished` instead); and it cannot hold the full band SoundFont (see above).
+- **Beat grid of solo takes.** On the URMP clips Beat This marks most beats as downbeats, so both the engine and the phone write 1/4 bars; the engine's `arrange_solo` path and the phone agree on the notes (onset+pitch F1 0.963 on URMP March) but not on bar positions.
 - **alphaTab's `api.load(bytes)`** returns false on Android: `AndroidUiFacade.load` uses `when (data) { (data is ByteArray) -> … }`, which compares values rather than checking the type. The app parses with `ScoreLoader.loadScoreFromBytes` and calls `renderScore` itself.

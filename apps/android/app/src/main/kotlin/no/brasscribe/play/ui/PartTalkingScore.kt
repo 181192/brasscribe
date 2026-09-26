@@ -41,7 +41,7 @@ private data class Row(val bar: Int, val barIndex: Int, val text: String, val he
 @Composable
 fun PartTalkingScore(vm: PlayViewModel, r: TranscriptionResult, part: Int, concert: Boolean, playBar: (Int) -> Unit) {
     val lang = currentLang()
-    val doc = remember(r.musicXml) { runCatching { vm.container.core.talkingScore(r.musicXml, r.compositionJson) }.getOrNull() } 
+    val doc = remember(r.musicXml) { runCatching { vm.container.core.talkingScore(r.musicXml, r.compositionJson ?: vm.container.core.encodeComposition(r.composition)) }.getOrNull() } 
     if (doc == null) { TalkingScoreList(vm, r); return }
     DisposableEffect(doc) { onDispose { doc.close() } }
     val bars = remember(doc, part, lang, concert) {

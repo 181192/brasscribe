@@ -31,6 +31,24 @@ class RealisticSynthTest {
     }
 
     @Test
+    fun scheduledNoteStartsOnItsFrame() {
+        assumeTrue("built without sfizz", RealisticSynth.available)
+        assertTrue(RealisticSynth.loadTestTone(2))
+        RealisticSynth.allOff()
+        RealisticSynth.renderOffline(512)
+        // 0.1 s ahead at the offline rate (48 kHz): silence first, the tone from about frame 4800.
+        RealisticSynth.noteAt(2, 72, 100, 0.1)
+        val out = RealisticSynth.renderOffline(9600)
+        val before = (0 until 4700).maxOf { abs(out[it * 2]) }
+        val after = (4900 until 9600).maxOf { abs(out[it * 2]) }
+        val first = (0 until 9600).first { abs(out[it * 2]) > 1e-4f }
+        android.util.Log.i("RealisticSynthTest", "scheduled note: first sample at frame %d, peak before %.5f, after %.4f".format(first, before, after))
+        assertTrue("silent before", before < 1e-4f)
+        assertTrue("sounding after", after > 0.01f)
+        RealisticSynth.allOff()
+    }
+
+    @Test
     fun cornetSoundPackRenders() {
         assumeTrue("built without sfizz", RealisticSynth.available)
         val path = InstrumentationRegistry.getArguments().getString("sfz")

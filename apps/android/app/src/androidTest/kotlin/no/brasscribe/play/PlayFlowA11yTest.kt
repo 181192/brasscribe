@@ -137,7 +137,7 @@ class PlayFlowA11yTest {
     }
 
     @Test
-    fun exportListsFormatsAndExplainsBraille() {
+    fun exportsEveryFormatIncludingBraille() {
         rule.onNodeWithText("Open the Mikkel sample").performClick()
         rule.onNodeWithText("Orchestra with soloist").performClick()
         rule.onNodeWithText("Continue").performClick()
@@ -149,11 +149,10 @@ class PlayFlowA11yTest {
         for (f in listOf("MusicXML, full score", "PDF", "MIDI", "Audio (MP3)", "Talking score (text)", "Braille music (BRF)")) {
             rule.onNode(isHeading() and hasText(f)).assertExists()
         }
-        rule.onNodeWithText("Needs braille export in the engine.", substring = true).assertExists()
 
         // Share builds each file (MusicXML, PDF, alphaTab MIDI, talking-score HTML), then opens the chooser.
         val exports = rule.activity.cacheDir.resolve("exports")
-        for ((i, ext) in listOf(0 to "musicxml", 1 to "pdf", 2 to "mid", 4 to "html")) {
+        for ((i, ext) in listOf(0 to "musicxml", 1 to "pdf", 2 to "mid", 4 to "html", 5 to "brf")) {
             rule.onAllNodesWithText("Share")[i].performClick()
             rule.waitUntil(15_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } }
             Thread.sleep(1500)
@@ -164,7 +163,12 @@ class PlayFlowA11yTest {
         val midi = exports.listFiles()!!.first { it.extension == "mid" }.readBytes()
         assertEquals("MThd", String(midi, 0, 4))
         val html = exports.listFiles()!!.first { it.extension == "html" }.readText()
-        assertTrue(html.contains("<h2>Solo Cornet</h2>") && html.contains("<h3>Bar 2</h3>") && html.contains(", uncertain</li>"))
+        // The core's talking score of the arranged score: every part, one line per event.
+        assertTrue(html.contains("Solo Cornet") && html.contains("Solo Horn") && html.contains("uncertain"))
+        val brf = exports.listFiles()!!.first { it.extension == "brf" }.readText()
+        // North American Braille ASCII with CRLF lines; the music lines fit 40 cells (the title may not).
+        val lines = brf.split("\r\n")
+        assertTrue("BRF", brf.length > 1000 && lines.size > 50 && lines.count { it.length <= 40 } >= lines.size * 9 / 10)
         rule.onNodeWithText("Exported", substring = true).assertExists()
     }
 }

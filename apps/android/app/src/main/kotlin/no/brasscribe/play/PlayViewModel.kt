@@ -316,7 +316,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
         val engine = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val core = opts.toCore()
-        val job = engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = container.settings.allowHeavy,
+        // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
+        val job = engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
             allowHeavy = container.settings.allowHeavy, title = r.composition.title, lineup = core.lineup,
             difficulty = core.difficulty, transpose = core.transpose))
         engine.events(job.id).collect { }
@@ -336,7 +337,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
         val audio = engine.uploadAudio(s.name, bytes)
         val created = engine.createJob(
-            JobCreate(audio.audioId, p.id, renderAudio = container.settings.allowHeavy, allowHeavy = container.settings.allowHeavy,
+            JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                 title = s.name.substringBeforeLast('.')),
         )
         engineJobId = created.id

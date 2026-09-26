@@ -54,7 +54,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
 
     /** Every part of the arranged score, from the core's talking score; null without the core. */
     private fun coreTalkingScore(r: TranscriptionResult, lang: Lang): String? =
-        runCatching { core.talkingScore(r.musicXml, r.compositionJson)?.use { it.toHtml(lang, null) } }.getOrNull()
+        runCatching { core.talkingScore(r.musicXml, r.compositionJson ?: core.encodeComposition(r.composition))?.use { it.toHtml(lang, null) } }.getOrNull()
 
     /** The talking-score text export: a heading per part and bar, one line per event (spec §6). */
     fun talkingScoreHtml(title: String, parts: List<PartView>, lang: Lang): String = buildString {
