@@ -177,16 +177,60 @@ function scoreTab(p: HTMLElement, ctx: Ctx): void {
   const score = h("bs-score", {}) as ScoreElement;
   const status = h("p", { class: "hint", role: "status" }, t("score.loading"));
   const warnings = h("section", { "aria-labelledby": "warn-h" }, h("h3", { id: "warn-h" }, t("warn.title")), loading());
-  clear(p, status, score, warnings);
+  const side = h("aside", { class: "card side", "aria-label": t("side.label") }, loading());
+  clear(p, status, h("div", { class: "insp" }, score, side), warnings);
+  void sidePanel(side, ctx);
   ctx.musicxml.then(async (xml) => {
     const t0 = performance.now();
     await score.load(xml, ctx.job.title ?? ctx.id);
     status.textContent = t("score.rendered", { bars: score.bars.length, parts: score.api?.score?.tracks.length ?? 0, ms: Math.round(performance.now() - t0) });
-    renderWarnings(warnings, ctx, parseMusicXml(xml), score);
+    const counts = await renderWarnings(warnings, ctx, parseMusicXml(xml), score);
+    side.dispatchEvent(new CustomEvent("warnings", { detail: counts }));
   }).catch((e) => clear(p, errorNotice(e)));
 }
 
-async function renderWarnings(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: ScoreElement): Promise<void> {
+/** Beside the score (design mockup studio-run): notes per transcription model and the checks. */
+async function sidePanel(el: HTMLElement, ctx: Ctx): Promise<void> {
+  const models = stageFiles(ctx, (s) => s.kind === "transcribe").filter(({ file }) => /\.midi?$/i.test(file.name));
+  const pattern: Record<string, string> = {
+    muscriptor: "background:var(--bc-model-1)",
+    "basic-pitch": "background:repeating-linear-gradient(45deg,var(--bc-model-2) 0 3px,transparent 3px 5px);box-shadow:inset 0 0 0 1px var(--bc-model-2)",
+    "swift-f0": "background:repeating-linear-gradient(90deg,var(--bc-model-3) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 0 1px var(--bc-model-3)",
+  };
+  const rows: (string | HTMLElement)[][] = [];
+  for (const { stage, file } of models) {
+    const model = stage.stage.split(".").slice(2).join(".");
+    const layer = stage.stage.split(".")[1] ?? "";
+    try {
+      const n = parseMidi(await fetchBytes(file.url)).notes.length;
+      rows.push([h("span", {}, h("span", { class: "sw", "aria-hidden": "true", style: pattern[model] ?? "background:var(--bc-model-4)" }), `${MODEL_STYLE[model]?.label ?? model}`),
+        layer, h("span", { class: "num" }, String(n))]);
+    } catch {
+      /* skip unreadable files */
+    }
+  }
+  const checks = h("div", {}, loading());
+  clear(el,
+    h("h3", {}, t("side.bySource")),
+    rows.length ? table(t("side.bySource"), [t("side.model"), t("side.layer"), t("side.notes")], rows, { hideCaption: true }) : h("p", { class: "hint" }, t("side.noModels")),
+    h("h3", {}, t("side.checks")),
+    checks);
+  const rt = await api.roundtrip(ctx.id).catch(() => null);
+  const fill = (c: { range: number; crossing: number } | null) => {
+    const row = (ok: boolean | null, label: string, text: string) => h("tr", {},
+      h("td", {}, ok === null ? h("span", { class: "muted" }, "–") : ok ? h("span", { class: "diff-added" }, icon("done")) : h("span", { class: "pill-warning" }, icon("error")), " ", label),
+      h("td", {}, text));
+    clear(checks, h("table", {}, h("tbody", {},
+      c ? row(c.range === 0, t("side.range"), t(c.range === 1 ? "side.rangeText1" : "side.rangeText", { n: c.range })) : null,
+      c ? row(c.crossing === 0, t("side.crossing"), t(c.crossing === 1 ? "side.crossingText1" : "side.crossingText", { n: c.crossing })) : null,
+      row(rt ? (rt.status === "not_run" ? null : rt.status === "pass") : null, "MuseScore",
+        !rt || rt.status === "not_run" ? t("side.rtNotRun") : rt.status === "pass" ? t("side.rtPass") : t("side.rtFail")))));
+  };
+  fill(null);
+  el.addEventListener("warnings", (e) => fill((e as CustomEvent<{ range: number; crossing: number }>).detail));
+}
+
+async function renderWarnings(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: ScoreElement): Promise<{ range: number; crossing: number }> {
   const engine = await api.validation(ctx.id).catch((e) => e as Error);
   const local = validateScore(xml);
   const rows = [
@@ -203,6 +247,7 @@ async function renderWarnings(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: S
       rows.slice(0, 300).map((r) => [go(r.bar), r.beat ? String(Math.round(r.beat * 100) / 100) : "–", r.part ?? "–", r.kind, pill(r.severity === "error" ? "error" : "warning"), r.message, r.source]),
       { hideCaption: true }),
     rows.length > 300 ? h("p", { class: "hint" }, t("warn.first", { n: 300, total: rows.length })) : null);
+  return { range: counts("range"), crossing: counts("crossing") };
 }
 
 function audioTab(p: HTMLElement, ctx: Ctx): void {

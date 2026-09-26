@@ -226,6 +226,11 @@ tr.selected td { background: var(--bc-selection-tint); }
 .mixer .part { display: flex; gap: var(--bc-space-2); align-items: center; justify-content: space-between; }
 /* The active part: bold with a leading bar, not only a highlight (visual-design-tokens.md §2). */
 .mixer .part.current .part-name { font-weight: 700; box-shadow: inset 3px 0 0 var(--bc-text); padding-left: 8px; }
+.insp { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--bc-space-4); align-items: start; }
+@media (min-width: 75rem) { .insp { grid-template-columns: minmax(0, 1fr) 22rem; } }
+.insp > .side { margin: 0; }
+.side h3:first-child { margin-top: 0; }
+.side .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
 .talk-now { font-weight: 600; min-height: 1.5em; }
 .talk-text { max-height: 24rem; overflow: auto; }
 .talk-text li.current { outline: 2px solid var(--bc-focus); outline-offset: 1px; }

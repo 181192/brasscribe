@@ -324,7 +324,6 @@ test("every view in light, dark, high contrast and Norwegian passes axe", async 
     await page.locator("#lang-select").selectOption(th.lang);
     for (const v of views) {
       await page.goto(`/#/${v.route}`);
-      await page.reload();
       if (v.open) {
         await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
       }
