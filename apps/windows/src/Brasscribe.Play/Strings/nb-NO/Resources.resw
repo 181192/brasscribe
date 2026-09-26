@@ -765,6 +765,36 @@
   <data name="PartPageNote.Text" xml:space="preserve">
     <value>Skrevet ned av Brasscribe. Sjekk tonene merket ? før øvelsen.</value>
   </data>
+  <data name="EditTitleItem.Text" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_EditTitle" xml:space="preserve">
+    <value>Endre partiturnavn</value>
+  </data>
+  <data name="Score_SaveTitle" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="Score_CancelTitle" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="PitchDownButton.Content" xml:space="preserve">
+    <value>Senk en halvtone</value>
+  </data>
+  <data name="PitchDownButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Senk tonen en halvtone</value>
+  </data>
+  <data name="PitchUpButton.Content" xml:space="preserve">
+    <value>Hev en halvtone</value>
+  </data>
+  <data name="PitchUpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hev tonen en halvtone</value>
+  </data>
+  <data name="PitchSaveNote.Text" xml:space="preserve">
+    <value>Endringer i toner lagres i partituret med én gang.</value>
+  </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Alle stemmer, eller én stemme som side (P)</value>
   </data>

@@ -101,6 +101,23 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         FocusScore();
     }
 
+    private async void OnEditTitle(object sender, RoutedEventArgs e)
+    {
+        if (Main is null) return;
+        var input = new TextBox { Text = ViewModel.Title, MaxLength = 160, Width = 360 };
+        var strings = App.Strings;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = strings["Score_EditTitle"],
+            Content = input,
+            PrimaryButtonText = strings["Score_SaveTitle"],
+            CloseButtonText = strings["Score_CancelTitle"],
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)

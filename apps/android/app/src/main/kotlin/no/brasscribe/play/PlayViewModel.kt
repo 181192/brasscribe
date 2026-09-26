@@ -26,11 +26,13 @@ import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.ProgressTracker
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
+import no.brasscribe.play.model.MusicXmlTitleEditor
 import no.brasscribe.play.model.PartSpec
 import no.brasscribe.play.model.TickMap
 import no.brasscribe.play.model.ArrangeOptions
 import no.brasscribe.play.model.SoloTake
 import no.brasscribe.play.model.TempoEstimator
+import no.brasscribe.play.model.VoiceRole
 import no.brasscribe.play.playback.ClipPlayer
 import java.io.File
 import java.util.zip.ZipInputStream
@@ -124,6 +126,9 @@ data class Status(val text: String, val serial: Long = System.nanoTime())
 class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val container = (app as PlayApplication).container
     private val res = app.resources
+    private val scoreLibrary = SavedScoreLibrary(File(app.filesDir, "scores"))
+    val savedScores = MutableStateFlow(scoreLibrary.list())
+    private var currentSavedScoreId: String? = null
 
     private val backStack = MutableStateFlow(listOf(if (container.firstRunDone) Screen.HOME else Screen.FIRST_RUN))
     val screen: StateFlow<List<Screen>> = backStack.asStateFlow()
@@ -237,7 +242,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 require(xml.contains("score-partwise") || xml.contains("score-timewise")) { "not MusicXML" }
                 setSource(Source(name, SourceKind.SCORE, 0.0))
-                result.value = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = true)
+                val opened = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = true)
+                result.value = opened
+                saveCurrentScore(opened, name.substringBeforeLast('.'))
                 say(R.string.opened_score, name)
                 navigate(Screen.SCORE)
             } catch (e: Exception) {
@@ -277,6 +284,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun setSource(s: Source) {
         source.value = s
+        currentSavedScoreId = null
         result.value = null
         checked.value = emptyMap()
         renderedScoreAudio = null
@@ -311,6 +319,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
                 result.value = r
+                saveCurrentScore(r)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
                 say(R.string.transcribe_done)
                 replaceTop(Screen.REVIEW)
@@ -390,7 +399,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     !r.onDevice && r.audioId != null -> rerunWithEngine(r, opts)
                     else -> null
                 }
-                if (updated != null) { result.value = updated; lastApplied = opts }
+                if (updated != null) { result.value = updated; saveCurrentScore(updated); lastApplied = opts }
                 say(R.string.arrangement_ready)
                 then()
             } catch (e: Exception) {
@@ -461,6 +470,72 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---- Review ---------------------------------------------------------------------------------------
+
+    private fun saveCurrentScore(r: TranscriptionResult, title: String? = null) {
+        val scoreTitle = title?.takeIf(String::isNotBlank)
+            ?: r.composition?.title?.takeIf(String::isNotBlank)
+            ?: source.value?.name?.substringBeforeLast('.')
+            ?: res.getString(R.string.score_title)
+        val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core))
+        currentSavedScoreId = saved.id
+        savedScores.value = scoreLibrary.list()
+    }
+
+    fun openSavedScore(saved: SavedScore) {
+        currentSavedScoreId = saved.id
+        source.value = Source(saved.title, SourceKind.SCORE, 0.0)
+        result.value = TranscriptionResult(
+            composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
+            musicXml = saved.musicXml,
+            profile = Profile.entries.firstOrNull { it.id == saved.profile } ?: Profile.BRASS_BAND,
+            onDevice = true,
+            compositionJson = saved.compositionJson,
+        )
+        checked.value = emptyMap()
+        backStack.value = listOf(Screen.HOME, Screen.SCORE)
+    }
+
+    fun renameSavedScore(id: String, title: String): Boolean {
+        val cleaned = title.trim()
+        if (cleaned.isEmpty()) return false
+        val saved = scoreLibrary.list().firstOrNull { it.id == id } ?: return false
+        return runCatching {
+            val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
+            val compositionJson = composition?.let(container.core::encodeComposition)
+            val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson)
+            savedScores.value = scoreLibrary.list()
+            if (currentSavedScoreId == id) {
+                result.value = result.value?.copy(composition = composition, musicXml = xml, compositionJson = compositionJson)
+                source.value = source.value?.copy(name = cleaned)
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
+        val current = result.value ?: return false
+        val composition = current.composition ?: return false
+        val voice = composition.voice(voiceId) ?: return false
+        val noteIndex = voice.notes.indexOfFirst { it.start == start && it.pitch == pitch }
+        if (noteIndex < 0) return false
+        val updatedVoice = voice.copy(notes = voice.notes.mapIndexed { index, note ->
+            if (index == noteIndex) note.copy(pitch = (note.pitch + semitones).coerceIn(0, 127)) else note
+        })
+        val updatedComposition = composition.copy(voices = composition.voices.map { if (it.id == voiceId) updatedVoice else it })
+        val parts = updatedComposition.voices.map { v ->
+            val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
+            PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
+        }
+        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, "auto") }.getOrNull()
+            ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
+            ?: return false
+        val updated = current.copy(composition = updatedComposition, musicXml = xml,
+            compositionJson = container.core.encodeComposition(updatedComposition))
+        result.value = updated
+        saveCurrentScore(updated)
+        return true
+    }
 
     fun markChecked(voiceId: String, index: Int, remaining: Int) {
         checked.update { it + (voiceId to (it[voiceId].orEmpty() + index)) }

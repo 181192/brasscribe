@@ -94,6 +94,20 @@ final class AppModel {
 
     func refresh() { pieces = Piece.loadAll() }
 
+    func rename(_ piece: Piece, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, let index = pieces.firstIndex(where: { $0.id == piece.id }) else { return }
+        var updated = pieces[index]
+        updated.title = cleaned
+        do {
+            try updated.saveMusicXML(MusicXMLNoteEditor.replacingTitle(in: updated.musicXML(), with: cleaned))
+            try updated.save()
+            pieces[index] = updated
+        } catch {
+            show(.notAScore(error.localizedDescription))
+        }
+    }
+
     /// Open "What is this?" for a new recording, closing any recorder sheet first.
     func ask(_ src: PendingSource) {
         showRecorder = false

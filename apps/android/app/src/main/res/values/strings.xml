@@ -44,6 +44,11 @@
     <string name="home_sample_desc">“Mikkel”, cornet solo with band</string>
     <string name="home_links_tip">Links can\'t be downloaded. Record what\'s playing, or open a file you have.</string>
     <string name="home_your_scores">Your scores</string>
+    <string name="edit_title">Edit title</string>
+    <string name="save">Save</string>
+    <string name="pitch_down">Lower by a semitone</string>
+    <string name="pitch_up">Raise by a semitone</string>
+    <string name="note_saved">Pitch correction saved</string>
     <plurals name="notes_to_check">
         <item quantity="one">%d note to check</item>
         <item quantity="other">%d notes to check</item>

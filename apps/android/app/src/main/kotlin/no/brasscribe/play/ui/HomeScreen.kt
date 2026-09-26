@@ -27,8 +27,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +64,7 @@ import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Problem
 import no.brasscribe.play.R
+import no.brasscribe.play.SavedScore
 import no.brasscribe.play.Screen
 import no.brasscribe.play.SourceKind
 import no.brasscribe.play.capture.CaptureController
@@ -136,13 +139,13 @@ val AUDIO_TYPES = arrayOf("audio/*", "video/*")
 fun HomeScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val busy by vm.busy.collectAsState()
-    val result by vm.result.collectAsState()
-    val source by vm.source.collectAsState()
-    val checked by vm.checked.collectAsState()
+    val savedScores by vm.savedScores.collectAsState()
     val c = BrasscribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
     val recorder = rememberRecorder(vm)
+    var renameTarget by remember { mutableStateOf<SavedScore?>(null) }
+    var titleDraft by remember { mutableStateOf("") }
 
     Scaffold(containerColor = c.bg) { padding ->
         Column(
@@ -187,30 +190,43 @@ fun HomeScreen(vm: PlayViewModel) {
                 }
             }
             InfoNote(stringResource(R.string.home_links_tip), boxed = false)
-            val r = result
-            if (r != null) {
+            if (savedScores.isNotEmpty()) {
                 SectionLabel(stringResource(R.string.home_your_scores))
-                val comp = r.composition
-                val left = remember(r, checked) {
-                    comp?.voices.orEmpty().sumOf { v ->
-                        val done = checked[v.id].orEmpty()
-                        partViewFor(comp!!, v.id, done, vm.container.core).events
-                            .count { it.note != null && it.uncertainty != Uncertainty.CONFIDENT && it.index !in done }
-                    }
-                }
                 RowGroup {
-                    ListRow(
-                        comp?.title?.ifBlank { null } ?: source?.name ?: stringResource(R.string.score_title),
-                        { vm.navigate(Screen.SCORE) },
-                        subtitle = listOfNotNull(
-                            stringResource(if (r.profile == no.brasscribe.play.engine.Profile.SOLO) R.string.lineup_solo else R.string.lineup_full),
-                            left.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.notes_to_check, it, it) },
-                        ).joinToString(" · "),
-                    )
+                    savedScores.forEachIndexed { index, score ->
+                        if (index > 0) RowDivider()
+                        ListRow(
+                            score.title,
+                            { vm.openSavedScore(score) },
+                            subtitle = score.profile.replace('-', ' '),
+                            trailing = {
+                                TextButton(onClick = { titleDraft = score.title; renameTarget = score }) {
+                                    Text(stringResource(R.string.edit_title))
+                                }
+                            },
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(BrasscribeSpace.s4))
         }
+    }
+    renameTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = { Text(stringResource(R.string.edit_title)) },
+            text = {
+                OutlinedTextField(value = titleDraft, onValueChange = { titleDraft = it },
+                    label = { Text(stringResource(R.string.score_title)) }, singleLine = true)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.renameSavedScore(target.id, titleDraft)
+                    renameTarget = null
+                }, enabled = titleDraft.isNotBlank()) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { renameTarget = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 

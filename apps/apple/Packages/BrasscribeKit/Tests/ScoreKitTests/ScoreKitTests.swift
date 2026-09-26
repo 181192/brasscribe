@@ -25,6 +25,32 @@ struct Reference: Decodable {
     enum CodingKeys: String, CodingKey { case parts; case sourceSHA256 = "source_sha256" }
 }
 
+
+@Suite struct MusicXMLNoteEditorTests {
+    @Test func replacesTheScoreTitle() throws {
+        let xml = "<score-partwise><work><work-title>Old</work-title></work><part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list><part id=\"P1\"><measure number=\"1\"><note><rest/><duration>1</duration></note></measure></part></score-partwise>"
+        let edited = try MusicXMLNoteEditor.replacingTitle(in: xml, with: "New & improved")
+        #expect(try MusicXMLParser.parse(Data(edited.utf8)).title == "New & improved")
+    }
+
+    @Test func replacesTheRequestedPitchedNoteAndKeepsGraceNotesOutOfTheIndex() throws {
+        let xml = """
+        <score-partwise><part id="P1"><measure number="1">
+        <note><grace/><pitch><step>C</step><octave>4</octave></pitch></note>
+        <note><pitch><step>D</step><alter>0</alter><octave>4</octave></pitch><duration>1</duration></note>
+        <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration></note>
+        </measure></part></score-partwise>
+        """
+
+        let edited = try MusicXMLNoteEditor.replacingPitch(in: xml, partID: "P1", noteIndex: 1,
+                                                            with: SpelledPitch(step: "F", alter: -1, octave: 5))
+        let score = try MusicXMLParser.parse(Data(edited.utf8))
+        let notes = try #require(score.parts.first?.notes)
+        guard case .pitched(let pitch) = notes[1].kind else { Issue.record("Expected a pitched note"); return }
+        #expect(pitch == SpelledPitch(step: "F", alter: -1, octave: 5))
+        #expect(notes[0].midiPitch == SpelledPitch(step: "D", alter: 0, octave: 4).midi)
+    }
+}
 /// Checks against the golden Mikkel output. The golden files are re-saved when the engine
 /// improves, so these tests check structure and agreement with the Python reference
 /// rather than frozen numbers.
