@@ -28,7 +28,8 @@ from .cases import REPO, Case, all_cases, synth_layers
 
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
-           "bench": ["composition.json", "brass-band.musicxml"], "lead": ["lead.musicxml"], "quant": ["quant.json"]}
+           "bench": ["composition.json", "brass-band.musicxml"], "lead": ["lead.musicxml"], "quant": ["quant.json"],
+           "meter": ["meter.json"]}
 IGNORED = {".pdf", ".mp3", ".mid", ".wav", ".brf"}
 
 
@@ -53,6 +54,8 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
                 str(a["support"]), "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]]
     if case.kind == "bench":
         return [b, "arrange-reference", "--reference", str(a["reference"]), "--out", str(out), "--title", a["title"]]
+    if case.kind == "meter":
+        return [b, "meter", "--beats", str(a["beats"]), "--notes", str(a["notes"]), "--out", str(out / "meter.json")]
     if case.kind == "quant":
         return [b, "quantize", "--reference", str(a["reference"]), "--beats", str(a["beats"]), "--out", str(out / "quant.json")]
     raise ValueError(case.kind)

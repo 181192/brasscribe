@@ -169,12 +169,56 @@ def durations_cases(rng) -> list[dict]:
     return out
 
 
+def meter_cases(rng) -> list[dict]:
+    """Solo meter on synthetic beat tracks: labels on (almost) every beat, jittered tempo, an inserted
+    and a missed beat, accents on the true downbeats of 2, 3 or 4 beats per bar."""
+    from brasscribe_music.beats import labels_on, solo_meter, track_bar_phase
+
+    out = []
+    for _ in range(60):
+        meter = int(rng.choice([2, 3, 4]))
+        n = int(rng.integers(24, 64))
+        ibi = float(rng.uniform(0.35, 0.8))
+        t = np.cumsum(np.r_[rng.uniform(0, 1), ibi * (1 + rng.normal(0, 0.03, n - 1))])
+        phase0 = int(rng.integers(0, meter))
+        strong = (np.arange(n) - phase0) % meter == 0
+        on, du = [], []
+        for k in range(n):
+            if rng.random() < 0.85:
+                on.append(t[k] + rng.normal(0, 0.01))
+                du.append(ibi * (rng.uniform(0.8, 1.9) if strong[k] else rng.uniform(0.2, 0.7)))
+            if rng.random() < 0.3:
+                on.append(t[k] + ibi * float(rng.choice([0.5, 1 / 3])))
+                du.append(ibi * 0.3)
+        pos = np.where(rng.random(n) < 0.85, 1, rng.integers(1, meter + 1, n))
+        pos[strong] = 1
+        if rng.random() < 0.5:
+            k = int(rng.integers(3, n - 3))
+            t = np.insert(t, k, (t[k - 1] + t[k]) / 2)
+            pos = np.insert(pos, k, 1)
+        if rng.random() < 0.5:
+            k = int(rng.integers(3, len(t) - 3))
+            t, pos = np.delete(t, k), np.delete(pos, k)
+        on, du = np.array(on), np.array(du)
+        grid = t * float(rng.choice([1.0, 1.0, 1.001]))
+        gp = labels_on(grid, t, pos)
+        m = solo_meter(grid, gp == 1, gp, 1, 0, on, du)
+        tb, first = track_bar_phase(t, (pos == 1).astype(float), meter)
+        out.append({"t": t.tolist(), "pos": pos.tolist(), "grid": grid.tolist(), "onsets": on.tolist(),
+                    "durations": du.tolist(), "grid_pos": gp.tolist(),
+                    "meter": [int(m.beats_per_bar), int(m.first_downbeat), bool(m.from_labels), bool(m.compound),
+                              float(m.strength), None if m.times is None else [float(x) for x in m.times]],
+                    "track": [meter, [float(x) for x in tb], int(first)]})
+    return out
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
     for name, data in (("spelling", spelling_cases(rng)), ("quantize", quantize_cases(rng)),
                        ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
-                       ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng))):
+                       ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
+                       ("meter", meter_cases(rng))):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 
