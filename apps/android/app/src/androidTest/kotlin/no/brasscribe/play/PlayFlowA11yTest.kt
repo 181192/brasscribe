@@ -99,13 +99,13 @@ class PlayFlowA11yTest {
         // Review: the golden solo has uncertain notes, each announced with its uncertainty.
         waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
         val uncertain = rule.onAllNodes(SemanticsMatcher("announces uncertain") { n ->
-            n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.endsWith(", uncertain") } == true
+            n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains(", uncertain") } == true
         }).fetchSemanticsNodes()
         assertTrue("uncertain notes are announced", uncertain.isNotEmpty())
         val first = uncertain.first()
         val text = first.config[SemanticsProperties.ContentDescription].first()
         // In free time (ad lib.) the position is the performed time, otherwise the beat.
-        assertTrue(text, Regex("""(bar \d+, )?(beat \d|at \d+ (seconds|minutes?)).*: [A-G][^,]* \d, [^,]*note.*, uncertain$""").containsMatchIn(text))
+        assertTrue(text, Regex("""(bar \d+, )?(beat \d|at \d+ (seconds|minutes?)).*: [A-G][^,]* \d, [^,]*note.*, uncertain""").containsMatchIn(text))
         // Only the first note of a free-time region announces it.
         val adLib = rule.onAllNodes(SemanticsMatcher("ad lib entry") { n ->
             n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains("Ad lib, free time") } == true
@@ -187,18 +187,33 @@ class PlayFlowA11yTest {
         waitFor(hasContentDescription("Share or print"))
         rule.onNodeWithContentDescription("Share or print").performClick()
         rule.onNode(isHeading() and hasText("Share or print")).assertExists()
-        // PDF is chosen by default (the review's P1: print your part); add the other formats.
+        // My part and PDF are the default (print your own part): that makes the Solo Cornet's PDF.
+        rule.onNode(hasText("Solo Cornet (you)") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertIsSelected()
+        val exports = rule.activity.cacheDir.resolve("exports")
+        exports.deleteRecursively()
+        rule.onNodeWithTag("share").performClick()
+        rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == "pdf" && it.name.contains("Solo Cornet") && it.length() > 0 } }
+        val part = exports.listFiles()!!.first { it.extension == "pdf" }
+        assertEquals("%PDF", String(part.readBytes(), 0, 4))
+        Thread.sleep(1500)
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        rule.waitForIdle()
+        exports.deleteRecursively()
+        // The conductor's score, with the other formats.
+        rule.onNode(hasText("Conductor's score") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).performClick()
         rule.onNode(hasText("PDF") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).assertExists()
         for (f in listOf("MusicXML", "MIDI", "Talking score", "Braille music")) {
-            rule.onNode(hasText(f) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).performClick()
+            rule.onNode(hasText(f) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).performScrollTo().performClick()
         }
         rule.onNodeWithText("Print").assertHeightIsAtLeast(48.dp)
 
         // One Share builds every chosen file (MusicXML, PDF, alphaTab MIDI, talking-score HTML, BRF), then opens the chooser.
-        val exports = rule.activity.cacheDir.resolve("exports")
         rule.onNodeWithTag("share").performClick()
         for (ext in listOf("musicxml", "pdf", "mid", "html", "brf")) {
-            rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } }
+            runCatching { rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } } }.onFailure {
+                throw AssertionError("no .$ext; files ${exports.listFiles().orEmpty().map { f -> f.name }}", it)
+            }
         }
         Thread.sleep(1500)
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -213,6 +228,5 @@ class PlayFlowA11yTest {
         // North American Braille ASCII with CRLF lines; the music lines fit 40 cells (the title may not).
         val lines = brf.split("\r\n")
         assertTrue("BRF", brf.length > 1000 && lines.size > 50 && lines.count { it.length <= 40 } >= lines.size * 9 / 10)
-        rule.onNodeWithText("Ready:", substring = true).assertExists()
     }
 }

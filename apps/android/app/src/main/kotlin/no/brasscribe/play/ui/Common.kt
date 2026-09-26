@@ -40,6 +40,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -104,15 +109,35 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
  */
 @Composable
 fun StatusLine(status: Status?, modifier: Modifier = Modifier) {
-    // An empty live region would be an unlabeled focusable item; the line appears with its first message.
-    if (status == null || status.text.isEmpty()) return
-    Text(
-        status.text,
-        color = BrasscribeTheme.colors.textMuted,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-    )
+    // A snackbar, not a line of the page (review 2, P2-5): only messages said on this screen show,
+    // for a few seconds; the live region still reads each one once.
+    val since = remember { System.nanoTime() }
+    var visible by remember { mutableStateOf<Status?>(null) }
+    LaunchedEffect(status?.serial) {
+        if (status == null || status.text.isEmpty() || status.serial < since) return@LaunchedEffect
+        visible = status
+        kotlinx.coroutines.delay(STATUS_MS)
+        if (visible == status) visible = null
+    }
+    val s = visible ?: return
+    val c = BrasscribeTheme.colors
+    Surface(
+        modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = c.text, contentColor = c.bg,
+    ) {
+        Text(
+            s.text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
 }
+
+/** How long a status message stays on screen. */
+const val STATUS_MS = 8_000L
+
+/** 150 % text and up: segmented controls stack, cards put their button under the text. */
+@Composable
+fun largeText(): Boolean = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
 
 @Composable
 fun BcIcon(@DrawableRes id: Int, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = Color.Unspecified) {
@@ -288,12 +313,14 @@ fun PlayScaffold(
         containerColor = BrasscribeTheme.colors.bg,
         topBar = { PlayTopBar(title, onBack, backLabel, actions) },
         bottomBar = {
-            if (bottom != null) Column(
+            Column(
                 Modifier.fillMaxWidth().background(BrasscribeTheme.colors.bg).navigationBarsPadding()
-                    .padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s3),
+                    .padding(horizontal = ScreenMargin, vertical = if (bottom != null) BrasscribeSpace.s3 else BrasscribeSpace.s0),
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
-                content = bottom,
-            )
+            ) {
+                StatusLine(status)
+                bottom?.invoke(this)
+            }
         },
     ) { padding ->
         val base = Modifier.fillMaxSize().padding(padding).padding(horizontal = ScreenMargin)
@@ -301,7 +328,6 @@ fun PlayScaffold(
             modifier = if (scroll) base.verticalScroll(rememberScrollState()) else base,
             verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
         ) {
-            StatusLine(status)
             content()
             Spacer(Modifier.size(BrasscribeSpace.s4))
         }

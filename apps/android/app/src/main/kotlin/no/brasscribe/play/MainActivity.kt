@@ -73,6 +73,7 @@ fun PlayRoot(vm: PlayViewModel) {
         Screen.COMPANION -> CompanionScreen(vm)
         Screen.ABOUT -> AboutScreen(vm)
         Screen.SETTINGS -> SettingsScreen(vm)
+        Screen.HELP -> no.brasscribe.play.ui.HelpScreen(vm)
         Screen.PROBLEM -> ProblemScreen(vm)
     }
 }

@@ -38,7 +38,7 @@ import no.brasscribe.play.playback.ClipPlayer
 import java.io.File
 import java.util.zip.ZipInputStream
 
-enum class Screen { FIRST_RUN, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM }
+enum class Screen { FIRST_RUN, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
 enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED }
@@ -102,6 +102,8 @@ data class TranscriptionResult(
     val appliedTranspose: Int = 0,
     /** Confidence and what each transcriber heard at the uncertain notes. */
     val evidence: no.brasscribe.play.engine.Evidence? = null,
+    /** A note was changed on the phone: the engine's PDF, braille and audio still show the old one. */
+    val changedOnPhone: Boolean = false,
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
@@ -448,7 +450,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val engine: EngineApi = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
-            res.getString(R.string.transcribe_where_companion, container.engineLabel()))
+            if (container.usingFixture) res.getString(R.string.demo_where) else res.getString(R.string.transcribe_where_companion, container.engineLabel()))
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
         val audio = engine.uploadAudio(s.name, bytes)
         val created = engine.createJob(
@@ -609,7 +611,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
             PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
         }
-        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, "auto") }.getOrNull()
+        // The same arranger as the score came from: the golden Composition re-arranges to the golden score.
+        val arranger = if (output.value.lineup == Lineup.MINIMAL) "minimal" else "auto"
+        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, arranger) }.getOrNull()
             ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
             ?: return false
         val newPitch = (pitch + semitones).coerceIn(0, 127)
@@ -621,7 +625,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             })
         }
         val updated = current.copy(composition = updatedComposition, musicXml = xml,
-            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence)
+            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence, changedOnPhone = true)
         result.value = updated
         saveCurrentScore(updated)
         return true

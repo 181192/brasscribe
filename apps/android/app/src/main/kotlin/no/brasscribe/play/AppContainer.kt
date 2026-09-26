@@ -62,6 +62,11 @@ class AppContainer(private val context: Context) {
     private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
 
     /** The first-run screen (three points and Get started) has been seen. */
+    /** Scores open with the realistic sound (SFZ instruments) instead of the standard one. */
+    var realisticByDefault: Boolean
+        get() = prefs.getBoolean("realistic_default", false)
+        set(v) = prefs.edit().putBoolean("realistic_default", v).apply()
+
     var firstRunDone: Boolean
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()

@@ -114,6 +114,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
+    var writtenTip by rememberSaveable { mutableStateOf(false) }
     // Playing live: the score alone, no system bars, screen awake. Rotation recreates the activity,
     // so this has to survive it.
     var performance by rememberSaveable { mutableStateOf(false) }
@@ -122,7 +123,7 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     LaunchedEffect(controller, c) {
         controller.setNotationColors(ScorePalette(c.bg.toArgb(), c.ink.toArgb(), c.staff.toArgb(), c.cursor.toArgb(),
-            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast))
+            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb()))
     }
     LaunchedEffect(controller) {
         // One part first (the full score is one tap away in Parts); a key shift re-renders once.
@@ -130,10 +131,12 @@ fun ScoreScreen(vm: PlayViewModel) {
         (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) { onDispose { controller.release() } }
+    // Settings > Sound: open with the realistic instruments when the player chose them.
+    LaunchedEffect(st.loaded) { if (st.loaded && vm.container.realisticByDefault && !st.realistic) controller.setRealistic(true) }
 
     val single = st.shown.size == 1
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
-    val shownText = if (single) partName else stringResource(R.string.show_all_parts)
+    val shownText = if (single) PartNames.display(partName) else stringResource(R.string.show_all_parts)
     val myPart = st.shown.minOrNull()?.takeIf { single } ?: defaultPart(st.parts)
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
     val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
@@ -166,7 +169,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         containerColor = c.bg,
         topBar = {
             if (!performance) PlayTopBar(
-                title = st.title.ifBlank { r.composition?.title.orEmpty() }, onBack = { vm.back() },
+                title = PartNames.shortTitle(st.title.ifBlank { r.composition?.title.orEmpty() }), onBack = { vm.back() },
                 actions = {
                     IconButton({ sheet = Sheet.SOUND }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_more, stringResource(R.string.more)) }
                     IconButton({ vm.navigate(Screen.EXPORT) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_export, stringResource(R.string.export)) }
@@ -185,14 +188,22 @@ fun ScoreScreen(vm: PlayViewModel) {
                     IconButton({ controller.setZoom(st.zoom - 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out)) }
                     IconButton({ controller.setZoom(st.zoom + 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in)) }
                 }
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                // "As written for B♭" names the key the part is written in; large text gets two chips, not segments.
+                val writtenLabel = controller.writtenKey()?.let { stringResource(R.string.written_pitch_for, it) } ?: stringResource(R.string.written_pitch)
+                if (largeText()) {
+                    PracticeChip(writtenLabel, !st.concertPitch, { controller.setConcertPitch(false) }, role = Role.RadioButton)
+                    PracticeChip(stringResource(R.string.concert_pitch), st.concertPitch, { controller.setConcertPitch(true) }, role = Role.RadioButton)
+                    IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
                     SegmentedButton(selected = !st.concertPitch, onClick = { controller.setConcertPitch(false) }, shape = SegmentedButtonDefaults.itemShape(0, 2),
-                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.written_pitch), maxLines = 2) }
+                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(writtenLabel, maxLines = 2) }
                     SegmentedButton(selected = st.concertPitch, onClick = { controller.setConcertPitch(true) }, shape = SegmentedButtonDefaults.itemShape(1, 2),
                         colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.concert_pitch), maxLines = 2) }
                 }
+                    IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                }
             }
-            if (!performance) StatusLine(status, Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
+            if (writtenTip && !performance) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
             if (toCheck > 0 && !performance) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
                 UncertainMark(false)
                 Text(pluralStringResource(R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
@@ -220,6 +231,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                     )
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
+                    // Status messages float over the bottom of the notation, clear of the player.
+                    if (!performance) StatusLine(status, Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                     if (performance) PerformanceBar(controller, st, Modifier.align(Alignment.BottomCenter), onBar = ::moveBar) { performance = false }
                 }
             }
@@ -334,7 +347,12 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
                     BeatCounter(st.beat, st.beatsInBar)
                 }
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            // At large text the practice chips sit behind one Practice button (system.md §2).
+            var practice by rememberSaveable { mutableStateOf(false) }
+            val large = largeText()
+            if (large) PracticeChip(stringResource(R.string.practice), practice, { practice = !practice }, icon = R.drawable.ic_bc_speed,
+                role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+            if (!large || practice) FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
                 PracticeChip(stringResource(R.string.speed_chip, st.speed), st.speed != 100, onSpeed, icon = R.drawable.ic_bc_speed, role = Role.Button)
                 PracticeChip(st.loop?.let { stringResource(R.string.loop_chip_on, it.first, it.last) } ?: stringResource(R.string.loop),
                     st.loop != null, onLoop, icon = R.drawable.ic_bc_loop, role = Role.Button)
@@ -429,32 +447,45 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
 @Composable
 private fun PartsSheet(st: ScoreUiState, controller: ScoreController, onDismiss: () -> Unit) {
     val c = BrasscribeTheme.colors
+    val large = largeText()
     BottomSheet(onDismiss) {
         SubHeading(stringResource(R.string.parts))
+        val all = st.shown.size > 1
+        val mine = st.shown == setOf(defaultPart(st.parts))
         Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-            SecondaryButton(stringResource(R.string.show_all_parts), { controller.showParts(st.parts.indices.toSet()); onDismiss() }, Modifier.weight(1f))
-            SecondaryButton(stringResource(R.string.show_one_part), { controller.showParts(setOf(defaultPart(st.parts))); onDismiss() }, Modifier.weight(1f))
+            PracticeChip(stringResource(R.string.show_all_parts), all, { controller.showParts(st.parts.indices.toSet()); onDismiss() },
+                Modifier.weight(1f), role = Role.RadioButton)
+            PracticeChip(stringResource(R.string.show_one_part), mine, { controller.showParts(setOf(defaultPart(st.parts))); onDismiss() },
+                Modifier.weight(1f), role = Role.RadioButton)
         }
         RowGroup {
-            st.parts.forEachIndexed { i, name ->
+            st.parts.forEachIndexed { i, english ->
                 if (i > 0) RowDivider()
+                val name = PartNames.display(english)
                 val shown = i in st.shown
-                Column(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s2),
-                    verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Button) { controller.showParts(setOf(i)); onDismiss() },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                // One row per part (about 64 dp): the name, then Mute and Only this at the right.
+                val toggles = @Composable {
+                    PracticeChip(stringResource(R.string.mute), i in st.muted, { controller.setMuted(i, i !in st.muted) }, icon = R.drawable.ic_bc_mute,
+                        accessibleName = stringResource(R.string.mute_part, name))
+                    PracticeChip(stringResource(R.string.only_this), i in st.soloed, { controller.setSolo(i, i !in st.soloed) }, icon = R.drawable.ic_bc_solo,
+                        accessibleName = stringResource(R.string.solo_part, name))
+                }
+                val label = @Composable { m: Modifier ->
+                    Row(m.heightIn(min = 48.dp).clickable(role = Role.Button) { controller.showParts(setOf(i)); onDismiss() },
+                        verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.width(4.dp).heightIn(min = 24.dp).background(if (shown) c.text else c.surfaceRaised))
                         Spacer(Modifier.size(BrasscribeSpace.s2))
                         Text(name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (shown) FontWeight.Bold else FontWeight.Normal))
                     }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                        PracticeChip(stringResource(R.string.mute), i in st.muted, { controller.setMuted(i, i !in st.muted) }, icon = R.drawable.ic_bc_mute,
-                            accessibleName = stringResource(R.string.mute_part, name))
-                        PracticeChip(stringResource(R.string.only_this), i in st.soloed, { controller.setSolo(i, i !in st.soloed) }, icon = R.drawable.ic_bc_solo,
-                            accessibleName = stringResource(R.string.solo_part, name))
-                    }
+                }
+                if (large) Column(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
+                    verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    label(Modifier.fillMaxWidth())
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) { toggles() }
+                } else Row(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    label(Modifier.weight(1f))
+                    toggles()
                 }
             }
         }

@@ -105,6 +105,8 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
 val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
     from(File(repoRoot, "data/golden/mikkel-arranged-band")) {
         include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf", "brass-band.mid")
+        // One PDF, braille file and MusicXML per player, for Share or print's "Every part" and "My part".
+        include("parts/*.pdf", "parts/*.brf", "parts/*.musicxml")
     }
     into(layout.buildDirectory.dir("generated/brasscribe/fixtures/fixtures"))
     // The golden output is read-only; the copies must stay writable so the next sync can replace them.

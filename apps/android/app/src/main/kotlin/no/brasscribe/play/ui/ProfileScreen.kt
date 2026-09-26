@@ -143,8 +143,11 @@ fun ProfileScreen(vm: PlayViewModel) {
                     else if (companionOk) stringResource(R.string.where_companion_desc, vm.container.engineLabel())
                     else stringResource(R.string.where_companion_missing),
                     chevron = false,
-                    trailing = { OutlineButton(stringResource(R.string.change), { changeWhere = true }, fill = false) },
+                    trailing = if (largeText()) null else ({ OutlineButton(stringResource(R.string.change), { changeWhere = true }, fill = false) }),
                 )
+                // Large text: Change goes under the card's text so the text keeps its width.
+                if (largeText()) OutlineButton(stringResource(R.string.change), { changeWhere = true },
+                    Modifier.padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s3))
             }
         }
     }
