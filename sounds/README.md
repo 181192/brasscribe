@@ -75,7 +75,7 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 - **AVAudioUnitSampler addressing:** melodic presets are `bankMSB = 0x79`, `bankLSB = bank`. The kit is `bankMSB = 0x78`, `bankLSB = 0`.
 - **Level differences at velocity 80:** AVAudioUnitSampler plays the sustain presets 7–9 dB louder than FluidSynth.
-- **Golden score percussion is silent in alphaTab:** its notes have no `<midi-unpitched>`, so alphaTab sends every drum note as MIDI note 0. This is independent of the SoundFont.
+- **Golden score percussion:** the arranger's score now writes `<midi-unpitched>` per drum and `<instrument id>` per note, and alphaTab plays the kit from bank 128 (rms 0.163 from bar 36, where the drums enter). Earlier scores without `<midi-unpitched>` send every drum note as MIDI note 0, which is silent in any kit.
 
 ## Humanization
 
