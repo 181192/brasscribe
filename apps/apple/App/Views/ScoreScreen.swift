@@ -67,8 +67,11 @@ struct PracticeView: View {
         .focusEffectDisabled()
         .focused($focused)
         .onAppear { focused = true }
+        .focusedSceneValue(\.practice, model)
         .onKeyPress(.rightArrow) { model.nextBar(); return .handled }
         .onKeyPress(.leftArrow) { model.previousBar(); return .handled }
+        .onKeyPress(",") { model.changeSpeed(by: -5); return .handled }
+        .onKeyPress(".") { model.changeSpeed(by: 5); return .handled }
         .sheet(isPresented: $showMixer) { MixerView(model: model) }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
         .sheet(isPresented: $showExport) { ExportView(model: model) }
@@ -139,17 +142,15 @@ struct TransportBar: View {
             HStack(spacing: 16) {
                 Button { model.previousBar() } label: { Image(systemName: "backward.end.fill").hitTarget() }
                     .accessibilityLabel(Text("Previous bar"))
-                    .keyboardShortcut(.leftArrow, modifiers: [])
                     .accessibilityIdentifier("previousBar")
                 Button { model.togglePlay() } label: {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill").font(.title2).frame(minWidth: 44, minHeight: 44)
                 }
                 .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
-                .keyboardShortcut(.space, modifiers: [])
+                .padShortcut(.space)
                 .accessibilityIdentifier("playPause")
                 Button { model.nextBar() } label: { Image(systemName: "forward.end.fill").hitTarget() }
                     .accessibilityLabel(Text("Next bar"))
-                    .keyboardShortcut(.rightArrow, modifiers: [])
                     .accessibilityIdentifier("nextBar")
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -171,7 +172,7 @@ struct TransportBar: View {
                 Toggle(isOn: $model.hearOriginal) { Label("Original", systemImage: "waveform").hitTarget() }
                     .toggleStyle(.button)
                     .disabled(!model.hasOriginal)
-                    .keyboardShortcut("o", modifiers: [])
+                    .padShortcut("o")
                     .accessibilityHint(Text("Switch between the score and the original recording at the same place."))
                     .accessibilityIdentifier("originalToggle")
             }
@@ -192,14 +193,12 @@ struct TransportBar: View {
         HStack {
             Button { model.changeSpeed(by: -5) } label: { Image(systemName: "tortoise").hitTarget() }
                 .accessibilityLabel(Text("Slower"))
-                .keyboardShortcut("[", modifiers: [])
             Slider(value: $model.speedPercent, in: 25...150, step: 5) { Text("Speed") }
                 .frame(minWidth: 100, maxWidth: 180)
                 .accessibilityValue(Text("\(Int(model.speedPercent)) percent"))
                 .accessibilityIdentifier("speed")
             Button { model.changeSpeed(by: 5) } label: { Image(systemName: "hare").hitTarget() }
                 .accessibilityLabel(Text("Faster"))
-                .keyboardShortcut("]", modifiers: [])
             Text("\(Int(model.speedPercent)) %").monospacedDigit().frame(minWidth: 44).accessibilityHidden(true)
         }
         HStack(spacing: 6) {
@@ -223,16 +222,16 @@ struct TransportBar: View {
         .fixedSize()
         HStack {
             Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: "1.circle").hitTarget() }.toggleStyle(.button)
-                .keyboardShortcut("c", modifiers: [])
+                .padShortcut("c")
             Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: "metronome").hitTarget() }.toggleStyle(.button)
-                .keyboardShortcut("m", modifiers: [])
+                .padShortcut("m")
             Toggle(isOn: $model.playAlong) { Label("Play along", systemImage: "music.mic").hitTarget() }.toggleStyle(.button)
                 .accessibilityHint(Text("Mutes your part so you can play it."))
-                .keyboardShortcut("a", modifiers: [])
+                .padShortcut("a")
         }
         .fixedSize()
         // hidden button so plain L loops the current bar
-        Button("") { model.toggleLoopCurrentBar() }.keyboardShortcut("l", modifiers: []).hidden().frame(width: 0).accessibilityHidden(true)
+        Button("") { model.toggleLoopCurrentBar() }.padShortcut("l").hidden().frame(width: 0).accessibilityHidden(true)
     }
 }
 
@@ -353,4 +352,14 @@ struct PlayerLayerView: NSViewRepresentable {
 extension View {
     /// At least 44 × 44 pt to hit (WCAG 2.5.8 asks for 24; Apple's guideline is 44).
     func hitTarget() -> some View { frame(minWidth: 44, minHeight: 44).contentShape(Rectangle()) }
+
+    /// A single-key shortcut on iPad. On macOS the Playback menu carries these keys, so
+    /// they work wherever focus is and are not registered twice.
+    @ViewBuilder func padShortcut(_ key: KeyEquivalent) -> some View {
+        #if os(iOS)
+        keyboardShortcut(key, modifiers: [])
+        #else
+        self
+        #endif
+    }
 }
