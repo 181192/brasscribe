@@ -10,17 +10,20 @@ struct BrasscribePlayApp: App {
     #endif
 
     init() {
-        if ProcessInfo.processInfo.arguments.contains("-reset") {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-reset") {
             try? FileManager.default.removeItem(at: Piece.libraryURL)
             UserDefaults.standard.removeObject(forKey: "useDemoService")
         }
+        if args.contains("-skip-first-run") { UserDefaults.standard.set(true, forKey: "firstRunDone") }
     }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(app)
-                .tint(Palette.accent)
+                .tint(Color.Brasscribe.primary)
+                .preferredColorScheme(LaunchOptions.colorScheme)
                 .onOpenURL { url in Task { await app.accept(url: url) } }
         }
         #if os(macOS)
@@ -29,47 +32,103 @@ struct BrasscribePlayApp: App {
         .restorationBehavior(.disabled)
         .commands { PlaybackCommands() }
         #endif
+
+        #if os(macOS)
+        Settings {
+            SettingsView()
+                .environment(app)
+                .tint(Color.Brasscribe.primary)
+                .preferredColorScheme(LaunchOptions.colorScheme)
+        }
+        #endif
+    }
+}
+
+/// Launch arguments for tests and screenshots.
+enum LaunchOptions {
+    static let args = ProcessInfo.processInfo.arguments
+
+    /// `-appearance dark` / `-appearance light`
+    static var colorScheme: ColorScheme? {
+        guard let i = args.firstIndex(of: "-appearance"), i + 1 < args.count else { return nil }
+        return args[i + 1] == "dark" ? .dark : .light
+    }
+
+    /// `-screen home|source|transcribing|review|score|part|export|first-run|error`
+    static var screen: String? {
+        guard let i = args.firstIndex(of: "-screen"), i + 1 < args.count else { return nil }
+        return args[i + 1]
     }
 }
 
 struct RootView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.horizontalSizeClass) private var hsize
+
+    /// iPhone: one stack. iPad and Mac: the library in a sidebar next to the stack.
+    private var split: Bool {
+        #if os(macOS)
+        true
+        #else
+        hsize == .regular
+        #endif
+    }
 
     var body: some View {
         @Bindable var app = app
-        NavigationStack(path: $app.path) {
-            HomeView()
-                .navigationDestination(for: Route.self) { r in
-                    switch r {
-                    case .transcribe(let id): TranscribeView(jobID: id)
-                    case .review(let p): ReviewView(piece: p)
-                    case .score(let p): ScoreScreen(piece: p)
-                    }
+        Group {
+            if split {
+                NavigationSplitView {
+                    LibrarySidebar()
+                        .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
+                } detail: {
+                    flow
                 }
+            } else {
+                flow
+            }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Brasscribe Play"))
-        .sheet(item: $app.pending) { src in SourceSheet(source: src) }
+        .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
+        #if os(iOS)
         .sheet(isPresented: $app.showSettings) { SettingsView() }
+        #endif
         #if os(macOS)
         .sheet(isPresented: $app.showCapture) { CaptureView() }
         #endif
-        .alert(item: $app.alert) { a in
-            Alert(title: Text(a.title), message: Text(a.message), dismissButton: .default(Text("OK")))
-        }
+        .sheet(isPresented: $app.showFirstRun) { FirstRunView() }
         .onAppear {
-            if ProcessInfo.processInfo.arguments.contains("-open-demo-score") { openDemoScore() }
+            if !UserDefaults.standard.bool(forKey: "firstRunDone") || LaunchOptions.screen == "first-run" { app.showFirstRun = true }
+            if LaunchOptions.args.contains("-open-demo-score") { openDemoScore() }
             // UI tests: start from a recording as if it had just been imported
             if let a = ProcessInfo.processInfo.environment["BRASSCRIBE_OPEN_AUDIO"], FileManager.default.fileExists(atPath: a) {
                 app.acceptRecording(URL(fileURLWithPath: a), title: URL(fileURLWithPath: a).deletingPathExtension().lastPathComponent)
             }
+            if let s = LaunchOptions.screen { ScreenshotScenes.open(s, app: app, openScore: openDemoScore) }
+        }
+    }
+
+    private var flow: some View {
+        @Bindable var app = app
+        return NavigationStack(path: $app.path) {
+            HomeView()
+                .navigationDestination(for: Route.self) { r in
+                    switch r {
+                    case .source(let s): SourceView(source: s)
+                    case .transcribe(let id): TranscribeView(jobID: id)
+                    case .review(let p): ReviewView(piece: p)
+                    case .score(let p): ScoreScreen(piece: p)
+                    case .problem(let p): ProblemView(problem: p)
+                    }
+                }
         }
     }
 
     /// UI tests and screenshots: import the fixture straight into a piece and open it.
-    private func openDemoScore() {
-        guard let dir = app.fixtureDirectory else { FileHandle.standardError.write(Data("open-demo-score: no fixture directory\n".utf8)); return }
+    @discardableResult
+    private func openDemoScore() -> Piece? {
+        guard let dir = app.fixtureDirectory else { FileHandle.standardError.write(Data("open-demo-score: no fixture directory\n".utf8)); return nil }
         do {
             let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
             let comp = (try? Data(contentsOf: dir.appending(path: "composition.json"))).flatMap { try? Composition.decode($0) }
@@ -78,32 +137,91 @@ struct RootView: View {
                                      video: app.videoForFixture, fixtureDirectory: dir)
             app.refresh()
             app.path = [.score(p)]
+            return p
         } catch {
             FileHandle.standardError.write(Data("open-demo-score: \(error)\n".utf8))
+            return nil
         }
+    }
+}
+
+/// iPad and Mac sidebar: the lockup, "Open a recording" and the scores.
+struct LibrarySidebar: View {
+    @Environment(AppModel.self) private var app
+
+    private var selection: Binding<UUID?> {
+        Binding(get: {
+            for r in app.path.reversed() {
+                switch r {
+                case .score(let p), .review(let p): return p.id
+                default: continue
+                }
+            }
+            return nil
+        }, set: { id in
+            if let id, let p = app.pieces.first(where: { $0.id == id }) { app.open(p) }
+        })
+    }
+
+    var body: some View {
+        List(selection: selection) {
+            Button { app.goHome() } label: {
+                Label("Open a recording", systemImage: BrasscribeIcon.importFile.systemName)
+            }
+            .accessibilityIdentifier("sidebarHome")
+            Section {
+                if app.pieces.isEmpty {
+                    Text("Your scores appear here.").foregroundStyle(Color.Brasscribe.textMuted)
+                }
+                ForEach(app.pieces) { p in
+                    Label(p.title, systemImage: BrasscribeIcon.score.systemName)
+                        .tag(p.id)
+                        .contextMenu {
+                            Button(role: .destructive) { app.delete(p) } label: { Label("Delete", systemImage: BrasscribeIcon.delete.systemName) }
+                        }
+                        .accessibilityIdentifier("sidebar-\(p.title)")
+                }
+            } header: { Text("Your scores") }
+        }
+        .safeAreaInset(edge: .top) {
+            HStack { Lockup(); Spacer() }
+                .padding(.horizontal, Space.s4)
+                .padding(.vertical, Space.s2)
+        }
+        .navigationTitle(Text(verbatim: "Brasscribe Play"))
+        #if os(macOS)
+        .toolbar(removing: .title)
+        #endif
     }
 }
 
 #if os(macOS)
 /// Menu commands mirror the transport shortcuts so they are discoverable and documented.
 /// On macOS these menu items carry the shortcuts, so they work wherever keyboard focus is.
+/// They are off when no score is open, so the keys reach the screen that is.
 struct PlaybackCommands: Commands {
     @FocusedValue(\.practice) private var model
+    @AppStorage("singleKeyShortcuts") private var singleKeys = true
+
+    private func key(_ k: KeyEquivalent) -> KeyboardShortcut? { singleKeys ? KeyboardShortcut(k, modifiers: []) : nil }
 
     var body: some Commands {
         CommandMenu(Text("Playback")) {
-            Button("Play or pause") { model?.togglePlay() }.keyboardShortcut(.space, modifiers: [])
-            Button("Previous bar") { model?.previousBar() }.keyboardShortcut(.leftArrow, modifiers: [])
-            Button("Next bar") { model?.nextBar() }.keyboardShortcut(.rightArrow, modifiers: [])
-            Divider()
-            Button("Loop current bar") { model?.toggleLoopCurrentBar() }.keyboardShortcut("l", modifiers: [])
-            Button("Slower") { model?.changeSpeed(by: -5) }.keyboardShortcut(",", modifiers: [])
-            Button("Faster") { model?.changeSpeed(by: 5) }.keyboardShortcut(".", modifiers: [])
-            Divider()
-            Button("Count-in") { model?.countIn.toggle() }.keyboardShortcut("c", modifiers: [])
-            Button("Metronome") { model?.metronome.toggle() }.keyboardShortcut("m", modifiers: [])
-            Button("Play along") { model?.playAlong.toggle() }.keyboardShortcut("a", modifiers: [])
-            Button("Original or score") { model?.hearOriginal.toggle() }.keyboardShortcut("o", modifiers: [])
+            Group {
+                Button("Play or pause") { model?.togglePlay() }.keyboardShortcut(key(.space))
+                Button("Previous bar") { model?.previousBar() }.keyboardShortcut(key(.leftArrow))
+                Button("Next bar") { model?.nextBar() }.keyboardShortcut(key(.rightArrow))
+                Divider()
+                Button("Loop this bar") { model?.toggleLoopCurrentBar() }.keyboardShortcut(key("l"))
+                Button("Slower") { model?.changeSpeed(by: -5) }.keyboardShortcut(key(","))
+                Button("Faster") { model?.changeSpeed(by: 5) }.keyboardShortcut(key("."))
+                Divider()
+                Button("Count-in") { model?.countIn.toggle() }.keyboardShortcut(key("c"))
+                Button("Metronome") { model?.metronome.toggle() }.keyboardShortcut(key("m"))
+                Button("Mute my part") { model?.playAlong.toggle() }.keyboardShortcut(key("a"))
+                Button("Band or recording") { model?.hearOriginal.toggle() }.keyboardShortcut(key("o"))
+            }
+            .disabled(model == nil)
         }
     }
 }
