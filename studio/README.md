@@ -13,6 +13,17 @@ npm run typecheck
 
 The bundle is committed, so the engine runs without Node. Rebuild and commit `static/` whenever `src/` changes.
 
+## Run
+
+Studio has no server of its own; the engine serves the built bundle.
+
+```sh
+cd .. && pixi run studio          # http://127.0.0.1:8765/, opens a browser
+cd .. && pixi run serve --lan     # 0.0.0.0, prints a LAN URL and a pairing code
+```
+
+`npm run watch` rebuilds into the engine's `static/` on save; reload the page to pick it up.
+
 ## Test
 
 ```sh

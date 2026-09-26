@@ -38,8 +38,11 @@ scripts/           bindings.sh, build-all.sh
 
 ## Commands
 
+Needs Rust stable, and `uv` for the conformance runner.
+
 ```sh
 export PATH=/opt/homebrew/opt/rustup/bin:$PATH
+cargo build --release                      # brasscribe-core CLI at target/release/brasscribe-core
 cargo test --release                       # unit tests + fixtures from the Python reference
 cd conformance && uv run python -m brasscribe_conformance.run [--musescore] [--only mikkel]
 uv run python -m brasscribe_conformance.fixtures   # regenerate the unit fixtures
