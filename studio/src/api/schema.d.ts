@@ -265,6 +265,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{job_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Evidence
+         * @description Per uncertain note: its confidence and the pitch each transcriber heard, for the apps' Check the notes.
+         */
+        get: operations["getJobEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{job_id}/input": {
         parameters: {
             query?: never;
@@ -622,7 +642,11 @@ export interface paths {
         delete: operations["deleteRun"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Run
+         * @description Rename a finished score: the title in its manifest, Composition and MusicXML.
+         */
+        patch: operations["updateRun"];
         trace?: never;
     };
     "/v1/sources": {
@@ -940,6 +964,16 @@ export interface components {
             /** Source Url */
             source_url?: string | null;
         };
+        /**
+         * Evidence
+         * @description What each transcriber heard at the notes Brasscribe is unsure about (confidence below 0.7).
+         */
+        Evidence: {
+            /** Models */
+            models: components["schemas"]["ModelInfo"][];
+            /** Notes */
+            notes: components["schemas"]["NoteEvidence"][];
+        };
         /** FileRef */
         FileRef: {
             /** Bytes */
@@ -1123,6 +1157,39 @@ export interface components {
             /** Sha256 */
             sha256?: string | null;
         };
+        /** ModelHeard */
+        ModelHeard: {
+            /** Agrees */
+            agrees: boolean;
+            /**
+             * Model
+             * @description adapter id, e.g. basic-pitch
+             */
+            model: string;
+            /**
+             * Name
+             * @description display name, e.g. Basic Pitch
+             */
+            name: string;
+            /**
+             * Pitch
+             * @description concert MIDI pitch this model heard at the note's onset; null: no note
+             */
+            pitch?: number | null;
+        };
+        /** ModelInfo */
+        ModelInfo: {
+            /**
+             * Model
+             * @description adapter id, e.g. basic-pitch
+             */
+            model: string;
+            /**
+             * Name
+             * @description display name, e.g. Basic Pitch
+             */
+            name: string;
+        };
         /** Note */
         Note: {
             /**
@@ -1153,6 +1220,27 @@ export interface components {
             start: number;
         } & {
             [key: string]: unknown;
+        };
+        /** NoteEvidence */
+        NoteEvidence: {
+            /** Confidence */
+            confidence: number;
+            /** Models */
+            models: components["schemas"]["ModelHeard"][];
+            /** Onset S */
+            onset_s?: number | null;
+            /**
+             * Pitch
+             * @description concert MIDI pitch Brasscribe wrote
+             */
+            pitch: number;
+            /**
+             * Start
+             * @description Composition tick of the note
+             */
+            start: number;
+            /** Voice */
+            voice: string;
         };
         /** PairRequest */
         PairRequest: {
@@ -1258,6 +1346,14 @@ export interface components {
             notes: number;
             /** Sound */
             sound?: string | null;
+        };
+        /** RunUpdate */
+        RunUpdate: {
+            /**
+             * Title
+             * @description new title for the score
+             */
+            title: string;
         };
         /** Source */
         Source: {
@@ -2065,6 +2161,39 @@ export interface operations {
             };
         };
     };
+    getJobEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidence"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getJobInput: {
         parameters: {
             query?: never;
@@ -2729,6 +2858,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description unknown run */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description run is queued or running */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    updateRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
             };
             /** @description unknown run */
             404: {
