@@ -114,7 +114,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         }
         field("profile", req.profile.rawValue)
         if let t = req.title { field("title", t) }
-        field("render_audio", "true")
+        // The app renders audio itself; skipping it on the engine avoids an extra MuseScore launch.
+        field("render_audio", "false")
         // Difficulty is recorded by the engine. Lineup and key make today's engine fail the
         // job, so the app arranges the small band itself and does not send them.
         field("difficulty", req.output.difficulty.rawValue)
