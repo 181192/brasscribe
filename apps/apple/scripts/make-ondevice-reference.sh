@@ -29,3 +29,15 @@ print("logmel", tuple(spect.shape), "beats", len(beats), "downbeats", len(downs)
 PY
 (cd "$ROOT/eval" && uv run python -m brasscribe_eval.arrange_solo --beats "$OUT/beats-small0.beats" \
   --sw "$OUT/sw.mid" --mus "$OUT/bp.mid" --bp "$OUT/bp.mid" --out "$OUT/solo" --title Reference)
+# The same inputs through the layered solo-with-band path the Rust core ports
+# (brasscribe_eval.arrange_layers_song), with only the solo layer present.
+L="$OUT/layers"; mkdir -p "$L"
+cp "$OUT/sw.mid" "$L/solo-sw.mid"; cp "$OUT/bp.mid" "$L/solo-bp.mid"; cp "$OUT/bp.mid" "$L/solo-mus.mid"
+"$ROOT/ml/adapters/swift-f0/contour.sh" "$IN" "$L/solo-sw.contour.npz"
+(cd "$ROOT/eval" && uv run python -c "
+import sys, pretty_midi
+for name in ('bass-mus', 'orchestra-mus', 'drums-mus'):
+    pretty_midi.PrettyMIDI().write(sys.argv[1] + '/' + name + '.mid')
+" "$L")
+(cd "$ROOT/eval" && uv run python -m brasscribe_eval.arrange_layers_song --layers "$L" --beats "$OUT/beats-small0.beats" \
+  --out "$OUT/layered" --title Reference --no-render --lineup minimal)

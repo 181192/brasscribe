@@ -7,7 +7,21 @@ import Foundation
 public enum OnDeviceModel: String, CaseIterable, Sendable {
     case swiftF0 = "swift-f0/swift-f0-window-fp32"
     case basicPitch = "basic-pitch/nmp-b1-fp32"
-    case beatThis = "beat-this/beat-this-small0-fp16"
+    case beatThisHalf = "beat-this/beat-this-small0-fp16"
+    case beatThisFull = "beat-this/beat-this-small0-fp32"
+
+    /// Beat This in fp16 (39 MB) on devices. The simulator's Core ML returns zeros for the
+    /// fp16 program, so it gets the fp32 build (78 MB, same parity gate).
+    public static var beatThis: OnDeviceModel {
+        #if targetEnvironment(simulator)
+        return .beatThisFull
+        #else
+        return .beatThisHalf
+        #endif
+    }
+
+    /// The models this device needs.
+    public static var needed: [OnDeviceModel] { [.swiftF0, .basicPitch, beatThis] }
 
     public var fileName: String { String(rawValue.split(separator: "/").last!) + ".mlpackage" }
     public var directory: String { String(rawValue.split(separator: "/").first!) }
@@ -17,7 +31,7 @@ public enum OnDeviceModel: String, CaseIterable, Sendable {
     public var computeUnits: MLComputeUnits {
         switch self {
         case .swiftF0, .basicPitch: return .cpuAndGPU
-        case .beatThis: return .all
+        case .beatThisHalf, .beatThisFull: return .all
         }
     }
 
@@ -26,7 +40,8 @@ public enum OnDeviceModel: String, CaseIterable, Sendable {
         switch self {
         case .swiftF0: return 1.2
         case .basicPitch: return 0.3
-        case .beatThis: return 39
+        case .beatThisHalf: return 39
+        case .beatThisFull: return 78
         }
     }
 
@@ -63,13 +78,13 @@ public final class ModelStore: @unchecked Sendable {
             || localSource.map { FileManager.default.fileExists(atPath: $0.appending(path: "\(m.directory)/\(m.fileName)").path) } ?? false
     }
 
-    public var missing: [OnDeviceModel] { OnDeviceModel.allCases.filter { !isAvailable($0) } }
+    public var missing: [OnDeviceModel] { OnDeviceModel.needed.filter { !isAvailable($0) } }
 
     /// Download (if needed) and compile every model. `progress` gets 0...1.
     public func prepareAll(progress: (@Sendable (Double) -> Void)? = nil) async throws {
-        for (i, m) in OnDeviceModel.allCases.enumerated() {
+        for (i, m) in OnDeviceModel.needed.enumerated() {
             _ = try await model(m)
-            progress?(Double(i + 1) / Double(OnDeviceModel.allCases.count))
+            progress?(Double(i + 1) / Double(OnDeviceModel.needed.count))
         }
     }
 
@@ -120,6 +135,9 @@ extension MLMultiArray {
     /// Row-major contents as Float, honouring the array's strides (Core ML outputs can be
     /// padded, for example 88 values in a row of 96) and storage type.
     func floats() -> [Float] {
+        // Core ML's own conversion handles strides and fp16 on every platform (the
+        // simulator's fp16 outputs are not readable through withUnsafeBytes).
+        if dataType == .float16 || dataType == .double { return MLShapedArray<Float>(converting: self).scalars }
         let shape = self.shape.map(\.intValue), strides = self.strides.map(\.intValue)
         let n = count
         var out = [Float](repeating: 0, count: n)
