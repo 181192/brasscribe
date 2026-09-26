@@ -102,9 +102,15 @@ struct SourceSheet: View {
                         Text("Standard").tag(Difficulty.standard)
                         Text("Easier").tag(Difficulty.easier)
                     } label: { Text("Difficulty") }
-                    // A key choice returns when the arranger can transpose; the engine rejects it today.
+                    Picker(selection: $output.keyFifths) {
+                        Text("Original key").tag(Int?.none)
+                        ForEach(-6...6, id: \.self) { f in Text(KeyNames.name(fifths: f)).tag(Int?.some(f)) }
+                    } label: { Text("Key (concert)") }
+                    .accessibilityIdentifier("keyPicker")
                 } header: { Text("Score") } footer: {
-                    Text("The small band is arranged on this device. Difficulty is noted but not applied yet.")
+                    Text(profile == .solo && app.soloOnDevice
+                         ? String(localized: "Solos are transcribed on this device. Other recordings go to your computer.")
+                         : String(localized: "Your computer arranges the score with these choices."))
                 }
             }
             .formStyle(.grouped)

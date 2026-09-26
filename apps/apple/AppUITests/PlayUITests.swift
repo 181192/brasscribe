@@ -100,6 +100,9 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(play.waitForExistence(timeout: 30))
         let position = app.descendants(matching: .any)["position"]
         let speed = app.descendants(matching: .any)["speed"]
+        // wait until the score is engraved, so no keystroke lands while the view rebuilds
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'")).firstMatch
+            .waitForExistence(timeout: 60))
         app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
         app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
         XCTAssertEqual(position.value as? String, "3")
@@ -111,6 +114,63 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 5))
         app.typeKey(" ", modifierFlags: [])
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 5))
+    }
+
+    /// A recorded solo becomes a readable part with no computer: on-device models and the core.
+    func testOfflineSoloToReadablePart() throws {
+        let clip = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "runs/apple/entertainer-tpt1-30s.wav")
+        let models = "/Users/k/private/brasscribe/models/converted"
+        guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: models) else {
+            throw XCTSkip("needs the URMP clip and models/converted")
+        }
+        app.terminate()
+        app.launchArguments = ["-reset"]
+        app.launchEnvironment["BRASSCRIBE_OPEN_AUDIO"] = clip.path
+        app.launchEnvironment["BRASSCRIBE_MODELS"] = models
+        app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"   // no computer
+        app.launch()
+        let solo = app.buttons["profile-solo"]
+        XCTAssertTrue(solo.waitForExistence(timeout: 20))
+        solo.tap()
+        app.buttons["transcribe"].tap()
+        let open = app.buttons["openScore"]
+        XCTAssertTrue(open.waitForExistence(timeout: 120), "on-device transcription should reach Review")
+        open.tap()
+        let staff = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-' AND label CONTAINS 'Solo Cornet'")).firstMatch
+        XCTAssertTrue(staff.waitForExistence(timeout: 60))
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "offline-solo-part"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// The synced video uses the system player, which offers picture in picture.
+    func testVideoOffersPictureInPicture() throws {
+        let video = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "runs/apple/mikkel-20s.mp4")
+        guard FileManager.default.fileExists(atPath: video.path) else { throw XCTSkip("needs data/runs/apple/mikkel-20s.mp4") }
+        app.terminate()
+        app.launchEnvironment["BRASSCRIBE_VIDEO"] = video.path
+        app.launch()
+        let pip = app.buttons["pipButton"]
+        XCTAssertTrue(pip.waitForExistence(timeout: 30), "picture-in-picture control")
+        let available = NSPredicate { _, _ in pip.isEnabled }
+        let r = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: available, object: nil)], timeout: 15)
+        #if os(iOS)
+        if r != .completed, UIDevice.current.userInterfaceIdiom == .phone {
+            throw XCTSkip("the iPhone simulator reports picture in picture as not possible for this player")
+        }
+        #endif
+        XCTAssertEqual(r, .completed)
+        pip.tap()
+        let started = app.buttons["Stop picture in picture"].waitForExistence(timeout: 10)
+        print("PIP available \(pip.isEnabled), started \(started)")
+        XCTAssertTrue(started)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "video-pip-control"
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 
     func testNextBarAndLoopWithoutDragging() throws {

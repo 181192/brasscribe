@@ -38,6 +38,7 @@ struct PracticeView: View {
     @State private var showTalking = false
     @State private var showExport = false
     @State private var showVideo = true
+    @FocusState private var focused: Bool
     @Environment(\.horizontalSizeClass) private var hsize
 
     var body: some View {
@@ -60,6 +61,14 @@ struct PracticeView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(model.piece.title))
+        // The score's scroll view takes arrow keys for scrolling, so bar navigation is
+        // handled here, on the focused practice screen, before it reaches the scroll view.
+        .focusable()
+        .focusEffectDisabled()
+        .focused($focused)
+        .onAppear { focused = true }
+        .onKeyPress(.rightArrow) { model.nextBar(); return .handled }
+        .onKeyPress(.leftArrow) { model.previousBar(); return .handled }
         .sheet(isPresented: $showMixer) { MixerView(model: model) }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
         .sheet(isPresented: $showExport) { ExportView(model: model) }
@@ -236,12 +245,110 @@ struct AdaptiveLabelStyle: LabelStyle {
 }
 
 /// Muted, synced video of the original performance with system picture-in-picture.
+/// The synced video in a player layer with system picture in picture
+/// (AVPictureInPictureController, iOS/iPadOS and macOS) and an explicit, labelled button
+/// to start it. The video stays muted; the app's audio engine plays.
 struct VideoPiP: View {
     let player: AVPlayer
+    @State private var pip = PiPModel()
+
     var body: some View {
-        VideoPlayer(player: player)
+        ZStack(alignment: .topTrailing) {
+            PlayerLayerView(player: player, pip: pip)
+            Button {
+                pip.toggle()
+            } label: {
+                Image(systemName: pip.active ? "pip.exit" : "pip.enter")
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .hitTarget()
+            }
+            .buttonStyle(.plain)
+            .disabled(!pip.possible)
+            .accessibilityLabel(pip.active ? Text("Stop picture in picture") : Text("Picture in picture"))
+            .accessibilityValue(Text(pip.possible ? "available" : "unavailable"))
+            .accessibilityIdentifier("pipButton")
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("videoPlayer")
     }
 }
+
+@Observable @MainActor
+final class PiPModel: NSObject, AVPictureInPictureControllerDelegate {
+    var controller: AVPictureInPictureController?
+    var possible = false
+    var active = false
+    private var observation: NSKeyValueObservation?
+
+    func attach(_ layer: AVPlayerLayer) {
+        guard controller == nil, AVPictureInPictureController.isPictureInPictureSupported(),
+              let c = AVPictureInPictureController(playerLayer: layer) else { return }
+        c.delegate = self
+        controller = c
+        observation = c.observe(\.isPictureInPicturePossible, options: [.initial, .new]) { [weak self] c, _ in
+            let p = c.isPictureInPicturePossible
+            Task { @MainActor in self?.possible = p }
+        }
+    }
+
+    func toggle() {
+        guard let c = controller else { return }
+        if c.isPictureInPictureActive { c.stopPictureInPicture() } else { c.startPictureInPicture() }
+    }
+
+    nonisolated func pictureInPictureControllerDidStartPictureInPicture(_ c: AVPictureInPictureController) {
+        Task { @MainActor in self.active = true }
+    }
+    nonisolated func pictureInPictureControllerDidStopPictureInPicture(_ c: AVPictureInPictureController) {
+        Task { @MainActor in self.active = false }
+    }
+}
+
+#if os(iOS)
+final class PlayerLayerUIView: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+}
+
+struct PlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer
+    let pip: PiPModel
+    func makeUIView(context: Context) -> PlayerLayerUIView {
+        let v = PlayerLayerUIView()
+        v.playerLayer.player = player
+        v.playerLayer.videoGravity = .resizeAspect
+        v.backgroundColor = .black
+        pip.attach(v.playerLayer)
+        return v
+    }
+    func updateUIView(_ v: PlayerLayerUIView, context: Context) { v.playerLayer.player = player }
+}
+#else
+final class PlayerLayerNSView: NSView {
+    let playerLayer = AVPlayerLayer()
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer = playerLayer
+        playerLayer.backgroundColor = NSColor.black.cgColor
+        playerLayer.videoGravity = .resizeAspect
+    }
+    required init?(coder: NSCoder) { fatalError() }
+}
+
+struct PlayerLayerView: NSViewRepresentable {
+    let player: AVPlayer
+    let pip: PiPModel
+    func makeNSView(context: Context) -> PlayerLayerNSView {
+        let v = PlayerLayerNSView()
+        v.playerLayer.player = player
+        pip.attach(v.playerLayer)
+        return v
+    }
+    func updateNSView(_ v: PlayerLayerNSView, context: Context) { v.playerLayer.player = player }
+}
+#endif
 
 extension View {
     /// At least 44 × 44 pt to hit (WCAG 2.5.8 asks for 24; Apple's guideline is 44).

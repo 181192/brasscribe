@@ -116,9 +116,11 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         if let t = req.title { field("title", t) }
         // The app renders audio itself; skipping it on the engine avoids an extra MuseScore launch.
         field("render_audio", "false")
-        // Difficulty is recorded by the engine. Lineup and key make today's engine fail the
-        // job, so the app arranges the small band itself and does not send them.
+        // Arrangement options (engine/openapi.json: lineup full|minimal, difficulty, key as
+        // FIFTHS[:MODE]).
+        field("lineup", req.output.lineup == .minimalBand ? "minimal" : "full")
         field("difficulty", req.output.difficulty.rawValue)
+        if let k = req.output.keyFifths { field("key", String(k)) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
         h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)

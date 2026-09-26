@@ -53,6 +53,8 @@ targets:
         product: PlaybackKit
       - package: BrasscribeKit
         product: SVGRender
+      - package: BrasscribeKit
+        product: OnDeviceKit
       - package: NotationKit
         product: NotationKit
       - package: BrasscribeCore

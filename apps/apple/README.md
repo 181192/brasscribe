@@ -58,11 +58,21 @@ The Playback menu lists the same keys.
   them, so colour is never the only cue. The talking score says "uncertain". Confidence comes from the
   Composition's source voices, and arranged notes inherit it by onset and pitch class. The arranger's
   own flag (the red colour in the MusicXML) is kept too.
-- **Sound.** AVAudioUnitSamplers in an AVAudioEnvironmentNode with hall reverb. With `BRASSCRIBE_SOUNDS`
-  set to the repository root, each part plays its brass-band instrument from `data/sounds/built`
-  (mapping, mix gain and audience-position seating from `sounds/*.json`). Otherwise one sampler per
-  section plays MuseScore_General.sf2, then the macOS system DLS, then the sampler's default tone. The
-  demo scripts and UI tests set this up. The app does not bundle any sounds yet.
+- **Sound.** With `BRASSCRIBE_SOUNDS` set to the repository root, each part plays its preset from the
+  band SoundFont (`data/sounds/band/brasscribe-band-16bit.sf2`: bank MSB 0x79 + LSB = bank, drums
+  0x78/0, gain `channel_gain_db`), placed at its audience-seat position from `sounds/seating.json` in an
+  AVAudioEnvironmentNode. The room is a convolution of the OpenAIR central-hall IR (vDSP partitioned
+  convolution in an AUAudioUnit), calibrated to +4.5 dB wet-to-direct at the audience seat (measured
+  4.48 dB on Mikkel). Without those files the app falls back to MuseScore_General.sf2 (or the system
+  DLS) and the environment node's hall reverb. The app does not bundle any sounds.
+- **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
+  and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
+  whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
+  Swift. The Rust core's solo-with-band path then writes the score. The models (about 40 MB) download on
+  demand from the address in Settings, or come from `BRASSCRIBE_MODELS` (a `models/converted/` folder)
+  during development. They are not in the app.
+- **Video.** The synced video plays in a player layer with picture in picture
+  (AVPictureInPictureController) and a labelled start/stop button.
 - **Capture on macOS.** This uses the Core Audio process tap. The release build is sandboxed. Whether
   the process tap works under App Sandbox is an open question. Debug builds run unsandboxed.
 - **Exports.** MusicXML, MIDI, audio (offline render to AAC) and the talking score (text) are made on

@@ -1,4 +1,5 @@
 import AVFoundation
+import OnDeviceKit
 import Foundation
 import Observation
 import ScoreKit
@@ -33,7 +34,7 @@ final class AppModel {
     var importing = false
 
     // Companion settings
-    var companionURL: String = UserDefaults.standard.string(forKey: "companionURL") ?? "http://localhost:8765" {
+    var companionURL: String = ProcessInfo.processInfo.environment["BRASSCRIBE_COMPANION"] ?? UserDefaults.standard.string(forKey: "companionURL") ?? "http://localhost:8765" {
         didSet { UserDefaults.standard.set(companionURL, forKey: "companionURL") }
     }
     var companionToken: String? = UserDefaults.standard.string(forKey: "companionToken") {
@@ -69,6 +70,23 @@ final class AppModel {
             return FixtureService(directory: dir, stepDelay: ProcessInfo.processInfo.arguments.contains("-fast") ? 0.05 : 0.6)
         }
         return CompanionService(baseURL: URL(string: companionURL) ?? URL(string: "http://localhost:8765")!, token: companionToken)
+    }
+
+    /// Solos are transcribed on this device when the models are there (or can be fetched);
+    /// everything else goes to the paired computer.
+    var soloOnDevice: Bool = UserDefaults.standard.object(forKey: "soloOnDevice") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(soloOnDevice, forKey: "soloOnDevice") }
+    }
+    var modelDownloadURL: String = UserDefaults.standard.string(forKey: "modelDownloadURL") ?? "" {
+        didSet { UserDefaults.standard.set(modelDownloadURL, forKey: "modelDownloadURL"); ModelStore.shared.remoteBase = URL(string: modelDownloadURL) }
+    }
+
+    func service(for profile: SourceProfile) -> TranscriptionService {
+        if profile == .solo && soloOnDevice && !useDemoService {
+            ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
+            if ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil { return OnDeviceSoloService() }
+        }
+        return service()
     }
 
     func refresh() { pieces = Piece.loadAll() }
@@ -152,20 +170,13 @@ final class AppModel {
     // MARK: transcription
 
     func startTranscription(_ src: PendingSource, profile: SourceProfile, output: OutputChoice) {
-        let job = TranscriptionJob(source: src, profile: profile, output: output, service: service())
+        let job = TranscriptionJob(source: src, profile: profile, output: output, service: service(for: profile))
         jobs[job.id] = job
         pending = nil
         path.append(.transcribe(job.id))
         job.start { [weak self] result in
             guard let self else { return }
-            var result = result
             do {
-                // The engine only writes the full band so far; the core arranges the small band here.
-                if output.lineup == .minimalBand, let comp = result.composition,
-                   let xml = try self.core.arrange(comp, lineup: .minimalBand, difficulty: output.difficulty, keyFifths: nil) {
-                    result.musicXML = xml
-                    result.available.remove(.pdf); result.available.remove(.brailleBRF); result.available.remove(.midi); result.available.remove(.audio)
-                }
                 let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
                                          video: src.videoURL, fixtureDirectory: self.useDemoService ? self.fixtureDirectory : nil)
                 self.refresh()

@@ -56,6 +56,10 @@ struct RootView: View {
         .onAppear {
             FileHandle.standardError.write(Data("root appeared \(ProcessInfo.processInfo.arguments)\n".utf8))
             if ProcessInfo.processInfo.arguments.contains("-open-demo-score") { openDemoScore() }
+            // UI tests: start from a recording as if it had just been imported
+            if let a = ProcessInfo.processInfo.environment["BRASSCRIBE_OPEN_AUDIO"], FileManager.default.fileExists(atPath: a) {
+                app.acceptRecording(URL(fileURLWithPath: a), title: URL(fileURLWithPath: a).deletingPathExtension().lastPathComponent)
+            }
         }
     }
 
