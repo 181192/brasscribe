@@ -113,6 +113,35 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 5))
     }
 
+    /// A recorded solo becomes a readable part with no computer: on-device models and the core.
+    func testOfflineSoloToReadablePart() throws {
+        let clip = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "runs/apple/entertainer-tpt1-30s.wav")
+        let models = "/Users/k/private/brasscribe/models/converted"
+        guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: models) else {
+            throw XCTSkip("needs the URMP clip and models/converted")
+        }
+        app.terminate()
+        app.launchArguments = ["-reset"]
+        app.launchEnvironment["BRASSCRIBE_OPEN_AUDIO"] = clip.path
+        app.launchEnvironment["BRASSCRIBE_MODELS"] = models
+        app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"   // no computer
+        app.launch()
+        let solo = app.buttons["profile-solo"]
+        XCTAssertTrue(solo.waitForExistence(timeout: 20))
+        solo.tap()
+        app.buttons["transcribe"].tap()
+        let open = app.buttons["openScore"]
+        XCTAssertTrue(open.waitForExistence(timeout: 120), "on-device transcription should reach Review")
+        open.tap()
+        let staff = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-' AND label CONTAINS 'Solo Cornet'")).firstMatch
+        XCTAssertTrue(staff.waitForExistence(timeout: 60))
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "offline-solo-part"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     func testNextBarAndLoopWithoutDragging() throws {
         let next = app.buttons["nextBar"]
         XCTAssertTrue(next.waitForExistence(timeout: 30))

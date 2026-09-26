@@ -1,3 +1,4 @@
+import OnDeviceKit
 import SwiftUI
 import TranscriptionKit
 #if os(macOS)
@@ -155,6 +156,20 @@ struct SettingsView: View {
                     Text("Start Brasscribe on your computer with “brasscribe serve --host 0.0.0.0” and type the six-digit code it shows.")
                 }
                 Section {
+                    Toggle(isOn: $app.soloOnDevice) { Text("Transcribe solos on this device") }
+                    TextField(text: $app.modelDownloadURL) { Text("Model download address") }
+                        .textContentType(.URL)
+                        .autocorrectionDisabled()
+                    LabeledContent {
+                        Text(modelStatus)
+                    } label: { Text("Models") }
+                    Button("Download models") { Task { await downloadModels() } }
+                        .disabled(busy || ModelStore.shared.missing.isEmpty)
+                    Button("Remove downloaded models", role: .destructive) { ModelStore.shared.removeAll(); modelTick += 1 }
+                } header: { Text("On this device") } footer: {
+                    Text("Pitch and beat models (about 40 MB) are downloaded once and not included in the app.")
+                }
+                Section {
                     Toggle(isOn: Binding(get: { UserDefaults.standard.bool(forKey: "useDemoService") },
                                          set: { UserDefaults.standard.set($0, forKey: "useDemoService") })) {
                         Text("Use the demo instead of a computer")
@@ -171,6 +186,23 @@ struct SettingsView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .frame(minWidth: 460, minHeight: 420)
+    }
+
+    @State private var modelTick = 0
+
+    var modelStatus: String {
+        _ = modelTick
+        let missing = ModelStore.shared.missing
+        if missing.isEmpty { return String(localized: "Ready") }
+        let mb = missing.reduce(0) { $0 + $1.sizeMB }
+        return String(localized: "\(missing.count) to download (\(Int(mb.rounded())) MB)")
+    }
+
+    func downloadModels() async {
+        busy = true; defer { busy = false; modelTick += 1 }
+        ModelStore.shared.remoteBase = URL(string: app.modelDownloadURL)
+        do { try await ModelStore.shared.prepareAll(); status = String(localized: "Models ready.") }
+        catch { status = "\(error)" }
     }
 
     func pair() async {
