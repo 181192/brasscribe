@@ -15,7 +15,7 @@
     "parts":           {"en": "Parts",                "nb": "Stemmer",               "apple": "music.note.list",         "material": "queue_music",         "windows": {"glyph": "EA37", "name": "List"}},
     "play-along":      {"en": "Play along",           "nb": "Spill med",             "apple": "music.mic",               "material": "mic",                 "windows": {"glyph": "E720", "name": "Microphone"}},
     "original":        {"en": "Original recording",   "nb": "Originalopptaket",      "apple": "waveform",                "material": "graphic_eq",          "windows": {"glyph": "E9E9", "name": "Equalizer"}},
-    "import":          {"en": "Import audio or video","nb": "Importer lyd eller video", "apple": "square.and.arrow.down", "material": "download",          "windows": {"glyph": "E8B5", "name": "Import"}},
+    "import-file":          {"en": "Import audio or video","nb": "Importer lyd eller video", "apple": "square.and.arrow.down", "material": "download",          "windows": {"glyph": "E8B5", "name": "Import"}},
     "record-mic":      {"en": "Record with the microphone", "nb": "Spill inn med mikrofonen", "apple": "mic",           "material": "mic",                 "windows": {"glyph": "E720", "name": "Microphone"}},
     "record-device":   {"en": "Record sound playing on this device", "nb": "Spill inn lyd som spilles her", "apple": "speaker.wave.2", "material": "volume_up", "windows": {"glyph": "E767", "name": "Volume"}},
     "record":          {"en": "Record",               "nb": "Spill inn",             "apple": "record.circle",           "material": "radio_button_checked", "windows": {"glyph": "E7C8", "name": "Record"}},

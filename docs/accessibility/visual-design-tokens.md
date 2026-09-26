@@ -1,19 +1,19 @@
 # Visual design tokens: colour, shape, contrast, motion, zoom
 
-- **Source of truth:** [design-tokens.json](design-tokens.json).
-- **Check:** `uv run qa/tools/contrast.py` exits 1 on any contrast failure and runs in CI.
-- **Generated report:** [qa/reports/contrast-tokens.md](../../qa/reports/contrast-tokens.md). Every ratio below is copied from that report; don't edit numbers by hand.
+- **Source of truth:** [design/tokens/tokens.json](../../design/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tokens/build.py` and keeps its existing shape for tools that read it.
+- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 67 pairs per theme) exit 1 on any contrast failure and run in CI.
+- **Generated reports:** [qa/reports/contrast-tokens.md](../../qa/reports/contrast-tokens.md) and [qa/reports/contrast-design-tokens.md](../../qa/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
 
 ## 1. Palette
 
 | Token | Light | Dark | High contrast | Use |
 |---|---|---|---|---|
-| bg | `#FFFFFF` | `#121212` | `#000000` | Page, score paper |
-| surface | `#F4F4F2` | `#1E1E1E` | `#000000` | Panels, player bar |
-| text | `#1A1A1A` | `#EDEDED` | `#FFFFFF` | Body text |
-| text-muted | `#595959` | `#B3B3B3` | `#FFFFFF` | Secondary text (still ≥ 4.5:1) |
-| ink | `#000000` | `#F2F2F2` | `#FFFFFF` | Noteheads, stems, confident notes |
-| staff | `#4D4D4D` | `#A6A6A6` | `#FFFFFF` | Staff lines, bar lines |
+| bg | `#FBFAF7` | `#131210` | `#000000` | Page, score paper (warm paper white) |
+| surface | `#F3F1EC` | `#1C1B18` | `#000000` | Panels, player bar |
+| text | `#1B1A17` | `#EDEBE6` | `#FFFFFF` | Body text |
+| text-muted | `#5E5A52` | `#B4B0A7` | `#FFFFFF` | Secondary text (still ≥ 4.5:1) |
+| ink | `#121110` | `#F2F0EB` | `#FFFFFF` | Noteheads, stems, confident notes |
+| staff | `#57534B` | `#A6A29A` | `#FFFFFF` | Staff lines, bar lines |
 | uncertain | `#0063A6` | `#56B4E9` | `#00FFFF` | Notes with confidence 0.4–0.7 |
 | very-uncertain | `#B04A00` | `#F0A04B` | `#FFFF00` | Notes with confidence < 0.4 |
 | adlib-tint | `#EEF3F8` | `#1B2530` | none (`#000000`) | Background band behind free-time bars |
@@ -21,6 +21,10 @@
 | cursor | `#6B3FA0` | `#C9A7F0` | `#FF80FF` | Playback cursor line |
 | focus | `#0050B3` | `#8AB4F8` | `#FFFF00` | Keyboard focus ring |
 | error | `#B3261E` | `#F2B8B5` | `#FF8080` | Error text |
+| cursor-tint | `#EAE4ED` | `#302A34` | none (`#000000`) | Band behind the bar under the cursor (design tokens only) |
+| selection-tint / selection-edge | `#E8E5DE` / `#1B1A17` | `#2C2A26` / `#EDEBE6` | none / `#FFFFFF` | Selected bar range before it becomes a loop (design tokens only) |
+
+The neutrals are warm (paper and ink rather than pure grey) for the Brasscribe look; the score hues are unchanged. Tints never stack: inside an ad lib passage the loop tint replaces the ad lib tint, and the ad lib text and dashed bar lines remain.
 
 The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which is the pair that dichromats still tell apart. They are darkened in light theme to reach ≥ 3:1 on white. Unmodified Okabe-Ito orange `#E69F00` measures about 2.2:1 on white and would fail 1.4.11.
 
@@ -28,19 +32,19 @@ The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which 
 
 | Pair | Light | Dark | High contrast | Min |
 |---|---|---|---|---|
-| text / bg | 17.40 | 16.00 | 21.00 | 4.5 |
-| text-muted / surface | 6.36 | 7.95 | 21.00 | 4.5 |
-| ink / adlib-tint | 18.81 | 13.86 | 21.00 | 3 |
-| staff / bg | 8.45 | 7.70 | 21.00 | 3 |
-| uncertain / bg | 6.30 | 8.12 | 16.75 | 3 |
+| text / bg | 16.67 | 15.71 | 21.00 | 4.5 |
+| text-muted / surface | 6.08 | 7.96 | 21.00 | 4.5 |
+| ink / adlib-tint | 16.90 | 13.62 | 21.00 | 3 |
+| staff / bg | 7.33 | 7.36 | 21.00 | 3 |
+| uncertain / bg | 6.03 | 8.11 | 16.75 | 3 |
 | uncertain / loop-tint | 5.71 | 6.21 | 16.75 | 3 |
-| very-uncertain / bg | 5.49 | 8.77 | 19.56 | 3 |
+| very-uncertain / bg | 5.26 | 8.77 | 19.56 | 3 |
 | very-uncertain / adlib-tint | 4.92 | 7.26 | 19.56 | 3 |
-| cursor / bg | 7.38 | 9.16 | 9.78 | 3 |
-| focus / surface | 6.81 | 7.91 | 19.56 | 3 |
-| error / bg | 6.54 | 10.97 | 8.65 | 4.5 |
+| cursor / bg | 7.07 | 9.16 | 9.78 | 3 |
+| focus / surface | 6.65 | 8.17 | 19.56 | 3 |
+| error / bg | 6.26 | 10.96 | 8.65 | 4.5 |
 
-All 63 pairs pass (21 pairs × 3 themes).
+All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 201 pairs, all pass.
 
 ### Colour-vision simulation (CIEDE2000, from the generated report)
 
@@ -48,8 +52,8 @@ The simulation uses the Machado et al. (2009) matrices at severity 1.0, plus a l
 
 | Pair (light) | Normal | Protan | Deutan | Tritan | Greyscale |
 |---|---|---|---|---|---|
-| ink / uncertain | 35.7 | 37.5 | 35.0 | 37.0 | 28.3 |
-| ink / very-uncertain | 41.3 | 34.8 | 42.2 | 41.0 | 31.5 |
+| ink / uncertain | 33.9 | 35.7 | 33.5 | 37.1 | 25.4 |
+| ink / very-uncertain | 39.0 | 32.3 | 39.7 | 38.6 | 28.6 |
 | uncertain / very-uncertain | 46.9 | 48.8 | 54.0 | 60.4 | **3.4** |
 | cursor / uncertain | 23.4 | **7.0** | **1.7** | 33.9 | **3.7** |
 
@@ -71,7 +75,7 @@ What this means:
 | Checked by user | normal | – | – | normal |
 | Free time (*ad lib*) | normal | `adlib-tint` band plus the text "ad lib." at the start, "a tempo" at the end, dashed bar lines | "Ad lib, free time…" | `<words>ad lib.</words>`, dashed `<bar-style>` |
 | Loop range | – | tint band plus bracket-shaped edge markers at both ends, labelled "Loop 12–16" | "Loop set, bars 12 to 16" | – |
-| Playback cursor | – | 3 px full-staff-height line (`cursor`) plus a 20% tint of the current bar | position in the status region | – |
+| Playback cursor | – | 3 px full-staff-height line (`cursor`) plus the `cursor-tint` band on the current bar | position in the status region | – |
 | Focus (score) | – | 2 px `focus` outline plus a 2 px gap around the focused note or bar | the announcement | – |
 | Active part | – | part name in bold plus a leading bar marker, not only highlight colour | "Part: Solo Cornet" | – |
 
