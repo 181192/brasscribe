@@ -144,15 +144,23 @@ def export(key: str, coreml: bool, onnx_export: bool = True) -> None:
 
 
 def _export_onnx(core, x, fp32: Path) -> None:
+    import shutil
     import onnx
-    with torch.no_grad():
-        torch.onnx.export(core, (x,), str(fp32), input_names=["x"], output_names=["mask"], opset_version=17,
-                          dynamo=False)
-    m = onnx.load(str(fp32))
-    onnx.save(m, str(fp32), save_as_external_data=True, all_tensors_to_one_file=True, location=fp32.name + ".data")
-    print("wrote", fp32)
+    if not (fp32.exists() and fp32.with_name(fp32.name + ".data").exists()):
+        # Graphs over 2 GB are written with one file per tensor; export into a scratch
+        # directory, then consolidate into a single external-data file.
+        tmp = fp32.parent / "export-tmp"
+        tmp.mkdir(exist_ok=True)
+        with torch.no_grad():
+            torch.onnx.export(core, (x,), str(tmp / fp32.name), input_names=["x"], output_names=["mask"],
+                              opset_version=17, dynamo=False)
+        m = onnx.load(str(tmp / fp32.name))
+        onnx.save(m, str(fp32), save_as_external_data=True, all_tensors_to_one_file=True, location=fp32.name + ".data")
+        shutil.rmtree(tmp)
+        print("wrote", fp32)
     from onnxruntime.transformers.float16 import convert_float_to_float16
-    m16 = convert_float_to_float16(onnx.load(str(fp32)), keep_io_types=True)
+    # Shape inference serialises the whole model, which fails above 2 GB; the export has shapes already.
+    m16 = convert_float_to_float16(onnx.load(str(fp32)), keep_io_types=True, disable_shape_infer=True)
     fp16 = fp32.with_name(fp32.name.replace("-fp32", "-fp16"))
     onnx.save(m16, str(fp16), save_as_external_data=True, all_tensors_to_one_file=True, location=fp16.name + ".data")
     print("wrote", fp16)
