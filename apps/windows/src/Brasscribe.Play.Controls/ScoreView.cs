@@ -69,6 +69,8 @@ public sealed partial class ScoreView : UserControl
         _overlay.Children.Add(_cursorLine);
         _overlay.Children.Add(_focusBox);
 
+        _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
+        _scroller.SizeChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
         ActualThemeChanged += (_, _) => ApplyBrushes();
         Loaded += (_, _) => ApplyBrushes();
         GotFocus += (_, _) => _peer?.RaiseFocusedTextChanged();
@@ -116,6 +118,68 @@ public sealed partial class ScoreView : UserControl
     }
 
     public Rect? FocusRect { get; private set; }
+
+    private readonly Dictionary<string, (Rect Bounds, Image? Image)> _slots = [];
+
+    /// <summary>Raised when the visible part of the score surface changes (scrolling, resizing, zoom).</summary>
+    public event EventHandler<Rect>? ViewportChanged;
+
+    /// <summary>The visible rectangle in score-surface coordinates.</summary>
+    public Rect Viewport => new(_scroller.HorizontalOffset, _scroller.VerticalOffset,
+        Math.Max(0, _scroller.ViewportWidth), Math.Max(0, _scroller.ViewportHeight));
+
+    /// <summary>Places empty pages for a new layout; images arrive later through <see cref="SetPageImage"/>.</summary>
+    public void SetPageSlots(IEnumerable<(string Id, Rect Bounds)> slots, double totalWidth, double totalHeight)
+    {
+        _pages.Children.Clear();
+        _slots.Clear();
+        foreach (var (id, bounds) in slots) _slots[id] = (bounds, null);
+        _surface.Width = totalWidth;
+        _surface.Height = totalHeight;
+        ViewportChanged?.Invoke(this, Viewport);
+    }
+
+    /// <summary>Ids of pages that intersect the viewport, grown by <paramref name="margin"/> viewports above and below.</summary>
+    public IEnumerable<string> PagesNear(Rect viewport, double margin = 1.0)
+    {
+        double grow = viewport.Height * margin;
+        var area = new Rect(viewport.X - viewport.Width * margin, Math.Max(0, viewport.Y - grow),
+            viewport.Width * (1 + 2 * margin), viewport.Height + 2 * grow);
+        foreach (var (id, slot) in _slots)
+        {
+            var r = slot.Bounds;
+            if (r.X < area.X + area.Width && r.X + r.Width > area.X && r.Y < area.Y + area.Height && r.Y + r.Height > area.Y)
+                yield return id;
+        }
+    }
+
+    public bool HasPageImage(string id) => _slots.TryGetValue(id, out var s) && s.Image is not null;
+
+    public void SetPageImage(string id, ImageSource source)
+    {
+        if (!_slots.TryGetValue(id, out var slot)) return;
+        var img = new Image { Source = source, Width = slot.Bounds.Width, Height = slot.Bounds.Height, Stretch = Stretch.Fill };
+        AutomationProperties.SetAccessibilityView(img, AccessibilityView.Raw);
+        Canvas.SetLeft(img, slot.Bounds.X);
+        Canvas.SetTop(img, slot.Bounds.Y);
+        _pages.Children.Add(img);
+        _slots[id] = (slot.Bounds, img);
+    }
+
+    /// <summary>Drops images far outside the viewport to bound memory; they are requested again when scrolled back.</summary>
+    public IReadOnlyList<string> ReleaseFarPages(Rect viewport, double keep = 4.0)
+    {
+        var near = PagesNear(viewport, keep).ToHashSet();
+        var released = new List<string>();
+        foreach (var (id, slot) in _slots.ToList())
+        {
+            if (slot.Image is null || near.Contains(id)) continue;
+            _pages.Children.Remove(slot.Image);
+            _slots[id] = (slot.Bounds, null);
+            released.Add(id);
+        }
+        return released;
+    }
 
     public void SetPages(IReadOnlyList<ScorePage> pages, double totalWidth, double totalHeight)
     {

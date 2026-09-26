@@ -20,8 +20,9 @@ namespace Brasscribe.Play.Views;
 /// </summary>
 public sealed partial class ScoreScreen : UserControl
 {
-    private RenderOutput? _render;
-    private readonly ScoreRenderService _renderer = new("skia");
+    private ScoreLayout? _layout;
+    private readonly LazyScoreRenderer _renderer = new("skia");
+    private readonly HashSet<string> _requested = [];
     private int[] _tracks = [];
     private bool _renderQueued;
     private int _lastCursorBar = -1;
@@ -33,6 +34,7 @@ public sealed partial class ScoreScreen : UserControl
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
         Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
+        Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
     }
 
     public ScoreViewModel ViewModel
@@ -133,50 +135,72 @@ public sealed partial class ScoreScreen : UserControl
         });
     }
 
+    /// <summary>
+    /// Lays out the score off the UI thread, then draws only the pages near the viewport. The UI
+    /// thread only places page slots and decodes finished PNGs (BitmapImage decodes asynchronously).
+    /// </summary>
     private async Task RenderAsync()
     {
         if (ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null || ViewModel.Document is null) return;
         var score = player.Score;
-
+        var doc = ViewModel.Document;
         _tracks = ViewModel.SelectedPartIndex >= 0 ? [ViewModel.SelectedPartIndex] : player.Tracks.Select(t => t.Index).ToArray();
-
-        // Written pitch shows each part's transposition; concert pitch shows sounding pitch.
-        foreach (var t in player.Tracks)
-            foreach (var staff in score.Tracks[t.Index].Staves)
-                staff.DisplayTranspositionPitch = ViewModel.ConcertPitch ? 0 : t.DisplayTransposition;
-
+        bool concert = ViewModel.ConcertPitch;
+        var display = player.Tracks.ToDictionary(t => t.Index, t => t.DisplayTransposition);
         var palette = UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
         if (new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast) palette = UncertaintyPalette.HighContrast;
-        ScoreStyler.ApplyUncertainty(score, ViewModel.Document, palette);
-
-        _renderer.Scale = ViewModel.ZoomPercent / 100.0;
         // Above 200 % a single part reflows into one horizontal line so scrolling goes one way.
-        _renderer.Settings.Display.LayoutMode = ViewModel.ZoomPercent > 200 && ViewModel.SelectedPartIndex >= 0
-            ? AlphaTab.LayoutMode.Horizontal : AlphaTab.LayoutMode.Page;
-
+        var mode = ViewModel.ZoomPercent > 200 && ViewModel.SelectedPartIndex >= 0 ? AlphaTab.LayoutMode.Horizontal : AlphaTab.LayoutMode.Page;
         double width = Math.Max(400, Notation.ActualWidth - 24);
-        if (_render is not null) ScoreRenderService.Release(_render);
-        _render = _renderer.Render(score, _tracks, width);
 
-        var pages = new List<ScorePage>();
-        foreach (var partial in _render.Partials)
+        var layout = await _renderer.LayoutAsync(score, _tracks, width, ViewModel.ZoomPercent / 100.0, mode, s =>
         {
-            if (ScoreRenderService.ToPng(partial.Result) is not { } png) continue;
-            var bitmap = new BitmapImage();
-            using var stream = new InMemoryRandomAccessStream();
-            await stream.WriteAsync(png.AsBuffer());
-            stream.Seek(0);
-            await bitmap.SetSourceAsync(stream);
-            pages.Add(new ScorePage(bitmap, new Rect(partial.X, partial.Y, partial.Width, partial.Height)));
-        }
-        Notation.SetPages(pages, _render.TotalWidth, _render.TotalHeight);
+            // Written pitch shows each part's transposition; concert pitch shows sounding pitch.
+            foreach (var (index, transposition) in display)
+                foreach (var staff in s.Tracks[index].Staves)
+                    staff.DisplayTranspositionPitch = concert ? 0 : transposition;
+            ScoreStyler.ApplyUncertainty(s, doc, palette);
+        });
+        if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
+
+        _layout = layout;
+        _requested.Clear();
         Notation.ReduceMotion = !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
+        Notation.SetPageSlots(layout.Pages.Select(p => (p.Id, new Rect(p.X, p.Y, p.Width, p.Height))), layout.Width, layout.Height);
         DrawOverlays();
+    }
+
+    /// <summary>Asks for the pages in and around the viewport, nearest first.</summary>
+    private void RequestVisiblePages(Rect viewport)
+    {
+        if (_layout is not { } layout) return;
+        foreach (var released in Notation.ReleaseFarPages(viewport)) _requested.Remove(released);
+        var ids = Notation.PagesNear(viewport)
+            .Where(id => !_requested.Contains(id))
+            .OrderBy(id => Math.Abs(layout.Pages.First(p => p.Id == id).Y - viewport.Y))
+            .ToList();
+        foreach (var id in ids)
+        {
+            _requested.Add(id);
+            _ = LoadPageAsync(layout.Generation, id);
+        }
+    }
+
+    private async Task LoadPageAsync(int generation, string id)
+    {
+        var png = await _renderer.RenderPageAsync(generation, id);
+        if (png is null || generation != _renderer.Generation) return;
+        var bitmap = new BitmapImage();
+        using var stream = new InMemoryRandomAccessStream();
+        await stream.WriteAsync(png.AsBuffer());
+        stream.Seek(0);
+        await bitmap.SetSourceAsync(stream);
+        if (generation == _renderer.Generation) Notation.SetPageImage(id, bitmap);
     }
 
     private void DrawOverlays()
     {
-        if (_render?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
+        if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
         Notation.SetNoteMarks(ScoreGeometry.UncertainHeads(player.Score, bounds, ViewModel.Document!, _tracks)
             .Select(h => new NoteMark(ToRect(h.Head), h.Level)));
 
@@ -194,7 +218,7 @@ public sealed partial class ScoreScreen : UserControl
 
     private void UpdateFocus()
     {
-        if (_render?.Bounds is not { } bounds || ViewModel.Navigator is not { } nav || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
+        if (_layout?.Bounds is not { } bounds || ViewModel.Navigator is not { } nav || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
         var box = ScoreGeometry.FocusBox(player.Score, bounds, nav.PartIndex, nav.BarIndex, nav.TickInBar);
         var items = new List<ScoreEventItem>();
         foreach (var ev in nav.Bar.Events)
@@ -217,7 +241,7 @@ public sealed partial class ScoreScreen : UserControl
     /// <summary>Playback cursor: a line per beat and a tint of the bar; follows by page turn when motion is reduced.</summary>
     private void OnPlaybackPosition(PlaybackPosition p)
     {
-        if (_render?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
+        if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
         if (ScoreGeometry.Cursor(player.TickLookup, bounds, _tracks, p.Tick) is { } c)
         {
             Notation.SetCursor(ToRect(c.Beat), ToRect(c.Bar));
