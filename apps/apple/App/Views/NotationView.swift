@@ -49,6 +49,13 @@ struct NotationView: View {
                     // after (re)engraving, show the current bar
                     DispatchQueue.main.async { proxy.scrollTo("page-\(model.pageNumber(forBar: model.currentBar))", anchor: .top) }
                 }
+                .onChange(of: model.pages.count) { _, _ in
+                    // pages arrive one by one: once the current bar's page is here, show it
+                    let page = model.pageNumber(forBar: model.currentBar)
+                    guard page != lastScrolledBar, model.pages.contains(where: { $0.number == page }) else { return }
+                    lastScrolledBar = page
+                    DispatchQueue.main.async { proxy.scrollTo("page-\(page)", anchor: .top) }
+                }
                 .onChange(of: model.currentBar) { _, bar in
                     let page = model.pageNumber(forBar: bar)
                     guard page != lastScrolledBar else { return }
@@ -59,6 +66,8 @@ struct NotationView: View {
                 }
             }
         }
+        // the score scrolls; it never asks the window to be as tall (or wide) as a page
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .overlay {
             if model.pages.isEmpty {
                 ProgressView(String(localized: "Laying out the pages…"))

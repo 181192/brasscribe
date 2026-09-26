@@ -25,7 +25,9 @@ struct DisplayTitle: View {
     var body: some View {
         Group {
             if let emphasis {
-                Text("\(Text(text).font(Font.Brasscribe.display(size))) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Brasscribe.brassText))")
+                // the whole line carries the display face, so the space between the two parts is display-sized too
+                Text("\(Text(text)) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Brasscribe.brassText))")
+                    .font(Font.Brasscribe.display(size))
             } else {
                 Text(text).font(Font.Brasscribe.display(size))
             }
@@ -375,6 +377,18 @@ struct UncertaintyLegend: View {
     @ViewBuilder private var items: some View {
         HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Brasscribe wasn't sure") }
         HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very unsure") }
+    }
+}
+
+extension View {
+    /// Menu pickers: ink text on iOS (they take the tint); the Mac pop-up button keeps its own
+    /// label colour, which a custom tint only dims.
+    @ViewBuilder func menuTint() -> some View {
+        #if os(iOS)
+        tint(Color.Brasscribe.text)
+        #else
+        foregroundStyle(Color.Brasscribe.text)
+        #endif
     }
 }
 

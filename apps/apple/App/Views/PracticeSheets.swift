@@ -97,7 +97,16 @@ struct ExportView: View {
     private var myPart: Part? { model.myPart.flatMap { model.score.part(id: $0) } }
 
     var body: some View {
-        NavigationStack {
+        // the Mac sheet has no title bar: its title is the display heading
+        #if os(macOS)
+        sheet
+        #else
+        NavigationStack { sheet }
+        #endif
+    }
+
+    private var sheet: some View {
+        Group {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s5) {
                     if wide { DisplayTitle(text: String(localized: "Share or print"), size: 34) }
@@ -114,8 +123,6 @@ struct ExportView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(wide ? .hidden : .visible, for: .navigationBar)
-            #else
-            .toolbar(removing: .title)
             #endif
             .fileExporter(isPresented: Binding(get: { saving != nil }, set: { if !$0 { saving = nil } }),
                           document: saving, contentType: saving?.type ?? .folder, defaultFilename: saving?.name) { result in
@@ -131,7 +138,7 @@ struct ExportView: View {
             marks = (model.piece.toCheck ?? 1) > 0
         }
         #if os(macOS)
-        .frame(minWidth: 560, minHeight: 640)
+        .frame(width: 620, height: 720)
         #else
         .presentationDetents([.large])
         #endif
@@ -307,7 +314,8 @@ struct ExportView: View {
         }
         .overlay { if busy { ProgressView() } }
         .padding(Space.s5)
-        .background(Color.Brasscribe.bg.opacity(0.95))
+        .background(Color.Brasscribe.bg)
+        .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
     }
 
     private var partsInScope: [Part] {

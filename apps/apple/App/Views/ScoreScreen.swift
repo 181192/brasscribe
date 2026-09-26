@@ -120,7 +120,7 @@ struct PracticeView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { showExport = true } label: { Label("Share or print", systemImage: BrasscribeIcon.export.systemName) }
+                Button { showExport = true } label: { Label("Share or print", systemImage: BrasscribeIcon.export.systemName).labelStyle(.titleAndIcon) }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                     .accessibilityIdentifier("shareOrPrint")
             }
@@ -203,6 +203,8 @@ struct StatusLine: View {
             .font(Font.Brasscribe.callout)
             .padding(.horizontal, Space.s5)
             .padding(.bottom, Space.s1)
+            // wrapping text measured at zero width is endlessly tall; a floor keeps the window its size
+            .frame(minWidth: 300, maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -267,7 +269,7 @@ struct ScoreToolbar: View {
         } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
         .pickerStyle(.menu)
         .labelsHidden()
-        .tint(Color.Brasscribe.text)
+        .menuTint()
         .accessibilityIdentifier("partPicker")
         .frame(minHeight: 44)
         .fixedSize()
@@ -624,7 +626,7 @@ struct PartsPanel: View {
                         ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
                     } label: { Text("My part") }
                     .pickerStyle(.menu)
-                    .tint(Color.Brasscribe.text)
+                    .menuTint()
                     Stepper(value: $model.transpose, in: -12...12) {
                         Text(model.transpose == 0 ? String(localized: "Pitch as written")
                              : String(localized: "Move the pitch \(model.transpose > 0 ? "+" : "")\(model.transpose) semitones"))
