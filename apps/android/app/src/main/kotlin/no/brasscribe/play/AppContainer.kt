@@ -56,6 +56,12 @@ class EngineSettings(context: Context) {
  */
 class AppContainer(private val context: Context) {
     val settings = EngineSettings(context)
+    private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
+
+    /** The first-run screen (three points and Get started) has been seen. */
+    var firstRunDone: Boolean
+        get() = prefs.getBoolean("first_run_done", false)
+        set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
 
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.
@@ -91,7 +97,7 @@ class AppContainer(private val context: Context) {
 
     fun newEngineClient(url: String): KtorEngineApi = KtorEngineApi(url, OkHttp.create())
 
-    fun engineLabel(): String = if (usingFixture) "sample" else settings.url.removePrefix("http://").removePrefix("https://")
+    fun engineLabel(): String = if (usingFixture) context.getString(R.string.demo_label) else settings.url.removePrefix("http://").removePrefix("https://")
 
     /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */
     val hasPitchModel: Boolean by lazy { runCatching { context.assets.open(MODEL_ASSET).close() }.isSuccess }

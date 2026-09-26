@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import no.brasscribe.play.TranscriptionResult
+import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.model.CoreBridge
 import no.brasscribe.play.model.Lang
@@ -38,13 +39,13 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
     }
 
     suspend fun build(r: TranscriptionResult, format: ExportFormat, engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang): ExportFile {
-        val base = r.composition.title.ifBlank { "score" }.replace(Regex("[^\\p{L}\\p{N} ._-]"), "").trim().ifBlank { "score" }
+        val base = r.composition?.title.orEmpty().ifBlank { "score" }.replace(Regex("[^\\p{L}\\p{N} ._-]"), "").trim().ifBlank { "score" }
         val bytes: ByteArray = when (format) {
             ExportFormat.MUSICXML -> r.musicXml.toByteArray()
             ExportFormat.PDF -> engine!!.pdf(r.jobId!!)
             ExportFormat.AUDIO -> engine!!.renderedAudio(r.jobId!!)
             ExportFormat.MIDI -> midi?.invoke() ?: engine!!.midi(r.jobId!!)
-            ExportFormat.TALKING_SCORE -> (coreTalkingScore(r, lang) ?: talkingScoreHtml(r.composition.title, parts, lang)).toByteArray()
+            ExportFormat.TALKING_SCORE -> (coreTalkingScore(r, lang) ?: talkingScoreHtml(r.composition?.title.orEmpty(), parts, lang)).toByteArray()
             ExportFormat.BRAILLE -> engine!!.braille(r.jobId!!)
         }
         val f = File(dir, "$base.${format.extension}")
@@ -54,7 +55,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
 
     /** Every part of the arranged score, from the core's talking score; null without the core. */
     private fun coreTalkingScore(r: TranscriptionResult, lang: Lang): String? =
-        runCatching { core.talkingScore(r.musicXml, r.compositionJson ?: core.encodeComposition(r.composition))?.use { it.toHtml(lang, null) } }.getOrNull()
+        runCatching { core.talkingScore(r.musicXml, r.compositionJsonFor(core))?.use { it.toHtml(lang, null) } }.getOrNull()
 
     /** The talking-score text export: a heading per part and bar, one line per event (spec §6). */
     fun talkingScoreHtml(title: String, parts: List<PartView>, lang: Lang): String = buildString {
@@ -76,10 +77,61 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         append("</body></html>\n")
     }
 
+    /** One share sheet for several files (ACTION_SEND_MULTIPLE when more than one). */
+    fun shareIntent(exports: List<ExportFile>): Intent {
+        if (exports.size == 1) return shareIntent(exports[0])
+        val uris = ArrayList(exports.map { FileProvider.getUriForFile(context, "${context.packageName}.exports", it.file) })
+        val send = Intent(Intent.ACTION_SEND_MULTIPLE).setType("*/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        send.clipData = android.content.ClipData.newRawUri(null, uris[0]).apply { uris.drop(1).forEach { addItem(android.content.ClipData.Item(it)) } }
+        return Intent.createChooser(send, null)
+    }
+
+    /** Sends a PDF to the system print dialog. */
+    fun print(activity: android.app.Activity, pdf: ExportFile) {
+        val pm = activity.getSystemService(android.print.PrintManager::class.java) ?: return
+        pm.print(pdf.file.nameWithoutExtension, PdfPrintAdapter(pdf.file), null)
+    }
+
+    /** Writes the files into a folder the user picked (Storage Access Framework tree). */
+    fun saveTo(tree: android.net.Uri, exports: List<ExportFile>): Int {
+        val resolver = context.contentResolver
+        val dirDoc = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
+        var n = 0
+        for (e in exports) {
+            val out = android.provider.DocumentsContract.createDocument(resolver, dirDoc, e.format.mime, e.file.name) ?: continue
+            resolver.openOutputStream(out)?.use { it.write(e.file.readBytes()); n++ }
+        }
+        return n
+    }
+
     fun shareIntent(export: ExportFile): Intent {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.exports", export.file)
         val send = Intent(Intent.ACTION_SEND).setType(export.format.mime).putExtra(Intent.EXTRA_STREAM, uri)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         return Intent.createChooser(send, export.file.name)
+    }
+}
+
+/** Prints an existing PDF file as it is. */
+private class PdfPrintAdapter(private val file: File) : android.print.PrintDocumentAdapter() {
+    override fun onLayout(
+        oldAttributes: android.print.PrintAttributes?, newAttributes: android.print.PrintAttributes?,
+        cancellationSignal: android.os.CancellationSignal?, callback: LayoutResultCallback, extras: android.os.Bundle?,
+    ) {
+        if (cancellationSignal?.isCanceled == true) { callback.onLayoutCancelled(); return }
+        val info = android.print.PrintDocumentInfo.Builder(file.name)
+            .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT).build()
+        callback.onLayoutFinished(info, true)
+    }
+
+    override fun onWrite(
+        pages: Array<out android.print.PageRange>?, destination: android.os.ParcelFileDescriptor,
+        cancellationSignal: android.os.CancellationSignal?, callback: WriteResultCallback,
+    ) {
+        runCatching {
+            file.inputStream().use { input -> java.io.FileOutputStream(destination.fileDescriptor).use { input.copyTo(it) } }
+        }.onSuccess { callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES)) }
+            .onFailure { callback.onWriteFailed(it.message) }
     }
 }
