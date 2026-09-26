@@ -3,6 +3,7 @@ dist/
 conformance/.venv/
 swift/BrasscribeCore/BrasscribeFFI.xcframework/
 swift/BrasscribeCore/.build/
+swift/BrasscribeCore/.swiftpm/
 android/.gradle/
 android/build/
 android/brasscribe-core/build/
