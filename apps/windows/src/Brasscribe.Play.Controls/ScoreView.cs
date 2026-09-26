@@ -1,4 +1,4 @@
-using Brasscribe.Play.Core.Scores;
+using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -18,17 +18,16 @@ namespace Brasscribe.Play.Controls;
 /// <summary>A rendered piece of notation at its place in the whole score.</summary>
 public sealed record ScorePage(ImageSource Image, Rect Bounds);
 
-/// <summary>An uncertain notehead: drawn with a ring beside it (open ring = uncertain, filled = very uncertain).</summary>
-public sealed record NoteMark(Rect NoteHead, Certainty Level);
-
 /// <summary>An event of the current bar, exposed to UI Automation as a list item.</summary>
 public sealed record ScoreEventItem(string Name, Rect Bounds, bool IsCurrent);
 
 /// <summary>
-/// The notation view. It shows alphaTab's rendered pages and draws the overlays the tokens specify:
-/// playback cursor (3 px line plus bar tint), the focused note (2 px outline with a 2 px gap), loop
-/// band with edge markers, ad lib band, and rings beside uncertain noteheads so uncertainty never
-/// relies on colour alone. It is one keyboard focus stop; inside it the score keys of
+/// The notation view. It shows alphaTab's rendered pages and draws the overlays planned by
+/// <see cref="ScoreOverlay"/> in the score tokens (design/system.md §6): tints (cursor bar, repeated
+/// bars, ad lib bars) under the notation, and over it the 3 epx cursor, the loop brackets and label,
+/// dashed ad lib bar lines, and a "?" (boxed below 0.4) above each uncertain note, so uncertainty
+/// never relies on colour alone. The focused note gets a 2 epx outline with a 2 epx gap.
+/// It is one keyboard focus stop; inside it the score keys of
 /// <see cref="ScoreKeyMap"/> move a talking-score cursor, whose announcement is exposed through the
 /// automation peer's Value and Text patterns. Tab and Shift+Tab leave the score.
 /// </summary>
@@ -36,10 +35,12 @@ public sealed partial class ScoreView : UserControl
 {
     private readonly ScrollViewer _scroller;
     private readonly Grid _surface;
+    private readonly Canvas _underlay;
+    private readonly Canvas _cursorUnder;
+    private readonly Canvas _cursorOver;
     private readonly Canvas _pages;
     private readonly Canvas _overlay;
-    private readonly Rectangle _cursorLine;
-    private readonly Rectangle _cursorBar;
+    private readonly Canvas _marks;
     private readonly Rectangle _focusBox;
     private ScoreViewModel? _viewModel;
     private ScoreViewAutomationPeer? _peer;
@@ -49,9 +50,13 @@ public sealed partial class ScoreView : UserControl
         IsTabStop = true;
         UseSystemFocusVisuals = true;
         TabFocusNavigation = KeyboardNavigationMode.Once;
+        _underlay = new Canvas { IsHitTestVisible = false };
+        _cursorUnder = new Canvas { IsHitTestVisible = false };
         _pages = new Canvas();
         _overlay = new Canvas { IsHitTestVisible = false };
-        _surface = new Grid { Children = { _pages, _overlay } };
+        _cursorOver = new Canvas { IsHitTestVisible = false };
+        _marks = new Canvas { IsHitTestVisible = false };
+        _surface = new Grid { Children = { _underlay, _cursorUnder, _pages, _overlay, _cursorOver, _marks } };
         _scroller = new ScrollViewer
         {
             Content = _surface,
@@ -62,16 +67,17 @@ public sealed partial class ScoreView : UserControl
         };
         Content = _scroller;
 
-        _cursorBar = new Rectangle { Opacity = 0.2, Visibility = Visibility.Collapsed };
-        _cursorLine = new Rectangle { Width = 3, Visibility = Visibility.Collapsed };
         _focusBox = new Rectangle { StrokeThickness = 2, Fill = null, Visibility = Visibility.Collapsed, RadiusX = 2, RadiusY = 2 };
-        _overlay.Children.Add(_cursorBar);
-        _overlay.Children.Add(_cursorLine);
-        _overlay.Children.Add(_focusBox);
+        _marks.Children.Add(_focusBox);
 
         _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
         _scroller.SizeChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
-        ActualThemeChanged += (_, _) => ApplyBrushes();
+        ActualThemeChanged += (_, _) =>
+        {
+            ApplyBrushes();
+            SetOverlay(_items);
+            SetCursor(_cursor);
+        };
         Loaded += (_, _) => ApplyBrushes();
         GotFocus += (_, _) => _peer?.RaiseFocusedTextChanged();
     }
@@ -196,87 +202,110 @@ public sealed partial class ScoreView : UserControl
         _surface.Height = totalHeight;
     }
 
-    private readonly List<UIElement> _marks = [];
+    private IReadOnlyList<OverlayItem> _items = [];
+    private IReadOnlyList<OverlayItem> _cursor = [];
 
-    public void SetNoteMarks(IEnumerable<NoteMark> marks)
+    /// <summary>The overlays of the current layout and loop (see <see cref="ScoreOverlay.Build"/>).</summary>
+    public void SetOverlay(IReadOnlyList<OverlayItem> items)
     {
-        foreach (var m in _marks) _overlay.Children.Remove(m);
-        _marks.Clear();
-        foreach (var m in marks)
+        _items = items;
+        Draw(items, _underlay, _overlay);
+    }
+
+    /// <summary>Moves the playback cursor (see <see cref="ScoreOverlay.Cursor"/>); in reduced motion the caller moves it per beat, never animated.</summary>
+    public void SetCursor(IReadOnlyList<OverlayItem> items)
+    {
+        _cursor = items;
+        Draw(items, _cursorUnder, _cursorOver);
+    }
+
+    private void Draw(IReadOnlyList<OverlayItem> items, Canvas under, Canvas over)
+    {
+        under.Children.Clear();
+        over.Children.Clear();
+        foreach (var item in items)
         {
-            double d = Math.Max(6, m.NoteHead.Height * 0.6);
-            var ring = new Ellipse
+            var b = item.Box;
+            switch (item.Kind)
             {
-                Width = d,
-                Height = d,
-                StrokeThickness = 1.5,
-                Stroke = Brush(m.Level == Certainty.VeryUncertain ? "BcVeryUncertainBrush" : "BcUncertainBrush"),
-                Fill = m.Level == Certainty.VeryUncertain ? Brush("BcVeryUncertainBrush") : null,
-            };
-            Canvas.SetLeft(ring, m.NoteHead.Right + 2);
-            Canvas.SetTop(ring, m.NoteHead.Y + (m.NoteHead.Height - d) / 2);
-            _overlay.Children.Insert(0, ring);
-            _marks.Add(ring);
+                case OverlayKind.CursorTint: Add(under, Fill(b, "BcCursorTintBrush")); break;
+                case OverlayKind.LoopTint: Add(under, Fill(b, "BcLoopTintBrush")); break;
+                case OverlayKind.AdlibTint: Add(under, Fill(b, "BcAdlibTintBrush")); break;
+                case OverlayKind.CursorLine: Add(over, Fill(b, "BcCursorBrush")); break;
+                case OverlayKind.LoopEdge: AddBracket(over, b, left: !items.Any(o => o.Kind == OverlayKind.LoopEdge && o.Box.Y == b.Y && o.Box.X < b.X)); break;
+                case OverlayKind.Outline:
+                    Add(over, new Rectangle { Width = b.W, Height = b.H, Stroke = Brush("BcInkBrush"), StrokeThickness = 1 }, b.X, b.Y);
+                    break;
+                case OverlayKind.DashedBarLine:
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1, StrokeDashArray = [4, 3] }, b.X, b.Y);
+                    break;
+                case OverlayKind.LoopLabel:
+                    Add(over, new TextBlock { Text = item.Text, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("BcLoopEdgeBrush") }, b.X, b.Y);
+                    break;
+                case OverlayKind.AdlibText:
+                    Add(over, new TextBlock { Text = item.Text, FontSize = 17, FontStyle = Windows.UI.Text.FontStyle.Italic, Foreground = Brush("BcInkBrush"),
+                        FontFamily = DisplayItalic }, b.X, b.Y);
+                    break;
+                case OverlayKind.UncertainMark:
+                    Add(over, Mark(b, "BcUncertainBrush", boxed: false), b.X, b.Y);
+                    break;
+                case OverlayKind.VeryUncertainMark:
+                    Add(over, Mark(b, "BcVeryUncertainBrush", boxed: true), b.X, b.Y);
+                    break;
+            }
         }
     }
 
-    private readonly List<UIElement> _bands = [];
+    /// <summary>The display face's italic (for "ad lib." when the score does not engrave it).</summary>
+    private static FontFamily DisplayItalic => Application.Current.Resources.TryGetValue("BcDisplayItalicFontFamily", out var f) && f is FontFamily ff
+        ? ff : new FontFamily("Georgia");
 
-    /// <summary>Loop and ad lib bands. In contrast themes the tints are replaced by outlines.</summary>
-    public void SetBands(IEnumerable<Rect> loop, IEnumerable<Rect> adLib)
+    private FrameworkElement Mark(Box b, string brush, bool boxed)
     {
-        foreach (var b in _bands) _overlay.Children.Remove(b);
-        _bands.Clear();
-        bool contrast = IsHighContrast();
-        foreach (var r in adLib) AddBand(r, contrast ? null : Brush("BcAdLibTintBrush"), contrast ? Brush("BcInkBrush") : null, dashed: true);
-        foreach (var r in loop)
+        var text = new TextBlock
         {
-            AddBand(r, contrast ? null : Brush("BcLoopTintBrush"), Brush("BcLoopEdgeBrush"), dashed: false);
-            AddEdge(r.Left, r.Top, r.Height);
-            AddEdge(r.Right - 4, r.Top, r.Height);
-        }
-    }
-
-    private void AddBand(Rect r, Brush? fill, Brush? stroke, bool dashed)
-    {
-        var rect = new Rectangle { Width = r.Width, Height = r.Height, Fill = fill, Stroke = stroke, StrokeThickness = stroke is null ? 0 : 1 };
-        if (dashed) rect.StrokeDashArray = [4, 3];
-        Canvas.SetLeft(rect, r.X);
-        Canvas.SetTop(rect, r.Y);
-        _overlay.Children.Insert(0, rect);
-        _bands.Add(rect);
-    }
-
-    private void AddEdge(double x, double y, double h)
-    {
-        var edge = new Rectangle { Width = 4, Height = h, Fill = Brush("BcLoopEdgeBrush") };
-        Canvas.SetLeft(edge, x);
-        Canvas.SetTop(edge, y);
-        _overlay.Children.Insert(0, edge);
-        _bands.Add(edge);
-    }
-
-    /// <summary>Moves the playback cursor; in reduced motion the caller moves it per beat, never animated.</summary>
-    public void SetCursor(Rect? beat, Rect? bar)
-    {
-        if (beat is { } b)
+            Text = "?",
+            FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            FontSize = Math.Max(10, b.H * (boxed ? 0.75 : 0.95)),
+            Foreground = Brush(brush),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            LineHeight = b.H,
+        };
+        return new Border
         {
-            _cursorLine.Height = b.Height;
-            Canvas.SetLeft(_cursorLine, b.X);
-            Canvas.SetTop(_cursorLine, b.Y);
-            _cursorLine.Visibility = Visibility.Visible;
-        }
-        else _cursorLine.Visibility = Visibility.Collapsed;
+            Width = b.W,
+            Height = b.H,
+            BorderBrush = boxed ? Brush(brush) : null,
+            BorderThickness = new Thickness(boxed ? 1.5 : 0),
+            CornerRadius = new CornerRadius(2),
+            Child = text,
+        };
+    }
 
-        if (bar is { } r)
-        {
-            _cursorBar.Width = r.Width;
-            _cursorBar.Height = r.Height;
-            Canvas.SetLeft(_cursorBar, r.X);
-            Canvas.SetTop(_cursorBar, r.Y);
-            _cursorBar.Visibility = IsHighContrast() ? Visibility.Collapsed : Visibility.Visible;
-        }
-        else _cursorBar.Visibility = Visibility.Collapsed;
+    private Rectangle Fill(Box b, string brush) => new() { Width = Math.Max(0, b.W), Height = Math.Max(0, b.H), Fill = Brush(brush), Tag = b };
+
+    private void AddBracket(Canvas canvas, Box b, bool left)
+    {
+        var brush = Brush("BcLoopEdgeBrush");
+        Add(canvas, new Rectangle { Width = b.W, Height = b.H, Fill = brush }, b.X, b.Y);
+        double footX = left ? b.X : b.X + b.W - 8;
+        Add(canvas, new Rectangle { Width = 8, Height = 3, Fill = brush }, footX, b.Y);
+        Add(canvas, new Rectangle { Width = 8, Height = 3, Fill = brush }, footX, b.Y + b.H - 3);
+    }
+
+    private static void Add(Canvas canvas, Rectangle r)
+    {
+        if (r.Tag is Box b) Add(canvas, r, b.X, b.Y);
+    }
+
+    private static void Add(Canvas canvas, FrameworkElement e, double x, double y)
+    {
+        AutomationProperties.SetAccessibilityView(e, AccessibilityView.Raw); // the score peer speaks for the notation
+        Canvas.SetLeft(e, x);
+        Canvas.SetTop(e, y);
+        canvas.Children.Add(e);
     }
 
     /// <summary>Shows the keyboard focus on a note or bar and scrolls it into view above the player bar.</summary>
@@ -402,8 +431,6 @@ public sealed partial class ScoreView : UserControl
 
     private void ApplyBrushes()
     {
-        _cursorLine.Fill = Brush("BcCursorBrush");
-        _cursorBar.Fill = Brush("BcCursorBrush");
         _focusBox.Stroke = Brush("BcFocusBrush");
     }
 
@@ -414,5 +441,6 @@ public sealed partial class ScoreView : UserControl
 
     private static readonly Windows.UI.ViewManagement.AccessibilitySettings Accessibility = new();
 
-    private static bool IsHighContrast() => Accessibility.HighContrast;
+    /// <summary>A Windows contrast theme is on: overlays are outlines only.</summary>
+    public static bool IsHighContrast() => Accessibility.HighContrast;
 }

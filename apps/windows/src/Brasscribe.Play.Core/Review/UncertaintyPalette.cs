@@ -39,28 +39,34 @@ public readonly record struct Rgb(byte R, byte G, byte B)
 public enum ThemeKind { Light, Dark, HighContrast }
 
 /// <summary>
-/// Colour tokens from docs/accessibility/visual-design-tokens.md (Okabe-Ito blue/orange pair,
-/// darkened for light theme). In a Windows contrast theme the app uses system colours instead;
-/// shape (ring, parentheses) always carries the level too.
+/// The score colours of design/tokens/tokens.json (the same values as design/dist/windows/BrasscribeTheme.xaml;
+/// a test keeps them in step). Used where the notation is drawn outside XAML: alphaTab's glyph and staff
+/// colours, the notehead colour of uncertain notes and the Skia preview. The level is always carried by
+/// shape as well: a "?" above the note, boxed below 0.4. In a Windows contrast theme the app draws
+/// with system colours instead (<see cref="HighContrast"/> is only a stand-in for tests and previews).
 /// </summary>
 public sealed record UncertaintyPalette(
     ThemeKind Theme, Rgb Background, Rgb Surface, Rgb Text, Rgb Ink, Rgb Staff,
-    Rgb Uncertain, Rgb VeryUncertain, Rgb Cursor, Rgb Focus, Rgb AdLibTint, Rgb LoopTint, Rgb LoopEdge, Rgb Error)
+    Rgb Uncertain, Rgb VeryUncertain, Rgb Cursor, Rgb Focus, Rgb AdLibTint, Rgb LoopTint, Rgb LoopEdge, Rgb Error,
+    Rgb CursorTint, Rgb TextMuted)
 {
     public static readonly UncertaintyPalette Light = new(ThemeKind.Light,
-        Rgb.Parse("#FFFFFF"), Rgb.Parse("#F4F4F2"), Rgb.Parse("#1A1A1A"), Rgb.Parse("#000000"), Rgb.Parse("#4D4D4D"),
+        Rgb.Parse("#FBFAF7"), Rgb.Parse("#F3F1EC"), Rgb.Parse("#1B1A17"), Rgb.Parse("#121110"), Rgb.Parse("#57534B"),
         Rgb.Parse("#0063A6"), Rgb.Parse("#B04A00"), Rgb.Parse("#6B3FA0"), Rgb.Parse("#0050B3"),
-        Rgb.Parse("#EEF3F8"), Rgb.Parse("#FFF3D6"), Rgb.Parse("#8A5A00"), Rgb.Parse("#B3261E"));
+        Rgb.Parse("#EEF3F8"), Rgb.Parse("#FFF3D6"), Rgb.Parse("#8A5A00"), Rgb.Parse("#B3261E"),
+        Rgb.Parse("#DED5E6"), Rgb.Parse("#5E5A52"));
 
     public static readonly UncertaintyPalette Dark = new(ThemeKind.Dark,
-        Rgb.Parse("#121212"), Rgb.Parse("#1E1E1E"), Rgb.Parse("#EDEDED"), Rgb.Parse("#F2F2F2"), Rgb.Parse("#A6A6A6"),
+        Rgb.Parse("#131210"), Rgb.Parse("#1C1B18"), Rgb.Parse("#EDEBE6"), Rgb.Parse("#F2F0EB"), Rgb.Parse("#A6A29A"),
         Rgb.Parse("#56B4E9"), Rgb.Parse("#F0A04B"), Rgb.Parse("#C9A7F0"), Rgb.Parse("#8AB4F8"),
-        Rgb.Parse("#1B2530"), Rgb.Parse("#33290F"), Rgb.Parse("#E0B65C"), Rgb.Parse("#F2B8B5"));
+        Rgb.Parse("#1B2530"), Rgb.Parse("#33290F"), Rgb.Parse("#E0B65C"), Rgb.Parse("#F2B8B5"),
+        Rgb.Parse("#37303D"), Rgb.Parse("#B4B0A7"));
 
     public static readonly UncertaintyPalette HighContrast = new(ThemeKind.HighContrast,
         Rgb.Parse("#000000"), Rgb.Parse("#000000"), Rgb.Parse("#FFFFFF"), Rgb.Parse("#FFFFFF"), Rgb.Parse("#FFFFFF"),
-        Rgb.Parse("#00FFFF"), Rgb.Parse("#FFFF00"), Rgb.Parse("#FF80FF"), Rgb.Parse("#FFFF00"),
-        Rgb.Parse("#000000"), Rgb.Parse("#000000"), Rgb.Parse("#FFFF00"), Rgb.Parse("#FF8080"));
+        Rgb.Parse("#00FFFF"), Rgb.Parse("#00FFFF"), Rgb.Parse("#FFFF00"), Rgb.Parse("#FFFF00"),
+        Rgb.Parse("#000000"), Rgb.Parse("#000000"), Rgb.Parse("#FFFF00"), Rgb.Parse("#FFFFFF"),
+        Rgb.Parse("#000000"), Rgb.Parse("#FFFFFF"));
 
     public static UncertaintyPalette For(ThemeKind theme) => theme switch
     {

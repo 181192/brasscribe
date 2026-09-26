@@ -29,12 +29,24 @@ public interface IFileDialogs
 {
     Task<string?> PickOpenAsync(IEnumerable<string> extensions);
     Task<SaveTarget?> PickSaveAsync(string suggestedName, string extension, string description);
+
+    /// <summary>A folder for several files at once (every part); null when cancelled or not supported.</summary>
+    Task<string?> PickFolderAsync() => Task.FromResult<string?>(null);
+}
+
+/// <summary>Sends a PDF to the printer the user picks (the system's print dialog).</summary>
+public interface IPrinter
+{
+    bool CanPrint { get; }
+    Task PrintAsync(string pdfPath);
 }
 
 /// <summary>Localised strings by resource key (.resw on Windows).</summary>
 public interface IStrings
 {
     string this[string key] { get; }
+    /// <summary>The UI language ("en-US", "nb-NO").</summary>
+    string Language => System.Globalization.CultureInfo.CurrentUICulture.Name;
     string Format(string key, params object[] args) =>
         string.Format(System.Globalization.CultureInfo.CurrentCulture, this[key], args);
 }

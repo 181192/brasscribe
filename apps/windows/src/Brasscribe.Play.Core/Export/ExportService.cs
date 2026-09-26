@@ -10,6 +10,8 @@ public enum ExportFormat
     MusicXmlScore,
     MusicXmlPart,
     Pdf,
+    /// <summary>One part's PDF, from the engine job's parts/NN-Name.pdf.</summary>
+    PdfPart,
     Midi,
     Audio,
     TalkingScoreHtml,
@@ -47,6 +49,7 @@ public sealed class ExportService
             new(ExportFormat.MusicXmlScore, ".musicxml", "application/vnd.recordare.musicxml+xml", score, score ? null : ReasonNoScore),
             new(ExportFormat.MusicXmlPart, ".musicxml", "application/vnd.recordare.musicxml+xml", score, score ? null : ReasonNoScore),
             new(ExportFormat.Pdf, ".pdf", "application/pdf", job, job ? null : ReasonNeedsEngine),
+            new(ExportFormat.PdfPart, ".pdf", "application/pdf", job && PartPdfs(s).Count > 0, job ? null : ReasonNeedsEngine),
             new(ExportFormat.Midi, ".mid", "audio/midi", score && s.Player is not null || job, score || job ? null : ReasonNoScore),
             new(ExportFormat.Audio, ".mp3", "audio/mpeg", job, job ? null : ReasonNeedsEngine),
             new(ExportFormat.TalkingScoreHtml, ".html", "text/html", s.TalkingScore is not null, s.TalkingScore is not null ? null : ReasonNoScore),
@@ -83,6 +86,14 @@ public sealed class ExportService
             case ExportFormat.Pdf:
                 await CopyFromEngine(s, JobDownload.Pdf, destination, ct);
                 break;
+            case ExportFormat.PdfPart:
+            {
+                var pdfs = PartPdfs(s);
+                string name = pdfs[Math.Clamp(partIndex ?? 0, 0, pdfs.Count - 1)];
+                await using var src = await s.Engine!.GetArtifactAsync(s.JobId!, name, ct);
+                await src.CopyToAsync(destination, ct);
+                break;
+            }
             case ExportFormat.Audio:
                 await CopyFromEngine(s, JobDownload.Audio, destination, ct);
                 break;
@@ -102,6 +113,11 @@ public sealed class ExportService
             }
         }
     }
+
+    /// <summary>The job's part PDFs in score order (the engine names them parts/01-Soprano-Cornet.pdf, …).</summary>
+    public static IReadOnlyList<string> PartPdfs(ExportSources s) =>
+        (s.JobOutputs ?? []).Where(o => o.StartsWith("parts/", StringComparison.Ordinal) && o.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            .Order(StringComparer.Ordinal).ToList();
 
     private static async Task CopyFromEngine(ExportSources s, JobDownload what, Stream destination, CancellationToken ct)
     {

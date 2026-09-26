@@ -8,8 +8,10 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <ResourceDictionary Source="Themes/Tokens.xaml" />
-                <ResourceDictionary Source="Themes/Styles.xaml" />
+                <!-- Generated from design/tokens (linked from design/dist/windows): colours per theme, contrast
+                     themes on system colours, spacing, radii, type ramp and icon glyphs. -->
+                <ResourceDictionary Source="ms-appx:///Themes/BrasscribeTheme.xaml" />
+                <ResourceDictionary Source="ms-appx:///Themes/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <controls:IntToDoubleConverter x:Key="IntToDouble" />
         </ResourceDictionary>

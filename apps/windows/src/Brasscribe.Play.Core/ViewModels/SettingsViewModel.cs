@@ -24,7 +24,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         Verbosity = store.Get(nameof(Verbosity), Verbosity.Standard);
         EngineAddress = store.Get(nameof(EngineAddress), EngineClient.DefaultBaseAddress.ToString());
         EngineToken = store.Get<string?>(nameof(EngineToken), null);
+        FirstRunDone = store.Get(nameof(FirstRunDone), false);
     }
+
+    /// <summary>The first-run screen was seen (it shows once).</summary>
+    [ObservableProperty] public partial bool FirstRunDone { get; set; }
+    partial void OnFirstRunDoneChanged(bool value) => _store.Set(nameof(FirstRunDone), value);
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }

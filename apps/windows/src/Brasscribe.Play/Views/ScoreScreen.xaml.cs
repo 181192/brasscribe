@@ -25,7 +25,6 @@ public sealed partial class ScoreScreen : UserControl
     private readonly HashSet<string> _requested = [];
     private int[] _tracks = [];
     private bool _renderQueued;
-    private int _lastCursorBar = -1;
 
     public ScoreScreen()
     {
@@ -35,6 +34,7 @@ public sealed partial class ScoreScreen : UserControl
         Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
         Loaded += (_, _) => FillKeyBox();
+        ActualThemeChanged += (_, _) => QueueRender(); // the notation itself is drawn in the theme's ink
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
     }
 
@@ -110,7 +110,7 @@ public sealed partial class ScoreScreen : UserControl
                 QueueRender();
                 break;
             case nameof(ScoreViewModel.UncertainLeft):
-                DrawOverlays(); // rings only; notehead colours follow on the next render
+                QueueRender(); // a kept note loses its "?" and its colour
                 break;
         }
     }
@@ -152,8 +152,7 @@ public sealed partial class ScoreScreen : UserControl
         _tracks = ViewModel.SelectedPartIndex >= 0 ? [ViewModel.SelectedPartIndex] : player.Tracks.Select(t => t.Index).ToArray();
         bool concert = ViewModel.ConcertPitch;
         var display = player.Tracks.ToDictionary(t => t.Index, t => t.DisplayTransposition);
-        var palette = UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
-        if (new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast) palette = UncertaintyPalette.HighContrast;
+        var palette = Palette();
         // Above 200 % a single part reflows into one horizontal line so scrolling goes one way.
         var mode = ViewModel.ZoomPercent > 200 && ViewModel.SelectedPartIndex >= 0 ? AlphaTab.LayoutMode.Horizontal : AlphaTab.LayoutMode.Page;
         double width = Math.Max(400, Notation.ActualWidth - 24);
@@ -165,7 +164,7 @@ public sealed partial class ScoreScreen : UserControl
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        });
+        }, palette);
         if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
 
         _layout = layout;
@@ -203,15 +202,22 @@ public sealed partial class ScoreScreen : UserControl
         if (generation == _renderer.Generation) Notation.SetPageImage(id, bitmap);
     }
 
+    /// <summary>The score colours of the current theme (a stand-in in contrast themes, where XAML uses system colours).</summary>
+    private UncertaintyPalette Palette() =>
+        ScoreView.IsHighContrast() ? UncertaintyPalette.HighContrast
+        : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
+
+    private IReadOnlyList<Box> _loopBoxes = [];
+
+    /// <summary>"?" marks, the repeated bars and the ad lib bars, planned in Core and drawn by the score view.</summary>
     private void DrawOverlays()
     {
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null) return;
-        Notation.SetNoteMarks(ScoreGeometry.UncertainHeads(player.Score, bounds, ViewModel.Document!, _tracks)
-            .Select(h => new NoteMark(ToRect(h.Head), h.Level)));
-
-        var loop = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last).Select(ToRect) : [];
-        var adlib = ViewModel.Document!.FreeRegions.SelectMany(r => ScoreGeometry.RangeBoxes(bounds, r.StartBar - 1, r.EndBar - 1)).Select(ToRect);
-        Notation.SetBands(loop, adlib);
+        var heads = ScoreGeometry.UncertainHeads(player.Score, bounds, ViewModel.Document!, _tracks);
+        _loopBoxes = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last) : [];
+        string? label = player.Loop is { } loop ? App.Strings.Format("Score_LoopLabel", loop.First + 1, loop.Last + 1) : null;
+        Notation.SetOverlay(ScoreOverlay.Build(new(heads, _loopBoxes, label, ScoreGeometry.AdlibRegions(bounds, ViewModel.Document!),
+            null, null, ScoreView.IsHighContrast())));
         UpdateFocus();
     }
 
@@ -252,12 +258,7 @@ public sealed partial class ScoreScreen : UserControl
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
         if (ScoreGeometry.Cursor(player.TickLookup, bounds, _tracks, p.Tick) is { } c)
         {
-            Notation.SetCursor(ToRect(c.Beat), ToRect(c.Bar));
-            if (p.BarIndex != _lastCursorBar)
-            {
-                _lastCursorBar = p.BarIndex;
-                if (player.Loop is null) DrawOverlays();
-            }
+            Notation.SetCursor(ScoreOverlay.Cursor(c.Beat, c.Bar, _loopBoxes, ScoreView.IsHighContrast()));
         }
     }
 

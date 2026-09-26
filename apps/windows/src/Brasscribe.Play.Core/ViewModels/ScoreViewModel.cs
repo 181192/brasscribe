@@ -262,6 +262,24 @@ public sealed partial class ScoreViewModel : ObservableObject
         else _announcer.Announce(r.Text, AnnouncementKind.Important);
     }
 
+    /// <summary>Puts the talking-score cursor on one event, without announcing it (the review screen speaks for itself).</summary>
+    public void FocusEvent(int part, int barIndex, int eventIndex)
+    {
+        if (_nav is null) return;
+        var r = _nav.GoToEvent(part, barIndex, eventIndex);
+        if (r.Moved) Sync(r.Text, announce: false);
+    }
+
+    /// <summary>Marks the note under the cursor as checked without announcing (the caller does).</summary>
+    public int KeepCurrent()
+    {
+        if (_nav is null) return 0;
+        int left = _nav.MarkChecked();
+        UpdateUncertain();
+        Announcement = _nav.Text;
+        return left;
+    }
+
     [RelayCommand]
     private void MarkChecked()
     {
@@ -320,6 +338,9 @@ public sealed partial class ScoreViewModel : ObservableObject
         CursorMoved?.Invoke(this, text);
         if (announce) _announcer.Announce(text);
     }
+
+    /// <summary>Recounts the notes still marked ? (after the review screen kept some).</summary>
+    public void RefreshUncertain() => UpdateUncertain();
 
     private void UpdateUncertain()
     {
