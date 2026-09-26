@@ -1,4 +1,5 @@
 import Testing
+import AVFoundation
 import Foundation
 import ScoreKit
 import TranscriptionKit
@@ -44,6 +45,24 @@ func fixtureDir() -> URL? {
     #expect(m.describe(partID: m.score.parts[1].id, bar: 0).contains("Solo Cornet"))
     #expect(m.uncertainCount(bar: 1) > 0)
     #expect(m.myPart == m.score.parts[1].id)
+}
+
+/// A short clip made with ffmpeg from the golden mp3 (data/runs/apple/mikkel-20s.mp4).
+func testVideo() -> URL? {
+    guard let d = fixtureDir() else { return nil }
+    let v = d.deletingLastPathComponent().deletingLastPathComponent().appending(path: "runs/apple/mikkel-20s.mp4")
+    return FileManager.default.fileExists(atPath: v.path) ? v : nil
+}
+
+/// Importing a video keeps the picture for the synced view and hands its audio to transcription.
+@Test(.enabled(if: testVideo() != nil)) @MainActor func videoImportExtractsAudio() async throws {
+    let app = AppModel()
+    await app.accept(url: try #require(testVideo()))
+    let src = try #require(app.pending, "\(String(describing: app.alert))")
+    #expect(src.videoURL != nil)
+    #expect(src.audioURL.pathExtension == "m4a")
+    let f = try AVAudioFile(forReading: src.audioURL)
+    #expect(abs(Double(f.length) / f.processingFormat.sampleRate - 20) < 0.5)
 }
 
 @Test(.enabled(if: fixtureDir() != nil)) func rustCoreArrangesTheGoldenCompositionOnDevice() throws {
