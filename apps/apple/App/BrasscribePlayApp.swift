@@ -56,6 +56,7 @@ enum LaunchOptions {
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
+    @State private var columns: NavigationSplitViewVisibility = .all
 
     /// iPhone: one stack. iPad and Mac: the library in a sidebar next to the stack.
     private var split: Bool {
@@ -70,12 +71,17 @@ struct RootView: View {
         @Bindable var app = app
         Group {
             if split {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $columns) {
                     LibrarySidebar()
                         .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
                 } detail: {
                     flow
                 }
+                .navigationSplitViewStyle(.balanced)
+                #if os(iOS)
+                // on iPad the library steps aside while a score is open; the sidebar button brings it back
+                .onChange(of: app.path.isEmpty) { _, home in columns = home ? .all : .detailOnly }
+                #endif
             } else {
                 flow
             }

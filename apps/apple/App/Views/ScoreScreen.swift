@@ -68,7 +68,12 @@ struct PracticeView: View {
     @Bindable var model: PracticeModel
     @Environment(AppModel.self) private var app
     @State private var showParts = false
+    // the parts panel starts open on the Mac; on iPad it's one tap away, so the score keeps its width
+    #if os(macOS)
     @State private var showInspector = true
+    #else
+    @State private var showInspector = false
+    #endif
     @State private var showTalking = false
     @State private var showExport = LaunchOptions.screen == "export"
     @State private var showVideo = true
@@ -203,6 +208,7 @@ struct StatusLine: View {
 
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
+    @Environment(\.dynamicTypeSize) private var typeSize
     let wide: Bool
     @Binding var showParts: Bool
     @Binding var showInspector: Bool
@@ -219,13 +225,28 @@ struct ScoreToolbar: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: Space.s3) { controls }.padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
-            VStack(alignment: .leading, spacing: Space.s2) {
-                HStack(spacing: Space.s3) { parts; Spacer(minLength: 0); view }
-                pitch
+        Group {
+            if typeSize >= .accessibility1 {
+                // the largest text sizes: one control per row, nothing squeezed
+                VStack(alignment: .leading, spacing: Space.s2) { parts; pitch; view; inspectorToggle }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s3) { controls }
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        HStack(spacing: Space.s3) { parts; Spacer(minLength: 0); view; inspectorToggle }
+                        pitch
+                    }
+                }
             }
-            .padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
+        }
+        .padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
+    }
+
+    @ViewBuilder private var inspectorToggle: some View {
+        if wide {
+            Toggle(isOn: $showInspector) { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
+                .toggleStyle(.button)
+                .accessibilityHint(Text("Shows or hides the list of parts, where you can mute them."))
         }
     }
 
@@ -235,11 +256,7 @@ struct ScoreToolbar: View {
         if wide { ZoomButtons(model: model, vertical: false) }
         Spacer(minLength: Space.s2)
         view
-        if wide {
-            Toggle(isOn: $showInspector) { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
-                .toggleStyle(.button)
-                .accessibilityHint(Text("Shows or hides the list of parts, where you can mute them."))
-        }
+        inspectorToggle
     }
 
     private var parts: some View {
@@ -690,12 +707,7 @@ struct FlowLayout: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let widest = subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0
-        // Asked for a minimum (a zero or tiny width): report one row, so the window's
-        // minimum size doesn't grow to one control per row.
-        guard let width = proposal.width, width >= widest else {
-            let h = subviews.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0
-            return CGSize(width: proposal.width == nil ? arrange(.infinity, subviews).first?.width ?? 0 : widest, height: h)
-        }
+        let width = max(proposal.width ?? .infinity, widest)
         let rows = arrange(width, subviews)
         let h = rows.reduce(0) { $0 + $1.height } + spacing * CGFloat(max(0, rows.count - 1))
         let w = rows.map(\.width).max() ?? 0

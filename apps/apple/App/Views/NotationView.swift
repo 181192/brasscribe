@@ -9,6 +9,7 @@ import SwiftUI
 struct NotationView: View {
     @Bindable var model: PracticeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hsize
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
 
@@ -35,7 +36,7 @@ struct NotationView: View {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
                     model.viewWidth = geo.size.width - 16
-                    if model.viewWidth < 600, model.shownPart == nil, LaunchOptions.screen != "score" {
+                    if hsize == .compact, model.shownPart == nil, LaunchOptions.screen != "score" {
                         model.shownPart = model.myPart
                     } else {
                         model.relayout()
