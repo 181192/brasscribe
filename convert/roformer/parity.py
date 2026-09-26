@@ -28,13 +28,15 @@ import convert as C  # noqa: E402
 
 BACKENDS = {
     "sw": ["onnx-fp32-ort-cpu", "onnx-fp16-ort-cpu", "coreml-fp16-ALL", "coreml-fp16-CPU_AND_GPU"],
-    "mega53": ["onnx-fp32-ort-cpu", "onnx-fp16-ort-cpu"],
+    "mega53": ["onnx-fp32-ort-cpu", "coreml-fp16-ALL"],
 }
 # Backends that could not run, with what happened (measured on this machine).
 BLOCKED = {
     "sw": {"onnx-fp32-ort-coreml": "process killed by the OS (exit 137, out of memory) on the first 13.4 s chunk "
                                     "while the CoreML execution provider compiled/ran the graph (48 GB machine)"},
-    "mega53": {},
+    "mega53": {"onnx-fp16-ort-cpu": "not run: ORT emulates fp16 on CPU (SW needed 22.5 GB vs 14.2 GB for fp32); "
+                                     "the fp32 graph already peaks at 20.7 GB per 20 s chunk on this 48 GB machine. "
+                                     "The fp16 ONNX is exported for GPU execution providers"},
 }
 TRANSCRIBE = {"sw": ["other", "vocals", "bass"], "mega53": ["trumpet", "brass", "bass"]}
 
@@ -46,7 +48,8 @@ def make_model(key: str, backend: str):
     name = C.SPECS[key]["name"]
     if backend.startswith("onnx-"):
         _, precision, _, provider = backend.split("-")
-        sess = P.ort_session(C.out_dir(key) / f"{name}-core-{precision}.onnx", provider, verbose=True)
+        sess = P.ort_session(C.out_dir(key) / f"{name}-core-{precision}.onnx", provider, verbose=True,
+                             low_memory=key == "mega53")
 
         def run(x):
             return torch.from_numpy(sess.run(["mask"], {"x": x.numpy()})[0].astype(np.float32))
