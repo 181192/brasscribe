@@ -115,6 +115,11 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         field("profile", req.profile.rawValue)
         if let t = req.title { field("title", t) }
         field("render_audio", "true")
+        // Arrangement options. The engine rejects lineup/key it cannot apply yet, so only
+        // send what differs from the defaults.
+        field("difficulty", req.output.difficulty.rawValue)
+        if req.output.lineup == .minimalBand { field("lineup", "minimal") }
+        if let k = req.output.keyFifths { field("key", String(k)) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
         h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)
@@ -222,9 +227,15 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     }
 
     public func artifact(_ kind: ArtifactKind, jobID: String) async throws -> Data {
-        let typed: [ArtifactKind: String] = [.composition: "composition", .musicXML: "musicxml", .pdf: "pdf", .midi: "midi", .audio: "audio"]
+        let typed: [ArtifactKind: String] = [.composition: "composition", .musicXML: "musicxml", .pdf: "pdf", .midi: "midi",
+                                             .audio: "audio", .brailleBRF: "braille", .talkingScore: "talking-score"]
         let path = typed[kind].map { "v1/jobs/\(jobID)/\($0)" } ?? "v1/jobs/\(jobID)/artifacts/\(kind.engineName)"
-        do { return try await send(request(path)) } catch TranscriptionError.http(404, _) {
+        var r = request(path)
+        if kind == .talkingScore, var c = URLComponents(url: r.url!, resolvingAgainstBaseURL: false) {
+            c.queryItems = [.init(name: "format", value: "text"), .init(name: "lang", value: ScoreLanguage.current.rawValue)]
+            r.url = c.url
+        }
+        do { return try await send(r) } catch TranscriptionError.http(404, _) {
             throw TranscriptionError.artifactUnavailable(kind)
         }
     }

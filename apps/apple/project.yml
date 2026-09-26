@@ -31,6 +31,8 @@ packages:
     path: Packages/NotationKit
   AudioCapture:
     path: ../../capture
+  BrasscribeCore:
+    path: ../../core/swift/BrasscribeCore
 
 targets:
   BrasscribePlay:
@@ -53,6 +55,8 @@ targets:
         product: SVGRender
       - package: NotationKit
         product: NotationKit
+      - package: BrasscribeCore
+        product: BrasscribeCore
       - package: AudioCapture
         product: AudioCapture
         destinationFilters: [macOS]
@@ -102,6 +106,7 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
         ENABLE_HARDENED_RUNTIME: YES
         SUPPORTS_MACCATALYST: NO
+        "ARCHS[sdk=macosx*]": arm64
       configs:
         Debug:
           "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": App/Debug.entitlements

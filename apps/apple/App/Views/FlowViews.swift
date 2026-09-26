@@ -52,7 +52,7 @@ struct HomeView: View {
         .toolbar {
             ToolbarItem { Button { app.showSettings = true } label: { Label("Settings", systemImage: "gear") } }
         }
-        .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, UTType(filenameExtension: "musicxml") ?? .xml]) { result in
+        .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml]) { result in
             if case .success(let url) = result { Task { await app.accept(url: url) } }
         }
     }
@@ -282,6 +282,14 @@ struct ReviewView: View {
                     } header: { Text("Listen to uncertain bars") }
                 }
                 .toolbar {
+                    if let comp = model.composition {
+                        ToolbarItem {
+                            Menu {
+                                Button("Full brass band") { rearrange(comp, .fullBand, model) }
+                                Button("Small band") { rearrange(comp, .minimalBand, model) }
+                            } label: { Label("Arrange again on this device", systemImage: "arrow.triangle.2.circlepath") }
+                        }
+                    }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Open score") { model.stopAll(); app.path.append(.score(piece)) }
                             .accessibilityIdentifier("openScore")
@@ -294,6 +302,14 @@ struct ReviewView: View {
             if model == nil, let m = try? PracticeModel(piece: piece) { m.start(); model = m }
         }
         .onDisappear { model?.stopAll() }
+    }
+
+    func rearrange(_ comp: Composition, _ lineup: Lineup, _ m: PracticeModel) {
+        m.stopAll()
+        do {
+            try app.arrangeOnDevice(comp, title: piece.title + (lineup == .minimalBand ? " (small band)" : ""), lineup: lineup,
+                                    original: piece.originalURL, video: piece.videoURL)
+        } catch { app.alert = .message(String(localized: "Couldn't arrange on this device."), error.localizedDescription) }
     }
 
     func uncertainBars(_ m: PracticeModel) -> [Int] {

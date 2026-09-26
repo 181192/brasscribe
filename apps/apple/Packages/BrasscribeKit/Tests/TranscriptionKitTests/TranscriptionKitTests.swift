@@ -98,6 +98,10 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (200, Data(#"{"id":"j1","profile":"solo","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml","brass-band.pdf"],"created":0}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/musicxml"):
                 return (200, Self.musicXML, "application/xml")
+            case ("GET", "/v1/jobs/j1/braille"):
+                return (200, Data("#A BRF".utf8), "text/plain")
+            case ("GET", "/v1/jobs/j1/talking-score"):
+                return request.url!.query?.contains("format=text") == true ? (200, Data("Bar 1".utf8), "text/plain") : (400, Data(), "text/plain")
             default:
                 return (404, Data(#"{"detail":"not found"}"#.utf8), "application/json")
             }
@@ -158,5 +162,7 @@ extension URLRequest {
         let upload = try #require(StubEngine.requests.first { $0.url?.path == "/v1/jobs/upload" })
         #expect(upload.value(forHTTPHeaderField: "Authorization") == "Bearer tok")
         #expect(upload.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("multipart/form-data; boundary=") == true)
+        #expect(try await svc.artifact(.brailleBRF, jobID: "j1") == Data("#A BRF".utf8))
+        #expect(try await svc.artifact(.talkingScore, jobID: "j1") == Data("Bar 1".utf8))
     }
 }

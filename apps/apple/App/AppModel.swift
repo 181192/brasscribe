@@ -82,6 +82,15 @@ final class AppModel {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let title = url.deletingPathExtension().lastPathComponent
         let type = UTType(filenameExtension: url.pathExtension)
+        if url.pathExtension.lowercased() == "json" {
+            do {
+                let comp = try core.composition(fromJSON: try Data(contentsOf: url))
+                try arrangeOnDevice(comp, title: title, lineup: .fullBand, original: nil, video: nil)
+            } catch {
+                alert = .message(String(localized: "This is not a score Brasscribe can read."), error.localizedDescription)
+            }
+            return
+        }
         if type?.conforms(to: .xml) == true || ["musicxml", "xml"].contains(url.pathExtension.lowercased()) {
             await openScoreFile(url, title: title)
             return
@@ -159,6 +168,17 @@ final class AppModel {
                 job.failure = error.localizedDescription
             }
         }
+    }
+
+    let core: CoreBridge = RustCoreBridge()
+
+    /// Arrange a Composition with the shared core on this device (no computer needed) and open it.
+    func arrangeOnDevice(_ comp: Composition, title: String, lineup: Lineup, original: URL?, video: URL?) throws {
+        guard let xml = try core.arrange(comp, lineup: lineup, difficulty: .faithful, keyFifths: nil) else { return }
+        let result = TranscriptionResult(jobID: "on-device", composition: comp, musicXML: xml, available: [.musicXML, .composition])
+        let p = try Piece.create(title: title, profile: nil, result: result, original: original, video: video, fixtureDirectory: nil)
+        refresh()
+        path.append(.score(p))
     }
 
     func delete(_ p: Piece) {

@@ -45,3 +45,19 @@ func fixtureDir() -> URL? {
     #expect(m.uncertainCount(bar: 1) > 0)
     #expect(m.myPart == m.score.parts[1].id)
 }
+
+@Test(.enabled(if: fixtureDir() != nil)) func rustCoreArrangesTheGoldenCompositionOnDevice() throws {
+    let bridge = RustCoreBridge()
+    #expect(!bridge.version.isEmpty)
+    let data = try Data(contentsOf: fixtureDir()!.appending(path: "composition.json"))
+    let comp = try bridge.composition(fromJSON: data)
+    let t0 = Date()
+    let xml = try #require(try bridge.arrange(comp, lineup: .fullBand, difficulty: .faithful, keyFifths: nil))
+    let seconds = Date().timeIntervalSince(t0)
+    let score = try bridge.score(fromMusicXML: xml)
+    print("CORE arrange on device \(Int(seconds * 1000)) ms, \(score.parts.count) parts, \(score.measures.count) bars")
+    #expect(score.parts.count == 18)
+    #expect(score.parts.contains { $0.name == "Solo Cornet" && !$0.playbackNotes.isEmpty })
+    let minimal = try #require(try bridge.arrange(comp, lineup: .minimalBand, difficulty: .faithful, keyFifths: nil))
+    #expect(try bridge.score(fromMusicXML: minimal).parts.count > 0)
+}

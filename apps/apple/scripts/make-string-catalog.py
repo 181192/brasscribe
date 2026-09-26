@@ -173,6 +173,8 @@ NB = {
     "Your scores appear here.": "Partiturene dine vises her.",
     "Zoom %lld percent": "Zoom %lld prosent",
     "Zoom in": "Zoom inn",
+    "Arrange again on this device": "Arranger på nytt på denne enheten",
+    "Couldn't arrange on this device.": "Kunne ikke arrangere på denne enheten.",
     "Zoom out": "Zoom ut",
     "from %lld": "fra %lld",
     "to %lld": "til %lld",

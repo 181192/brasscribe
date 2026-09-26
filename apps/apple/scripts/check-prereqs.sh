@@ -6,3 +6,7 @@ if [ ! -d "$HERE/Frameworks/Verovio.xcframework" ] || [ ! -d "$HERE/Frameworks/V
   echo "error: Verovio.xcframework missing. Run apps/apple/scripts/build-verovio.sh first." >&2
   exit 1
 fi
+if [ ! -d "$HERE/../../core/swift/BrasscribeCore/BrasscribeFFI.xcframework" ]; then
+  echo "error: BrasscribeFFI.xcframework missing. Run apps/apple/scripts/build-core.sh first." >&2
+  exit 1
+fi

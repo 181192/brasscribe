@@ -111,6 +111,16 @@
         }
       }
     },
+    "Arrange again on this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arranger på nytt på denne enheten"
+          }
+        }
+      }
+    },
     "Arranging for brass band": {
       "localizations": {
         "nb": {
@@ -277,6 +287,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koblet til Brasscribe %@ (%@)."
+          }
+        }
+      }
+    },
+    "Couldn't arrange on this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke arrangere på denne enheten."
           }
         }
       }
