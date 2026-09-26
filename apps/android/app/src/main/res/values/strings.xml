@@ -85,6 +85,7 @@
     <string name="stage_export">Engraving the score</string>
     <string name="stage_decode">Reading the recording</string>
     <string name="stage_pitch">Listening for the notes</string>
+    <string name="stage_confirm">Checking the notes with a second model</string>
     <string name="stage_quantize">Placing the notes in bars</string>
     <plurals name="eta_minutes">
         <item quantity="one">About %d minute left</item>
@@ -181,6 +182,8 @@
         <item quantity="one">%d part plays an installed instrument.</item>
         <item quantity="other">%d parts play installed instruments.</item>
     </plurals>
+    <string name="sound_humanized">Played with human timing and dynamics.</string>
+    <string name="sound_band_soundfont">Brass-band sounds (band SoundFont).</string>
     <string name="action_next_bar">Next bar</string>
     <string name="action_prev_bar">Previous bar</string>
     <string name="action_next_part">Next part</string>
@@ -204,7 +207,7 @@
     <string name="export_audio">Audio (MP3)</string>
     <string name="export_talking">Talking score (text)</string>
     <string name="export_braille">Braille music (BRF)</string>
-    <string name="export_braille_unavailable">Needs braille export in the engine. This engine version does not have it.</string>
+    <string name="export_braille_unavailable">Braille music is made by the companion engine. Transcribe on your computer to get it.</string>
     <string name="export_needs_engine">Needs the companion engine.</string>
     <string name="export_share">Share</string>
     <string name="export_save">Save to Files</string>

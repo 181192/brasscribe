@@ -34,19 +34,26 @@ interface EngineApi {
     suspend fun artifact(jobId: String, name: String): ByteArray
     suspend fun manifest(jobId: String): String
 
+    /** Braille music (BRF, North American Braille ASCII, 40 cells x 25 lines, CRLF); [part] = 1-based index or name, null = score. */
+    suspend fun braille(jobId: String, part: String? = null): ByteArray
+
+    /** Talking score: [format] html, text or json; [lang] en or nb; [part] = 1-based index or name, null = all parts. */
+    suspend fun talkingScore(jobId: String, format: String = "html", lang: String = "en", part: String? = null,
+                             pitchMode: String? = null, verbosity: String = "standard"): String
+
     companion object {
         /** operationIds of engine/openapi.json this client implements; checked by EngineContractTest. */
         val OPERATIONS = setOf(
             "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
-            "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest",
+            "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
         )
 
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools. */
         val NOT_USED = setOf(
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
-            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob",
+            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "deleteRun",
         )
     }
 }

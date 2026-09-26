@@ -80,7 +80,11 @@ fun ScoreScreen(vm: PlayViewModel) {
     val reducedMotion = remember {
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     }
-    val controller = remember(r) { ScoreController(context, reducedMotion).also { vm.scoreController = it } }
+    val controller = remember(r) {
+        val c = vm.container
+        ScoreController(context, reducedMotion, c.core, c.bandSoundMap, c.bandSoundFont(),
+            r.compositionJson ?: runCatching { c.core.encodeComposition(r.composition) }.getOrNull()).also { vm.scoreController = it }
+    }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
     var showParts by remember { mutableStateOf(false) }
@@ -89,7 +93,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     LaunchedEffect(controller) {
         // One part first (the full 18-stave score is one tap away in Parts); a key shift re-renders once.
         controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names)) }
-        if (options.keyShift != 0) controller.setKeyShift(options.keyShift)
+        (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) { onDispose { controller.release() } }
 
@@ -132,7 +136,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (textView) {
-                    TalkingScoreList(vm, r)
+                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
                     AndroidView(
                         factory = { controller.view },
@@ -173,7 +177,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     Text(stringResource(R.string.zoom_value, st.zoom))
                     OutlinedButton(onClick = { controller.setZoom(st.zoom + 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_in)) }
                 }
-                SoundChoice(st.realistic, st.soundPackParts) { on -> controller.setRealistic(on) }
+                SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) }
             }
         }
     }
@@ -246,7 +250,7 @@ fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun SoundChoice(realistic: Boolean, packParts: Int, onChange: (Boolean) -> Boolean) {
+private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, bandSoundFont: Boolean, onChange: (Boolean) -> Boolean) {
     val available = RealisticSynth.available
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         SubHeading(stringResource(R.string.sound))
@@ -266,6 +270,8 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, onChange: (Boolean) 
             },
             style = MaterialTheme.typography.bodySmall,
         )
+        if (realistic && humanized) Text(stringResource(R.string.sound_humanized), style = MaterialTheme.typography.bodySmall)
+        if (!realistic && bandSoundFont) Text(stringResource(R.string.sound_band_soundfont), style = MaterialTheme.typography.bodySmall)
     }
 }
 

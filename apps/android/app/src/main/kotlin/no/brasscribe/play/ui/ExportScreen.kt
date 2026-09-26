@@ -64,7 +64,7 @@ fun ExportScreen(vm: PlayViewModel) {
 
     fun make(format: ExportFormat, then: (ExportFile) -> Unit) = scope.launch {
         try {
-            val parts = r.composition.voices.filter { it.notes.isNotEmpty() }.map { partViewFor(r.composition, it.id, checked[it.id].orEmpty()) }
+            val parts = r.composition.voices.filter { it.notes.isNotEmpty() }.map { partViewFor(r.composition, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val f = withContext(Dispatchers.Default) {
                 exporter.build(r, format, vm.container.engine(), vm.scoreController?.let { c -> { c.midiBytes() } }, parts, currentLang())
             }

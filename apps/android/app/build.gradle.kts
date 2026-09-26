@@ -87,18 +87,28 @@ kotlin {
 
 /*
  * Assets that come from outside git:
- * - models/: the SwiftF0 ONNX export from models/convert (MIT, 1.1 MB), bundled in every build when present.
+ * - models/: SwiftF0 (1.1 MB), Basic Pitch (0.26 MB) and Beat This! small (9.4 MB) ONNX from convert/ (all MIT),
+ *   bundled in every build when present.
  * - fixtures/: the golden Mikkel output, debug builds only, for the built-in sample engine.
  */
 val modelAssets = tasks.register<Sync>("syncModelAssets") {
-    from(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }
-    into(layout.buildDirectory.dir("generated/brasscribe/models/models"))
+    into(layout.buildDirectory.dir("generated/brasscribe/models"))
+    into("models") {
+        from(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }
+        from(File(repoRoot, "models/converted/basic-pitch")) { include("nmp-b1.onnx") }
+        from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
+    }
+    // The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
+    into("sounds") { from(File(repoRoot, "sounds")) { include("mapping.json") } }
+    filePermissions { user { read = true; write = true } }
 }
 val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
     from(File(repoRoot, "data/golden/mikkel-arranged-band")) {
-        include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3")
+        include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf", "brass-band.mid")
     }
     into(layout.buildDirectory.dir("generated/brasscribe/fixtures/fixtures"))
+    // The golden output is read-only; the copies must stay writable so the next sync can replace them.
+    filePermissions { user { read = true; write = true } }
 }
 
 androidComponents {
@@ -116,6 +126,7 @@ dependencies {
     implementation(project(":engine-client"))
     implementation(project(":pitch"))
     implementation(project(":audio"))
+    implementation(project(":core-bridge"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -131,7 +142,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.alphatab)
-    implementation(libs.onnxruntime.android)
+    // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
+    // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
+    val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")
+    if (reducedOrt.isFile) implementation(files(reducedOrt)) else implementation(libs.onnxruntime.android)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

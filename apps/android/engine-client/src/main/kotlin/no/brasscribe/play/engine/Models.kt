@@ -50,6 +50,14 @@ data class JobCreate(
     val title: String? = null,
     @SerialName("source_id") val sourceId: String? = null,
     val path: String? = null,
+    /** "full" (18 parts) or "minimal" (8 parts). */
+    val lineup: String = "full",
+    /** "faithful", "standard" or "easier". */
+    val difficulty: String = "faithful",
+    /** Target concert key: a tonic (Bb, F#, Am) or FIFTHS[:MODE]; exclusive with [transpose]. */
+    val key: String? = null,
+    /** Semitones, -11..11; exclusive with [key]. */
+    val transpose: Int? = null,
 )
 
 @Serializable

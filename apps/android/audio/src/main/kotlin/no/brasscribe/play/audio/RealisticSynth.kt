@@ -25,6 +25,11 @@ object RealisticSynth {
     fun regions(channel: Int): Int = if (available) NativeAudio.sfizzRegions(channel) else 0
     fun noteOn(channel: Int, note: Int, velocity: Int) { if (available) NativeAudio.sfizzNoteOn(channel, note, velocity) }
     fun noteOff(channel: Int, note: Int) { if (available) NativeAudio.sfizzNoteOff(channel, note) }
+    /** Note on (velocity > 0) or off (0) [delaySeconds] from now, placed sample-accurately in the output. */
+    fun noteAt(channel: Int, note: Int, velocity: Int, delaySeconds: Double) {
+        if (available) NativeAudio.sfizzNoteAt(channel, note, velocity, delaySeconds)
+    }
+
     fun allOff() { if (available) NativeAudio.sfizzAllOff() }
     fun setGain(channel: Int, gain: Float) { if (available) NativeAudio.sfizzSetGain(channel, gain) }
     fun activeVoices(): Int = if (available) NativeAudio.sfizzActiveVoices() else 0

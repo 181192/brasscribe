@@ -18,13 +18,14 @@
 
 namespace {
 
-constexpr int kChannels = 16;
+constexpr int kChannels = 32;
 constexpr int kBlock = 256;
 
 struct Event {
     int channel;
     int note;
     int velocity;  // 0 = note off
+    long long atFrame;  // absolute output frame; <= now plays at the start of the next block
 };
 
 class Player : public oboe::AudioStreamDataCallback {
@@ -93,6 +94,18 @@ public:
         pending_.push_back(e);
     }
 
+    /** Queues an event [delaySeconds] after the current output position. */
+    void pushDelayed(int channel, int note, int velocity, double delaySeconds) {
+        std::lock_guard<std::mutex> g(mutex_);
+        const long long at = frame_ + static_cast<long long>(std::max(0.0, delaySeconds) * rate_);
+        pending_.push_back({channel, note, velocity, at});
+    }
+
+    double positionSeconds() {
+        std::lock_guard<std::mutex> g(mutex_);
+        return static_cast<double>(frame_) / rate_;
+    }
+
     void allOff() {
         std::lock_guard<std::mutex> g(mutex_);
         pending_.clear();
@@ -113,17 +126,22 @@ public:
 
     // Renders into interleaved stereo; caller holds the lock.
     void renderLocked(float* out, int frames) {
-        for (const auto& e : pending_) {
-            auto* s = synths_[e.channel];
-            if (!s) continue;
-            if (e.velocity > 0) sfizz_send_note_on(s, 0, e.note, e.velocity);
-            else sfizz_send_note_off(s, 0, e.note, 0);
-        }
-        pending_.clear();
         std::fill(out, out + frames * 2, 0.f);
         int done = 0;
         while (done < frames) {
             const int n = std::min(kBlock, frames - done);
+            // Events due in this block go to sfizz with their offset inside it (sample-accurate).
+            const long long blockStart = frame_;
+            auto due = std::stable_partition(pending_.begin(), pending_.end(),
+                                             [&](const Event& e) { return e.atFrame >= blockStart + n; });
+            for (auto it = due; it != pending_.end(); ++it) {
+                auto* s = synths_[it->channel];
+                if (!s) continue;
+                const int delay = static_cast<int>(std::max<long long>(0, it->atFrame - blockStart));
+                if (it->velocity > 0) sfizz_send_note_on(s, delay, it->note, it->velocity);
+                else sfizz_send_note_off(s, delay, it->note, 0);
+            }
+            pending_.erase(due, pending_.end());
             for (int ch = 0; ch < kChannels; ++ch) {
                 auto* s = synths_[ch];
                 if (!s || !loaded_[ch]) continue;
@@ -136,6 +154,7 @@ public:
                 }
             }
             done += n;
+            frame_ += n;
         }
     }
 
@@ -166,6 +185,7 @@ private:
     std::array<float, kBlock> left_{};
     std::array<float, kBlock> right_{};
     int rate_ = 48000;
+    long long frame_ = 0;
 };
 
 Player& player() {
@@ -182,8 +202,10 @@ void stop() { player().close(); }
 bool loadFile(int channel, const std::string& path) { return player().load(channel, path, nullptr); }
 bool loadString(int channel, const std::string& sfz, const std::string& virtualPath) { return player().load(channel, virtualPath, &sfz); }
 int regions(int channel) { return player().regions(channel); }
-void noteOn(int channel, int note, int velocity) { player().push({channel, note, std::max(1, velocity)}); }
-void noteOff(int channel, int note) { player().push({channel, note, 0}); }
+void noteOn(int channel, int note, int velocity) { player().push({channel, note, std::max(1, velocity), 0}); }
+void noteOff(int channel, int note) { player().push({channel, note, 0, 0}); }
+void noteAt(int channel, int note, int velocity, double delaySeconds) { player().pushDelayed(channel, note, velocity, delaySeconds); }
+double positionSeconds() { return player().positionSeconds(); }
 void allOff() { player().allOff(); }
 void setGain(int channel, float gain) { player().setGain(channel, gain); }
 int renderOffline(float* interleaved, int frames) { return player().renderOffline(interleaved, frames); }

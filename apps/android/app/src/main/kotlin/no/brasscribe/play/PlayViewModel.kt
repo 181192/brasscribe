@@ -28,7 +28,9 @@ import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.PartSpec
 import no.brasscribe.play.model.TickMap
-import no.brasscribe.play.pitch.SoloTranscriber
+import no.brasscribe.play.model.ArrangeOptions
+import no.brasscribe.play.model.SoloTake
+import no.brasscribe.play.model.TempoEstimator
 import no.brasscribe.play.playback.ClipPlayer
 import java.io.File
 
@@ -51,7 +53,8 @@ enum class Where { DEVICE, COMPANION }
 enum class Step(@StringRes val text: Int) {
     QUEUED(R.string.stage_queued), UPLOAD(R.string.stage_upload), BEATS(R.string.stage_beats), STEMS(R.string.stage_stems),
     LAYERS(R.string.stage_layers), TRANSCRIBE(R.string.stage_transcribe), ARRANGE(R.string.stage_arrange),
-    EXPORT(R.string.stage_export), DECODE(R.string.stage_decode), PITCH(R.string.stage_pitch), QUANTIZE(R.string.stage_quantize);
+    EXPORT(R.string.stage_export), DECODE(R.string.stage_decode), PITCH(R.string.stage_pitch), QUANTIZE(R.string.stage_quantize),
+    CONFIRM(R.string.stage_confirm);
 
     companion object {
         fun ofKind(kind: String?): Step = when (kind) {
@@ -81,12 +84,24 @@ data class TranscriptionResult(
     val onDevice: Boolean,
     val jobId: String? = null,
     val engineOutputs: Set<String> = emptySet(),
+    /** The uploaded audio on the engine, for re-arranging with other options. */
+    val audioId: String? = null,
+    /** The Composition as the core wrote it (humanization reads it). */
+    val compositionJson: String? = null,
+    /** Semitones the arrangement itself is transposed by (the rest of a key shift is display-only in alphaTab). */
+    val appliedTranspose: Int = 0,
 )
 
 enum class Lineup(@StringRes val label: Int) { FULL(R.string.lineup_full), MINIMAL(R.string.lineup_minimal), SOLO(R.string.lineup_solo) }
 enum class Difficulty(@StringRes val label: Int) { FAITHFUL(R.string.difficulty_faithful), STANDARD(R.string.difficulty_standard), EASIER(R.string.difficulty_easier) }
 
-data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Difficulty = Difficulty.FAITHFUL, val keyShift: Int = 0)
+data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Difficulty = Difficulty.FAITHFUL, val keyShift: Int = 0) {
+    fun toCore() = ArrangeOptions(
+        lineup = if (lineup == Lineup.MINIMAL) "minimal" else "full",
+        difficulty = difficulty.name.lowercase(),
+        transpose = keyShift.takeIf { it != 0 },
+    )
+}
 
 /** A status line for sighted users that screen readers also hear (polite live region). */
 data class Status(val text: String, val serial: Long = System.nanoTime())
@@ -229,24 +244,90 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun transcribeOnDevice(s: Source): TranscriptionResult {
         val audio = s.audio!!
-        transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 1, 3, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device))
-        val solo = withContext(Dispatchers.Default) {
-            container.openPitchModel().use { model ->
-                SoloTranscriber(model, container.core).transcribe(audio.samples, audio.sampleRate, s.name.substringBeforeLast('.')) { f ->
-                    val step = when {
-                        f < 0.2 -> Step.DECODE
-                        f < 0.8 -> Step.PITCH
-                        else -> Step.QUANTIZE
-                    }
-                    transcribe.update { it.copy(step = step, fraction = f, stepIndex = step.ordinal - Step.DECODE.ordinal + 1,
-                        etaSeconds = ((1 - f) * estimateDeviceSeconds(audio)).toInt()) }
+        val steps = listOf(Step.DECODE, Step.PITCH, Step.CONFIRM, Step.BEATS, Step.ARRANGE)
+        transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 0, steps.size, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device))
+        val title = s.name.substringBeforeLast('.')
+        return withContext(Dispatchers.Default) {
+            val wav = s.file?.takeIf { it.extension.equals("wav", true) }?.readBytes()
+            container.openSoloPipeline().use { pipeline ->
+                val (take, stats) = pipeline.pipeline.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
+                    val step = steps[stage.ordinal.coerceAtMost(steps.size - 1)]
+                    transcribe.update { it.copy(step = step, stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
+                        etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * estimateDeviceSeconds(audio)).toInt()) }
+                }
+                transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 4, fraction = 0.9) }
+                val a0 = System.nanoTime()
+                val arranged = runCatching { pipeline.pipeline.arrange(take, output.value.toCore()) }
+                    .onFailure { android.util.Log.w(TAG, "core arrangement failed", it) }.getOrNull()
+                val arrangeMs = (System.nanoTime() - a0) / 1_000_000
+                android.util.Log.i(TAG, "on-device solo: %.1f s audio, SwiftF0 %d notes, Basic Pitch %d, beats %d (%s), downbeats %d, stages %s ms, arrange %d ms, core %s"
+                    .format(stats.audioSeconds, stats.swiftF0Notes, stats.basicPitchNotes, stats.beats, stats.beatSource, stats.downbeats,
+                        stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, arrangeMs, container.core.name))
+                soloTake = take
+                if (arranged != null) {
+                    // Kept for inspection (adb pull): the last on-device arrangement, as the core wrote it.
+                    runCatching { getApplication<Application>().getExternalFilesDir("runs")?.resolve("last-solo-composition.json")?.writeText(arranged.compositionJson) }
+                    TranscriptionResult(arranged.composition, arranged.musicXml, Profile.SOLO, onDevice = true, compositionJson = arranged.compositionJson)
+                } else {
+                    // Without the Rust core: the Kotlin grid and a single solo part.
+                    val c = container.core.quantizeSolo(take.swiftF0, TempoEstimator.estimate(take.swiftF0.map { it.onsetS }), title)
+                    TranscriptionResult(c, container.core.toMusicXml(c, listOf(PartSpec("solo", SOLO_PART_NAME, Instrument.CORNET))), Profile.SOLO, onDevice = true)
                 }
             }
         }
-        android.util.Log.i(TAG, "on-device solo: %.1f s audio at %d Hz, %d notes, %.0f bpm, resample %d ms, SwiftF0 %d ms, total %d ms"
-            .format(audio.seconds, audio.sampleRate, solo.notes, solo.bpm, solo.resampleMillis, solo.detectMillis, solo.totalMillis))
-        val xml = container.core.toMusicXml(solo.composition, listOf(PartSpec("solo", SOLO_PART_NAME, Instrument.CORNET)))
-        return TranscriptionResult(solo.composition, xml, Profile.SOLO, onDevice = true)
+    }
+
+    /** The last on-device take, kept so Output options re-arrange it without listening again. */
+    private var soloTake: SoloTake? = null
+
+    /**
+     * Applies the Output options: on-device results are re-arranged by the core; engine results
+     * become a new engine job with the options (the engine's cache makes it quick).
+     */
+    fun applyOutput(then: () -> Unit) {
+        val r = result.value ?: return
+        val opts = output.value
+        if (opts == lastApplied) { then(); return }
+        busy.value = true
+        viewModelScope.launch {
+            try {
+                val take = soloTake
+                val updated = when {
+                    r.onDevice && take != null -> withContext(Dispatchers.Default) {
+                        container.core.arrangeSolo(take, opts.toCore())?.let {
+                            runCatching { getApplication<Application>().getExternalFilesDir("runs")?.resolve("last-solo-composition.json")?.writeText(it.compositionJson) }
+                            r.copy(composition = it.composition, musicXml = it.musicXml, compositionJson = it.compositionJson,
+                                appliedTranspose = opts.keyShift)
+                        }
+                    }
+                    !r.onDevice && r.audioId != null -> rerunWithEngine(r, opts)
+                    else -> null
+                }
+                if (updated != null) { result.value = updated; lastApplied = opts }
+                say(R.string.arrangement_ready)
+                then()
+            } catch (e: Exception) {
+                say(R.string.transcribe_failed, e.message ?: e.javaClass.simpleName)
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    private var lastApplied: OutputOptions = OutputOptions()
+
+    private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
+        val engine = container.engine() ?: error(res.getString(R.string.where_companion_missing))
+        val core = opts.toCore()
+        // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
+        val job = engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
+            allowHeavy = container.settings.allowHeavy, title = r.composition.title, lineup = core.lineup,
+            difficulty = core.difficulty, transpose = core.transpose))
+        engine.events(job.id).collect { }
+        val final = engine.job(job.id)
+        if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
+        return r.copy(composition = engine.composition(job.id), musicXml = engine.musicXml(job.id), jobId = job.id,
+            engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift)
     }
 
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
@@ -259,7 +340,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
         val audio = engine.uploadAudio(s.name, bytes)
         val created = engine.createJob(
-            JobCreate(audio.audioId, p.id, renderAudio = container.settings.allowHeavy, allowHeavy = container.settings.allowHeavy,
+            JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                 title = s.name.substringBeforeLast('.')),
         )
         engineJobId = created.id
@@ -275,7 +356,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
-        return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id,
+        return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audio.audioId,
             engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() })
     }
 

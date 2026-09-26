@@ -24,6 +24,8 @@ class PartView(
     val partName: String,
     val partNameNb: String = partName,
     val checked: Set<Int> = emptySet(),
+    /** Spells the notes (the Rust core's ps13 when available). */
+    private val core: CoreBridge = KotlinCoreBridge,
 ) {
     val tickMap = TickMap(composition)
     private val tpb = composition.ticksPerBeat
@@ -36,8 +38,15 @@ class PartView(
 
     fun eventsInBar(bar: Int): List<PartEvent> = events.filter { it.bar == bar }
 
+    private val sortedNotes = voice.notes.sortedWith(compareBy({ it.start }, { it.pitch }))
+
+    /** Concert spelling of every note, in [sortedNotes] order. */
+    private val concertSpelling: List<SpelledPitch> by lazy {
+        core.spell(sortedNotes.map { it.start.toDouble() / tpb }, sortedNotes.map { it.pitch }, composition.keys.firstOrNull()?.fifths)
+    }
+
     private fun buildEvents(): List<PartEvent> {
-        val notes = voice.notes.sortedWith(compareBy({ it.start }, { it.pitch }))
+        val notes = sortedNotes
         val out = mutableListOf<PartEvent>()
         var lastBar = 0
         for ((i, n) in notes.withIndex()) {
@@ -96,7 +105,6 @@ class PartView(
         val barEnd = tickMap.barEnd(bar)
         val firstLen = minOf(n.dur, barEnd - n.start).coerceAtLeast(1)
         val value = Durations.split(firstLen, tpb).first()
-        val concertFifths = tickMap.keyAt(maxOf(0, n.start)).fifths
         val tie = when {
             firstLen < n.dur -> {
                 val rest = n.dur - firstLen
@@ -117,8 +125,8 @@ class PartView(
             dots = value.dots,
             tuplet = if (value.triplet) TsTuplet(3, 2, (offset / value.ticks(tpb)) % 3 + 1) else null,
             tie = tie,
-            written = instrument.spellWritten(n.pitch, concertFifths),
-            concert = SpelledPitch.spell(n.pitch, concertFifths),
+            written = instrument.written(concertSpelling[index]),
+            concert = concertSpelling[index],
             articulations = n.articulations.map { it.name.lowercase() },
             confidence = n.confidence,
             sources = n.sources,

@@ -33,8 +33,8 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         ExportFormat.MIDI -> midiFromScore || r.jobId != null
         ExportFormat.PDF -> r.jobId != null && "brass-band.pdf" in r.engineOutputs
         ExportFormat.AUDIO -> r.jobId != null && "brass-band.mp3" in r.engineOutputs
-        // The engine has no BRF endpoint yet (engine/openapi.json 0.1.0).
-        ExportFormat.BRAILLE -> false
+        // Braille music comes from the engine (music21's translator; the core does not write BRF).
+        ExportFormat.BRAILLE -> r.jobId != null && (r.engineOutputs.isEmpty() || r.engineOutputs.any { it.endsWith(".brf") })
     }
 
     suspend fun build(r: TranscriptionResult, format: ExportFormat, engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang): ExportFile {
@@ -44,13 +44,17 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
             ExportFormat.PDF -> engine!!.pdf(r.jobId!!)
             ExportFormat.AUDIO -> engine!!.renderedAudio(r.jobId!!)
             ExportFormat.MIDI -> midi?.invoke() ?: engine!!.midi(r.jobId!!)
-            ExportFormat.TALKING_SCORE -> talkingScoreHtml(r.composition.title, parts, lang).toByteArray()
-            ExportFormat.BRAILLE -> error("braille export needs the engine")
+            ExportFormat.TALKING_SCORE -> (coreTalkingScore(r, lang) ?: talkingScoreHtml(r.composition.title, parts, lang)).toByteArray()
+            ExportFormat.BRAILLE -> engine!!.braille(r.jobId!!)
         }
         val f = File(dir, "$base.${format.extension}")
         f.writeBytes(bytes)
         return ExportFile(f, format)
     }
+
+    /** Every part of the arranged score, from the core's talking score; null without the core. */
+    private fun coreTalkingScore(r: TranscriptionResult, lang: Lang): String? =
+        runCatching { core.talkingScore(r.musicXml, r.compositionJson ?: core.encodeComposition(r.composition))?.use { it.toHtml(lang, null) } }.getOrNull()
 
     /** The talking-score text export: a heading per part and bar, one line per event (spec §6). */
     fun talkingScoreHtml(title: String, parts: List<PartView>, lang: Lang): String = buildString {

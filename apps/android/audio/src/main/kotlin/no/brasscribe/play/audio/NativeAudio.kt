@@ -21,6 +21,8 @@ internal object NativeAudio {
     external fun sfizzRegions(channel: Int): Int
     external fun sfizzNoteOn(channel: Int, note: Int, velocity: Int)
     external fun sfizzNoteOff(channel: Int, note: Int)
+    external fun sfizzNoteAt(channel: Int, note: Int, velocity: Int, delaySeconds: Double)
+    external fun sfizzPosition(): Double
     external fun sfizzAllOff()
     external fun sfizzSetGain(channel: Int, gain: Float)
     external fun sfizzActiveVoices(): Int
