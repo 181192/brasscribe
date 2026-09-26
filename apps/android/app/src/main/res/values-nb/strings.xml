@@ -70,6 +70,7 @@
     <string name="where_device_desc">Bare soloinstrument. Ingenting forlater telefonen.</string>
     <string name="where_companion">På datamaskinen min (motoren)</string>
     <string name="where_device_unavailable">Modellen for telefonen er ikke installert.</string>
+    <string name="where_device_no_audio">Eksempelet Mikkel har ikke noe opptak å analysere. Importer eller ta opp noe i stedet.</string>
     <string name="where_companion_missing">Koble til motoren på datamaskinen først.</string>
 
     <!-- Transkripsjon -->

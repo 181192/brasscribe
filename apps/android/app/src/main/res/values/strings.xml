@@ -71,6 +71,7 @@
     <string name="where_device_desc">Solo instrument only. Nothing leaves the phone.</string>
     <string name="where_companion">On my computer (companion engine)</string>
     <string name="where_device_unavailable">The on-device model is not installed.</string>
+    <string name="where_device_no_audio">The Mikkel sample has no recording to analyse. Import or record something instead.</string>
     <string name="where_companion_missing">Connect the companion engine first.</string>
 
     <!-- Transcription -->

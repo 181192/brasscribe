@@ -96,10 +96,17 @@ fun ProfileScreen(vm: PlayViewModel) {
             SubHeading(stringResource(R.string.where_title))
             val deviceOk = vm.canTranscribeOnDevice()
             val companionOk = vm.container.engine() != null
+            // Say why the offline choice is off, once the profile no longer explains it.
+            val deviceDesc = when {
+                profile != Profile.SOLO -> R.string.where_device_desc
+                !vm.container.hasPitchModel -> R.string.where_device_unavailable
+                source?.audio == null -> R.string.where_device_no_audio
+                else -> R.string.where_device_desc
+            }
             Column(Modifier.selectableGroup().semantics { collectionInfo = CollectionInfo(2, 1) }) {
                 RadioRow(
                     stringResource(R.string.where_device),
-                    stringResource(if (profile == Profile.SOLO && !vm.container.hasPitchModel) R.string.where_device_unavailable else R.string.where_device_desc),
+                    stringResource(deviceDesc),
                     where == Where.DEVICE, deviceOk, 0, 2,
                 ) { vm.where.value = Where.DEVICE }
                 RadioRow(
