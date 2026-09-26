@@ -59,8 +59,8 @@ public struct SoundBank: Sendable, Equatable {
     func load(into sampler: AVAudioUnitSampler, part: Part) -> Bool {
         if let ps = perPart[part.name] {
             do {
-                try sampler.loadSoundBankInstrument(at: ps.soundFont, program: 0,
-                                                    bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB), bankLSB: 0)
+                try sampler.loadSoundBankInstrument(at: ps.soundFont, program: UInt8(ps.program),
+                                                    bankMSB: UInt8(ps.bankMSB), bankLSB: UInt8(ps.bankLSB))
                 sampler.overallGain = Float(ps.gainDB)
                 return true
             } catch { /* fall back to the general bank */ }
