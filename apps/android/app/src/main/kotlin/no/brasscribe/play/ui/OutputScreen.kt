@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
 import no.brasscribe.design.BrasscribeButtonShape
@@ -74,7 +75,7 @@ fun OutputScreen(vm: PlayViewModel) {
     val key = r?.composition?.keys?.firstOrNull()
 
     PlayScaffold(
-        title = null, onBack = vm::back, backLabel = r?.composition?.title?.ifBlank { null } ?: stringResource(R.string.back), status = status,
+        title = null, onBack = vm::back, backLabel = r?.composition?.title?.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.back), status = status,
         bottom = {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
             PrimaryButton(stringResource(R.string.output_apply), { vm.applyOutput { vm.navigate(Screen.SCORE) } }, enabled = !busy)
@@ -94,7 +95,13 @@ fun OutputScreen(vm: PlayViewModel) {
         }
         SubHeading(stringResource(R.string.difficulty))
         val levels = listOf(Difficulty.EASIER, Difficulty.STANDARD, Difficulty.FAITHFUL)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        if (largeText()) ChoiceGroup(levels.size) {
+            levels.forEachIndexed { i, d ->
+                ChoiceCard(stringResource(d.label), null, options.difficulty == d, canArrange || d == Difficulty.FAITHFUL, i) {
+                    vm.output.update { it.copy(difficulty = d) }
+                }
+            }
+        } else SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             levels.forEachIndexed { i, d ->
                 SegmentedButton(
                     selected = options.difficulty == d, onClick = { vm.output.update { it.copy(difficulty = d) } },
@@ -113,23 +120,26 @@ fun OutputScreen(vm: PlayViewModel) {
         val shiftText = if (options.keyShift == 0) stringResource(R.string.key_as_recorded)
         else stringResource(R.string.key_shifted, (if (options.keyShift > 0) "+" else "−") +
             pluralStringResource(R.plurals.key_shift, kotlin.math.abs(options.keyShift), kotlin.math.abs(options.keyShift)))
-        Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3), verticalAlignment = Alignment.CenterVertically) {
-            val down = stringResource(R.string.key_down)
-            val up = stringResource(R.string.key_up)
-            FilledTonalIconButton({ vm.output.update { it.copy(keyShift = (it.keyShift - 1).coerceAtLeast(-6)) } },
-                Modifier.size(56.dp).semantics { contentDescription = down }, shape = BrasscribeButtonShape,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = c.secondary, contentColor = c.text)) { Text("−", style = MaterialTheme.typography.titleLarge) }
-            Column(
-                Modifier.weight(1f).heightIn(min = 56.dp).border(1.dp, c.borderStrong, BrasscribeButtonShape)
-                    .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s2)
-                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
-            ) {
-                if (key != null) Text(keyName(key.fifths, key.mode == "minor", options.keyShift, lang), style = MaterialTheme.typography.titleMedium)
-                Text(shiftText, style = MaterialTheme.typography.bodyMedium, color = if (key != null) c.textMuted else c.text)
+        // Both keys: the concert key and the one B-flat players read on their parts (review 2, P2-3).
+        Column(
+            Modifier.fillMaxWidth().heightIn(min = 56.dp).border(1.dp, c.borderStrong, BrasscribeButtonShape)
+                .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3)
+                .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+        ) {
+            if (key != null) {
+                val minor = key.mode == "minor"
+                Text(stringResource(R.string.key_concert, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.key_for_bflat, keyName(key.fifths, minor, options.keyShift + 2, lang)), style = MaterialTheme.typography.bodyLarge)
             }
-            FilledTonalIconButton({ vm.output.update { it.copy(keyShift = (it.keyShift + 1).coerceAtMost(6)) } },
-                Modifier.size(56.dp).semantics { contentDescription = up }, shape = BrasscribeButtonShape,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = c.secondary, contentColor = c.text)) { Text("+", style = MaterialTheme.typography.titleLarge) }
+            Text(shiftText, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+        }
+        val semitone = stringResource(R.string.key_semitone_hint)
+        Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            SecondaryButton(stringResource(R.string.key_lower), { vm.output.update { it.copy(keyShift = (it.keyShift - 1).coerceAtLeast(-6)) } },
+                Modifier.weight(1f).semantics { stateDescription = semitone }, enabled = options.keyShift > -6)
+            SecondaryButton(stringResource(R.string.key_higher), { vm.output.update { it.copy(keyShift = (it.keyShift + 1).coerceAtMost(6)) } },
+                Modifier.weight(1f).semantics { stateDescription = semitone }, enabled = options.keyShift < 6)
         }
     }
 }

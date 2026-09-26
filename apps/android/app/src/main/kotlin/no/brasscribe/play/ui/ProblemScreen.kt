@@ -96,10 +96,20 @@ fun ProblemScreen(vm: PlayViewModel) {
     }
 }
 
-/** Settings: Brasscribe on your computer, and About (the display face for the title only). */
+/**
+ * Settings (system.md §5): Brasscribe on your computer; Sound; Display (language, text size and
+ * reduced motion, which are the phone's own settings); Help and About.
+ */
 @Composable
 fun SettingsScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var realistic by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.realisticByDefault) }
+    fun open(action: String, withPackage: Boolean = false) = runCatching {
+        context.startActivity(android.content.Intent(action).apply {
+            if (withPackage) data = android.net.Uri.fromParts("package", context.packageName, null)
+        })
+    }
     PlayScaffold(title = null, onBack = vm::back, backLabel = stringResource(R.string.home), status = status) {
         ScreenTitle(stringResource(R.string.settings))
         RowGroup {
@@ -111,8 +121,50 @@ fun SettingsScreen(vm: PlayViewModel) {
                     else -> stringResource(R.string.companion_status_none)
                 },
             )
+        }
+        SectionLabel(stringResource(R.string.sound))
+        ChoiceGroup(2) {
+            ChoiceCard(stringResource(R.string.sound_baseline), stringResource(R.string.settings_sound_standard), !realistic, true, 0) {
+                realistic = false; vm.container.realisticByDefault = false
+            }
+            ChoiceCard(stringResource(R.string.sound_realistic), stringResource(R.string.settings_sound_realistic), realistic,
+                no.brasscribe.play.audio.RealisticSynth.available, 1) { realistic = true; vm.container.realisticByDefault = true }
+        }
+        SectionLabel(stringResource(R.string.settings_display))
+        RowGroup {
+            // Per-app language is a system setting from Android 13; before that the app follows the phone.
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                ListRow(stringResource(R.string.settings_language), { open(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, withPackage = true) },
+                    icon = R.drawable.ic_bc_info, subtitle = stringResource(R.string.settings_language_desc))
+                RowDivider()
+            }
+            ListRow(stringResource(R.string.settings_text_motion), { open(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) },
+                icon = R.drawable.ic_bc_text_size, subtitle = stringResource(R.string.settings_text_motion_desc))
+        }
+        RowGroup {
+            ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
             RowDivider()
             ListRow(stringResource(R.string.about_title), { vm.navigate(no.brasscribe.play.Screen.ABOUT) }, icon = R.drawable.ic_bc_info)
+        }
+    }
+}
+
+/** Help: the flow in the band room's words, one short section each. */
+@Composable
+fun HelpScreen(vm: PlayViewModel) {
+    val status by vm.status.collectAsState()
+    val c = BrasscribeTheme.colors
+    PlayScaffold(title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status) {
+        ScreenTitle(stringResource(R.string.help))
+        listOf(
+            R.string.help_1_title to R.string.help_1_text, R.string.help_2_title to R.string.help_2_text,
+            R.string.help_3_title to R.string.help_3_text, R.string.help_4_title to R.string.help_4_text,
+            R.string.help_5_title to R.string.help_5_text, R.string.help_6_title to R.string.help_6_text,
+        ).forEach { (t, body) ->
+            Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+                SubHeading(stringResource(t))
+                Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+            }
         }
     }
 }

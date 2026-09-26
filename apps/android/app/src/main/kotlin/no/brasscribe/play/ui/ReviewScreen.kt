@@ -177,7 +177,7 @@ fun ReviewScreen(vm: PlayViewModel) {
     fun finish() { vm.stopListening(); vm.navigate(Screen.OUTPUT) }
 
     PlayScaffold(
-        title = null, onBack = vm::back, backLabel = composition.title.ifBlank { null } ?: stringResource(R.string.home), status = status, scroll = false,
+        title = null, onBack = vm::back, backLabel = composition.title.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.home), status = status, scroll = false,
         actions = { if (current != null) PlainButton(stringResource(R.string.review_finish_later, todo.size), { confirmLater = true }) },
         bottom = {
             if (current != null) {
@@ -479,6 +479,11 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
                 OutlineButton(stringResource(R.string.pitch_down), { shift -= 1 }, Modifier.weight(1f), enabled = written + shift > 0)
                 OutlineButton(stringResource(R.string.pitch_up), { shift += 1 }, Modifier.weight(1f), enabled = written + shift < 127)
+            }
+            // An octave either way: the other common mishearing of a brass note.
+            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                OutlineButton(stringResource(R.string.octave_down), { shift -= 12 }, Modifier.weight(1f), enabled = written + shift > 11)
+                OutlineButton(stringResource(R.string.octave_up), { shift += 12 }, Modifier.weight(1f), enabled = written + shift < 116)
             }
             val heard = evidence?.models.orEmpty().mapNotNull { m -> m.pitch?.let { m.name to it } }
             if (heard.isNotEmpty()) {

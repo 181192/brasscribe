@@ -174,7 +174,6 @@
     <string name="review_card_title">Takt %1$d · %2$s</string>
     <string name="review_position">%1$d av %2$d</string>
     <string name="review_note_line">Notert %1$s, %2$s</string>
-    <string name="review_note_and_level">%1$s. %2$s.</string>
     <string name="level_uncertain">Usikker</string>
     <string name="level_very_uncertain">Svært usikker</string>
     <string name="review_keep_next">Behold, gå til neste</string>
@@ -190,7 +189,6 @@
     <string name="review_still_to_check">Gjenstår å sjekke</string>
     <string name="review_more">+ %1$d til</string>
     <string name="review_all_notes">Alle tonene i %1$s</string>
-    <string name="listen">Lytt</string>
     <string name="legend_uncertain">Usikker</string>
     <string name="legend_very_uncertain">Svært usikker</string>
     <string name="review_next_uncertain">Neste usikre tone</string>
@@ -231,8 +229,6 @@
     <string name="difficulty_unsupported">Dette partituret er skrevet slik det ble spilt. Koble til Brasscribe på datamaskinen for de andre valgene.</string>
     <string name="key_label">Toneart</string>
     <string name="key_as_recorded">Som i opptaket</string>
-    <string name="key_up">En halvtone opp</string>
-    <string name="key_down">En halvtone ned</string>
     <plurals name="key_shift">
         <item quantity="one">%d halvtone</item>
         <item quantity="other">%d halvtoner</item>
@@ -387,7 +383,7 @@
     <string name="key_major">%1$s-dur</string>
     <string name="key_minor">%1$s-moll</string>
     <string name="key_shifted">%1$s fra opptaket</string>
-    <string name="demo_label">det innebygde eksempelet</string>
+    <string name="demo_label">eksempelet, uten datamaskin</string>
     <string name="view_menu">Visning</string>
     <string name="export_what">Hva</string>
     <string name="export_scope_my_part">%1$s (deg)</string>
@@ -406,4 +402,35 @@
         <item quantity="one">Den %d svært usikre kommer først.</item>
         <item quantity="other">De %d svært usikre kommer først.</item>
     </plurals>
+    <string name="key_concert">%1$s (klingende)</string>
+    <string name="key_for_bflat">%1$s for B-instrumenter</string>
+    <string name="key_lower">− Lavere</string>
+    <string name="key_higher">Høyere +</string>
+    <string name="key_semitone_hint">én halvtone</string>
+    <string name="written_pitch_for">Notert for %1$s</string>
+    <string name="written_tip">Notert er det du leser i stemmen din. Klingende er slik det låter på et piano.</string>
+    <string name="practice">Øving</string>
+    <string name="written_tip_label">Hva notert og klingende betyr</string>
+    <string name="help">Hjelp</string>
+    <string name="settings_sound_standard">Klare, lette lyder som starter med en gang.</string>
+    <string name="settings_sound_realistic">Ekte messinginstrumenter, spilt med menneskelig timing.</string>
+    <string name="settings_display">Visning</string>
+    <string name="settings_language">Språk</string>
+    <string name="settings_language_desc">Norsk (bokmål) eller English, i telefonens innstillinger</string>
+    <string name="settings_text_motion">Tekststørrelse og mindre bevegelse</string>
+    <string name="settings_text_motion_desc">Brasscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
+    <string name="help_1_title">Lag et partitur</string>
+    <string name="help_1_text">Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Brasscribe ned tonene og arrangerer dem for brassband.</string>
+    <string name="help_2_title">«?»-merkene</string>
+    <string name="help_2_text">Et «?» over en tone betyr at Brasscribe var usikker. «?» i en boks betyr svært usikker. Lytt til takten, og behold eller endre tonen.</string>
+    <string name="help_3_title">Øv</string>
+    <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og skru av lyden på stemmen din for å spille med bandet.</string>
+    <string name="help_4_title">Del eller skriv ut</string>
+    <string name="help_4_text">Skriv ut din egen stemme, alle stemmene til bandet, eller dirigentpartituret.</string>
+    <string name="help_5_title">Et helt band trenger datamaskinen</string>
+    <string name="help_5_text">Ett instrument kan skrives ned på telefonen. For fullt band åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
+    <string name="help_6_title">Lenker og strømmeapper</string>
+    <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
+    <string name="octave_down">Oktav ned</string>
+    <string name="octave_up">Oktav opp</string>
 </resources>

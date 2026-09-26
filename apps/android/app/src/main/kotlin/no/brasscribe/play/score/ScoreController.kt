@@ -236,6 +236,13 @@ class ScoreController(
         view.api.renderScore(s, DoubleList(*_state.value.shown.sorted().map { it.toDouble() }.toDoubleArray()))
     }
 
+    /** The instrument key the shown part is written for ("B♭", "E♭"), or null for concert-pitch parts. */
+    fun writtenKey(): String? {
+        val i = _state.value.shown.singleOrNull() ?: return null
+        val t = writtenTransposition[i]?.toInt() ?: return null
+        return when (Math.floorMod(-t, 12)) { 2 -> "B♭"; 9 -> "E♭"; 7 -> "F"; 3 -> "A"; else -> null }
+    }
+
     fun showParts(indexes: Set<Int>) {
         if (indexes.isEmpty()) return
         _state.value = _state.value.copy(shown = indexes)
