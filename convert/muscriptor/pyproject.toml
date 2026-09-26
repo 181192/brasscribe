@@ -3,6 +3,7 @@ name = "brasscribe-convert-muscriptor"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "coremltools>=9.0",
     "mir-eval>=0.8",
     "muscriptor>=0.3.0",
     "onnx>=1.17",
