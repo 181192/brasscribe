@@ -2,7 +2,7 @@ import Foundation
 import ScoreKit
 
 /// Talks to the brasscribe engine running on the musician's own computer
-/// (`brasscribe serve --host 0.0.0.0`, default port 8765), per `engine/openapi.json`.
+/// (`brasscribe serve --lan`, default port 8765), per `engine/openapi.json`.
 ///
 /// Pairing: the engine prints a 6-digit code; `pair(code:)` exchanges it for a bearer
 /// token. Loopback clients need no token.

@@ -51,7 +51,7 @@ pixi run brasscribe profiles  # the four transcription profiles
 pixi run studio               # serves Studio on http://127.0.0.1:8765/ and opens a browser
 ```
 
-`pixi run studio --no-browser --port 8799` leaves the browser alone. `pixi run serve --lan` binds `0.0.0.0` and prints a LAN URL and a 6-digit pairing code for phones on the same network. Without a browser:
+`pixi run studio --no-browser --port 8799` leaves the browser alone. `pixi run serve --lan` binds `0.0.0.0`, prints a LAN URL and a 6-digit pairing code for phones on the same network, and advertises the engine over Bonjour/mDNS as `_brasscribe._tcp` so the Play apps list it in Settings (`--no-advertise` turns that off). Without a browser:
 
 ```sh
 curl -s http://127.0.0.1:8765/v1/health
@@ -110,7 +110,7 @@ dotnet test tests/Brasscribe.Play.Core.Tests -c Release
 dotnet build src/Brasscribe.Play -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64
 ```
 
-To point an app at a LAN engine, start it with `pixi run serve --lan` and enter the printed pairing code in the app.
+To point an app at a LAN engine, start it with `pixi run serve --lan`, pick it from the list in the app's settings (or type the printed address) and enter the pairing code. Guest and corporate Wi-Fi often block mDNS between devices; typing the address still works there. Set `BRASSCRIBE_TOKEN` to keep apps paired across engine restarts.
 
 ## Configuration
 

@@ -97,6 +97,8 @@ class AppContainer(private val context: Context) {
 
     fun newEngineClient(url: String): KtorEngineApi = KtorEngineApi(url, OkHttp.create())
 
+    val discovery by lazy { EngineDiscovery(context) }
+
     fun engineLabel(): String = if (usingFixture) context.getString(R.string.demo_label) else settings.url.removePrefix("http://").removePrefix("https://")
 
     /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */

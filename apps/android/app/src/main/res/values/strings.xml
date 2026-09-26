@@ -340,6 +340,8 @@
     <string name="companion_title">Brasscribe on your computer</string>
     <string name="companion_explain">Open Brasscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
     <string name="companion_address">Computer address</string>
+    <string name="companion_searching">Looking for Brasscribe on your network… You can also type the address below.</string>
+    <string name="companion_chosen">Chosen</string>
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>

@@ -48,6 +48,7 @@ pandas = "==3.0.6"
 [feature.engine.tasks]
 engine = "brasscribe"
 serve = "brasscribe serve"
+serve-lan = "brasscribe serve --lan"
 studio = "brasscribe studio"
 openapi = "python -m brasscribe_engine.openapi engine/openapi.json"
 

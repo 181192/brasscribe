@@ -35,7 +35,8 @@ ENV BRASSCRIBE_ADAPTER_RUNNER=pixi \
     BRASSCRIBE_DATA=/data \
     BRASSCRIBE_PYTHON=/brasscribe/.pixi/envs/default/bin/python
 EXPOSE 8765
-CMD ["pixi", "run", "brasscribe", "serve", "--lan"]
+# mDNS from a bridged container would advertise the container's own address.
+CMD ["pixi", "run", "brasscribe", "serve", "--lan", "--no-advertise"]
 
 # Engine plus every adapter on CPU PyTorch.
 FROM base AS cpu

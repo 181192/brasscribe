@@ -338,6 +338,8 @@
     <string name="companion_title">Brasscribe på datamaskinen</string>
     <string name="companion_explain">Åpne Brasscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_address">Adressen til datamaskinen</string>
+    <string name="companion_searching">Ser etter Brasscribe på nettverket … Du kan også skrive inn adressen nedenfor.</string>
+    <string name="companion_chosen">Valgt</string>
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>

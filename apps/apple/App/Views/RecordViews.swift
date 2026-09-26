@@ -138,12 +138,21 @@ struct SettingsView: View {
     @State private var code = ""
     @State private var status: String?
     @State private var busy = false
+    @State private var browser = EngineBrowser()
 
     var body: some View {
         @Bindable var app = app
         NavigationStack {
             Form {
                 Section {
+                    ForEach(browser.engines) { engine in
+                        Button { Task { await choose(engine) } } label: { Label(engine.name, systemImage: "desktopcomputer") }
+                            .disabled(busy)
+                    }
+                    if browser.engines.isEmpty {
+                        Text(browser.problem ?? String(localized: "Looking for Brasscribe on your network…"))
+                            .foregroundStyle(.secondary)
+                    }
                     TextField(text: $app.companionURL) { Text("Address") }
                         .textContentType(.URL)
                         .autocorrectionDisabled()
@@ -153,7 +162,7 @@ struct SettingsView: View {
                     Button("Check connection") { Task { await check() } }.disabled(busy)
                     if let status { Text(status).font(.callout) }
                 } header: { Text("Your computer") } footer: {
-                    Text("Start Brasscribe on your computer with “brasscribe serve --host 0.0.0.0” and type the six-digit code it shows.")
+                    Text("Start Brasscribe on your computer with “brasscribe serve --lan”. When it is on the same network it is listed here; choose it and type the six-digit code it shows.")
                 }
                 Section {
                     Toggle(isOn: $app.soloOnDevice) { Text("Transcribe solos on this device") }
@@ -184,8 +193,19 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle(Text("Settings"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .onAppear { browser.start() }
+            .onDisappear { browser.stop() }
         }
         .frame(minWidth: 460, minHeight: 420)
+    }
+
+    func choose(_ engine: EngineBrowser.Engine) async {
+        busy = true; defer { busy = false }
+        do {
+            let url = try await browser.resolve(engine)
+            app.companionURL = url.absoluteString
+            status = String(localized: "Found at \(url.absoluteString). Type the six-digit code to pair.")
+        } catch { status = error.localizedDescription }
     }
 
     @State private var modelTick = 0
