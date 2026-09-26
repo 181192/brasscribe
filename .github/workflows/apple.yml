@@ -1,38 +1,45 @@
 name: apple
 
-# Brasscribe Play for macOS, iOS and iPadOS: builds the Rust core's Apple slices, Verovio, the
-# Xcode project, then runs package + app tests. Uploads the macOS .app as a downloadable artifact.
+# Brasscribe Play for macOS, iOS and iPadOS. Checks: Swift package tests plus macOS and iPhone
+# simulator app tests. With `release`: a Release build of the macOS app uploaded as dist-macos.
 on:
   push:
-    paths:
+    branches: [main]
+    paths: &paths
       - "apps/apple/**"
       - "capture/**"
       - "core/**"
       - "design/**"
       - ".github/workflows/apple.yml"
   pull_request:
-    paths:
-      - "apps/apple/**"
-      - "capture/**"
-      - "core/**"
-      - "design/**"
-      - ".github/workflows/apple.yml"
+    paths: *paths
   workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      release:
+        description: Build the macOS app for download instead of running checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: apple-${{ github.ref }}
-  cancel-in-progress: true
+  group: apple-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+defaults:
+  run:
+    working-directory: apps/apple
 
 jobs:
   build:
-    runs-on: macos-15
+    name: ${{ inputs.release && 'release build' || 'test' }}
+    runs-on: macos-26
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -44,56 +51,50 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      - name: Install cbindgen
-        run: cargo install cbindgen --locked
+      - run: brew install xcodegen
 
-      - run: brew install xcodegen cmake
-
-      # Verovio source is a pinned upstream commit; cache the built xcframework by that pin.
-      - name: Cache Verovio build
+      # Verovio is a pinned upstream commit: rebuild only when the build script changes.
+      - name: Cache Verovio.xcframework
+        id: verovio
         uses: actions/cache@v4
         with:
-          path: |
-            apps/apple/build/verovio
-            apps/apple/Frameworks
-          key: verovio-${{ runner.os }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+          path: apps/apple/Frameworks
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
 
       - name: Build Verovio.xcframework
-        working-directory: apps/apple
+        if: steps.verovio.outputs.cache-hit != 'true'
         run: make verovio
 
-      - name: Generate UniFFI bindings (Swift/Kotlin/C)
-        working-directory: core
-        run: scripts/bindings.sh
-
-      - name: Build the Rust core's Apple slices (BrasscribeFFI.xcframework)
-        working-directory: apps/apple
+      # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
+      - name: Build BrasscribeFFI.xcframework
         run: scripts/build-core.sh
 
-      - name: Generate the Xcode project
-        working-directory: apps/apple
-        run: make project
-
-      - name: Build (macOS, iPhone simulator, iPad simulator)
-        working-directory: apps/apple
-        run: make build
-
       # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
-      - name: Test (package tests, macOS and iPhone simulator app tests)
-        working-directory: apps/apple
-        run: make test
-
-      - name: Package the macOS app
-        working-directory: apps/apple
+      - name: Test (packages, macOS app, iPhone simulator app)
+        if: ${{ !inputs.release }}
         run: |
-          app=$(find build/DerivedData/Build/Products -maxdepth 2 -name "*.app" -path "*macos*" | head -1)
-          if [ -z "$app" ]; then app=$(find build/DerivedData/Build/Products -maxdepth 2 -name "*.app" | head -1); fi
-          [ -n "$app" ] || { echo "no .app found under DerivedData" >&2; exit 1; }
-          mkdir -p "$RUNNER_TEMP/apple-macos-app"
-          ditto "$app" "$RUNNER_TEMP/apple-macos-app/$(basename "$app")"
+          iphone=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))] | last | .name')
+          echo "iPhone simulator: $iphone"
+          make test IPHONE="$iphone"
+
+      # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
+      - name: Release build of the macOS app
+        if: ${{ inputs.release }}
+        run: |
+          make project
+          xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
+            -scheme BrasscribePlay-macOS -configuration Release -destination 'generic/platform=macOS' build
+          app=$(find build/DerivedData/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          [ -n "$app" ] || { echo "no .app under build/DerivedData/Build/Products/Release" >&2; exit 1; }
+          mkdir -p "$RUNNER_TEMP/out"
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip"
 
       - uses: actions/upload-artifact@v4
+        if: ${{ inputs.release }}
         with:
-          name: apple-macos-app
-          path: ${{ runner.temp }}/apple-macos-app
+          name: dist-macos
+          path: ${{ runner.temp }}/out/*.zip
+          if-no-files-found: error
+

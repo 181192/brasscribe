@@ -1,28 +1,38 @@
 name: windows
 
-# Brasscribe Play for Windows: core tests, the WinUI 3 app build and an Axe.Windows accessibility scan.
+# Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test, an
+# Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
+# uploaded as dist-windows-x64.
 on:
   push:
-    paths:
+    branches: [main]
+    paths: &paths
       - "apps/windows/**"
       - "core/**"
       - "design/**"
+      - "docs/accessibility/talking-score-vectors.json"
+      - "sounds/mapping.json"
       - ".github/workflows/windows.yml"
   pull_request:
-    paths:
-      - "apps/windows/**"
-      - "core/**"
-      - "design/**"
-      - ".github/workflows/windows.yml"
+    paths: *paths
   workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      release:
+        description: Build the app for download instead of running checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: windows-${{ github.ref }}
-  cancel-in-progress: true
+  group: windows-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -32,10 +42,12 @@ defaults:
 env:
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   CONFIGURATION: Release
 
 jobs:
   build:
+    name: ${{ inputs.release && 'release build' || 'test, build and scan' }}
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -43,7 +55,13 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          global-json-file: apps/windows/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('apps/windows/Directory.Packages.props', 'apps/windows/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       # The Rust core as brasscribe_ffi.dll (MSVC host build). The app build copies it next to the exe.
       - uses: dtolnay/rust-toolchain@stable
@@ -51,6 +69,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build the Rust core (brasscribe_ffi.dll)
         working-directory: core
@@ -58,46 +77,30 @@ jobs:
           cargo build --release --locked -p brasscribe-ffi
           $dll = Resolve-Path target/release/brasscribe_ffi.dll
           "BRASSCRIBE_FFI_PATH=$dll" >> $env:GITHUB_ENV
-          Write-Host "Built $dll"
-
-      - name: Restore
-        run: dotnet restore Brasscribe.Play.slnx -p:Platform=x64
 
       # BRASSCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
       # the default bridge). Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts) skip in CI.
       - name: Core tests
+        if: ${{ !inputs.release }}
         run: >
           dotnet test tests/Brasscribe.Play.Core.Tests -c $env:CONFIGURATION
           --logger "trx;LogFileName=core.trx" --results-directory "$env:RUNNER_TEMP/test-results"
 
       - name: Build app (WinUI 3, unpackaged, x64)
+        if: ${{ !inputs.release }}
         run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH"
 
-      - name: Package the app
-        id: package
-        run: |
-          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
-          if (-not $exe) { throw "BrasscribePlay.exe was not built" }
-          $dest = "$env:RUNNER_TEMP/windows-app"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item -Recurse -Path $exe.DirectoryName -Destination "$dest/BrasscribePlay"
-          "path=$dest" >> $env:GITHUB_OUTPUT
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-app
-          path: ${{ steps.package.outputs.path }}
-
       - name: Locate the exe
+        if: ${{ !inputs.release }}
         id: exe
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribePlay.exe was not built" }
           if (-not (Test-Path (Join-Path $exe.DirectoryName "brasscribe_ffi.dll"))) { throw "brasscribe_ffi.dll is not next to the exe" }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
-          Write-Host "Built $($exe.FullName)"
 
       - name: Smoke test (the app starts and shows its window)
+        if: ${{ !inputs.release }}
         run: |
           $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -PassThru
           $deadline = (Get-Date).AddSeconds(90)
@@ -109,6 +112,7 @@ jobs:
 
       # Axe.Windows rules on the start screen, then on the score screen (the app opens the fixture score).
       - name: Accessibility scan (Axe.Windows)
+        if: ${{ !inputs.release }}
         run: >
           dotnet run --project tools/AxeScan -c $env:CONFIGURATION --
           "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/axe"
@@ -116,26 +120,46 @@ jobs:
 
       # Every screen in light and dark, named like design/mockups/png (e.g. score-desktop-light.png).
       - name: Screenshots
-        if: always() && steps.exe.outputs.path != ''
+        if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
         run: >
           ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}"
           -Score tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
           -Out "$env:RUNNER_TEMP/screenshots"
 
       - name: Upload screenshots
-        if: always()
+        if: ${{ !inputs.release && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: windows-screenshots
           path: ${{ runner.temp }}/screenshots
+          retention-days: 14
           if-no-files-found: ignore
 
-      - name: Upload results
-        if: always()
+      - name: Upload test and scan results
+        if: ${{ !inputs.release && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: windows-results
           path: |
             ${{ runner.temp }}/test-results
             ${{ runner.temp }}/axe
+          retention-days: 14
           if-no-files-found: ignore
+
+      # Self-contained (.NET and Windows App SDK) so it runs without installing either runtime.
+      - name: Release build (self-contained, x64)
+        if: ${{ inputs.release }}
+        run: |
+          $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
+          dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH" -o $out
+          if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
+          Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-play-windows-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.release }}
+        with:
+          name: dist-windows-x64
+          path: ${{ runner.temp }}/out/*.zip
+          if-no-files-found: error
+

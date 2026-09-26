@@ -1,9 +1,32 @@
 name: ci
 
+# Python engine, music library and eval: tests on Linux and Windows, CPU benchmark gate on Linux.
+# The apps, the Rust core and the site have their own workflows.
 on:
   push:
     branches: [main]
+    paths-ignore: &ignore
+      - "apps/**"
+      - "capture/**"
+      - "core/**"
+      - "site/**"
+      - "**/*.md"
+      - ".github/workflows/android.yml"
+      - ".github/workflows/apple.yml"
+      - ".github/workflows/core.yml"
+      - ".github/workflows/pages.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/windows.yml"
   pull_request:
+    paths-ignore: *ignore
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   linux:

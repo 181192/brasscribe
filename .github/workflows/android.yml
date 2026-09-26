@@ -1,21 +1,37 @@
 name: android
 
-# Brasscribe Play for Android: unit tests, lint, and a downloadable debug + unsigned release APK.
+# Brasscribe Play for Android. Checks: unit tests, lint and a debug build (Kotlin fallback core,
+# stub audio tier). With `release`: the Rust core and sfizz are built in and an unsigned release
+# APK is uploaded as dist-android.
 on:
   push:
     branches: [main]
-    paths: ["apps/android/**", "design/**", ".github/workflows/android.yml"]
+    paths: &paths
+      - "apps/android/**"
+      - "core/android/**"
+      - "design/**"
+      - "docs/accessibility/talking-score-vectors.json"
+      - ".github/workflows/android.yml"
   pull_request:
-    paths: ["apps/android/**", "design/**", ".github/workflows/android.yml"]
+    paths: *paths
   workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      release:
+        description: Build the full release APK for download instead of running checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
-  cancel-in-progress: true
+  group: android-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -23,10 +39,9 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ inputs.release && 'release build' || 'test and lint' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -35,29 +50,54 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # Pinned in build.gradle.kts; installing up front keeps AGP from downloading them mid-build.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools ndk;28.2.13676358 cmake;3.31.6
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # NDK 28.2 and CMake 3.31.6 (pinned in build.gradle.kts) are auto-provisioned by AGP once
-      # the SDK licenses are accepted; no manual sdkmanager install needed for compileSdk/build-tools.
-      - name: Unit tests and lint
-        run: ./gradlew testDebugUnitTest lint --stacktrace
-
-      - name: Assemble debug and release APKs (release is unsigned in CI)
-        run: ./gradlew assembleDebug assembleRelease --stacktrace
+      - name: Unit tests, lint and debug APK
+        if: ${{ !inputs.release }}
+        run: ./gradlew testDebugUnitTest lint assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !inputs.release && failure() }}
         with:
           name: android-test-and-lint-reports
           path: |
-            apps/android/app/build/reports
+            apps/android/**/build/reports
             apps/android/**/build/test-results
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@v4
+      - uses: dtolnay/rust-toolchain@stable
+        if: ${{ inputs.release }}
         with:
-          name: android-apks
-          path: apps/android/app/build/outputs/apk/**/*.apk
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        if: ${{ inputs.release }}
+        with:
+          workspaces: core
+
+      - name: Build the Rust core and fetch sfizz
+        if: ${{ inputs.release }}
+        run: |
+          cargo install cargo-ndk --locked
+          ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358" scripts/build-core.sh
+          scripts/fetch-sfizz.sh
+
+      - name: Release APK (unsigned)
+        if: ${{ inputs.release }}
+        run: |
+          ./gradlew assembleRelease --stacktrace
+          mkdir -p "$RUNNER_TEMP/out"
+          cp app/build/outputs/apk/release/*.apk "$RUNNER_TEMP/out/brasscribe-play-android-unsigned.apk"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.release }}
+        with:
+          name: dist-android
+          path: ${{ runner.temp }}/out/*.apk
           if-no-files-found: error
+
