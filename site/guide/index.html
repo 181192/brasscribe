@@ -70,10 +70,13 @@
     <section id="open">
       <h2>Open or record</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../assets/shots/home-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../assets/shots/home-phone-light.png" alt="The home screen, with Open a recording, Record and Your scores." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/home-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/home-en-light.webp">
+            <img src="../assets/shots/home-en-light.png" width="600" height="1334" loading="lazy" alt="Home: Open a recording, Record with the microphone, Record what's playing, Open a score and Try the demo.">
+          </picture>
+        </div>
       </figure>
       <p>On the home screen, choose one:</p>
       <ul>
@@ -87,6 +90,15 @@
 
     <section id="what">
       <h2>What is this?</h2>
+      <figure class="phone">
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/what-is-this-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/what-is-this-en-light.webp">
+            <img src="../assets/shots/what-is-this-en-light.png" width="600" height="1334" loading="lazy" alt="What is this? with its four choices, and where the score will be made.">
+          </picture>
+        </div>
+      </figure>
       <p>Brasscribe asks what the recording is. Your answer decides how it listens. It never guesses, and nothing is chosen for you the first time.</p>
       <div class="table-scroll" role="region" aria-labelledby="what-caption" tabindex="0">
         <table>
@@ -106,10 +118,13 @@
     <section id="making">
       <h2>Making the score</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../assets/shots/transcribing-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../assets/shots/transcribing-phone-light.png" alt="Making the score: the current step as a heading, the percentage, the time left and a list of all steps." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/making-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/making-en-light.webp">
+            <img src="../assets/shots/making-en-light.png" width="600" height="1334" loading="lazy" alt="Making the score: the current step as a heading, the percentage, the time left and a list of all steps.">
+          </picture>
+        </div>
       </figure>
       <p>Brasscribe shows each step in plain words, such as <em>Finding the beat</em> and <em>Arranging for brass band</em>, with the percentage and the time left. A few minutes of music usually takes a few minutes.</p>
       <p>You can leave the screen. To stop, choose <strong>Cancel</strong>: the app asks first, and the recording stays in Your scores.</p>
@@ -118,10 +133,13 @@
     <section id="check">
       <h2>Check the notes</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../assets/shots/review-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../assets/shots/review-phone-light.png" alt="Checking one uncertain note: the bar, the part and the written note, with Listen to this bar, Skip and Keep, go to next." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/review-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/review-en-light.webp">
+            <img src="../assets/shots/review-en-light.png" width="600" height="1334" loading="lazy" alt="Checking one uncertain note: the bar on a staff, the part and the written note, with Listen to this bar, Change note, Keep, go to next, and Skip.">
+          </picture>
+        </div>
       </figure>
       <p>When the score is ready, Brasscribe shows the notes it wasn't sure about, one at a time.</p>
       <ul>
@@ -132,6 +150,7 @@
       <ul>
         <li><strong>Listen to this bar</strong> plays that bar from the recording, over and over.</li>
         <li><strong>Keep, go to next</strong> if it's right. The question mark is removed.</li>
+        <li><strong>Change note…</strong> if it's wrong: pick the right note, and the question mark is removed.</li>
         <li><strong>Skip</strong> leaves the note marked and moves on.</li>
       </ul>
       <p>You don't have to check every note now. <strong>Finish later</strong> keeps the question marks, and <strong>"9 notes marked ? · Check them"</strong> above the score takes you back any time.</p>
@@ -139,10 +158,19 @@
 
     <section id="output">
       <h2>How should the score be?</h2>
+      <figure class="phone">
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/output-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/output-en-light.webp">
+            <img src="../assets/shots/output-en-light.png" width="600" height="1334" loading="lazy" alt="How should the score be? with Which band?, How hard? and Key, and Show the score.">
+          </picture>
+        </div>
+      </figure>
       <p>Three questions on one screen. Brasscribe remembers the answers for each song.</p>
       <ul>
         <li><strong>Which band?</strong> Full brass band (around 25 players) or a small band (10–15 players, with parts combined).</li>
-        <li><strong>How hard?</strong> <em>As played</em>, or <em>Easier</em>: it keeps the tune but avoids high notes and fast runs.</li>
+        <li><strong>How hard?</strong> <em>As played</em>, <em>A bit easier</em> or <em>Easier</em>: it keeps the tune but avoids high notes and fast runs.</li>
         <li><strong>Key:</strong> as recorded, or step up and down to the key you want.</li>
       </ul>
       <p>Nothing changes until you choose <strong>Show the score</strong>. You can come back and change it later, and nothing is lost.</p>
@@ -150,11 +178,21 @@
 
     <section id="score">
       <h2>The score and the player</h2>
-      <figure>
-        <picture>
-          <source srcset="../assets/shots/score-desktop-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../assets/shots/score-desktop-light.png" alt="The full score on a computer, with the toolbar above and the player docked below." loading="lazy" width="1440" height="900">
-        </picture>
+      <figure class="phone pair">
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/score-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/score-en-light.webp">
+            <img src="../assets/shots/score-en-light.png" width="600" height="1334" loading="lazy" alt="The full score on a phone, with the part picker and As written or Concert pitch above, and the player below.">
+          </picture>
+        </div>
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/parts-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/parts-en-light.webp">
+            <img src="../assets/shots/parts-en-light.png" width="600" height="1334" loading="lazy" alt="The Parts sheet: All parts or My part, and Mute and Only this for every part.">
+          </picture>
+        </div>
       </figure>
       <h3>Reading</h3>
       <ul>
@@ -170,12 +208,21 @@
         <li><strong>Count-in:</strong> one bar of clicks before the music starts. <strong>Metronome:</strong> a click on every beat.</li>
         <li><strong>Mute my part:</strong> your part goes quiet so you can play it yourself.</li>
         <li>In the parts list, <strong>Mute</strong> silences a part and <strong>Only this</strong> plays one part alone.</li>
-        <li><strong>Hear: Band / Recording</strong> switches to the original recording from the same bar.</li>
+        <li>On iPhone, iPad and Mac, <strong>Original recording</strong> switches to the recording at the same place. On Windows, choose <strong>Hear the band</strong> or <strong>Recording</strong>.</li>
       </ul>
     </section>
 
     <section id="share">
       <h2>Share or print</h2>
+      <figure class="phone">
+        <div class="device">
+          <picture>
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/share-en-dark.webp">
+            <source type="image/webp" srcset="../assets/shots/share-en-light.webp">
+            <img src="../assets/shots/share-en-light.png" width="600" height="1334" loading="lazy" alt="Share or print: Solo Cornet (you), Every part or Conductor's score, then the formats, with Print, Share and Save to Files.">
+          </picture>
+        </div>
+      </figure>
       <p>Choose <strong>Share or print</strong>, then what and how.</p>
       <div class="table-scroll" role="region" aria-labelledby="share-what" tabindex="0">
         <table>
@@ -208,6 +255,16 @@
     <section id="computer">
       <h2>Brasscribe on your computer</h2>
       <p>For a full band, Brasscribe on your computer (a Mac or PC) makes the score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else.</p>
+      <figure class="wide">
+        <div class="window">
+          <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>Brasscribe Studio · Score viewer</span></div>
+          <picture>
+          <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="../assets/shots/computer-en-dark.webp">
+          <source type="image/webp" srcset="../assets/shots/computer-en-light.webp">
+          <img src="../assets/shots/computer-en-light.png" width="1440" height="900" loading="lazy" alt="A brass band score in the browser on a computer, with Play, Repeat bars, Speed and a parts menu above the full score.">
+          </picture>
+        </div>
+      </figure>
       <ol>
         <li>Start Brasscribe on your computer. It shows a six-digit code.</li>
         <li>Put your phone on the <strong>same Wi-Fi</strong> as the computer.</li>

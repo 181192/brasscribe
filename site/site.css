@@ -97,11 +97,67 @@ section + section { border-top: 1px solid var(--bc-border); }
 .hero { padding-top: var(--bc-space-12); background: linear-gradient(180deg, var(--bc-brass-tint), var(--bc-bg) 70%); }
 .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--bc-space-12); align-items: center; }
 .hero .mark { width: 56px; margin-bottom: var(--bc-space-6); }
-.phones { display: flex; gap: var(--bc-space-4); justify-content: center; }
-.phones picture { width: 46%; max-width: 300px; }
-.phones img { width: 100%; border-radius: 28px; border: 1px solid var(--bc-border); box-shadow: var(--bc-elevation-3); }
-.phones picture:nth-child(2) { margin-top: var(--bc-space-12); }
-.shot img { border-radius: var(--bc-radius-lg); border: 1px solid var(--bc-border); box-shadow: var(--bc-elevation-2); }
+.hero-grid.reverse > :first-child { order: 2; }
+.hero-grid.wide-shot { grid-template-columns: 0.8fr 1.2fr; }
+
+/* Screenshots. Phones sit in a device frame drawn here, desktops in a window frame.
+   The frame fixes the ratio, so shots from any phone or desktop crop to fit. */
+.device {
+  --bezel: #1b1a18;
+  position: relative; width: 100%;
+  padding: 3.2%; border-radius: 13% / 6%;
+  background: var(--bezel);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), inset 0 0 0 1.5px rgb(255 255 255 / 0.07), var(--bc-elevation-3);
+}
+.device picture, .window picture { display: block; }
+.device img {
+  width: 100%; height: auto; aspect-ratio: 600 / 1334; object-fit: cover; object-position: top;
+  border-radius: 10.5% / 4.8%; background: var(--bc-bg);
+}
+@media (prefers-color-scheme: dark) {
+  .device { --bezel: #2c2a27; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1), var(--bc-elevation-3); }
+}
+.phones { display: flex; gap: var(--bc-space-6); justify-content: center; align-items: flex-start; }
+.phones .device { width: 46%; max-width: 280px; }
+.phones .device:nth-child(2) { margin-top: var(--bc-space-12); }
+
+.window {
+  border-radius: var(--bc-radius-lg); overflow: hidden;
+  border: 1px solid var(--bc-border-strong); background: var(--bc-surface-raised);
+  box-shadow: var(--bc-elevation-3);
+}
+.window-bar {
+  display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
+  background: var(--bc-surface); border-bottom: 1px solid var(--bc-border);
+  font-size: 12px; color: var(--bc-text-muted); white-space: nowrap; overflow: hidden;
+}
+.window-bar i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--bc-border-strong); }
+.window-bar span { flex: 1; text-align: center; margin-right: 44px; overflow: hidden; text-overflow: ellipsis; }
+.window img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; }
+.studio-shot { margin: var(--bc-space-10) 0 0; }
+
+/* How it works: one phone per step */
+.flow {
+  list-style: none; padding: 0; margin: var(--bc-space-12) 0 0; counter-reset: step;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--bc-space-12) var(--bc-space-8);
+}
+.flow li { counter-increment: step; }
+.flow .device { max-width: 232px; margin: 0 auto var(--bc-space-6); }
+.flow h3 { display: flex; align-items: baseline; gap: var(--bc-space-2); margin: 0 0 var(--bc-space-2); font-size: var(--bc-type-headline-size); }
+.flow h3::before {
+  content: counter(step) / "";
+  flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--bc-radius-full);
+  background: var(--bc-brass-tint); color: var(--bc-brass-text); font-size: var(--bc-type-caption-size); font-weight: 700;
+  transform: translateY(-2px);
+}
+.flow p { color: var(--bc-text-muted); font-size: var(--bc-type-callout-size); margin: 0; }
+
+ul.ticks { list-style: none; padding: 0; margin: 0 0 var(--bc-space-4); display: grid; gap: var(--bc-space-3); }
+ul.ticks li { position: relative; padding-left: 1.6em; }
+ul.ticks li::before {
+  content: ""; position: absolute; left: 0.2em; top: 0.62em; width: 0.5em; height: 0.5em;
+  border-radius: 50%; background: var(--bc-brass);
+}
 
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--bc-space-6); }
 .cards { list-style: none; padding: 0; margin: var(--bc-space-8) 0 0; counter-reset: step; }
@@ -165,8 +221,9 @@ tbody th { font-weight: 600; }
 .guide article section { padding: var(--bc-space-10) 0; }
 .guide article section:first-child { padding-top: 0; }
 .guide figure { margin: var(--bc-space-6) 0; }
-.guide figure.phone img { max-width: 300px; border-radius: 24px; border: 1px solid var(--bc-border); box-shadow: var(--bc-elevation-2); }
-.guide figure:not(.phone) img { border-radius: var(--bc-radius-lg); border: 1px solid var(--bc-border); box-shadow: var(--bc-elevation-2); }
+.guide figure.phone { display: flex; gap: var(--bc-space-6); }
+.guide figure.phone .device { max-width: 260px; }
+.guide figure.pair .device { width: 50%; }
 .to-top { font-size: var(--bc-type-callout-size); }
 
 /* Footer */
@@ -178,15 +235,25 @@ tbody th { font-weight: 600; }
   html { scroll-padding-top: var(--bc-space-4); }
   .site-header { position: static; }
   .site-header .wrap { flex-wrap: wrap; padding-top: var(--bc-space-2); padding-bottom: var(--bc-space-2); }
-  .hero-grid, .grid-3, .guide { grid-template-columns: minmax(0, 1fr); }
+  .hero-grid, .hero-grid.wide-shot, .grid-3, .guide { grid-template-columns: minmax(0, 1fr); }
+  .hero-grid.reverse > :first-child { order: 0; }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--bc-space-10) var(--bc-space-6); }
   .guide { gap: var(--bc-space-8); padding-top: var(--bc-space-8); }
   .toc { position: static; max-height: none; border: 1px solid var(--bc-border); border-radius: var(--bc-radius-md); padding: var(--bc-space-3); }
   .site-nav { gap: 0 var(--bc-space-4); }
   section { padding: var(--bc-space-12) 0; }
 }
 
+@media (max-width: 520px) {
+  .flow { gap: var(--bc-space-8) var(--bc-space-4); }
+  .flow h3 { font-size: var(--bc-type-callout-size); }
+  .flow h3::before { width: 22px; height: 22px; }
+  .flow .device { margin-bottom: var(--bc-space-4); }
+  .phones { gap: var(--bc-space-4); }
+}
+
 @media (forced-colors: active) {
-  .card, details, .platforms li, .note, .phones img, .shot img, .guide figure img { border: 1px solid CanvasText; }
+  .card, details, .platforms li, .note, .device, .window { border: 1px solid CanvasText; }
   .site-nav a[aria-current="page"] { text-decoration: underline; }
 }
 
