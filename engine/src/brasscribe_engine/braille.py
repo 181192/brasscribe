@@ -2,7 +2,8 @@
 
 music21 writes Unicode braille cells (U+2800-U+283F); a .brf file is the same cells in North
 American Braille ASCII, the encoding embossers and braille displays read. Lines are at most 40
-cells, CRLF-terminated, with a form feed after every 25 lines (one embossed page).
+cells, CRLF-terminated, with a form feed after every 25 lines (one embossed page). Title and heading lines
+longer than a line are wrapped at word boundaries, runover lines indented two cells.
 
 music21 only transcribes plain text, so titles and part names are reduced to ASCII first. Where
 music21 cannot place a text direction (e.g. an "ad lib." above a note) the score is translated
@@ -50,8 +51,41 @@ def brf_to_unicode(brf: str) -> str:
     return "".join(table.get(c, c) for c in brf.replace("\r\n", "\n").replace("\f", ""))
 
 
+RUNOVER_INDENT = 2  # continuation lines of a wrapped title or heading start in cell 3
+
+
+def wrap_line(line: str, width: int = LINE_CELLS, indent: int = RUNOVER_INDENT) -> list[str]:
+    """Split a line longer than the page width at word boundaries (blank cells).
+
+    music21 wraps the music itself but not the title and heading lines. As in braille title
+    formatting, a runover line is indented; a word longer than the line is split where it must be."""
+    line = line.rstrip()
+    if len(line) <= width:
+        return [line]
+    lead = len(line) - len(line.lstrip(" "))
+    words = line.split()
+    out, cur, first = [], " " * lead, True
+    for w in words:
+        prefix = "" if cur.strip() == "" else " "
+        if len(cur) + len(prefix) + len(w) <= width:
+            cur += prefix + w
+            continue
+        if cur.strip():
+            out.append(cur)
+            first = False
+        cur = " " * indent
+        while len(cur) + len(w) > width:  # a single word wider than the line
+            room = width - len(cur)
+            out.append(cur + w[:room])
+            w = w[room:]
+        cur += w
+    if cur.strip():
+        out.append(cur)
+    return out
+
+
 def paginate(brf: str) -> str:
-    lines = [ln.rstrip() for ln in brf.replace("\r\n", "\n").split("\n")]
+    lines = [part for ln in brf.replace("\r\n", "\n").split("\n") for part in wrap_line(ln)]
     while lines and not lines[-1]:
         lines.pop()
     pages = [lines[i:i + PAGE_LINES] for i in range(0, len(lines), PAGE_LINES)]

@@ -149,3 +149,34 @@ def test_job_options_validated_by_the_api(settings, audio):
         assert c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "lineup": "huge"}).status_code == 422
         ok = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "difficulty": "easier"})
         assert ok.status_code == 202
+
+
+def test_long_title_lines_wrap_at_words():
+    line = ",MOVEMENT ,NAME3 ,MIKKEL 0 SOLO CORNET AND BRASS BAND 7DRAFT7 0 ,SOPRANO ,CORNET"
+    out = braille.wrap_line(line)
+    assert len(out) > 1 and all(len(x) <= braille.LINE_CELLS for x in out)
+    assert all(x.startswith("  ") and not x.startswith("   ") for x in out[1:])  # runover indent of two cells
+    assert " ".join(x.strip() for x in out) == line  # nothing lost, words intact
+    assert braille.wrap_line("#A \"?:$]") == ["#A \"?:$]"]
+    long_word = "X" * 90
+    assert all(len(x) <= braille.LINE_CELLS for x in braille.wrap_line(long_word))
+
+
+def _lines_ok(brf: str) -> bool:
+    return all(len(line) <= braille.LINE_CELLS for page in brf.split("\f") for line in page.split("\r\n"))
+
+
+def test_every_brf_line_fits_the_page(tmp_path):
+    p = tmp_path / "scale.musicxml"
+    p.write_text(_scale_xml().replace("Scale — test", "A very long title that no braille line of forty cells can hold"))
+    r = braille.translate(p)
+    assert _lines_ok(r.brf)
+
+
+GOLDEN = braille.Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band"
+
+
+@pytest.mark.skipif(not (GOLDEN / "brass-band.musicxml").exists(), reason="golden output not available")
+def test_every_line_of_the_golden_score_and_parts_fits_the_page():
+    for xml in [GOLDEN / "brass-band.musicxml", *sorted((GOLDEN / "parts").glob("*.musicxml"))]:
+        assert _lines_ok(braille.translate(xml).brf), xml.name
