@@ -223,7 +223,11 @@ tbody th { font-weight: 600; }
 .guide figure { margin: var(--bc-space-6) 0; }
 .guide figure.phone { display: flex; gap: var(--bc-space-6); }
 .guide figure.phone .device { max-width: 260px; }
-.guide figure.pair .device { width: 50%; }
+.guide figure.pair .device { width: 50%; max-width: 220px; }
+.guide article section::after { content: ""; display: block; clear: both; }
+@media (min-width: 901px) {
+  .guide figure.phone:not(.pair) { float: right; width: 220px; margin: var(--bc-space-2) 0 var(--bc-space-6) var(--bc-space-8); }
+}
 .to-top { font-size: var(--bc-type-callout-size); }
 
 /* Footer */
