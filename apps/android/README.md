@@ -66,6 +66,7 @@ Some inputs come from outside git and are used only when present:
   - count-in and metronome
   - concert or written pitch
   - zoom from 50 to 400%
+  - notation colours from the theme tokens (paper, ink, staff lines, cursor), so the score stays readable in dark and high contrast; alphaTab engraves in black on a transparent background by default
 
   Reduced motion (animator scale 0) turns off the animated cursor and scrolls by page. For screen readers, the notation view is one item. It announces the title, the part and "bar n of m", and has the custom actions Next/Previous bar, Next/Previous part and Play this bar. The Text tab is the talking score: one item per event, with Next/Previous bar, Read bar and Play this bar.
 - **Band SoundFont**: every part gets its own MIDI channel (drums on channel 10; alphaTab's own two-channels-per-track numbering wraps past 16 and shares presets), its preset at (bank, program) and its `channel_gain_db` from `sounds/mapping.json` (bundled as an asset), and the importer's per-beat instrument and bank changes are removed. The SoundFont itself is read from the app's `sounds/` folder. The full `brasscribe-band.sf2` runs alphaTab out of Java heap (its synth keeps every sample as floats: OutOfMemoryError at the 576 MB large heap with the 149 MB 16-bit file), so `scripts/mobile_soundfont.py` makes `brasscribe-band-mobile.sf2`: the same presets and kit, sustain only, first layer, 22.05 kHz, 58.6 MB. It loads in about 0.1 s.

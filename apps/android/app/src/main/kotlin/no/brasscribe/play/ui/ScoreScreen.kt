@@ -45,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -90,6 +91,9 @@ fun ScoreScreen(vm: PlayViewModel) {
     var showParts by remember { mutableStateOf(false) }
     val t = LocalPlayTokens.current
 
+    LaunchedEffect(controller, t) {
+        controller.setNotationColors(t.bg.toArgb(), t.ink.toArgb(), t.staff.toArgb(), t.cursor.toArgb())
+    }
     LaunchedEffect(controller) {
         // One part first (the full 18-stave score is one tap away in Parts); a key shift re-renders once.
         controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names)) }

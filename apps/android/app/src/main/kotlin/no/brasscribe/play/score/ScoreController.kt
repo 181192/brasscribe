@@ -338,6 +338,27 @@ class ScoreController(
     }
 
     /**
+     * Notation colours from the theme tokens. alphaTab engraves in black on a transparent background,
+     * which is unreadable on the dark and high-contrast surfaces, so paper and ink are set explicitly.
+     * Colours are ARGB ints (PlayTokens through Color.toArgb).
+     */
+    fun setNotationColors(paper: Int, ink: Int, staff: Int, cursor: Int) {
+        view.setBackgroundColor(paper)
+        view.beatCursorFillColor = cursor
+        view.barCursorFillColor = (cursor and 0x00FFFFFF) or (0x2E shl 24)
+        view.settings.display.resources.apply {
+            mainGlyphColor = ink.toAlphaTabColor()
+            secondaryGlyphColor = ink.toAlphaTabColor()
+            scoreInfoColor = ink.toAlphaTabColor()
+            staffLineColor = staff.toAlphaTabColor()
+            barSeparatorColor = staff.toAlphaTabColor()
+            barNumberColor = staff.toAlphaTabColor()
+        }
+        view.api.updateSettings()
+        if (_state.value.loaded) render()
+    }
+
+    /**
      * Realistic tier on: every pitched part plays an SFZ instrument through sfizz on its own channel
      * with its band balance, humanized by the core; alphaTab keeps the kit, metronome and count-in.
      */
@@ -388,3 +409,10 @@ class ScoreController(
         runCatching { view.api.stop() }
     }
 }
+
+private fun Int.toAlphaTabColor() = alphaTab.model.Color(
+    ((this shr 16) and 0xFF).toDouble(),
+    ((this shr 8) and 0xFF).toDouble(),
+    (this and 0xFF).toDouble(),
+    ((this ushr 24) and 0xFF).toDouble(),
+)
