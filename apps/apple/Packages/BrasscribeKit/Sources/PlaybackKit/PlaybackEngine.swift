@@ -62,8 +62,18 @@ public final class PlaybackEngine {
     /// - Parameters:
     ///   - offlineFormat: when set, the engine runs in offline manual-rendering mode
     ///     (for audio export and tests); otherwise it plays to the output device.
+    /// Wet-to-direct energy ratio of the room at the audience seat (sounds/render.py calibration).
+    public static let wetToDirectDB = 4.5
+    /// How much louder the unit-energy central-hall IR makes a brass band than white noise
+    /// would (its reverb is strongest where the band's energy is): measured on the Mikkel
+    /// band render, 14.5 dB wet at unit gain with a 4.5 dB send, so 10 dB.
+    public static let roomColorationDB = 10.0
+    /// The convolution reverb, when a room IR is loaded.
+    public private(set) var convolution: ConvolutionReverbAU?
+    public var usesRoomIR: Bool { convolution != nil }
+
     public init(score: Score, tempoMap: TempoMap? = nil, originalURL: URL? = nil,
-                soundBank: SoundBank = .locate(), offlineFormat: AVAudioFormat? = nil) throws {
+                soundBank: SoundBank = .locate(), roomIR: URL? = RoomIR.locate(), offlineFormat: AVAudioFormat? = nil) throws {
         self.score = score
         self.tempoMap = tempoMap
         self.soundBank = soundBank
@@ -72,7 +82,24 @@ public final class PlaybackEngine {
         }
         let out = engine.mainMixerNode
         engine.attach(environment)
-        engine.connect(environment, to: out, format: nil)
+        let stereo = AVAudioFormat(standardFormatWithSampleRate: out.outputFormat(forBus: 0).sampleRate > 0
+                                   ? out.outputFormat(forBus: 0).sampleRate : 44100, channels: 2)!
+        if let irURL = roomIR, let (ch, sr) = try? RoomIR.load(irURL) {
+            // Direct sound from the environment node, reverberant field from the room IR.
+            _ = ConvolutionReverbAU.registered
+            let conv = AVAudioUnitEffect(audioComponentDescription: ConvolutionReverbAU.componentDescription)
+            engine.attach(conv)
+            engine.connect(environment, to: [AVAudioConnectionPoint(node: out, bus: out.nextAvailableInputBus),
+                                             AVAudioConnectionPoint(node: conv, bus: 0)], fromBus: 0, format: stereo)
+            engine.connect(conv, to: out, format: stereo)
+            if let au = conv.auAudioUnit as? ConvolutionReverbAU {
+                au.kernel.setIR(ch, sampleRate: sr, normalize: true)
+                au.kernel.wetGain = Float(pow(10, (Self.wetToDirectDB - Self.roomColorationDB) / 20))
+                convolution = au
+            }
+        } else {
+            engine.connect(environment, to: out, format: stereo)
+        }
         environment.renderingAlgorithm = .HRTFHQ
         environment.outputType = .auto
         environment.listenerPosition = AVAudio3DPoint(x: 0, y: 0, z: 0)
@@ -375,8 +402,10 @@ public final class PlaybackEngine {
     }
 
     private func applyRoom() {
-        environment.reverbParameters.enable = roomOn
-        for s in samplers.values { s.reverbBlend = roomOn ? 0.35 : 0 }
+        // the environment node's hall reverb stands in only when no room IR is loaded
+        environment.reverbParameters.enable = roomOn && convolution == nil
+        for s in samplers.values { s.reverbBlend = roomOn && convolution == nil ? 0.35 : 0 }
+        convolution?.kernel.enabled = roomOn
     }
 
     /// Place a section (azimuth in degrees, negative = left of the conductor; distance in m).
