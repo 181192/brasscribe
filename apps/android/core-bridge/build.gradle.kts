@@ -38,6 +38,10 @@ android {
             it.systemProperty("jna.library.path", File(coreRoot, "target/release").absolutePath)
             it.systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED")
+            it.systemProperty("brasscribe.models", File(repoRoot, "models/converted").absolutePath)
+            it.systemProperty("brasscribe.data", File(repoRoot, "data").absolutePath)
+            // The engine's solo profile on the same clip, for comparison (see README); the test skips without it.
+            (findProperty("brasscribe.engineSolo") as String?)?.let { p -> it.systemProperty("brasscribe.engineSolo", p) }
         }
     }
 }
@@ -51,4 +55,6 @@ dependencies {
     implementation(libs.jna) { artifact { type = "aar" } }
     testImplementation(libs.junit)
     testImplementation(libs.jna)
+    testImplementation(project(":pitch"))
+    testImplementation(libs.onnxruntime.jvm)
 }
