@@ -28,6 +28,18 @@
                 <StackPanel Spacing="8" Padding="12,0">
                     <TextBlock Style="{StaticResource OverlineStyle}" Text="{x:Bind ViewModel.CountHeading, Mode=OneWay}"
                                AutomationProperties.HeadingLevel="Level2" />
+                    <!-- Triage: your part first (very unsure first); the count follows the choice. -->
+                    <TextBlock Style="{StaticResource BodyStyle}" FontSize="14" Text="{x:Bind ViewModel.TriageText, Mode=OneWay}"
+                               Visibility="{x:Bind ViewModel.HasMyPart, Mode=OneWay}" />
+                    <Border Style="{StaticResource SegmentGroupStyle}" HorizontalAlignment="Left" x:Uid="ReviewScope"
+                            Visibility="{x:Bind ViewModel.HasMyPart, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="3">
+                            <RadioButton x:Name="MyPartScope" GroupName="ReviewScope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked"
+                                         Content="{x:Bind ViewModel.MyPartScopeLabel, Mode=OneWay}" />
+                            <RadioButton x:Name="AllPartsScope" GroupName="ReviewScope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked"
+                                         Content="{x:Bind ViewModel.AllPartsScopeLabel, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
                     <!-- The legend: "?" uncertain, boxed "?" very uncertain. -->
                     <StackPanel Orientation="Horizontal" Spacing="16" x:Uid="ReviewLegend">
                         <StackPanel Orientation="Horizontal" Spacing="6">

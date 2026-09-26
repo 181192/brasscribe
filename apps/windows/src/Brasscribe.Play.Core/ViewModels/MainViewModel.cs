@@ -50,6 +50,17 @@ public sealed partial class MainViewModel : ObservableObject
         _announcer = announcer;
         _s = strings;
         Review = new ReviewViewModel(score, announcer, strings);
+        // A changed note arranges the whole score again from the Composition (the native core), with the same band.
+        Score.Rearrange = composition =>
+        {
+            if (!core.IsNative) return null;
+            try { return core.ArrangeMusicXml(composition, Output.Lineup == Lineup.MinimalBand ? "minimal" : "layers"); }
+            catch (Bridge.CoreBridgeException e)
+            {
+                _announcer.Announce(_s.Format("Output_Failed", e.Message), AnnouncementKind.Important);
+                return null;
+            }
+        };
         Error = new ErrorViewModel(strings);
         Library = library;
         Score.PersistEditedScore = (xml, compositionJson) =>
@@ -72,6 +83,14 @@ public sealed partial class MainViewModel : ObservableObject
             UpdateLibraryCount();
         };
         Output.ShowScoreRequested += (_, _) => Screen = Screen.Score;
+        Score.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(ScoreViewModel.Title) or nameof(ScoreViewModel.IsLoaded)) UpdateOutputContext();
+        };
+        Score.Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlayerViewModel.PlayAlongPart)) UpdateOutputContext();
+        };
         Error.Retry += async (_, _) =>
         {
             if (_lastChoice is { } choice)
@@ -245,6 +264,14 @@ public sealed partial class MainViewModel : ObservableObject
     private void NewScore()
     {
         if (!Transcription.IsRunning) Screen = Screen.Start;
+    }
+
+    /// <summary>The recorded key and the player's instrument, for "C major (concert) · D major for B♭ instruments".</summary>
+    private void UpdateOutputContext()
+    {
+        int mine = Score.MyPartIndex;
+        int? chromatic = mine >= 0 && Score.Document is { } doc ? doc.Parts[mine].Transpose.Chromatic : null;
+        Output.SetScoreContext(Score.Composition, chromatic);
     }
 
     private bool _chooseOutputNext;

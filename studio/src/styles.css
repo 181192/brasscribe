@@ -140,7 +140,12 @@ tr.selected td { background: var(--bc-selection-tint); }
 .notice { background: var(--bc-surface); border-radius: var(--bc-radius-sm); box-shadow: inset 3px 0 0 var(--bc-border-strong); padding: var(--bc-space-2) var(--bc-space-3); margin: var(--bc-space-2) 0; max-width: none; }
 .notice-missing { box-shadow: inset 3px 0 0 var(--bc-focus); }
 .notice-error { box-shadow: inset 3px 0 0 var(--bc-error); }
-.notice-error > strong::before { content: "⚠ "; color: var(--bc-error); }
+.notice p { margin: var(--bc-space-1) 0; }
+.notice .notice-title { margin-top: 0; }
+.notice-error .notice-title strong::before { content: "⚠ "; color: var(--bc-error); }
+.notice .detail { display: block; margin-top: var(--bc-space-1); overflow-wrap: anywhere; }
+.empty { background: var(--bc-surface); border-radius: var(--bc-radius-sm); padding: var(--bc-space-3) var(--bc-space-4); margin: var(--bc-space-2) 0; }
+.empty p { margin: var(--bc-space-1) 0; }
 .loading { color: var(--bc-text-muted); }
 /* Uncertainty mark, as in the score: "?" and a boxed "?" below 0.4. */
 .q { display: inline-grid; place-items: center; font-weight: 700; font-size: 0.8125rem; line-height: 1; min-width: 16px; height: 16px; font-family: var(--bc-font-text); }
@@ -178,7 +183,8 @@ tr.selected td { background: var(--bc-selection-tint); }
 .stage-node.status-started { box-shadow: inset 0 0 0 3px var(--bc-text); }
 .stage-node.status-failed { box-shadow: inset 0 0 0 3px var(--bc-error); }
 .stage-node[aria-pressed="true"] { background: var(--bc-selection-tint); color: var(--bc-text); box-shadow: inset 0 0 0 1px var(--bc-selection-edge); }
-.stage-col { display: flex; flex-direction: column; gap: 6px; }
+.stage-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.stage-col .stage-node { width: 100%; }
 .stage-arrow { color: var(--bc-text-muted); }
 .progress { width: 100%; max-width: 20rem; height: 6px; accent-color: var(--bc-brass); }
 
@@ -196,9 +202,11 @@ tr.selected td { background: var(--bc-selection-tint); }
   border-radius: var(--bc-radius-sm) var(--bc-radius-sm) 0 0; box-shadow: inset 0 -1px 0 var(--bc-border);
   position: sticky; top: 0; z-index: 3;
 }
-.transport .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.transport .group { display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; }
+.transport input[type="number"] { width: 4em; }
+.transport input[type="range"] { width: 6.5rem; }
 .score-view { position: relative; overflow: auto; max-height: 75vh; min-height: 20rem; padding: var(--bc-space-2); scroll-padding-top: 4rem; }
-.score-view:focus-visible { outline: 3px solid var(--bc-focus); outline-offset: -3px; }
+.score-view:focus-visible { outline: var(--bc-score-focus-width) solid var(--bc-focus); outline-offset: calc(-1 * var(--bc-score-focus-width)); }
 /* Score tokens (system.md §6): cursor 3 px with its bar tint, loop tint with edge brackets. */
 .at-cursor-bar { background: var(--bc-cursor-tint); }
 .at-cursor-beat { background: var(--bc-cursor); width: var(--bc-score-cursor-width) !important; }
@@ -218,7 +226,8 @@ tr.selected td { background: var(--bc-selection-tint); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .score-surface .at-cursors { mix-blend-mode: screen; } }
 :root[data-theme="dark"] .score-surface .at-cursors { mix-blend-mode: screen; }
 @media (prefers-contrast: more), (forced-colors: active) { .score-surface .at-cursors { mix-blend-mode: normal; } }
-.score-marks .q { position: absolute; transform: translateX(-50%); }
+.score-marks .q { position: absolute; transform: translateX(-50%); height: auto; min-width: 0; padding: 0 0.12em; line-height: 1; }
+.score-marks .q.vu { box-shadow: inset 0 0 0 max(1.5px, 0.08em) currentColor; border-radius: 0.12em; padding: 0.04em 0.16em; }
 .score-bands .adlib { position: absolute; background: var(--bc-adlib-tint); }
 .score-status { max-width: none; margin: 0; padding: 6px var(--bc-space-3); font-size: 0.8125rem; color: var(--bc-text-muted); background: var(--bc-surface); box-shadow: inset 0 1px 0 var(--bc-border); }
 .score-shell > details.card { margin: 0; border-radius: 0 0 var(--bc-radius-sm) var(--bc-radius-sm); box-shadow: inset 0 1px 0 var(--bc-border); }
@@ -280,3 +289,10 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   .score-bands .adlib { background: transparent; outline: 1px dashed var(--bc-ink); }
   .stage-node.status-cached, .stage-node.status-imported { outline-color: var(--bc-text); }
 }
+
+/* File choosers: a styled button with localised text (the native control stays English). */
+.file-pick { display: inline-flex; align-items: center; gap: var(--bc-space-2); }
+.file-pick input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.file-pick:has(input:focus-visible) .button { outline: var(--bc-score-focus-width) solid var(--bc-focus); outline-offset: var(--bc-score-focus-gap); }
+.file-pick .file-name { color: var(--bc-text-muted); font-size: 0.8125rem; }
+.file-pick:has(input:disabled) .button { opacity: 0.55; pointer-events: none; }

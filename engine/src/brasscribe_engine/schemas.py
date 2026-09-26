@@ -366,4 +366,15 @@ class Source(BaseModel):
     duration_s: float | None = None
 
 
+class ConformanceRun(BaseModel):
+    status: Literal["idle", "running", "succeeded", "failed"]
+    available: bool = Field(description="core/conformance exists in this checkout")
+    started: float | None = None
+    finished: float | None = None
+    exit_code: int | None = Field(None, description="0: every case identical; 1: some case differs")
+    command: list[str] = Field(default_factory=list)
+    log: str | None = Field(None, description="log file of the run")
+    log_tail: str | None = Field(None, description="last lines of the log")
+
+
 Manifest = dict[str, Any]

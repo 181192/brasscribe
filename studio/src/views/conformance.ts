@@ -2,10 +2,11 @@
 // sets. Summary reports are listed as written; wherever an item has both a
 // py/ and a rust/ output, Studio diffs them itself.
 import { api } from "../api/client";
-import type { Composition, ConformanceReport } from "../api/types";
+import type { Composition, ConformanceReport, ConformanceRun } from "../api/types";
 import { diffCompositions } from "../lib/diff";
 import { locale, t } from "../i18n";
-import { clear, errorNotice, h, loading, pill, table } from "../ui/dom";
+import { announce, clear, errorNotice, h, loading, pill, table } from "../ui/dom";
+import { icon } from "../ui/icons";
 
 interface Pair {
   key: string; // set/item/stage/file
@@ -41,12 +42,50 @@ export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; det
   return { status: same ? "pass" : "fail", detail: same ? "identical" : "JSON differs" };
 }
 
-export function conformanceView(root: HTMLElement): void {
+export function conformanceView(root: HTMLElement): () => void {
   const el = h("div", {}, loading());
+  const runner = h("div", { class: "conf-run" });
   clear(root, h("h1", {}, t("nav.conformance")),
     h("p", {}, t("conf.intro")),
+    runner,
     el);
-  api.conformance().then((reports) => clear(el, render(reports))).catch((e) => clear(el, errorNotice(e)));
+  let timer = 0;
+  const load = () => api.conformance().then((reports) => clear(el, render(reports))).catch((e) => clear(el, errorNotice(e, { retry: load })));
+  // "Run conformance" when the engine can start the core's conformance run; otherwise the command is shown.
+  const showRun = (r: ConformanceRun | null) => {
+    window.clearTimeout(timer);
+    if (!r || !r.available) {
+      clear(runner);
+      return;
+    }
+    const running = r.status === "running";
+    const btn = h("button", { type: "button", class: "primary", disabled: running, onclick: async () => {
+      btn.disabled = true;
+      try {
+        showRun(await api.startConformanceRun());
+        announce(t("conf.started"));
+      } catch (e) {
+        clear(runner, errorNotice(e, { retry: () => void api.conformanceRun().then(showRun).catch(() => showRun(null)) }));
+      }
+    } }, icon("retry"), running ? t("conf.running") : t("conf.run"));
+    const state = r.status === "idle" ? null : h("span", { class: "hint", role: "status" },
+      running ? t("conf.runningSince", { when: fmtTime(r.started ?? 0) })
+        : t(r.status === "succeeded" ? (r.exit_code === 0 ? "conf.doneSame" : "conf.doneDiff") : "conf.failed", { when: fmtTime(r.finished ?? 0) }));
+    clear(runner, h("div", { class: "row" }, btn, state),
+      r.log_tail ? h("details", {}, h("summary", {}, t("conf.log")), h("pre", { class: "json", tabindex: 0 }, r.log_tail)) : null);
+    if (running) {
+      timer = window.setTimeout(() => void api.conformanceRun().then((n) => {
+        showRun(n);
+        if (n.status !== "running") {
+          announce(t(n.status === "succeeded" ? "conf.finished" : "conf.failedShort"));
+          void load();
+        }
+      }).catch(() => showRun(null)), 3000);
+    }
+  };
+  void load();
+  api.conformanceRun().then(showRun).catch(() => showRun(null));
+  return () => window.clearTimeout(timer);
 }
 
 interface CaseRow {
@@ -91,12 +130,22 @@ function fmtTime(v: string | number): string {
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(locale());
 }
 
+const RUN_CMD = "cd core/conformance && uv run python -m brasscribe_conformance.run";
+
 function render(reports: ConformanceReport[]): HTMLElement[] {
   const summaries = reports.filter(isSummary);
+  if (!reports.length) {
+    const retry = h("button", { type: "button", class: "ghost", onclick: () => window.dispatchEvent(new CustomEvent("studio:retry")) }, t("err.retry"));
+    const [before, after] = t("conf.noneBody").split("{cmd}");
+    return [h("div", { class: "empty", role: "note" },
+      h("p", {}, h("strong", {}, t("conf.none"))),
+      h("p", {}, before, h("code", {}, RUN_CMD), after),
+      h("p", {}, retry))];
+  }
   if (summaries.length) {
     return [
       ...summaries.map(summaryView),
-      h("p", { class: "hint" }, t("conf.regen"), h("code", {}, "cd core/conformance && uv run python -m brasscribe_conformance.run"), t("conf.regen2"), h("code", {}, "--musescore"), t("conf.regen3")),
+      h("p", { class: "hint" }, t("conf.regen"), h("code", {}, RUN_CMD), t("conf.regen2"), h("code", {}, "--musescore"), t("conf.regen3")),
     ];
   }
   return pairsView(reports);

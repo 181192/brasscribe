@@ -113,6 +113,7 @@ export type BenchRun = S["BenchRun"];
 export type AdapterInfo = S["AdapterInfo"];
 export type DatasetInfo = S["Dataset"];
 export type Source = S["Source"];
+export type ConformanceRun = S["ConformanceRun"];
 
 /** A converted-model parity report (models/convert/reports/*.json), passed through as-is. */
 export interface ParityReport {
