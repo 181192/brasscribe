@@ -170,22 +170,22 @@ struct StatusLine: View {
         if toCheck > 0 || free != nil {
             VStack(alignment: .leading, spacing: Space.s1) {
                 if toCheck > 0 {
-                    HStack(spacing: Space.s2) {
-                        UncertainMark(level: .uncertain)
-                        Text(wide ? (toCheck == 1 ? String(localized: "1 note marked ? (boxed ? = very unsure)") : String(localized: "\(toCheck) notes marked ? (boxed ? = very unsure)"))
-                                  : (toCheck == 1 ? String(localized: "1 note marked ?") : String(localized: "\(toCheck) notes marked ?")))
-                            .foregroundStyle(Color.Brasscribe.textMuted)
-                        Text(verbatim: "·").foregroundStyle(Color.Brasscribe.textMuted).accessibilityHidden(true)
-                        Button(action: check) {
-                            Text("Check them").underline()
-                                .frame(minWidth: 44, minHeight: 44)
-                                .contentShape(Rectangle())
+                    let count = wide ? (toCheck == 1 ? String(localized: "1 note marked ? (boxed ? = very unsure)") : String(localized: "\(toCheck) notes marked ? (boxed ? = very unsure)"))
+                                     : (toCheck == 1 ? String(localized: "1 note marked ?") : String(localized: "\(toCheck) notes marked ?"))
+                    // one button, one wrapping line: "? 9 notes marked ? · Check them"
+                    Button(action: check) {
+                        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                            UncertainMark(level: .uncertain)
+                            Text("\(Text(count).foregroundStyle(Color.Brasscribe.textMuted)) \(Text(verbatim: "·").foregroundStyle(Color.Brasscribe.textMuted)) \(Text("Check them").underline().foregroundStyle(Color.Brasscribe.text))")
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
                         }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(Color.Brasscribe.text)
-                            .accessibilityIdentifier("checkThem")
-                        Spacer(minLength: 0)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("\(count). Check them"))
+                    .accessibilityIdentifier("checkThem")
                 }
                 if let free {
                     HelperLine(systemImage: BrasscribeIcon.info.systemName,
@@ -350,7 +350,8 @@ struct PlayerBar: View {
                 }
                 .card(padding: Space.s4)
                 .padding(.horizontal, Space.s5)
-                .padding(.bottom, Space.s2)
+                .padding(.vertical, Space.s2)
+                .background(Color.Brasscribe.bg)
             }
         }
         .labelStyle(.titleAndIcon)

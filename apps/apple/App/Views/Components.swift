@@ -252,9 +252,10 @@ struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            // the shadow sits on the card's shape only, never on the text inside it
+            .background(RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Brasscribe.surfaceRaised)
+                .shadow(color: scheme == .dark ? .clear : .black.opacity(0.04), radius: 2, y: 1))
             .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.border, lineWidth: 1))
-            .shadow(color: scheme == .dark ? .clear : .black.opacity(0.04), radius: 2, y: 1)
     }
 }
 
@@ -282,7 +283,7 @@ struct HelperLine: View {
     let systemImage: String
     let text: String
     var body: some View {
-        Label { Text(text) } icon: { Image(systemName: systemImage) }
+        Label { Text(text).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: systemImage) }
             .font(Font.Brasscribe.callout)
             .foregroundStyle(Color.Brasscribe.textMuted)
             .accessibilityElement(children: .combine)
