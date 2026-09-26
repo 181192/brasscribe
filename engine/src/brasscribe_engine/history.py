@@ -47,12 +47,12 @@ def entries(settings: Settings, suite: str | None = None, limit: int = 1000) -> 
     return rows
 
 
-def reports(root: Path) -> list[dict]:
-    """Every *.json report under root (recursively), as stored, with its file name added as `_file`."""
+def reports(root: Path, name: str | None = None) -> list[dict]:
+    """Every *.json report under root (recursively), or only files called `name`, as stored, plus `_file`."""
     if not root.is_dir():
         return []
     out = []
-    for p in sorted(root.rglob("*.json")):
+    for p in sorted(root.rglob(name or "*.json")):
         try:
             data = json.loads(p.read_text())
         except ValueError:

@@ -417,9 +417,12 @@ export class ScoreElement extends HTMLElement {
           const x = nb.noteHeadBounds.x + nb.noteHeadBounds.w / 2;
           if (Math.abs(x - lastX) < 4) return; // one mark per chord
           lastX = x;
+          const space = Math.max(6, nb.noteHeadBounds.h);
+          const glyph = 1.6 * space; // cap height of the "?"
+          const font = Math.round(glyph / 0.72);
           const staffTop = bb.barBounds.visualBounds.y;
-          const y = Math.min(staffTop, nb.noteHeadBounds.y) - 20;
-          layer.append(h("span", { class: `q ${level}`, style: `left:${ox + x}px;top:${oy + y}px` }, "?"));
+          const y = Math.min(staffTop, nb.noteHeadBounds.y) - font - space * 0.4;
+          layer.append(h("span", { class: `q ${level}`, style: `left:${ox + x}px;top:${oy + y}px;font-size:${font}px` }, "?"));
         });
       });
     });
