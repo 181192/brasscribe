@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: part view</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .menu-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; min-height: 40px; padding: 0 12px; border-radius: var(--bc-radius-sm); background: var(--bc-secondary); font-size: 0.9375rem; }
+  .phone .scorebox { flex: 1; overflow: hidden; padding: 0 var(--bc-space-3); }
+  .mini { margin: 0 var(--bc-space-3) var(--bc-space-2); display: flex; align-items: center; gap: var(--bc-space-3); }
+  .mini .play { width: 48px; height: 48px; }
+  .sheet-paper { background: var(--bc-bg); border-radius: 4px; box-shadow: var(--bc-elevation-2), inset 0 0 0 1px var(--bc-border); padding: 56px 72px; width: 920px; margin: var(--bc-space-6) auto 0; }
+  .ptitle { text-align: center; }
+  .dock { flex: none; padding: var(--bc-space-3) var(--bc-space-5); box-shadow: inset 0 1px 0 var(--bc-border); background: var(--bc-surface-raised); display: flex; align-items: center; gap: var(--bc-space-5); }
+  .zoom { display: inline-flex; align-items: center; gap: 2px; background: var(--bc-secondary); border-radius: var(--bc-radius-sm); padding: 0 2px; }
+  .zoom .icon-btn { width: 36px; height: 36px; }
+  .zoom span { font-size: 0.875rem; font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar"><span class="back"><i data-i="back"></i>Mikkel</span><span class="menu-btn" style="background:transparent"><b>Solo Cornet</b><svg class="i sm" viewBox="0 -960 960 960"><path d="M480-361q-8 0-15-2.5t-13-8.5L268-556q-11-11-11-28t11-28q11-11 28-11t28 11l156 156 156-156q11-11 28-11t28 11q11 11 11 28t-11 28L508-372q-6 6-13 8.5t-15 2.5Z"/></svg></span><button class="icon-btn" aria-label="More"><i data-i="more"></i></button></div>
+  <div class="scorebox paper">
+    <div data-score="partPhone1"></div>
+    <div data-score="partPhone2"></div>
+    <div data-score="partPhone3"></div>
+    <p class="caption" style="padding: var(--bc-space-2) var(--bc-space-2) 0; display:flex; gap: 6px; align-items:center"><i data-i="info" class="sm"></i>Bars 1–2 are in free time (ad lib.). Rhythms there are approximate.</p>
+  </div>
+  <div class="player mini">
+    <button class="play" aria-label="Play"><i data-i="play"></i></button>
+    <div class="pos" style="flex:1"><b>Bar 4</b> <span>of 64</span><br><span>Your part is muted</span></div>
+    <span class="chip on"><i data-i="play-along" class="sm"></i>Play along</span>
+  </div>
+  <div class="homebar"></div>
+</div>
+
+<div class="desktop">
+  <div class="titlebar">
+    <span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel</span><span class="sp"></span>
+    <span class="menu-btn"><i data-i="parts" class="sm"></i>Solo Cornet</span>
+    <span class="zoom"><button class="icon-btn" aria-label="Zoom out"><i data-i="zoom-out" class="sm"></i></button><span>125%</span><button class="icon-btn" aria-label="Zoom in"><i data-i="zoom-in" class="sm"></i></button></span>
+    <button class="btn outline compact"><i data-i="export" class="sm"></i>Export part</button>
+  </div>
+  <main class="main" style="background: var(--bc-surface)">
+    <div class="sheet-paper">
+      <div class="ptitle">
+        <p class="eyebrow">Solo Cornet in B♭</p>
+        <h1 class="display" style="font-size: 2.5rem">Mikkel</h1>
+        <p class="callout">Transcribed with Brasscribe · check the marked notes before the rehearsal</p>
+      </div>
+      <div data-score="part1" style="margin-top: var(--bc-space-6)"></div>
+      <div data-score="part2"></div>
+      <div data-score="part3"></div>
+    </div>
+  </main>
+  <div class="dock">
+    <div class="transport">
+      <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+      <button class="play" aria-label="Play"><i data-i="play"></i></button>
+      <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+    </div>
+    <div class="pos" style="min-width: 150px"><b>Bar 4, beat 3</b><br><span>of 64 · paused</span></div>
+    <span style="flex:1"></span>
+    <span class="chip"><i data-i="speed" class="sm"></i>Speed <span class="val">100%</span></span>
+    <span class="chip"><i data-i="loop" class="sm"></i>Loop</span>
+    <span class="chip"><i data-i="count-in" class="sm"></i>Count-in</span>
+    <span class="chip"><i data-i="metronome" class="sm"></i>Metronome</span>
+    <span class="chip on"><i data-i="play-along" class="sm"></i>Play along: my part muted</span>
+  </div>
+</div>
+</body>
+</html>

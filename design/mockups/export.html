@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: export</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .fmt { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 60px; padding: var(--bc-space-2) var(--bc-space-4); }
+  .group .fmt + .fmt { box-shadow: inset 0 1px 0 var(--bc-border); }
+  .fmt .grow { flex: 1; }
+  .fmt .t { font-weight: 600; }
+  .fmt .d { font-size: 0.9375rem; color: var(--bc-text-muted); line-height: 1.3; }
+  .check { width: 24px; height: 24px; border-radius: 6px; box-shadow: inset 0 0 0 2px var(--bc-border-strong); display: grid; place-items: center; flex: none; }
+  .check.on { background: var(--bc-primary); color: var(--bc-on-primary); box-shadow: none; }
+  .check .i { width: 18px; height: 18px; }
+  .behind { position: absolute; inset: 0; }
+  .desktop { position: relative; }
+  .desk-dialog { position: absolute; left: 50%; top: 72px; transform: translateX(-50%); width: 640px; padding: var(--bc-space-8); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="behind" style="display:flex; flex-direction: column">
+    <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+    <div class="navbar"><span class="back"><i data-i="back"></i>Scores</span><span class="ttl">Mikkel</span><span style="width:44px"></span></div>
+    <div class="paper" data-score="phone" style="padding: 0 8px"></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet" role="dialog" aria-labelledby="exp-t" style="top: 96px">
+    <div class="grabber"></div>
+    <div style="display:flex; align-items:center; justify-content: space-between">
+      <h2 class="title-2" id="exp-t">Export</h2>
+      <button class="icon-btn filled" aria-label="Close"><i data-i="close" class="sm"></i></button>
+    </div>
+    <p class="eyebrow" style="margin-top: var(--bc-space-4)">What to export</p>
+    <span class="seg" style="width:100%"><span style="flex:1; text-align:center">Full score</span><span class="on" style="flex:1; text-align:center">All parts</span><span style="flex:1; text-align:center">My part</span></span>
+    <p class="eyebrow" style="margin-top: var(--bc-space-5)">Formats</p>
+    <div class="group">
+      <div class="fmt"><span class="check on"><i data-i="done"></i></span><div class="grow"><div class="t">PDF</div><div class="d">For printing and the music stand</div></div></div>
+      <div class="fmt"><span class="check on"><i data-i="done"></i></span><div class="grow"><div class="t">MusicXML</div><div class="d">Edit in MuseScore, Sibelius or Dorico</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Audio</div><div class="d">MP3 of the score, to practise with</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">MIDI</div><div class="d">For other music apps</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Talking score</div><div class="d">Text a screen reader can read aloud</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Braille music</div><div class="d">BRF file for a braille display or embosser</div></div></div>
+    </div>
+    <div style="display:flex; gap: var(--bc-space-2); margin-top: var(--bc-space-5)">
+      <button class="btn secondary" style="flex:1"><i data-i="folder" class="sm"></i>Save to Files</button>
+      <button class="btn primary" style="flex:1"><i data-i="export" class="sm"></i>Share…</button>
+    </div>
+    <p class="caption" style="margin-top: var(--bc-space-3); text-align:center">12 files · uncertain notes keep their “?” marks</p>
+  </div>
+</div>
+
+<div class="desktop">
+  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel</span><span class="sp"></span></div>
+  <div class="paper" data-score="full" style="padding: 0 24px; opacity: 1"></div>
+  <div class="scrim" style="top: 52px"></div>
+  <div class="dialog desk-dialog" role="dialog" aria-labelledby="exp-d">
+    <div style="display:flex; align-items:center; justify-content: space-between">
+      <h2 class="display" style="font-size: 2.25rem" id="exp-d">Export</h2>
+      <button class="icon-btn filled" aria-label="Close"><i data-i="close" class="sm"></i></button>
+    </div>
+    <p class="eyebrow" style="margin-top: var(--bc-space-5)">What to export</p>
+    <span class="seg"><span>Full score</span><span class="on">All parts</span><span>Solo Cornet only</span></span>
+    <p class="eyebrow" style="margin-top: var(--bc-space-5)">Formats</p>
+    <div class="group">
+      <div class="fmt"><span class="check on"><i data-i="done"></i></span><div class="grow"><div class="t">PDF</div><div class="d">For printing and the music stand</div></div></div>
+      <div class="fmt"><span class="check on"><i data-i="done"></i></span><div class="grow"><div class="t">MusicXML</div><div class="d">Edit in MuseScore, Sibelius or Dorico</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Audio</div><div class="d">MP3 of the score, to practise with</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">MIDI</div><div class="d">For other music apps</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Talking score</div><div class="d">Text a screen reader can read aloud</div></div></div>
+      <div class="fmt"><span class="check"></span><div class="grow"><div class="t">Braille music</div><div class="d">BRF file for a braille display or embosser</div></div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap: var(--bc-space-3); margin-top: var(--bc-space-6)">
+      <span class="caption" style="flex:1">12 files. Uncertain notes keep their “?” marks.</span>
+      <button class="btn plain">Cancel</button>
+      <button class="btn primary">Export 12 files…</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

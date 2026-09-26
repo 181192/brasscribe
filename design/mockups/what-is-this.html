@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: What is this?</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .choices { display: grid; gap: var(--bc-space-3); }
+  .desktop .choices { grid-template-columns: 1fr 1fr; gap: var(--bc-space-4); }
+  .desktop .choice { min-height: 120px; padding: var(--bc-space-5); }
+  .file { display: flex; align-items: center; gap: var(--bc-space-3); }
+  .where { display: flex; align-items: center; gap: var(--bc-space-3); padding: var(--bc-space-3) var(--bc-space-4); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar">
+    <span class="back"><i data-i="back"></i><span data-nb="Hjem">Home</span></span>
+    <span class="caption">Mikkel.m4a · 4:12</span>
+    <span style="width:72px"></span>
+  </div>
+  <div class="content" style="padding-top: var(--bc-space-4)">
+    <h1 class="display" data-nb="Hva er dette?">What is this?</h1>
+    <p class="callout" style="margin-top: var(--bc-space-2); font-size: 1.0625rem" data-nb="Svaret ditt avgjør hvordan Brasscribe lytter. Appen gjetter aldri.">Your answer decides how Brasscribe listens. It never guesses.</p>
+    <div class="choices" style="margin-top: var(--bc-space-5)" role="radiogroup">
+      <div class="choice"><div class="grow" style="flex:1"><div class="t" data-nb="Ett instrument">One instrument</div><div class="d" data-nb="Én som spiller alene, for eksempel deg som øver på kornett.">One player on their own, like you practising the cornet.</div></div><span class="radio"></span></div>
+      <div class="choice"><div style="flex:1"><div class="t" data-nb="Brassband">Brass band</div><div class="d" data-nb="Et helt band som spiller sammen, uten andre instrumenter.">A whole band playing together, with no other instruments.</div></div><span class="radio"></span></div>
+      <div class="choice on"><div style="flex:1"><div class="t" data-nb="Solist med orkester eller band">Soloist with orchestra or band</div><div class="d" data-nb="Solisten blir solostemmen, resten blir til brassband.">The soloist becomes the solo part; the rest becomes brass band.</div></div><span class="radio"></span></div>
+      <div class="choice"><div style="flex:1"><div class="t" data-nb="Pop eller rock">Pop or rock</div><div class="d" data-nb="Sang, gitar, tangenter, bass og trommer.">Singing, guitars, keys, bass and drums.</div></div><span class="radio"></span></div>
+    </div>
+    <div class="group" style="margin-top: var(--bc-space-4)">
+      <div class="row"><span class="well"><i data-i="computer" class="sm"></i></span><div class="grow"><div class="title" data-nb="På datamaskinen din">On your computer</div><div class="sub" data-nb="Kallis MacBook · ingenting sendes til nettet">Kalli's MacBook · nothing goes online</div></div><span class="btn plain compact" data-nb="Endre">Change</span></div>
+    </div>
+  </div>
+  <div class="bottom"><button class="btn primary block" data-nb="Fortsett">Continue</button></div>
+  <div class="homebar"></div>
+</div>
+
+<div class="desktop">
+  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel.m4a</span><span class="sp"></span></div>
+  <div class="shell">
+    <main class="main" style="justify-content:center">
+      <div class="pane" style="max-width: 860px; padding-top: var(--bc-space-8)">
+        <div class="file caption" style="margin-bottom: var(--bc-space-4)"><i data-i="file" class="sm"></i><span>Mikkel.m4a · 4 min 12 s</span></div>
+        <h1 class="display" style="font-size: 3rem" data-nb="Hva er dette?">What is this?</h1>
+        <p class="callout" style="margin-top: var(--bc-space-2); font-size: 1.125rem" data-nb="Svaret ditt avgjør hvordan Brasscribe lytter. Appen gjetter aldri.">Your answer decides how Brasscribe listens. It never guesses.</p>
+        <div class="choices" style="margin-top: var(--bc-space-8)" role="radiogroup">
+          <div class="choice"><div style="flex:1"><div class="t" data-nb="Ett instrument">One instrument</div><div class="d" data-nb="Én som spiller alene, for eksempel deg som øver på kornett.">One player on their own, like you practising the cornet.</div></div><span class="radio"></span></div>
+          <div class="choice"><div style="flex:1"><div class="t" data-nb="Brassband">Brass band</div><div class="d" data-nb="Et helt band som spiller sammen, uten andre instrumenter.">A whole band playing together, with no other instruments.</div></div><span class="radio"></span></div>
+          <div class="choice on"><div style="flex:1"><div class="t" data-nb="Solist med orkester eller band">Soloist with orchestra or band</div><div class="d" data-nb="Solisten blir solostemmen, resten blir til brassband.">The soloist becomes the solo part; the rest becomes brass band.</div></div><span class="radio"></span></div>
+          <div class="choice"><div style="flex:1"><div class="t" data-nb="Pop eller rock">Pop or rock</div><div class="d" data-nb="Sang, gitar, tangenter, bass og trommer.">Singing, guitars, keys, bass and drums.</div></div><span class="radio"></span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap: var(--bc-space-3); margin-top: var(--bc-space-8)">
+          <span class="caption" style="display:flex;gap:6px;align-items:center;flex:1"><i data-i="computer" class="sm"></i><span data-nb="Transkriberes på denne Macen. Ingenting sendes til nettet.">Transcribed on this Mac. Nothing goes online.</span></span>
+          <button class="btn plain" data-nb="Avbryt">Cancel</button>
+          <button class="btn primary" style="min-width: 160px" data-nb="Fortsett">Continue</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

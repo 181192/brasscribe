@@ -19,3 +19,14 @@ def test_ciede2000_reference_pair():
 def test_simulation_keeps_greys():
     grey = c.simulate((0.5, 0.5, 0.5), "deutan")
     assert all(abs(x - 0.5) < 0.01 for x in grey)
+
+
+def test_dtcg_tokens_load_and_pass():
+    tokens = c.ROOT / "design" / "tokens" / "tokens.json"
+    if not tokens.exists():
+        return
+    data = c.load_dtcg(tokens)
+    assert set(data["themes"]) == {"light", "dark", "high-contrast"}
+    for theme in data["themes"].values():
+        for fg, bg, minimum, _ in data["pairs"]:
+            assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (fg, bg)
