@@ -1,0 +1,32 @@
+[project]
+name = "brasscribe-convert-roformer"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "beartype>=0.19",
+    "coremltools>=9.0",
+    "einops>=0.8",
+    "librosa>=0.10",
+    "matplotlib>=3.9",
+    "mir-eval>=0.8",
+    "ml-collections>=1.0",
+    "omegaconf>=2.2",
+    "onnx>=1.17",
+    "onnxruntime>=1.22",
+    "onnxscript>=0.3",
+    "pandas>=2.2",
+    "pretty-midi>=0.2.10",
+    "pyyaml>=6.0",
+    "rotary-embedding-torch>=0.8",
+    "scipy>=1.13",
+    "soundfile>=0.13",
+    "soxr>=0.5",
+    "swift-f0>=0.3.0",
+    "torch==2.7.0",
+    "torchaudio==2.7.0",
+    "tqdm>=4.66",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+package = false
