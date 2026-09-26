@@ -1,0 +1,62 @@
+name: core
+
+# Rust workspace (core/): unit tests plus the brasscribe-core CLI as a downloadable artifact per OS.
+on:
+  push:
+    branches: [main]
+    paths: ["core/**", ".github/workflows/core.yml"]
+  pull_request:
+    paths: ["core/**", ".github/workflows/core.yml"]
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: core-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: brasscribe-core-linux-x86_64
+            bin: brasscribe-core
+          - os: macos-15
+            artifact: brasscribe-core-macos-arm64
+            bin: brasscribe-core
+          - os: windows-latest
+            artifact: brasscribe-core-windows-x86_64
+            bin: brasscribe-core.exe
+    name: build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Test
+        run: cargo test --release --locked --workspace
+
+      - name: Build the CLI
+        run: cargo build --release --locked -p brasscribe-cli
+
+      - name: Stage the binary
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/${{ matrix.artifact }}"
+          cp "target/release/${{ matrix.bin }}" "$RUNNER_TEMP/${{ matrix.artifact }}/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ runner.temp }}/${{ matrix.artifact }}

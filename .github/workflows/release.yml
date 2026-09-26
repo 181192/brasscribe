@@ -1,0 +1,46 @@
+name: release
+
+# On a semver tag (v1.2.3, v1.2.3-beta.1): build every artifact via the existing workflows and
+# publish a GitHub release with them attached.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+permissions:
+  contents: write
+
+jobs:
+  core:
+    uses: ./.github/workflows/core.yml
+
+  android:
+    uses: ./.github/workflows/android.yml
+
+  apple:
+    uses: ./.github/workflows/apple.yml
+
+  windows:
+    uses: ./.github/workflows/windows.yml
+
+  publish:
+    name: publish GitHub release
+    needs: [core, android, apple, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: false
+
+      - name: Zip each artifact folder
+        working-directory: dist
+        run: |
+          for d in */; do
+            name="${d%/}"
+            (cd "$name" && zip -qr "../${name}.zip" .)
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*.zip

@@ -14,6 +14,7 @@ on:
       - "core/**"
       - "design/**"
       - ".github/workflows/windows.yml"
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -71,6 +72,21 @@ jobs:
 
       - name: Build app (WinUI 3, unpackaged, x64)
         run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH"
+
+      - name: Package the app
+        id: package
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
+          if (-not $exe) { throw "BrasscribePlay.exe was not built" }
+          $dest = "$env:RUNNER_TEMP/windows-app"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -Recurse -Path $exe.DirectoryName -Destination "$dest/BrasscribePlay"
+          "path=$dest" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-app
+          path: ${{ steps.package.outputs.path }}
 
       - name: Locate the exe
         id: exe
