@@ -144,6 +144,7 @@ class Composition:
     free_regions: list[FreeRegion] = field(default_factory=list)
     dynamics: list[Dynamic] = field(default_factory=list)
     sections: list[Section] = field(default_factory=list)
+    arrangement: dict | None = None  # options the arrangement was made with (lineup, difficulty, ...); None = defaults
 
     def free_region_at(self, tick: int) -> FreeRegion | None:
         return next((r for r in self.free_regions if r.start <= tick < r.end), None)
@@ -167,7 +168,21 @@ class Composition:
         return 60.0 / diffs[len(diffs) // 2]
 
     def to_json(self, path: Path) -> None:
-        path.write_text(json.dumps(asdict(self), indent=1, default=_plain))
+        d = asdict(self)
+        if d.get("arrangement") is None:
+            d.pop("arrangement", None)  # files made with the default options stay as they were
+        path.write_text(json.dumps(d, indent=1, default=_plain))
+
+    def transposed(self, semitones: int) -> Composition:
+        """The whole piece `semitones` higher at concert pitch (drums and tick positions unchanged)."""
+        from dataclasses import replace as _r
+        from .keys import transposed_key
+
+        voices = [Voice(v.id, v.role, [n if v.layer == "drums" or v.role == VoiceRole.RHYTHM else
+                                       _r(n, pitch=n.pitch + semitones, sources=list(n.sources),
+                                          articulations=list(n.articulations)) for n in v.notes],
+                        v.instrument_hint, v.layer) for v in self.voices]
+        return _r(self, voices=voices, keys=[transposed_key(k, semitones) for k in self.keys])
 
     @staticmethod
     def from_json(path: Path) -> Composition:
@@ -178,4 +193,4 @@ class Composition:
                            d.get("beat_times", []), d.get("first_downbeat", 0), d.get("ticks_per_beat", TICKS_PER_BEAT),
                            [FreeRegion.from_dict(r) for r in d.get("free_regions", [])],
                            [Dynamic(**x) for x in d.get("dynamics", [])],
-                           [Section(**x) for x in d.get("sections", [])])
+                           [Section(**x) for x in d.get("sections", [])], d.get("arrangement"))

@@ -53,7 +53,7 @@ BASS_TARGET = 0.35  # bass lines centre a third of the way up the reading range
 
 
 def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], prefer_low: bool = False,
-                prev: int | None = None) -> int | None:
+                prev: int | None = None, bass_overflow_up: bool = False) -> int | None:
     """Octave shift that puts the most notes in [lo, hi] and none outside the pro range.
 
     Ties go to the octave nearest the middle of the range (a third of the way
@@ -67,7 +67,10 @@ def _best_shift(pitches: list[int], lo: int, hi: int, pro: tuple[int, int], pref
         shifted = [p + 12 * k for p in pitches]
         if any(not pro[0] <= p <= pro[1] for p in shifted):
             continue
-        inside = sum(lo <= p <= hi for p in shifted)
+        # Bass parts in treble clef read up to the top of their range easily but go onto ledger
+        # lines below it, so for bass lines notes above the reading range still count as inside.
+        top = pro[1] if prefer_low and bass_overflow_up else hi
+        inside = sum(lo <= p <= top for p in shifted)
         mean = sum(shifted) / len(shifted)
         jump = abs(shifted[0] - prev) if prev is not None else 0
         cand = (inside, -(abs(mean - target) + jump))
@@ -86,12 +89,28 @@ def _nearest_octave(pitch: int, ranges: list[tuple[int, int]], prev: int | None)
     return None
 
 
-def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False) -> list[Note]:
+def _split_wide(phrase: list[Note], width: int) -> list[list[Note]]:
+    """Split a phrase that spans more than `width` semitones at its largest leap, recursively,
+    so each piece can take its own octave (the line changes octave where it jumps anyway)."""
+    ps = [n.pitch for n in phrase]
+    if len(phrase) < 4 or max(ps) - min(ps) <= width:
+        return [phrase]
+    _, cut = max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))
+    return _split_wide(phrase[:cut], width) + _split_wide(phrase[cut:], width)
+
+
+def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False,
+                bass_overflow_up: bool = False) -> list[Note]:
     inst = part.instrument
     placed = []
-    for phrase in _phrases(notes):
+    phrases = _phrases(notes)
+    if bass_overflow_up:
+        width = inst.preferred[1] - inst.preferred[0]
+        phrases = [q for ph in phrases for q in _split_wide(ph, width)]
+    for phrase in phrases:
         prev = placed[-1].pitch if placed else None
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev)
+        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev,
+                        bass_overflow_up=bass_overflow_up)
         if k is None:
             # No single octave fits the whole phrase: per note, the octave nearest the previous note.
             for n in phrase:
@@ -266,11 +285,83 @@ def _place_smooth(notes: list[Note], part: Part) -> list[Note]:
     return _hold_small_gaps(out)
 
 
-def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangement:
+def _figurate(slots, onsets: list[int], min_len: int = 12) -> list[tuple[int, int, list[int]]]:
+    """Split harmony slots at the source's own attacks, so the pads play its rhythm.
+
+    A slot is re-attacked at every source onset inside it that lies on the 8th
+    grid, at least `min_len` ticks from the previous attack and from the slot end.
+    """
+    on = sorted({o for o in onsets if o % 12 == 0})
+    out = []
+    for s, e, pcs in slots:
+        cut = s
+        for o in on:
+            if s < o < e and o - cut >= min_len and e - o >= min_len:
+                out.append((cut, o, pcs))
+                cut = o
+        out.append((cut, e, pcs))
+    return out
+
+
+CLIMAX_MARKS = {"f", "ff"}
+
+
+def _climax_spans(comp: Composition) -> list[tuple[int, int]]:
+    """Tick spans where the solo is at its loudest (ff) while the orchestra plays f or louder."""
+    def timeline(layer: str) -> list[tuple[int, str]]:
+        return sorted((d.tick, d.mark) for d in comp.dynamics if d.layer == layer)
+
+    def mark_at(tl, t):
+        m = None
+        for tick, mk in tl:
+            if tick <= t:
+                m = mk
+        return m
+
+    solo, strings = timeline("solo"), timeline("strings")
+    edges = sorted({t for t, _ in solo + strings} | {comp.end_tick})
+    spans = []
+    for a, b in zip(edges, edges[1:]):
+        ms, mo = mark_at(solo, a), mark_at(strings, a)
+        if ms == "ff" and mo in CLIMAX_MARKS:
+            if spans and spans[-1][1] == a:
+                spans[-1] = (spans[-1][0], b)
+            else:
+                spans.append((a, b))
+    return spans
+
+
+def _soprano_doubling(solo: list[Note], part: Part, spans: list[tuple[int, int]]) -> list[Note]:
+    """Soprano Cornet doubles the solo an octave up at climaxes (at the unison when the octave is too high)."""
+    lo, hi = part.instrument.preferred
+    out = []
+    for n in solo:
+        if not any(a <= n.start < b for a, b in spans):
+            continue
+        p = n.pitch + 12 if lo <= n.pitch + 12 <= hi else n.pitch if lo <= n.pitch <= hi else None
+        if p is not None:
+            out.append(_moved(n, p))
+    return out
+
+
+def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: str = "faithful",
+                   soprano: bool | None = None, figuration: bool | None = None) -> Arrangement:
+    """Layered solo-with-band arrangement.
+
+    `difficulty` (faithful, standard, easier; see difficulty.py) rewrites the
+    parts afterwards. `soprano` (Soprano Cornet doubling the solo at climaxes)
+    and `figuration` (pads re-attacked with the source's rhythm) default to on
+    for every mode but faithful, which reproduces the arranger's plain output.
+    Parts missing from `lineup` are simply not written (e.g. MINIMAL_BAND).
+    """
+    from .difficulty import apply_difficulty
     from .harmony import harmony_slots
     from .instruments import BRASS_BAND
 
     lineup = lineup or BRASS_BAND
+    soprano = difficulty != "faithful" if soprano is None else soprano
+    figuration = difficulty != "faithful" if figuration is None else figuration
+    names = {p.name for p in lineup.parts}
     arr = Arrangement(lineup)
     for p in lineup.parts:
         arr.parts[p.name] = []
@@ -281,7 +372,11 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangeme
 
     bass = _layer(comp, "bass")
     eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
-    arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
+    # A transposed piece re-fits its bass lines: phrases wider than the reading range are split at their
+    # largest leap, and a phrase may spill above the range rather than below it (onto ledger lines).
+    # Untransposed arrangements keep their established placement.
+    refit = bool(comp.arrangement and comp.arrangement.get("transpose_semitones"))
+    arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True, bass_overflow_up=refit)
     arr.parts[bb.name] = [_moved(n, n.pitch - 12 if _readable(bb.instrument, n.pitch - 12) else n.pitch)
                           for n in arr.parts[eb.name]]
 
@@ -298,22 +393,34 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None) -> Arrangeme
             continue
         top.append(n)
     counter = [n for n in top if n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat]
-    euph = lineup.by_name("Euphonium")
-    arr.parts[euph.name] = _place_smooth(counter, euph)
+    if "Euphonium" in names:
+        euph = lineup.by_name("Euphonium")
+        arr.parts[euph.name] = _place_smooth(counter, euph)
 
     pad_slots = harmony_slots(strings + keys, end)
-    _voice_layer(arr, pad_slots, PAD_PARTS, arr.parts["Solo Cornet"], arr.parts[eb.name], 76, 0.8)
+    if figuration:
+        pad_slots = _figurate(pad_slots, [n.start for n in strings + keys])
+    _voice_layer(arr, pad_slots, [p for p in PAD_PARTS if p in names], arr.parts["Solo Cornet"], arr.parts[eb.name], 76, 0.8)
 
     choir_slots = harmony_slots(brass, end, max_pcs=3)
-    _voice_layer(arr, choir_slots, CHOIR_PARTS, arr.parts["Solo Cornet"], arr.parts[eb.name], 79, 0.8)
+    if figuration:
+        choir_slots = _figurate(choir_slots, [n.start for n in brass])
+    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names], arr.parts["Solo Cornet"], arr.parts[eb.name],
+                 79, 0.8)
 
     # Bass trombone reinforces the bass line only while the brass choir is playing.
-    btb = lineup.by_name("Bass Trombone")
-    active = [(s, e) for s, e, _ in choir_slots]
-    tutti = [n for n in bass if any(s <= n.start < e for s, e in active)]
-    arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
+    if "Bass Trombone" in names:
+        btb = lineup.by_name("Bass Trombone")
+        active = [(s, e) for s, e, _ in choir_slots]
+        tutti = [n for n in bass if any(s <= n.start < e for s, e in active)]
+        arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
+
+    if soprano and "Soprano Cornet" in names:
+        arr.parts["Soprano Cornet"] = _soprano_doubling(arr.parts["Solo Cornet"], lineup.by_name("Soprano Cornet"),
+                                                        _climax_spans(comp))
 
     drums = _layer(comp, "drums")
-    if drums and "Percussion" in [p.name for p in lineup.parts]:
+    if drums and "Percussion" in names:
         arr.parts["Percussion"] = sorted(drums, key=lambda n: n.start)
+    arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
     return arr

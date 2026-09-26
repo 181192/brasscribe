@@ -106,3 +106,44 @@ def key_plan(notes: list[Note], bar: int, penalty: float = CHANGE_PENALTY, bass:
             mode, _ = _mode(seg, f)
             keys.append(KeySig(b * bar, f, mode))
     return KeyPlan(keys, per_bar)
+
+
+# ---------------------------------------------------------------- transposition
+
+_DEGREE = {m: d for d, m in MODES.items()}
+_NAMES = {"C": 0, "B#": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "Fb": 4, "F": 5, "E#": 5, "F#": 6,
+          "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11, "Cb": 11}
+
+
+def fifths_of_major(pc: int) -> int:
+    """Key signature (-5..6 fifths) whose major tonic is pitch class `pc`."""
+    return next(f for f in range(-5, 7) if (7 * f) % 12 == pc % 12)
+
+
+def tonic_of(k: KeySig) -> int:
+    return (7 * k.fifths + _DEGREE.get(k.mode, 0)) % 12
+
+
+def transposed_key(k: KeySig, semitones: int) -> KeySig:
+    """The same mode `semitones` higher: the signature follows the tonic."""
+    major = (7 * k.fifths + semitones) % 12
+    return KeySig(k.tick, fifths_of_major(major), k.mode)
+
+
+def semitones_to(current: KeySig, target: str) -> int:
+    """Semitones (-6..5) that move `current` to `target`.
+
+    `target` is a tonic name with an optional "m" for minor (Bb, F#, Am) or
+    FIFTHS[:MODE] (-2, -2:minor). Without a mode the current one is kept, so
+    an F-lydian passage asked to go to Bb stays lydian.
+    """
+    t = target.strip()
+    if t.lstrip("+-").split(":")[0].isdigit():
+        f, _, mode = t.partition(":")
+        mode = mode or current.mode
+        tonic = (7 * int(f) + _DEGREE.get(mode, 0)) % 12
+    else:
+        minor = t.endswith("m") and t[:-1] in _NAMES
+        tonic = _NAMES[t[:-1] if minor else t]
+    n = (tonic - tonic_of(current)) % 12
+    return n - 12 if n > 6 else n
