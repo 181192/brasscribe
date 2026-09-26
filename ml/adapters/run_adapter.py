@@ -65,15 +65,23 @@ def basic_pitch(src: Path, dst: Path) -> None:
 
 def beat_this(src: Path, dst: Path) -> None:
     model = os.environ.get("BEAT_THIS_MODEL")  # e.g. small0, the model the Play apps run on device
-    run("beat-this", ["beat_this", str(src), "-o", str(dst), *(["--model", model] if model else [])])
+    with tempfile.TemporaryDirectory() as tmp:
+        audio = Path(tmp) / "input.wav"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-ar", "44100", "-ac", "2",
+                        str(audio)], check=True)
+        run("beat-this", ["beat_this", str(audio), "-o", str(dst), *(["--model", model] if model else [])])
 
 
 def muscriptor(src: Path, dst: Path) -> None:
-    cmd = ["muscriptor", "transcribe", str(src), "-m", os.environ.get("MUSCRIPTOR_MODEL", "medium"), "-o", str(dst),
-           "--detect-tempo", "false"]
-    if os.environ.get("MUSCRIPTOR_INSTRUMENTS"):
-        cmd += ["--instruments", os.environ["MUSCRIPTOR_INSTRUMENTS"]]
-    run("muscriptor", cmd)
+    with tempfile.TemporaryDirectory() as tmp:
+        audio = Path(tmp) / "input.wav"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-ar", "16000", "-ac", "1",
+                        str(audio)], check=True)
+        cmd = ["muscriptor", "transcribe", str(audio), "-m", os.environ.get("MUSCRIPTOR_MODEL", "medium"),
+               "-o", str(dst), "--detect-tempo", "false"]
+        if os.environ.get("MUSCRIPTOR_INSTRUMENTS"):
+            cmd += ["--instruments", os.environ["MUSCRIPTOR_INSTRUMENTS"]]
+        run("muscriptor", cmd)
 
 
 def separator(src: Path, dst: Path) -> None:
