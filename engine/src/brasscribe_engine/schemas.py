@@ -53,7 +53,10 @@ class JobCreate(BaseModel):
     title: str | None = None
     render_audio: bool = Field(True, description="also render an MP3 of the score")
     allow_heavy: bool = Field(True, description="allow heavy models to run on cache misses")
-    lineup: Lineup = Field("full", description="full: the 18-part brass band; minimal: the 8-part minimal band")
+    lineup: Lineup | None = Field(None, description="full: the 18-part brass band; minimal: the 8-part minimal band; "
+                                                     "default: the profile's (minimal for solo, full otherwise)")
+    muscriptor: bool = Field(True, description="solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch "
+                                               "in its place, as the apps do on device")
     difficulty: Difficulty = Field("faithful", description="faithful keeps every transcribed note; standard and "
                                                            "easier simplify rhythms and ranges")
     key: str | None = Field(None, description="target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] "

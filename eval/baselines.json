@@ -288,6 +288,31 @@
           "tolerance": 0
         }
       }
+    },
+    "solo-ondevice": {
+      "source": "data/runs/apple/entertainer-ref/layered, made by apps/apple/scripts/make-ondevice-reference.sh; the Play apps' on-device solo path matches it with F1 1.0",
+      "metrics": {
+        "composition_identical": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "musicxml_identical": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "parts_identical_frac": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "notes_identical_frac": {
+          "value": 1,
+          "tolerance": 0
+        },
+        "part_files_identical_frac": {
+          "value": 1,
+          "tolerance": 0
+        }
+      }
     }
   }
 }

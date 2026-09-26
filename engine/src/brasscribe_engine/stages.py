@@ -127,6 +127,11 @@ def arrange_layered(ctx: StageContext) -> None:
     names = {k: v for k, v in ctx.inputs.items() if k.endswith((".mid", ".npz", ".wav"))}
     with tempfile.TemporaryDirectory(dir=ctx.out.parent) as tmp:
         view = _view(names, Path(tmp) / "layers")
+        for layer in ("bass-mus", "orchestra-mus", "drums-mus"):  # a solo recording has no other layers
+            if not (view / f"{layer}.mid").exists():
+                import pretty_midi
+
+                pretty_midi.PrettyMIDI().write(str(view / f"{layer}.mid"))
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
                 "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render",
                 *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
@@ -142,14 +147,6 @@ def arrange_band(ctx: StageContext) -> None:
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
     _python(ctx, "brasscribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "brasscribe_eval.arrange_song"))
-    _stable_musicxml(ctx)
-
-
-def arrange_solo(ctx: StageContext) -> None:
-    i = ctx.inputs
-    _python(ctx, "brasscribe_eval.arrange_solo", "--beats", str(i["beats"]), "--sw", str(i["sw"]), "--mus", str(i["mus"]),
-            "--bp", str(i["bp"]), "--out", str(ctx.out), "--title", ctx.params["title"],
-            *_arrangement_flags(ctx, "brasscribe_eval.arrange_solo"))
     _stable_musicxml(ctx)
 
 

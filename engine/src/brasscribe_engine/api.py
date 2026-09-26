@@ -210,6 +210,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         title = body.title or profiles.default_title(body.profile, Path(filename))
         params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
                   "key": body.key, "transpose": body.transpose}
+        if not body.muscriptor:
+            params["muscriptor"] = False
         try:
             profiles.arrangement_options(params)
         except ValueError as e:
@@ -234,7 +236,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
               tags=["jobs"], dependencies=[Depends(auth)])
     def create_job_from_upload(file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
                                title: str | None = Form(None), render_audio: bool = Form(True),
-                               lineup: m.Lineup = Form("full"), difficulty: m.Difficulty = Form("faithful"),
+                               lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
                                key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
