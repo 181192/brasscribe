@@ -10,7 +10,7 @@ the adapter's environment:
 
 Adapters and their output:
   basic-pitch       <input.wav> <output.mid>     (BASIC_PITCH_SERIALIZATION; ONNX outside macOS)
-  beat-this         <input.wav> <output.beats>
+  beat-this         <input.wav> <output.beats>     (BEAT_THIS_MODEL, default final0)
   mega53            <input audio> <output dir>   (<stem>.flac for all 53 stems)
   muscriptor        <input.wav> <output.mid>     (MUSCRIPTOR_MODEL, MUSCRIPTOR_INSTRUMENTS)
   separator         <input.wav> <output dir>     (SEPARATOR_MODEL)
@@ -64,7 +64,8 @@ def basic_pitch(src: Path, dst: Path) -> None:
 
 
 def beat_this(src: Path, dst: Path) -> None:
-    run("beat-this", ["beat_this", str(src), "-o", str(dst)])
+    model = os.environ.get("BEAT_THIS_MODEL")  # e.g. small0, the model the Play apps run on device
+    run("beat-this", ["beat_this", str(src), "-o", str(dst), *(["--model", model] if model else [])])
 
 
 def muscriptor(src: Path, dst: Path) -> None:

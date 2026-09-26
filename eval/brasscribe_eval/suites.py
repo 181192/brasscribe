@@ -410,6 +410,42 @@ def _musescore(data: Path, mode: str) -> dict[str, float]:
     return {"all_match": float(ok), "pitched_parts": float(len(lines)), "pitched_parts_match": float(match)}
 
 
+def _solo_ondevice(data: Path, mode: str) -> dict[str, float]:
+    """The engine's solo profile against the on-device reference (apps/apple/scripts/make-ondevice-reference.sh).
+
+    The reference ran SwiftF0, Basic Pitch (standing in for MuScriptor), the SwiftF0 contour and
+    Beat This! small0 on a 30 s URMP trumpet clip, then the layered arranger with only a solo layer
+    and the minimal band. Cached mode seeds the engine's cache with those model outputs, so only the
+    arrangement runs; live mode runs the light models (SwiftF0, Basic Pitch, contour) itself and
+    seeds only the beats. Gates on note-for-note identity of the score and every part."""
+    from brasscribe_engine import runner
+    from brasscribe_engine.compare import compare
+    from brasscribe_engine.config import Settings
+
+    ref = data / "runs" / "apple" / "entertainer-ref"
+    clip = data / "runs" / "apple" / "entertainer-tpt1-30s.wav"
+    _need(data, "runs/apple/entertainer-ref/layered", "runs/apple/entertainer-tpt1-30s.wav")
+    with tempfile.TemporaryDirectory() as tmp:
+        seed = Path(tmp) / "seed"
+        (seed / "layers").mkdir(parents=True)
+        shutil.copy(ref / "beats-small0.beats", seed / "mix.beats")
+        if mode != "live":
+            for f in ("solo-sw.mid", "solo-bp.mid", "solo-sw.contour.npz"):
+                shutil.copy(ref / "layers" / f, seed / "layers" / f)
+        settings = Settings(data_dir=Path(tmp) / "data", adapters_dir=ADAPTERS)
+        m = runner.run(settings, clip, "solo", title="Reference", params={"audio": False, "muscriptor": False},
+                       reuse=seed, allow_heavy=False)
+        if m["status"] != "succeeded":
+            raise RuntimeError(m.get("error") or m["status"])
+        c = compare(settings.runs_dir / m["run_id"] / "outputs", ref / "layered")
+        d = c.to_dict()
+    extra = list(c.extra_files.values())
+    return {"composition_identical": float(c.composition_identical), "musicxml_identical": float(c.musicxml_identical),
+            "parts_identical_frac": c.parts_identical / max(1, len(c.parts)),
+            "notes_identical_frac": c.notes_identical / max(1, d["notes_total"]),
+            "part_files_identical_frac": sum(extra) / max(1, len(extra)), "notes_total": float(d["notes_total"])}
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -452,6 +488,8 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
+    Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
+          _solo_ondevice, ("runs/apple/entertainer-ref", "runs/apple/entertainer-tpt1-30s.wav")),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", "golden/mikkel-arranged-band"), tools=("mscore",)),
 ]}

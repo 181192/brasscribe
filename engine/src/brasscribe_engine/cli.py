@@ -40,7 +40,8 @@ def cmd_run(args) -> int:
     m = runner.run(s, args.audio, args.profile, title=args.title, out=args.out, reuse=args.reuse,
                    allow_heavy=not args.no_heavy, cold=_cold(args.cold), params={"audio": not args.no_audio, "lineup": args.lineup,
                                                                      "difficulty": args.difficulty, "key": args.key,
-                                                                     "transpose": args.transpose},
+                                                                     "transpose": args.transpose,
+                                                                     **({"muscriptor": False} if args.no_muscriptor else {})},
                    emit=_print_event)
     run_dir = s.runs_dir / m["run_id"]
     print(f"{m['status']}: {run_dir}  ({m['seconds']:.1f}s, devices {', '.join(m['devices']) or '-'})")
@@ -182,7 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--no-heavy", action="store_true", help="fail instead of running a heavy model on a cache miss")
     r.add_argument("--cold", help="comma-separated stages or kinds to run even on a cache hit (e.g. layers,arrange,export)")
     r.add_argument("--no-audio", action="store_true", help="skip the MP3 rendering")
-    r.add_argument("--lineup", choices=["full", "minimal"], default="full")
+    r.add_argument("--lineup", choices=["full", "minimal"], help="default: the profile's (minimal for solo)")
+    r.add_argument("--no-muscriptor", action="store_true", help="solo: Basic Pitch in MuScriptor's place, as on device")
     r.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
     r.add_argument("--key", help="target concert key: tonic (Bb, F#, Am) or FIFTHS[:MODE]")
     r.add_argument("--transpose", type=int, help="semitones (instead of --key)")

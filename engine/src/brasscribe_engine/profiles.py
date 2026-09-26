@@ -56,8 +56,9 @@ def arrangement_options(params: dict) -> dict:
     return opts
 
 
-def _arrange_params(title: str, params: dict) -> dict:
-    opts = arrangement_options(params)
+def _arrange_params(title: str, params: dict, lineup: str = "full") -> dict:
+    """lineup: the profile's lineup when the job does not choose one."""
+    opts = arrangement_options({**params, "lineup": params.get("lineup") or lineup})
     return {"title": title, "arrangement": opts} if opts else {"title": title}
 
 
@@ -149,14 +150,32 @@ def brass_band(title: str, params: dict) -> Pipeline:
 
 
 def solo(title: str, params: dict) -> Pipeline:
+    """One brass line, no separation, through the layered arranger with only a solo layer.
+
+    The same path the Play apps run on device (Rust arrangeLayersBand): SwiftF0 is the spine,
+    confirmed by MuScriptor and Basic Pitch; the SwiftF0 contour gives the note ends; Beat This!
+    small0 gives the beats; the minimal band by default. With muscriptor=False (as on device),
+    Basic Pitch also fills MuScriptor's confirmation slot. Stage outputs use the layered names, so
+    a directory with mix.beats and layers/solo-{sw,bp,mus}.mid, solo-sw.contour.npz can seed the cache.
+    """
     mix = Input(SOURCE)
-    st = [_beats()] + [_transcribe("mix", t, s, mix, None) for t, s in LAYER_TOOLS["solo"]]
-    st.append(Stage("arrange", "arrange", {
-        "beats": Input("beats", "mix.beats"), "sw": Input("transcribe.mix.swift-f0", "mix-sw.mid"),
-        "mus": Input("transcribe.mix.muscriptor", "mix-mus.mid"), "bp": Input("transcribe.mix.basic-pitch", "mix-bp.mid")},
-        S.arrange_solo, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+    st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
+                outputs=("mix.beats",), reuse_subdir=".")]
+    tools = [("swift-f0", "sw"), ("basic-pitch", "bp")] + ([("muscriptor", "mus")] if params.get("muscriptor", True) else [])
+    arrange_inputs = {"beats": Input("beats", "mix.beats")}
+    for tool, suffix in tools:
+        s = _transcribe("solo", tool, suffix, mix, "layers")
+        st.append(s)
+        arrange_inputs[f"solo-{suffix}.mid"] = Input(s.name, f"solo-{suffix}.mid")
+    if "solo-mus.mid" not in arrange_inputs:
+        arrange_inputs["solo-mus.mid"] = arrange_inputs["solo-bp.mid"]
+    st.append(Stage("contour.solo.swift-f0", "transcribe", {"audio": mix}, S.transcribe, adapter="swift-f0-contour",
+                    params={"output": "solo-sw.contour.npz"}, outputs=("solo-sw.contour.npz",), reuse_subdir="layers"))
+    arrange_inputs["solo-sw.contour.npz"] = Input("contour.solo.swift-f0", "solo-sw.contour.npz")
+    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, "minimal"),
+                    code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
-    return Pipeline("solo", "A-solo", st, _outputs("arrange"), params)
+    return Pipeline("solo", "layered-solo", st, _outputs("arrange"), params)
 
 
 SW_STEMS = ("vocals", "other", "guitar", "piano", "bass", "drums")
@@ -182,7 +201,8 @@ def pop_rock(title: str, params: dict) -> Pipeline:
 
 
 PROFILES: dict[str, Profile] = {p.name: p for p in [
-    Profile("solo", "A-solo", "One brass line, no separation; SwiftF0 spine confirmed by MuScriptor or Basic Pitch", False, solo),
+    Profile("solo", "layered-solo", "One brass line, no separation; SwiftF0 spine confirmed by MuScriptor or Basic Pitch, "
+            "layered arranger (the on-device path), minimal band", True, solo),
     Profile("brass-band", "A", "Brass-only ensemble; MuScriptor medium + Basic Pitch on the mix, minimal band", False, brass_band),
     Profile("pop-rock", "B", "Full band; BS-RoFormer SW stems, per-stem transcription, minimal band", False, pop_rock),
     Profile("orchestra-with-soloist", "layered",
