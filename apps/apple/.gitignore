@@ -6,3 +6,4 @@ xcuserdata/
 *.xcresult
 .build/
 .swiftpm/
+App/Icon.xcassets/

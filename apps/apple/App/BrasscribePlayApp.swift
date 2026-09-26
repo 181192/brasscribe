@@ -20,7 +20,7 @@ struct BrasscribePlayApp: App {
         WindowGroup {
             RootView()
                 .environment(app)
-                .tint(Palette.accent)
+                .tint(Color.Brasscribe.primary)
                 .onOpenURL { url in Task { await app.accept(url: url) } }
         }
         #if os(macOS)

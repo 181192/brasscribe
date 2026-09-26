@@ -44,6 +44,18 @@ targets:
       - path: Frameworks/VerovioResources
         type: folder
         buildPhase: resources
+      # The design system, linked from design/dist (regenerate there, never copy here).
+      # App/Icon.xcassets is generated from design/dist/icons/apple by scripts/check-prereqs.sh.
+      - path: ../../design/dist/apple/BrasscribeDesign.swift
+      - path: ../../design/dist/apple/BrasscribeDesign.xcassets
+      - path: ../../design/dist/apple/Fonts/InstrumentSerif-Regular.ttf
+        buildPhase: resources
+      - path: ../../design/dist/apple/Fonts/OFL.txt
+        buildPhase: resources
+      - path: ../../design/brand/fonts/InstrumentSerif-Italic.ttf
+        buildPhase: resources
+      - path: ../../design/brand/logo/mark.svg
+        buildPhase: resources
     dependencies:
       - package: BrasscribeKit
         product: ScoreKit
@@ -77,6 +89,8 @@ targets:
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         UIBackgroundModes: [audio]
+        UIAppFonts: [InstrumentSerif-Regular.ttf, InstrumentSerif-Italic.ttf]
+        ATSApplicationFontsPath: "."
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
         LSSupportsOpeningDocumentsInPlace: true
@@ -106,6 +120,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: App/BrasscribePlay-${platform}.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
         SUPPORTS_MACCATALYST: NO
         "ARCHS[sdk=macosx*]": arm64
