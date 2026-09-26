@@ -26,8 +26,8 @@ def test_every_mode_defines_every_role():
 
 def test_a11y_palette_is_unchanged_where_agreed():
     # The score hues were agreed with accessibility review; only the neutrals may move.
-    agreed = {"uncertain": "#0063A6", "very-uncertain": "#B04A00", "cursor": "#6B3FA0", "focus": "#0050B3",
-              "adlib-tint": "#EEF3F8", "loop-tint": "#FFF3D6", "loop-edge": "#8A5A00", "error": "#B3261E"}
+    agreed = {"uncertain": "#0063A6", "very-uncertain": "#B04A00", "cursor": "#6B3FA0",
+              "loop-tint": "#FFF3D6", "loop-edge": "#8A5A00", "error": "#B3261E"}
     for role, hexv in agreed.items():
         assert build.hexval("light", role) == hexv, role
 
@@ -45,3 +45,14 @@ def test_compat_file_keeps_its_shape():
     data = json.loads((build.ROOT / "docs" / "accessibility" / "design-tokens.json").read_text())
     assert set(data) >= {"themes", "pairs", "distinguish", "legacy"}
     assert set(data["themes"]) == {"light", "dark", "high-contrast"}
+
+
+def test_focus_never_looks_like_uncertainty():
+    # The focus ring sits on notation; it must not share a hue family with the uncertainty colours.
+    import sys
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for mode in ("light", "dark"):
+        for role in ("uncertain", "very-uncertain"):
+            de = contrast.delta_e(build.hexval(mode, "focus"), build.hexval(mode, role), None)
+            assert de >= 20, (mode, role, de)

@@ -16,10 +16,10 @@
 | staff | `#57534B` | `#A6A29A` | `#FFFFFF` | Staff lines, bar lines |
 | uncertain | `#0063A6` | `#56B4E9` | `#00FFFF` | Notes with confidence 0.4–0.7 |
 | very-uncertain | `#B04A00` | `#F0A04B` | `#FFFF00` | Notes with confidence < 0.4 |
-| adlib-tint | `#EEF3F8` | `#1B2530` | none (`#000000`) | Background band behind free-time bars |
-| loop-tint / loop-edge | `#FFF3D6` / `#8A5A00` | `#33290F` / `#E0B65C` | none / `#FFFF00` | Loop range band plus its edge markers |
+| adlib-tint | `#EFECE5` | `#221F1B` | none (`#000000`) | Background band behind free-time bars (neutral, so it never reads as uncertain blue) |
+| loop-tint / loop-edge | `#FFF3D6` / `#8A5A00` | `#2B2412` / `#E0B65C` | none / `#FFFF00` | Loop range band plus its edge markers |
 | cursor | `#6B3FA0` | `#C9A7F0` | `#FF80FF` | Playback cursor line |
-| focus | `#0050B3` | `#8AB4F8` | `#FFFF00` | Keyboard focus ring |
+| focus | `#1B1A17` | `#EDEBE6` | `#FFFFFF` | Keyboard focus ring: ink / paper, so it is never confused with the uncertain blue or the very-uncertain yellow (usability review, P2-11) |
 | error | `#B3261E` | `#F2B8B5` | `#FF8080` | Error text |
 | cursor-tint | `#DED5E6` | `#37303D` | none (`#000000`) | The 20% cursor tint on the current bar (design tokens only) |
 | selection-tint / selection-edge | `#E8E5DE` / `#1B1A17` | `#2C2A26` / `#EDEBE6` | none / `#FFFFFF` | Selected bar range before it becomes a loop (design tokens only) |
@@ -34,14 +34,14 @@ The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which 
 |---|---|---|---|---|
 | text / bg | 16.67 | 15.71 | 21.00 | 4.5 |
 | text-muted / surface | 6.08 | 7.96 | 21.00 | 4.5 |
-| ink / adlib-tint | 16.90 | 13.62 | 21.00 | 3 |
+| ink / adlib-tint | 15.99 | 14.41 | 21.00 | 3 |
 | staff / bg | 7.33 | 7.36 | 21.00 | 3 |
 | uncertain / bg | 6.03 | 8.11 | 16.75 | 3 |
-| uncertain / loop-tint | 5.71 | 6.21 | 16.75 | 3 |
+| uncertain / loop-tint | 5.71 | 6.67 | 16.75 | 3 |
 | very-uncertain / bg | 5.26 | 8.77 | 19.56 | 3 |
-| very-uncertain / adlib-tint | 4.92 | 7.26 | 19.56 | 3 |
+| very-uncertain / adlib-tint | 4.65 | 7.68 | 19.56 | 3 |
 | cursor / bg | 7.07 | 9.16 | 9.78 | 3 |
-| focus / surface | 6.65 | 8.17 | 19.56 | 3 |
+| focus / surface | 15.42 | 14.46 | 21.00 | 3 |
 | error / bg | 6.26 | 10.96 | 8.65 | 4.5 |
 
 All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 204 pairs, all pass.

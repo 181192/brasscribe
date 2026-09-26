@@ -13,7 +13,7 @@
   .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--bc-space-3); }
   .tile { padding: var(--bc-space-4); display: flex; flex-direction: column; gap: var(--bc-space-3); min-height: 132px; }
   .recent { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--bc-space-4); }
-  .thumb { height: 104px; border-radius: var(--bc-radius-md) var(--bc-radius-md) 0 0; background: var(--bc-bg); box-shadow: inset 0 -1px 0 var(--bc-border); overflow: hidden; padding: 10px 14px; }
+  .thumb { height: 104px; margin: 1px 1px 0; border-radius: 15px 15px 0 0; background: var(--bc-bg); box-shadow: inset 0 -1px 0 var(--bc-border); overflow: hidden; padding: 10px 14px; }
   .thumb svg { opacity: 0.9; }
   .rc .meta { padding: var(--bc-space-3) var(--bc-space-4) var(--bc-space-4); }
 </style>
@@ -25,26 +25,28 @@
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar" style="padding: 0 var(--bc-space-4) 0 var(--bc-space-5)">
     <span class="brandline" style="color: var(--bc-brass)"><span data-mark="26"></span><span style="font-family: var(--bc-font-display); font-size: 1.5rem; color: var(--bc-text)">Brasscribe</span></span>
-    <button class="icon-btn" aria-label="Settings"><i data-i="settings"></i></button>
+    <span><button class="icon-btn" aria-label="Help"><i data-i="help"></i></button><button class="icon-btn" aria-label="Settings"><i data-i="settings"></i></button></span>
   </div>
   <div class="content" style="padding-top: var(--bc-space-6)">
     <h1 class="display">Turn a recording<br>into <em>a score.</em></h1>
     <p class="callout" style="margin-top: var(--bc-space-3); font-size: 1.0625rem">Play it, record it, or open a file. Brasscribe writes the parts for your band.</p>
 
     <div style="margin-top: var(--bc-space-6)">
-      <button class="btn primary block"><i data-i="import-file"></i>Import audio or video</button>
+      <button class="btn primary block"><i data-i="import-file"></i>Open a recording</button>
+      <p class="caption" style="margin-top: 6px; text-align: center">MP3, WAV, M4A, MP4 and most video</p>
     </div>
 
     <div class="group" style="margin-top: var(--bc-space-4)">
-      <div class="row"><span class="well"><i data-i="record-mic" class="sm"></i></span><div class="grow"><div class="title">Record with the microphone</div></div><i data-i="open" class="sm chev"></i></div>
+      <div class="row"><span class="well"><i data-i="record-mic" class="sm"></i></span><div class="grow"><div class="title">Record with the microphone</div><div class="sub">A rehearsal, or you playing</div></div><i data-i="open" class="sm chev"></i></div>
       <div class="row"><span class="well"><i data-i="record-device" class="sm"></i></span><div class="grow"><div class="title">Record what's playing</div><div class="sub">From another app on this phone</div></div><i data-i="open" class="sm chev"></i></div>
       <div class="row"><span class="well"><i data-i="score" class="sm"></i></span><div class="grow"><div class="title">Try the demo</div><div class="sub">“Mikkel”, cornet solo with band</div></div><i data-i="open" class="sm chev"></i></div>
     </div>
 
-    <h2 class="eyebrow" style="margin-top: var(--bc-space-8)">Your scores</h2>
+    <p class="caption" style="margin-top: var(--bc-space-3); display:flex; gap:6px; align-items:flex-start"><i data-i="info" class="sm"></i>Links to streaming sites can't be opened. Play the music and record it instead.</p>
+    <h2 class="eyebrow" style="margin-top: var(--bc-space-6)">Your scores</h2>
     <div class="group">
-      <div class="row"><div class="grow"><div class="title">Mikkel</div><div class="sub">Full band · 64 bars · Today</div></div><i data-i="open" class="sm chev"></i></div>
-      <div class="row"><div class="grow"><div class="title">Abide with Me</div><div class="sub">Solo cornet · 32 bars · Tuesday</div></div><i data-i="open" class="sm chev"></i></div>
+      <div class="row"><div class="grow"><div class="title">Mikkel</div><div class="sub">Full band · 9 notes to check</div></div><i data-i="open" class="sm chev"></i></div>
+      <div class="row"><div class="grow"><div class="title">Abide with Me</div><div class="sub">Solo cornet · Tuesday</div></div><i data-i="open" class="sm chev"></i></div>
     </div>
   </div>
   <div class="homebar"></div>
@@ -69,8 +71,8 @@
 
         <div class="drop" style="margin-top: var(--bc-space-8)">
           <span class="well" style="width:56px;height:56px;border-radius:var(--bc-radius-md)"><i data-i="import-file"></i></span>
-          <div class="copy"><div class="headline">Drop an audio or video file here</div><div class="callout">MP3, WAV, M4A, MP4 and most other formats</div></div>
-          <button class="btn primary">Choose a file…</button>
+          <div class="copy"><div class="headline">Drop a recording here</div><div class="callout">MP3, WAV, M4A, MP4 and most other formats</div></div>
+          <button class="btn primary">Open a recording…</button>
         </div>
 
         <div class="tiles" style="margin-top: var(--bc-space-3)">
@@ -78,11 +80,11 @@
           <div class="card tile"><span class="well"><i data-i="record-device" class="sm"></i></span><div><div class="headline">Record what's playing</div><div class="callout">Sound from another app on this Mac</div></div></div>
           <div class="card tile"><span class="well"><i data-i="score" class="sm"></i></span><div><div class="headline">Try the demo</div><div class="callout">“Mikkel”, cornet solo with band</div></div></div>
         </div>
-        <p class="caption" style="margin-top: var(--bc-space-3); display:flex; gap:6px; align-items:center"><i data-i="info" class="sm"></i>Links to streaming sites can't be downloaded. Play the music and record it instead.</p>
+        <p class="caption" style="margin-top: var(--bc-space-3); display:flex; gap:6px; align-items:center"><i data-i="info" class="sm"></i>Links to streaming sites can't be opened. Play the music and record it instead.</p>
 
         <h2 class="eyebrow" style="margin-top: var(--bc-space-10)">Your scores</h2>
         <div class="recent">
-          <div class="card rc"><div class="thumb" data-score="mini1"></div><div class="meta"><div class="headline">Mikkel</div><div class="callout">Full band · 64 bars · Today</div></div></div>
+          <div class="card rc"><div class="thumb" data-score="mini1"></div><div class="meta"><div class="headline">Mikkel</div><div class="callout">Full band · 9 notes to check</div></div></div>
           <div class="card rc"><div class="thumb" data-score="mini2"></div><div class="meta"><div class="headline">Abide with Me</div><div class="callout">Solo cornet · 32 bars · Tuesday</div></div></div>
           <div class="card rc"><div class="thumb" data-score="mini4"></div><div class="meta"><div class="headline">Deep Harmony</div><div class="callout">Small band · 24 bars · 12 Sep</div></div></div>
         </div>

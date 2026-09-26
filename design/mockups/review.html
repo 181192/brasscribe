@@ -14,7 +14,7 @@
   .item .staff { margin: 0 calc(-1 * var(--bc-space-2)); }
   .note-desc { font-size: 1.0625rem; }
   .actions { display: flex; gap: var(--bc-space-2); margin-top: var(--bc-space-4); }
-  .actions .btn { flex: 1; }
+  .actions .btn { flex: 1; white-space: nowrap; padding: 0 var(--bc-space-3); }
   .rv-row { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 56px; padding: var(--bc-space-2) var(--bc-space-4); }
   .group .rv-row + .rv-row { box-shadow: inset 0 1px 0 var(--bc-border); }
   .rv-row.on { background: var(--bc-selection-tint); }
@@ -30,34 +30,34 @@
 
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
-  <div class="navbar"><span class="back"><i data-i="back"></i>Mikkel</span><span></span><span class="btn plain compact">Done</span></div>
+  <div class="navbar"><span class="back"><i data-i="back"></i>Mikkel</span><span></span><span class="btn plain compact">Finish later (9 left)</span></div>
   <div class="content" style="padding-top: var(--bc-space-2)">
-    <h1 class="display" style="font-size: 2.25rem">Check 12 notes</h1>
-    <p class="callout" style="margin-top: var(--bc-space-2); font-size: 1.0625rem">Brasscribe wasn't sure about these. Listen, then keep or change each one.</p>
-    <div class="legend" style="margin-top: var(--bc-space-3)"><span><b class="q u">?</b>Uncertain</span><span><b class="q vu">?</b>Very uncertain</span></div>
+    <h1 class="display" style="font-size: 2.25rem">Check 9 notes</h1>
+    <div class="legend" style="margin-top: var(--bc-space-2)"><span><b class="q u">?</b>Brasscribe wasn't sure</span><span><b class="q vu">?</b>Very unsure</span></div>
 
     <div class="card item" style="margin-top: var(--bc-space-4)">
-      <div style="display:flex; justify-content: space-between; align-items: baseline"><span class="headline">Bar 14 · Solo Cornet</span><span class="caption num">1 of 12</span></div>
+      <div style="display:flex; justify-content: space-between; align-items: baseline"><span class="headline">Bar 14 · Solo Cornet</span><span class="caption num">1 of 9</span></div>
       <div class="staff" data-score="reviewBarPhone" style="height: 150px"></div>
-      <p class="note-desc">G, half note. <span class="muted">Very uncertain.</span></p>
+      <p class="note-desc">Written G, minim. <span class="muted">Very uncertain: it could also be an A.</span></p>
       <div class="actions">
-        <button class="btn secondary compact"><i data-i="listen-bar" class="sm"></i>Listen</button>
-        <button class="btn outline compact">Change note…</button>
+        <button class="btn secondary compact touch48"><i data-i="listen-bar" class="sm"></i>Listen to bar</button>
+        <button class="btn outline compact touch48">Change note…</button>
       </div>
     </div>
 
     <h2 class="eyebrow" style="margin-top: var(--bc-space-6)">Still to check</h2>
     <div class="group">
-      <div class="rv-row"><span class="bn">Bar 15</span><span class="grow callout" style="flex:1">C♯, quarter note</span><b class="q u">?</b></div>
-      <div class="rv-row"><span class="bn">Bar 10</span><span class="grow callout" style="flex:1">F♯, quarter note</span><b class="q u">?</b></div>
+      <div class="rv-row"><span class="bn">Bar 15</span><span class="grow callout" style="flex:1">Solo Cornet · C♯, crotchet</span><b class="q u">?</b></div>
+      <div class="rv-row"><span class="bn">Bar 14</span><span class="grow callout" style="flex:1">Euphonium · D, minim</span><b class="q u">?</b></div>
+      <div class="rv-row"><span class="grow callout" style="flex:1; font-weight:600; color: var(--bc-text)">+ 7 more</span><i data-i="open" class="sm chev"></i></div>
     </div>
   </div>
-  <div class="bottom"><button class="btn primary block"><i data-i="mark-checked"></i>Keep, go to next</button></div>
+  <div class="bottom" style="display:flex; gap: var(--bc-space-2)"><button class="btn secondary" style="flex: 0 0 auto">Skip</button><button class="btn primary" style="flex:1"><i data-i="mark-checked"></i>Keep, go to next</button></div>
   <div class="homebar"></div>
 </div>
 
 <div class="desktop">
-  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel · Check the notes</span><span class="sp"></span><span class="btn plain compact">Done checking</span></div>
+  <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel · Check the notes</span><span class="sp"></span></div>
   <div class="shell">
     <nav class="sidebar" aria-label="Notes to check" style="gap: 2px">
       <div class="side-head" style="padding-top: 0">12 notes to check</div>
@@ -73,18 +73,18 @@
       <div class="side-rv"><b class="q u">?</b><span class="grow">Bar 23 · A</span></div>
       <div class="side-head">Solo Horn</div>
       <div class="side-rv"><b class="q u">?</b><span class="grow">Bar 15 · B</span></div>
-      <div class="side-rv"><span class="grow caption" style="padding-left: 30px">4 more</span></div>
+      <div class="side-rv"><span class="grow" style="padding-left: 30px; font-weight: 600">+ 4 more</span><i data-i="open" class="sm chev"></i></div>
     </nav>
     <main class="main">
       <div class="pane" style="max-width: 880px; padding-top: var(--bc-space-8)">
-        <p class="eyebrow">3 of 12 · Solo Cornet</p>
+        <p class="eyebrow">3 of 12 · Solo Cornet · 9 left</p>
         <h1 class="display" style="font-size: 2.75rem">Bar 14</h1>
         <div class="card" style="margin-top: var(--bc-space-5); padding: var(--bc-space-4) var(--bc-space-5) var(--bc-space-2)">
           <div data-score="reviewBar" style="height: 190px"></div>
         </div>
         <div style="display:flex; align-items:flex-start; gap: var(--bc-space-8); margin-top: var(--bc-space-6)">
           <div style="flex:1">
-            <p class="title-2" style="font-weight:600">G, half note</p>
+            <p class="title-2" style="font-weight:600">Written G, minim</p>
             <p class="callout" style="margin-top: 4px; font-size: 1.0625rem">Very uncertain: it could also be an A. Listen to the original and the score side by side.</p>
           </div>
           <div style="display:flex; gap: var(--bc-space-2)">
@@ -94,8 +94,9 @@
         </div>
         <hr class="hairline" style="margin: var(--bc-space-8) 0 var(--bc-space-5)">
         <div style="display:flex; align-items:center; gap: var(--bc-space-3)">
-          <span class="caption" style="flex:1">Keyboard: Space listens, K keeps, arrows move between notes.</span>
-          <button class="btn plain">Skip</button>
+          <span class="caption" style="flex:1">Space listens · K keeps · arrows move</span>
+          <button class="btn plain">Finish later (9 left)</button>
+          <button class="btn secondary">Skip</button>
           <button class="btn primary"><i data-i="mark-checked" class="sm"></i>Keep, go to next</button>
         </div>
       </div>

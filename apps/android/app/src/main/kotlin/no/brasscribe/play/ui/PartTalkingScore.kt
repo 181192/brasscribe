@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.TranscriptionResult
+import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.model.PitchMode
 
 /** One row of the per-part talking score: a bar heading or one event line of that bar. */
@@ -41,7 +42,7 @@ private data class Row(val bar: Int, val barIndex: Int, val text: String, val he
 @Composable
 fun PartTalkingScore(vm: PlayViewModel, r: TranscriptionResult, part: Int, concert: Boolean, playBar: (Int) -> Unit) {
     val lang = currentLang()
-    val doc = remember(r.musicXml) { runCatching { vm.container.core.talkingScore(r.musicXml, r.compositionJson ?: vm.container.core.encodeComposition(r.composition)) }.getOrNull() } 
+    val doc = remember(r.musicXml) { runCatching { vm.container.core.talkingScore(r.musicXml, r.compositionJsonFor(vm.container.core)) }.getOrNull() } 
     if (doc == null) { TalkingScoreList(vm, r); return }
     DisposableEffect(doc) { onDispose { doc.close() } }
     val bars = remember(doc, part, lang, concert) {

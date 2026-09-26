@@ -63,7 +63,7 @@ data class BrasscribeColors(
     val warning: Color,
     /** Error text and the error icon. Always with a sentence that says what to do. */
     val error: Color,
-    /** Keyboard focus ring: 2 px, with a 2 px gap on the background. */
+    /** Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow. */
     val focus: Color,
     /** Dimmed backdrop behind a sheet or dialog (40% alpha). */
     val scrim: Color,
@@ -75,7 +75,7 @@ data class BrasscribeColors(
     val uncertain: Color,
     /** Notes with confidence below 0.4. Always with a boxed "?" above the note. */
     val veryUncertain: Color,
-    /** Band behind free-time (ad lib) bars. High contrast: none, outline instead. */
+    /** Neutral band behind free-time (ad lib) bars; the italic "ad lib." and dashed bar lines carry the meaning. Not blue, so it never reads as uncertain. High contrast: none, outline instead. */
     val adlibTint: Color,
     /** Band behind the loop range. High contrast: none, outline instead. */
     val loopTint: Color,
@@ -118,13 +118,13 @@ val BrasscribeLightColors = BrasscribeColors(
     success = Color(0xFF2E6B3F),
     warning = Color(0xFF8A5A00),
     error = Color(0xFFB3261E),
-    focus = Color(0xFF0050B3),
+    focus = Color(0xFF1B1A17),
     scrim = Color(0x66000000),
     ink = Color(0xFF121110),
     staff = Color(0xFF57534B),
     uncertain = Color(0xFF0063A6),
     veryUncertain = Color(0xFFB04A00),
-    adlibTint = Color(0xFFEEF3F8),
+    adlibTint = Color(0xFFEFECE5),
     loopTint = Color(0xFFFFF3D6),
     loopEdge = Color(0xFF8A5A00),
     cursor = Color(0xFF6B3FA0),
@@ -148,7 +148,7 @@ val BrasscribeDarkColors = BrasscribeColors(
     borderStrong = Color(0xFF85817A),
     primary = Color(0xFFEDEBE6),
     onPrimary = Color(0xFF131210),
-    secondary = Color(0xFF2A2925),
+    secondary = Color(0xFF36342F),
     onSecondary = Color(0xFFEDEBE6),
     brass = Color(0xFFD2A955),
     brassText = Color(0xFFD9B266),
@@ -156,14 +156,14 @@ val BrasscribeDarkColors = BrasscribeColors(
     success = Color(0xFF8BD39B),
     warning = Color(0xFFE0B65C),
     error = Color(0xFFF2B8B5),
-    focus = Color(0xFF8AB4F8),
+    focus = Color(0xFFEDEBE6),
     scrim = Color(0x66000000),
     ink = Color(0xFFF2F0EB),
     staff = Color(0xFFA6A29A),
     uncertain = Color(0xFF56B4E9),
     veryUncertain = Color(0xFFF0A04B),
-    adlibTint = Color(0xFF1B2530),
-    loopTint = Color(0xFF33290F),
+    adlibTint = Color(0xFF221F1B),
+    loopTint = Color(0xFF2B2412),
     loopEdge = Color(0xFFE0B65C),
     cursor = Color(0xFFC9A7F0),
     cursorTint = Color(0xFF37303D),
@@ -194,7 +194,7 @@ val BrasscribeHighContrastColors = BrasscribeColors(
     success = Color(0xFF80FF80),
     warning = Color(0xFFFFFF00),
     error = Color(0xFFFF8080),
-    focus = Color(0xFFFFFF00),
+    focus = Color(0xFFFFFFFF),
     scrim = Color(0x66000000),
     ink = Color(0xFFFFFFFF),
     staff = Color(0xFFFFFFFF),

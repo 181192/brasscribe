@@ -173,6 +173,13 @@
     <string name="zoom_in">Zoom inn</string>
     <string name="zoom_out">Zoom ut</string>
     <string name="zoom_value">Zoom %1$d prosent</string>
+    <string name="performance_enter">Full skjerm</string>
+    <string name="performance_exit">Avslutt full skjerm</string>
+    <string name="previous">Forrige</string>
+    <string name="next">Neste</string>
+    <string name="opened_score">Åpnet %1$s.</string>
+    <string name="home_open_score">Åpne et MusicXML-partitur</string>
+    <string name="talking_score_unavailable">Talepartituret trenger kjernen, som ikke er installert.</string>
     <string name="sound">Lyd</string>
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistisk</string>

@@ -103,6 +103,36 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
             if _has_quarter(song / "reference.json"):
                 cases.append(Case(f"{base}/bench", "bench", {"reference": song / "reference.json", "title": song.name}))
                 cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
+    # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
+    # layered output from the Python reference is kept next to it.
+    ent = DATA / "runs" / "apple" / "entertainer-ref"
+    if (ent / "layers").exists():
+        cases.append(Case("entertainer/layers", "layers",
+                          {"layers": ent / "layers", "beats": ent / "beats-small0.beats", "title": "Reference",
+                           "contour": ent / "layers" / "solo-sw.contour.npz", "options": ["--lineup", "minimal"]},
+                          golden=ent / "layered"))
+    # Meter and bar phase on single-instrument beat tracks (every URMP and ChoraleBricks part, Beat This!
+    # small0 on the part's own recording): meter_of alone, and the layered song with that part's beats.
+    solo = DATA / "runs" / "music-core" / "solo-beats"
+    eval_songs = {s.name: s for es in (DATA / "eval").iterdir() if es.is_dir() for s in es.iterdir()
+                  if (s / "reference.json").exists()}
+    for song in sorted(solo.glob("*/*")) if solo.exists() else []:
+        if not (song / "reference.json").exists():
+            continue
+        ref = None
+        for bf in sorted(song.glob("*.beats")):
+            base = f"solo-beats/{song.parent.name}/{song.name}/{bf.stem}"
+            notes = work / "_solo-notes" / f"{song.parent.name}-{song.name}-{bf.stem}.json"
+            if not notes.exists():
+                ref = ref or json.loads((song / "reference.json").read_text())
+                notes.parent.mkdir(parents=True, exist_ok=True)
+                notes.write_text(json.dumps(sorted(({"onset": n["onset"], "offset": n["offset"]} for n in ref["notes"]
+                                                    if n["part"] == bf.stem), key=lambda n: n["onset"])))
+            cases.append(Case(f"{base}/meter", "meter", {"beats": bf, "notes": notes}))
+            if song.name in eval_songs:
+                es = eval_songs[song.name]
+                cases.append(Case(f"{base}/layers", "layers", {"layers": work / "_layers" / es.parent.name / es.name,
+                                                               "song": es, "beats": bf, "title": es.name}))
     if only:
         cases = [c for c in cases if only in c.id]
     return cases

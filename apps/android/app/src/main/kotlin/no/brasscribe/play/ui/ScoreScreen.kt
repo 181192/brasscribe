@@ -1,11 +1,15 @@
 package no.brasscribe.play.ui
 
+import android.app.Activity
+import android.content.ContextWrapper
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +32,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -58,11 +64,16 @@ import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.audio.RealisticSynth
+import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.score.ScoreController
+import no.brasscribe.play.score.ScoreUiState
 import no.brasscribe.play.ui.theme.LocalPlayTokens
 
 /** Index of the part a player most likely wants first: the solo cornet, else the first part. */
@@ -84,12 +95,17 @@ fun ScoreScreen(vm: PlayViewModel) {
     val controller = remember(r) {
         val c = vm.container
         ScoreController(context, reducedMotion, c.core, c.bandSoundMap, c.bandSoundFont(),
-            r.compositionJson ?: runCatching { c.core.encodeComposition(r.composition) }.getOrNull()).also { vm.scoreController = it }
+            r.compositionJsonFor(c.core)).also { vm.scoreController = it }
     }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
     var showParts by remember { mutableStateOf(false) }
+    // Playing live: the score alone, no system bars, screen awake. Rotation recreates the activity,
+    // so this has to survive it.
+    var performance by rememberSaveable { mutableStateOf(false) }
     val t = LocalPlayTokens.current
+    PerformanceWindow(performance)
+    BackHandler(enabled = performance) { performance = false }
 
     LaunchedEffect(controller, t) {
         controller.setNotationColors(t.bg.toArgb(), t.ink.toArgb(), t.staff.toArgb(), t.cursor.toArgb())
@@ -104,7 +120,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
     val shownText = if (st.shown.size == 1) partName else stringResource(R.string.show_all_parts)
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
-    val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition.title }, shownText, st.bar, st.totalBars)
+    val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
     val nextBar = stringResource(R.string.action_next_bar)
     val prevBar = stringResource(R.string.action_prev_bar)
     val nextPart = stringResource(R.string.action_next_part)
@@ -125,21 +141,25 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.score_title)) },
-                navigationIcon = { IconButton(onClick = { vm.back() }) { Icon(BackArrow, stringResource(R.string.back)) } },
-                actions = { TextButton(onClick = { vm.navigate(Screen.EXPORT) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.export)) } },
-            )
+            if (!performance) {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.score_title)) },
+                    navigationIcon = { IconButton(onClick = { vm.back() }) { Icon(BackArrow, stringResource(R.string.back)) } },
+                    actions = { TextButton(onClick = { vm.navigate(Screen.EXPORT) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.export)) } },
+                )
+            }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            StatusLine(status, Modifier.padding(horizontal = 16.dp))
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                SegmentedButton(selected = !textView, onClick = { textView = false }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text(stringResource(R.string.notation_view)) }
-                SegmentedButton(selected = textView, onClick = { textView = true }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.text_view)) }
+        Column(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding)) {
+            if (!performance) {
+                StatusLine(status, Modifier.padding(horizontal = 16.dp))
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    SegmentedButton(selected = !textView, onClick = { textView = false }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text(stringResource(R.string.notation_view)) }
+                    SegmentedButton(selected = textView, onClick = { textView = true }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.text_view)) }
+                }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (textView) {
+                if (textView && !performance) {
                     PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
                     AndroidView(
@@ -159,34 +179,100 @@ fun ScoreScreen(vm: PlayViewModel) {
                     )
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = t.error, modifier = Modifier.align(Alignment.Center).padding(16.dp)) }
+                    if (performance) {
+                        PerformanceBar(controller, st, Modifier.align(Alignment.BottomCenter)) { performance = false }
+                    }
                 }
             }
-            Column(
-                Modifier.weight(0.9f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TransportRow(controller, st.playing, st.bar, st.totalBars)
-                SpeedControl(st.speed) { controller.setSpeed(it) }
-                LoopControl(st.totalBars, st.loop, onSet = { a, b ->
-                    controller.setLoop(a..b); vm.say(R.string.loop_set_announce, a, b)
-                }, onClear = { controller.setLoop(null); vm.say(R.string.loop_cleared) }, invalid = { vm.say(R.string.loop_invalid, st.totalBars) })
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    ToggleRow(stringResource(R.string.count_in), st.countIn) { controller.setCountIn(it) }
-                    ToggleRow(stringResource(R.string.metronome), st.metronome) { controller.setMetronome(it) }
-                    ToggleRow(stringResource(R.string.concert_pitch), st.concertPitch) { controller.setConcertPitch(it) }
+            if (!performance) {
+                Column(
+                    Modifier.weight(0.9f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TransportRow(controller, st.playing, st.bar, st.totalBars)
+                    SpeedControl(st.speed) { controller.setSpeed(it) }
+                    LoopControl(st.totalBars, st.loop, onSet = { a, b ->
+                        controller.setLoop(a..b); vm.say(R.string.loop_set_announce, a, b)
+                    }, onClear = { controller.setLoop(null); vm.say(R.string.loop_cleared) }, invalid = { vm.say(R.string.loop_invalid, st.totalBars) })
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        ToggleRow(stringResource(R.string.count_in), st.countIn) { controller.setCountIn(it) }
+                        ToggleRow(stringResource(R.string.metronome), st.metronome) { controller.setMetronome(it) }
+                        ToggleRow(stringResource(R.string.concert_pitch), st.concertPitch) { controller.setConcertPitch(it) }
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { showParts = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.parts)) }
+                        OutlinedButton(onClick = { controller.setZoom(st.zoom - 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_out)) }
+                        Text(stringResource(R.string.zoom_value, st.zoom))
+                        OutlinedButton(onClick = { controller.setZoom(st.zoom + 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_in)) }
+                        OutlinedButton(
+                            onClick = { textView = false; performance = true },
+                            modifier = Modifier.heightIn(min = 48.dp).semantics { testTag = "performance" },
+                        ) { Text(stringResource(R.string.performance_enter)) }
+                    }
+                    SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) }
                 }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { showParts = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.parts)) }
-                    OutlinedButton(onClick = { controller.setZoom(st.zoom - 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_out)) }
-                    Text(stringResource(R.string.zoom_value, st.zoom))
-                    OutlinedButton(onClick = { controller.setZoom(st.zoom + 10) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.zoom_in)) }
-                }
-                SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) }
             }
         }
     }
 
     if (showParts) PartsDialog(st.parts, st.shown, st.muted, st.soloed, controller) { showParts = false }
+}
+
+/** Screen awake and no system bars while the score is on a stand; both are restored on the way out. */
+@Composable
+private fun PerformanceWindow(enabled: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(enabled) {
+        val window = generateSequence(view.context) { (it as? ContextWrapper)?.baseContext }
+            .filterIsInstance<Activity>().firstOrNull()?.window
+        val bars = window?.let { WindowCompat.getInsetsController(it, view) }
+        view.keepScreenOn = enabled
+        if (enabled) {
+            bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            bars?.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            bars?.show(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose {
+            view.keepScreenOn = false
+            bars?.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+}
+
+/** The only controls left on stage: play, the bar you are on, a bar either way, and the way out. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PerformanceBar(controller: ScoreController, st: ScoreUiState, modifier: Modifier = Modifier, onExit: () -> Unit) {
+    val prevBar = stringResource(R.string.action_prev_bar)
+    val nextBar = stringResource(R.string.action_next_bar)
+    // Opaque: it sits on top of the notation, and it has to wrap on a narrow phone held upright.
+    Surface(modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
+        FlowRow(
+            Modifier.fillMaxWidth().padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(onClick = controller::togglePlay, modifier = Modifier.heightIn(min = 56.dp).widthIn(min = 120.dp).semantics { testTag = "play" }) {
+                Text(stringResource(if (st.playing) R.string.pause else R.string.play))
+            }
+            OutlinedButton(
+                onClick = { controller.goToBar(st.bar - 1) },
+                modifier = Modifier.heightIn(min = 56.dp).semantics { contentDescription = prevBar },
+            ) { Text(stringResource(R.string.previous)) }
+            Box(Modifier.heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.bar_heading, st.bar) + " / ${st.totalBars}", style = MaterialTheme.typography.titleMedium)
+            }
+            OutlinedButton(
+                onClick = { controller.goToBar(st.bar + 1) },
+                modifier = Modifier.heightIn(min = 56.dp).semantics { contentDescription = nextBar },
+            ) { Text(stringResource(R.string.next)) }
+            OutlinedButton(
+                onClick = onExit,
+                modifier = Modifier.heightIn(min = 56.dp).semantics { testTag = "performance-exit" },
+            ) { Text(stringResource(R.string.performance_exit)) }
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
