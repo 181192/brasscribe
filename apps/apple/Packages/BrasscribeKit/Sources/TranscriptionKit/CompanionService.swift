@@ -115,11 +115,9 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         field("profile", req.profile.rawValue)
         if let t = req.title { field("title", t) }
         field("render_audio", "true")
-        // Arrangement options. The engine rejects lineup/key it cannot apply yet, so only
-        // send what differs from the defaults.
+        // Difficulty is recorded by the engine. Lineup and key make today's engine fail the
+        // job, so the app arranges the small band itself and does not send them.
         field("difficulty", req.output.difficulty.rawValue)
-        if req.output.lineup == .minimalBand { field("lineup", "minimal") }
-        if let k = req.output.keyFifths { field("key", String(k)) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
         h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)
@@ -270,7 +268,14 @@ public struct SSEParser: Sendable {
         case "event":
             if !data.isEmpty { out = flush() }
             eventType = String(value)
-        case "data": data.append(String(value))
+        case "data":
+            data.append(String(value))
+            // The engine sends one JSON object per data line. Emit it now, because
+            // AsyncBytes.lines drops the blank line that would otherwise end the event.
+            if value.first == "{", value.last == "}",
+               (try? JSONSerialization.jsonObject(with: Data(data.joined(separator: "\n").utf8))) != nil {
+                out += flush()
+            }
         default: break
         }
         return out

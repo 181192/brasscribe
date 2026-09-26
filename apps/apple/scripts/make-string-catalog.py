@@ -173,6 +173,7 @@ NB = {
     "Your scores appear here.": "Partiturene dine vises her.",
     "Zoom %lld percent": "Zoom %lld prosent",
     "Zoom in": "Zoom inn",
+    "The small band is arranged on this device. Difficulty is noted but not applied yet.": "Lite korps arrangeres på denne enheten. Vanskelighetsgraden blir notert, men ikke brukt ennå.",
     "Arrange again on this device": "Arranger på nytt på denne enheten",
     "Couldn't arrange on this device.": "Kunne ikke arrangere på denne enheten.",
     "Zoom out": "Zoom ut",

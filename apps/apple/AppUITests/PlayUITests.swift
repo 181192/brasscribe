@@ -67,6 +67,52 @@ final class PlayUITests: XCTestCase {
         add(shot)
     }
 
+    /// Home → "What is this?" → progress → Review → score, with the demo transcription service.
+    func testDemoFlowThroughReview() throws {
+        app.terminate()
+        app.launchArguments = ["-reset", "-demo-service", "-fast"]
+        app.launch()
+        let demo = app.buttons["demo"]
+        XCTAssertTrue(demo.waitForExistence(timeout: 20))
+        demo.tap()
+        let transcribe = app.buttons["transcribe"]
+        XCTAssertTrue(transcribe.waitForExistence(timeout: 10))
+        XCTAssertFalse(transcribe.isEnabled, "the app never guesses the profile")
+        app.buttons["profile-orchestra-with-soloist"].tap()
+        XCTAssertTrue(transcribe.isEnabled)
+        transcribe.tap()
+        let open = app.buttons["openScore"]
+        XCTAssertTrue(open.waitForExistence(timeout: 60), "review should follow the transcription")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "review"
+        shot.lifetime = .keepAlways
+        add(shot)
+        open.tap()
+        XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
+    }
+
+    /// Documented shortcuts: → / ← move by bar, ] raises the speed, space plays and pauses.
+    func testKeyboardShortcuts() throws {
+        #if os(iOS)
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("hardware-keyboard shortcuts are tested on iPad and Mac") }
+        #endif
+        let play = app.buttons["playPause"]
+        XCTAssertTrue(play.waitForExistence(timeout: 30))
+        let position = app.descendants(matching: .any)["position"]
+        let speed = app.descendants(matching: .any)["speed"]
+        app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
+        app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
+        XCTAssertEqual(position.value as? String, "3")
+        app.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        XCTAssertEqual(position.value as? String, "2")
+        app.typeKey("]", modifierFlags: [])
+        XCTAssertTrue((speed.value as? String)?.contains("105") == true, "\(String(describing: speed.value))")
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 5))
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 5))
+    }
+
     func testNextBarAndLoopWithoutDragging() throws {
         let next = app.buttons["nextBar"]
         XCTAssertTrue(next.waitForExistence(timeout: 30))

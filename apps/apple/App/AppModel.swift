@@ -158,7 +158,14 @@ final class AppModel {
         path.append(.transcribe(job.id))
         job.start { [weak self] result in
             guard let self else { return }
+            var result = result
             do {
+                // The engine only writes the full band so far; the core arranges the small band here.
+                if output.lineup == .minimalBand, let comp = result.composition,
+                   let xml = try self.core.arrange(comp, lineup: .minimalBand, difficulty: output.difficulty, keyFifths: nil) {
+                    result.musicXML = xml
+                    result.available.remove(.pdf); result.available.remove(.brailleBRF); result.available.remove(.midi); result.available.remove(.audio)
+                }
                 let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
                                          video: src.videoURL, fixtureDirectory: self.useDemoService ? self.fixtureDirectory : nil)
                 self.refresh()

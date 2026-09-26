@@ -28,6 +28,14 @@ func goldenDir() -> URL? {
     #expect(evs[0].fraction == 0.25 && evs[0].stage == "beats" && evs[0].device == "mps")
     #expect(evs[1].message == "hi")
     #expect(evs[2].type == "job" && evs[2].status == "succeeded")
+
+    // progress must not wait for the next event
+    var q = SSEParser()
+    #expect(q.feed(line: "id: 7").isEmpty)
+    #expect(q.feed(line: "event: stage").isEmpty)
+    let now = q.feed(line: #"data: {"id":7,"type":"stage","status":"ran","stage":"arrange","fraction":0.9}"#)
+    #expect(now.map(\.id) == [7])
+    #expect(q.feed(line: ": keepalive").isEmpty)
 }
 
 @Test func stagesReadAsPlainSteps() {

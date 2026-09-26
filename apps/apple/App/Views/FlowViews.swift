@@ -66,8 +66,6 @@ struct SourceSheet: View {
     let source: PendingSource
     @State private var profile: SourceProfile?
     @State private var output = OutputChoice()
-    @State private var keepKey = true
-    @State private var key = 0
 
     var body: some View {
         NavigationStack {
@@ -104,14 +102,9 @@ struct SourceSheet: View {
                         Text("Standard").tag(Difficulty.standard)
                         Text("Easier").tag(Difficulty.easier)
                     } label: { Text("Difficulty") }
-                    Toggle(isOn: $keepKey) { Text("Keep the original key") }
-                    if !keepKey {
-                        Picker(selection: $key) {
-                            ForEach(-6...6, id: \.self) { f in Text(KeyNames.name(fifths: f)).tag(f) }
-                        } label: { Text("Key (concert)") }
-                    }
+                    // A key choice returns when the arranger can transpose; the engine rejects it today.
                 } header: { Text("Score") } footer: {
-                    Text("Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them.")
+                    Text("The small band is arranged on this device. Difficulty is noted but not applied yet.")
                 }
             }
             .formStyle(.grouped)
@@ -121,7 +114,6 @@ struct SourceSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Transcribe") {
                         guard let profile else { return }
-                        output.keyFifths = keepKey ? nil : key
                         app.startTranscription(source, profile: profile, output: output)
                     }
                     .disabled(profile == nil)

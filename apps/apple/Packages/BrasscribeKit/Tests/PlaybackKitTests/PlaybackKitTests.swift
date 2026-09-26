@@ -96,6 +96,21 @@ func goldenDir() -> URL? {
         #expect(abs(e.position - 36) < 1e-6)
     }
 
+    /// The audio export writes AAC that reads back with the expected length and some sound.
+    @Test func exportsAudio() throws {
+        let q = Score(title: score.title, parts: score.parts, measures: Array(score.measures.prefix(12)), tempos: score.tempos)
+        let e = try PlaybackEngine(score: q, soundBank: .locate(bundle: .main), offlineFormat: PlaybackEngine.offlineFormat())
+        let url = FileManager.default.temporaryDirectory.appending(path: "export-\(UUID().uuidString).m4a")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try e.exportScore(to: url, tailSeconds: 1)
+        let f = try AVAudioFile(forReading: url)
+        let seconds = Double(f.length) / f.processingFormat.sampleRate
+        #expect(abs(seconds - (q.durationSeconds + 1)) < 0.5)
+        let buf = AVAudioPCMBuffer(pcmFormat: f.processingFormat, frameCapacity: AVAudioFrameCount(f.length))!
+        try f.read(into: buf)
+        #expect(buf.peak > 0.005)
+    }
+
     @Test func transposeRetunesPitchedSamplers() throws {
         let e = try engine()
         e.transposeSemitones = -2

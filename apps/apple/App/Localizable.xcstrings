@@ -1451,6 +1451,16 @@
         }
       }
     },
+    "The small band is arranged on this device. Difficulty is noted but not applied yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lite korps arrangeres på denne enheten. Vanskelighetsgraden blir notert, men ikke brukt ennå."
+          }
+        }
+      }
+    },
     "This decides how the music is taken apart. Brasscribe never guesses.": {
       "localizations": {
         "nb": {

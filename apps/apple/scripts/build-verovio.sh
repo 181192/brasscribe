@@ -108,5 +108,7 @@ rm -rf "$R"; mkdir -p "$R"
 for f in Leipzig Bravura; do cp -R "$SRC/data/$f" "$R/"; cp "$SRC/data/$f.xml" "$SRC/data/$f.css" "$R/"; done
 cp -R "$SRC/data/text" "$R/"
 cp "$SRC/COPYING" "$SRC/COPYING.LESSER" "$OUT/"
+# the LGPL text ships inside the app with the font data
+cp "$SRC/COPYING" "$SRC/COPYING.LESSER" "$R/"
 echo "$VERSION $COMMIT humdrum=$HUMDRUM" > "$OUT/VEROVIO_VERSION"
 echo "done: $OUT/Verovio.xcframework ($(du -sh "$OUT/Verovio.xcframework" | cut -f1)), resources $(du -sh "$R" | cut -f1)"
