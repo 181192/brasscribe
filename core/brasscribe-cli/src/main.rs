@@ -3,13 +3,15 @@
 //!
 //! ```text
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
+//!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal]
+//!                               [--difficulty faithful|standard|easier] [--key KEY | --transpose N]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
 //! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
 //! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
 //! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
-//! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--text FILE] [--html FILE]
+//! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! ```
 
@@ -19,7 +21,6 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use brasscribe_core::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
 use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::MidiFile;
@@ -184,6 +185,10 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 no_gate: a.has("no-gate"),
                 no_beat_cleanup: a.has("no-beat-cleanup"),
                 single_key: a.has("single-key"),
+                lineup: a.opt("lineup").unwrap_or_default(),
+                difficulty: a.opt("difficulty").unwrap_or_default(),
+                key: a.opt("key"),
+                transpose: a.opt("transpose").map(|s| s.parse::<i32>().map_err(|e| e.to_string())).transpose()?,
             };
             let r = pipeline::arrange_layers_song(&layers, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
@@ -225,7 +230,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         }
         "musicxml" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
-            let arr = if comp.voices.iter().any(|v| v.layer.is_some()) { arrange_layers(&comp) } else { arrange(&comp) };
+            let arr = pipeline::arrange_composition(&comp)?;
             write(Path::new(&a.one("out")?), &stamp(write_score(&band_score(&arr, &comp))))
         }
         "normalize" => {
@@ -267,6 +272,9 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             };
             if let Some(p) = a.opt("json") {
                 write(Path::new(&p), &brasscribe_core::pyjson::dumps(&doc))?;
+            }
+            if let Some(p) = a.opt("json-utf8") {
+                write(Path::new(&p), &brasscribe_core::pyjson::dumps_utf8(&doc))?;
             }
             if let Some(p) = a.opt("text") {
                 write(Path::new(&p), &ts::to_text(&doc, &settings, None))?;

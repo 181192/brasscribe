@@ -21,6 +21,15 @@ MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
 
 
+MIKKEL_VARIANTS = [
+    ("layers-standard", ["--difficulty", "standard"]),
+    ("layers-easier", ["--difficulty", "easier"]),
+    ("layers-minimal-easier", ["--lineup", "minimal", "--difficulty", "easier"]),
+    ("layers-key-bb", ["--key", "Bb"]),
+    ("layers-transpose-down-3", ["--transpose", "-3"]),
+]
+
+
 def mikkel_contour() -> Path | None:
     """The contour next to the repro layers, else the engine cache's copy with the golden's hash."""
     import hashlib
@@ -74,10 +83,12 @@ def synth_layers(song: Path, out: Path) -> Path:
 
 
 def all_cases(work: Path, only: str | None = None) -> list[Case]:
-    cases = [Case("mikkel/layers", "layers",
-                  {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
-                   **({"contour": c} if (c := mikkel_contour()) else {})},
-                  golden=DATA / "golden/mikkel-arranged-band")]
+    mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
+              **({"contour": c} if (c := mikkel_contour()) else {})}
+    cases = [Case("mikkel/layers", "layers", mikkel, golden=DATA / "golden/mikkel-arranged-band")]
+    # Arrangement options (lineup, difficulty, key) against the Python reference.
+    for stage, options in MIKKEL_VARIANTS:
+        cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}))
     for eval_set in sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()):
         for song in sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists()):
             base = f"{eval_set.name}/{song.name}"

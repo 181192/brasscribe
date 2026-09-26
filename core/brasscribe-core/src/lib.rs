@@ -14,6 +14,7 @@ pub mod energy;
 pub mod dynamics;
 pub mod beats;
 pub mod consensus;
+pub mod difficulty;
 pub mod durations;
 pub mod freetime;
 pub mod harmony;

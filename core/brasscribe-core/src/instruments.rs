@@ -194,6 +194,8 @@ pub struct Part {
     pub players: u32,
     /// Staff label after the first system; distinct per part (default: the instrument's).
     pub short: &'static str,
+    /// 1-based MusicXML <midi-bank> of this part's preset in the band SoundFont.
+    pub midi_bank: Option<i64>,
 }
 
 impl Part {
@@ -223,11 +225,11 @@ impl Lineup {
 }
 
 fn p(name: &'static str, inst: &'static Instrument, players: u32) -> Part {
-    Part { name, instrument: inst, players, short: "" }
+    Part { name, instrument: inst, players, short: "", midi_bank: None }
 }
 
-fn ps(name: &'static str, inst: &'static Instrument, players: u32, short: &'static str) -> Part {
-    Part { name, instrument: inst, players, short }
+fn ps(name: &'static str, inst: &'static Instrument, players: u32, short: &'static str, bank: Option<i64>) -> Part {
+    Part { name, instrument: inst, players, short, midi_bank: bank }
 }
 
 /// Standard British/Norwegian contest band, in conventional score order.
@@ -235,24 +237,24 @@ pub fn brass_band() -> Lineup {
     Lineup {
         name: "Brass band",
         parts: vec![
-            ps("Soprano Cornet", &SOPRANO_CORNET, 1, "Sop. Cnt."),
-            ps("Solo Cornet", &CORNET, 4, "Solo Cnt."),
-            ps("Repiano Cornet", &CORNET, 1, "Rep."),
-            ps("2nd Cornet", &CORNET, 2, "2nd Cnt."),
-            ps("3rd Cornet", &CORNET, 2, "3rd Cnt."),
-            ps("Flugelhorn", &FLUGELHORN, 1, "Flug."),
-            ps("Solo Horn", &TENOR_HORN, 1, "Solo Hn."),
-            ps("1st Horn", &TENOR_HORN, 1, "1st Hn."),
-            ps("2nd Horn", &TENOR_HORN, 1, "2nd Hn."),
-            ps("1st Baritone", &BARITONE, 1, "1st Bar."),
-            ps("2nd Baritone", &BARITONE, 1, "2nd Bar."),
-            ps("1st Trombone", &TENOR_TROMBONE, 1, "1st Tbn."),
-            ps("2nd Trombone", &TENOR_TROMBONE, 1, "2nd Tbn."),
-            ps("Bass Trombone", &BASS_TROMBONE, 1, "B. Tbn."),
-            ps("Euphonium", &EUPHONIUM, 2, "Euph."),
-            ps("E♭ Bass", &EB_BASS, 2, "E♭ Bass"),
-            ps("B♭ Bass", &BB_BASS, 2, "B♭ Bass"),
-            ps("Percussion", &PERCUSSION, 1, "Perc."),
+            ps("Soprano Cornet", &SOPRANO_CORNET, 1, "Sop. Cnt.", Some(2)),
+            ps("Solo Cornet", &CORNET, 4, "Solo Cnt.", Some(1)),
+            ps("Repiano Cornet", &CORNET, 1, "Rep.", Some(3)),
+            ps("2nd Cornet", &CORNET, 2, "2nd Cnt.", Some(4)),
+            ps("3rd Cornet", &CORNET, 2, "3rd Cnt.", Some(5)),
+            ps("Flugelhorn", &FLUGELHORN, 1, "Flug.", Some(6)),
+            ps("Solo Horn", &TENOR_HORN, 1, "Solo Hn.", Some(1)),
+            ps("1st Horn", &TENOR_HORN, 1, "1st Hn.", Some(2)),
+            ps("2nd Horn", &TENOR_HORN, 1, "2nd Hn.", Some(3)),
+            ps("1st Baritone", &BARITONE, 1, "1st Bar.", Some(4)),
+            ps("2nd Baritone", &BARITONE, 1, "2nd Bar.", Some(5)),
+            ps("1st Trombone", &TENOR_TROMBONE, 1, "1st Tbn.", Some(1)),
+            ps("2nd Trombone", &TENOR_TROMBONE, 1, "2nd Tbn.", Some(2)),
+            ps("Bass Trombone", &BASS_TROMBONE, 1, "B. Tbn.", Some(3)),
+            ps("Euphonium", &EUPHONIUM, 2, "Euph.", Some(3)),
+            ps("E♭ Bass", &EB_BASS, 2, "E♭ Bass", Some(1)),
+            ps("B♭ Bass", &BB_BASS, 2, "B♭ Bass", Some(2)),
+            ps("Percussion", &PERCUSSION, 1, "Perc.", None),
         ],
     }
 }

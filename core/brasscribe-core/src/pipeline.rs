@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 
-use crate::arranger::{arrange, arrange_layers, Arrangement};
+use crate::arranger::{arrange, Arrangement};
 use crate::beats::clean_beats_gated;
 use crate::consensus::{cluster, consensus, Sources};
 use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
@@ -171,6 +171,14 @@ pub struct LayersOptions {
     pub no_beat_cleanup: bool,
     /// One key signature for the whole piece.
     pub single_key: bool,
+    /// "band" (= "full", the 18-part contest band) or "minimal" (8 parts); empty = band.
+    pub lineup: String,
+    /// "faithful" (default when empty), "standard" or "easier".
+    pub difficulty: String,
+    /// Target concert key of the first key signature: Bb, F#, Am or FIFTHS[:MODE].
+    pub key: Option<String>,
+    /// Transpose the whole arrangement by this many semitones (instead of `key`).
+    pub transpose: Option<i32>,
 }
 
 /// Detached notes are written as (staccato) 8ths in band parts, not 16ths and rests.
@@ -224,6 +232,18 @@ fn separation(l: &Layers) -> Option<String> {
 /// The orchestra residual is split by what the notes do: short notes attacked
 /// together with two or more others are brass-choir hits, the rest strings.
 pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+    let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
+    if !crate::difficulty::MODES.contains(&difficulty) {
+        return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
+    }
+    let lineup_name = match opts.lineup.as_str() {
+        "" | "band" | "full" => "band",
+        "minimal" => "minimal",
+        other => return Err(format!("unknown lineup {other}")),
+    };
+    if opts.key.is_some() && opts.transpose.is_some() {
+        return Err("give a key or a transposition, not both".into());
+    }
     let solo_mus = layers.solo_mus.pitched();
     let solo_bp = layers.solo_bp.pitched();
     let mut bass_raw = layers.bass.pitched();
@@ -360,7 +380,8 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         // Key changes where the music modulates (a change must pay for itself over several bars).
         let mut sl: Vec<Note> = solo.clone();
         sl.extend(lines.iter().cloned());
-        key_plan(&sl, bar_ticks, CHANGE_PENALTY, &bass).keys
+        let penalty = crate::difficulty::key_change_penalty(difficulty).unwrap_or(CHANGE_PENALTY);
+        key_plan(&sl, bar_ticks, penalty, &bass).keys
     };
     let mut comp = Composition {
         title: title.into(),
@@ -379,6 +400,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         free_regions: regions,
         dynamics: Vec::new(),
         sections: Vec::new(),
+        arrangement: None,
     };
     // Dynamics per layer from its own loudness, per bar.
     let bm = BeatMap::new(&comp.beat_times)?;
@@ -401,9 +423,42 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         let starts = section_starts(&bar_features(&e, &bars), &forced);
         comp.sections = starts.iter().zip(letters(starts.len())).map(|(b, l)| Section { tick: b * bar_ticks, label: l }).collect();
     }
-    let arrangement = arrange_layers(&comp);
+    // Arrangement options: lineup, difficulty, transposition to a concert key.
+    let shift = match (&opts.transpose, &opts.key) {
+        (Some(t), _) => *t,
+        (None, Some(k)) => crate::keys::semitones_to(&comp.keys[0], k)?,
+        _ => 0,
+    };
+    if shift != 0 {
+        comp = comp.transposed(shift);
+    }
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 {
+        let mut a = serde_json::Map::new();
+        a.insert("lineup".into(), lineup_name.into());
+        a.insert("difficulty".into(), difficulty.into());
+        a.insert("transpose_semitones".into(), shift.into());
+        comp.arrangement = Some(serde_json::Value::Object(a));
+    }
+    let lineup = if lineup_name == "band" { crate::instruments::brass_band() } else { crate::instruments::minimal_band() };
+    let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
     let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
+}
+
+/// Arrange an existing Composition the way it was made: the layered arranger
+/// when its voices carry layers (with the lineup and difficulty recorded in
+/// `arrangement`), else the minimal arranger.
+pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
+    if !comp.voices.iter().any(|v| v.layer.is_some()) {
+        return Ok(arrange(comp));
+    }
+    let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
+    let lineup = match opt("lineup").as_deref() {
+        Some("minimal") => crate::instruments::minimal_band(),
+        _ => crate::instruments::brass_band(),
+    };
+    let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
+    crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
 }
 
 #[derive(Debug, Clone)]
@@ -464,6 +519,7 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
         free_regions: Vec::new(),
         dynamics: Vec::new(),
         sections: Vec::new(),
+        arrangement: None,
     };
     let arrangement = arrange(&comp);
     let musicxml = write_score(&band_score(&arrangement, &comp));
@@ -555,6 +611,7 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         free_regions: Vec::new(),
         dynamics: Vec::new(),
         sections: Vec::new(),
+        arrangement: None,
     })
 }
 

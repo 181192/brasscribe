@@ -158,3 +158,64 @@ pub fn key_plan(notes: &[Note], bar: i64, penalty: f64, bass: &[Note]) -> KeyPla
     }
     KeyPlan { keys, per_bar }
 }
+
+// ---------------------------------------------------------------- transposition
+
+fn degree_of_mode(mode: &str) -> Option<i64> {
+    [0, 2, 4, 5, 7, 9, 11].into_iter().find(|&d| mode_of_degree(d) == Some(mode))
+}
+
+fn note_name_pc(name: &str) -> Option<i64> {
+    Some(match name {
+        "C" | "B#" => 0,
+        "C#" | "Db" => 1,
+        "D" => 2,
+        "D#" | "Eb" => 3,
+        "E" | "Fb" => 4,
+        "F" | "E#" => 5,
+        "F#" | "Gb" => 6,
+        "G" => 7,
+        "G#" | "Ab" => 8,
+        "A" => 9,
+        "A#" | "Bb" => 10,
+        "B" | "Cb" => 11,
+        _ => return None,
+    })
+}
+
+/// Key signature (-5..6 fifths) whose major tonic is pitch class `pc`.
+pub fn fifths_of_major(pc: i64) -> i32 {
+    (-5..7).find(|&f: &i32| py::pymod(7 * f as i64, 12) == py::pymod(pc, 12)).unwrap()
+}
+
+pub fn tonic_of(k: &KeySig) -> i64 {
+    py::pymod(7 * k.fifths as i64 + degree_of_mode(&k.mode).unwrap_or(0), 12)
+}
+
+/// The same mode `semitones` higher: the signature follows the tonic.
+pub fn transposed_key(k: &KeySig, semitones: i32) -> KeySig {
+    let major = py::pymod(7 * k.fifths as i64 + semitones as i64, 12);
+    KeySig { tick: k.tick, fifths: fifths_of_major(major), mode: k.mode.clone() }
+}
+
+/// Semitones (-5..6) that move `current` to `target`: a tonic name with an
+/// optional "m" (Bb, F#, Am) or FIFTHS[:MODE] (-2, -2:minor). Without a mode
+/// the current one is kept.
+pub fn semitones_to(current: &KeySig, target: &str) -> Result<i32, String> {
+    let t = target.trim();
+    let head = t.trim_start_matches(['+', '-']).split(':').next().unwrap_or("");
+    let tonic = if !head.is_empty() && head.chars().all(|c| c.is_ascii_digit()) {
+        let (f, mode) = match t.split_once(':') {
+            Some((f, m)) => (f, m),
+            None => (t, ""),
+        };
+        let mode = if mode.is_empty() { current.mode.as_str() } else { mode };
+        let f: i64 = f.parse().map_err(|_| format!("bad key {target}"))?;
+        py::pymod(7 * f + degree_of_mode(mode).unwrap_or(0), 12)
+    } else {
+        let minor = t.ends_with('m') && note_name_pc(&t[..t.len() - 1]).is_some();
+        note_name_pc(if minor { &t[..t.len() - 1] } else { t }).ok_or_else(|| format!("unknown key {target}"))?
+    };
+    let n = py::pymod(tonic - tonic_of(current), 12);
+    Ok(if n > 6 { n as i32 - 12 } else { n as i32 })
+}

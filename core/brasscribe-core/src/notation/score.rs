@@ -1636,8 +1636,133 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     for (i, p) in parts.iter().enumerate() {
         root.push(part_xml(p, i, spec.beats_per_bar));
     }
+    if !spec.sounds.is_empty() {
+        band_midi(&mut root);
+    }
     root
 }
 
 #[allow(dead_code)]
 fn _unused(_: DType) {}
+
+// ---------------------------------------------------------------------------
+// MIDI setup for the band SoundFont
+
+/// Percussion instruments by written position and notehead, as General MIDI notes.
+const DRUM_SOUNDS: [(&str, &str, i64, &str); 13] = [
+    ("F4", "normal", 36, "Bass Drum"),
+    ("C5", "normal", 38, "Snare Drum"),
+    ("C5", "x", 37, "Side Stick"),
+    ("A4", "normal", 43, "Floor Tom"),
+    ("D5", "normal", 47, "Low-Mid Tom"),
+    ("E5", "normal", 50, "High Tom"),
+    ("G5", "x", 42, "Closed Hi-Hat"),
+    ("D4", "x", 44, "Pedal Hi-Hat"),
+    ("G5", "circle-x", 46, "Open Hi-Hat"),
+    ("A5", "x", 49, "Crash Cymbal"),
+    ("F5", "x", 51, "Ride Cymbal"),
+    ("F5", "diamond", 53, "Ride Bell"),
+    ("B5", "x", 54, "Tambourine"),
+];
+const DRUM_CHANNEL: i64 = 10;
+
+fn drum_sound(pos: &str, head: &str) -> (i64, &'static str) {
+    let hit = DRUM_SOUNDS.iter().find(|d| d.0 == pos && d.1 == head).unwrap_or(&DRUM_SOUNDS[12]);
+    (hit.2, hit.3)
+}
+
+fn attr_of<'a>(e: &'a X, k: &str) -> Option<&'a str> {
+    e.attrs.iter().find(|(n, _)| n == k).map(|(_, v)| v.as_str())
+}
+
+fn child_text(e: &X, tag: &str) -> Option<String> {
+    e.children.iter().find(|c| c.name == tag).map(|c| c.text.clone().unwrap_or_default())
+}
+
+fn has_descendant(e: &X, tag: &str) -> bool {
+    e.children.iter().any(|c| c.name == tag || has_descendant(c, tag))
+}
+
+/// Every drum note gets `<instrument id>`; returns the GM notes used with their names.
+fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
+    for c in e.children.iter_mut() {
+        if c.name == "note" {
+            if let Some(u) = c.children.iter().find(|x| x.name == "unpitched") {
+                let pos = format!("{}{}", child_text(u, "display-step").unwrap_or_else(|| "None".into()), child_text(u, "display-octave").unwrap_or_else(|| "None".into()));
+                let head = child_text(c, "notehead").filter(|h| !h.is_empty()).unwrap_or_else(|| "normal".into());
+                let (gm, label) = drum_sound(&pos, &head);
+                match used.iter_mut().find(|(g, _)| *g == gm) {
+                    Some(x) => x.1 = label,
+                    None => used.push((gm, label)),
+                }
+                // Schema order: ..., duration, tie*, instrument, voice, type, ...
+                let after = c.children.iter().rposition(|x| ["unpitched", "duration", "tie", "chord", "grace", "cue"].contains(&x.name.as_str()));
+                let at = after.map(|i| i + 1).unwrap_or(0);
+                c.children.insert(at, X::new("instrument").attr("id", format!("{base}-{gm}")));
+            }
+        }
+        tag_drum_notes(c, base, used);
+    }
+}
+
+/// Pitched parts: their preset's <midi-bank> and a channel of their own in
+/// score order, skipping the drum channel; past 15 parts the channels continue
+/// on MIDI port 2. Percussion: one score-instrument per drum sound used, on
+/// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
+/// every note.
+fn band_midi(root: &mut X) {
+    let banks: Vec<(&'static str, i64)> = crate::instruments::brass_band().parts.iter().filter_map(|p| p.midi_bank.map(|b| (p.name, b))).collect();
+    let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
+    let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
+    let mut k = 0usize;
+    for si in 0..root.children[pl].children.len() {
+        if root.children[pl].children[si].name != "score-part" {
+            continue;
+        }
+        let pid = attr_of(&root.children[pl].children[si], "id").unwrap_or("").to_string();
+        let part_idx = root.children.iter().position(|c| c.name == "part" && attr_of(c, "id") == Some(pid.as_str()));
+        if let Some(pi) = part_idx.filter(|&pi| has_descendant(&root.children[pi], "unpitched")) {
+            let sp = &root.children[pl].children[si];
+            let base = sp.children.iter().find(|c| c.name == "score-instrument").and_then(|c| attr_of(c, "id")).unwrap_or("").to_string();
+            let mut used = Vec::new();
+            tag_drum_notes(&mut root.children[pi], &base, &mut used);
+            used.sort_by_key(|u| u.0);
+            let sp = &mut root.children[pl].children[si];
+            sp.children.retain(|c| !["score-instrument", "midi-instrument", "midi-device"].contains(&c.name.as_str()));
+            for (gm, label) in &used {
+                sp.push(X::new("score-instrument").attr("id", format!("{base}-{gm}")).child(X::text("instrument-name", *label)).child(X::text("instrument-sound", "drum.group.set")));
+            }
+            for (gm, _) in &used {
+                sp.push(
+                    X::new("midi-instrument")
+                        .attr("id", format!("{base}-{gm}"))
+                        .child(X::text("midi-channel", DRUM_CHANNEL.to_string()))
+                        .child(X::text("midi-unpitched", (gm + 1).to_string())),
+                );
+            }
+            continue;
+        }
+        let sp = &mut root.children[pl].children[si];
+        let name = child_text(sp, "part-name").unwrap_or_default().trim().to_string();
+        let Some(mi) = sp.children.iter().position(|c| c.name == "midi-instrument") else { continue };
+        let (port, channel) = (k / channels.len(), k % channels.len());
+        k += 1;
+        let mi_id = attr_of(&sp.children[mi], "id").unwrap_or("").to_string();
+        {
+            let m = &mut sp.children[mi];
+            match m.children.iter().position(|c| c.name == "midi-channel") {
+                Some(ci) => m.children[ci].text = Some(channels[channel].to_string()),
+                None => m.children.insert(0, X::text("midi-channel", channels[channel].to_string())),
+            }
+            if let Some((_, bank)) = banks.iter().find(|(n, _)| *n == name) {
+                if !m.children.iter().any(|c| c.name == "midi-bank") {
+                    let after = m.children.iter().rposition(|c| c.name == "midi-channel" || c.name == "midi-name");
+                    m.children.insert(after.map(|i| i + 1).unwrap_or(0), X::text("midi-bank", bank.to_string()));
+                }
+            }
+        }
+        if port > 0 {
+            sp.children.insert(mi, X::new("midi-device").attr("id", mi_id).attr("port", (port + 1).to_string()));
+        }
+    }
+}

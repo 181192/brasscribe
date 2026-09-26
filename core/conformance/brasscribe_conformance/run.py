@@ -29,7 +29,7 @@ from .cases import REPO, Case, all_cases, synth_layers
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
            "bench": ["composition.json", "brass-band.musicxml"], "lead": ["lead.musicxml"], "quant": ["quant.json"]}
-IGNORED = {".pdf", ".mp3", ".mid", ".wav"}
+IGNORED = {".pdf", ".mp3", ".mid", ".wav", ".brf"}
 
 
 def rust_bin() -> Path:
@@ -42,7 +42,8 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
     b = str(binary)
     if case.kind == "layers":
         return [b, "arrange-layers", "--layers", str(a["layers"]), "--beats", str(a["beats"]), "--out", str(out),
-                "--title", a["title"], *(["--solo-contour", str(a["contour"])] if "contour" in a else [])]
+                "--title", a["title"], *(["--solo-contour", str(a["contour"])] if "contour" in a else []),
+                *a.get("options", [])]
     if case.kind == "song":
         return [b, "arrange-song", "--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support",
                 str(a["support"]), "--bass", str(a["bass"]), "--harmony", *map(str, a["harmony"]), "--out", str(out),
@@ -98,6 +99,9 @@ def compare(ref_dir: Path, rs_dir: Path, names: list[str]) -> list[tuple[str, bo
         elif name.endswith(".json"):
             same, byte_same, detail = json_equal(a, b)
             rows.append((name, same, detail or ("" if byte_same else "(parsed equal, bytes differ)")))
+        elif name.endswith((".txt", ".html")):
+            same = a.read_bytes() == b.read_bytes()
+            rows.append((name, same, "" if same else "text differs"))
         else:
             same, detail = musicxml_equal(a, b)
             rows.append((name, same, detail))
@@ -170,7 +174,12 @@ def main() -> None:
             if not args.no_extras:
                 rows += extras.talking_rows(binary, py, py, rs) + extras.humanize_rows(binary, py, py, rs)
         if case.golden is not None and p.returncode == 0:
-            gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists()]
+            # The engine's accessible exports: the talking score is ported (written here from the Rust score),
+            # braille (music21's translator) is not.
+            subprocess.run([str(binary), "talking-score", "--musicxml", str(rs / "brass-band.musicxml"), "--composition",
+                            str(rs / "composition.json"), "--json-utf8", str(rs / "talking-score.json"),
+                            "--html", str(rs / "talking-score.html"), "--text", str(rs / "talking-score.txt")], check=True)
+            gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists() and not n.endswith(".brf")]
             rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
         ok = all(r[1] for r in rows)
         entry = {"case": case.id, "ok": ok, "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
