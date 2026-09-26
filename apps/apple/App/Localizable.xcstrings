@@ -31,6 +31,16 @@
         }
       }
     },
+    "%lld to download (%lld MB)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld må lastes ned (%lld MB)"
+          }
+        }
+      }
+    },
     "%lld uncertain notes": {
       "localizations": {
         "nb": {
@@ -391,6 +401,16 @@
         }
       }
     },
+    "Download models": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ned modellene"
+          }
+        }
+      }
+    },
     "Easier": {
       "localizations": {
         "nb": {
@@ -701,6 +721,36 @@
         }
       }
     },
+    "Model download address": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse for nedlasting av modeller"
+          }
+        }
+      }
+    },
+    "Models": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modeller"
+          }
+        }
+      }
+    },
+    "Models ready.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellene er klare."
+          }
+        }
+      }
+    },
     "MusicXML (score and parts)": {
       "localizations": {
         "nb": {
@@ -801,6 +851,16 @@
         }
       }
     },
+    "On this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På denne enheten"
+          }
+        }
+      }
+    },
     "One instrument": {
       "localizations": {
         "nb": {
@@ -857,6 +917,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Original / partitur: O"
+          }
+        }
+      }
+    },
+    "Original key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaltoneart"
           }
         }
       }
@@ -951,12 +1021,32 @@
         }
       }
     },
+    "Picture in picture": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilde i bilde"
+          }
+        }
+      }
+    },
     "Pitch": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Tonehøyde"
+          }
+        }
+      }
+    },
+    "Pitch and beat models (about 40 MB) are downloaded once and not included in the app.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellene for tonehøyde og puls (omtrent 40 MB) lastes ned én gang og følger ikke med appen."
           }
         }
       }
@@ -1101,6 +1191,16 @@
         }
       }
     },
+    "Ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar"
+          }
+        }
+      }
+    },
     "Record": {
       "localizations": {
         "nb": {
@@ -1187,6 +1287,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tar opp …"
+          }
+        }
+      }
+    },
+    "Remove downloaded models": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern nedlastede modeller"
           }
         }
       }
@@ -1321,6 +1431,16 @@
         }
       }
     },
+    "Solos are transcribed on this device. Other recordings go to your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soloer transkriberes på denne enheten. Andre opptak sendes til datamaskinen din."
+          }
+        }
+      }
+    },
     "Sound": {
       "localizations": {
         "nb": {
@@ -1391,6 +1511,16 @@
         }
       }
     },
+    "Stop picture in picture": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp bilde i bilde"
+          }
+        }
+      }
+    },
     "Switch between the score and the original recording at the same place.": {
       "localizations": {
         "nb": {
@@ -1451,16 +1581,6 @@
         }
       }
     },
-    "The small band is arranged on this device. Difficulty is noted but not applied yet.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lite korps arrangeres på denne enheten. Vanskelighetsgraden blir notert, men ikke brukt ennå."
-          }
-        }
-      }
-    },
     "This decides how the music is taken apart. Brasscribe never guesses.": {
       "localizations": {
         "nb": {
@@ -1497,6 +1617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transkriber"
+          }
+        }
+      }
+    },
+    "Transcribe solos on this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transkriber soloer på denne enheten"
           }
         }
       }
@@ -1631,6 +1761,16 @@
         }
       }
     },
+    "Your computer arranges the score with these choices.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen din arrangerer partituret med disse valgene."
+          }
+        }
+      }
+    },
     "Your scores appear here.": {
       "localizations": {
         "nb": {
@@ -1671,6 +1811,16 @@
         }
       }
     },
+    "available": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tilgjengelig"
+          }
+        }
+      }
+    },
     "from %lld": {
       "localizations": {
         "nb": {
@@ -1681,12 +1831,32 @@
         }
       }
     },
+    "this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "denne enheten"
+          }
+        }
+      }
+    },
     "to %lld": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "til %lld"
+          }
+        }
+      }
+    },
+    "unavailable": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ikke tilgjengelig"
           }
         }
       }

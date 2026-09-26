@@ -142,6 +142,28 @@ final class PlayUITests: XCTestCase {
         add(shot)
     }
 
+    /// The synced video uses the system player, which offers picture in picture.
+    func testVideoOffersPictureInPicture() throws {
+        let video = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "runs/apple/mikkel-20s.mp4")
+        guard FileManager.default.fileExists(atPath: video.path) else { throw XCTSkip("needs data/runs/apple/mikkel-20s.mp4") }
+        app.terminate()
+        app.launchEnvironment["BRASSCRIBE_VIDEO"] = video.path
+        app.launch()
+        let pip = app.buttons["pipButton"]
+        XCTAssertTrue(pip.waitForExistence(timeout: 30), "picture-in-picture control")
+        let available = NSPredicate { _, _ in pip.isEnabled }
+        wait(for: [XCTNSPredicateExpectation(predicate: available, object: nil)], timeout: 15)
+        pip.tap()
+        let started = app.buttons["Stop picture in picture"].waitForExistence(timeout: 10)
+        print("PIP available \(pip.isEnabled), started \(started)")
+        XCTAssertTrue(started)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "video-pip-control"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     func testNextBarAndLoopWithoutDragging() throws {
         let next = app.buttons["nextBar"]
         XCTAssertTrue(next.waitForExistence(timeout: 30))
