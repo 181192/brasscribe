@@ -5,3 +5,6 @@ data/
 *.wav
 .DS_Store
 .pixi/
+
+# GitHub Pages build output (site/build.sh)
+site/_site/
