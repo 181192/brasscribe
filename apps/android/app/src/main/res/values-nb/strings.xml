@@ -396,4 +396,14 @@
     <string name="export_scope_conductor">Dirigentpartitur</string>
     <string name="export_whole_score_only">%1$s · hele partituret</string>
     <string name="export_made_before_change">Laget før endringene dine. Brasscribe på datamaskinen lager den på nytt.</string>
+    <string name="review_your_part_first">Sjekk stemmen din først</string>
+    <string name="review_accompaniment">Akkompagnement (%1$d)</string>
+    <plurals name="review_your_part_count">
+        <item quantity="one">%1$d tone i %2$s.</item>
+        <item quantity="other">%1$d toner i %2$s.</item>
+    </plurals>
+    <plurals name="review_very_first">
+        <item quantity="one">Den %d svært usikre kommer først.</item>
+        <item quantity="other">De %d svært usikre kommer først.</item>
+    </plurals>
 </resources>

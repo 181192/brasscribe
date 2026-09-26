@@ -395,7 +395,17 @@
     <string name="export_scope_my_part">%1$s (you)</string>
     <string name="export_scope_every_part">Every part</string>
     <string name="export_scope_every_part_tip">One PDF per player.</string>
-    <string name="export_scope_conductor">Conductor's score</string>
+    <string name="export_scope_conductor">Conductor\'s score</string>
     <string name="export_whole_score_only">%1$s · the whole score</string>
     <string name="export_made_before_change">Made before your changes. Brasscribe on your computer makes it again.</string>
+    <string name="review_your_part_first">Check your part first</string>
+    <string name="review_accompaniment">Accompaniment (%1$d)</string>
+    <plurals name="review_your_part_count">
+        <item quantity="one">%1$d note in %2$s.</item>
+        <item quantity="other">%1$d notes in %2$s.</item>
+    </plurals>
+    <plurals name="review_very_first">
+        <item quantity="one">The %d very unsure one comes first.</item>
+        <item quantity="other">The %d very unsure ones come first.</item>
+    </plurals>
 </resources>

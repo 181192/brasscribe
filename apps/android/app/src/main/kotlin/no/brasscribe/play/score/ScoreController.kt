@@ -404,22 +404,7 @@ class ScoreController(
      * then blanks the small text marks so alphaTab keeps their band and the overlay draws them.
      */
     private fun collectMarks(s: Score) {
-        val found = HashMap<alphaTab.model.Beat, Boolean>()
-        val adLib = HashSet<Int>()
-        for (t in 0 until s.tracks.length.toInt()) for (st in s.tracks[t].staves) {
-            var free = false
-            for (bar in st.bars) {
-                for (voice in bar.voices) for (beat in voice.beats) {
-                    when (beat.text?.trim()?.lowercase()) {
-                        "?" -> { found[beat] = false; beat.text = MARK_SPACE }
-                        BOXED_QUESTION -> { found[beat] = true; beat.text = MARK_SPACE }
-                        "ad lib.", "ad lib", "ad. lib." -> free = true
-                        "a tempo" -> free = false
-                    }
-                }
-                if (free) adLib += bar.index.toInt()
-            }
-        }
+        val (found, adLib) = no.brasscribe.play.score.collectMarks(s)
         marks = found
         overlay.marks = found
         tints.adLibBars = adLib
@@ -446,25 +431,7 @@ class ScoreController(
         return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
     }
 
-    /** Colours each marked note (head, stem, flags, accidentals) and its mark: uncertain or very uncertain. */
-    private fun colourUncertainty(s: Score) {
-        val p = palette ?: return
-        val uncertain = p.uncertain.toAlphaTabColor()
-        val very = p.veryUncertain.toAlphaTabColor()
-        for (t in 0 until s.tracks.length.toInt()) for (st in s.tracks[t].staves) for (bar in st.bars) for (voice in bar.voices) {
-            for (beat in voice.beats) {
-                val colour = when (marks[beat]) { false -> uncertain; true -> very; null -> null } ?: continue
-                beat.style = BeatStyle().apply {
-                    for (e in listOf(BeatSubElement.Effects, BeatSubElement.StandardNotationEffects, BeatSubElement.StandardNotationStem,
-                        BeatSubElement.StandardNotationFlags)) colors.set(e, colour)
-                }
-                for (n in beat.notes) n.style = NoteStyle().apply {
-                    for (e in listOf(NoteSubElement.StandardNotationNoteHead, NoteSubElement.StandardNotationAccidentals,
-                        NoteSubElement.StandardNotationEffects)) colors.set(e, colour)
-                }
-            }
-        }
-    }
+    private fun colourUncertainty(s: Score) = colourMarks(s, marks, palette)
 
     /**
      * Realistic tier on: every pitched part plays an SFZ instrument through sfizz on its own channel
@@ -524,9 +491,9 @@ data class ScorePalette(
     val loopTint: Int, val highContrast: Boolean, val adlibTint: Int = loopTint,
 )
 
-private const val BOXED_QUESTION = "\u2370"
+internal const val BOXED_QUESTION = "\u2370"
 /** Blank text in place of a mark: alphaTab still reserves the text band above the note. */
-private const val MARK_SPACE = "\u2003\u2003"
+internal const val MARK_SPACE = "\u2003\u2003"
 private val VERY_UNCERTAIN_WORDS = Regex("""<words\b[^>]*enclosure="rectangle"[^>]*>\?</words>""")
 
 /** A colour with [alpha] that, drawn over [paper], gives [tint]. */
