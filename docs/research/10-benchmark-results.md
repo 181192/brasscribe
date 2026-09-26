@@ -2,7 +2,9 @@
 
 ## Reproducing these numbers
 
-Run from `eval/` with `uv run python -W ignore -m <module> ...`. Eval sets live in `data/eval/`; they are built by `brasscribe_eval.choralebricks`, `.urmp` and `.slakh` from the downloaded datasets.
+**Regression suites.** `pixi run brasscribe bench <suite>` (or `all`, or `ci` for the subset that gates in CI) runs every benchmark below from cached model outputs and gates against `eval/baselines.json` (±0.01 F1 unless a metric says otherwise). `eval/README.md` lists which suites gate in CI and which need local data.
+
+Individual benchmarks run from `eval/` with `uv run python -W ignore -m <module> ...`. Eval sets live in `data/eval/`; they are built by `brasscribe_eval.choralebricks`, `.urmp` and `.slakh` from the downloaded datasets.
 
 **From committed commands:**
 
@@ -174,7 +176,8 @@ Corrected results (100 ms):
 |---|---|---|---|
 | Reference beats (from alignments), original penalties | 0.89 | 0.89 | 0.76 |
 | Reference beats, penalties ×20 (adopted) | **0.99** | 0.99 | 0.88 |
-| Beat This!, penalties ×20 | ~0.45 | **0.92** | 0.76 |
+| Beat This!, penalties ×20 (9 chorales, without Drese) | 0.46 | **0.92** | 0.76 |
+| Beat This!, penalties ×20 (all 10; current baseline) | 0.49 | 0.93 | 0.77 |
 
 **Findings:**
 - With the adopted penalties, remaining quantizer errors are mostly note lengths. Offsets depend on legato vs detached playing; per-voice "hold until next onset" belongs in the voice-separation stage.
@@ -253,8 +256,10 @@ Corrected results (100 ms):
 | Variant | URMP brass | Chorales |
 |---|---|---|
 | Performed length, snapped | 0.58 | 0.85 |
-| **Fill gaps ≤ 8th** (adopted) | **0.61** | **0.88** |
+| **Fill gaps ≤ 8th** (earlier rule) | **0.61** | **0.88** |
 | Fill gaps ≤ beat | 0.61 | 0.88 |
+
+These figures came from an uncommitted script. The committed `duration_bench` (whole ensemble quantized together, ±1 tick, weighted by note count) gives 0.631 / 0.911 for the same rule; see "Durations from audio" below for the current rule.
 
 - The dominant remaining error on URMP is 899 notes where the score has an 8th plus an 8th rest and we write a quarter (staccato themes in Surprise and Slavonic).
 - That is a notation choice audio cannot settle. It should become staccato marks when the performed length is under half the written one.
@@ -358,6 +363,67 @@ Visible limits:
 
 **Separation failures:** two chorales (Gesius *Du Friedensfürst*, Jan) fail for every model (F1 ≤ 0.35). Mega-53 did not isolate the trumpet there, and no vote can recover missing audio.
 
+## Free time (rubato)
+
+`music/src/brasscribe_music/freetime.py`; benchmark `brasscribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`.
+- Detection: runs of ≥ 3 beat intervals and ≥ 4 s that match neither the piece's beat nor its double, half or split, with spread ≥ 0.2 of the mean interval.
+- Fires on 1 of 18 eval pieces (Air on the G String, 169.6–181.1 s, a ritardando into a 4.5 s hold). Strict-passage position / subdivision / duration change by 0.000 on every piece (mean 0.474 / 0.886 / 0.627 in both runs).
+- Mikkel: 0.03–29.76 s detected, notated as 7 bars *ad lib.* at ♩≈57. Solo Cornet 16ths in the intro fall from 30.8% to 5.6% (`qa/tools/musicxml_readability.py --range`).
+- Open: the region-tempo rule (median melody gap = half note, clamped 40–100 BPM) is tuned on Mikkel only.
+
+## Durations from audio
+
+`music/src/brasscribe_music/durations.py`; benchmark `brasscribe_eval.duration_bench <eval_dir> [--contours <dir>]`.
+
+| Offsets | URMP: fill ≤ 8th → new rule | Chorales: fill ≤ 8th → new rule |
+|---|---|---|
+| Annotated | 0.631 → **0.654** | 0.911 → **0.929** |
+| SwiftF0 contour of each part | 0.629 → 0.647 | 0.907 → 0.908 |
+
+- Contour offsets land within 100 ms of the annotation for 91% (URMP) / 84% (chorales) of notes.
+- Staccato fires 17–22 times on URMP, and 15–16 of those are where the score wrote a shorter value instead of a staccato mark. Unvalidated: no articulation ground truth.
+- Open: both thresholds were chosen on the data they are scored on; a held-out set is needed.
+
+## Bar-line cleanup
+
+`beats.clean_beats_gated`; benchmark `brasscribe_eval.barline_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`. The cleanup is applied only when the tracker's own downbeat labels agree better afterwards (by ≥ 0.02), or on one-beat-per-bar tracks with ≥ 3 edits.
+
+| Beats | Position | Subdivision | Duration | Drift events |
+|---|---|---|---|---|
+| Raw | 0.470 | 0.885 | 0.627 | 268 |
+| Gated cleanup | 0.519 | 0.905 | 0.654 | 139 |
+
+Changed pieces all improve (Entertainer position 0.48 → 0.90, Air 0.07 → 0.31, Arioso 0.23 → 0.45); the other 15 are identical. Thresholds are tuned on this data.
+
+## Difficulty modes and lineups
+
+`music/src/brasscribe_music/difficulty.py`; benchmark `brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass --mikkel ../data/golden/mikkel-arranged-band/composition.json`. Faithful at default options stays identical to the golden output.
+
+| Mikkel, full band | Solo / other 16ths | Uncomfortable | Harmony fidelity | Melody kept | Contour | Key changes |
+|---|---|---|---|---|---|---|
+| faithful | 38.8 / 3.1% | 27 | 0.834 | 1.0 | 1.0 | 8 |
+| standard | 16.1 / 1.7% | 0 | 0.792 | 0.79 | 0.775 | 8 |
+| easier | 8.6 / 0% | 0 | 0.793 | 0.742 | 0.717 | 4 |
+
+URMP: uncomfortable 1.0 / 0 / 0, harmony fidelity 0.971 / 0.958 / 0.958. Separating reading ranges from playable ranges took URMP uncomfortable notes from 3.8 to 1.0 (current baseline).
+Open: large transpositions put the basses on ledger lines (E♭ Bass with 3+ ledger lines: 6.0% at +5 semitones, 7.7% at −5; limit 5%).
+
+## Readability (Mikkel)
+
+`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json`. Old golden → current golden, Solo Cornet: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5% → 6.4%; 16ths 40.2% → 38.4%. Whole score: dynamics 0 → 201, rehearsal marks 0 → 11, key changes 0 → 8.
+
+## Rust core conformance
+
+`cd core/conformance && uv run python -m brasscribe_conformance.run --musescore`: 102/102 cases and 1442/1442 files identical to the Python reference (golden Mikkel, option variants, 20 eval songs, arranger and quantize benches), talking score 50/50 vectors in en and nb, humanization 3762/3762 runs byte-identical, MuseScore round trip 84/84. Speed: Mikkel layers arrangement 7.2 s (Python) vs 0.28 s (Rust). The Python reference is exact only on macOS arm64 with NumPy 2.5.3 (argsort tie order, FMA in `interp`).
+
+## On-device model parity
+
+See `convert/README.md` (regenerate with `python3 convert/summarize.py`; reports in `convert/reports/`). Gate: note F1 ≥ 0.98 against the reference framework's output.
+
+## Realistic sound
+
+`sounds/` (see `sounds/README.md`). Spectral centroid per part in harmonics against held-out ChoraleBricks references: the realistic tier is closer than MS Basic on 16/16 parts. Blind A/B material for 5 listeners × 5 excerpts, plain and room-matched, is in `data/runs/sound/ab-test{,-room}/`. The listening test has not been run.
+
 ## Capture check
 
 - The `capture/` process tap was verified with a loopback test: a 10 s 440 Hz sine played via `afplay` was captured as 10.000 s at 440.0 Hz.
@@ -365,6 +431,4 @@ Visible limits:
 
 ## Next
 
-- Consensus of MuScriptor medium and Basic Pitch on brass4.
-- Separated-stem pipeline (B) on brass4.
-- A melody reference for Mikkel.
+See `docs/plan/apps-plan.md` §8 for the engine backlog.
