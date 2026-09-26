@@ -51,15 +51,16 @@
                                 <ComboBoxItem x:Uid="LineupFull" />
                                 <ComboBoxItem x:Uid="LineupMinimal" />
                             </ComboBox>
-                            <ComboBox x:Uid="DifficultyBox" SelectedIndex="0" IsEnabled="{x:Bind Output.DifficultyAvailable}">
+                            <ComboBox x:Name="DifficultyBox" x:Uid="DifficultyBox" SelectedIndex="0" SelectionChanged="OnDifficultyChanged"
+                                      IsEnabled="{x:Bind Output.DifficultyAvailable, Mode=OneWay}">
                                 <ComboBoxItem x:Uid="DifficultyFaithful" />
                                 <ComboBoxItem x:Uid="DifficultyStandard" />
                                 <ComboBoxItem x:Uid="DifficultyEasier" />
                             </ComboBox>
-                            <ComboBox x:Uid="KeyBox" SelectedIndex="0" IsEnabled="{x:Bind Output.KeyAvailable}">
-                                <ComboBoxItem x:Uid="KeyOriginal" />
-                            </ComboBox>
-                            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Output.UnavailableText}" />
+                            <!-- Filled from OutputOptionsViewModel.Keys with localised key names. -->
+                            <ComboBox x:Name="KeyBox" x:Uid="KeyBox" SelectionChanged="OnKeyChanged"
+                                      IsEnabled="{x:Bind Output.KeyAvailable, Mode=OneWay}" />
+                            <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Output.UnavailableText, Mode=OneWay}" />
                             <Button x:Uid="ApplyOutputButton" Style="{StaticResource ActionButtonStyle}" Click="OnApplyOutput" />
                             <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind Output.StatusText, Mode=OneWay}" />
                         </StackPanel>

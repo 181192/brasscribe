@@ -213,9 +213,6 @@
   <data name="Export_Format_TalkingScoreText" xml:space="preserve">
     <value>Talende note, ren tekst</value>
   </data>
-  <data name="Export_Reason_BrailleMissing" xml:space="preserve">
-    <value>Eksport til punktskrift finnes ikke ennå: motoren lager ikke BRF-filer.</value>
-  </data>
   <data name="Export_Reason_NeedsEngine" xml:space="preserve">
     <value>Krever motoren som laget dette partituret.</value>
   </data>
@@ -262,10 +259,34 @@
     <value>Importer lyd eller video</value>
   </data>
   <data name="KeyBox.Header" xml:space="preserve">
-    <value>Toneart</value>
+    <value>Toneart (klingende)</value>
   </data>
-  <data name="KeyOriginal.Content" xml:space="preserve">
+  <data name="Key_Ab" xml:space="preserve">
+    <value>Ass-dur</value>
+  </data>
+  <data name="Key_AsRecorded" xml:space="preserve">
     <value>Som i opptaket</value>
+  </data>
+  <data name="Key_Bb" xml:space="preserve">
+    <value>B-dur</value>
+  </data>
+  <data name="Key_C" xml:space="preserve">
+    <value>C-dur</value>
+  </data>
+  <data name="Key_D" xml:space="preserve">
+    <value>D-dur</value>
+  </data>
+  <data name="Key_Db" xml:space="preserve">
+    <value>Dess-dur</value>
+  </data>
+  <data name="Key_Eb" xml:space="preserve">
+    <value>Ess-dur</value>
+  </data>
+  <data name="Key_F" xml:space="preserve">
+    <value>F-dur</value>
+  </data>
+  <data name="Key_G" xml:space="preserve">
+    <value>G-dur</value>
   </data>
   <data name="KindHeading.Text" xml:space="preserve">
     <value>Hva er dette?</value>
@@ -387,11 +408,14 @@
   <data name="Output_NeedsCore" xml:space="preserve">
     <value>Arrangering på denne PC-en krever Brasscribe-kjernebiblioteket, som ikke er installert.</value>
   </data>
-  <data name="Output_NotYet" xml:space="preserve">
-    <value>Valg av vanskegrad og toneart finnes ikke ennå.</value>
+  <data name="Output_NeedsEngine" xml:space="preserve">
+    <value>Vanskegrad og toneart settes av transkripsjonsmotoren; åpne et partitur den har laget for å endre dem.</value>
   </data>
   <data name="Output_Ready" xml:space="preserve">
     <value>Arrangementet er klart</value>
+  </data>
+  <data name="Output_Rearranging" xml:space="preserve">
+    <value>Arrangerer på nytt med de nye valgene</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Paringskode</value>
@@ -854,6 +878,9 @@
   </data>
   <data name="Transcribe_ProgressAnnouncement" xml:space="preserve">
     <value>{0} prosent. {1}. {2}</value>
+  </data>
+  <data name="Transcribe_Rearranging" xml:space="preserve">
+    <value>Arrangerer på nytt med de nye valgene</value>
   </data>
   <data name="Transcribe_Stage_Arrange" xml:space="preserve">
     <value>Arrangerer for brassband</value>

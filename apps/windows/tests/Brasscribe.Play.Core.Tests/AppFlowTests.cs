@@ -152,11 +152,55 @@ public class AppFlowTests
         var pdf = main.Export.Formats.Single(f => f.Format == ExportFormat.Pdf);
         Assert.True(pdf.Available);
         var brf = main.Export.Formats.Single(f => f.Format == ExportFormat.Braille);
-        Assert.False(brf.Available);
-        Assert.StartsWith("Braille export is not available yet", brf.Reason);
+        Assert.True(brf.Available);
+        Assert.True(brf.NeedsPart);
 
         main.BackCommand.Execute(null);
         Assert.Equal(Screen.Start, main.Screen);
+    }
+
+    [Fact]
+    public async Task Output_choices_arrange_again_on_the_engine_without_a_new_upload()
+    {
+        var engine = Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n");
+        var (main, _) = Build(engine);
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        main.Kind.ContinueCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Score);
+        Assert.True(main.Output.HasEngineJob);
+        Assert.True(main.Output.DifficultyAvailable && main.Output.KeyAvailable);
+
+        int uploads = engine.Requests.Count(r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
+        main.Output.Lineup = Lineup.MinimalBand;
+        main.Output.Difficulty = Difficulty.Easier;
+        main.Output.KeyIndex = Array.IndexOf(OutputOptionsViewModel.Keys, "Eb");
+        main.Output.ApplyCommand.Execute(main.Score.Composition);
+        await Until(() => engine.Requests.Count(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs") == 2);
+        await Until(() => main.Screen == Screen.Score && !main.Transcription.IsRunning);
+
+        var second = engine.Requests.Last(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!;
+        Assert.Contains("\"audio_id\":\"a1\"", second);
+        Assert.Contains("\"lineup\":\"minimal\"", second);
+        Assert.Contains("\"difficulty\":\"easier\"", second);
+        Assert.Contains("\"key\":\"Eb\"", second);
+        Assert.Contains("\"profile\":\"brass-band\"", second);
+        Assert.Equal(uploads, engine.Requests.Count(r => r.Request.RequestUri!.AbsolutePath == "/v1/audio"));
+    }
+
+    [Fact]
+    public async Task Braille_of_a_part_comes_from_the_engine()
+    {
+        var handler = new FakeHandler((r, _) => r.RequestUri!.PathAndQuery == "/v1/jobs/j1/braille?part=2"
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("⠼⠁") }
+            : new HttpResponseMessage(HttpStatusCode.NotFound));
+        var engine = new EngineClient(new HttpClient(handler), new Uri("http://e:8765"));
+        var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"));
+        var sources = new ExportSources(xml, null, null, engine, "j1", []);
+        using var output = new MemoryStream();
+        await new ExportService().ExportAsync(ExportFormat.Braille, sources, output, 1, new());
+        Assert.Equal("⠼⠁", System.Text.Encoding.UTF8.GetString(output.ToArray()));
     }
 
     [Fact]

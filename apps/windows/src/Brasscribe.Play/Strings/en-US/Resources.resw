@@ -213,9 +213,6 @@
   <data name="Export_Format_TalkingScoreText" xml:space="preserve">
     <value>Talking score, plain text</value>
   </data>
-  <data name="Export_Reason_BrailleMissing" xml:space="preserve">
-    <value>Braille export is not available yet: the engine does not write BRF files.</value>
-  </data>
   <data name="Export_Reason_NeedsEngine" xml:space="preserve">
     <value>Needs the engine that made this score.</value>
   </data>
@@ -262,10 +259,34 @@
     <value>Import audio or video</value>
   </data>
   <data name="KeyBox.Header" xml:space="preserve">
-    <value>Key</value>
+    <value>Key (concert pitch)</value>
   </data>
-  <data name="KeyOriginal.Content" xml:space="preserve">
+  <data name="Key_Ab" xml:space="preserve">
+    <value>A♭ major</value>
+  </data>
+  <data name="Key_AsRecorded" xml:space="preserve">
     <value>As recorded</value>
+  </data>
+  <data name="Key_Bb" xml:space="preserve">
+    <value>B♭ major</value>
+  </data>
+  <data name="Key_C" xml:space="preserve">
+    <value>C major</value>
+  </data>
+  <data name="Key_D" xml:space="preserve">
+    <value>D major</value>
+  </data>
+  <data name="Key_Db" xml:space="preserve">
+    <value>D♭ major</value>
+  </data>
+  <data name="Key_Eb" xml:space="preserve">
+    <value>E♭ major</value>
+  </data>
+  <data name="Key_F" xml:space="preserve">
+    <value>F major</value>
+  </data>
+  <data name="Key_G" xml:space="preserve">
+    <value>G major</value>
   </data>
   <data name="KindHeading.Text" xml:space="preserve">
     <value>What is this?</value>
@@ -387,11 +408,14 @@
   <data name="Output_NeedsCore" xml:space="preserve">
     <value>Arranging on this PC needs the Brasscribe core library, which is not installed.</value>
   </data>
-  <data name="Output_NotYet" xml:space="preserve">
-    <value>Difficulty and key choices are not available yet.</value>
+  <data name="Output_NeedsEngine" xml:space="preserve">
+    <value>Difficulty and key are set by the transcription engine; open a score it made to change them.</value>
   </data>
   <data name="Output_Ready" xml:space="preserve">
     <value>Arrangement ready</value>
+  </data>
+  <data name="Output_Rearranging" xml:space="preserve">
+    <value>Arranging again with the new choices</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Pairing code</value>
@@ -854,6 +878,9 @@
   </data>
   <data name="Transcribe_ProgressAnnouncement" xml:space="preserve">
     <value>{0} percent. {1}. {2}</value>
+  </data>
+  <data name="Transcribe_Rearranging" xml:space="preserve">
+    <value>Arranging again with the new choices</value>
   </data>
   <data name="Transcribe_Stage_Arrange" xml:space="preserve">
     <value>Arranging for brass band</value>

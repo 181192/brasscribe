@@ -68,7 +68,9 @@ public class BandSoundFontTests(ITestOutputHelper log)
         var banked = TestPaths.RepoFile(BankedScore);
         if (sf2 is null || golden is null || banked is null) return;
         var bytes = File.ReadAllBytes(sf2);
-        var plain = SoloLevels(bytes, File.ReadAllBytes(golden));
+        // The golden score now carries <midi-bank> itself, so "plain" is the golden with the banks removed.
+        var withoutBanks = System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(golden), @"<midi-bank>\d+</midi-bank>", "");
+        var plain = SoloLevels(bytes, System.Text.Encoding.UTF8.GetBytes(withoutBanks));
         var withBanks = SoloLevels(bytes, File.ReadAllBytes(banked));
         Report("with midi-bank", withBanks);
         Assert.Empty(withBanks.Where(l => l.HasNotes && !l.Percussion && l.Rms < 1e-4).Select(l => l.Track));

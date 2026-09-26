@@ -34,6 +34,7 @@ public sealed partial class ScoreScreen : UserControl
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
         Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
+        Loaded += (_, _) => FillKeyBox();
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
     }
 
@@ -282,4 +283,22 @@ public sealed partial class ScoreScreen : UserControl
     }
 
     private void OnApplyOutput(object sender, RoutedEventArgs e) => Output.ApplyCommand.Execute(ViewModel.Composition);
+
+    private void OnDifficultyChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (Output is not null) Output.Difficulty = (Difficulty)Math.Max(0, DifficultyBox.SelectedIndex);
+    }
+
+    private void OnKeyChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (Output is not null && KeyBox.SelectedIndex >= 0) Output.KeyIndex = KeyBox.SelectedIndex;
+    }
+
+    private void FillKeyBox()
+    {
+        if (KeyBox.Items.Count > 0) return;
+        foreach (var key in OutputOptionsViewModel.Keys)
+            KeyBox.Items.Add(new ComboBoxItem { Content = App.Strings[key is null ? "Key_AsRecorded" : $"Key_{key}"] });
+        KeyBox.SelectedIndex = 0;
+    }
 }
