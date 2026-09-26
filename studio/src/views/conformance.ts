@@ -91,12 +91,22 @@ function fmtTime(v: string | number): string {
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(locale());
 }
 
+const RUN_CMD = "cd core/conformance && uv run python -m brasscribe_conformance.run";
+
 function render(reports: ConformanceReport[]): HTMLElement[] {
   const summaries = reports.filter(isSummary);
+  if (!reports.length) {
+    const retry = h("button", { type: "button", class: "ghost", onclick: () => window.dispatchEvent(new CustomEvent("studio:retry")) }, t("err.retry"));
+    const [before, after] = t("conf.noneBody").split("{cmd}");
+    return [h("div", { class: "empty", role: "note" },
+      h("p", {}, h("strong", {}, t("conf.none"))),
+      h("p", {}, before, h("code", {}, RUN_CMD), after),
+      h("p", {}, retry))];
+  }
   if (summaries.length) {
     return [
       ...summaries.map(summaryView),
-      h("p", { class: "hint" }, t("conf.regen"), h("code", {}, "cd core/conformance && uv run python -m brasscribe_conformance.run"), t("conf.regen2"), h("code", {}, "--musescore"), t("conf.regen3")),
+      h("p", { class: "hint" }, t("conf.regen"), h("code", {}, RUN_CMD), t("conf.regen2"), h("code", {}, "--musescore"), t("conf.regen3")),
     ];
   }
   return pairsView(reports);

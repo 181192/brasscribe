@@ -187,5 +187,10 @@ translateChrome();
 shortcutsDialog();
 engineStatus();
 globalKeys();
+// "Try again" in an error notice shows the current view again.
+window.addEventListener("studio:retry", () => {
+  void engineStatus();
+  route(true);
+});
 window.addEventListener("hashchange", () => route());
 route(true);

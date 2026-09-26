@@ -1,5 +1,5 @@
 // Small DOM helpers shared by the views.
-import { ApiError, MissingEndpoint } from "../api/client";
+import { ApiError, MissingEndpoint, TimedOut, Unreachable } from "../api/client";
 import { locale, t } from "../i18n";
 import { icon } from "./icons";
 
@@ -45,15 +45,58 @@ export function announce(message: string): void {
   setTimeout(() => (region.textContent = message), 30);
 }
 
-/** The state shown in place of a view (or a panel) whose data could not be loaded. */
-export function errorNotice(err: unknown): HTMLElement {
-  if (err instanceof MissingEndpoint) {
-    return h("div", { class: "notice notice-missing", role: "note" },
-      h("strong", {}, `${t("common.notAvailable")} `),
-      ...t("common.needsEndpoint", { endpoint: "\u0000" }).split("\u0000").flatMap((s, i) => (i ? [h("code", {}, err.endpoint), s] : [s])));
+/** Show text with `{code}`-style placeholders filled by elements (commands, endpoint names). */
+function withCode(text: string, parts: Record<string, string>): Child[] {
+  const out: Child[] = [];
+  for (const piece of text.split(/(\{\w+\})/)) {
+    const m = piece.match(/^\{(\w+)\}$/);
+    out.push(m && m[1] in parts ? h("code", {}, parts[m[1]]) : piece);
   }
-  const msg = err instanceof ApiError ? `${err.status}: ${err.message}` : err instanceof Error ? err.message : String(err);
-  return h("div", { class: "notice notice-error", role: "alert" }, h("strong", {}, `${t("common.couldNotLoad")} `), msg);
+  return out;
+}
+
+export interface NoticeOptions {
+  /** What "Try again" does; by default the current view is shown again. */
+  retry?: () => void;
+}
+
+/**
+ * The state shown in place of a view (or a panel) whose data could not be
+ * loaded: what happened, why (in words), and the way forward, with a
+ * Try again button. Never a bare browser message such as "Failed to fetch".
+ */
+export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement {
+  let title: string;
+  let body: Child[];
+  let cls = "notice notice-error";
+  let role = "alert";
+  if (err instanceof Unreachable) {
+    title = t("err.unreachable");
+    body = withCode(t("err.unreachableBody"), { serve: "brasscribe serve", studio: "brasscribe studio" });
+  } else if (err instanceof TimedOut) {
+    title = t("err.timeout");
+    body = [t("err.timeoutBody", { s: err.seconds })];
+  } else if (err instanceof MissingEndpoint) {
+    title = t("err.missing");
+    body = withCode(t("err.missingBody"), { endpoint: err.endpoint });
+    cls = "notice notice-missing";
+    role = "note";
+  } else if (err instanceof ApiError && err.status >= 500) {
+    title = t("err.server");
+    body = [t("err.serverBody", { status: err.status }), err.message ? h("span", { class: "mono small detail" }, err.message) : null];
+  } else if (err instanceof ApiError) {
+    title = err.status === 404 ? t("err.notFound") : t("err.refused");
+    body = [err.message];
+  } else {
+    title = t("err.other");
+    body = [err instanceof Error ? err.message : String(err)];
+  }
+  const retry = h("button", { type: "button", class: "ghost" }, t("err.retry"));
+  retry.addEventListener("click", () => (opts.retry ? opts.retry() : window.dispatchEvent(new CustomEvent("studio:retry"))));
+  return h("div", { class: cls, role },
+    h("p", { class: "notice-title" }, h("strong", {}, title)),
+    h("p", {}, ...body),
+    h("p", {}, retry));
 }
 
 export function loading(label?: string): HTMLElement {
@@ -68,7 +111,7 @@ export async function panel<T>(el: Element, load: () => Promise<T>, render: (v: 
     clear(el, render(v));
     return v;
   } catch (e) {
-    clear(el, errorNotice(e));
+    clear(el, errorNotice(e, { retry: () => void panel(el, load, render) }));
     return undefined;
   }
 }

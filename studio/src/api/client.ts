@@ -19,6 +19,28 @@ export class ApiError extends Error {
   }
 }
 
+/** The browser could not reach the engine at all (not running, or the connection dropped). */
+export class Unreachable extends Error {}
+
+/** The engine did not answer in time. */
+export class TimedOut extends Error {
+  constructor(readonly seconds: number) {
+    super(`no answer within ${seconds} s`);
+  }
+}
+
+/** Default time to wait for an answer; long reads (audio, scores) pass their own. */
+const TIMEOUT_S = 60;
+
+async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_S): Promise<Response> {
+  try {
+    return await fetch(url(path), { ...init, signal: AbortSignal.timeout(timeoutS * 1000) });
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) throw new TimedOut(timeoutS);
+    throw new Unreachable(e instanceof Error ? e.message : String(e));
+  }
+}
+
 let base = "";
 export function setBase(url: string): void {
   base = url.replace(/\/$/, "");
@@ -43,8 +65,8 @@ async function fail(r: Response, endpoint: string): Promise<never> {
   throw new ApiError(r.status, msg);
 }
 
-async function get<T>(path: string, endpoint = path): Promise<T> {
-  const r = await fetch(url(path), { headers: { Accept: "application/json" } });
+async function get<T>(path: string, endpoint = path, timeoutS = TIMEOUT_S): Promise<T> {
+  const r = await request(path, { headers: { Accept: "application/json" } }, timeoutS);
   if (!r.ok) return fail(r, endpoint);
   return (await r.json()) as T;
 }
@@ -56,19 +78,20 @@ async function send<T>(method: string, path: string, body?: unknown, endpoint = 
     init.body = JSON.stringify(body);
     init.headers = { ...init.headers, "Content-Type": "application/json" };
   }
-  const r = await fetch(url(path), init);
+  // Sends may start long work (a benchmark suite, MuseScore); give them longer.
+  const r = await request(path, init, 600);
   if (!r.ok) return fail(r, endpoint);
   return (await r.json()) as T;
 }
 
 export async function fetchBytes(path: string, endpoint = path): Promise<ArrayBuffer> {
-  const r = await fetch(url(path));
+  const r = await request(path, {}, 300);
   if (!r.ok) return fail(r, endpoint);
   return r.arrayBuffer();
 }
 
 export async function fetchText(path: string, endpoint = path): Promise<string> {
-  const r = await fetch(url(path));
+  const r = await request(path, {}, 120);
   if (!r.ok) return fail(r, endpoint);
   return r.text();
 }
@@ -90,7 +113,7 @@ export const api = {
   cancel: (id: string) => send<Job>("DELETE", `/v1/jobs/${enc(id)}`),
   /** Remove a finished run's files (the artifact cache is kept). */
   deleteRun: async (id: string): Promise<void> => {
-    const r = await fetch(url(`/v1/runs/${enc(id)}`), { method: "DELETE" });
+    const r = await request(`/v1/runs/${enc(id)}`, { method: "DELETE" });
     if (!r.ok) await fail(r, "DELETE /v1/runs/{id}");
   },
   uploadAndRun: (file: File, profile: string, title?: string) => {
@@ -132,7 +155,8 @@ export const api = {
   adapters: () => get<AdapterInfo[]>("/v1/registry/adapters", "GET /v1/registry/adapters"),
   datasets: () => get<DatasetInfo[]>("/v1/registry/datasets", "GET /v1/registry/datasets"),
   parity: () => get<ParityReport[]>("/v1/parity", "GET /v1/parity"),
-  conformance: () => get<ConformanceReport[]>("/v1/conformance", "GET /v1/conformance"),
+  // The summary report only: the full dump of every case's files is far too large for a page.
+  conformance: () => get<ConformanceReport[]>("/v1/conformance", "GET /v1/conformance", 20),
   sources: () => get<Source[]>("/v1/sources", "GET /v1/sources"),
 };
 

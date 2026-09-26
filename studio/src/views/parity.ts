@@ -12,7 +12,7 @@ export function parityView(root: HTMLElement): void {
   clear(root, h("h1", {}, t("nav.parity")),
     h("p", {}, t("parity.intro")),
     el);
-  api.parity().then((reports) => clear(el, reports.length ? reports.map(report) : h("p", {}, t("parity.none")))).catch((e) => clear(el, errorNotice(e)));
+  api.parity().then((reports) => clear(el, reports.length ? reports.map(report) : h("div", { class: "empty", role: "note" }, h("p", {}, h("strong", {}, t("parity.none"))), h("p", { class: "hint" }, t("parity.noneBody"))))).catch((e) => clear(el, errorNotice(e)));
 }
 
 function report(r: ParityReport): HTMLElement {
