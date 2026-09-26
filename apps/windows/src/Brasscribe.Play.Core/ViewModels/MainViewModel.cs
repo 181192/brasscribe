@@ -1,3 +1,4 @@
+using Brasscribe.Play.Core.Arrangement;
 using Brasscribe.Play.Core.Bridge;
 using Brasscribe.Play.Core.Engine;
 using Brasscribe.Play.Core.Export;
@@ -61,6 +62,10 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _result = r;
             Output.HasEngineJob = r.AudioId is not null;
+            Output.Title = r.Composition.Title;
+            Output.LayerSource = r.JobId is { Length: > 0 } jobId && LayerCacheRoot is { } cache
+                ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
+                : null;
             Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
             Score.Load(r.MusicXml, r.Composition);
             Screen = Screen.Score;
@@ -70,6 +75,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (e.PropertyName == nameof(TranscriptionViewModel.IsRunning)) BackCommand.NotifyCanExecuteChanged();
         };
         Output.Arranged += (_, xml) => Score.Load(xml, Score.Composition);
+        Output.ArrangedBand += (_, band) => Score.Load(band.MusicXml, core.ParseComposition(band.CompositionJson));
         Output.RearrangeRequested += async (_, options) =>
         {
             if (_result is not { } previous) return;
@@ -97,6 +103,9 @@ public sealed partial class MainViewModel : ObservableObject
     public SettingsViewModel Settings { get; }
     public ICoreBridge Core { get; }
 
+    /// <summary>Folder for layer inputs fetched from engine jobs (on-device re-arrangement); null disables it.</summary>
+    public string? LayerCacheRoot { get; set; }
+
     public IEngineClient Engine => _engine ??= _engineFactory(Settings.EngineUri, Settings.EngineToken);
 
     [ObservableProperty]
@@ -113,6 +122,7 @@ public sealed partial class MainViewModel : ObservableObject
             string xml = File.ReadAllText(path);
             _result = null;
             Output.HasEngineJob = false;
+            Output.LayerSource = null;
             Score.Load(xml, null);
             Screen = Screen.Score;
         }

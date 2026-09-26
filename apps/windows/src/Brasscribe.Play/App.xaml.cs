@@ -77,7 +77,10 @@ public partial class App : Application
             new ExportViewModel(new ExportService(), dialogs, announcer, Strings),
             new OutputOptionsViewModel(core, announcer, Strings),
             settingsVm,
-            EngineFactory, announcer, Strings, core);
+            EngineFactory, announcer, Strings, core)
+        {
+            LayerCacheRoot = System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "layers"),
+        };
 
         _window = new MainWindow(main, Strings);
         _window.Closed += (_, _) =>

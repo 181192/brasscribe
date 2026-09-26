@@ -64,6 +64,13 @@ public static class JobStatus
 
 public sealed record Artifact(string Name, long Bytes, string MediaType, string Url);
 
+/// <summary>One output file of a stage.</summary>
+public sealed record FileRef(string Name, long Bytes, string MediaType, string Url, string? Sha256 = null);
+
+/// <summary>A stage of a run with its output files (stems, layers, MIDI, beats, Composition, MusicXML …).</summary>
+public sealed record StageArtifacts(string Stage, string Status, IReadOnlyList<FileRef> Files, string? Kind = null,
+    string? Key = null, string? Device = null, double? Seconds = null);
+
 public sealed record ProfileInfo(string Name, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
 
 public sealed record PairRequest(string Code, string? DeviceName = null);
@@ -93,6 +100,7 @@ public sealed record JobEvent(
 [JsonSerializable(typeof(List<Job>))]
 [JsonSerializable(typeof(List<Artifact>))]
 [JsonSerializable(typeof(List<ProfileInfo>))]
+[JsonSerializable(typeof(List<StageArtifacts>))]
 [JsonSerializable(typeof(PairRequest))]
 [JsonSerializable(typeof(PairResponse))]
 [JsonSerializable(typeof(JobEvent))]

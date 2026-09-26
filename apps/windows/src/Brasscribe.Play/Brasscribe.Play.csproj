@@ -56,4 +56,17 @@
     <Content Include="..\..\..\..\models\converted\swift-f0\*.onnx" Link="Models\%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\..\..\models\converted\swift-f0')" />
   </ItemGroup>
+
+  <!-- The Rust core (brasscribe_ffi.dll) goes next to the exe, where NativeCoreBridge loads it; without
+       it the app runs on the managed fallback. Pass -p:BrasscribeFfiDll=path to pick a build, otherwise
+       the first of: cargo's MSVC host build, the explicit MSVC target build, core/dist/windows. -->
+  <PropertyGroup>
+    <CoreDir>$(MSBuildThisFileDirectory)..\..\..\..\core\</CoreDir>
+    <BrasscribeFfiDll Condition="'$(BrasscribeFfiDll)' == '' And Exists('$(CoreDir)target\release\brasscribe_ffi.dll')">$(CoreDir)target\release\brasscribe_ffi.dll</BrasscribeFfiDll>
+    <BrasscribeFfiDll Condition="'$(BrasscribeFfiDll)' == '' And Exists('$(CoreDir)target\x86_64-pc-windows-msvc\release\brasscribe_ffi.dll')">$(CoreDir)target\x86_64-pc-windows-msvc\release\brasscribe_ffi.dll</BrasscribeFfiDll>
+    <BrasscribeFfiDll Condition="'$(BrasscribeFfiDll)' == '' And Exists('$(CoreDir)dist\windows\brasscribe_ffi.dll')">$(CoreDir)dist\windows\brasscribe_ffi.dll</BrasscribeFfiDll>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BrasscribeFfiDll)' != '' And Exists('$(BrasscribeFfiDll)')">
+    <Content Include="$(BrasscribeFfiDll)" Link="brasscribe_ffi.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -1,3 +1,6 @@
+using Brasscribe.Play.Core.Arrangement;
+using Brasscribe.Play.Core.Engine;
+using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.TalkingScore;
 
@@ -24,6 +27,15 @@ public interface ICoreBridge
 
     /// <summary>Arranges a Composition to brass-band MusicXML on the device, or null when this core cannot.</summary>
     string? ArrangeMusicXml(Composition composition, string arranger = "auto");
+
+    /// <summary>
+    /// Arranges a score from the layered pipeline's stage files (layer MIDI, stems, beats, solo contour)
+    /// with a lineup, difficulty and key, or null when this core cannot.
+    /// </summary>
+    BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options);
+
+    /// <summary>Humanized timing and velocity for one player's notes, or null when this core has no humanizer.</summary>
+    HumanizedPart? Humanize(IReadOnlyList<HumanizeNote> notes, string part, int player, string? compositionJson);
 }
 
 public sealed class ManagedCoreBridge : ICoreBridge
@@ -41,6 +53,11 @@ public sealed class ManagedCoreBridge : ICoreBridge
 
     /// <summary>Arranging needs the Rust core or the engine; the managed bridge has no arranger.</summary>
     public string? ArrangeMusicXml(Composition composition, string arranger = "auto") => null;
+
+    public BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options) => null;
+
+    /// <summary>Without the core, playback keeps the score's exact timing.</summary>
+    public HumanizedPart? Humanize(IReadOnlyList<HumanizeNote> notes, string part, int player, string? compositionJson) => null;
 }
 
 public static class CoreBridge
