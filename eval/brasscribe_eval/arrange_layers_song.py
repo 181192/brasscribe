@@ -24,7 +24,9 @@ from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
 from brasscribe_music.beats import clean_beats_gated
-from brasscribe_music.keys import key_plan
+from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
+from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
+from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.parts import STYLE as PART_STYLE
@@ -87,6 +89,12 @@ def main() -> None:
     ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
     ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
     ap.add_argument("--single-key", action="store_true", help="one key signature for the whole piece")
+    ap.add_argument("--lineup", choices=["band", "full", "minimal"], default="band",
+                    help="band (= full): the 18-part contest band; minimal: the 8-part minimal band")
+    ap.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
+    tr = ap.add_mutually_exclusive_group()
+    tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
+    tr.add_argument("--transpose", type=int, help="transpose the whole arrangement by N semitones")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
     args = ap.parse_args()
     L = args.layers
@@ -198,7 +206,9 @@ def main() -> None:
     comp.keys = [KeySig(0, fifths)]
     if not args.single_key:
         # Key changes where the music modulates (a change must pay for itself over several bars).
-        comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass).keys
+        penalty = KEY_CHANGE_PENALTY[args.difficulty]
+        comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass,
+                             **({"penalty": penalty} if penalty else {})).keys
     # Dynamics per layer from its own loudness, per bar.
     bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
     bm = BeatMap(np.array(comp.beat_times))
@@ -218,9 +228,17 @@ def main() -> None:
         starts = section_starts(bar_features(list(envs.values()), bars), [r.end // bar_ticks for r in comp.free_regions])
         comp.sections = [Section(b * bar_ticks, lab) for b, lab in zip(starts, letters(len(starts)))]
         print("rehearsal marks at bars", [(s.label, s.tick // bar_ticks + 1) for s in comp.sections])
+    # Arrangement options: lineup, difficulty, transposition to a concert key.
+    shift = args.transpose if args.transpose is not None else semitones_to(comp.keys[0], args.key) if args.key else 0
+    if shift:
+        comp = comp.transposed(shift)
+        print(f"transposed {shift:+d} semitones; first key now {comp.keys[0].fifths} fifths {comp.keys[0].mode}")
+    lineup = "band" if args.lineup in ("band", "full") else args.lineup
+    if lineup != "band" or args.difficulty != "faithful" or shift:
+        comp.arrangement = {"lineup": lineup, "difficulty": args.difficulty, "transpose_semitones": shift}
     comp.to_json(args.out / "composition.json")
 
-    arr = arrange_layers(comp)
+    arr = arrange_layers(comp, BRASS_BAND if lineup == "band" else MINIMAL_BAND, difficulty=args.difficulty)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     if not args.no_render:
         musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
