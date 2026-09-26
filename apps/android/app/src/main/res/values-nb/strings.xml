@@ -181,6 +181,8 @@
         <item quantity="one">%d stemme spiller et installert instrument.</item>
         <item quantity="other">%d stemmer spiller installerte instrumenter.</item>
     </plurals>
+    <string name="sound_humanized">Spilles med menneskelig timing og dynamikk.</string>
+    <string name="sound_band_soundfont">Brassbandlyder (bandets lydfont).</string>
     <string name="action_next_bar">Neste takt</string>
     <string name="action_prev_bar">Forrige takt</string>
     <string name="action_next_part">Neste stemme</string>

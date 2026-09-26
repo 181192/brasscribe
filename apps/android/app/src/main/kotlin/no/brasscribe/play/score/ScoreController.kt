@@ -44,6 +44,12 @@ data class ScoreUiState(
     val keyShift: Int = 0,
     /** Parts playing a real instrument from the sound pack in the realistic tier. */
     val soundPackParts: Int = 0,
+    /** The realistic tier plays humanized notes (the Rust core). */
+    val humanized: Boolean = false,
+    /** The band SoundFont replaced alphaTab's built-in one. */
+    val bandSoundFont: Boolean = false,
+    /** MIDI channel of each part as the synth plays it (index 9 = channel 10, drums). */
+    val channels: List<Int> = emptyList(),
 )
 
 /**
@@ -52,8 +58,23 @@ data class ScoreUiState(
  * and the realistic sfizz tier, which takes over the note events while alphaTab's own instruments are
  * silenced (the metronome and count-in stay on alphaTab).
  */
-class ScoreController(context: Context, reducedMotion: Boolean) {
+class ScoreController(
+    context: Context,
+    reducedMotion: Boolean,
+    private val core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge,
+    /** Band SoundFont part map (sounds/mapping.json); null keeps alphaTab's General MIDI programs. */
+    private val soundMap: BandSoundMap? = null,
+    /** brasscribe-band.sf2 when installed; alphaTab keeps its built-in SoundFont otherwise. */
+    private val bandSoundFont: java.io.File? = null,
+    /** The Composition the score came from, for humanization. */
+    private val compositionJson: String? = null,
+) {
     val view: AlphaTabView = AlphaTabView(context, null)
+    private var channels = IntArray(0)
+    private var percussion: List<Boolean> = emptyList()
+    private var gains = DoubleArray(0)
+    private val humanized = HumanizedPlayer(core)
+    private var humanizedReady = false
     private val _state = MutableStateFlow(ScoreUiState())
     val state: StateFlow<ScoreUiState> = _state
     private var score: Score? = null
@@ -71,17 +92,28 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
         view.api.updateSettings()
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         view.api.playerStateChanged.on { e ->
-            _state.value = _state.value.copy(playing = e.state == PlayerState.Playing)
-            if (e.state != PlayerState.Playing) RealisticSynth.allOff()
+            val playing = e.state == PlayerState.Playing
+            _state.value = _state.value.copy(playing = playing)
+            if (_state.value.realistic && humanizedReady) {
+                if (playing) humanized.start(::channelAudible) else humanized.stop()
+            } else if (!playing) RealisticSynth.allOff()
         }
+        view.api.playerPositionChanged.on { e ->
+            if (_state.value.realistic && humanizedReady) humanized.position(humanized.secondsAt(e.currentTick), view.api.playbackSpeed)
+        }
+        // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
+        // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
+        view.api.postRenderFinished.on { applyVolumes() }
+
         view.api.playedBeatChanged.on { beat -> _state.value = _state.value.copy(bar = beat.voice.bar.index.toInt() + 1) }
         view.api.error.on { e -> _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName) }
         view.api.midiEventsPlayed.on { e ->
-            if (!_state.value.realistic) return@on
+            // Without humanization (no core) the realistic tier follows alphaTab's own note events.
+            if (!_state.value.realistic || humanizedReady) return@on
             for (ev in e.events) {
                 when (ev) {
-                    is NoteOnEvent -> if (channelAudible(ev.channel.toInt())) RealisticSynth.noteOn(ev.channel.toInt() % 16, ev.noteKey.toInt(), ev.noteVelocity.toInt())
-                    is NoteOffEvent -> RealisticSynth.noteOff(ev.channel.toInt() % 16, ev.noteKey.toInt())
+                    is NoteOnEvent -> if (ev.channel.toInt() != ChannelPlan.DRUMS && channelAudible(ev.channel.toInt())) RealisticSynth.noteOn(ev.channel.toInt(), ev.noteKey.toInt(), ev.noteVelocity.toInt())
+                    is NoteOffEvent -> RealisticSynth.noteOff(ev.channel.toInt(), ev.noteKey.toInt())
                 }
             }
         }
@@ -98,6 +130,8 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
                 s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace(' ', ' ').trim()
             }
             val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
+            prepareSound(s, names)
+            loadBandSoundFont()
             _state.value = _state.value.copy(
                 loaded = true, error = null, title = s.title, parts = names,
                 shown = shown, totalBars = s.masterBars.length.toInt(),
@@ -105,6 +139,72 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
             render()
         } catch (e: Throwable) {
             _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName)
+        }
+    }
+
+    /**
+     * One MIDI channel per part (drums on channel 10), the band SoundFont preset (program, bank) per
+     * part, and its balance as channel gain. The MusicXML importer turns <midi-instrument> into
+     * per-beat instrument and bank changes that would override the preset, so those are removed.
+     */
+    private fun prepareSound(s: Score, names: List<String>) {
+        percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
+        channels = ChannelPlan.forPlayback(percussion)
+        gains = DoubleArray(names.size) { 1.0 }
+        for (i in names.indices) {
+            val t = s.tracks[i]
+            t.playbackInfo.primaryChannel = channels[i].toDouble()
+            t.playbackInfo.secondaryChannel = channels[i].toDouble()
+            val sound = soundMap?.forPart(names[i]) ?: continue
+            t.playbackInfo.program = if (sound.percussion) 0.0 else sound.program.toDouble()
+            t.playbackInfo.bank = if (sound.percussion) 0.0 else sound.bank.toDouble()
+            gains[i] = sound.gain
+            for (staff in t.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) {
+                val keep = ArrayList<alphaTab.model.Automation>()
+                for (a in beat.automations) if (a.type != alphaTab.model.AutomationType.Instrument && a.type != alphaTab.model.AutomationType.Bank) keep += a
+                if (keep.size != beat.automations.length.toInt()) beat.automations = alphaTab.collections.List(*keep.toTypedArray())
+            }
+        }
+        _state.value = _state.value.copy(channels = channels.toList())
+    }
+
+    private var soundFontRequested = false
+
+    /** Replaces alphaTab's built-in SoundFont with the band SoundFont (read off the UI thread). */
+    private fun loadBandSoundFont() {
+        val sf = bandSoundFont?.takeIf { it.isFile } ?: return
+        if (soundFontRequested) return
+        soundFontRequested = true
+        Thread({
+            val t0 = System.nanoTime()
+            val bytes = runCatching { sf.readBytes() }.getOrElse {
+                android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it); return@Thread
+            }
+            fun attempt(tries: Int) {
+                // api.loadSoundFont(ByteArray) returns false on Android (AndroidUiFacade's `when` compares the
+                // value, not the type), so the synth gets the bytes directly.
+                val player = view.api.player
+                val ok = player != null && runCatching {
+                    player.soundFontLoaded.on {
+                        _state.value = _state.value.copy(bandSoundFont = true)
+                        android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB) loaded by alphaTab in %d ms"
+                            .format(sf.name, bytes.size shr 20, (System.nanoTime() - t0) / 1_000_000))
+                    }
+                    player.loadSoundFont(Uint8Array(bytes.asUByteArray()), false); true
+                }.getOrDefault(false)
+                if (!ok) if (tries > 0) view.postDelayed({ attempt(tries - 1) }, 200)
+                else android.util.Log.w("BrasscribePlay", "alphaTab player not ready for the band SoundFont")
+            }
+            view.post { attempt(50) }
+        }, "band-soundfont").start()
+    }
+
+    /** Applies each part's balance (and mutes alphaTab's pitched parts while sfizz plays them). */
+    private fun applyVolumes() {
+        val s = score ?: return
+        for (i in 0 until s.tracks.length.toInt()) {
+            val silent = _state.value.realistic && !percussion.getOrElse(i) { false }
+            view.api.changeTrackVolume(alphaTab.collections.List(s.tracks[i]), if (silent) 0.0 else gains.getOrElse(i) { 1.0 })
         }
     }
 
@@ -124,7 +224,11 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
         render()
     }
 
-    fun togglePlay() = view.api.playPause()
+    fun togglePlay() {
+        applyVolumes()
+        if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
+        view.api.playPause()
+    }
     fun stop() { view.api.stop(); RealisticSynth.allOff() }
 
     fun setSpeed(percent: Int) {
@@ -146,9 +250,7 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
     private fun channelAudible(channel: Int): Boolean {
         val s = score ?: return true
         val st = _state.value
-        val track = s.tracks.firstOrNull { it.playbackInfo.primaryChannel.toInt() == channel || it.playbackInfo.secondaryChannel.toInt() == channel }
-            ?: return true
-        val i = track.index.toInt()
+        val i = channels.indexOf(channel).takeIf { it >= 0 } ?: return s.tracks.length > 0
         return i !in st.muted && (st.soloed.isEmpty() || i in st.soloed)
     }
 
@@ -227,28 +329,40 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
         render()
     }
 
-    /** Realistic tier on: alphaTab's instruments go silent and their note events drive sfizz. */
+    /**
+     * Realistic tier on: every pitched part plays an SFZ instrument through sfizz on its own channel
+     * with its band balance, humanized by the core; alphaTab keeps the kit, metronome and count-in.
+     */
     fun setRealistic(on: Boolean): Boolean {
         val s = score ?: return false
         if (on && !RealisticSynth.start()) return false
         if (on) {
-            // Each part's MIDI channel gets its instrument from the installed pack, or a test tone.
             val pack = SoundPack(view.context)
             var installed = 0
             for (i in 0 until s.tracks.length.toInt()) {
-                val t = s.tracks[i]
-                val ch = t.playbackInfo.primaryChannel.toInt() % 16
-                if (RealisticSynth.regions(ch) > 0) continue
-                val sfz = pack.sfzFor(t.name.replace(' ', ' '))
-                if (sfz != null && RealisticSynth.load(ch, sfz)) installed++
+                if (percussion.getOrElse(i) { false }) continue
+                val ch = channels[i]
+                RealisticSynth.setGain(ch, gains.getOrElse(i) { 1.0 }.toFloat())
+                if (RealisticSynth.regions(ch) > 0) { installed++; continue }
+                val sfz = pack.sfzFor(s.tracks[i].name.replace('\u00A0', ' '))
+                if (sfz != null && RealisticSynth.load(ch, sfz)) installed++ else RealisticSynth.loadTestTone(ch)
             }
-            for (ch in 0 until 16) if (RealisticSynth.regions(ch) == 0) RealisticSynth.loadTestTone(ch)
-            _state.value = _state.value.copy(soundPackParts = installed)
+            val t0 = System.nanoTime()
+            val count = runCatching { humanized.prepare(s, channels, percussion, compositionJson) }
+                .onFailure { android.util.Log.w("BrasscribePlay", "humanization unavailable", it) }.getOrDefault(0)
+            humanizedReady = count > 0
+            android.util.Log.i("BrasscribePlay", "realistic tier: %d parts with installed instruments, %d humanized notes in %d ms, channels %s"
+                .format(installed, count, (System.nanoTime() - t0) / 1_000_000, channels.toList()))
+            view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn, MidiEventType.NoteOff)
+            _state.value = _state.value.copy(realistic = true, soundPackParts = installed, humanized = humanizedReady)
+            if (_state.value.playing && humanizedReady) humanized.start(::channelAudible)
+        } else {
+            humanized.stop()
+            view.api.midiEventsPlayedFilter = alphaTab.collections.List()
+            RealisticSynth.allOff(); RealisticSynth.stop()
+            _state.value = _state.value.copy(realistic = false, humanized = false)
         }
-        view.api.changeTrackVolume(s.tracks, if (on) 0.0 else 1.0)
-        view.api.midiEventsPlayedFilter = if (on) alphaTab.collections.List(MidiEventType.NoteOn, MidiEventType.NoteOff) else alphaTab.collections.List()
-        if (!on) { RealisticSynth.allOff(); RealisticSynth.stop() }
-        _state.value = _state.value.copy(realistic = on)
+        applyVolumes()
         return true
     }
 
@@ -261,6 +375,7 @@ class ScoreController(context: Context, reducedMotion: Boolean) {
     }
 
     fun release() {
+        humanized.release()
         RealisticSynth.allOff()
         runCatching { view.api.stop() }
     }

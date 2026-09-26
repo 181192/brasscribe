@@ -63,7 +63,10 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
 
     override fun arrangeSolo(take: SoloTake, options: ArrangeOptions): Arranged {
         val sw = MidiWriter.write(take.swiftF0)
-        val layers = LayerMidi(sw, MidiWriter.EMPTY, MidiWriter.write(take.basicPitch), MidiWriter.EMPTY, MidiWriter.EMPTY, MidiWriter.EMPTY)
+        val bp = MidiWriter.write(take.basicPitch, tpq = MidiWriter.BASIC_PITCH_TPQ)
+        // The layered arranger with only a solo layer: SwiftF0 spine, Basic Pitch confirming in the
+        // MuScriptor slot too (the phone has no MuScriptor), as the other apps and the reference do.
+        val layers = LayerMidi(sw, bp, bp, MidiWriter.EMPTY, MidiWriter.EMPTY, MidiWriter.EMPTY)
         val opts = layersSongDefaults().apply {
             soloContour = take.contour?.let { SoloContour(it.timesS, it.pitchHz, it.loudnessDb) }
             lineup = if (options.lineup == "minimal") "minimal" else "band"

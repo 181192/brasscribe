@@ -92,10 +92,14 @@ kotlin {
  * - fixtures/: the golden Mikkel output, debug builds only, for the built-in sample engine.
  */
 val modelAssets = tasks.register<Sync>("syncModelAssets") {
-    from(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }
-    from(File(repoRoot, "models/converted/basic-pitch")) { include("nmp-b1.onnx") }
-    from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
-    into(layout.buildDirectory.dir("generated/brasscribe/models/models"))
+    into(layout.buildDirectory.dir("generated/brasscribe/models"))
+    into("models") {
+        from(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }
+        from(File(repoRoot, "models/converted/basic-pitch")) { include("nmp-b1.onnx") }
+        from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
+    }
+    // The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
+    into("sounds") { from(File(repoRoot, "sounds")) { include("mapping.json") } }
     filePermissions { user { read = true; write = true } }
 }
 val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {

@@ -11,6 +11,12 @@ import java.io.File
 class SoundPack(context: Context) {
     val dir: File = File(context.getExternalFilesDir(null), "sounds")
 
+    init {
+        // The app creates the folders itself: files copied in with adb or a file manager are readable
+        // by the app only inside folders it owns.
+        INSTRUMENTS.forEach { File(dir, "$it/samples").mkdirs() }
+    }
+
     /** The sustain SFZ for a brass-band part name, if that instrument is installed. */
     fun sfzFor(partName: String): File? {
         val n = partName.lowercase()
@@ -28,5 +34,10 @@ class SoundPack(context: Context) {
             else -> return null
         }
         return File(dir, "$instrument/$instrument-sus.sfz").takeIf { it.isFile }
+    }
+
+    companion object {
+        val INSTRUMENTS = listOf("soprano-cornet", "cornet-a", "flugelhorn", "tenor-horn", "baritone", "euphonium",
+            "trombone", "bass-trombone", "eb-bass", "bb-bass")
     }
 }

@@ -6,13 +6,17 @@ import kotlin.math.max
 
 /**
  * Standard MIDI files of timed notes, the form the core's layer arranger reads (like the engine's
- * transcriber outputs): format 0, 120 bpm, 480 ticks per beat, so one second is 960 ticks.
+ * transcriber outputs): format 0 at 120 bpm. [tpq] sets the time resolution, so a file can be
+ * quantized exactly like the adapter it stands in for: SwiftF0's export_to_midi writes 480 ticks
+ * per beat (960 per second), Basic Pitch writes through pretty_midi at 220 (440 per second).
  */
 object MidiWriter {
-    private const val TPQ = 480
-    private const val TICKS_PER_SECOND = 960.0
+    const val SWIFTF0_TPQ = 480
+    const val BASIC_PITCH_TPQ = 220
 
-    fun write(notes: List<TimedNote>, velocity: Int = 80): ByteArray {
+    fun write(notes: List<TimedNote>, velocity: Int = 80, tpq: Int = SWIFTF0_TPQ): ByteArray {
+        val TPQ = tpq
+        val TICKS_PER_SECOND = tpq * 2.0
         data class Ev(val tick: Long, val on: Boolean, val pitch: Int, val vel: Int)
         val evs = notes.flatMap { n ->
             val a = floor(n.onsetS * TICKS_PER_SECOND + 0.5).toLong()

@@ -57,6 +57,11 @@ class EngineSettings(context: Context) {
 class AppContainer(private val context: Context) {
     val settings = EngineSettings(context)
 
+    init {
+        // Sound pack folders exist from the first start, so instruments can be copied into them.
+        runCatching { no.brasscribe.play.score.SoundPack(context) }
+    }
+
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
     val core: CoreBridge = RustCoreBridge.load() ?: KotlinCoreBridge
 
@@ -105,6 +110,20 @@ class AppContainer(private val context: Context) {
         val bp = asset(BASIC_PITCH_ASSET)?.let { BasicPitch(it) }
         val bt = asset(BEAT_THIS_ASSET)?.let { BeatThis(it) }
         return OpenPipeline(SoloPipeline(sw, bp, bt, core), listOfNotNull(sw, bp, bt))
+    }
+
+    /** Band SoundFont presets and balance per part (assets/sounds/mapping.json). */
+    val bandSoundMap: no.brasscribe.play.score.BandSoundMap? by lazy {
+        asset("sounds/mapping.json")?.let { runCatching { no.brasscribe.play.score.BandSoundMap.parse(String(it)) }.getOrNull() }
+    }
+
+    /**
+     * brasscribe-band.sf2 (sounds/band.py; 16-bit 149 MB or 24-bit 223 MB) copied to the app's external
+     * files under sounds/. Not bundled: it is a separate download like the other sound packs.
+     */
+    fun bandSoundFont(): java.io.File? = context.getExternalFilesDir(null)?.resolve("sounds")?.also { it.mkdirs() }?.let { d ->
+        listOf("brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2").map { d.resolve(it) }.firstOrNull { it.isFile }
+            .also { android.util.Log.i("BrasscribePlay", "band SoundFont in $d: ${it?.name ?: "none"}") }
     }
 
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"

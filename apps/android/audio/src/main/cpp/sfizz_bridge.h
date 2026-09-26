@@ -13,6 +13,10 @@ bool loadString(int channel, const std::string& sfz, const std::string& virtualP
 int regions(int channel);
 void noteOn(int channel, int note, int velocity);
 void noteOff(int channel, int note);
+// Note on (velocity > 0) or off (0) [delaySeconds] after the current output position, sample-accurate.
+void noteAt(int channel, int note, int velocity, double delaySeconds);
+// Output position (seconds of audio rendered).
+double positionSeconds();
 void allOff();
 void setGain(int channel, float gain);
 // Renders frames offline into interleaved stereo (used by tests and for exporting audio).

@@ -11,6 +11,8 @@ bool loadString(int, const std::string&, const std::string&) { return false; }
 int regions(int) { return 0; }
 void noteOn(int, int, int) {}
 void noteOff(int, int) {}
+void noteAt(int, int, int, double) {}
+double positionSeconds() { return 0; }
 void allOff() {}
 void setGain(int, float) {}
 int renderOffline(float*, int) { return 0; }

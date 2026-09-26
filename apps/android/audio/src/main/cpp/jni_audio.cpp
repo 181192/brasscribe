@@ -57,6 +57,8 @@ JNIEXPORT jboolean JNICALL FN(sfizzLoadString)(JNIEnv* env, jobject, jint channe
 JNIEXPORT jint JNICALL FN(sfizzRegions)(JNIEnv*, jobject, jint channel) { return sfizz_bridge::regions(channel); }
 JNIEXPORT void JNICALL FN(sfizzNoteOn)(JNIEnv*, jobject, jint ch, jint note, jint vel) { sfizz_bridge::noteOn(ch, note, vel); }
 JNIEXPORT void JNICALL FN(sfizzNoteOff)(JNIEnv*, jobject, jint ch, jint note) { sfizz_bridge::noteOff(ch, note); }
+JNIEXPORT void JNICALL FN(sfizzNoteAt)(JNIEnv*, jobject, jint ch, jint note, jint vel, jdouble delay) { sfizz_bridge::noteAt(ch, note, vel, delay); }
+JNIEXPORT jdouble JNICALL FN(sfizzPosition)(JNIEnv*, jobject) { return sfizz_bridge::positionSeconds(); }
 JNIEXPORT void JNICALL FN(sfizzAllOff)(JNIEnv*, jobject) { sfizz_bridge::allOff(); }
 JNIEXPORT void JNICALL FN(sfizzSetGain)(JNIEnv*, jobject, jint ch, jfloat gain) { sfizz_bridge::setGain(ch, gain); }
 JNIEXPORT jint JNICALL FN(sfizzActiveVoices)(JNIEnv*, jobject) { return sfizz_bridge::activeVoices(); }
