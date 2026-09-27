@@ -66,8 +66,8 @@ The Playback menu lists the same keys.
   own flag (the red colour in the MusicXML) is kept too.
 - **Bundled band sounds.** Each app bundle carries the band SoundFont in `Sounds/`, staged per platform
   by `scripts/stage-band-sounds.sh` (run by `make project`) from `data/sounds/band`: the Mac gets
-  `brasscribe-band-16bit.sf2` (195 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (77 MB, since the
-  sampler keeps the samples in memory). `BandSounds.bandFiles` looks for the same file first on each
+  `brasscribe-band-16bit.sf2` (195 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (77 MB: smaller, for
+  phone memory and download size). `BandSounds.bandFiles` looks for the same file first on each
   platform. The iOS Release app is 96 MB with the phone build, against 209 MB with the 16-bit one. Without
   the files (`pixi run fetch-sounds` was not run) the app builds, plays the basic tier and says the band
   sounds are missing. Release builds in CI fetch them first and stop if they cannot.

@@ -70,7 +70,7 @@ public enum BandSounds {
     static let log = Logger(subsystem: "no.brasscribe.play", category: "sound")
 
     /// The band SoundFont builds in the order this device prefers them. iPhone and iPad get the phone build
-    /// (77 MB, which the app bundles for iOS): the sampler holds the samples in memory there. The Mac gets the
+    /// (77 MB, which the app bundles for iOS): smaller, for phone memory and download size. The Mac gets the
     /// 16-bit build (195 MB), else the 24-bit master. Each falls back to the other so a checkout still plays.
     static func bandFiles(phone: Bool = BandSounds.isPhone) -> [String] {
         phone ? ["brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2"]

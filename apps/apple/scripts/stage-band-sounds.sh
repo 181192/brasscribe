@@ -2,7 +2,7 @@
 # Stage the band sounds for the app bundles: apps/apple/Sounds/<platform>/Sounds/ (not committed)
 # becomes each bundle's Sounds/ folder, where PlaybackKit looks for them first (BandSounds.locateBand).
 #   macOS  brasscribe-band-16bit.sf2  (195 MB; else the 24-bit brasscribe-band.sf2)
-#   iOS    brasscribe-band-mobile.sf2 (77 MB: phones and iPads hold the samples in memory)
+#   iOS    brasscribe-band-mobile.sf2 (77 MB: smaller, for phone memory and download size)
 #   both   mapping.json, seating.json from sounds/
 # The SoundFonts come from data/sounds/band (`pixi run fetch-sounds`, sounds/tools/band_sounds.py).
 # Run by `make bandsound` and by check-prereqs.sh before the project is generated. Without a
