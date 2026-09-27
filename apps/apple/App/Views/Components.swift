@@ -195,6 +195,9 @@ struct Segmented<Value: Hashable>: View {
     let label: String
     @Binding var selection: Value
     let options: [(value: Value, title: String)]
+    /// Fall back to one segment per row when the row doesn't fit. Off for short labels that
+    /// always fit (the fallback's measuring leaves an empty node for the audit to flag).
+    var wraps = true
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// At the largest text sizes the segments stack, one per row, so none wraps or squeezes.
@@ -203,6 +206,8 @@ struct Segmented<Value: Hashable>: View {
     var body: some View {
         if stacked {
             segments(vertical: true)
+        } else if !wraps {
+            segments(vertical: false)
         } else {
             ViewThatFits(in: .horizontal) {
                 segments(vertical: false)
@@ -362,7 +367,7 @@ struct UncertainMark: View {
     var body: some View {
         let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
         Text(verbatim: "?")
-            .font(.system(size: size, weight: .bold))
+            .font(.body.weight(.bold))   // Dynamic Type; the frame below scales with it
             .foregroundStyle(color)
             .frame(width: size * 1.1, height: size * 1.3)
             .overlay {

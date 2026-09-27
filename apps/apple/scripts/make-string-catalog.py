@@ -462,6 +462,8 @@ NB = {
     "quaver": "åttendedelsnote",
     "semibreve": "helnote",
     "semiquaver": "sekstendedelsnote",
+    # the third usability review, 2
+    "Hear the recording": "Hør opptaket",
 }
 
 INFO_NB = {

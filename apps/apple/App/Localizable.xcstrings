@@ -1601,6 +1601,16 @@
         }
       }
     },
+    "Hear the recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hør opptaket"
+          }
+        }
+      }
+    },
     "Higher": {
       "localizations": {
         "nb": {

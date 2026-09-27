@@ -365,7 +365,6 @@ struct PlayerBar: View {
             } else {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
-                    hear
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: Space.s2)], spacing: Space.s2) { chipsPhone }
                 }
                 .card(padding: Space.s4)
@@ -442,7 +441,7 @@ struct PlayerBar: View {
     @ViewBuilder private var hear: some View {
         if model.hasOriginal {
             Segmented(label: String(localized: "Hear the band or the recording"), selection: $model.hearOriginal,
-                      options: [(false, String(localized: "Hear the band")), (true, String(localized: "Recording"))])
+                      options: [(false, String(localized: "Hear the band")), (true, String(localized: "Recording"))], wraps: false)
             .accessibilityHint(Text("Switch between the score and the recording at the same place."))
             .accessibilityIdentifier("originalToggle")
         }
@@ -552,6 +551,13 @@ struct PlayerBar: View {
         Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
         Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")
         muteMyPart
+        if model.hasOriginal {
+            // "Hear the recording": the words say it plays, never that it records
+            Toggle(isOn: $model.hearOriginal) { Label("Hear the recording", systemImage: BrasscribeIcon.listenBar.systemName) }
+                .toggleStyle(.chip)
+                .accessibilityHint(Text("Plays the recording instead of the band, at the same place."))
+                .accessibilityIdentifier("originalToggle")
+        }
     }
 }
 
