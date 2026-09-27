@@ -23,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.performScrollTo
@@ -249,9 +250,16 @@ class PlayFlowA11yTest {
         val during = button.fetchSemanticsNode().boundsInRoot
         assertEquals("same place and size", before, during)
         rule.onNodeWithText("Listen to this bar").assertDoesNotExist()
+        // A hardware keyboard: out of touch mode, so the button can take focus.
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+        rule.waitForIdle()
+        button.requestFocus()
         button.performKeyInput { pressKey(Key.Spacebar) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
+        runCatching { rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() } }.onFailure {
+            throw AssertionError("after Space: " + button.fetchSemanticsNode().config.toString(), it)
+        }
         rule.waitUntil(5_000) { rule.onAllNodesWithText("Stopped", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        button.requestFocus()
         button.performKeyInput { pressKey(Key.Enter) }
         rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         // A bar lasts a few seconds: then it is Listen again, without a press.

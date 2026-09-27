@@ -130,7 +130,7 @@
     <string name="stage_queued">Gjør klar</string>
     <string name="stage_upload">Sender opptaket til datamaskinen</string>
     <string name="stage_beats">Finner pulsen</string>
-    <string name="stage_stems">Skiller instrumentene fra hverandre</string>
+    <string name="stage_stems">Skiller instrumentene</string>
     <string name="stage_layers">Skiller solisten fra bandet</string>
     <string name="stage_transcribe">Skriver ned tonene</string>
     <string name="stage_arrange">Arrangerer for brassband</string>

@@ -61,6 +61,9 @@ import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.platform.testTag as tagged
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
@@ -657,7 +660,7 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
 /**
  * "Listen to this bar", which turns into "Stop" while the bar plays: one button, same place and size,
  * only the words and the icon change. Both labels are laid out (the other one invisible), so large text
- * that wraps the longer one does not change the height. Enter and Space press it like any button.
+ * that wraps the longer one does not change the height. Enter and Space both press it.
  */
 @Composable
 fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier) {
@@ -665,7 +668,13 @@ fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifie
     val stopText = stringResource(R.string.listen_stop)
     androidx.compose.material3.FilledTonalButton(
         if (playing) stop else listen,
-        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged("listen-bar"),
+        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged("listen-bar")
+            // Compose buttons take Enter; Space is added so a keyboard user can start and stop with either.
+            .onPreviewKeyEvent { e ->
+                if (e.key != androidx.compose.ui.input.key.Key.Spacebar) return@onPreviewKeyEvent false
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { if (playing) stop() else listen() }
+                true
+            },
         shape = no.brasscribe.design.BrasscribeButtonShape,
     ) {
         androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
