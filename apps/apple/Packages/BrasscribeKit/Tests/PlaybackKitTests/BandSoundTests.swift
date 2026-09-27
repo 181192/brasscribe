@@ -64,11 +64,8 @@ func partSoundVectors() -> URL? {
     let bank = SoundBank(general: nil)
     #expect(bank.tier == .basic)
     #expect(bank.bandStatus.isMissing)
-    #expect(bank.bandStatus.message(norwegian: false) == "The band sounds are missing. Reinstall Brasscribe Play to hear the band.")
-    #expect(bank.bandStatus.message(norwegian: true)?.hasPrefix("Lydene til bandet mangler") == true)
-    for word in ["SoundFont", "SFZ", "GM", "sample"] {
-        #expect(!(bank.bandStatus.message(norwegian: false) ?? "").contains(word))
-    }
+    let (_, status) = BandSounds.locateBand(bundle: .main)
+    if status.isMissing { #expect(!status.details.isEmpty, "the details say where the band sounds were looked for") }
 }
 
 /// Without any environment variable, a checkout finds the band SoundFont and every golden part

@@ -269,6 +269,7 @@ NB = {
     "Connected to Brasscribe %@ on %@.": "Koblet til Brasscribe %@ på %@.",
     "Continue": "Fortsett",
     "Details for the band's tech person": "Detaljer for den tekniske i bandet",
+    "The band sounds are missing. Reinstall Brasscribe Play to hear the band.": "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.",
     "Download address": "Nedlastingsadresse",
     "Download the listening files": "Last ned lyttefilene",
     "Drop a recording here": "Slipp et opptak her",

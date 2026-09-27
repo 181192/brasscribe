@@ -107,6 +107,11 @@ final class PracticeModel {
 
     var hasOriginal: Bool { engine?.originalFile != nil }
     var soundDescription: String { engine?.soundBank.description ?? "" }
+    /// Set when the band sounds are not installed (basic tier): the player shows a line saying so.
+    var bandSoundsMissing: BandSoundStatus? {
+        guard let s = engine?.soundBank.bandStatus, s.isMissing else { return nil }
+        return s
+    }
 
     // MARK: engraving
 

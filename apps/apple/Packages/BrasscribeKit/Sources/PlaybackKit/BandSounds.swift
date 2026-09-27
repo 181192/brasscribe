@@ -49,20 +49,13 @@ public struct BandSoundFont: Sendable {
 }
 
 /// Whether the band sounds were found. When they are missing the app plays the basic tier and
-/// should show `message` (plain words, no file-format or library names); `searched` goes under details.
+/// shows one line saying so (its string catalog: "The band sounds are missing. …"), with
+/// `details` (where it looked) for the band's tech person.
 public enum BandSoundStatus: Sendable, Equatable {
     case ready(URL)
     case missing(searched: [URL])
 
     public var isMissing: Bool { if case .missing = self { return true } else { return false } }
-
-    /// One line for the UI, in English or Norwegian Bokmål.
-    public func message(norwegian: Bool = Locale.current.language.languageCode?.identifier == "nb"
-                            || Locale.current.language.languageCode?.identifier == "no") -> String? {
-        guard isMissing else { return nil }
-        return norwegian ? "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."
-                         : "The band sounds are missing. Reinstall Brasscribe Play to hear the band."
-    }
 
     /// Where the app looked, for a details view.
     public var details: String {
