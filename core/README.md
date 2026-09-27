@@ -14,8 +14,9 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   durations        contour offsets, written durations, staccato
   spelling         ps13 pitch spelling, Krumhansl-Kessler key
   harmony          harmonic-rhythm reduction
-  instruments      brass-band instruments, lineups, ranges, transpositions
-  arranger         minimal band (`arrange`) and solo with band (`arrange_layers_opts`: lineup, soprano doubling, figuration)
+  instruments      brass-band instruments, lineups (band, minimal, quartet) with their roles, ranges, transpositions
+  arranger         minimal band or quartet (`arrange_opts`) and solo with band (`arrange_layers_opts`: lineup, soprano
+                   doubling, figuration); `voice_satb` voices the quartet's alto and tenor
   difficulty       faithful / standard / easier rewrites of the arranged parts
   keys             key plan (key changes, modes), transposition to a concert key
   beats, energy, separation, dynamics, structure
@@ -68,11 +69,13 @@ brasscribe-core humanize --notes notes.json --part "Solo Cornet" --player 0 [--c
 brasscribe-core talking-score --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
 ```
 
-`arrange-layers` also takes `--lineup band|minimal`, `--difficulty
+`arrange-layers` also takes `--lineup band|full|minimal|quartet`, `--difficulty
 faithful|standard|easier`, `--key Bb` or `--transpose N`, `--no-gate`,
 `--no-beat-cleanup` and `--single-key`, and reads the stems
 (`solo.wav`, `bass.wav`, `drums.wav`, `orchestra.wav`) from the layers folder
-when present.
+when present. `arrange-song` and `arrange-reference` take `--lineup
+minimal|quartet` (default minimal). The quartet is 1st Cornet, 2nd Cornet,
+Tenor Horn and Euphonium, one player each.
 
 ## Conformance
 
@@ -129,6 +132,9 @@ Swift (UniFFI):
 ```swift
 import BrasscribeCore
 let xml = try arrangeMusicxml(compositionJson: json, arranger: "auto")
+// Re-arrange for a lineup and difficulty (transpose: the total from the recording)
+let quartet = try arrangeMusicxmlWith(compositionJson: json,
+                                      options: ArrangeOptions(lineup: "quartet", difficulty: "easier", key: nil, transpose: nil))
 let out = try arrangeLayersSong(layers: LayerMidi(soloSwiftf0: sw, soloMuscriptor: mus, soloBasicPitch: bp,
                                 bass: bass, orchestra: orch, drums: drums),
                                 beatsText: beats, title: "Mikkel", soloContour: nil, freeTime: true, freeTempo: nil)
@@ -160,6 +166,7 @@ C# (P/Invoke over `bc_*`):
 ```csharp
 using Brasscribe.Core;
 string xml = BrasscribeCore.ArrangeMusicXml(compositionJson);
+string quartet = BrasscribeCore.ArrangeMusicXmlWith(compositionJson, lineup: "quartet", difficulty: "easier");
 var band = BrasscribeCore.ArrangeLayersBand(layers, new LayerStems(solo, bass, drums, orchestra), beatsText, "Mikkel",
                                             new LayersSongOptions(Difficulty: "easier"));
 var played = BrasscribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: band.CompositionJson);
