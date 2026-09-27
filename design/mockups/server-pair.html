@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Bandroom: pair a phone</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .os { background: var(--bc-surface); }
+  .col { position: absolute; }
+  .pw { width: 860px; }
+  .pw .body { padding: 28px 32px 22px; display: flex; flex-direction: column; gap: 18px; }
+  .pw h1 { font-family: var(--bc-font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.1; margin: 0; }
+  .ways { display: grid; grid-template-columns: 1fr 260px; gap: 28px; }
+  .way { display: flex; gap: 14px; align-items: flex-start; }
+  .num-dot { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.9375rem; box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  .way p { font-size: 1.0625rem; }
+  .waiting { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .qrbox { display: flex; flex-direction: column; gap: 10px; }
+  .qrbox img { width: 260px; height: 260px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; box-shadow: inset 0 1px 0 var(--bc-border); padding-top: 16px; }
+  .match { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 2rem; letter-spacing: 0.12em; color: var(--bc-text); }
+</style>
+</head>
+<body>
+<div class="os">
+
+  <div class="col" style="left: 40px; top: 40px">
+    <div class="win-frame pw">
+      <div class="wbar"><span style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t" data-nb="Koble til en telefon">Pair a phone</span></div>
+      <div class="body">
+        <div>
+          <h1 data-nb="Koble til en telefon">Pair a phone</h1>
+          <p class="muted" style="margin-top: 8px; font-size: 1.0625rem" data-nb="Gjør dette én gang per telefon eller nettbrett. Den forblir tilkoblet.">Do this once for each phone or tablet. It stays paired.</p>
+        </div>
+        <div class="ways">
+          <div style="display:flex; flex-direction:column; gap: 22px">
+            <div class="way"><span class="num-dot">1</span><p><span data-nb="Åpne Brasscribe på telefonen › Innstillinger › Datamaskinen din, og velg">On the phone, open Brasscribe › Settings › Your computer and choose</span> <b data-nb="Brasscribe på Kallis MacBook">Brasscribe on Kalli's MacBook</b>. <span data-nb="Godkjenn den her etterpå.">Then allow it here.</span></p></div>
+            <div class="way"><span class="num-dot">2</span><p data-nb="Eller skann QR-koden med kameraet på telefonen.">Or scan the QR code with the phone's camera.</p></div>
+            <div class="way"><span class="num-dot">3</span><div>
+              <p data-nb="Eller skriv inn denne koden på telefonen:">Or type this code on the phone:</p>
+              <div class="code" style="margin-top: 6px" aria-label="Code: 4 8 2, 9 1 3">482 913</div>
+            </div></div>
+            <div class="notice" role="status" style="flex-direction: column; gap: 4px">
+              <span class="waiting"><span data-state-mark="starting" data-size="20"></span><span data-nb="Venter på en telefon …">Waiting for a phone…</span></span>
+              <span class="muted" data-nb="Koden virker så lenge dette vinduet er åpent, og bare én gang.">This code works while this window is open, and only once.</span>
+            </div>
+          </div>
+          <div class="qrbox">
+            <img class="qr" src="assets/pair-qr.svg" alt="QR code for pairing with Brasscribe on Kalli's MacBook. It holds the same code: 482 913.">
+            <p class="caption" data-nb="Skann med kameraet, eller i Brasscribe på telefonen.">Scan with the camera, or in Brasscribe on the phone.</p>
+          </div>
+        </div>
+        <details class="tech" style="margin-top: 0">
+          <summary data-nb="Ser ikke telefonen denne datamaskinen?">Phone doesn't show this computer?</summary>
+        </details>
+        <div class="foot">
+          <button class="btn outline desk" data-nb="Koble til en telefon til">Pair another phone</button>
+          <button class="btn primary desk" data-nb="Ferdig">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Way 1: the computer asks -->
+  <div class="col" style="left: 960px; top: 40px; width: 440px">
+    <p class="cap" data-nb="Telefonen valgte denne datamaskinen">The phone chose this computer</p>
+    <div class="alert" style="width: 320px; margin: 0 auto; gap: 10px">
+      <span data-mark="40" style="color: var(--bc-brass); margin: 0 auto"></span>
+      <div class="t" data-nb="Godkjenne Karis iPhone?">Allow Kari's iPhone?</div>
+      <p data-nb="Den kan sende opptak til denne datamaskinen og få partitur tilbake. Du kan fjerne den når som helst.">It can send recordings to this computer and get scores back. You can remove it any time.</p>
+      <p style="color: var(--bc-text)" data-nb="Telefonen viser tallet:">The phone shows the number:</p>
+      <div class="match" aria-label="4 7 1 9">4719</div>
+      <div style="display:flex; flex-direction:column; gap: 8px; margin-top: 4px">
+        <button class="btn primary desk" data-nb="Godkjenn">Allow</button>
+        <button class="btn secondary desk" data-nb="Ikke godkjenn">Don't allow</button>
+      </div>
+    </div>
+
+    <p class="cap" style="margin-top: var(--bc-space-8)" data-nb="Etterpå">Afterwards</p>
+    <div class="notice ok" role="status"><i data-i="running" class="sm"></i><span data-nb="Karis iPhone er koblet til.">Kari's iPhone is paired.</span></div>
+    <p class="cap" style="margin-top: var(--bc-space-6)" data-nb="Etter for mange feil koder">After too many wrong codes</p>
+    <div class="notice" role="status"><i data-i="info" class="sm"></i><span data-nb="For mange feil koder. Vent litt, eller godkjenn telefonen her.">Too many wrong codes. Wait a moment, or allow the phone here.</span></div>
+  </div>
+
+</div>
+</body>
+</html>

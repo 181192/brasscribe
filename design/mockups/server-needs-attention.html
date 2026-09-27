@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Bandroom: needs attention</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .col { position: absolute; top: 44px; }
+  .problem { display: flex; flex-direction: column; gap: 6px; }
+  .problem .t { font-weight: 700; font-size: 1.0625rem; }
+  .prow .warn { color: var(--bc-warning); }
+</style>
+</head>
+<body>
+<div class="os">
+  <div class="menubar">
+    <b>Finder</b><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+    <span class="sp"></span>
+    <span class="mi open" title="Brasscribe needs attention: phones can't find this computer"><span data-state-mark="attention" data-size="18"></span></span>
+    <span class="mi"><i data-i="network"></i></span>
+    <span>Sun 27 Sep 14:05</span>
+  </div>
+
+  <!-- Left: engine keeps stopping -->
+  <div class="col" style="left: 40px">
+    <p class="cap">Stopped unexpectedly</p>
+    <div class="panel">
+      <div class="hd">
+        <span data-mark="22"></span>
+        <div class="grow">
+          <h2>Brasscribe on Kalli's MacBook</h2>
+          <div class="state err"><i data-i="close"></i><span>Stopped unexpectedly</span></div>
+        </div>
+        <button class="icon-btn" aria-label="More"><i data-i="more"></i></button>
+      </div>
+      <div class="pcard pad problem" role="alert">
+        <div class="t">Brasscribe stopped unexpectedly</div>
+        <p class="muted">It tried to start three times. Recordings on your phones are safe.</p>
+      </div>
+      <button class="btn primary desk block"><i data-i="retry"></i>Try again</button>
+      <details class="tech" open>
+        <summary>Details for the band's tech person</summary>
+        <div class="mono muted" style="margin-top: 6px">Engine exited 3× in 5 min (code 1).<br>Last line: ImportError: libsndfile.dylib not found<br>Log: ~/Library/Logs/Brasscribe/engine.log</div>
+        <div class="btns" style="margin-top: 8px">
+          <button class="btn outline desk">Show logs</button>
+          <button class="btn outline desk">Copy details for the tech person</button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Middle: low disk while running -->
+  <div class="col" style="left: 440px">
+    <p class="cap">Space is running low</p>
+    <div class="panel">
+      <div class="hd">
+        <span data-mark="22"></span>
+        <div class="grow">
+          <h2>Brasscribe on Kalli's MacBook</h2>
+          <div class="state warn"><i data-i="attention"></i><span>Needs attention</span></div>
+        </div>
+        <button class="icon-btn" aria-label="More"><i data-i="more"></i></button>
+      </div>
+      <div class="pcard pad problem" role="status">
+        <div class="t">Space is running low</div>
+        <p class="muted">2.1 GB free. Brasscribe needs 3 GB to make a score.</p>
+      </div>
+      <button class="btn primary desk block">Free up space…</button>
+      <button class="btn outline desk block"><i data-i="delete"></i>Delete old results (1.4 GB)</button>
+      <p class="caption" style="margin-top: -6px">Scores on your phones stay.</p>
+      <div class="pcard">
+        <h3>This computer</h3>
+        <div class="prow"><i data-i="workload"></i><div class="grow">Work load</div><span class="val">Calm</span><span class="meter" aria-hidden="true"><b class="on"></b><b></b><b></b></span></div>
+        <div class="prow"><i data-i="attention" class="warn"></i><div class="grow">Free space</div><span class="val">2.1 GB free</span></div>
+        <div class="prow"><i data-i="running"></i><div class="grow">Ready to make scores</div><span class="val">Ready</span></div>
+      </div>
+      <div class="btns">
+        <button class="btn outline desk"><i data-i="restart"></i>Restart</button>
+        <button class="btn outline desk"><i data-i="shut-down"></i>Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: open under the menu bar icon: phones can't find this computer -->
+  <div class="col" style="left: 1016px; top: 36px">
+    <div class="panel">
+      <div class="hd">
+        <span data-mark="22"></span>
+        <div class="grow">
+          <h2>Brasscribe on Kalli's MacBook</h2>
+          <div class="state warn"><i data-i="attention"></i><span>Needs attention</span></div>
+        </div>
+        <button class="icon-btn" aria-label="More"><i data-i="more"></i></button>
+      </div>
+      <div class="pcard pad problem" role="status">
+        <div class="t">Phones can't find this computer</div>
+        <p class="muted">Your Mac isn't letting Brasscribe use the local network.</p>
+        <p>Turn on <b>Brasscribe Bandroom</b> under Local Network.</p>
+      </div>
+      <button class="btn primary desk block"><i data-i="settings"></i>Open Privacy settings</button>
+      <div class="pcard">
+        <div class="prow"><i data-i="pair-phone"></i><div class="grow"><div class="val">Phones and tablets</div><div class="sub">None connected now · 3 paired</div></div><i data-i="open" class="chev"></i></div>
+      </div>
+      <p class="muted" style="font-size: 0.875rem">Scores can still be made on this Mac, in Brasscribe Play.</p>
+      <div class="btns">
+        <button class="btn outline desk"><i data-i="restart"></i>Restart</button>
+        <button class="btn outline desk"><i data-i="shut-down"></i>Stop</button>
+        <span style="flex:1"></span>
+        <button class="btn plain desk"><i data-i="open-studio"></i>Open Studio</button>
+      </div>
+      <details class="tech" open>
+        <summary>Details for the band's tech person</summary>
+        <div class="mono muted" style="margin-top: 6px">Local Network permission is off for Brasscribe Bandroom. mDNS _brasscribe._tcp not advertised. Listening on 192.168.1.20:8765.</div>
+      </details>
+    </div>
+  </div>
+</div>
+</body>
+</html>

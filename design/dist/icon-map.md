@@ -53,3 +53,14 @@ Custom glyphs live in `design/brand/icons/custom/`.
 | file | File | Fil | `doc.text` | `description` | `Document` U+E8A5 |
 | folder | Save to Files | Lagre i Filer | `folder` | `folder` | `Folder` U+E8B7 |
 | text-size | Text size | Tekststørrelse | `textformat.size` | `format_size` | `FontSize` U+E8E9 |
+| pair-phone | Pair a phone | Koble til en telefon | `iphone` | `smartphone` | `CellPhone` U+E8EA |
+| restart | Restart | Start på nytt | `arrow.clockwise` | `restart_alt` | `UpdateRestore` U+E777 |
+| shut-down | Stop Brasscribe | Stopp Brasscribe | `power` | `power_settings_new` | `PowerButton` U+E7E8 |
+| open-studio | Open Studio | Åpne Studio | `arrow.up.forward.square` | `open_in_new` | `OpenInNewWindow` U+E8A7 |
+| download | Download | Last ned | `arrow.down.circle` | `download` | `Download` U+E896 |
+| access-key | Access key | Tilgangsnøkkel | `key` | `key` | `Permissions` U+E8D7 |
+| network | Network | Nettverk | `wifi` | `wifi` | `Wifi` U+E701 |
+| workload | Work load | Arbeidsmengde | `memorychip` | `memory` | `Processing` U+E9F5 |
+| disk | Free space | Ledig plass | `internaldrive` | `hard_drive` | `HardDrive` U+EDA2 |
+| running | Running | Kjører | `checkmark.circle` | `check_circle` | `Completed` U+E930 |
+| attention | Needs attention | Må sjekkes | `exclamationmark.triangle` | `warning` | `Warning` U+E7BA |

@@ -211,3 +211,60 @@ p { margin: 0; }
 /* ---------- disclosure ---------- */
 details.tech { margin-top: var(--bc-space-5); border-radius: var(--bc-radius-md); box-shadow: inset 0 0 0 1px var(--bc-border); padding: var(--bc-space-3) var(--bc-space-4); font-size: 0.9375rem; }
 details.tech summary { font-weight: 600; cursor: pointer; min-height: 28px; }
+
+/* ---------- Brasscribe Bandroom: menu bar, taskbar corner, panels (design/server-app.md) ---------- */
+.os { position: relative; width: 1440px; height: 900px; overflow: hidden; background: var(--bc-surface); font-size: 0.9375rem; line-height: 1.4; }
+.menubar { height: 30px; display: flex; align-items: center; gap: 16px; padding: 0 14px; font-size: 0.875rem; background: var(--bc-surface-raised); box-shadow: inset 0 -1px 0 var(--bc-border); }
+.menubar .sp { flex: 1; }
+.menubar .mi { display: inline-flex; align-items: center; justify-content: center; height: 24px; min-width: 28px; padding: 0 4px; border-radius: 5px; color: var(--bc-text); }
+.menubar .mi.open { background: var(--bc-secondary); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+.menubar .mi .i { width: 18px; height: 18px; }
+.taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; display: flex; align-items: center; padding: 0 10px; gap: 6px; background: var(--bc-surface-raised); box-shadow: inset 0 1px 0 var(--bc-border); font-size: 0.75rem; }
+.taskbar .ti { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 6px; color: var(--bc-text); }
+.taskbar .ti.open { background: var(--bc-secondary); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+.taskbar .ti .i { width: 18px; height: 18px; }
+.taskbar .clock { text-align: right; line-height: 1.25; padding: 0 8px; }
+.cap { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bc-text-muted); margin: 0 0 var(--bc-space-2); }
+/* Edges are outlines, not part of the shadow list: high contrast sets the elevation tokens to none. */
+.panel { width: 360px; background: var(--bc-surface); border-radius: var(--bc-radius-md); box-shadow: var(--bc-elevation-3); outline: 1px solid var(--bc-border-strong); outline-offset: -1px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.panel.win { border-radius: 8px; }
+.panel .hd { display: flex; gap: 10px; align-items: flex-start; }
+.panel .hd .grow { flex: 1; min-width: 0; }
+.panel .hd h2 { font-size: 1rem; font-weight: 700; margin: 0; line-height: 1.3; }
+.panel .hd .icon-btn { width: 36px; height: 36px; margin: -4px -4px 0 0; }
+.state { display: flex; gap: 6px; align-items: center; font-size: 0.9375rem; margin-top: 2px; }
+.state .i { width: 18px; height: 18px; }
+.state.ok .i { color: var(--bc-success); }
+.state.warn .i { color: var(--bc-warning); }
+.state.err .i { color: var(--bc-error); }
+.state.off .i { color: var(--bc-text-muted); }
+.pcard { background: var(--bc-surface-raised); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--bc-border); }
+.pcard.pad { padding: 12px; }
+.pcard h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bc-text-muted); margin: 0; padding: 10px 12px 0; }
+.pcard.pad h3 { padding: 0 0 6px; }
+.prow { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; }
+.pcard .prow + .prow { box-shadow: inset 0 1px 0 var(--bc-border); }
+.prow .grow { flex: 1; min-width: 0; }
+.prow .i { width: 20px; height: 20px; color: var(--bc-text-muted); }
+.prow .val { font-weight: 600; }
+.prow .sub { font-size: 0.875rem; color: var(--bc-text-muted); }
+.btn.desk { min-height: 38px; padding: 0 14px; font-size: 0.9375rem; }
+.btn.desk .i { width: 20px; height: 20px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.meter { display: inline-flex; gap: 3px; margin-left: 8px; }
+.meter b { width: 14px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+.meter b.on { background: var(--bc-text-muted); box-shadow: none; }
+.mono { font-family: var(--bc-font-mono); font-size: 0.8125rem; line-height: 1.6; }
+.panel details.tech { margin-top: 0; padding: 8px 12px; }
+.panel details.tech summary { min-height: 24px; }
+.qr { display: block; background: #fff; border-radius: var(--bc-radius-md); box-shadow: 0 0 0 1px var(--bc-border-strong); }
+.code { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 2.5rem; letter-spacing: 0.08em; line-height: 1.1; }
+.win-frame { background: var(--bc-bg); border-radius: var(--bc-radius-md); box-shadow: var(--bc-elevation-3); outline: 1px solid var(--bc-border-strong); outline-offset: -1px; overflow: hidden; display: flex; flex-direction: column; }
+.win-frame .wbar { height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; box-shadow: inset 0 -1px 0 var(--bc-border); font-size: 0.875rem; font-weight: 600; flex: none; }
+.win-frame .wbar .t { flex: 1; text-align: center; margin-right: 52px; }
+.alert { width: 280px; background: var(--bc-surface-raised); border-radius: var(--bc-radius-lg); box-shadow: var(--bc-elevation-3); outline: 1px solid var(--bc-border-strong); outline-offset: -1px; padding: 20px 16px 16px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+.alert .t { font-weight: 700; font-size: 0.9375rem; }
+.alert p { font-size: 0.875rem; color: var(--bc-text-muted); }
+.alert .btn { width: 100%; }
+[data-theme="high-contrast"] .btn.secondary { box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+.alert > svg { align-self: center; }

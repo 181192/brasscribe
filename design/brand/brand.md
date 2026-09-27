@@ -3,9 +3,10 @@
 ## Name
 
 - **Brasscribe** is one word with a capital B. Never write BrassScribe, BRASSCRIBE or brass-scribe. The CLI command `brasscribe` is the only lower-case form.
-- The two products are **Brasscribe Play**, the musician app, and **Brasscribe Studio**, the workbench.
+- The products are **Brasscribe Play**, the musician app, **Brasscribe Studio**, the workbench, and **Brasscribe Bandroom**, which runs the engine on a Mac or PC in the background (spec: [`../server-app.md`](../server-app.md)).
   - Inside the apps, say "Brasscribe": "Brasscribe wasn't sure about these notes".
-  - Use the product name only where both products appear together: store listings, About, the docs.
+  - Use the product name only where the products appear together: store listings, About, the docs, installers, and the app lists (Applications, Start, Login Items).
+  - Inside Bandroom, the header names the computer, as phones see it: "Brasscribe on Kalli's MacBook" / "Brasscribe på Kallis MacBook".
 - The names are the same in Norwegian. They are not translated or inflected ("Brasscribes partitur" is wrong; write "partituret fra Brasscribe").
 
 ## Mark
@@ -90,7 +91,9 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | Leave the review | Finish later (9 left) | Fortsett senere (9 igjen) | Done, Ferdig (they silently abandon notes) |
 | Note name in review | Written G, minim (en-GB) · G, half note (en-US) | Notert G, halvnote | bare "G" (written or concert?) |
 | Free time | no steady beat (ad lib.) | ingen fast puls (ad lib.) | free time, rubato |
-| The desktop helper | Brasscribe on your computer | Brasscribe på datamaskinen | companion engine, motor, server |
+| The desktop helper | Brasscribe on your computer (product name, in app lists and installers only: Brasscribe Bandroom) | Brasscribe på datamaskinen (Brasscribe Bandroom) | companion engine, motor, server |
+| Connect a phone to the computer | Pair a phone | Koble til en telefon | Pair a device, Koble til en enhet, pairing code in body text |
+| Model files the engine needs (Bandroom only) | the downloads · "Band writer (MuScriptor)" on the licence step only | nedlastingene · «Bandskriver (MuScriptor)» bare på lisenssteget | models, weights, checkpoints |
 | Transposed view | As written for B♭ / Concert pitch (phone: As written / Concert) | Notert for B♭ / Klingende | Written pitch, transposing score |
 | Talking score (toolbar) | Read aloud (format name in Share or print stays "Talking score") | Les opp | Talking score in the toolbar |
 | Video | Show video | Vis video | Video |

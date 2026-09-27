@@ -369,4 +369,15 @@
     <x:String x:Key="BcIconFile">&#xE8A5;</x:String>
     <x:String x:Key="BcIconFolder">&#xE8B7;</x:String>
     <x:String x:Key="BcIconTextSize">&#xE8E9;</x:String>
+    <x:String x:Key="BcIconPairPhone">&#xE8EA;</x:String>
+    <x:String x:Key="BcIconRestart">&#xE777;</x:String>
+    <x:String x:Key="BcIconShutDown">&#xE7E8;</x:String>
+    <x:String x:Key="BcIconOpenStudio">&#xE8A7;</x:String>
+    <x:String x:Key="BcIconDownload">&#xE896;</x:String>
+    <x:String x:Key="BcIconAccessKey">&#xE8D7;</x:String>
+    <x:String x:Key="BcIconNetwork">&#xE701;</x:String>
+    <x:String x:Key="BcIconWorkload">&#xE9F5;</x:String>
+    <x:String x:Key="BcIconDisk">&#xEDA2;</x:String>
+    <x:String x:Key="BcIconRunning">&#xE930;</x:String>
+    <x:String x:Key="BcIconAttention">&#xE7BA;</x:String>
 </ResourceDictionary>
