@@ -143,6 +143,10 @@
     </Style>
 
     <!-- ===== Surfaces ===== -->
+    <!-- A window's root: the background follows the window's own theme (Appearance, design/system.md §10). -->
+    <Style x:Key="WindowRootStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{ThemeResource BcBgBrush}" />
+    </Style>
     <Style x:Key="CardStyle" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />

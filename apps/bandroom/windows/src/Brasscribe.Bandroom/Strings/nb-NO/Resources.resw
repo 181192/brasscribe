@@ -227,6 +227,27 @@
   <data name="More_Quit" xml:space="preserve">
     <value>Avslutt Brasscribe Bandroom</value>
   </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="Settings_Login" xml:space="preserve">
+    <value>Start når jeg logger på</value>
+  </data>
+  <data name="Appearance_Title" xml:space="preserve">
+    <value>Utseende</value>
+  </data>
+  <data name="Appearance_System" xml:space="preserve">
+    <value>Følg systemet</value>
+  </data>
+  <data name="Appearance_Light" xml:space="preserve">
+    <value>Lyst</value>
+  </data>
+  <data name="Appearance_Dark" xml:space="preserve">
+    <value>Mørkt</value>
+  </data>
+  <data name="Appearance_Contrast" xml:space="preserve">
+    <value>Kontrasttemaet ditt er på, så Windows velger fargene.</value>
+  </data>
   <data name="Tray_Open" xml:space="preserve">
     <value>Åpne</value>
   </data>
