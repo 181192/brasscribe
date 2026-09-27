@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import java.net.InetAddress
 import io.ktor.client.engine.okhttp.OkHttp
 import no.brasscribe.play.engine.EngineApi
@@ -91,6 +93,29 @@ class AppContainer(private val context: Context) {
     var firstRunDone: Boolean
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
+
+    /** Settings → Display: turning the phone sideways opens the music stand (off by default, WCAG 2.5.4). */
+    var standOnTurn: Boolean
+        get() = prefs.getBoolean("stand_on_turn", false)
+        set(v) = prefs.edit().putBoolean("stand_on_turn", v).apply()
+
+    /** Settings → Display: the stand's control layer never hides by itself. */
+    var standKeepControls: Boolean
+        get() = prefs.getBoolean("stand_keep_controls", false)
+        set(v) = prefs.edit().putBoolean("stand_keep_controls", v).apply()
+
+    /** Settings → Display: playback turns the stand's pages (on by default). */
+    var standFollow: Boolean
+        get() = prefs.getBoolean("stand_follow", true)
+        set(v) = prefs.edit().putBoolean("stand_follow", v).apply()
+
+    /** "Tap the music to show the controls." has been shown once, and does not come back. */
+    var standHintShown: Boolean
+        get() = prefs.getBoolean("stand_hint_shown", false)
+        set(v) = prefs.edit().putBoolean("stand_hint_shown", v).apply()
+
+    /** Tests stand in for TalkBack or Switch Access here (the stand keeps its controls); null asks the system. */
+    var assistiveOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
 
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.

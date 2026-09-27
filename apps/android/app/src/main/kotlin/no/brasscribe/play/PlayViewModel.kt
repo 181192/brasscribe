@@ -171,6 +171,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         ScoreEntry.merge(local, jobs)
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, ScoreEntry.merge(scoreLibrary.list(), emptyList()))
     val openingScore = MutableStateFlow<String?>(null)
+    /** "Open on the music stand" from the library: the score opens straight onto the stand (the entry id). */
+    val standFromLibrary = MutableStateFlow<String?>(null)
+    /** The library row that gets the focus back when a stand opened from the library closes. */
+    val focusEntry = MutableStateFlow<String?>(null)
     private var currentSavedScoreId: String? = null
 
     private val backStack = MutableStateFlow(listOf(if (container.firstRunDone) Screen.HOME else Screen.FIRST_RUN))
@@ -597,7 +601,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { runCatching { engine.jobs() }.onSuccess { computerJobs.value = it } }
     }
 
-    fun openEntry(entry: ScoreEntry, review: Boolean = false) {
+    fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
+        standFromLibrary.value = if (stand && !review) entry.id else null
         entry.saved?.let { openSavedScore(it, review); return }
         val jobId = entry.jobId ?: return
         val engine = container.engine() ?: return

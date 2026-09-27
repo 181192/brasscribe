@@ -73,7 +73,7 @@ data class ScoreUiState(
  */
 class ScoreController(
     context: Context,
-    reducedMotion: Boolean,
+    private val reducedMotion: Boolean,
     private val core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge,
     /** Band SoundFont part map (sounds/mapping.json); null keeps alphaTab's General MIDI programs. */
     private val soundMap: BandSoundMap? = null,
@@ -98,6 +98,10 @@ class ScoreController(
     val state: StateFlow<ScoreUiState> = _state
     private var score: Score? = null
     private val writtenTransposition = HashMap<Int, Double>()
+    private val _renders = MutableStateFlow(0)
+    /** Counts finished renders: the music stand lays out its pages again after each one. */
+    val renders: StateFlow<Int> = _renders
+    private val innerScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
 
     init {
         view.settings.apply {
@@ -124,7 +128,11 @@ class ScoreController(
         }
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
-        view.api.postRenderFinished.on { applyVolumes(); overlays().forEach { it.refresh() } }
+        view.api.postRenderFinished.on {
+            applyVolumes(); overlays().forEach { it.refresh() }
+            // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
+            view.post { _renders.value++ }
+        }
 
         view.api.playedBeatChanged.on { beat ->
             val mb = beat.voice.bar.masterBar
@@ -146,6 +154,49 @@ class ScoreController(
             }
         }
     }
+
+    /**
+     * The music stand's layout (design/music-stand.md §3): a fixed number of bars per system, and the
+     * stand turns the pages itself, so alphaTab neither scrolls to the cursor nor takes taps or keys (a
+     * tap shows the controls, the stand's own surface over the view takes the drags, and a page
+     * turner's arrows must not scroll the view by a screen). Null goes back to the ordinary score.
+     * Only the layout is engraved again: the music keeps playing.
+     */
+    fun setStandLayout(barsPerRow: Int?) {
+        val on = barsPerRow != null
+        val rows = (barsPerRow ?: -1).toDouble()
+        if (view.settings.display.barsPerRow == rows && on == (view.settings.player.scrollMode == ScrollMode.Off)) return
+        view.settings.display.barsPerRow = rows
+        view.settings.player.scrollMode = when {
+            on -> ScrollMode.Off
+            reducedMotion -> ScrollMode.OffScreen
+            else -> ScrollMode.Continuous
+        }
+        view.settings.player.enableUserInteraction = !on
+        view.api.updateSettings()
+        view.descendantFocusability = if (on) android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS else android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+        if (_state.value.loaded) view.api.render()
+    }
+
+    /** The engraved systems in view pixels (alphaTab's layout units times the display density). */
+    fun standSystems(): List<StandSystem> {
+        val systems = view.api.boundsLookup?.staffSystems ?: return emptyList()
+        val f = view.resources.displayMetrics.density
+        return (0 until systems.length.toInt()).mapNotNull { i ->
+            val sys = systems[i]
+            val bars = sys.bars
+            if (bars.length.toInt() == 0) return@mapNotNull null
+            val b = sys.realBounds
+            StandSystem((b.y * f).toFloat(), ((b.y + b.h) * f).toFloat(),
+                bars[0].index.toInt() + 1, bars[bars.length.toInt() - 1].index.toInt() + 1)
+        }
+    }
+
+    /** Height of the engraving in view pixels. */
+    fun standContentHeight(): Float = view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface)?.height?.toFloat() ?: 0f
+
+    /** Shows the stand's window from [y] view pixels down. */
+    fun scrollStandTo(y: Int) { innerScroll?.scrollTo(0, y.coerceAtLeast(0)) }
 
     /** Parses MusicXML (or any format alphaTab reads) and renders the given tracks (default: the first). */
     fun load(bytes: ByteArray, pick: (List<String>) -> Set<Int> = { setOf(0) }) {

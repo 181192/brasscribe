@@ -1,14 +1,8 @@
 package no.brasscribe.play.ui
 
-import android.app.Activity
-import android.content.ContextWrapper
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -73,6 +67,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.nativeKeyCode
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import no.brasscribe.play.score.StandPages
 import no.brasscribe.design.BrasscribeNumericStyle
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
@@ -115,11 +122,9 @@ fun ScoreScreen(vm: PlayViewModel) {
     var textView by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
     var writtenTip by rememberSaveable { mutableStateOf(false) }
-    // Playing live: the score alone, no system bars, screen awake. Rotation recreates the activity,
-    // so this has to survive it.
-    var performance by rememberSaveable { mutableStateOf(false) }
-    PerformanceWindow(performance)
-    BackHandler(enabled = performance) { performance = false }
+    // The music stand (design/music-stand.md, ui/MusicStand.kt): the score alone, in pages.
+    val ms = rememberMusicStand()
+    val performance = ms.open
 
     LaunchedEffect(controller, c) {
         controller.setNotationColors(ScorePalette(c.bg.toArgb(), c.ink.toArgb(), c.staff.toArgb(), c.cursor.toArgb(),
@@ -160,6 +165,180 @@ fun ScoreScreen(vm: PlayViewModel) {
         vm.status.value = no.brasscribe.play.Status(res.getString(R.string.bar_heading, (st.bar + delta).coerceIn(1, st.totalBars)))
     }
 
+    // ---- The music stand ------------------------------------------------------------------------
+    val shape = standShape()
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val activity = remember(context) { context.findActivity() }
+    val container = vm.container
+    val assistive = rememberAssistive(container.assistiveOverride)
+    val keyboard = keyboardInUse()
+    val keepControls = remember(ms.open) { container.standKeepControls }
+    val follow = remember(ms.open) { container.standFollow }
+    val standButton = remember { FocusRequester() }
+    val scoreFocus = remember { FocusRequester() }
+    val yours = MusicStandRules.yourPart(st.parts, r.lineup)
+    val onlyMineOffered = MusicStandRules.offersOnlyMine(st.parts, yours)
+    var libraryEntry by rememberSaveable { mutableStateOf<String?>(null) }
+    var focusOpener by remember { mutableStateOf(false) }
+    StandWindow(ms.open)
+
+    fun quiet(text: String) { vm.status.value = no.brasscribe.play.Status(text, quiet = true) }
+    fun enterStand(origin: StandOrigin) {
+        if (ms.open) return
+        textView = false; sheet = null
+        ms.origin = origin
+        ms.before = if (st.loaded) st.shown.toList() else emptyList()
+        ms.topBar = st.bar
+        ms.layer = !st.playing || assistive || keepControls
+        ms.hint = false
+        ms.open = true
+    }
+    fun leaveStand() {
+        if (!ms.open) return
+        ms.open = false
+        ms.pages = null
+        ms.hint = false
+        controller.setStandLayout(null)
+        if (ms.before.isNotEmpty() && ms.before.toSet() != st.shown) controller.showParts(ms.before.toSet())
+        if (ms.locked) { lockRotation(activity, false); ms.locked = false }
+        if (ms.origin == StandOrigin.LIBRARY) {
+            // Back to the library, focus on the score's row, and "Music stand closed." said there.
+            vm.focusEntry.value = libraryEntry
+            libraryEntry = null
+            vm.back()
+        } else {
+            quiet(res.getString(R.string.stand_left))
+            focusOpener = true
+        }
+    }
+    fun turnPage(to: Int) {
+        val p = ms.pages ?: return
+        val t = to.coerceIn(0, p.count - 1)
+        ms.touches++
+        // Past either end the page stays, and says where it is, so a pedal press is never silent.
+        if (t == ms.page) {
+            if (to != t) quiet(res.getString(if (to < 0) R.string.stand_first_page else R.string.stand_last_page))
+            return
+        }
+        ms.topBar = p.topBar(t)
+        val bars = p.bars(t)
+        quiet(res.getString(R.string.stand_page_turned, t + 1, p.count, bars.first, bars.last))
+    }
+    fun hideLayer() {
+        if (!container.standHintShown) { container.standHintShown = true; ms.hint = true }
+        ms.layer = false
+    }
+    fun tapMusic() {
+        ms.touches++
+        ms.hint = false
+        if (!ms.layer) { ms.layer = true; return }
+        // With a screen reader, switch access or the setting, the controls stay.
+        if (assistive || keepControls) return
+        // Focus never lands on nothing: it goes to the score before the layer goes.
+        if (ms.layerFocused) runCatching { scoreFocus.requestFocus() }
+        hideLayer()
+    }
+    fun toggleLock() {
+        val on = !ms.locked
+        lockRotation(activity, on)
+        ms.locked = on
+        quiet(res.getString(if (on) R.string.stand_locked else R.string.stand_unlocked))
+    }
+    fun toggleRepeat() {
+        val loop = st.loop
+        val last = ms.lastLoop
+        when {
+            loop != null -> { ms.lastLoop = loop; controller.setLoop(null); vm.say(R.string.loop_cleared) }
+            last != null -> { controller.setLoop(last); vm.say(R.string.loop_set_announce, last.first, last.last) }
+            else -> sheet = Sheet.LOOP
+        }
+    }
+    fun standCommand(cmd: StandCommand) {
+        ms.touches++
+        if (cmd != StandCommand.LEAVE) ms.layer = true
+        when (cmd) {
+            StandCommand.NEXT_PAGE -> turnPage(ms.page + 1)
+            StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1)
+            StandCommand.FIRST_PAGE -> turnPage(0)
+            StandCommand.LAST_PAGE -> turnPage(ms.pageCount - 1)
+            StandCommand.NEXT_BAR -> moveBar(1)
+            StandCommand.PREVIOUS_BAR -> moveBar(-1)
+            StandCommand.PLAY_PAUSE -> controller.togglePlay()
+            StandCommand.LEAVE -> leaveStand()
+            StandCommand.SHOW_CONTROLS -> Unit
+        }
+    }
+    BackHandler(enabled = ms.open) { leaveStand() }
+    // "Open on the music stand" in the library opens the score and the stand in one step.
+    LaunchedEffect(Unit) {
+        vm.standFromLibrary.value?.let { id -> vm.standFromLibrary.value = null; libraryEntry = id; enterStand(StandOrigin.LIBRARY) }
+    }
+    // Settings: Open the music stand when I turn the phone sideways (off by default); turning it upright leaves.
+    var lastOrientation by remember { androidx.compose.runtime.mutableIntStateOf(configuration.orientation) }
+    LaunchedEffect(configuration.orientation) {
+        val was = lastOrientation
+        lastOrientation = configuration.orientation
+        if (was == configuration.orientation || shape.tablet) return@LaunchedEffect
+        val sideways = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        if (!ms.open && sideways && container.standOnTurn) enterStand(StandOrigin.TURN)
+        else if (ms.open && !sideways && ms.origin == StandOrigin.TURN) leaveStand()
+    }
+    // The layout (the section 3 sizing table) and your part, once the score is there.
+    LaunchedEffect(ms.open, st.loaded, shape.barsPerSystem) {
+        if (ms.open && st.loaded) controller.setStandLayout(shape.barsPerSystem)
+    }
+    LaunchedEffect(ms.open, st.loaded, ms.onlyMine, yours) {
+        if (!ms.open || !st.loaded) return@LaunchedEffect
+        if (ms.before.isEmpty()) ms.before = st.shown.toList()
+        val before = ms.before.toSet()
+        val want = when {
+            ms.onlyMine && onlyMineOffered && yours != null -> setOf(yours)
+            // Off goes back to the parts shown before; when that was your part alone, to every part.
+            onlyMineOffered && before == setOf(yours) -> st.parts.indices.toSet()
+            else -> before
+        }
+        if (want.isNotEmpty() && want != st.shown) controller.showParts(want)
+    }
+    // The pages follow every new layout (a turn, Only my part, zoom): the place is kept as a bar.
+    val renders by controller.renders.collectAsState()
+    LaunchedEffect(ms.open, renders, ms.viewport) {
+        ms.pages = if (ms.open && ms.viewport > 0f) controller.standSystems().let { sys ->
+            StandPages(sys, ms.viewport, maxOf(controller.standContentHeight(), sys.lastOrNull()?.bottom ?: 0f)) }.takeIf { it.count > 0 } else null
+    }
+    // Playback turns the pages (Settings can turn that off); a bar moved by hand brings its page.
+    LaunchedEffect(ms.open, st.bar, ms.pages) {
+        val p = ms.pages ?: return@LaunchedEffect
+        if (!ms.open || !st.playing || !follow) return@LaunchedEffect
+        val to = p.followPlayback(ms.page, st.bar)
+        if (to != ms.page) ms.topBar = p.topBar(to)
+    }
+    LaunchedEffect(ms.open, st.bar) {
+        val p = ms.pages ?: return@LaunchedEffect
+        if (!ms.open || st.playing) return@LaunchedEffect
+        val to = p.pageShowing(ms.page, st.bar)
+        if (to != ms.page) ms.topBar = p.topBar(to)
+    }
+    StandAutoHide(ms, st.playing, assistive, keyboard, keepControls, ::hideLayer)
+    // Entering: focus on the score, and the announcement (section 6); leaving: focus back on the opener.
+    val standTitle = st.title.ifBlank { r.composition?.title.orEmpty() }
+    val position = standPosition(st, yours, standTitle, ms, shape)
+    val entered = stringResource(R.string.stand_entered, position.part, st.bar, st.totalBars)
+    val hintText = stringResource(R.string.stand_hint)
+    LaunchedEffect(ms.open) {
+        if (ms.open) {
+            runCatching { scoreFocus.requestFocus() }
+            quiet(if (assistive) entered else "$entered $hintText")
+        } else if (focusOpener) {
+            focusOpener = false
+            runCatching { standButton.requestFocus() }
+        }
+    }
+    DisposableEffect(Unit) { onDispose { if (ms.locked) lockRotation(activity, false) } }
+    val autoRotateOff = rememberAutoRotateOff(ms.open && shape.lockAvailable)
+    val held = rememberHeldOrientation(ms.open && shape.lockAvailable && autoRotateOff)
+    val turnPill = ms.open && shape.lockAvailable && autoRotateOff && !ms.locked && held != null && held != configuration.orientation
+    val standSummary = stringResource(R.string.stand_score_summary, position.part, st.bar, st.totalBars, ms.page + 1, ms.pageCount)
+
     Scaffold(
         containerColor = c.bg,
         topBar = {
@@ -172,8 +351,18 @@ fun ScoreScreen(vm: PlayViewModel) {
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding)) {
-            // The score toolbar: part picker, written or concert pitch, zoom, Read aloud and Full screen.
+        Column(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding).onPreviewKeyEvent { e ->
+            val n = e.nativeKeyEvent
+            when {
+                ms.open -> standKey(e, ms.layerFocused, ::standCommand)
+                // F opens the stand (a single-key shortcut on the score screen, 2.1.4).
+                e.type == KeyEventType.KeyDown && !textView &&
+                    MusicStandRules.opensStand(e.key.nativeKeyCode, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) -> { enterStand(StandOrigin.BUTTON); true }
+                else -> false
+            }
+        }) {
+            if (performance) MusicStandBand(position, shape, ms, onlyMineOffered, { ms.onlyMine = !ms.onlyMine }, ::toggleLock, ::leaveStand)
+            // The score toolbar: part picker, written or concert pitch, zoom, and the music stand.
             if (!performance) FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
                 horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
@@ -189,6 +378,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     PracticeChip(writtenLabel, !st.concertPitch, { controller.setConcertPitch(false) }, role = Role.RadioButton)
                     PracticeChip(stringResource(R.string.concert_pitch), st.concertPitch, { controller.setConcertPitch(true) }, role = Role.RadioButton)
                     IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                    MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
                 } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
                     SegmentedButton(selected = !st.concertPitch, onClick = { controller.setConcertPitch(false) }, shape = SegmentedButtonDefaults.itemShape(0, 2),
                         colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(writtenLabel, maxLines = 2) }
@@ -196,6 +386,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                         colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.concert_pitch), maxLines = 2) }
                 }
                     IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
+                    Spacer(Modifier.size(BrasscribeSpace.s2))
+                    MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
                 }
             }
             if (writtenTip && !performance) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
@@ -205,13 +397,17 @@ fun ScoreScreen(vm: PlayViewModel) {
                     color = c.textMuted, modifier = Modifier.weight(1f))
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
             }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            Box(Modifier.weight(1f).fillMaxWidth()
+                .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
+                    androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal)) else Modifier)
+                .onSizeChanged { ms.viewport = it.height.toFloat() }) {
                 if (textView && !performance) {
                     PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
                     AndroidView(
                         factory = { controller.view },
-                        modifier = Modifier.fillMaxSize().semantics {
+                        // On the stand the surface over it is the score for TalkBack (with page actions).
+                        modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText
@@ -226,9 +422,20 @@ fun ScoreScreen(vm: PlayViewModel) {
                     )
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
-                    // Status messages float over the bottom of the notation, clear of the player.
-                    if (!performance) StatusLine(status, Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
-                    if (performance) PerformanceBar(controller, st, Modifier.align(Alignment.BottomCenter), onBar = ::moveBar) { performance = false }
+                    if (performance) MusicStandOverlay(
+                        controller, st, ms, shape, scoreFocus, standSummary, assistive, reducedMotion, onlyMineOffered,
+                        turnPill, onTurnMusic = {
+                            lockRotation(activity, true, if (held == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT)
+                            ms.locked = true
+                        },
+                        onPage = ::turnPage, onBar = ::moveBar, onTap = ::tapMusic, onSpeed = { controller.setSpeed(it) },
+                        onRepeat = ::toggleRepeat, onOnlyMine = { ms.onlyMine = !ms.onlyMine }, onLock = ::toggleLock,
+                    )
+                    // Status messages float over the bottom of the notation, clear of the player. On the stand they
+                    // are heard, not drawn over the music. One line in both, so no message is lost at the switch.
+                    StatusLine(if (performance) status?.copy(quiet = true) else status,
+                        Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                 }
             }
             if (!performance && st.basicTier) BandSoundsMissing(st.bandSoundsExpected)
@@ -241,62 +448,27 @@ fun ScoreScreen(vm: PlayViewModel) {
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
             LoopControl(st.totalBars, st.loop, onSet = { a, b ->
-                controller.setLoop(a..b); vm.say(R.string.loop_set_announce, a, b); sheet = null
+                controller.setLoop(a..b); ms.lastLoop = a..b; vm.say(R.string.loop_set_announce, a, b); sheet = null
             }, onClear = { controller.setLoop(null); vm.say(R.string.loop_cleared); sheet = null }, invalid = { vm.say(R.string.loop_invalid, st.totalBars) })
         }
         Sheet.SOUND -> BottomSheet({ sheet = null }) {
-            // The View menu (the review's P2): Read aloud and Full screen, then the sound.
+            // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
                 PracticeChip(stringResource(R.string.read_aloud), textView, { textView = !textView; sheet = null }, icon = R.drawable.ic_bc_talking_score)
-                PracticeChip(stringResource(R.string.performance_enter), false, { textView = false; performance = true; sheet = null },
-                    Modifier.semantics { testTag = "performance" }, icon = R.drawable.ic_bc_picture_in_picture, role = Role.Button)
+                PracticeChip(stringResource(R.string.stand_enter), false, { sheet = null; enterStand(StandOrigin.BUTTON) },
+                    Modifier.semantics { testTag = "performance" }, icon = R.drawable.ic_stand_music_stand, role = Role.Button)
             }
             SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) } }
         null -> Unit
     }
 }
 
-/** Screen awake and no system bars while the score is on a stand; both are restored on the way out. */
+/** The way onto the music stand (section 5.1): outline, with the icon and a visible label. */
 @Composable
-private fun PerformanceWindow(enabled: Boolean) {
-    val view = LocalView.current
-    DisposableEffect(enabled) {
-        val window = generateSequence(view.context) { (it as? ContextWrapper)?.baseContext }
-            .filterIsInstance<Activity>().firstOrNull()?.window
-        val bars = window?.let { WindowCompat.getInsetsController(it, view) }
-        view.keepScreenOn = enabled
-        if (enabled) {
-            bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            bars?.hide(WindowInsetsCompat.Type.systemBars())
-        } else {
-            bars?.show(WindowInsetsCompat.Type.systemBars())
-        }
-        onDispose {
-            view.keepScreenOn = false
-            bars?.show(WindowInsetsCompat.Type.systemBars())
-        }
-    }
-}
-
-/** The only controls left on stage: Play, a bar either way, the bar you are on, and the way out. */
-@Composable
-private fun PerformanceBar(controller: ScoreController, st: ScoreUiState, modifier: Modifier = Modifier, onBar: (Int) -> Unit, onExit: () -> Unit) {
-    val c = BrasscribeTheme.colors
-    // Opaque: it sits on top of the notation.
-    Surface(modifier.fillMaxWidth(), color = c.surfaceRaised, contentColor = c.text, border = BorderStroke(1.dp, c.border)) {
-        Row(Modifier.fillMaxWidth().padding(BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-            FilledIconButton(
-                controller::togglePlay, Modifier.size(56.dp).semantics { testTag = "play" }, shape = CircleShape,
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.primary, contentColor = c.onPrimary),
-            ) { BcIcon(if (st.playing) R.drawable.ic_bc_pause else R.drawable.ic_bc_play, stringResource(if (st.playing) R.string.pause else R.string.play)) }
-            IconButton({ onBar(-1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
-            IconButton({ onBar(1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar)) }
-            Text(stringResource(R.string.bar_of, st.bar, st.totalBars), style = BrasscribeNumericStyle, modifier = Modifier.weight(1f))
-            OutlineButton(stringResource(R.string.performance_exit), onExit, Modifier.semantics { testTag = "performance-exit" }, fill = false)
-        }
-    }
+private fun MusicStandButton(focus: FocusRequester, onClick: () -> Unit) {
+    PracticeChip(stringResource(R.string.stand_enter), false, onClick,
+        Modifier.focusRequester(focus).semantics { testTag = "stand-enter" }, icon = R.drawable.ic_stand_music_stand, role = Role.Button)
 }
 
 @Composable

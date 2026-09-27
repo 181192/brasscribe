@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -143,6 +144,16 @@ fun HomeScreen(vm: PlayViewModel) {
     val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
     val recorder = rememberRecorder(vm)
     LaunchedEffect(Unit) { vm.refreshComputerScores() }
+    // Back from a music stand opened from the library: focus on that score's row (music-stand.md section 6).
+    val focusEntry by vm.focusEntry.collectAsState()
+    val rowFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val closed = stringResource(R.string.stand_left)
+    LaunchedEffect(focusEntry) {
+        if (focusEntry == null) return@LaunchedEffect
+        vm.status.value = no.brasscribe.play.Status(closed, quiet = true)
+        runCatching { rowFocus.requestFocus() }
+        vm.focusEntry.value = null
+    }
 
     Scaffold(containerColor = c.bg) { padding ->
         Column(
@@ -199,6 +210,7 @@ fun HomeScreen(vm: PlayViewModel) {
                         ListRow(
                             no.brasscribe.play.ScoreTitles.display(entry.title, entry.updated),
                             { vm.openEntry(entry) },
+                            if (entry.id == focusEntry) Modifier.focusRequester(rowFocus) else Modifier,
                             subtitle = if (opening == entry.id) stringResource(R.string.opening_score) else scoreSubtitle(entry),
                             icon = if (entry.onComputer) R.drawable.ic_bc_computer else R.drawable.ic_bc_score,
                             chevron = false,
