@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The flyout content (design/server-app.md §7), also shown in the "Brasscribe on this PC" window.
+    Top to bottom is the reading and focus order. Sub-views (Phones and tablets, confirmations) replace
+    the main view in place, with Back first.
+-->
+<UserControl
+    x:Class="Brasscribe.Bandroom.Views.BandroomPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Bandroom.Core.ViewModels"
+    xmlns:local="using:Brasscribe.Bandroom.Views">
+
+    <Grid x:Name="Root" Padding="14,14,14,12">
+
+        <!-- ===== Main ===== -->
+        <StackPanel x:Name="MainView" Spacing="12" Visibility="{x:Bind Vm.IsMainView, Mode=OneWay}">
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Image x:Name="Mark" Width="20" Height="20" Margin="0,2,0,0" VerticalAlignment="Top"
+                       AutomationProperties.AccessibilityView="Raw" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock x:Name="HeaderText" Text="{x:Bind Vm.Header, Mode=OneWay}" Style="{StaticResource PanelHeadingStyle}"
+                               AutomationProperties.HeadingLevel="Level1" />
+                    <StackPanel x:Name="StatusLine" Orientation="Horizontal" Spacing="6"
+                                AutomationProperties.Name="{x:Bind Vm.StatusWord, Mode=OneWay}"
+                                AutomationProperties.LiveSetting="Polite">
+                        <FontIcon x:Name="StatusIcon" Style="{StaticResource IconStyle}" FontSize="16"
+                                  Glyph="{x:Bind StatusGlyph(Vm.State), Mode=OneWay}"
+                                  Foreground="{x:Bind StatusBrush(Vm.State), Mode=OneWay}"
+                                  AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Text="{x:Bind Vm.StatusWord, Mode=OneWay}" Style="{StaticResource BodyStyle}" />
+                    </StackPanel>
+                </StackPanel>
+                <Button x:Name="MoreButton" Grid.Column="2" Style="{StaticResource PlainButtonStyle}" MinWidth="40" Padding="8"
+                        VerticalAlignment="Top"
+                        AutomationProperties.Name="{x:Bind Vm.MoreLabel}" ToolTipService.ToolTip="{x:Bind Vm.MoreLabel}">
+                    <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconMore}" />
+                    <Button.Flyout>
+                        <MenuFlyout x:Name="MoreMenu" Placement="BottomEdgeAlignedRight" />
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+
+            <TextBlock x:Name="StatusSubText" Text="{x:Bind Vm.StatusSub, Mode=OneWay}" Style="{StaticResource MutedStyle}"
+                       Visibility="{x:Bind HasText(Vm.StatusSub), Mode=OneWay}" />
+
+            <!-- Now: only while a score is being made. -->
+            <Border x:Name="NowCard" Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.IsBusy, Mode=OneWay}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind Upper(Vm.NowHeading)}" Style="{StaticResource OverlineStyle}"
+                               AutomationProperties.Name="{x:Bind Vm.NowHeading}" AutomationProperties.HeadingLevel="Level2" />
+                    <TextBlock Text="{x:Bind Vm.JobStep, Mode=OneWay}" Style="{StaticResource PanelHeadingStyle}" />
+                    <TextBlock Text="{x:Bind Vm.JobSource, Mode=OneWay}" Style="{StaticResource MutedStyle}"
+                               Visibility="{x:Bind HasText(Vm.JobSource), Mode=OneWay}" />
+                    <ProgressBar x:Name="JobProgress" Style="{StaticResource BrassProgressStyle}" Margin="0,6,0,2" Maximum="100"
+                                 Value="{x:Bind Vm.JobPercent, Mode=OneWay}"
+                                 AutomationProperties.Name="{x:Bind Vm.JobStep, Mode=OneWay}" />
+                    <Grid>
+                        <TextBlock Text="{x:Bind Vm.JobProgressText, Mode=OneWay}" Style="{StaticResource StrongStyle}" />
+                        <TextBlock Text="{x:Bind Vm.QueueText, Mode=OneWay}" Style="{StaticResource MutedStyle}" HorizontalAlignment="Right"
+                                   Visibility="{x:Bind Vm.HasQueue, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- The one primary: usually Pair a phone. -->
+            <Button x:Name="PrimaryButton" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch"
+                    Command="{x:Bind Vm.PrimaryCommand}" Visibility="{x:Bind Vm.HasPrimary, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind Vm.PrimaryLabel, Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource BcIconPairPhone}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16"
+                              Visibility="{x:Bind Vm.PrimaryIsPair, Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind Vm.PrimaryLabel, Mode=OneWay}" />
+                </StackPanel>
+            </Button>
+
+            <!-- Phones and tablets: opens the list inside the panel. -->
+            <Button x:Name="DevicesRow" Style="{StaticResource RowButtonStyle}" Command="{x:Bind Vm.ShowDevicesCommand}"
+                    AutomationProperties.Name="{x:Bind Join(Vm.DevicesHeading, Vm.DevicesSummary), Mode=OneWay}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconPairPhone}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{x:Bind Vm.DevicesHeading}" Style="{StaticResource StrongStyle}" />
+                        <TextBlock Text="{x:Bind Vm.DevicesSummary, Mode=OneWay}" Style="{StaticResource MutedStyle}"
+                                   Visibility="{x:Bind HasText(Vm.DevicesSummary), Mode=OneWay}" />
+                    </StackPanel>
+                    <FontIcon Grid.Column="2" Style="{StaticResource IconStyle}" Glyph="&#xE76C;" FontSize="12" />
+                </Grid>
+            </Button>
+
+            <!-- This computer: health in words, neutral meters. -->
+            <Border x:Name="ComputerCard" Style="{StaticResource CardStyle}" Padding="12,10" Visibility="{x:Bind Vm.HasHealth, Mode=OneWay}">
+                <StackPanel>
+                    <TextBlock Text="{x:Bind Upper(Vm.ComputerHeading)}" Style="{StaticResource OverlineStyle}" Margin="0,0,0,4"
+                               AutomationProperties.Name="{x:Bind Vm.ComputerHeading}" AutomationProperties.HeadingLevel="Level2" />
+                    <Grid MinHeight="44" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconWorkload}" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Vm.LoadLabel}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind Vm.LoadWord, Mode=OneWay}" Style="{StaticResource StrongStyle}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.LoadLevel, 1), Mode=OneWay}" />
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.LoadLevel, 2), Mode=OneWay}" />
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.LoadLevel, 3), Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Grid MinHeight="44" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconWorkload}" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Vm.MemoryLabel}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind Vm.MemoryWord, Mode=OneWay}" Style="{StaticResource StrongStyle}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.MemoryLevel, 1), Mode=OneWay}" />
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.MemoryLevel, 2), Mode=OneWay}" />
+                            <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.MemoryLevel, 3), Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Grid MinHeight="44" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconDisk}" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Vm.DiskLabel}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind Vm.DiskText, Mode=OneWay}" Style="{StaticResource StrongStyle}" VerticalAlignment="Center" />
+                    </Grid>
+                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Grid MinHeight="44" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Style="{StaticResource IconStyle}" Glyph="{x:Bind ReadyGlyph(Vm.IsReady), Mode=OneWay}" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind Vm.ReadyLabel}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind Vm.ReadyWord, Mode=OneWay}" Style="{StaticResource StrongStyle}" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock Text="{x:Bind Vm.SpeedCaption, Mode=OneWay}" Style="{StaticResource CaptionStyle}" Margin="0,0,0,2" />
+                </StackPanel>
+            </Border>
+
+            <!-- Restart and Stop are outline buttons; Open Studio is plain. -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="RestartButton" Style="{StaticResource OutlineButtonStyle}" Command="{x:Bind Vm.RestartCommand}"
+                        IsEnabled="{x:Bind Vm.CanRestart, Mode=OneWay}" AutomationProperties.Name="{x:Bind Vm.RestartLabel}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="{StaticResource BcIconRestart}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16" />
+                        <TextBlock Text="{x:Bind Vm.RestartLabel}" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="StopButton" Style="{StaticResource OutlineButtonStyle}" Command="{x:Bind Vm.StopCommand}"
+                        IsEnabled="{x:Bind Vm.CanStop, Mode=OneWay}" AutomationProperties.Name="{x:Bind Vm.StopLabel}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="{StaticResource BcIconShutDown}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16" />
+                        <TextBlock Text="{x:Bind Vm.StopLabel}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <Button x:Name="StudioButton" Style="{StaticResource PlainButtonStyle}" Command="{x:Bind Vm.OpenStudioCommand}"
+                    Margin="-10,-6,0,0" AutomationProperties.Name="{x:Bind Vm.OpenStudioLabel}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource BcIconOpenStudio}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16" />
+                    <TextBlock Text="{x:Bind Vm.OpenStudioLabel}" />
+                </StackPanel>
+            </Button>
+
+            <!-- Details for the band's tech person: collapsed. -->
+            <Expander x:Name="TechExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      AutomationProperties.Name="{x:Bind Vm.TechSummary}">
+                <Expander.Header>
+                    <TextBlock Text="{x:Bind Vm.TechSummary}" Style="{StaticResource StrongStyle}" />
+                </Expander.Header>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{x:Bind Vm.TechText, Mode=OneWay}" Style="{StaticResource MonoStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind Vm.ShowLogsLabel}" Command="{x:Bind Vm.ShowLogsCommand}" />
+                        <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind Vm.CopyLabel}" Command="{x:Bind Vm.CopyDiagnosticsCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+
+        <!-- ===== Phones and tablets ===== -->
+        <StackPanel x:Name="DevicesView" Spacing="12" Visibility="{x:Bind Vm.IsDevicesView, Mode=OneWay}">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="BackButton" Style="{StaticResource PlainButtonStyle}" Padding="8" Command="{x:Bind Vm.BackCommand}"
+                        AutomationProperties.Name="{x:Bind Vm.BackLabel}" ToolTipService.ToolTip="{x:Bind Vm.BackLabel}">
+                    <FontIcon Style="{StaticResource IconStyle}" Glyph="{StaticResource BcIconBack}" />
+                </Button>
+                <TextBlock x:Name="DevicesHeading" Grid.Column="1" Text="{x:Bind Vm.DevicesHeading}" Style="{StaticResource PanelHeadingStyle}"
+                           VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1" />
+            </Grid>
+            <ItemsRepeater x:Name="DeviceList" ItemsSource="{x:Bind Vm.Devices}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Spacing="0" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DeviceRow">
+                        <Grid MinHeight="56" Padding="10,6" ColumnSpacing="12" Background="{ThemeResource BcSurfaceRaisedBrush}"
+                              BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="1,1,1,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource IconWellStyle}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
+                                <FontIcon Style="{StaticResource IconStyle}" Glyph="{x:Bind local:Glyphs.Device(IsTablet)}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource StrongStyle}" />
+                                <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedStyle}" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Style="{StaticResource PlainButtonStyle}" MinHeight="44" VerticalAlignment="Center"
+                                    Content="{x:Bind RemoveText}" Tag="{x:Bind Id}" Click="OnRemoveClick"
+                                    AutomationProperties.Name="{x:Bind RemoveName}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <TextBlock Text="{x:Bind Vm.EmptyDevicesText}" Style="{StaticResource BodyStyle}" Visibility="{x:Bind Vm.HasNoDevices, Mode=OneWay}" />
+            <Button Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch" Command="{x:Bind Vm.PairCommand}"
+                    AutomationProperties.Name="{x:Bind Vm.PairLabel}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource BcIconPairPhone}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16" />
+                    <TextBlock Text="{x:Bind Vm.PairLabel}" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <!-- ===== Confirmations: Stop while busy, Restart while busy, Remove a phone ===== -->
+        <StackPanel x:Name="ConfirmView" Spacing="12" Visibility="{x:Bind Vm.IsConfirmView, Mode=OneWay}">
+            <TextBlock x:Name="ConfirmTitle" Text="{x:Bind Vm.ConfirmTitle, Mode=OneWay}" Style="{StaticResource PanelHeadingStyle}"
+                       AutomationProperties.HeadingLevel="Level1" />
+            <TextBlock Text="{x:Bind Vm.ConfirmBody, Mode=OneWay}" Style="{StaticResource MutedStyle}"
+                       Visibility="{x:Bind HasText(Vm.ConfirmBody), Mode=OneWay}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button x:Name="ConfirmSecondary" Style="{StaticResource SecondaryButtonStyle}" Content="{x:Bind Vm.ConfirmSecondaryLabel, Mode=OneWay}"
+                        Command="{x:Bind Vm.ConfirmCancelCommand}" />
+                <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind Vm.ConfirmTertiaryLabel, Mode=OneWay}"
+                        Command="{x:Bind Vm.ConfirmTertiaryCommand}" Visibility="{x:Bind Vm.HasConfirmTertiary, Mode=OneWay}" />
+                <Button x:Name="ConfirmPrimary" Style="{StaticResource PrimaryButtonStyle}" Content="{x:Bind Vm.ConfirmPrimaryLabel, Mode=OneWay}"
+                        Command="{x:Bind Vm.ConfirmPrimaryCommand}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Screen-reader announcements that don't move focus. -->
+        <TextBlock x:Name="AnnouncerHost" Width="1" Height="1" Opacity="0" IsHitTestVisible="False" />
+    </Grid>
+</UserControl>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Brasscribe Bandroom as MSIX (spec §5.3): per user, no administrator prompt, runFullTrust, and a
+    StartupTask so it starts at sign-in. The user can turn that off in Task Manager › Startup apps; the
+    app reads the state through Windows.ApplicationModel.StartupTask ("BrasscribeBandroom").
+    Used only for an MSIX build (WindowsPackageType=MSIX); see README.md.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 desktop rescap">
+
+  <Identity Name="Brasscribe.Bandroom" Publisher="CN=brasscribe" Version="0.1.0.0" ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Brasscribe Bandroom</DisplayName>
+    <PublisherDisplayName>Brasscribe</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19045.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="nb-NO" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+      <uap:VisualElements DisplayName="Brasscribe Bandroom" Description="Brasscribe on this computer: phones and tablets make full-band scores here."
+                          BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png"
+                         Square310x310Logo="Assets\LargeTile.png" ShortName="Bandroom" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start at sign-in, on by default after the first run; the argument tells the app not to open its window. -->
+        <uap5:Extension Category="windows.startupTask">
+          <uap5:StartupTask TaskId="BrasscribeBandroom" Enabled="true" DisplayName="Brasscribe Bandroom" />
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+    <Capability Name="privateNetworkClientServer" />
+  </Capabilities>
+</Package>

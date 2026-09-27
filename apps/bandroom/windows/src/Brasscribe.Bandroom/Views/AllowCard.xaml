@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Allow Kari's iPhone?" with the four-digit number both screens show (§3.4 way 1). -->
+<UserControl
+    x:Class="Brasscribe.Bandroom.Views.AllowCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource CardStyle}" Padding="16">
+        <StackPanel Spacing="10" HorizontalAlignment="Stretch">
+            <Image x:Name="Mark" Width="32" Height="32" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="TitleText" Text="{x:Bind Vm.Title}" Style="{StaticResource PanelHeadingStyle}" HorizontalAlignment="Center"
+                       TextAlignment="Center" AutomationProperties.HeadingLevel="Level2" />
+            <TextBlock Text="{x:Bind Vm.Body}" Style="{StaticResource MutedStyle}" TextAlignment="Center"
+                       Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" />
+            <StackPanel Spacing="2" Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" AutomationProperties.Name="{x:Bind Vm.MatchSpoken}">
+                <TextBlock Text="{x:Bind Vm.MatchLabel}" Style="{StaticResource BodyStyle}" HorizontalAlignment="Center"
+                           AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Text="{x:Bind Vm.MatchCode}" FontSize="32" FontWeight="SemiBold" CharacterSpacing="200"
+                           Foreground="{ThemeResource BcTextBrush}" HorizontalAlignment="Center"
+                           AutomationProperties.AccessibilityView="Raw" />
+            </StackPanel>
+            <Button x:Name="AllowButton" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch"
+                    Content="{x:Bind Vm.AllowLabel}" Command="{x:Bind Vm.AllowCommand}" Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" />
+            <Button Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Stretch"
+                    Content="{x:Bind Vm.DenyLabel}" Command="{x:Bind Vm.DenyCommand}" Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" />
+            <TextBlock Text="{x:Bind Vm.ExpiredText}" Style="{StaticResource BodyStyle}" TextAlignment="Center"
+                       Visibility="{x:Bind Vm.IsExpired, Mode=OneWay}" />
+            <Button x:Name="CloseButton" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Stretch"
+                    Content="{x:Bind Vm.CloseLabel}" Command="{x:Bind Vm.DismissCommand}" Visibility="{x:Bind Vm.IsExpired, Mode=OneWay}" />
+        </StackPanel>
+    </Border>
+</UserControl>

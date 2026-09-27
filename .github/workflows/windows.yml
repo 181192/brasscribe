@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths: &paths
       - "apps/windows/**"
+      - "apps/bandroom/**"
       - "core/**"
       - "design/**"
       - "docs/accessibility/talking-score-vectors.json"
@@ -176,4 +177,108 @@ jobs:
           name: dist-windows-x64
           path: ${{ runner.temp }}/out/*.zip
           if-no-files-found: error
+
+  # Brasscribe Bandroom for Windows (apps/bandroom/windows): Core tests, the WinUI 3 tray app build, a smoke
+  # test of the real start (admin credential, data folder, window form), an Axe.Windows scan of every view
+  # and screenshots to compare with design/mockups/png/server-*.
+  bandroom:
+    name: bandroom (test, build and scan)
+    if: ${{ !inputs.release }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: apps/bandroom/windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: apps/bandroom/windows/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-bandroom-${{ runner.os }}-${{ hashFiles('apps/bandroom/windows/Directory.Packages.props', 'apps/bandroom/windows/**/*.csproj') }}
+          restore-keys: nuget-bandroom-${{ runner.os }}-
+
+      - name: Core tests
+        run: >
+          dotnet test tests/Brasscribe.Bandroom.Core.Tests -c $env:CONFIGURATION
+          --logger "trx;LogFileName=bandroom-core.trx" --results-directory "$env:RUNNER_TEMP/bandroom-results"
+
+      - name: Build Bandroom (WinUI 3, unpackaged, x64)
+        run: dotnet build src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
+
+      - name: Locate the exe
+        id: exe
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
+          if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/src/brasscribe_engine/api.py", "workspace/ml/adapters/run_adapter.py")) {
+            if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
+          }
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+
+      # The real start: no engine can be installed here (no pixi, about 10 GB), so it stays in "Setting up",
+      # but the admin credential, the log, the icon and the window form must all work.
+      - name: Smoke test (the real start shows its window and keeps running)
+        run: |
+          $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -PassThru
+          $deadline = (Get-Date).AddSeconds(90)
+          while ($p.MainWindowHandle -eq 0 -and -not $p.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500; $p.Refresh() }
+          Start-Sleep -Seconds 8
+          $data = Join-Path $env:LOCALAPPDATA "Brasscribe"
+          $crash = Join-Path $data "logs/bandroom-crash.log"
+          if ($p.HasExited) {
+            if (Test-Path $crash) { Get-Content $crash }
+            throw "Bandroom exited with code $($p.ExitCode)"
+          }
+          if ($p.MainWindowHandle -eq 0) { throw "No window after 90 s" }
+          Write-Host "Window: $($p.MainWindowTitle)"
+          Get-Content (Join-Path $data "logs/engine.log")
+          $token = Join-Path $data "bandroom/admin-token"
+          if (-not (Test-Path $token)) { throw "no admin credential" }
+          $acl = Get-Acl $token
+          $acl.Access | Format-Table IdentityReference, FileSystemRights, AccessControlType, IsInherited
+          if ($acl.AreAccessRulesProtected -ne $true -or @($acl.Access).Count -ne 1) { throw "the admin credential is readable by more than this user" }
+          Stop-Process -Id $p.Id -Force
+          if (Test-Path $crash) { Get-Content $crash; throw "Bandroom logged an unhandled exception" }
+
+      - name: Accessibility scan (Axe.Windows)
+        run: >
+          dotnet run --project tools/AxeScan -c $env:CONFIGURATION --
+          "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/bandroom-axe"
+          flyout devices confirm-stop window pair allow
+
+      - name: Screenshots
+        if: ${{ !cancelled() && steps.exe.outputs.path != '' }}
+        run: ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out "$env:RUNNER_TEMP/bandroom-screenshots"
+
+      - name: Crash log
+        if: ${{ failure() }}
+        run: |
+          $log = Join-Path $env:LOCALAPPDATA "Brasscribe/logs/bandroom-crash.log"
+          if (Test-Path $log) { Get-Content $log } else { "no bandroom-crash.log" }
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandroom-windows-screenshots
+          path: ${{ runner.temp }}/bandroom-screenshots
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload test and scan results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandroom-windows-results
+          path: |
+            ${{ runner.temp }}/bandroom-results
+            ${{ runner.temp }}/bandroom-axe
+          retention-days: 14
+          if-no-files-found: ignore
 

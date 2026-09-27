@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Type-checks Brasscribe Bandroom's C# (code-behind, platform code, composition root) without the WinUI
+    XAML compiler, which only runs on Windows. Play's gen_stubs.py writes the members the XAML compiler
+    would generate. Run tools/check-macos.sh. The real app build happens on Windows CI.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(BrasscribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(BrasscribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <OutputType>Library</OutputType>
+    <UseWinUI>true</UseWinUI>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Brasscribe.Bandroom</RootNamespace>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <AppDir>$(MSBuildThisFileDirectory)../../src/Brasscribe.Bandroom</AppDir>
+    <StubGen>$(MSBuildThisFileDirectory)../../../../windows/tools/CodeBehindCheck/gen_stubs.py</StubGen>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(AppDir)/**/*.cs" Exclude="$(AppDir)/obj/**;$(AppDir)/bin/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(AppDir)/../Brasscribe.Bandroom.Core/Brasscribe.Bandroom.Core.csproj" />
+  </ItemGroup>
+  <Target Name="GenerateXamlStubs" BeforeTargets="CoreCompile;BeforeBuild">
+    <Exec Command="python3 &quot;$(StubGen)&quot; &quot;$(AppDir)&quot; &quot;$(IntermediateOutputPath)stubs&quot;" />
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)stubs/*.cs" />
+      <Compile Include="$(IntermediateOutputPath)stubs/*.cs" />
+    </ItemGroup>
+  </Target>
+</Project>
