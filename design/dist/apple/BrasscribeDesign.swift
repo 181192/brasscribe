@@ -228,6 +228,17 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
     case file
     case folder
     case textSize
+    case pairPhone
+    case restart
+    case shutDown
+    case openStudio
+    case download
+    case accessKey
+    case network
+    case workload
+    case disk
+    case running
+    case attention
 
     public var systemName: String {
         switch self {
@@ -278,6 +289,17 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .file: "doc.text"
         case .folder: "folder"
         case .textSize: "textformat.size"
+        case .pairPhone: "iphone"
+        case .restart: "arrow.clockwise"
+        case .shutDown: "power"
+        case .openStudio: "arrow.up.forward.square"
+        case .download: "arrow.down.circle"
+        case .accessKey: "key"
+        case .network: "wifi"
+        case .workload: "memorychip"
+        case .disk: "internaldrive"
+        case .running: "checkmark.circle"
+        case .attention: "exclamationmark.triangle"
         }
     }
 }

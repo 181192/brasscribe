@@ -47,6 +47,17 @@
     "score":           {"en": "Score",                "nb": "Partitur",              "apple": "music.note",              "material": "music_note",          "windows": {"glyph": "EC4F", "name": "MusicNote"}},
     "file":            {"en": "File",                 "nb": "Fil",                   "apple": "doc.text",                "material": "description",         "windows": {"glyph": "E8A5", "name": "Document"}},
     "folder":          {"en": "Save to Files",        "nb": "Lagre i Filer",         "apple": "folder",                  "material": "folder",              "windows": {"glyph": "E8B7", "name": "Folder"}},
-    "text-size":       {"en": "Text size",            "nb": "Tekststørrelse",        "apple": "textformat.size",         "material": "format_size",         "windows": {"glyph": "E8E9", "name": "FontSize"}}
+    "text-size":       {"en": "Text size",            "nb": "Tekststørrelse",        "apple": "textformat.size",         "material": "format_size",         "windows": {"glyph": "E8E9", "name": "FontSize"}},
+    "pair-phone":      {"en": "Pair a phone",         "nb": "Koble til en telefon",  "apple": "iphone",                  "material": "smartphone",          "windows": {"glyph": "E8EA", "name": "CellPhone"}},
+    "restart":         {"en": "Restart",              "nb": "Start på nytt",         "apple": "arrow.clockwise",         "material": "restart_alt",         "windows": {"glyph": "E777", "name": "UpdateRestore"}},
+    "shut-down":       {"en": "Stop Brasscribe",      "nb": "Stopp Brasscribe",      "apple": "power",                   "material": "power_settings_new",  "windows": {"glyph": "E7E8", "name": "PowerButton"}},
+    "open-studio":     {"en": "Open Studio",          "nb": "Åpne Studio",           "apple": "arrow.up.forward.square", "material": "open_in_new",         "windows": {"glyph": "E8A7", "name": "OpenInNewWindow"}},
+    "download":        {"en": "Download",             "nb": "Last ned",              "apple": "arrow.down.circle",       "material": "download",            "windows": {"glyph": "E896", "name": "Download"}},
+    "access-key":      {"en": "Access key",           "nb": "Tilgangsnøkkel",        "apple": "key",                     "material": "key",                 "windows": {"glyph": "E8D7", "name": "Permissions"}},
+    "network":         {"en": "Network",              "nb": "Nettverk",              "apple": "wifi",                    "material": "wifi",                "windows": {"glyph": "E701", "name": "Wifi"}},
+    "workload":        {"en": "Work load",            "nb": "Arbeidsmengde",         "apple": "memorychip",              "material": "memory",              "windows": {"glyph": "E9F5", "name": "Processing"}},
+    "disk":            {"en": "Free space",           "nb": "Ledig plass",           "apple": "internaldrive",           "material": "hard_drive",          "windows": {"glyph": "EDA2", "name": "HardDrive"}},
+    "running":         {"en": "Running",              "nb": "Kjører",                "apple": "checkmark.circle",        "material": "check_circle",        "windows": {"glyph": "E930", "name": "Completed"}},
+    "attention":       {"en": "Needs attention",      "nb": "Må sjekkes",            "apple": "exclamationmark.triangle","material": "warning",             "windows": {"glyph": "E7BA", "name": "Warning"}}
   }
 }

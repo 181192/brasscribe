@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Bandroom: first run</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .os { background: var(--bc-surface); }
+  .grid { position: absolute; inset: 24px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 24px; }
+  .win-frame { min-height: 0; }
+  .wbody { flex: 1; display: flex; min-height: 0; }
+  .rail { width: 176px; flex: none; background: var(--bc-surface); box-shadow: inset -1px 0 0 var(--bc-border); padding: 16px 12px; }
+  .rail .steps li { min-height: 36px; font-size: 0.875rem; gap: 8px; }
+  .rail .steps .dot { width: 20px; height: 20px; }
+  .rail .steps .dot .i { width: 14px; height: 14px; }
+  .rail .steps .now .dot::after { width: 6px; height: 6px; }
+  .pagec { flex: 1; min-width: 0; padding: 18px 22px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .pagec h1 { font-family: var(--bc-font-display); font-weight: 400; font-size: 1.875rem; line-height: 1.1; margin: 0; }
+  .pagec p { font-size: 0.9375rem; }
+  .foot { margin-top: auto; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+  .chk { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; }
+  .chk .i { width: 20px; height: 20px; color: var(--bc-text-muted); margin-top: 1px; }
+  .chk .ok { color: var(--bc-success); }
+  ol.how { margin: 0; padding-left: 1.3em; font-size: 0.9375rem; display: flex; flex-direction: column; gap: 4px; }
+  .dl .steps li { min-height: 30px; font-size: 0.9375rem; }
+  .dl .steps .dot { width: 20px; height: 20px; }
+  .dl .steps .dot .i { width: 14px; height: 14px; }
+  .dl .steps .now .dot::after { width: 6px; height: 6px; }
+  a.lnk { color: var(--bc-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; font-size: 0.9375rem; }
+  .menubar-mini { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border); font-size: 0.8125rem; }
+</style>
+</head>
+<body>
+<div class="os">
+<div class="grid">
+
+  <!-- 1. Check this computer -->
+  <div class="win-frame">
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbody">
+      <div class="rail"><ol class="steps">
+        <li class="now"><span class="dot"></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Godta én lisens">Accept one licence</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Last ned">Download</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Klar">Ready</span></li>
+      </ol></div>
+      <div class="pagec">
+        <span data-mark="32" style="color: var(--bc-brass)"></span>
+        <h1 data-nb="Lag partitur på denne datamaskinen">Make scores on this computer</h1>
+        <p class="muted" data-nb="Brasscribe gjør det tunge arbeidet her, så telefoner og nettbrett kan lage partitur for hele bandet. Opptakene blir på dine egne enheter.">Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.</p>
+        <div class="chk"><i data-i="workload"></i><div><b>Apple M3 Pro</b> · <span data-nb="Rask: bruker grafikkbrikken">Fast: uses the graphics chip</span></div></div>
+        <div class="chk"><i data-i="disk"></i><div><span data-nb="Trenger omtrent 15 GB · 212 GB ledig">Needs about 15 GB · 212 GB free</span></div><i data-i="done" class="ok"></i></div>
+        <div class="chk"><i data-i="network"></i><div><span data-nb="Internett: trengs én gang, til nedlastingene">Internet: needed once, for the downloads</span></div><i data-i="done" class="ok"></i></div>
+        <div class="foot"><button class="btn primary desk" data-nb="Fortsett">Continue</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Accept one licence -->
+  <div class="win-frame">
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbody">
+      <div class="rail"><ol class="steps">
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
+        <li class="now"><span class="dot"></span><span class="label" data-nb="Godta én lisens">Accept one licence</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Last ned">Download</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Klar">Ready</span></li>
+      </ol></div>
+      <div class="pagec">
+        <h1 data-nb="Godta én lisens">Accept one licence</h1>
+        <p class="muted" data-nb="Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto.">The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.</p>
+        <ol class="how">
+          <li data-nb="Logg inn og velg «Agree» på MuScriptor-siden.">Sign in and choose “Agree” on the MuScriptor page.</li>
+          <li data-nb="Kom tilbake hit. Brasscribe laster den ned for deg.">Come back here. Brasscribe downloads it for you.</li>
+        </ol>
+        <div style="display:flex; gap: 16px; flex-wrap: wrap"><a class="lnk" data-nb="Lim inn en tilgangsnøkkel i stedet">Paste an access key instead</a><a class="lnk" data-nb="Les lisensen">Read the licence</a></div>
+        <p class="caption" data-nb="Uten den kan ikke Brasscribe skrive ned et fullt band. Du kan legge den til senere.">Without it, Brasscribe can't write down a full band. You can add it later.</p>
+        <div class="foot">
+          <button class="btn plain desk" data-nb="Hopp over nå">Skip for now</button>
+          <button class="btn primary desk"><i data-i="open-studio"></i><span data-nb="Logg inn med Hugging Face">Sign in with Hugging Face</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Download -->
+  <div class="win-frame">
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbody">
+      <div class="rail"><ol class="steps">
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Godta én lisens">Accept one licence</span></li>
+        <li class="now"><span class="dot"></span><span class="label" data-nb="Last ned">Download</span></li>
+        <li class="todo"><span class="dot"></span><span class="label" data-nb="Klar">Ready</span></li>
+      </ol></div>
+      <div class="pagec dl">
+        <h1 data-nb="Laster ned det Brasscribe trenger">Downloading what Brasscribe needs</h1>
+        <div role="status">
+          <div class="bar" style="margin-top: 4px"><span style="width: 32%"></span></div>
+          <p class="num" style="margin-top: 6px" data-nb="3,1 av 9,8 GB · omtrent 12 min igjen">3.1 of 9.8 GB · about 12 min left</p>
+        </div>
+        <ol class="steps">
+          <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Lytteverktøy">Listening tools</span></li>
+          <li class="now"><span class="dot"></span><span class="label" data-nb="Bandskriver (MuScriptor)">Band writer (MuScriptor)</span></li>
+          <li class="todo"><span class="dot"></span><span class="label" data-nb="Instrumentskiller">Instrument separator</span></li>
+          <li class="todo"><span class="dot"></span><span class="label" data-nb="Taktfinner">Beat finder</span></li>
+        </ol>
+        <p class="caption" data-nb="Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart.">You can close this window. Brasscribe keeps downloading and tells you when it's ready.</p>
+        <div class="foot">
+          <button class="btn secondary desk" data-nb="Pause">Pause</button>
+          <button class="btn outline desk" data-nb="Lukk vinduet">Close window</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Ready -->
+  <div class="win-frame">
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbody">
+      <div class="rail"><ol class="steps">
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Godta én lisens">Accept one licence</span></li>
+        <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Last ned">Download</span></li>
+        <li class="now"><span class="dot"></span><span class="label" data-nb="Klar">Ready</span></li>
+      </ol></div>
+      <div class="pagec">
+        <h1 data-nb="Brasscribe er klar">Brasscribe is ready</h1>
+        <p data-nb="Den kjører i det stille i menylinjen. Se etter Brasscribe-merket øverst på skjermen.">It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.</p>
+        <div><span class="menubar-mini"><span data-state-mark="running" data-size="16"></span><i data-i="network" class="sm" style="width:16px;height:16px"></i><span>14:05</span></span></div>
+        <div><span class="chip on" data-nb="Start når jeg logger på">Start when I log in</span></div>
+        <div class="notice"><i data-i="info" class="sm"></i><span data-nb="Nå spør Macen om Brasscribe får finne enheter på nettverket. Velg «Tillat» så telefonene kan koble seg til.">Next, your Mac asks whether Brasscribe may find devices on your network. Choose “Allow” so phones can connect.</span></div>
+        <div class="foot">
+          <button class="btn secondary desk" data-nb="Ferdig">Done</button>
+          <button class="btn primary desk"><i data-i="pair-phone"></i><span data-nb="Koble til en telefon">Pair a phone</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Bandroom: Windows taskbar corner</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  /* Windows 11 idiom: Segoe UI Variable in the app, 8 px flyout corners, 40 epx controls, Mica ground (surface here). */
+  .os { background: var(--bc-bg); }
+  .col { position: absolute; }
+  .panel.win .btn.desk { min-height: 40px; border-radius: 6px; }
+  .tray-icon { position: relative; display: inline-grid; place-items: center; }
+  .tray-icon img { width: 20px; height: 20px; display: block; }
+  .menu { width: 240px; background: var(--bc-surface-raised); border-radius: 8px; box-shadow: var(--bc-elevation-3); outline: 1px solid var(--bc-border-strong); outline-offset: -1px; padding: 4px; font-size: 0.875rem; }
+  .menu div { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: 4px; }
+  .menu div.on { background: var(--bc-secondary); }
+  .menu hr { border: 0; height: 1px; background: var(--bc-border); margin: 4px 0; }
+  .menu .i { width: 18px; height: 18px; color: var(--bc-text-muted); }
+  .dev .rm { min-height: 40px; }
+  .dev .well { width: 36px; height: 36px; }
+</style>
+</head>
+<body>
+<div class="os">
+
+  <!-- Left: Phones and tablets (sub-view inside the flyout) -->
+  <div class="col" style="left: 40px; top: 40px">
+    <p class="cap">Phones and tablets (inside the flyout)</p>
+    <div class="panel win">
+      <div class="hd" style="align-items:center">
+        <button class="icon-btn" style="margin:0; width: 40px; height: 40px" aria-label="Back"><i data-i="back"></i></button>
+        <h2 class="grow">Phones and tablets</h2>
+      </div>
+      <div class="pcard dev">
+        <div class="prow"><span class="well"><i data-i="pair-phone"></i></span><div class="grow"><div class="val">Kari's iPhone</div><div class="sub">Connected now</div></div><button class="btn plain desk rm">Remove</button></div>
+        <div class="prow"><span class="well"><i data-i="pair-phone"></i></span><div class="grow"><div class="val">Ola's Pixel 8</div><div class="sub">Connected now</div></div><button class="btn plain desk rm">Remove</button></div>
+        <div class="prow"><span class="well"><i data-i="pair-phone"></i></span><div class="grow"><div class="val">Band iPad</div><div class="sub">Last used 3 days ago</div></div><button class="btn plain desk rm">Remove</button></div>
+      </div>
+      <button class="btn primary desk block"><i data-i="pair-phone"></i>Pair a phone</button>
+    </div>
+    <p class="cap" style="margin-top: var(--bc-space-8)">Remove, confirmed</p>
+    <div class="alert" style="width: 360px; text-align: left; border-radius: 8px">
+      <div class="t" style="font-size: 1.125rem">Remove Band iPad?</div>
+      <p>It can't send recordings here until it is paired again. Scores already on the iPad stay.</p>
+      <div class="btns" style="justify-content: flex-end; margin-top: 8px">
+        <button class="btn secondary desk" style="width:auto">Cancel</button>
+        <button class="btn primary desk" style="width:auto">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle: right-click menu on the tray icon -->
+  <div class="col" style="left: 560px; bottom: 60px">
+    <p class="cap">Right-click (or Shift+F10) on the icon</p>
+    <div class="menu" role="menu">
+      <div class="on"><i data-i="computer"></i>Open</div>
+      <div><i data-i="pair-phone"></i>Pair a phone</div>
+      <hr>
+      <div><i data-i="restart"></i>Restart</div>
+      <div><i data-i="shut-down"></i>Stop</div>
+      <hr>
+      <div><i data-i="close"></i>Quit Brasscribe Bandroom</div>
+    </div>
+  </div>
+
+  <!-- Right: the flyout above the tray, idle with an update waiting -->
+  <div class="col" style="right: 12px; bottom: 60px">
+    <div class="panel win">
+      <div class="hd">
+        <span data-mark="22"></span>
+        <div class="grow">
+          <h2>Brasscribe on Kalli's PC</h2>
+          <div class="state ok"><i data-i="running"></i><span>Running</span></div>
+        </div>
+        <button class="icon-btn" aria-label="More"><i data-i="more"></i></button>
+      </div>
+      <p class="muted">Ready. Phones and tablets can send recordings.</p>
+      <button class="btn primary desk block"><i data-i="pair-phone"></i>Pair a phone</button>
+      <div class="pcard">
+        <div class="prow"><i data-i="pair-phone"></i><div class="grow"><div class="val">Phones and tablets</div><div class="sub">2 connected now · 3 paired</div></div><i data-i="open" class="chev"></i></div>
+      </div>
+      <div class="pcard">
+        <h3>This computer</h3>
+        <div class="prow"><i data-i="workload"></i><div class="grow">Work load</div><span class="val">Calm</span><span class="meter" aria-hidden="true"><b class="on"></b><b></b><b></b></span></div>
+        <div class="prow"><i data-i="workload"></i><div class="grow">Memory</div><span class="val">Getting full</span><span class="meter" aria-hidden="true"><b class="on"></b><b class="on"></b><b></b></span></div>
+        <div class="prow"><i data-i="disk"></i><div class="grow">Free space</div><span class="val">86 GB free</span></div>
+        <div class="prow"><i data-i="running"></i><div class="grow">Ready to make scores</div><span class="val">Ready</span></div>
+        <p class="caption" style="padding: 0 12px 10px">Uses the graphics card (NVIDIA)</p>
+      </div>
+      <div class="pcard pad" style="display:flex; gap: 10px; align-items:flex-start">
+        <i data-i="download" style="width:20px;height:20px;color:var(--bc-text-muted)"></i>
+        <div class="grow"><div>Version 1.3 is ready. It installs when nothing is being made.</div>
+        <button class="btn outline desk" style="margin-top: 8px">Update now</button></div>
+      </div>
+      <div class="btns">
+        <button class="btn outline desk"><i data-i="restart"></i>Restart</button>
+        <button class="btn outline desk"><i data-i="shut-down"></i>Stop</button>
+        <span style="flex:1"></span>
+        <button class="btn plain desk"><i data-i="open-studio"></i>Open Studio</button>
+      </div>
+      <details class="tech"><summary>Details for the band's tech person</summary></details>
+    </div>
+  </div>
+
+  <div class="taskbar">
+    <span style="flex:1"></span>
+    <span class="ti"><i data-i="folder"></i></span>
+    <span class="ti"><i data-i="file"></i></span>
+    <span class="ti"><i data-i="settings"></i></span>
+    <span style="flex:1"></span>
+    <span class="ti" aria-label="Show hidden icons" style="transform: rotate(180deg)"><i data-i="choose"></i></span>
+    <span class="ti open tray-icon" title="Brasscribe: running · 2 phones connected"><img src="../dist/icons/web/favicon.svg" alt=""></span>
+    <span class="ti"><i data-i="network"></i></span>
+    
+    <span class="clock"><div>14:05</div><div>27.09.2026</div></span>
+  </div>
+</div>
+</body>
+</html>

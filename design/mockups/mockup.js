@@ -9,7 +9,36 @@
   window.markSVG = (size, cls = "") =>
     `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${MARK}"/></svg>`;
 
+  // Bandroom's menu-bar / tray icon: the mark plus a state badge that differs by shape (never colour alone).
+  // The badge is knocked out of the mark so it reads at 16 px. kind: running | busy | attention | stopped |
+  // starting | updating | error | setup. `pie` is the busy fraction, drawn in 8 steps.
+  let maskId = 0;
+  window.stateMarkSVG = (kind, size, pie = 0.62) => {
+    const id = `sm${maskId++}`;
+    const cut = kind === "running" ? "" : `<circle cx="50" cy="50" r="17" fill="black"/>`;
+    const b = {
+      running: "",
+      busy: (() => {
+        const f = Math.round(pie * 8) / 8, a = f * 2 * Math.PI, r = 11;
+        const x = 50 + r * Math.sin(a), y = 50 - r * Math.cos(a);
+        return `<circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" stroke-width="3"/>` +
+          `<path fill="currentColor" d="M50 50V${50 - r}A${r} ${r} 0 ${f > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)}Z"/>`;
+      })(),
+      attention: `<path fill="currentColor" d="M50 35.5 64 61H36Z"/>`,
+      stopped: `<rect x="39" y="39" width="22" height="22" rx="3" fill="currentColor"/>`,
+      starting: `<circle cx="38.5" cy="50" r="4.5" fill="currentColor"/><circle cx="50" cy="50" r="4.5" fill="currentColor"/><circle cx="61.5" cy="50" r="4.5" fill="currentColor"/>`,
+      updating: `<path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" d="M60 45a11 11 0 1 0 1 8"/><path fill="currentColor" d="M63.5 36v12h-12Z"/>`,
+      error: `<circle cx="50" cy="50" r="13" fill="currentColor"/><path stroke="var(--sm-knock, var(--bc-surface-raised))" stroke-width="4" stroke-linecap="round" d="m44.5 44.5 11 11m0-11-11 11"/>`,
+      setup: `<path fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M50 37v24m-9-9 9 9 9-9"/>`,
+    }[kind];
+    return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="${id}"><rect width="64" height="64" fill="white"/>${cut}</mask></defs>` +
+      `<path fill="currentColor" fill-rule="evenodd" mask="url(#${id})" d="${MARK}"/>${b}</svg>`;
+  };
+
   function icons() {
+    document.querySelectorAll("[data-state-mark]").forEach((el) => {
+      el.outerHTML = window.stateMarkSVG(el.dataset.stateMark, +el.dataset.size || 18, +(el.dataset.pie || 0.62));
+    });
     document.querySelectorAll("i[data-i]").forEach((el) => {
       const d = (globalThis.BrasscribeIcons || {})[el.dataset.i];
       if (!d) { el.textContent = "?"; return; }

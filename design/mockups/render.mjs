@@ -36,6 +36,13 @@ const SCREENS = {
   "first-run": [["phone", "light"], ["phone", "dark"]],
   "error": [["phone", "light"], ["desktop", "dark"]],
   "studio-run": [["desktop", "light"], ["desktop", "dark"]],
+  "server-mac-popover": [["desktop", "light"], ["desktop", "dark"], ["desktop", "hc"]],
+  "server-win-flyout": [["desktop", "light"], ["desktop", "dark"]],
+  "server-first-run": [["desktop", "light"], ["desktop", "dark"]],
+  "server-first-run-nb": [["desktop", "light"]],
+  "server-pair": [["desktop", "light"], ["desktop", "dark"], ["desktop", "hc"]],
+  "server-pair-nb": [["desktop", "light"]],
+  "server-needs-attention": [["desktop", "light"], ["desktop", "dark"]],
 };
 
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".woff2": "font/woff2", ".ttf": "font/ttf", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -60,12 +67,14 @@ for (const [screen, variants] of Object.entries(SCREENS)) {
   if (only.length && !only.includes(screen)) continue;
   for (const [device, theme] of variants) {
     const vp = device === "phone" ? PHONE : DESKTOP;
-    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.deviceScaleFactor, colorScheme: theme });
+    // "hc" renders the high-contrast tokens (data-theme="high-contrast"), the palette macOS Increase Contrast uses.
+    const hc = theme === "hc";
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.deviceScaleFactor, colorScheme: hc ? "dark" : theme });
     const page = await ctx.newPage();
     page.on("pageerror", (e) => console.error(screen, e.message));
     const nb = screen.endsWith("-nb");
     const base = nb ? screen.slice(0, -3) : screen;
-    await page.goto(`http://127.0.0.1:${port}/mockups/${base}.html?device=${device}${nb ? "&lang=nb" : ""}`);
+    await page.goto(`http://127.0.0.1:${port}/mockups/${base}.html?device=${device}${nb ? "&lang=nb" : ""}${hc ? "&theme=high-contrast" : ""}`);
     await page.waitForSelector("body[data-ready]");
     await page.evaluate(() => document.fonts.ready);
     const file = join(OUT, `${screen}-${device}-${theme}.png`);
