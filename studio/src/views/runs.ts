@@ -1,17 +1,26 @@
 // Runs: start a pipeline on a file, capture or dataset item; list and search runs.
 import { api, MissingEndpoint } from "../api/client";
 import type { Job, ProfileInfo, Source } from "../api/types";
-import { t } from "../i18n";
+import { locale, t } from "../i18n";
 import { announce, clear, errorNotice, filePicker, fmt, h, infoTip, loading, more, pill, table, viewHead } from "../ui/dom";
 
-/** A run's display title: the given title, or "Recording, <time>" when there is none or it is a bare timestamp. */
+const short = (d: Date, time: boolean) =>
+  d.toLocaleString(locale(), time ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short" });
+
+/**
+ * A run's display title: the given title; or, when there is none or it is a bare
+ * timestamp (a phone's file name), the recording's date plus the run's own time,
+ * so re-runs of one recording can be told apart ("Recording of 15 Aug, run 26 Sep 19:02").
+ */
 export function runTitle(j: Job): string {
   const raw = (j.title ?? "").trim();
   const m = raw.match(/^(\d{4})(\d{2})(\d{2})[_-]?(\d{2})(\d{2})(\d{2})?$/);
   if (raw && !m) return raw;
-  const when = m ? fmt.date(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString()) : fmt.date(j.created);
-  return t("runs.untitled", { when });
+  const run = short(new Date(j.created * 1000), true);
+  return m ? t("runs.untitled", { rec: short(new Date(+m[1], +m[2] - 1, +m[3]), false), run }) : t("runs.untitledRun", { run });
 }
+
+const PAGE = 20;
 
 export function runLink(j: Job): HTMLAnchorElement {
   return h("a", { href: `#/runs/${encodeURIComponent(j.id)}`, class: "run-link" }, runTitle(j));
@@ -26,10 +35,11 @@ export function runsView(root: HTMLElement): void {
   const chips = h("div", { class: "chips", role: "group", "aria-label": t("runs.filter") });
   let jobs: Job[] = [];
   let filter: Filter = "all";
+  let limit = PAGE; // 20 rows, then "Show more"
   const matches = (j: Job, f: Filter) => f === "all" || (f === "failed" ? j.status === "failed" || j.status === "cancelled" : j.status === "running" || j.status === "queued");
 
   const renderChips = () => clear(chips, (["all", "failed", "running"] as Filter[]).map((f) =>
-    h("button", { type: "button", class: "chip", "aria-pressed": String(filter === f), onclick: () => { filter = f; renderList(); } },
+    h("button", { type: "button", class: "chip", "aria-pressed": String(filter === f), onclick: () => { filter = f; limit = PAGE; renderList(); } },
       t(`runs.filter.${f}`), h("span", { class: "count" }, String(jobs.filter((j) => matches(j, f)).length)))));
 
   const renderList = () => {
@@ -44,9 +54,11 @@ export function runsView(root: HTMLElement): void {
     }
     const q = search.value.trim().toLowerCase();
     const shown = jobs.filter((j) => matches(j, filter) && (!q || [j.id, runTitle(j), j.profile, j.status].some((s) => s.toLowerCase().includes(q))));
+    const page = shown.slice(0, limit);
+    const left = shown.length - page.length;
     clear(listEl,
       h("p", { class: "hint", role: "status" }, t("runs.count", { shown: shown.length, total: jobs.length })),
-      table(t("runs.title"), [t("runs.col.run"), t("runs.col.status"), t("runs.col.profile"), t("runs.col.stages"), t("runs.col.created")], shown.map((j) => {
+      table(t("runs.title"), [t("runs.col.run"), t("runs.col.status"), t("runs.col.profile"), t("runs.col.stages"), t("runs.col.created")], page.map((j) => {
         const cached = j.stages.filter((s) => s.status === "cached" || s.status === "imported").length;
         const ran = j.stages.filter((s) => s.status === "ran").length;
         return [
@@ -56,9 +68,19 @@ export function runsView(root: HTMLElement): void {
           t("runs.stages", { n: j.stages.length, ran, cached }),
           fmt.date(j.created),
         ];
-      }), { hideCaption: true, className: "runs-table" }));
+      }), { hideCaption: true, className: "runs-table" }),
+      left > 0 ? h("p", { class: "actions" }, h("button", { type: "button", class: "ghost", id: "runs-more", onclick: () => {
+        const next = listEl.querySelectorAll(".runs-table tbody tr").length;
+        limit += PAGE;
+        renderList();
+        // Keep the keyboard where the new rows start.
+        listEl.querySelectorAll<HTMLAnchorElement>(".runs-table a.run-link")[next]?.focus();
+      } }, t("runs.showMore", { n: Math.min(PAGE, left), left }))) : null);
   };
-  search.addEventListener("input", renderList);
+  search.addEventListener("input", () => {
+    limit = PAGE;
+    renderList();
+  });
 
   clear(root,
     viewHead(t("runs.title"), t("runs.purpose")),

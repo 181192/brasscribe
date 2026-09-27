@@ -246,7 +246,7 @@ export const fmt = {
 /** A status pill: text always carries the meaning; the icon and colour repeat it. */
 export function pill(status: string): HTMLElement {
   const icons: Record<string, string> = {
-    pass: "mark-checked", succeeded: "mark-checked", ran: "done", ok: "done", identical: "mark-checked", improved: "done",
+    pass: "mark-checked", ready: "mark-checked", not_ready: "error", succeeded: "mark-checked", ran: "done", ok: "done", identical: "mark-checked", improved: "done",
     fail: "error", failed: "error", regressed: "error", error: "error", different: "info", warning: "error",
     running: "play", started: "play", cached: "retry", imported: "retry", missing: "help", cancelled: "close",
   };

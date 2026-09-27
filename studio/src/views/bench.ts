@@ -2,7 +2,7 @@
 import { api } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, infoTip, loading, more, pill, table, token, viewHead } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, table, token, viewHead } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
   const suitesEl = h("div", {}, loading());
@@ -52,9 +52,10 @@ function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], run: (name: string, m
   const rows = (list: SuiteInfo[]) => list.map((s) => {
     const last = latest(s.name);
     return [
-      h("span", {}, h("span", { class: "mono" }, s.name), h("span", { class: "sub" }, s.description),
-        s.requires.length ? more(t("bench.col.needs"), h("span", { class: "mono" }, s.requires.join(", ")), { count: s.requires.length }) : null),
-      last ? h("span", {}, pill(last.status), h("span", { class: "sub" }, fmt.date(last.time))) : h("span", { class: "muted" }, t("bench.never")),
+      // Compact rows: the id and what the suite needs sit in the info tip.
+      h("span", { class: "suite" }, h("span", {}, s.description.charAt(0).toUpperCase() + s.description.slice(1)),
+        infoTip(s.name, `${s.name}${s.requires.length ? ` · ${t("bench.needsTip", { r: s.requires.join(", ") })}` : ""}`)),
+      last ? h("span", { class: "row last" }, pill(last.status), h("span", { class: "muted" }, fmt.date(last.time))) : h("span", { class: "muted" }, t("bench.never")),
       h("span", { class: "row" }, btn(s.name, "cached"), s.cpu ? null : btn(s.name, "live")),
     ];
   });
