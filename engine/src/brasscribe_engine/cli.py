@@ -6,6 +6,7 @@
     brasscribe studio [--port N] [--lan] [--no-advertise] [--no-browser]   (opens the default browser)
     brasscribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
     brasscribe compare <candidate dir> <reference dir>
+    brasscribe devices [list | revoke <device id> | reset]   (paired Play devices; takes effect in a running engine)
     brasscribe profiles | suites
 """
 
@@ -116,14 +117,20 @@ def lan_addresses() -> list[str]:
     return [str(ip) for ip in sorted(ips, key=lambda ip: (not ip.is_private or ip in ipaddress.ip_network("100.64.0.0/10"), str(ip)))]
 
 
-def serve_banner(app, host: str, port: int) -> tuple[str, list[str]]:
-    """(URL to open locally, lines to print)."""
+def serve_banner(app, host: str, port: int, ips: list[str] | None = None) -> tuple[str, list[str]]:
+    """(URL to open locally, lines to print). Records the LAN addresses in the pairing payload."""
     local = f"http://{'127.0.0.1' if host in ('0.0.0.0', '::') else host}:{port}/"
     lines = [f"brasscribe engine on {local}"]
     if host not in ("127.0.0.1", "localhost", "::1"):
-        ips = lan_addresses() if host in ("0.0.0.0", "::") else [host]
+        if ips is None:
+            ips = lan_addresses() if host in ("0.0.0.0", "::") else [host]
+        app.state.hosts = [f"{ip}:{port}" for ip in ips]
         lines += [f"LAN URL: http://{ip}:{port}/" for ip in ips] or ["LAN URL: no network address found"]
-        lines.append(f"LAN pairing code: {app.state.pairing.code}  (POST /v1/pair, then send the token as a Bearer header)")
+        lines.append(f"LAN pairing code: {app.state.pairing.code}  (type it once on each phone or tablet; "
+                     f"paired devices stay paired across restarts)")
+        n = len(app.state.devices.list())
+        if n:
+            lines.append(f"Paired devices: {n}  (brasscribe devices list)")
     return local, lines
 
 
@@ -145,10 +152,32 @@ def cmd_serve(args, open_browser: bool = False) -> int:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     on_lan = host not in ("127.0.0.1", "localhost", "::1") and not args.no_advertise
     addresses = (lan_addresses() if host in ("0.0.0.0", "::") else [host]) if on_lan else []
-    with advertise(args.port, addresses) as name:
+    with advertise(args.port, addresses, server_id=app.state.identity.server_id) as name:
         if name:
             print(f"Advertised on the LAN as \"{name}\" (_brasscribe._tcp)", flush=True)
         uvicorn.run(app, host=host, port=args.port, log_level="warning")
+    return 0
+
+
+def cmd_devices(args) -> int:
+    from .companion import DeviceRegistry, ServerIdentity, reset_server
+
+    s = config.load()
+    registry = DeviceRegistry(s.state_dir / "devices.json", idle_days=s.device_idle_days)
+    if args.action == "list":
+        print(f"server id {ServerIdentity.load(s.state_dir).server_id}")
+        for d in registry.list():
+            p = d.public()
+            print(f"{p['device_id']}  {p['name']:32s} {p['platform']:8s} paired {p['paired_at']}  last seen {p['last_seen']}")
+        return 0
+    if args.action == "revoke":
+        if not args.device_id or not registry.revoke(args.device_id):
+            print(f"no device {args.device_id}", file=sys.stderr)
+            return 1
+        print(f"revoked {args.device_id}")
+        return 0
+    ident = reset_server(s.state_dir)
+    print(f"all devices forgotten; new server id {ident.server_id}. Every phone and tablet must pair again.")
     return 0
 
 
@@ -233,6 +262,11 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("candidate", type=Path)
     c.add_argument("reference", type=Path)
     c.set_defaults(fn=cmd_compare)
+
+    dv = sub.add_parser("devices", help="list or revoke paired Play devices, or reset the engine's identity")
+    dv.add_argument("action", nargs="?", choices=["list", "revoke", "reset"], default="list")
+    dv.add_argument("device_id", nargs="?")
+    dv.set_defaults(fn=cmd_devices)
 
     p = sub.add_parser("profiles", help="list profiles")
     p.set_defaults(fn=lambda a: print("\n".join(

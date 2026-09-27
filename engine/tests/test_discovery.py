@@ -19,3 +19,8 @@ def test_advertise_without_addresses_is_a_no_op():
 def test_lan_only_drops_vpn_addresses_unless_nothing_else_is_left():
     assert discovery.lan_only(["100.64.0.1", "192.168.10.95"]) == ["192.168.10.95"]
     assert discovery.lan_only(["100.101.1.2"]) == ["100.101.1.2"]
+
+
+def test_service_info_carries_the_stable_server_id():
+    info = discovery.service_info(9000, ["192.168.1.20"], hostname="studio-mac", server_id="ab" * 16)
+    assert info.decoded_properties["id"] == "ab" * 16

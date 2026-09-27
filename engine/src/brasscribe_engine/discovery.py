@@ -1,6 +1,7 @@
 """DNS-SD (Bonjour/mDNS) advertisement so Play apps on the LAN can find the engine.
 
-The advertisement only says where the engine is; clients still pair with the printed code.
+The advertisement says where the engine is and which engine it is (`id`, the stable server id), so a paired
+client can find its engine again after the address or port changes. Clients still pair before they are trusted.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ def service_name(hostname: str | None = None) -> str:
     return f"Brasscribe on {host}"
 
 
-def service_info(port: int, addresses: list[str], hostname: str | None = None):
+def service_info(port: int, addresses: list[str], hostname: str | None = None, server_id: str | None = None):
     from zeroconf import ServiceInfo
 
     host = (hostname or socket.gethostname()).split(".")[0]
@@ -37,12 +38,12 @@ def service_info(port: int, addresses: list[str], hostname: str | None = None):
         port=port,
         addresses=[socket.inet_aton(a) for a in addresses],
         server=f"{host}.local.",
-        properties={"v": __version__, "api": "/v1", "auth": "pair"},
+        properties={"v": __version__, "api": "/v1", "auth": "pair", **({"id": server_id} if server_id else {})},
     )
 
 
 @contextmanager
-def advertise(port: int, addresses: list[str]) -> Iterator[str | None]:
+def advertise(port: int, addresses: list[str], server_id: str | None = None) -> Iterator[str | None]:
     """Register the service for the duration of the block; yields the advertised name, or None if it failed."""
     if not addresses:
         yield None
@@ -51,7 +52,7 @@ def advertise(port: int, addresses: list[str]) -> Iterator[str | None]:
         from zeroconf import IPVersion, Zeroconf
 
         zc = Zeroconf(ip_version=IPVersion.V4Only)
-        info = service_info(port, lan_only(addresses))
+        info = service_info(port, lan_only(addresses), server_id=server_id)
         zc.register_service(info, allow_name_change=True)
     except Exception as e:  # discovery is a convenience; the engine still serves without it
         print(f"LAN discovery unavailable: {e}", flush=True)

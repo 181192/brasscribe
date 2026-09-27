@@ -1,9 +1,11 @@
 """HTTP service: Studio (browser, same machine) and companion mode for the native Play apps.
 
 Clients on the loopback interface are trusted. Any other client pairs once:
-the engine prints a pairing code at start, `POST /v1/pair` with that code
-returns the shared bearer token, and every other request carries
-`Authorization: Bearer <token>`.
+`POST /v1/pair` with the code the engine shows returns that device's own
+bearer token, and every other request carries `Authorization: Bearer <token>`.
+The token survives engine restarts and address changes; the owner lists and
+revokes devices on the computer (loopback-only `/v1/devices`). See
+companion.py and docs/plan/pairing-and-remote-access.md.
 
 Progress is streamed as Server-Sent Events with monotonic ids; reconnect with
 `Last-Event-ID` (or `?after=`) to resume. A comment line is sent every 15 s
@@ -17,15 +19,15 @@ import hmac
 import json
 import secrets
 import shutil
-import threading
-from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, history, inspection, profiles
+from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
 from .config import Settings
@@ -34,6 +36,7 @@ from .jobs import TERMINAL, Job, JobManager
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 STATIC = Path(__file__).resolve().parent / "static"
 HEARTBEAT_S = 15.0
+ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 
 MEDIA = {
     "composition.json": "application/json",
@@ -53,23 +56,6 @@ def media_type(name: str) -> str:
     return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
 
 
-@dataclass
-class Pairing:
-    token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
-    code: str = field(default_factory=lambda: f"{secrets.randbelow(10**6):06d}")
-    failures: int = 0
-    lock: threading.Lock = field(default_factory=threading.Lock)
-
-    def pair(self, code: str) -> str | None:
-        with self.lock:
-            if hmac.compare_digest(code.strip(), self.code):
-                return self.token
-            self.failures += 1
-            if self.failures >= 5:  # rotate after repeated wrong guesses
-                self.code, self.failures = f"{secrets.randbelow(10**6):06d}", 0
-            return None
-
-
 def create_app(settings: Settings | None = None, *, trust_loopback: bool = True, workers: int = 1) -> FastAPI:
     settings = (settings or Settings()).ensure()
     app = FastAPI(
@@ -77,23 +63,64 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         version=__version__,
         description="Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed "
                     "cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair "
-                    "with the code the engine prints and then send a bearer token.",
+                    "once with the code the engine shows and then send their own long-lived bearer token.",
     )
     app.state.settings = settings
     app.state.jobs = JobManager(settings, workers=workers)
-    app.state.pairing = Pairing(token=settings.token) if settings.token else Pairing()
     app.state.trust_loopback = trust_loopback
+    from .discovery import service_name
+
+    app.state.identity = ServerIdentity.load(settings.state_dir)
+    app.state.server_name = service_name()
+    app.state.devices = DeviceRegistry(settings.state_dir / "devices.json", idle_days=settings.device_idle_days)
+    # The code printed at start stays valid until pairing is closed, as before; a window opened on the
+    # computer (POST /v1/pairing) is single-use and expires.
+    app.state.pairing = PairingWindow()
+    app.state.pair_requests = PairRequests()
+    app.state.hosts = []  # ip:port the engine is reachable on; set by `brasscribe serve`
 
     def is_trusted(request: Request) -> bool:
         host = request.client.host if request.client else ""
         return app.state.trust_loopback and host in LOOPBACK | {"testclient"}
 
+    def bearer(authorization: str | None) -> str | None:
+        return authorization[7:].strip() if authorization and authorization.lower().startswith("bearer ") else None
+
     def auth(request: Request, authorization: str | None = Header(None)) -> None:
+        request.state.device = None
         if is_trusted(request):
             return
-        token = authorization[7:] if authorization and authorization.lower().startswith("bearer ") else None
-        if not token or not hmac.compare_digest(token, app.state.pairing.token):
+        token = bearer(authorization)
+        if token and settings.token and hmac.compare_digest(token.encode(), settings.token.encode()):
+            return
+        device = app.state.devices.authenticate(token) if token else None
+        if device is None:
             raise HTTPException(401, "pair first: POST /v1/pair with the engine's pairing code", {"WWW-Authenticate": "Bearer"})
+        request.state.device = device
+
+    def owner(request: Request) -> None:
+        """Device management happens on the computer running the engine."""
+        if not is_trusted(request):
+            raise HTTPException(403, "only on the computer running the engine")
+
+    def this_device(request: Request, _: None = Depends(auth)):
+        if request.state.device is None:
+            raise HTTPException(404, "this client is not a paired device (loopback or static token)")
+        return request.state.device
+
+    def pair_response(device, token: str) -> m.PairResponse:
+        return m.PairResponse(token=token, device_id=device.device_id, server_id=app.state.identity.server_id,
+                              server_name=app.state.server_name)
+
+    def pairing_state() -> m.PairingState:
+        w: PairingWindow = app.state.pairing
+        is_open = w.is_open
+        code = w.code if is_open else None
+        return m.PairingState(open=is_open, code=code, expires_at=iso(w.expires_at) if is_open and w.expires_at else None,
+                              single_use=w.single_use, server_id=app.state.identity.server_id,
+                              server_name=app.state.server_name, hosts=list(app.state.hosts), fingerprint=None,
+                              uri=pairing_uri(app.state.identity.server_id, app.state.server_name,
+                                              list(app.state.hosts), code))
 
     jobs: JobManager = app.state.jobs
     from .conformance import ConformanceRunner
@@ -130,15 +157,121 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     @app.get("/v1/health", response_model=m.Health, operation_id="getHealth", tags=["session"])
     def health(request: Request) -> m.Health:
-        return m.Health(version=__version__, device=host_device(), auth_required=not is_trusted(request))
+        return m.Health(version=__version__, device=host_device(), auth_required=not is_trusted(request),
+                        server_id=app.state.identity.server_id, server_name=app.state.server_name)
 
     @app.post("/v1/pair", response_model=m.PairResponse, operation_id="pairDevice", tags=["session"],
-              responses={403: {"description": "wrong pairing code"}})
-    def pair(body: m.PairRequest) -> m.PairResponse:
-        token = app.state.pairing.pair(body.code)
-        if not token:
+              responses={403: {"description": "wrong pairing code, or pairing is closed"},
+                         429: {"description": "too many wrong codes; retry after Retry-After seconds"}})
+    def pair(body: m.PairRequest, authorization: str | None = Header(None)) -> m.PairResponse:
+        result = app.state.pairing.check(body.code)
+        if result == "locked":
+            raise HTTPException(429, "too many wrong codes; wait and try again",
+                                {"Retry-After": str(int(app.state.pairing.retry_after()) + 1)})
+        if result == "closed":
+            raise HTTPException(403, "pairing is closed: open it on the computer")
+        if result != "ok":
             raise HTTPException(403, "wrong pairing code")
-        return m.PairResponse(token=token)
+        # A device that pairs again while holding a valid token keeps its entry instead of adding a duplicate.
+        token = bearer(authorization)
+        known = app.state.devices.authenticate(token) if token else None
+        device, new_token = app.state.devices.pair(body.device_name, body.platform,
+                                                   replace=known.device_id if known else None)
+        return pair_response(device, new_token)
+
+    @app.post("/v1/pair/requests", response_model=m.PairRequestInfo, status_code=202, operation_id="requestPairing",
+              tags=["session"], responses={429: {"description": "too many requests are waiting"}})
+    def request_pairing(body: m.PairRequestCreate) -> m.PairRequestInfo:
+        """Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
+        poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes)."""
+        r = app.state.pair_requests.create(body.device_name, body.platform)
+        if r is None:
+            raise HTTPException(429, "too many pairing requests are waiting", {"Retry-After": "30"})
+        return m.PairRequestInfo(**r.public())
+
+    @app.get("/v1/pair/requests/{request_id}", response_model=m.PairRequestResult, operation_id="pollPairingRequest",
+             tags=["session"], responses={404: {"description": "unknown or expired request"}})
+    def poll_pairing_request(request_id: str) -> m.PairRequestResult:
+        r = app.state.pair_requests.poll(request_id)
+        if r is None:
+            raise HTTPException(404, "unknown or expired pairing request")
+        if r.status != "approved":
+            return m.PairRequestResult(status=r.status)
+        return m.PairRequestResult(status="approved", token=r.token, device_id=r.device_id,
+                                   server_id=app.state.identity.server_id, server_name=app.state.server_name)
+
+    # ------------------------------------------------------------ this device
+
+    @app.get("/v1/devices/me", response_model=m.DeviceSelf, operation_id="getThisDevice", tags=["devices"])
+    def get_this_device(device=Depends(this_device)) -> m.DeviceSelf:
+        """Check the stored credential: 401 means pair again, anything else means it is still good."""
+        rotate_from = device.rotated_at or device.paired_at
+        return m.DeviceSelf(**device.public(), server_id=app.state.identity.server_id,
+                            rotate_after=iso(rotate_from + ROTATE_AFTER_S),
+                            expires_if_idle_after=iso(device.last_seen + app.state.devices.idle_s))
+
+    @app.post("/v1/devices/me/rotate", response_model=m.RotateResponse, operation_id="rotateDeviceToken",
+              tags=["devices"])
+    def rotate_device_token(device=Depends(this_device)) -> m.RotateResponse:
+        token = app.state.devices.rotate(device.device_id)
+        if token is None:
+            raise HTTPException(401, "this device was revoked")
+        return m.RotateResponse(token=token, device_id=device.device_id)
+
+    @app.delete("/v1/devices/me", status_code=204, operation_id="unpairThisDevice", tags=["devices"],
+                response_class=Response)
+    def unpair_this_device(device=Depends(this_device)) -> Response:
+        app.state.devices.revoke(device.device_id)
+        return Response(status_code=204)
+
+    # ------------------------------------------------------------ owner, on the computer
+
+    @app.get("/v1/devices", response_model=list[m.DeviceInfo], operation_id="listDevices", tags=["devices"],
+             dependencies=[Depends(owner)])
+    def list_devices() -> list[m.DeviceInfo]:
+        return [m.DeviceInfo(**d.public()) for d in app.state.devices.list()]
+
+    @app.delete("/v1/devices/{device_id}", status_code=204, operation_id="revokeDevice", tags=["devices"],
+                dependencies=[Depends(owner)], response_class=Response,
+                responses={404: {"description": "no such device"}})
+    def revoke_device(device_id: str) -> Response:
+        if not app.state.devices.revoke(device_id):
+            raise HTTPException(404, "no such device")
+        return Response(status_code=204)
+
+    @app.get("/v1/pairing", response_model=m.PairingState, operation_id="getPairing", tags=["devices"],
+             dependencies=[Depends(owner)])
+    def get_pairing() -> m.PairingState:
+        return pairing_state()
+
+    @app.post("/v1/pairing", response_model=m.PairingState, operation_id="openPairing", tags=["devices"],
+              dependencies=[Depends(owner)])
+    def open_pairing(body: m.PairingOpen | None = None) -> m.PairingState:
+        """Show a new code (default: 10 minutes, single use), or extend the one on screen."""
+        body = body or m.PairingOpen()
+        if not (body.extend and app.state.pairing.extend(body.ttl_s or 600)):
+            app.state.pairing.open(body.ttl_s, body.single_use)
+        return pairing_state()
+
+    @app.delete("/v1/pairing", response_model=m.PairingState, operation_id="closePairing", tags=["devices"],
+                dependencies=[Depends(owner)])
+    def close_pairing() -> m.PairingState:
+        app.state.pairing.close()
+        return pairing_state()
+
+    @app.get("/v1/pairing/requests", response_model=list[m.PairRequestInfo], operation_id="listPairingRequests",
+             tags=["devices"], dependencies=[Depends(owner)])
+    def list_pairing_requests() -> list[m.PairRequestInfo]:
+        return [m.PairRequestInfo(**r.public()) for r in app.state.pair_requests.pending()]
+
+    @app.post("/v1/pairing/requests/{request_id}/{decision}", response_model=m.PairRequestInfo,
+              operation_id="decidePairingRequest", tags=["devices"], dependencies=[Depends(owner)],
+              responses={404: {"description": "unknown, expired or already decided"}})
+    def decide_pairing_request(request_id: str, decision: Literal["approve", "deny"]) -> m.PairRequestInfo:
+        r = app.state.pair_requests.decide(request_id, decision == "approve", app.state.devices)
+        if r is None:
+            raise HTTPException(404, "unknown, expired or already decided")
+        return m.PairRequestInfo(**r.public())
 
     @app.get("/v1/profiles", response_model=list[m.ProfileInfo], operation_id="listProfiles", tags=["session"],
              dependencies=[Depends(auth)])

@@ -623,6 +623,115 @@
         "title": "Dataset",
         "type": "object"
       },
+      "DeviceInfo": {
+        "properties": {
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "last_seen": {
+            "description": "ISO 8601, UTC; updated at most every 5 minutes",
+            "title": "Last Seen",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paired_at": {
+            "description": "ISO 8601, UTC",
+            "title": "Paired At",
+            "type": "string"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "rotated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotated At"
+          }
+        },
+        "required": [
+          "device_id",
+          "name",
+          "platform",
+          "paired_at",
+          "last_seen"
+        ],
+        "title": "DeviceInfo",
+        "type": "object"
+      },
+      "DeviceSelf": {
+        "properties": {
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "expires_if_idle_after": {
+            "description": "ISO 8601; the credential is forgotten if unused until then",
+            "title": "Expires If Idle After",
+            "type": "string"
+          },
+          "last_seen": {
+            "description": "ISO 8601, UTC; updated at most every 5 minutes",
+            "title": "Last Seen",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paired_at": {
+            "description": "ISO 8601, UTC",
+            "title": "Paired At",
+            "type": "string"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "rotate_after": {
+            "description": "ISO 8601; rotate the token (POST /v1/devices/me/rotate) after this time",
+            "title": "Rotate After",
+            "type": "string"
+          },
+          "rotated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotated At"
+          },
+          "server_id": {
+            "title": "Server Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device_id",
+          "name",
+          "platform",
+          "paired_at",
+          "last_seen",
+          "server_id",
+          "rotate_after",
+          "expires_if_idle_after"
+        ],
+        "title": "DeviceSelf",
+        "type": "object"
+      },
       "Evidence": {
         "description": "What each transcriber heard at the notes Brasscribe is unsure about (confidence below 0.7).",
         "properties": {
@@ -712,6 +821,16 @@
             "title": "Device",
             "type": "string"
           },
+          "server_id": {
+            "description": "stable id of this engine: kept across restarts and address or port changes, new only after `brasscribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.",
+            "title": "Server Id",
+            "type": "string"
+          },
+          "server_name": {
+            "description": "display name, e.g. 'Brasscribe on studio-mac'",
+            "title": "Server Name",
+            "type": "string"
+          },
           "status": {
             "const": "ok",
             "default": "ok",
@@ -726,7 +845,9 @@
         "required": [
           "version",
           "device",
-          "auth_required"
+          "auth_required",
+          "server_id",
+          "server_name"
         ],
         "title": "Health",
         "type": "object"
@@ -1271,7 +1392,7 @@
       "PairRequest": {
         "properties": {
           "code": {
-            "description": "pairing code shown by the engine (brasscribe serve --host 0.0.0.0)",
+            "description": "pairing code shown by the engine (brasscribe serve --lan)",
             "title": "Code",
             "type": "string"
           },
@@ -1285,6 +1406,18 @@
               }
             ],
             "title": "Device Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ios, macos, android or windows; shown in the device list",
+            "title": "Platform"
           }
         },
         "required": [
@@ -1293,18 +1426,280 @@
         "title": "PairRequest",
         "type": "object"
       },
-      "PairResponse": {
+      "PairRequestCreate": {
         "properties": {
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          }
+        },
+        "title": "PairRequestCreate",
+        "type": "object"
+      },
+      "PairRequestInfo": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "match_code": {
+            "description": "four digits shown on both screens so the owner can tell which device asks",
+            "title": "Match Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "denied"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "name",
+          "platform",
+          "match_code",
+          "created_at",
+          "status"
+        ],
+        "title": "PairRequestInfo",
+        "type": "object"
+      },
+      "PairRequestResult": {
+        "properties": {
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "denied"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
           "token": {
-            "description": "send as 'Authorization: Bearer <token>' on every request",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "set once, on the first poll after approval",
+            "title": "Token"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "PairRequestResult",
+        "type": "object"
+      },
+      "PairResponse": {
+        "description": "Every value is a string: older Apple clients decode this object as [String: String].",
+        "properties": {
+          "device_id": {
+            "description": "this device's id in the engine's device list",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "server_id": {
+            "description": "the engine's stable id (as in /v1/health); store it with the token",
+            "title": "Server Id",
+            "type": "string"
+          },
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "token": {
+            "description": "this device's own credential: send as 'Authorization: Bearer <token>'. It stays valid across engine restarts until revoked; keep it in the platform keystore",
             "title": "Token",
             "type": "string"
           }
         },
         "required": [
-          "token"
+          "token",
+          "device_id",
+          "server_id",
+          "server_name"
         ],
         "title": "PairResponse",
+        "type": "object"
+      },
+      "PairingOpen": {
+        "properties": {
+          "extend": {
+            "default": false,
+            "description": "keep the current code and push its expiry out by ttl_s",
+            "title": "Extend",
+            "type": "boolean"
+          },
+          "single_use": {
+            "default": true,
+            "title": "Single Use",
+            "type": "boolean"
+          },
+          "ttl_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 600,
+            "description": "seconds the code stays valid; null keeps it open until closed",
+            "title": "Ttl S"
+          }
+        },
+        "title": "PairingOpen",
+        "type": "object"
+      },
+      "PairingState": {
+        "description": "What the computer shows to pair a phone: the code, and the payload a QR code encodes.",
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ISO 8601; null while open with no expiry",
+            "title": "Expires At"
+          },
+          "fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SHA-256 of the TLS key (SPKI), base64url; null while the engine serves plain HTTP",
+            "title": "Fingerprint"
+          },
+          "hosts": {
+            "description": "ip:port addresses the engine is reachable on",
+            "items": {
+              "type": "string"
+            },
+            "title": "Hosts",
+            "type": "array"
+          },
+          "open": {
+            "title": "Open",
+            "type": "boolean"
+          },
+          "server_id": {
+            "title": "Server Id",
+            "type": "string"
+          },
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "single_use": {
+            "title": "Single Use",
+            "type": "boolean"
+          },
+          "uri": {
+            "description": "pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]",
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "open",
+          "single_use",
+          "server_id",
+          "server_name",
+          "hosts",
+          "uri"
+        ],
+        "title": "PairingState",
         "type": "object"
       },
       "PartComparison": {
@@ -1410,6 +1805,25 @@
           }
         },
         "title": "RerunRequest",
+        "type": "object"
+      },
+      "RotateResponse": {
+        "properties": {
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "token": {
+            "description": "the new token. The previous one keeps working until this one is first used, or for 10 minutes",
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "device_id"
+        ],
+        "title": "RotateResponse",
         "type": "object"
       },
       "Roundtrip": {
@@ -2106,7 +2520,7 @@
     }
   },
   "info": {
-    "description": "Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair with the code the engine prints and then send a bearer token.",
+    "description": "Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair once with the code the engine shows and then send their own long-lived bearer token.",
     "title": "brasscribe engine",
     "version": "0.1.0"
   },
@@ -2339,6 +2753,208 @@
         "summary": "Run Conformance",
         "tags": [
           "inspection"
+        ]
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceInfo"
+                  },
+                  "title": "Response Listdevices",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Devices",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/devices/me": {
+      "delete": {
+        "operationId": "unpairThisDevice",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unpair This Device",
+        "tags": [
+          "devices"
+        ]
+      },
+      "get": {
+        "description": "Check the stored credential: 401 means pair again, anything else means it is still good.",
+        "operationId": "getThisDevice",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSelf"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get This Device",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/devices/me/rotate": {
+      "post": {
+        "operationId": "rotateDeviceToken",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rotate Device Token",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/devices/{device_id}": {
+      "delete": {
+        "operationId": "revokeDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "no such device"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Device",
+        "tags": [
+          "devices"
         ]
       }
     },
@@ -4150,6 +4766,24 @@
     "/v1/pair": {
       "post": {
         "operationId": "pairDevice",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -4172,7 +4806,100 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "wrong pairing code"
+            "description": "wrong pairing code, or pairing is closed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "too many wrong codes; retry after Retry-After seconds"
+          }
+        },
+        "summary": "Pair",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/v1/pair/requests": {
+      "post": {
+        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).",
+        "operationId": "requestPairing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairRequestInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "too many requests are waiting"
+          }
+        },
+        "summary": "Request Pairing",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/v1/pair/requests/{request_id}": {
+      "get": {
+        "operationId": "pollPairingRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairRequestResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "unknown or expired request"
           },
           "422": {
             "content": {
@@ -4185,9 +4912,179 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Pair",
+        "summary": "Poll Pairing Request",
         "tags": [
           "session"
+        ]
+      }
+    },
+    "/v1/pairing": {
+      "delete": {
+        "operationId": "closePairing",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Close Pairing",
+        "tags": [
+          "devices"
+        ]
+      },
+      "get": {
+        "operationId": "getPairing",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Pairing",
+        "tags": [
+          "devices"
+        ]
+      },
+      "post": {
+        "description": "Show a new code (default: 10 minutes, single use), or extend the one on screen.",
+        "operationId": "openPairing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PairingOpen"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Pairing",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/pairing/requests": {
+      "get": {
+        "operationId": "listPairingRequests",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PairRequestInfo"
+                  },
+                  "title": "Response Listpairingrequests",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Pairing Requests",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/pairing/requests/{request_id}/{decision}": {
+      "post": {
+        "operationId": "decidePairingRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "decision",
+            "required": true,
+            "schema": {
+              "enum": [
+                "approve",
+                "deny"
+              ],
+              "title": "Decision",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairRequestInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "unknown, expired or already decided"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Pairing Request",
+        "tags": [
+          "devices"
         ]
       }
     },
