@@ -7,6 +7,14 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+// Appearance before first paint (src/theme.ts): a system contrast setting always wins.
+try {
+  var bcTheme = localStorage.getItem("brasscribe.studio.theme");
+  var bcContrast = matchMedia("(forced-colors: active)").matches || matchMedia("(prefers-contrast: more)").matches;
+  if ((bcTheme === "light" || bcTheme === "dark") && !bcContrast) document.documentElement.setAttribute("data-theme", bcTheme);
+} catch (e) { /* storage may be blocked */ }
+</script>
 <link rel="stylesheet" href="assets/studio-style.css">
 <script src="assets/alphatab/alphaTab.min.js"></script>
 <script type="module" src="assets/studio.js"></script>
@@ -35,6 +43,15 @@
   </nav>
   <div class="header-end">
   <p class="engine-status" id="engine-status" data-i18n="app.connecting">Connecting to the engine…</p>
+  <div class="theme-switch">
+    <label for="theme-select" data-i18n="app.appearance">Appearance</label>
+    <select id="theme-select" aria-describedby="theme-note">
+      <option value="system" data-i18n="app.theme.system">Match system</option>
+      <option value="light" data-i18n="app.theme.light">Light</option>
+      <option value="dark" data-i18n="app.theme.dark">Dark</option>
+    </select>
+    <p class="theme-note" id="theme-note" hidden></p>
+  </div>
   <label class="lang-switch"><span class="visually-hidden" data-i18n="app.language">Language</span>
     <select id="lang-select">
       <option value="en" lang="en">English</option>

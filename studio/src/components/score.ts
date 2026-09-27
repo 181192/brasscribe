@@ -204,7 +204,7 @@ export class ScoreElement extends HTMLElement {
     return { mainGlyphColor: ink, secondaryGlyphColor: ink, scoreInfoColor: tokenColour("text"), staffLineColor: staff, barSeparatorColor: staff, barNumberColor: muted };
   }
 
-  /** Re-colour the notation when the theme changes (dark mode, more contrast, forced colours). */
+  /** Re-colour the notation when the theme changes (Appearance, dark mode, more contrast, forced colours). */
   private watchTheme(): void {
     if (this.themeWatch) return;
     const queries = ["(prefers-color-scheme: dark)", "(prefers-contrast: more)", "(forced-colors: active)"].map((q) => matchMedia(q));
@@ -216,7 +216,13 @@ export class ScoreElement extends HTMLElement {
       this.api.render();
     };
     for (const q of queries) q.addEventListener("change", onChange);
-    this.themeWatch = () => queries.forEach((q) => q.removeEventListener("change", onChange));
+    // The Appearance setting pins the theme with data-theme on <html> (theme.ts).
+    const pinned = new MutationObserver(onChange);
+    pinned.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    this.themeWatch = () => {
+      queries.forEach((q) => q.removeEventListener("change", onChange));
+      pinned.disconnect();
+    };
   }
 
   /** Load a MusicXML document (text) and render it. Resolves when the first render finishes. */
