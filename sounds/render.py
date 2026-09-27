@@ -365,6 +365,27 @@ def player_positions(seat: dict, n: int, spread: float) -> list[tuple[float, flo
     return [(seat["x"] + o * tx, seat["y"] + o * ty) for o in offs]
 
 
+def lineup_of(comp: Path | None) -> str | None:
+    """The lineup a composition was arranged for (arrangement.lineup), if it records one."""
+    if comp is None or not Path(comp).exists():
+        return None
+    return (json.loads(Path(comp).read_text()).get("arrangement") or {}).get("lineup")
+
+
+def placement(name: str, pm: dict, seating: dict, lineup: str | None) -> tuple[dict, list[dict], float]:
+    """Seat, players and gain (dB) of a part: the band's (mapping.json, seating.json seats), or the
+    lineup's override in seating.json `lineups` (its own seats and player count). The gain keeps
+    the part's balance per player: gain_db is balance - 10 log10(players), so fewer players get
+    the per-player difference back."""
+    over = seating.get("lineups", {}).get(lineup or "", {})
+    o = over.get("parts", {}).get(name)
+    gain = pm.get("gain_db", 0.0)
+    if o is None:
+        return seating["seats"][pm["seat"]], pm["players"], gain
+    k = min(o["players"], len(pm["players"]))
+    return over["seats"][o["seat"]], pm["players"][:k], gain + 10 * math.log10(len(pm["players"]) / k)
+
+
 def render(args: argparse.Namespace) -> None:
     out = Path(args.out)
     (out / "stems").mkdir(parents=True, exist_ok=True)
@@ -381,6 +402,7 @@ def render(args: argparse.Namespace) -> None:
     if comp is None and (Path(args.score).parent / "composition.json").exists():
         comp = Path(args.score).parent / "composition.json"
     perf = Performance.load(Path(comp)) if comp else None
+    lineup = lineup_of(comp)
     human_stats = {}
     jobs = []  # (part, player index, target, notes, detune, position)
     for p in parts:
@@ -388,8 +410,8 @@ def render(args: argparse.Namespace) -> None:
         if pm is None:
             print(f"warning: part {p.name!r} not in mapping.json, skipped", file=sys.stderr)
             continue
-        seat = seating["seats"][pm["seat"]]
-        players = pm["players"] if args.tier == "realistic" else [pm["players"][0]]
+        seat, players, _ = placement(p.name, pm, seating, lineup)
+        players = players if args.tier == "realistic" else [players[0]]
         pos = player_positions(seat, len(players), seating["player_spread_m"])
         for i, pl in enumerate(players):
             if pl["target"] == "msbasic-drums":  # drums stay identical in both tiers
@@ -438,13 +460,13 @@ def render(args: argparse.Namespace) -> None:
     box = ROOMS[args.room]["shoebox"]
     for (p, i, target, _, _, pos), dry in results:
         pm = mapping["parts"][p.name]
-        g = 10 ** (pm.get("gain_db", 0.0) / 20)
+        seat, _, gain_db = placement(p.name, pm, seating, lineup)
+        g = 10 ** (gain_db / 20)
         dry = dry * g
         dry_stems[p.name] = dry_stems.get(p.name, np.zeros(n)) + dry
         if args.tier == "baseline":
             mix[:n] += dry[:, None] * math.sqrt(0.5)
             continue
-        seat = seating["seats"][pm["seat"]]
         direct = pan_player(dry, pos, lst, seat["bell"], seating)
         er = early_reflections(dry, pos, lst, box)
         placed = _add(direct, er)

@@ -35,6 +35,7 @@ const TPQ = 960;
 
 const NB_PARTS: Record<string, string> = {
   "Soprano Cornet": "Sopran-kornett", "Solo Cornet": "Solokornett", "Repiano Cornet": "Repiano-kornett",
+  "1st Cornet": "1. kornett", "Tenor Horn": "Althorn",
   "2nd Cornet": "2. kornett", "3rd Cornet": "3. kornett", Flugelhorn: "Flygelhorn",
   "Solo Horn": "Solo althorn", "1st Horn": "1. althorn", "2nd Horn": "2. althorn",
   "1st Baritone": "1. baryton", "2nd Baritone": "2. baryton", "1st Trombone": "1. trombone", "2nd Trombone": "2. trombone",

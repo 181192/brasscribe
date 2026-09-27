@@ -219,7 +219,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--no-heavy", action="store_true", help="fail instead of running a heavy model on a cache miss")
     r.add_argument("--cold", help="comma-separated stages or kinds to run even on a cache hit (e.g. layers,arrange,export)")
     r.add_argument("--no-audio", action="store_true", help="skip the MP3 rendering")
-    r.add_argument("--lineup", choices=["full", "minimal"], help="default: the profile's (minimal for solo)")
+    r.add_argument("--lineup", choices=["full", "minimal", "quartet"],
+                   help="default: the profile's (minimal for solo; quartet needs a recording of the whole group)")
     r.add_argument("--no-muscriptor", action="store_true", help="solo: Basic Pitch in MuScriptor's place, as on device")
     r.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
     r.add_argument("--key", help="target concert key: tonic (Bb, F#, Am) or FIFTHS[:MODE]")

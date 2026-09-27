@@ -811,6 +811,8 @@ pub fn nb_part_name(name: &str) -> &str {
     match name {
         "Soprano Cornet" => "Sopran-kornett",
         "Solo Cornet" => "Solokornett",
+        "1st Cornet" => "1. kornett",
+        "Tenor Horn" => "Althorn",
         "Repiano Cornet" => "Repiano-kornett",
         "2nd Cornet" => "2. kornett",
         "3rd Cornet" => "3. kornett",

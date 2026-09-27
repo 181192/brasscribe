@@ -349,7 +349,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         if not body.muscriptor:
             params["muscriptor"] = False
         try:
-            profiles.arrangement_options(params)
+            profiles.job_options(body.profile, params)
         except ValueError as e:
             raise HTTPException(422, str(e)) from e
         job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,

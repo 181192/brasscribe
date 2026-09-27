@@ -370,5 +370,106 @@
     }
    }
   }
+ },
+ "lineups": {
+  "quartet": {
+   "about": "Brass quartet (composition.json arrangement.lineup = \"quartet\"): four players in a shallow arc facing the audience, 1st Cornet on the left to Euphonium on the right, one player per part. render.py uses these seats and player counts in place of the band's.",
+   "seats": {
+    "quartet-first-cornet": {
+     "x": -1.8,
+     "y": 1.2,
+     "bell": "forward",
+     "parts": [
+      "1st Cornet"
+     ],
+     "note": "far left of the arc, nearest the audience",
+     "polar": {
+      "audience": {
+       "azimuth_deg": -14.0,
+       "distance_m": 7.42
+      },
+      "conductor": {
+       "azimuth_deg": -46.6,
+       "distance_m": 2.48
+      }
+     }
+    },
+    "quartet-second-cornet": {
+     "x": -0.7,
+     "y": 1.8,
+     "bell": "forward",
+     "parts": [
+      "2nd Cornet"
+     ],
+     "note": "left of centre",
+     "polar": {
+      "audience": {
+       "azimuth_deg": -5.1,
+       "distance_m": 7.83
+      },
+      "conductor": {
+       "azimuth_deg": -16.9,
+       "distance_m": 2.4
+      }
+     }
+    },
+    "quartet-tenor-horn": {
+     "x": 0.7,
+     "y": 1.8,
+     "bell": "up",
+     "parts": [
+      "Tenor Horn"
+     ],
+     "note": "right of centre",
+     "polar": {
+      "audience": {
+       "azimuth_deg": 5.1,
+       "distance_m": 7.83
+      },
+      "conductor": {
+       "azimuth_deg": 16.9,
+       "distance_m": 2.4
+      }
+     }
+    },
+    "quartet-euphonium": {
+     "x": 1.8,
+     "y": 1.2,
+     "bell": "up",
+     "parts": [
+      "Euphonium"
+     ],
+     "note": "far right of the arc",
+     "polar": {
+      "audience": {
+       "azimuth_deg": 14.0,
+       "distance_m": 7.42
+      },
+      "conductor": {
+       "azimuth_deg": 46.6,
+       "distance_m": 2.48
+      }
+     }
+    }
+   },
+   "parts": {
+    "1st Cornet": {
+     "seat": "quartet-first-cornet",
+     "players": 1
+    },
+    "2nd Cornet": {
+     "seat": "quartet-second-cornet",
+     "players": 1
+    },
+    "Tenor Horn": {
+     "seat": "quartet-tenor-horn",
+     "players": 1
+    },
+    "Euphonium": {
+     "seat": "quartet-euphonium",
+     "players": 1
+    }
+   }
+  }
  }
 }

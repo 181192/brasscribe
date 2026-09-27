@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled"]
-Lineup = Literal["full", "minimal"]
+Lineup = Literal["full", "minimal", "quartet"]
 Difficulty = Literal["faithful", "standard", "easier"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
@@ -131,7 +131,10 @@ class JobCreate(BaseModel):
     render_audio: bool = Field(True, description="also render an MP3 of the score")
     allow_heavy: bool = Field(True, description="allow heavy models to run on cache misses")
     lineup: Lineup | None = Field(None, description="full: the 18-part brass band; minimal: the 8-part minimal band; "
-                                                     "default: the profile's (minimal for solo, full otherwise)")
+                                                     "quartet: 1st Cornet, 2nd Cornet, Tenor Horn and Euphonium, one "
+                                                     "player each (not for the solo profile: it needs a recording of "
+                                                     "the whole group); default: the profile's (minimal for solo, "
+                                                     "full otherwise)")
     muscriptor: bool = Field(True, description="solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch "
                                                "in its place, as the apps do on device")
     difficulty: Difficulty = Field("faithful", description="faithful keeps every transcribed note; standard and "

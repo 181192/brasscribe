@@ -2,6 +2,7 @@
 
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -58,6 +59,12 @@ def test_pagination_breaks_every_25_lines():
 def test_arrangement_options_only_non_defaults():
     assert profiles.arrangement_options({"lineup": "full", "difficulty": "faithful", "key": None}) == {}
     assert profiles.arrangement_options({"lineup": "minimal", "transpose": "-2"}) == {"lineup": "minimal", "transpose": -2}
+    assert profiles.arrangement_options({"lineup": "quartet"}) == {"lineup": "quartet"}
+    assert profiles.job_options("brass-band", {"lineup": "quartet"}) == {"lineup": "quartet"}
+    with pytest.raises(ValueError, match="whole group"):
+        profiles.job_options("solo", {"lineup": "quartet"})
+    with pytest.raises(ValueError, match="whole group"):
+        profiles.build("solo", Path("a.wav"), params={"lineup": "quartet"})
     assert profiles.arrangement_options({"transpose": 0}) == {}
     for bad in ({"key": "Bb", "transpose": 2}, {"lineup": "huge"}, {"difficulty": "hard"}, {"transpose": 13}):
         with pytest.raises(ValueError):
@@ -147,6 +154,8 @@ def test_job_options_validated_by_the_api(settings, audio):
         bad = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "key": "Bb", "transpose": 2})
         assert bad.status_code == 422
         assert c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "lineup": "huge"}).status_code == 422
+        solo = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "solo", "lineup": "quartet"})
+        assert solo.status_code == 422 and "whole group" in solo.json()["detail"]
         ok = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test", "difficulty": "easier"})
         assert ok.status_code == 202
 

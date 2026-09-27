@@ -12,11 +12,13 @@ const CORNET = R([52, 82], [52, 79]);
 export const RANGES: Record<string, Range> = {
   "Soprano Cornet": R([57, 87], [57, 84]),
   "Solo Cornet": CORNET,
+  "1st Cornet": CORNET,
   "Repiano Cornet": CORNET,
   "2nd Cornet": CORNET,
   "3rd Cornet": CORNET,
   Flugelhorn: CORNET,
   "Solo Horn": R([45, 75], [45, 72]),
+  "Tenor Horn": R([45, 75], [45, 72]),
   "1st Horn": R([45, 75], [45, 72]),
   "2nd Horn": R([45, 75], [45, 72]),
   "1st Baritone": R([40, 70], [40, 67]),
@@ -40,6 +42,10 @@ export const CROSSING_PAIRS: [string, string][] = [
   ["1st Trombone", "2nd Trombone"],
   ["2nd Trombone", "Bass Trombone"],
   ["E♭ Bass", "B♭ Bass"],
+  // Brass quartet
+  ["1st Cornet", "2nd Cornet"],
+  ["2nd Cornet", "Tenor Horn"],
+  ["Tenor Horn", "Euphonium"],
 ];
 
 const NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];

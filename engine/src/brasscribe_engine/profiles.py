@@ -34,8 +34,10 @@ class Profile:
 
 
 ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None, "transpose": None}
-LINEUPS = ("full", "minimal")
+LINEUPS = ("full", "minimal", "quartet")
 DIFFICULTIES = ("faithful", "standard", "easier")
+# A solo take has one line and nothing for the other three quartet parts to play.
+QUARTET_NEEDS_GROUP = "a quartet needs a recording of the whole group: a solo take has no harmony for the other parts"
 
 
 def arrangement_options(params: dict) -> dict:
@@ -53,6 +55,14 @@ def arrangement_options(params: dict) -> dict:
             raise ValueError("transpose is in semitones, -11 to 11")
         if opts["transpose"] == 0:
             del opts["transpose"]
+    return opts
+
+
+def job_options(profile: str, params: dict) -> dict:
+    """arrangement_options, plus what the profile cannot do (the solo profile has no quartet)."""
+    opts = arrangement_options(params)
+    if profile == "solo" and params.get("lineup") == "quartet":
+        raise ValueError(QUARTET_NEEDS_GROUP)
     return opts
 
 
@@ -157,7 +167,10 @@ def solo(title: str, params: dict) -> Pipeline:
     small0 gives the beats; the minimal band by default. With muscriptor=False (as on device),
     Basic Pitch also fills MuScriptor's confirmation slot. Stage outputs use the layered names, so
     a directory with mix.beats and layers/solo-{sw,bp,mus}.mid, solo-sw.contour.npz can seed the cache.
+    The quartet is refused (QUARTET_NEEDS_GROUP).
     """
+    if params.get("lineup") == "quartet":
+        raise ValueError(QUARTET_NEEDS_GROUP)
     mix = Input(SOURCE)
     st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
                 outputs=("mix.beats",), reuse_subdir=".")]

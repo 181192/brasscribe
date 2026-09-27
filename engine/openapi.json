@@ -216,7 +216,8 @@
               {
                 "enum": [
                   "full",
-                  "minimal"
+                  "minimal",
+                  "quartet"
                 ],
                 "type": "string"
               },
@@ -1032,7 +1033,8 @@
               {
                 "enum": [
                   "full",
-                  "minimal"
+                  "minimal",
+                  "quartet"
                 ],
                 "type": "string"
               },
@@ -1040,7 +1042,7 @@
                 "type": "null"
               }
             ],
-            "description": "full: the 18-part brass band; minimal: the 8-part minimal band; default: the profile's (minimal for solo, full otherwise)",
+            "description": "full: the 18-part brass band; minimal: the 8-part minimal band; quartet: 1st Cornet, 2nd Cornet, Tenor Horn and Euphonium, one player each (not for the solo profile: it needs a recording of the whole group); default: the profile's (minimal for solo, full otherwise)",
             "title": "Lineup"
           },
           "muscriptor": {

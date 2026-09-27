@@ -241,3 +241,20 @@ describe("dsp", () => {
     expect(e[0]).toBeCloseTo(20 * Math.log10(0.5), 3);
   });
 });
+
+describe("quartet part names", () => {
+  it("has ranges, crossing pairs and nb names for every quartet part", async () => {
+    const { RANGES, CROSSING_PAIRS } = await import("../src/lib/validate");
+    const { partNameNb } = await import("../src/lib/talkingxml");
+    const quartet = ["1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium"];
+    for (const name of quartet) {
+      expect(RANGES[name], name).toBeDefined();
+      expect(partNameNb(name), name).toBeDefined();
+    }
+    expect(partNameNb("1st Cornet")).toBe("1. kornett");
+    expect(partNameNb("Tenor Horn")).toBe("Althorn");
+    for (let i = 0; i < 3; i++) {
+      expect(CROSSING_PAIRS).toContainEqual([quartet[i], quartet[i + 1]]);
+    }
+  });
+});
