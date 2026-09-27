@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pair a phone (§3.4): three ways, easiest first. The code works while this window is open, and only
+    once; nobody races a timer. A phone that chose this computer appears as an Allow card on top.
+-->
+<UserControl
+    x:Class="Brasscribe.Bandroom.Views.PairPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Padding="32,24,32,24" RowSpacing="16" MaxWidth="900" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="TitleText" Text="{x:Bind Vm.Title}" Style="{StaticResource DisplayHeadingStyle}"
+                           AutomationProperties.HeadingLevel="Level1" />
+                <TextBlock Text="{x:Bind Vm.Lead}" Style="{StaticResource MutedStyle}" FontSize="16" />
+            </StackPanel>
+
+            <!-- A phone asking to be allowed. -->
+            <StackPanel x:Name="Requests" Grid.Row="1" Spacing="12" MaxWidth="360" HorizontalAlignment="Left" />
+
+            <TextBlock Grid.Row="1" Text="{x:Bind Vm.ErrorText, Mode=OneWay}" Style="{StaticResource BodyStyle}"
+                       Visibility="{x:Bind Vm.HasError, Mode=OneWay}" />
+
+            <Grid Grid.Row="2" ColumnSpacing="28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Spacing="18">
+                    <!-- 1: choose this computer on the phone, then allow it here (no code at all). -->
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                                VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
+                            <TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Style="{StaticResource BodyStyle}" FontSize="16">
+                            <Run Text="{x:Bind Vm.Way1Before, Mode=OneWay}" /><Run Text="{x:Bind Vm.Way1Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{x:Bind Vm.Way1After, Mode=OneWay}" />
+                        </TextBlock>
+                    </Grid>
+                    <!-- 2: scan the code. -->
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                                VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
+                            <TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{x:Bind Vm.Way2}" Style="{StaticResource BodyStyle}" FontSize="16" />
+                    </Grid>
+                    <!-- 3: type the code. -->
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                                VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
+                            <TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="{x:Bind Vm.Way3}" Style="{StaticResource BodyStyle}" FontSize="16" />
+                            <TextBlock x:Name="CodeText" Text="{x:Bind Vm.CodeDisplay, Mode=OneWay}" FontSize="40" FontWeight="Bold"
+                                       CharacterSpacing="120" Foreground="{ThemeResource BcTextBrush}" IsTextSelectionEnabled="True"
+                                       AutomationProperties.Name="{x:Bind Vm.CodeSpoken, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Waiting, or paired. -->
+                    <Border Style="{StaticResource CardStyle}" Background="{ThemeResource BcSurfaceBrush}" Visibility="{x:Bind Vm.IsWaiting, Mode=OneWay}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Bind Vm.WaitingText, Mode=OneWay}" Style="{StaticResource StrongStyle}" />
+                            <TextBlock Text="{x:Bind Vm.Limit}" Style="{StaticResource MutedStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="PairedCard" Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.HasPaired, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE930;" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="18"
+                                      Foreground="{ThemeResource BcSuccessBrush}" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock x:Name="PairedText" Text="{x:Bind Vm.PairedText, Mode=OneWay}" Style="{StaticResource BodyStyle}"
+                                       AutomationProperties.LiveSetting="Polite" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- The QR: always black on a white plate, in every theme. -->
+                <StackPanel Grid.Column="1" Spacing="8" Width="262" VerticalAlignment="Top" Visibility="{x:Bind Vm.IsOpen, Mode=OneWay}">
+                    <Border Background="White" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
+                        <Image x:Name="QrImage" Width="244" Height="244" AutomationProperties.Name="{x:Bind Vm.QrSpoken, Mode=OneWay}" />
+                    </Border>
+                    <TextBlock Text="{x:Bind Vm.QrCaption}" Style="{StaticResource CaptionStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Phone doesn't show this computer? A disclosure, not tech-only. -->
+            <Expander Grid.Row="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      AutomationProperties.Name="{x:Bind Vm.HelpSummary}">
+                <Expander.Header>
+                    <TextBlock Text="{x:Bind Vm.HelpSummary}" Style="{StaticResource StrongStyle}" />
+                </Expander.Header>
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{x:Bind Vm.HelpWifi}" Style="{StaticResource BodyStyle}" />
+                    <TextBlock Text="{x:Bind Vm.HelpAddress, Mode=OneWay}" Style="{StaticResource BodyStyle}" IsTextSelectionEnabled="True"
+                               AutomationProperties.Name="{x:Bind Vm.HelpAddressSpoken, Mode=OneWay}" />
+                </StackPanel>
+            </Expander>
+
+            <Grid Grid.Row="4" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                <Button x:Name="AnotherButton" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind Vm.AnotherLabel}"
+                        Command="{x:Bind Vm.OpenCommand}" />
+                <Button x:Name="DoneButton" Style="{StaticResource PrimaryButtonStyle}" Content="{x:Bind Vm.DoneLabel}" HorizontalAlignment="Right"
+                        Click="OnDone" />
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

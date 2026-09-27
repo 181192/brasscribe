@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Brasscribe Bandroom for Windows: a WinUI 3 (Windows App SDK) app with no main window, an icon in the
+    notification area and a flyout. Unpackaged and self-contained by default, so CI can start the exe
+    directly; Package.appxmanifest is the MSIX build (see README: set WindowsPackageType to MSIX).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(BrasscribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(BrasscribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <RootNamespace>Brasscribe.Bandroom</RootNamespace>
+    <AssemblyName>BrasscribeBandroom</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>$(DesignDir)dist\icons\windows\Assets\AppIcon.ico</ApplicationIcon>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <SatelliteResourceLanguages>en-US;nb-NO</SatelliteResourceLanguages>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Program.cs owns Main: one Bandroom per user, a second start hands over to the running one. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brasscribe.Bandroom.Core\Brasscribe.Bandroom.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+    <!-- The copy deck is read from the .resw tables next to the exe (Core's ReswStrings), so the language switch and the tests use the same text. -->
+    <Content Include="Strings\**\*.resw" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The design system: theme, fonts and icons are linked from design/dist, never copied. -->
+  <ItemGroup>
+    <Page Include="$(DesignDir)dist\windows\BrasscribeTheme.xaml" Link="Themes\BrasscribeTheme.xaml" />
+    <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)brand\logo\mark.svg" Link="Assets\Brand\mark.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)brand\logo\mark-on-dark.svg" Link="Assets\Brand\mark-on-dark.svg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    The pixi workspace the first run installs from (spec §5.1): pixi.toml, pixi.lock and the sources pixi
+    installs as editable packages, copied next to the exe under workspace\ with -p:BandroomBundleWorkspace=true.
+    A release also bundles the pinned pixi.exe under pixi\ (-p:BandroomPixiExe=path).
+  -->
+  <Target Name="BundleWorkspace" AfterTargets="Build;Publish" Condition="'$(BandroomBundleWorkspace)' == 'true'">
+    <PropertyGroup>
+      <_Ws Condition="'$(_IsPublishing)' == 'true'">$(PublishDir)workspace\</_Ws>
+      <_Ws Condition="'$(_Ws)' == ''">$(OutDir)workspace\</_Ws>
+      <_NoCache>$(RepoRoot)**\__pycache__\**;$(RepoRoot)**\.venv\**;$(RepoRoot)**\*.pyc</_NoCache>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WsRoot Include="$(RepoRoot)pixi.toml;$(RepoRoot)pixi.lock" />
+      <_WsEngine Include="$(RepoRoot)engine\src\**\*" Exclude="$(_NoCache)" />
+      <_WsMusic Include="$(RepoRoot)music\src\**\*" Exclude="$(_NoCache)" />
+      <_WsEv Include="$(RepoRoot)eval\brasscribe_eval\**\*" Exclude="$(_NoCache)" />
+      <_WsAdapters Include="$(RepoRoot)ml\adapters\**\*" Exclude="$(_NoCache)" />
+      <_WsEngineMeta Include="$(RepoRoot)engine\pyproject.toml;$(RepoRoot)engine\openapi.json" />
+      <_WsMusicMeta Include="$(RepoRoot)music\pyproject.toml;$(RepoRoot)music\README.md" />
+      <_WsEvMeta Include="$(RepoRoot)eval\pyproject.toml;$(RepoRoot)eval\README.md" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WsRoot)" DestinationFolder="$(_Ws)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEngineMeta)" DestinationFolder="$(_Ws)engine" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsMusicMeta)" DestinationFolder="$(_Ws)music" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEvMeta)" DestinationFolder="$(_Ws)eval" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEngine)" DestinationFiles="@(_WsEngine->'$(_Ws)engine\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsMusic)" DestinationFiles="@(_WsMusic->'$(_Ws)music\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\brasscribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsAdapters)" DestinationFiles="@(_WsAdapters->'$(_Ws)ml\adapters\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+  <ItemGroup Condition="'$(BandroomPixiExe)' != '' And Exists('$(BandroomPixiExe)')">
+    <Content Include="$(BandroomPixiExe)" Link="pixi\pixi.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
