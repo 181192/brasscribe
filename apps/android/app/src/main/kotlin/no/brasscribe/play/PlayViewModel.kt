@@ -124,19 +124,33 @@ fun TranscriptionResult.compositionJsonFor(core: no.brasscribe.play.model.CoreBr
     compositionJson ?: composition?.let { runCatching { core.encodeComposition(it) }.getOrNull() }
 
 
-enum class Lineup(@StringRes val label: Int, @StringRes val desc: Int) {
-    FULL(R.string.lineup_full, R.string.lineup_full_desc), MINIMAL(R.string.lineup_minimal, R.string.lineup_minimal_desc),
-    SOLO(R.string.lineup_solo, R.string.lineup_solo_desc),
+enum class Difficulty(@StringRes val label: Int) {
+    FAITHFUL(R.string.difficulty_faithful), STANDARD(R.string.difficulty_standard), EASIER(R.string.difficulty_easier);
+
+    /** The name the core and the engine use. */
+    val id: String get() = name.lowercase()
+
+    companion object {
+        fun of(name: String?): Difficulty? = entries.firstOrNull { it.id == name?.trim()?.lowercase() }
+    }
 }
-enum class Difficulty(@StringRes val label: Int) { FAITHFUL(R.string.difficulty_faithful), STANDARD(R.string.difficulty_standard), EASIER(R.string.difficulty_easier) }
 
 data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Difficulty = Difficulty.FAITHFUL, val keyShift: Int = 0) {
     fun toCore() = ArrangeOptions(
-        lineup = if (lineup == Lineup.MINIMAL) "minimal" else "full",
-        difficulty = difficulty.name.lowercase(),
+        lineup = lineup.core,
+        difficulty = difficulty.id,
         transpose = keyShift.takeIf { it != 0 },
     )
 }
+
+/** A take with no harmony to arrange (a solo, or anything transcribed on the phone): no quartet for it. */
+val TranscriptionResult.isSoloTake: Boolean get() = profile == Profile.SOLO
+
+/** The lineup this result was arranged for, when it was recorded. */
+val TranscriptionResult.lineup: Lineup? get() = Lineup.recorded(composition)
+
+/** The engine refused a quartet for this take (it has no harmony): the app says why in its own words. */
+class QuartetNeedsGroupException : Exception("quartet needs a recording of the whole group")
 
 /** A status line for sighted users that screen readers also hear (polite live region). */
 data class Status(
@@ -211,6 +225,25 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { top ->
                 listening.stop(announce = false)
                 if (top != Screen.COMPANION) cancelAsk()
+            }
+        }
+        // The output choices follow the score on screen: its recorded lineup and difficulty, and never a
+        // quartet for a solo take (it has no harmony to arrange).
+        viewModelScope.launch {
+            result.collect { r ->
+                r ?: return@collect
+                val recorded = r.lineup
+                val difficulty = Difficulty.of(r.arrangementText("difficulty"))
+                val synced = output.value.let { o ->
+                    o.copy(
+                        lineup = recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup,
+                        difficulty = if (recorded != null && difficulty != null) difficulty else o.difficulty,
+                    )
+                }
+                if (synced != output.value) {
+                    output.value = synced
+                    lastApplied = synced
+                }
             }
         }
     }
@@ -408,7 +441,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 4, fraction = 0.9) }
                 val a0 = System.nanoTime()
-                val arranged = runCatching { pipeline.pipeline.arrange(take, output.value.toCore()) }
+                // A solo take has no harmony for a quartet: the full band then, as the Output screen shows it.
+                val opts = output.value.let { if (it.lineup == Lineup.QUARTET) it.copy(lineup = Lineup.FULL) else it }
+                val arranged = runCatching { pipeline.pipeline.arrange(take, opts.toCore()) }
                     .onFailure { android.util.Log.w(TAG, "core arrangement failed", it) }.getOrNull()
                 val arrangeMs = (System.nanoTime() - a0) / 1_000_000
                 android.util.Log.i(TAG, "on-device solo: %.1f s audio, SwiftF0 %d notes, Basic Pitch %d, beats %d (%s), downbeats %d, stages %s ms, arrange %d ms, core %s"
@@ -458,11 +493,15 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                     !r.onDevice && r.audioId != null -> rerunWithEngine(r, opts)
+                    // A score arranged on the phone before (no take kept): the core re-arranges its Composition.
+                    r.onDevice && r.composition != null -> withContext(Dispatchers.Default) { rearrange(r, opts) }
                     else -> null
                 }
-                if (updated != null) { result.value = updated; saveCurrentScore(updated); lastApplied = opts }
+                if (updated != null) { lastApplied = opts; result.value = updated; saveCurrentScore(updated) }
                 say(R.string.arrangement_ready)
                 then()
+            } catch (e: QuartetNeedsGroupException) {
+                say(R.string.lineup_quartet_needs_group)
             } catch (e: Exception) {
                 say(R.string.transcribe_failed, e.message ?: e.javaClass.simpleName)
             } finally {
@@ -477,9 +516,15 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val engine = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val core = opts.toCore()
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
-        val job = engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
-            allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = core.lineup,
-            difficulty = core.difficulty, transpose = core.transpose))
+        val job = try {
+            engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
+                allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.engine,
+                difficulty = core.difficulty, transpose = core.transpose))
+        } catch (e: EngineException) {
+            // The engine's own words stay out of the app: a refused quartet gets the card's reason.
+            if (e.status == 422 && opts.lineup == Lineup.QUARTET) throw QuartetNeedsGroupException()
+            throw e
+        }
         engine.events(job.id).collect { }
         val final = engine.job(job.id)
         if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
@@ -655,11 +700,17 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
             PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
         }
-        // The same arranger as the score came from: the golden Composition re-arranges to the golden score.
-        val arranger = if (output.value.lineup == Lineup.MINIMAL) "minimal" else "auto"
-        val xml = runCatching { container.core.arrangeMusicXml(updatedComposition, arranger) }.getOrNull()
+        // The same lineup and difficulty as the score came from (the golden Composition re-arranges to the
+        // golden score), and no new transposition: the recorded total is passed back.
+        val options = OutputOptions(
+            lineup = current.lineup ?: output.value.lineup,
+            difficulty = Difficulty.of(current.arrangementText("difficulty")) ?: output.value.difficulty,
+        )
+        val arranged = runCatching { arrangeComposition(updatedComposition, options) }.getOrNull()
+        val xml = arranged?.second
             ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
             ?: return false
+        val finalComposition = arranged?.first ?: updatedComposition
         val newPitch = (pitch + semitones).coerceIn(0, 127)
         // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
         val evidence = current.evidence?.let { e ->
@@ -668,11 +719,29 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
             })
         }
-        val updated = current.copy(composition = updatedComposition, musicXml = xml,
-            compositionJson = container.core.encodeComposition(updatedComposition), evidence = evidence, changedOnPhone = true)
+        val updated = current.copy(composition = finalComposition, musicXml = xml,
+            compositionJson = container.core.encodeComposition(finalComposition), evidence = evidence, changedOnPhone = true)
         result.value = updated
         saveCurrentScore(updated)
         return true
+    }
+
+    /**
+     * [composition] arranged by the core for [options]' lineup and difficulty, with no new transposition
+     * (the recorded total goes back in). Returns the Composition with its arrangement recorded as the
+     * core made it, and the MusicXML; null without the core.
+     */
+    private fun arrangeComposition(composition: Composition, options: OutputOptions): Pair<Composition, String>? {
+        val transposed = (composition.arrangement?.get("transpose_semitones") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
+        val xml = container.core.arrangeMusicXmlWith(composition,
+            ArrangeOptions(lineup = options.lineup.core, difficulty = options.difficulty.id, transpose = transposed)) ?: return null
+        return composition.arrangedFor(options.lineup, options.difficulty.id) to xml
+    }
+
+    /** A score arranged on the phone, re-arranged from its Composition (the rest of a key shift stays display-only). */
+    private fun rearrange(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult? {
+        val (composition, xml) = arrangeComposition(r.composition ?: return null, opts) ?: return null
+        return r.copy(composition = composition, musicXml = xml, compositionJson = container.core.encodeComposition(composition))
     }
 
     /** Keeps several notes at once ("Keep the rest of this bar"). */

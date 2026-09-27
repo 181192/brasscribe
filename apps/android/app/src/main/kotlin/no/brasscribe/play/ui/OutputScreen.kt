@@ -35,6 +35,7 @@ import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.Difficulty
 import no.brasscribe.play.Lineup
+import no.brasscribe.play.isSoloTake
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
@@ -56,8 +57,9 @@ fun keyName(fifths: Int, minor: Boolean, shift: Int, lang: Lang): String {
 
 /**
  * How should the score be? (mockups/png/choose-output-*): Which band?, How hard? with its tip, and
- * Key, then Show the score. Full and Small band map to the arranger's full and minimal lineups; the
- * three difficulty segments to faithful, standard and easier.
+ * Key, then Show the score. Full band, Small band and Quartet map to the arranger's lineups; the
+ * three difficulty segments to faithful, standard and easier. The quartet needs a take with harmony,
+ * so it is unavailable for a solo take.
  */
 @Composable
 fun OutputScreen(vm: PlayViewModel) {
@@ -71,7 +73,10 @@ fun OutputScreen(vm: PlayViewModel) {
     // computer (a new run with the choices); without either only the key remains.
     val r = result
     val canArrange = r != null && ((r.onDevice && vm.container.core.name.startsWith("rust")) || (!r.onDevice && r.audioId != null))
-    val lineups = listOf(Lineup.FULL, Lineup.MINIMAL)
+    val lineups = listOf(Lineup.FULL, Lineup.MINIMAL, Lineup.QUARTET)
+    // A solo take has no harmony for four parts: the quartet card says so and stays reachable.
+    val soloTake = r?.isSoloTake == true
+    val needsGroup = stringResource(R.string.lineup_quartet_needs_group)
     val key = r?.composition?.keys?.firstOrNull()
 
     PlayScaffold(
@@ -88,7 +93,8 @@ fun OutputScreen(vm: PlayViewModel) {
         SubHeading(stringResource(R.string.lineup))
         ChoiceGroup(lineups.size) {
             lineups.forEachIndexed { i, l ->
-                ChoiceCard(stringResource(l.label), stringResource(l.desc), options.lineup == l, canArrange || l == Lineup.FULL, i) {
+                val reason = needsGroup.takeIf { l == Lineup.QUARTET && soloTake }
+                ChoiceCard(stringResource(l.label), stringResource(l.desc), options.lineup == l, canArrange || l == Lineup.FULL, i, reason) {
                     vm.output.update { it.copy(lineup = l) }
                 }
             }

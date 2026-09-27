@@ -31,7 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.Lineup
 import no.brasscribe.play.PlayViewModel
+import no.brasscribe.play.lineup
 import no.brasscribe.play.R
 import no.brasscribe.play.export.ExportFile
 import no.brasscribe.play.export.ExportFormat
@@ -71,7 +73,9 @@ fun ExportScreen(vm: PlayViewModel) {
     // What: the player's own part first (the part on screen), every part, or the conductor's score.
     val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
     val shown = vm.scoreController?.state?.collectAsState()?.value?.shown
-    val myPart = shown?.singleOrNull() ?: defaultPart(partNames)
+    // The labels follow the recorded lineup: a quartet has no conductor, so its third choice is the score.
+    val lineup = r.lineup ?: Lineup.ofParts(partNames)
+    val myPart = shown?.singleOrNull() ?: defaultPart(partNames, lineup)
     val manyParts = partNames.size > 1
     var what by rememberSaveable { mutableStateOf(if (manyParts) ExportScope.MY_PART else ExportScope.CONDUCTOR) }
     val myName = PartNames.display(partNames.getOrElse(myPart) { "" })
@@ -131,7 +135,7 @@ fun ExportScreen(vm: PlayViewModel) {
                 ChoiceCard(stringResource(R.string.export_scope_my_part, myName), null, what == ExportScope.MY_PART, true, 0) { what = ExportScope.MY_PART }
                 ChoiceCard(stringResource(R.string.export_scope_every_part), stringResource(R.string.export_scope_every_part_tip),
                     what == ExportScope.EVERY_PART, true, 1) { what = ExportScope.EVERY_PART }
-                ChoiceCard(stringResource(R.string.export_scope_conductor), null, what == ExportScope.CONDUCTOR, true, 2) { what = ExportScope.CONDUCTOR }
+                ChoiceCard(stringResource(if (lineup == Lineup.QUARTET) R.string.export_scope_score_quartet else R.string.export_scope_conductor), null, what == ExportScope.CONDUCTOR, true, 2) { what = ExportScope.CONDUCTOR }
             }
         }
         SectionLabel(stringResource(R.string.export_formats))

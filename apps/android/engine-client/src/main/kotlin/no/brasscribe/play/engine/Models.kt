@@ -106,7 +106,7 @@ data class JobCreate(
     val title: String? = null,
     @SerialName("source_id") val sourceId: String? = null,
     val path: String? = null,
-    /** "full" (18 parts) or "minimal" (8 parts). */
+    /** "full" (18 parts), "minimal" (8 parts) or "quartet" (4 parts; not for the solo profile, which answers 422). */
     val lineup: String = "full",
     /** "faithful", "standard" or "easier". */
     val difficulty: String = "faithful",

@@ -2,6 +2,7 @@ package no.brasscribe.play.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * The canonical score shared by every Brasscribe app: concert pitch, integer ticks.
@@ -27,6 +28,11 @@ data class Composition(
      * note is its own item.
      */
     val review: List<ReviewItem>? = null,
+    /**
+     * The options the arrangement was made with (`lineup`, `difficulty`, `transpose_semitones`, …), as
+     * the core and the engine record them; null means the defaults. Kept whole so a re-encode keeps it.
+     */
+    val arrangement: JsonObject? = null,
 ) {
     val endTick: Int get() = voices.maxOfOrNull { v -> v.notes.maxOfOrNull { it.end } ?: 0 } ?: 0
     val startTick: Int get() = minOf(0, voices.minOfOrNull { v -> v.notes.minOfOrNull { it.start } ?: 0 } ?: 0)

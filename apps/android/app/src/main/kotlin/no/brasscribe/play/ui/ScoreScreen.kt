@@ -81,14 +81,14 @@ import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.audio.RealisticSynth
 import no.brasscribe.play.compositionJsonFor
+import no.brasscribe.play.lineup
 import no.brasscribe.play.model.Uncertainty
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScorePalette
 import no.brasscribe.play.score.ScoreUiState
 
-/** Index of the part a player most likely wants first: the solo cornet, else the first part. */
-fun defaultPart(parts: List<String>): Int =
-    parts.indexOfFirst { it.trim().equals("Solo Cornet", ignoreCase = true) }.takeIf { it >= 0 } ?: 0
+/** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
+fun defaultPart(parts: List<String>, lineup: no.brasscribe.play.Lineup? = null): Int = no.brasscribe.play.leadPartIndex(parts, lineup)
 
 private enum class Sheet { PARTS, SPEED, LOOP, SOUND }
 
@@ -127,7 +127,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
     LaunchedEffect(controller) {
         // One part first (the full score is one tap away in Parts); a key shift re-renders once.
-        controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names)) }
+        controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names, r.lineup)) }
         (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) { onDispose { controller.release() } }
@@ -137,7 +137,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     val single = st.shown.size == 1
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
     val shownText = if (single) PartNames.display(partName) else stringResource(R.string.show_all_parts)
-    val myPart = st.shown.minOrNull()?.takeIf { single } ?: defaultPart(st.parts)
+    val myPart = st.shown.minOrNull()?.takeIf { single } ?: defaultPart(st.parts, r.lineup)
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
     val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
     val nextBar = stringResource(R.string.action_next_bar)
@@ -237,7 +237,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
 
     when (sheet) {
-        Sheet.PARTS -> PartsSheet(st, controller) { sheet = null }
+        Sheet.PARTS -> PartsSheet(st, controller, r.lineup) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
             LoopControl(st.totalBars, st.loop, onSet = { a, b ->
@@ -441,17 +441,17 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PartsSheet(st: ScoreUiState, controller: ScoreController, onDismiss: () -> Unit) {
+private fun PartsSheet(st: ScoreUiState, controller: ScoreController, lineup: no.brasscribe.play.Lineup?, onDismiss: () -> Unit) {
     val c = BrasscribeTheme.colors
     val large = largeText()
     BottomSheet(onDismiss) {
         SubHeading(stringResource(R.string.parts))
         val all = st.shown.size > 1
-        val mine = st.shown == setOf(defaultPart(st.parts))
+        val mine = st.shown == setOf(defaultPart(st.parts, lineup))
         Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
             PracticeChip(stringResource(R.string.show_all_parts), all, { controller.showParts(st.parts.indices.toSet()); onDismiss() },
                 Modifier.weight(1f), role = Role.RadioButton)
-            PracticeChip(stringResource(R.string.show_one_part), mine, { controller.showParts(setOf(defaultPart(st.parts))); onDismiss() },
+            PracticeChip(stringResource(R.string.show_one_part), mine, { controller.showParts(setOf(defaultPart(st.parts, lineup))); onDismiss() },
                 Modifier.weight(1f), role = Role.RadioButton)
         }
         RowGroup {

@@ -14,13 +14,16 @@ data class PartSpec(val voiceId: String, val name: String, val instrument: Instr
 
 /** Arrangement choices of the Output screen, as the core and the engine name them. */
 data class ArrangeOptions(
-    /** "full" or "minimal". */
-    val lineup: String = "full",
+    /** The core's lineup: "band" (the full band), "minimal" or "quartet". */
+    val lineup: String = "band",
     /** "faithful", "standard" or "easier". */
     val difficulty: String = "faithful",
     /** Concert key such as "Bb" or "-2:major"; exclusive with [transpose]. */
     val key: String? = null,
-    /** Semitones, -11..11; exclusive with [key]. */
+    /**
+     * Semitones from the recording, -11..11; exclusive with [key]. It is the total: a composition that
+     * is already transposed by that much (its `arrangement.transpose_semitones`) is not moved again.
+     */
     val transpose: Int? = null,
 )
 
@@ -88,6 +91,12 @@ interface CoreBridge {
 
     /** The core's band arranger on a Composition ("auto", "minimal", "layers"). */
     fun arrangeMusicXml(composition: Composition, arranger: String): String? = null
+
+    /**
+     * The core's arranger on a Composition with a lineup, difficulty and key or transposition: the
+     * layered arranger for a take with layers, else the small band or the quartet.
+     */
+    fun arrangeMusicXmlWith(composition: Composition, options: ArrangeOptions): String? = null
 
     fun announce(stop: TsStop, context: TsContext, settings: TsSettings, lang: Lang): String
 
