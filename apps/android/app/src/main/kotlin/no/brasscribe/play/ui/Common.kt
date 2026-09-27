@@ -335,13 +335,18 @@ fun PlayScaffold(
         containerColor = BrasscribeTheme.colors.bg,
         topBar = { PlayTopBar(title, onBack, backLabel, actions) },
         bottomBar = {
-            Column(
-                Modifier.fillMaxWidth().background(BrasscribeTheme.colors.bg).navigationBarsPadding()
-                    .padding(horizontal = ScreenMargin, vertical = if (bottom != null) BrasscribeSpace.s3 else BrasscribeSpace.s0),
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
-            ) {
-                StatusLine(status)
-                bottom?.invoke(this)
+            // Docked actions sit on an opaque band with a hairline above it, so the content ends
+            // visibly at the band instead of looking cut off behind the button.
+            Column(Modifier.fillMaxWidth().background(BrasscribeTheme.colors.bg)) {
+                if (bottom != null) HorizontalDivider(thickness = 1.dp, color = BrasscribeTheme.colors.border)
+                Column(
+                    Modifier.fillMaxWidth().navigationBarsPadding()
+                        .padding(horizontal = ScreenMargin, vertical = if (bottom != null) BrasscribeSpace.s3 else BrasscribeSpace.s0),
+                    verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+                ) {
+                    StatusLine(status)
+                    bottom?.invoke(this)
+                }
             }
         },
     ) { padding ->

@@ -174,6 +174,27 @@ class PlayFlowA11yTest {
         onView(isRoot()).perform(ViewActions.closeSoftKeyboard())
     }
 
+    /**
+     * Show the score is docked on its own band: the key buttons scroll fully clear of it, so no
+     * control (and no focused one) is hidden behind the button (WCAG 2.4.11).
+     */
+    @Test
+    fun showScoreBandLeavesTheKeyButtonsClear() {
+        openOldHundredth()
+        rule.onNodeWithText("Soloist with orchestra or band").performClick()
+        rule.onNodeWithText("Continue").performClick()
+        waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
+        rule.onNodeWithText("Finish later (", substring = true).performClick()
+        rule.onNodeWithText("Finish later").performClick()
+        rule.onNode(isHeading() and hasText("How should the score be?")).assertExists()
+        val show = rule.onNodeWithText("Show the score").fetchSemanticsNode().boundsInRoot
+        for (label in listOf("− Lower", "Higher +")) {
+            rule.onNodeWithText(label).performScrollTo()
+            val b = rule.onNodeWithText(label).fetchSemanticsNode().boundsInRoot
+            assertTrue("$label ends at ${b.bottom}, the button band starts above ${show.top}", b.bottom <= show.top)
+        }
+    }
+
     /** Full screen on a music stand: the score alone, with only the transport left. */
     @Test
     fun fullScreenLeavesOnlyTheScoreAndTheTransport() {
