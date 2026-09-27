@@ -25,7 +25,10 @@ public sealed record JobCreate(
     string Difficulty = "faithful",
     string? Key = null,
     int? Transpose = null,
-    bool Muscriptor = true);
+    bool Muscriptor = true,
+    string? Seat = null,
+    string? Reads = null,
+    string? Lead = null);
 
 /// <summary>Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a transposition.</summary>
 public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null)

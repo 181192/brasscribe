@@ -73,6 +73,7 @@ interface EngineApi {
 
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(
+            "getPartSources",
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",
