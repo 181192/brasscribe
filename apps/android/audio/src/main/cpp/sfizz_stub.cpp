@@ -14,6 +14,8 @@ void noteOff(int, int) {}
 void noteAt(int, int, int, double) {}
 double positionSeconds() { return 0; }
 void allOff() {}
+void releaseAll() {}
+void fadeOut(double) {}
 void setGain(int, float) {}
 int renderOffline(float*, int) { return 0; }
 int activeVoices() { return 0; }
