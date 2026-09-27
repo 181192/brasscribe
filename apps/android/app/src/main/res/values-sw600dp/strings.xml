@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- On tablets the device is called a tablet. -->
+<resources>
+    <string name="conn_offline">Not connected. You can still make scores on this tablet.</string>
+    <string name="conn_needs_pairing">The computer no longer recognises this tablet.</string>
+    <string name="conn_pair_again">Pair this tablet again</string>
+    <string name="pair_forgotten">This tablet no longer connects to the computer.</string>
+</resources>

@@ -14,7 +14,9 @@ data class Health(
     val version: String,
     val device: String,
     @SerialName("auth_required") val authRequired: Boolean,
+    /** Stable id of the engine: a stored credential belongs to this, not to an address. */
     @SerialName("server_id") val serverId: String,
+    /** "Brasscribe on <computer name>". */
     @SerialName("server_name") val serverName: String,
     val status: String = "ok",
 )
@@ -32,6 +34,49 @@ data class PairResponse(
     @SerialName("device_id") val deviceId: String,
     @SerialName("server_id") val serverId: String,
     @SerialName("server_name") val serverName: String,
+)
+
+/** GET /v1/devices/me: this device as the engine knows it. Timestamps are ISO 8601. */
+@Serializable
+data class DeviceSelf(
+    @SerialName("device_id") val deviceId: String,
+    val name: String,
+    val platform: String,
+    @SerialName("paired_at") val pairedAt: String,
+    @SerialName("last_seen") val lastSeen: String,
+    /** Seen in the last 60 s. */
+    val online: Boolean,
+    @SerialName("server_id") val serverId: String,
+    @SerialName("rotate_after") val rotateAfter: String,
+    @SerialName("expires_if_idle_after") val expiresIfIdleAfter: String,
+    @SerialName("rotated_at") val rotatedAt: String? = null,
+)
+
+@Serializable
+data class RotateResponse(val token: String, @SerialName("device_id") val deviceId: String)
+
+@Serializable
+data class PairRequestCreate(@SerialName("device_name") val deviceName: String? = null, val platform: String? = null)
+
+/** A request to pair without a code, waiting for "Allow" on the computer. */
+@Serializable
+data class PairRequestInfo(
+    @SerialName("request_id") val requestId: String,
+    val name: String,
+    val platform: String,
+    @SerialName("match_code") val matchCode: String,
+    @SerialName("created_at") val createdAt: String,
+    val status: String,
+)
+
+/** Poll result; [token] is set once, on the first poll after approval. */
+@Serializable
+data class PairRequestResult(
+    val status: String,
+    val token: String? = null,
+    @SerialName("device_id") val deviceId: String? = null,
+    @SerialName("server_id") val serverId: String? = null,
+    @SerialName("server_name") val serverName: String? = null,
 )
 
 @Serializable

@@ -34,7 +34,20 @@ import no.brasscribe.play.model.ArrangeOptions
 import no.brasscribe.play.model.SoloTake
 import no.brasscribe.play.model.TempoEstimator
 import no.brasscribe.play.model.VoiceRole
+import no.brasscribe.play.playback.BarListening
 import no.brasscribe.play.playback.ClipPlayer
+import no.brasscribe.play.connection.ConnectionMonitor
+import no.brasscribe.play.connection.Credential
+import no.brasscribe.play.connection.CredentialStore
+import no.brasscribe.play.connection.EngineConnection
+import no.brasscribe.play.connection.ServerNames
+import no.brasscribe.play.engine.EngineException
+import no.brasscribe.play.engine.KtorEngineApi
+import no.brasscribe.play.engine.PairLink
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import java.io.File
 import java.util.zip.ZipInputStream
 
@@ -126,7 +139,12 @@ data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Diffi
 }
 
 /** A status line for sighted users that screen readers also hear (polite live region). */
-data class Status(val text: String, val serial: Long = System.nanoTime())
+data class Status(
+    val text: String,
+    val serial: Long = System.nanoTime(),
+    /** Only for screen readers: the screen already shows it (the Listen button reads Stop), so no bar covers the card. */
+    val quiet: Boolean = false,
+)
 
 class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val container = (app as PlayApplication).container
@@ -154,7 +172,27 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val status = MutableStateFlow<Status?>(null)
     val busy = MutableStateFlow(false)
     val companionState = MutableStateFlow<String?>(null)
-    val clipPlaying = MutableStateFlow<Int?>(null)
+    private val clips = ClipPlayer()
+    /** "Listen to this bar": [clipPlaying] is the bar playing now; the button shows Stop while it is. */
+    val listening = BarListening(viewModelScope, clips) { e ->
+        when (e) {
+            is BarListening.Event.Started -> sayQuietly(if (e.withRecording) R.string.playing_bar_original else R.string.playing_bar_score, e.bar)
+            is BarListening.Event.Stopped -> sayQuietly(R.string.listen_stopped)
+            is BarListening.Event.Ended -> sayQuietly(R.string.listen_ended, e.bar)
+            BarListening.Event.Unavailable -> say(R.string.listen_unavailable)
+        }
+    }
+    val clipPlaying: StateFlow<Int?> = listening.playing
+
+    /** Connected, looking for, offline or pair again: the status row on Home and in Settings. */
+    val connection = ConnectionMonitor(viewModelScope, EngineConnection(container))
+    /** A pairing link (QR code or brasscribe://pair) waiting for the user to press Connect. */
+    val pendingLink = MutableStateFlow<PairLink?>(null)
+    /** The four-digit code both screens show while the computer is asked to allow this phone. */
+    val matchCode = MutableStateFlow<String?>(null)
+    /** Asking the computer ended without an answer or with a no: offer "Ask again". */
+    val askAgain = MutableStateFlow<String?>(null)
+    private var askJob: Job? = null
     val problem = MutableStateFlow<Problem?>(null)
     /** The detail of the last problem (an engine message), shown under the reasons. */
     var problemDetail: String? = null
@@ -165,8 +203,17 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private var job: Job? = null
     private var engineJobId: String? = null
-    private val clips = ClipPlayer()
     private var renderedScoreAudio: PcmAudio? = null
+
+    init {
+        // Leaving a place stops "Listen to this bar" (and asking the computer), whichever way the user left.
+        viewModelScope.launch {
+            backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { top ->
+                listening.stop(announce = false)
+                if (top != Screen.COMPANION) cancelAsk()
+            }
+        }
+    }
 
     fun navigate(to: Screen) = backStack.update { it + to }
     fun replaceTop(to: Screen) = backStack.update { it.dropLast(1) + to }
@@ -192,6 +239,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun say(@StringRes id: Int, vararg args: Any) { status.value = Status(res.getString(id, *args)) }
+    private fun sayQuietly(@StringRes id: Int, vararg args: Any) { status.value = Status(res.getString(id, *args), quiet = true) }
     private fun sayText(text: String) { status.value = Status(text) }
 
     // ---- Import ---------------------------------------------------------------------------------------
@@ -645,21 +693,21 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         say(R.string.checked_left, remaining)
     }
 
-    /** Plays the recording's bar, then the score's bar, looped, until [stopListening]. */
+    /**
+     * Plays the recording's bar, then the score's bar, once; pressing it again while that bar plays stops
+     * it (the button reads Stop meanwhile).
+     */
     fun listenToBar(bar: Int) {
         val r = result.value ?: return
-        val map = TickMap(r.composition ?: return)
-        val original = source.value?.audio?.let { a ->
-            val span = map.barSeconds(bar)
-            a.slice(span.start, span.endInclusive)
-        }
-        viewModelScope.launch {
+        val composition = r.composition ?: return
+        listening.toggle(bar) {
+            val map = TickMap(composition)
+            val original = source.value?.audio?.let { a ->
+                val span = map.barSeconds(bar)
+                a.slice(span.start, span.endInclusive)
+            }
             val score = scoreBarAudio(r, map, bar)
-            val clipsToPlay = listOfNotNull(original, score)
-            if (clipsToPlay.isEmpty()) { say(R.string.listen_unavailable); return@launch }
-            clips.playLooped(clipsToPlay)
-            clipPlaying.value = bar
-            say(if (original != null) R.string.playing_bar_original else R.string.playing_bar_score, bar)
+            BarListening.Clips(listOfNotNull(original, score), withRecording = original != null)
         }
     }
 
@@ -680,32 +728,220 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         return rendered.slice(from, to)
     }
 
-    fun stopListening() {
-        clips.stop()
-        clipPlaying.value = null
-    }
+    fun stopListening(announce: Boolean = true) = listening.stop(announce)
 
     // ---- Companion ------------------------------------------------------------------------------------
 
+    /** The engine's name in this language: "Brasscribe on Kalli's Mac" / "Brasscribe på Kalli's Mac". */
+    fun serverDisplayName(serverName: String): String =
+        ServerNames.display(serverName, { res.getString(R.string.server_name_format, it) }, res.getString(R.string.companion_title))
+
+    /**
+     * Connects to the engine at [url]. A credential this phone already holds for that engine is checked
+     * first (GET /v1/devices/me); the code is only used when there is none, or the engine answers 401.
+     */
     fun connect(url: String, code: String) {
+        pendingLink.value = null
+        askAgain.value = null
         companionState.value = res.getString(R.string.companion_connecting)
         viewModelScope.launch {
             try {
-                val client = container.newEngineClient(url)
-                val health = client.health()
-                if (health.authRequired) {
-                    val token = client.pair(code.trim(), container.deviceName).token
-                    container.settings.token = token
-                } else container.settings.token = null
-                container.settings.url = url
-                container.settings.paired = true
-                container.settings.useFixture = false
-                companionState.value = res.getString(R.string.companion_connected, health.version, url, health.device)
-                say(R.string.companion_connected, health.version, url, health.device)
+                val done = container.newEngineClient(url).use { client -> connectTo(client, url, client.health(), code) }
+                if (!done) companionState.value = res.getString(R.string.pair_code_needed)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                companionState.value = res.getString(R.string.companion_failed, e.message ?: e.javaClass.simpleName)
-                say(R.string.companion_failed, e.message ?: e.javaClass.simpleName)
+                failed(e)
             }
+        }
+    }
+
+    /** A pairing link from a QR code or brasscribe://pair: shown on the connection screen, connected on Connect. */
+    fun openPairLink(text: String): Boolean {
+        val link = PairLink.parse(text)
+        if (link == null) {
+            say(R.string.pair_link_invalid)
+            return false
+        }
+        pendingLink.value = link
+        companionState.value = null
+        if (backStack.value.last() != Screen.COMPANION) navigate(Screen.COMPANION)
+        return true
+    }
+
+    /**
+     * Tries the link's addresses in order (or the address mDNS gives for its server id) and pairs only
+     * with the engine whose id matches. Without a code, the computer is asked to allow this phone.
+     */
+    fun pairWithLink(link: PairLink) {
+        // A pinned certificate needs TLS, which this version does not speak yet: never fall back to plain HTTP.
+        if (link.fingerprint != null) {
+            companionState.value = res.getString(R.string.pair_needs_update)
+            say(R.string.pair_needs_update)
+            return
+        }
+        askAgain.value = null
+        companionState.value = res.getString(R.string.companion_connecting)
+        viewModelScope.launch {
+            val urls = link.urls.ifEmpty { listOfNotNull(container.reconnectDiscovery.find(link.serverId)) }
+            for (url in urls) {
+                val client = container.newEngineClient(url)
+                try {
+                    val health = client.health()
+                    if (health.serverId != link.serverId) continue
+                    pendingLink.value = null
+                    if (!connectTo(client, url, health, link.code.orEmpty())) askComputer(url)
+                    return@launch
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: EngineException) {
+                    if (e.status != 0) { failed(e); return@launch }
+                } catch (e: Exception) {
+                    // Not reachable at this address: try the next one.
+                } finally {
+                    client.close()
+                }
+            }
+            companionState.value = res.getString(R.string.pair_link_unreachable, serverDisplayName(link.serverName))
+        }
+    }
+
+    /**
+     * Uses a credential this phone already holds for the engine, or pairs with [code]. False when there is
+     * neither a valid credential nor a code.
+     */
+    private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
+        val store = container.credentials
+        if (!health.authRequired) { connected(url, health.serverId, health.serverName); return true }
+        // A token from an earlier version belongs to the address it was used with.
+        store.get(CredentialStore.LEGACY_ID)?.takeIf { it.lastAddress == url }?.let { store.adopt(health.serverId, health.serverName) }
+        val held = store.get(health.serverId)
+        if (held != null) {
+            client.token = held.token
+            val valid = try { client.thisDevice(); true } catch (e: EngineException) { if (e.status == 401) false else throw e }
+            if (valid) {
+                store.put(held.copy(lastAddress = url, serverName = health.serverName))
+                connected(url, health.serverId, health.serverName)
+                return true
+            }
+            store.remove(health.serverId)
+            client.token = null
+        }
+        if (code.isBlank()) return false
+        val r = client.pair(code.trim(), container.deviceName)
+        store.put(Credential(r.serverId, r.token, r.deviceId, r.serverName, url))
+        connected(url, r.serverId, r.serverName)
+        return true
+    }
+
+    private fun connected(url: String, serverId: String, serverName: String) {
+        val s = container.settings
+        s.url = url
+        s.serverId = serverId
+        s.serverName = serverName
+        s.paired = true
+        s.useFixture = false
+        companionState.value = null
+        askAgain.value = null
+        sayText(res.getString(R.string.conn_connected, serverDisplayName(serverName)))
+        connection.retry()
+        refreshComputerScores()
+    }
+
+    private fun failed(e: Exception) {
+        // The reason goes to the log and the tech details, never into the sentence.
+        android.util.Log.w(TAG, "connect failed", e)
+        lastConnectError = e.message ?: e.javaClass.simpleName
+        val text = when ((e as? EngineException)?.status) {
+            403 -> res.getString(R.string.pair_code_wrong)
+            429 -> res.getString(R.string.pair_code_locked)
+            else -> res.getString(R.string.companion_failed_plain)
+        }
+        // Shown on the connection screen already: heard, not shown twice.
+        companionState.value = text
+        status.value = Status(text, quiet = true)
+    }
+
+    /** What went wrong last time, for the tech details. */
+    var lastConnectError: String? = null
+        private set
+
+    /** Pairing without a code: the computer shows "Allow <phone>?" with [matchCode]; this waits for the answer. */
+    fun askComputer(url: String) {
+        askJob?.cancel()
+        pendingLink.value = null
+        askAgain.value = null
+        companionState.value = res.getString(R.string.companion_connecting)
+        askJob = viewModelScope.launch {
+            val client = container.newEngineClient(url)
+            try {
+                val health = client.health()
+                if (connectTo(client, url, health, "")) return@launch
+                val info = client.requestPairing(container.deviceName)
+                matchCode.value = info.matchCode
+                companionState.value = null
+                sayQuietly(R.string.pair_ask_waiting_spoken, info.matchCode.toList().joinToString(" "))
+                val until = System.currentTimeMillis() + ASK_TIMEOUT_MS
+                while (System.currentTimeMillis() < until) {
+                    delay(ASK_POLL_MS)
+                    val r = try { client.pollPairingRequest(info.requestId) } catch (e: EngineException) {
+                        if (e.status == 404) break else throw e
+                    }
+                    when (r.status) {
+                        "approved" -> {
+                            val token = r.token ?: break
+                            val serverId = r.serverId ?: health.serverId
+                            val name = r.serverName ?: health.serverName
+                            container.credentials.put(Credential(serverId, token, r.deviceId, name, url))
+                            matchCode.value = null
+                            connected(url, serverId, name)
+                            return@launch
+                        }
+                        "denied" -> {
+                            matchCode.value = null
+                            askAgain.value = url
+                            companionState.value = res.getString(R.string.pair_ask_denied)
+                            sayQuietly(R.string.pair_ask_denied)
+                            return@launch
+                        }
+                    }
+                }
+                matchCode.value = null
+                askAgain.value = url
+                companionState.value = res.getString(R.string.pair_ask_expired)
+                sayQuietly(R.string.pair_ask_expired)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                matchCode.value = null
+                throw e
+            } catch (e: Exception) {
+                matchCode.value = null
+                failed(e)
+            } finally {
+                client.close()
+            }
+        }
+    }
+
+    fun cancelAsk() {
+        askJob?.cancel()
+        askJob = null
+        matchCode.value = null
+    }
+
+    /** Removes this phone from the computer's list and forgets the credential. */
+    fun unpair() {
+        val s = container.settings
+        val id = s.serverId ?: CredentialStore.LEGACY_ID
+        val token = s.token
+        val url = s.url
+        viewModelScope.launch {
+            if (token != null) runCatching { container.newEngineClient(url, token).use { it.unpairThisDevice() } }
+            container.credentials.remove(id)
+            s.paired = false
+            companionState.value = null
+            say(R.string.pair_forgotten)
+            connection.retry()
+            refreshComputerScores()
         }
     }
 
@@ -715,11 +951,14 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        clips.stop()
+        listening.stop(announce = false)
     }
 
     companion object {
         const val TAG = "BrasscribePlay"
+        const val ASK_POLL_MS = 2_000L
+        /** The engine forgets a pairing request after two minutes. */
+        const val ASK_TIMEOUT_MS = 125_000L
         const val SOLO_PART_NAME = "Solo Cornet"
         /** Opened as a score, never sent through a transcription profile. */
         val SCORE_EXTENSIONS = setOf("musicxml", "mxl", "xml")

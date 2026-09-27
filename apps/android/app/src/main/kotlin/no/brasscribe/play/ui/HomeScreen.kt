@@ -167,6 +167,7 @@ fun HomeScreen(vm: PlayViewModel) {
                 modifier = Modifier.padding(top = BrasscribeSpace.s4).semantics { heading() },
             )
             Lead(stringResource(R.string.home_tagline))
+            ConnectionStatusRow(vm)
             StatusLine(status)
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
             PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = R.drawable.ic_bc_import_file)

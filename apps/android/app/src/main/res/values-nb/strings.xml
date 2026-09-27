@@ -69,8 +69,6 @@
         <item quantity="other">%d toner å sjekke</item>
     </plurals>
     <string name="companion_status_fixture">Bruker det innebygde eksempelet</string>
-    <string name="companion_status_connected">Koblet til %1$s</string>
-    <string name="companion_status_none">Ikke tilkoblet. Fullt band trenger Brasscribe på datamaskinen.</string>
     <string name="imported">Åpnet %1$s, %2$s</string>
     <string name="imported_video">Åpnet %1$s, %2$s. Lyden brukes.</string>
     <string name="reading_file">Åpner %1$s</string>
@@ -132,7 +130,7 @@
     <string name="stage_queued">Gjør klar</string>
     <string name="stage_upload">Sender opptaket til datamaskinen</string>
     <string name="stage_beats">Finner pulsen</string>
-    <string name="stage_stems">Skiller instrumentene fra hverandre</string>
+    <string name="stage_stems">Skiller instrumentene</string>
     <string name="stage_layers">Skiller solisten fra bandet</string>
     <string name="stage_transcribe">Skriver ned tonene</string>
     <string name="stage_arrange">Arrangerer for brassband</string>
@@ -199,7 +197,6 @@
     <string name="playing_bar_original">Spiller takt %1$d, opptaket</string>
     <string name="playing_bar_score">Spiller takt %1$d, partituret</string>
     <string name="listen_unavailable">Det finnes ikke noe opptak å spille for denne takten.</string>
-    <string name="stop_listening">Slutt å lytte</string>
     <string name="bar_heading">Takt %1$d</string>
     <string name="bar_rest_heading">Takt %1$d til %2$d</string>
     <string name="review_continue">Velg resultat</string>
@@ -361,8 +358,6 @@
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>
-    <string name="companion_connected">Koblet til Brasscribe %1$s på %2$s, bruker %3$s</string>
-    <string name="companion_failed">Kunne ikke koble til. Sjekk at Brasscribe er åpen på datamaskinen, og at begge er på samme nett. (%1$s)</string>
     <string name="companion_tech_details">Start serveren på datamaskinen med «brasscribe serve --lan». Adressen vises når den starter, for eksempel http://192.168.1.20:8765.</string>
     <string name="companion_allow_heavy">La datamaskinen gjøre det tunge arbeidet</string>
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
@@ -473,4 +468,37 @@
         <item quantity="one">Begynn med den %d svært usikre.</item>
         <item quantity="other">Begynn med de %d svært usikre.</item>
     </plurals>
+
+    <!-- Connection to the computer, pairing, and listening to a bar. -->
+    <string name="conn_connected">Koblet til %1$s</string>
+    <string name="conn_reconnecting">Leter etter %1$s …</string>
+    <string name="conn_offline">Ikke tilkoblet. Du kan fortsatt lage partitur på denne telefonen.</string>
+    <string name="conn_needs_pairing">Datamaskinen kjenner ikke igjen denne telefonen lenger.</string>
+    <string name="conn_pair_again">Koble til telefonen på nytt</string>
+    <string name="server_name_format">Brasscribe på %1$s</string>
+    <string name="listen_stop">Stopp</string>
+    <string name="listen_stopped">Stoppet</string>
+    <string name="listen_ended">Slutt på takt %1$d</string>
+    <string name="pair_scan">Skann koden på datamaskinen</string>
+    <string name="pair_scan_unavailable">Telefonen kan ikke skanne koder her. Skriv inn koden fra datamaskinen i stedet.</string>
+    <string name="pair_link_invalid">Den koden er ikke fra Brasscribe på en datamaskin.</string>
+    <string name="pair_link_title">Koble til %1$s?</string>
+    <string name="pair_link_unreachable">Fant ikke %1$s. Sjekk at telefonen og datamaskinen er på samme wifi.</string>
+    <string name="pair_needs_update">Oppdater Brasscribe Play for å koble til denne datamaskinen.</string>
+    <string name="pair_code_needed">Skriv inn koden datamaskinen viser, eller spør på datamaskinen i stedet.</string>
+    <string name="pair_code_wrong">Koden virket ikke. Sjekk koden på datamaskinen og prøv igjen.</string>
+    <string name="pair_code_locked">For mange feil koder. Vent litt, eller spør på datamaskinen i stedet.</string>
+    <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Brasscribe på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
+    <string name="pair_ask">Spør på datamaskinen i stedet</string>
+    <string name="pair_ask_again">Spør igjen</string>
+    <string name="pair_ask_waiting">Velg Godkjenn på datamaskinen når den viser dette tallet:</string>
+    <string name="pair_ask_waiting_spoken">Velg Godkjenn på datamaskinen når den viser %1$s</string>
+    <string name="pair_ask_denied">Datamaskinen sa nei. Spør igjen, eller skriv inn koden.</string>
+    <string name="pair_ask_expired">Ingen svarte på datamaskinen. Spør igjen.</string>
+    <string name="pair_forget">Glem denne datamaskinen</string>
+    <string name="pair_forgotten">Telefonen kobler ikke lenger til datamaskinen.</string>
+    <string name="conn_detail_address">Adresse: %1$s</string>
+    <string name="conn_detail_server_id">Server-id: %1$s</string>
+    <string name="conn_detail_last_seen">Svarte sist: %1$s</string>
+    <string name="conn_detail_last_error">Siste feil: %1$s</string>
 </resources>

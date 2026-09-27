@@ -12,7 +12,16 @@ class EngineException(val status: Int, message: String) : Exception(message)
  */
 interface EngineApi {
     suspend fun health(): Health
-    suspend fun pair(code: String, deviceName: String?): PairResponse
+    suspend fun pair(code: String, deviceName: String?, platform: String? = PLATFORM): PairResponse
+
+    /** Checks the stored credential: 401 means pair again; 404 means a trusted client with no device entry. */
+    suspend fun thisDevice(): DeviceSelf
+    suspend fun rotateToken(): RotateResponse
+    suspend fun unpairThisDevice()
+
+    /** Asks to pair without a code; the computer shows "Allow <device>?" with the match code. */
+    suspend fun requestPairing(deviceName: String?, platform: String? = PLATFORM): PairRequestInfo
+    suspend fun pollPairingRequest(requestId: String): PairRequestResult
     suspend fun profiles(): List<ProfileInfo>
 
     suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef
@@ -56,20 +65,21 @@ interface EngineApi {
             "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
             "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
-            "getJobEvidence", "updateRun", "deleteRun",
+            "getJobEvidence", "updateRun", "deleteRun", "getThisDevice", "rotateDeviceToken", "unpairThisDevice",
+            "requestPairing", "pollPairingRequest",
         )
 
-        /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools. */
+        const val PLATFORM = "android"
+
+        /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
-            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob",
-            "getConformanceRun", "runConformance",
-            // Device management and status belong to the desktop helper on the engine's computer.
-            "getStatus", "listDevices", "revokeDevice", "getPairing", "openPairing", "closePairing",
-            "listPairingRequests", "decidePairingRequest",
-            // Not called by this client yet: pair once / approve on the computer / heartbeat.
-            "getThisDevice", "rotateDeviceToken", "unpairThisDevice", "requestPairing", "pollPairingRequest",
+            "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",
+            "runConformance",
+            // Only the computer itself may call these (Brasscribe Bandroom).
+            "listDevices", "revokeDevice", "getPairing", "openPairing", "closePairing", "listPairingRequests",
+            "decidePairingRequest", "getStatus",
         )
     }
 }
