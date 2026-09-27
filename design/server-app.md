@@ -260,7 +260,7 @@ WantedBy=default.target
 | `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
 | `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu.lock`) | default (temp folder) |
 | `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
-| Computer name (new; the engine picks the variable name) | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook" | the device name from Settings › System › About |
+| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook" | the device name from Settings › System › About |
 
 - **Environments** go in `<data>/envs`, as a pixi workspace copied from the app, with `PIXI_CACHE_DIR=<data>/cache/pixi`.
 - **Engine command:** `pixi run -e <env> brasscribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
@@ -653,10 +653,11 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.
   - A request expires after 2 minutes, and at most three wait at once (429 beyond that).
 - **Health:** today `/v1/health` gives the version and device. Work load, memory and free space come from the **native shell** (host APIs), not the engine, so the engine needs no new endpoint for them. Job progress uses the existing `/v1/jobs` and SSE.
-- **The computer's name (a request to the engine):**
-  - Today `discovery.py` builds "Brasscribe on {host}" from `socket.gethostname()`. That gives `Kallis-MacBook-Pro`, not the name the user knows, and its TXT record carries only `v`, `api` and `auth`.
-  - The shell passes the user-visible computer name (§5.2). The engine uses it for the mDNS instance name and for `server_name`, and adds a `host=` TXT field.
-  - Phones then build the display name in their own language, "Brasscribe på Kallis MacBook". The popover header and the phone's list then match word for word, and pairing way 1 depends on that.
+- **The computer's name:** the shell sets `BRASSCRIBE_COMPUTER_NAME` (§5.2).
+  - `server_name` in `/v1/health`, `/v1/pair`, the pairing state and the QR `name` is always exactly "Brasscribe on <name>". The popover header uses that string as it is.
+  - The engine cleans the name: control characters and "." become spaces, whitespace collapses, and the name is cut to fit one DNS label (about 49 bytes). If nothing is left, it falls back to the short host name.
+  - The mDNS TXT record carries `host=<name>` and `id=<server id>`. Phones build "Brasscribe på <host>" from `host`. They never show the mDNS instance name, because a name collision can add " (2)" to it.
+  - The SRV target stays the DNS-safe host name (`Kallis-MacBook-Pro.local.`).
 
 ## 12. Copy that has to change elsewhere
 These still tell people to type a command, or use other words.
