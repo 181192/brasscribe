@@ -39,7 +39,13 @@ tasks.test {
  * Refreshes the vendored API description from the engine once it is in the same checkout.
  * The contract test compares the client against this file.
  */
-tasks.register<Copy>("syncOpenApi") {
-    from(File(repoRoot, "engine/openapi.json"))
-    into(projectDir)
+val syncOpenApi = tasks.register("syncOpenApi") {
+    val source = File(repoRoot, "engine/openapi.json")
+    val target = file("openapi.json")
+    inputs.files(source)
+    onlyIf { source.isFile }
+    // Only the one file: a copy into the project folder would own every other task's inputs too.
+    outputs.file(target)
+    doLast { source.copyTo(target, overwrite = true) }
 }
+tasks.test { mustRunAfter(syncOpenApi) }
