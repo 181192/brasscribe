@@ -26,7 +26,9 @@ public static partial class ScoreTitles
     public static string Recording(DateTimeOffset when, IStrings s)
     {
         bool nb = s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) || s.Language.StartsWith("no", StringComparison.OrdinalIgnoreCase);
-        var culture = nb ? CultureInfo.GetCultureInfo("nb-NO") : CultureInfo.GetCultureInfo("en-GB");
+        // English uses the invariant month names ("Sep"): ICU's en-GB abbreviates September as "Sept",
+        // so the title would differ between machines.
+        var culture = nb ? CultureInfo.GetCultureInfo("nb-NO") : CultureInfo.InvariantCulture;
         string stamp = when.ToLocalTime().ToString(nb ? "d. MMM HH:mm" : "d MMM HH:mm", culture);
         return s.Format("Library_RecordingTitle", stamp);
     }
