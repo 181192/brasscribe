@@ -44,6 +44,12 @@ public sealed partial class MainWindow : Window
         settings.Invoked += OnSettingsAccelerator;
         Root.KeyboardAccelerators.Add(settings);
 
+        // The Back key (mouse and keyboard back button): XAML cannot parse "GoBack" as a VirtualKey
+        // and the window fails to load, so it is added here.
+        var back = new KeyboardAccelerator { Key = VirtualKey.GoBack };
+        back.Invoked += OnBackAccelerator;
+        Root.KeyboardAccelerators.Add(back);
+
         ViewModel.PropertyChanged += OnViewModelChanged;
         ViewModel.Score.PropertyChanged += (_, e) =>
         {

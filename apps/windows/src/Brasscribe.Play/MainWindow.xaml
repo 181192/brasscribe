@@ -17,7 +17,6 @@
             <KeyboardAccelerator Key="G" Modifiers="Control" Invoked="OnGoToBarAccelerator" />
             <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnToggleTalkingScoreAccelerator" />
             <KeyboardAccelerator Key="F1" Invoked="OnShortcutsAccelerator" />
-            <KeyboardAccelerator Key="GoBack" Invoked="OnBackAccelerator" />
             <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="OnBackAccelerator" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
