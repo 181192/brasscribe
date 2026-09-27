@@ -56,7 +56,6 @@ fun CompanionScreen(vm: PlayViewModel) {
     val context = LocalContext.current
     var url by rememberSaveable { mutableStateOf(settings.url) }
     var code by rememberSaveable { mutableStateOf("") }
-    var fixture by rememberSaveable { mutableStateOf(vm.container.usingFixture) }
     var details by rememberSaveable { mutableStateOf(false) }
     var heavy by rememberSaveable { mutableStateOf(settings.allowHeavy) }
     val discovery = vm.container.discovery
@@ -86,8 +85,8 @@ fun CompanionScreen(vm: PlayViewModel) {
         title = null, onBack = vm::back, backLabel = stringResource(R.string.settings), status = status,
         bottom = {
             when {
-                pending != null -> PrimaryButton(stringResource(R.string.companion_connect), { fixture = false; vm.pairWithLink(pending) })
-                match == null -> PrimaryButton(stringResource(R.string.companion_connect), { fixture = false; vm.connect(url, code) }, enabled = url.startsWith("http"))
+                pending != null -> PrimaryButton(stringResource(R.string.companion_connect), { vm.pairWithLink(pending) })
+                match == null -> PrimaryButton(stringResource(R.string.companion_connect), { vm.connect(url, code) }, enabled = url.startsWith("http"))
             }
         },
     ) {
@@ -137,12 +136,6 @@ fun CompanionScreen(vm: PlayViewModel) {
                 ListRow(stringResource(R.string.companion_allow_heavy), null, subtitle = stringResource(R.string.companion_allow_heavy_desc), chevron = false,
                     trailing = { PracticeChip(stringResource(if (heavy) R.string.on else R.string.off), heavy, { heavy = !heavy; settings.allowHeavy = heavy },
                         accessibleName = stringResource(R.string.companion_allow_heavy)) })
-                if (vm.container.hasFixtures) {
-                    RowDivider()
-                    ListRow(stringResource(R.string.companion_use_fixture), null, subtitle = stringResource(R.string.companion_use_fixture_desc), chevron = false,
-                        trailing = { PracticeChip(stringResource(if (fixture) R.string.on else R.string.off), fixture, { fixture = !fixture; vm.useFixture(fixture) },
-                            accessibleName = stringResource(R.string.companion_use_fixture)) })
-                }
             }
             if (settings.paired && connection !is ConnectionState.Offline) OutlineButton(stringResource(R.string.pair_forget), vm::unpair)
         }

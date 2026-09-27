@@ -182,15 +182,17 @@ fun HomeScreen(vm: PlayViewModel) {
                 ListRow(stringResource(R.string.home_open_score), {
                     pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
                 }, icon = R.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc), enabled = !busy)
-                if (vm.container.hasFixtures) {
-                    RowDivider()
-                    ListRow(stringResource(R.string.home_sample), vm::openSample, icon = R.drawable.ic_bc_score,
-                        subtitle = stringResource(R.string.home_sample_desc), enabled = !busy)
-                }
             }
             InfoNote(stringResource(R.string.home_links_tip), boxed = false)
-            if (scores.isNotEmpty()) {
-                SectionLabel(stringResource(R.string.home_your_scores))
+            SectionLabel(stringResource(R.string.home_your_scores))
+            if (scores.isEmpty()) {
+                // Empty state: what will appear here, with the mark.
+                Row(Modifier.padding(vertical = BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
+                    BrandMark(32.dp)
+                    Spacer(Modifier.size(BrasscribeSpace.s3))
+                    Text(stringResource(R.string.home_scores_empty), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+                }
+            } else {
                 RowGroup {
                     scores.forEachIndexed { index, entry ->
                         if (index > 0) RowDivider()

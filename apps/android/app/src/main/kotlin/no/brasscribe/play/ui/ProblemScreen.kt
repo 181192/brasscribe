@@ -116,7 +116,7 @@ fun SettingsScreen(vm: PlayViewModel) {
         RowGroup {
             ListRow(
                 stringResource(R.string.companion_title), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, icon = R.drawable.ic_bc_computer,
-                subtitle = if (vm.container.usingFixture) stringResource(R.string.companion_status_fixture) else connectionText(vm, connection),
+                subtitle = connectionText(vm, connection),
             )
         }
         SectionLabel(stringResource(R.string.sound))

@@ -164,7 +164,7 @@ fun ProfileScreen(vm: PlayViewModel) {
                 val deviceDesc = when {
                     profile != Profile.SOLO -> R.string.where_device_solo_only
                     !vm.container.hasPitchModel -> R.string.where_device_unavailable
-                    source?.audio == null -> R.string.where_device_no_audio
+                    source?.audio == null -> R.string.where_device_unavailable
                     else -> R.string.where_device_desc
                 }
                 ChoiceGroup(2) {

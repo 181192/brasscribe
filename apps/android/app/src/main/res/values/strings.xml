@@ -40,9 +40,8 @@
     <string name="home_record_mic_desc">Play or record a rehearsal</string>
     <string name="home_record_device">Record what\'s playing</string>
     <string name="home_record_device_desc">From another app on this phone</string>
-    <string name="home_sample">Try the demo</string>
-    <string name="home_sample_desc">“Mikkel”, cornet solo with band</string>
     <string name="home_links_tip">Links can\'t be downloaded. Record what\'s playing, or open a file you have.</string>
+    <string name="home_scores_empty">Your scores appear here after the first recording.</string>
     <string name="home_your_scores">Your scores</string>
     <string name="edit_title">Edit title</string>
     <string name="save">Save</string>
@@ -70,7 +69,6 @@
         <item quantity="one">%d note to check</item>
         <item quantity="other">%d notes to check</item>
     </plurals>
-    <string name="companion_status_fixture">Using the built-in demo</string>
     <string name="imported">Opened %1$s, %2$s</string>
     <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
     <string name="reading_file">Opening %1$s</string>
@@ -125,7 +123,6 @@
     <string name="where_companion">On your computer</string>
     <string name="where_companion_desc">%1$s · nothing goes online</string>
     <string name="where_device_unavailable">This version can\'t make scores on the phone.</string>
-    <string name="where_device_no_audio">The demo has no recording to listen to. Open or record something instead.</string>
     <string name="where_companion_missing">Connect Brasscribe on your computer first.</string>
 
     <!-- Making the score -->
@@ -363,8 +360,6 @@
     <string name="companion_tech_details">Start the server on the computer with “brasscribe serve --lan”. The address is shown when it starts, for example http://192.168.1.20:8765.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
-    <string name="companion_use_fixture">Use the built-in demo</string>
-    <string name="companion_use_fixture_desc">Replays a finished score of Mikkel, for trying the app without a computer.</string>
 
     <!-- About -->
     <string name="about_title">About and licences</string>
@@ -380,7 +375,6 @@
     <string name="key_major">%1$s major</string>
     <string name="key_minor">%1$s minor</string>
     <string name="key_shifted">%1$s from the recording</string>
-    <string name="demo_label">Example only · no computer needed</string>
     <string name="view_menu">View</string>
     <string name="export_what">What</string>
     <string name="export_scope_my_part">%1$s (you)</string>
@@ -430,7 +424,6 @@
     <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
     <string name="octave_down">Octave down</string>
     <string name="octave_up">Octave up</string>
-    <string name="demo_where">The example, no computer needed</string>
     <string name="review_most_right">Most of these are probably right. Listen to a few, then keep the rest bar by bar.</string>
     <plurals name="review_keep_bar">
         <item quantity="one">Keep this bar</item>
