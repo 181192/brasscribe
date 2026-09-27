@@ -42,9 +42,9 @@ public sealed partial class ScoreViewAutomationPeer : FrameworkElementAutomation
     {
         if (_childrenVersion != _owner.EventsVersion)
         {
-            _children = _owner.CurrentEvents
-                .Where(e => e.Bounds.Width > 0 && e.Bounds.Height > 0)
-                .Select(e => (AutomationPeer)new ScoreEventAutomationPeer(this, e))
+            var shown = _owner.CurrentEvents.Where(e => e.Bounds.Width > 0 && e.Bounds.Height > 0).ToList();
+            _children = shown
+                .Select((e, i) => (AutomationPeer)new ScoreEventAutomationPeer(this, e, i + 1, shown.Count))
                 .ToList();
             _childrenVersion = _owner.EventsVersion;
         }
@@ -107,9 +107,12 @@ public sealed partial class ScoreViewAutomationPeer : FrameworkElementAutomation
 }
 
 /// <summary>One event of the current bar as a list item; its name is the brief announcement.</summary>
-public sealed partial class ScoreEventAutomationPeer(ScoreViewAutomationPeer parent, ScoreEventItem item) : AutomationPeer
+public sealed partial class ScoreEventAutomationPeer(ScoreViewAutomationPeer parent, ScoreEventItem item, int position, int count) : AutomationPeer
 {
     protected override string GetNameCore() => item.Name;
+    // "3 of 7": list items need their place in the bar's list.
+    protected override int GetPositionInSetCore() => position;
+    protected override int GetSizeOfSetCore() => count;
     protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.ListItem;
     protected override string GetClassNameCore() => "ScoreEvent";
     protected override bool IsContentElementCore() => true;

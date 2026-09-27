@@ -804,6 +804,9 @@
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Spill av eller pause</value>
   </data>
+  <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
+    <value>avspiller</value>
+  </data>
   <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Avspiller</value>
   </data>
@@ -1123,7 +1126,7 @@
     <value>Piltastene flytter én tone, Ctrl+piltaster ett slag eller én takt, Ctrl+Shift+piltaster én stemme. U finner toner merket ?. Tab går ut av partituret.</value>
   </data>
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Partitur</value>
+    <value>Noter</value>
   </data>
   <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Valg for partituret</value>
@@ -1145,6 +1148,9 @@
   </data>
   <data name="ScoreOptions_EditTitle" xml:space="preserve">
     <value>Endre navn</value>
+  </data>
+  <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
+    <value>verktøylinje</value>
   </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Verktøy for partituret</value>

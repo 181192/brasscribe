@@ -804,6 +804,9 @@
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Play or pause</value>
   </data>
+  <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
+    <value>player</value>
+  </data>
   <data name="PlayerBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Player</value>
   </data>
@@ -1123,7 +1126,7 @@
     <value>Arrows move by note, Ctrl+arrows by beat and bar, Ctrl+Shift+arrows by part. U finds notes marked ?. Tab leaves the score.</value>
   </data>
   <data name="ScoreNotation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Score</value>
+    <value>Notes</value>
   </data>
   <data name="ScoreOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score options</value>
@@ -1145,6 +1148,9 @@
   </data>
   <data name="ScoreOptions_EditTitle" xml:space="preserve">
     <value>Edit title</value>
+  </data>
+  <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
+    <value>toolbar</value>
   </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Score tools</value>
