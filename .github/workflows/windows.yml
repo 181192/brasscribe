@@ -133,6 +133,13 @@ jobs:
           -Score tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
           -Out "$env:RUNNER_TEMP/screenshots"
 
+      # What made the app exit, if it did (App writes unhandled exceptions to crash.log).
+      - name: Crash log
+        if: ${{ !inputs.release && failure() }}
+        run: |
+          $log = Join-Path $env:LOCALAPPDATA "Brasscribe/Play/crash.log"
+          if (Test-Path $log) { Get-Content $log } else { "no crash.log" }
+
       - name: Upload screenshots
         if: ${{ !inputs.release && !cancelled() }}
         uses: actions/upload-artifact@v4
