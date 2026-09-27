@@ -21,7 +21,7 @@ dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x6
 $env:BRASSCRIBE_BANDROOM_WORKSPACE = "C:\src\brasscribe"; .\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
 ```
 
-The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the 16-bit
+The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the phone
 build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the
 repository root once (needs `gh auth login`). Bandroom passes the folder to the engine as
 `BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`; without it `engine.log` says the band

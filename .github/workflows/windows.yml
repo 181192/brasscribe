@@ -210,10 +210,10 @@ jobs:
           --logger "trx;LogFileName=bandroom-core.trx" --results-directory "$env:RUNNER_TEMP/bandroom-results"
 
       # Studio, served by the engine, plays the band SoundFont Bandroom bundles (band\ next to the exe).
-      - name: Band sounds (16-bit SoundFont)
+      - name: Band sounds (mobile SoundFont, for Studio in the browser)
         uses: ./.github/actions/band-sounds
         with:
-          files: brasscribe-band-16bit.sf2
+          files: brasscribe-band-mobile.sf2
 
       - name: Build Bandroom (WinUI 3, unpackaged, x64)
         run: dotnet build src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
