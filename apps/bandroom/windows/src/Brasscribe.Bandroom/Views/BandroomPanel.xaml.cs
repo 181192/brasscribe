@@ -14,6 +14,7 @@ public interface IPanelHost
 {
     bool StartAtLogin { get; set; }
     bool StartAtLoginChangeable { get; }
+    void OpenSettings();
     void OpenRemoveSettings();
     void Quit();
 }
@@ -30,8 +31,12 @@ public sealed partial class BandroomPanel : UserControl
         InitializeComponent();
         Mark.Source = new SvgImageSource(new Uri(ActualTheme == ElementTheme.Dark
             ? "ms-appx:///Assets/Brand/mark-on-dark.svg" : "ms-appx:///Assets/Brand/mark.svg"));
-        ActualThemeChanged += (_, _) => Mark.Source = new SvgImageSource(new Uri(ActualTheme == ElementTheme.Dark
-            ? "ms-appx:///Assets/Brand/mark-on-dark.svg" : "ms-appx:///Assets/Brand/mark.svg"));
+        ActualThemeChanged += (_, _) =>
+        {
+            Mark.Source = new SvgImageSource(new Uri(ActualTheme == ElementTheme.Dark
+                ? "ms-appx:///Assets/Brand/mark-on-dark.svg" : "ms-appx:///Assets/Brand/mark.svg"));
+            Bindings.Update(); // the status icon and meters take their brushes for the new theme
+        };
         BuildMoreMenu();
         vm.FocusRequested += target => DispatcherQueue.TryEnqueue(() => MoveFocus(target));
         vm.PropertyChanged += (_, e) =>
@@ -53,12 +58,15 @@ public sealed partial class BandroomPanel : UserControl
         studio.Click += (_, _) => Vm.OpenStudioCommand.Execute(null);
         var login = new ToggleMenuFlyoutItem { Text = s["More_Login"], IsChecked = _host.StartAtLogin, IsEnabled = _host.StartAtLoginChangeable };
         login.Click += (_, _) => { _host.StartAtLogin = login.IsChecked; login.IsChecked = _host.StartAtLogin; };
+        var settings = new MenuFlyoutItem { Text = s["More_Settings"], Icon = new FontIcon { Glyph = "\uE713" } };
+        settings.Click += (_, _) => _host.OpenSettings();
         var remove = new MenuFlyoutItem { Text = s["More_Remove"] };
         remove.Click += (_, _) => _host.OpenRemoveSettings();
         var quit = new MenuFlyoutItem { Text = s["More_Quit"], Icon = new FontIcon { Glyph = "\uE711" } };
         quit.Click += (_, _) => _host.Quit();
         MoreMenu.Items.Add(studio);
         MoreMenu.Items.Add(login);
+        MoreMenu.Items.Add(settings);
         MoreMenu.Items.Add(new MenuFlyoutSeparator());
         MoreMenu.Items.Add(remove);
         MoreMenu.Items.Add(quit);
@@ -127,12 +135,11 @@ public sealed partial class BandroomPanel : UserControl
             DisplayState.Error => "BcErrorBrush",
             _ => "BcTextBrush",
         };
-        return Res(key);
+        return ThemeBrushes.For(this, key);
     }
 
-    /// <summary>A theme brush by key (theme dictionaries included), or the text colour.</summary>
-    public static Brush Res(string key) =>
-        Application.Current.Resources.TryGetValue(key, out var v) && v is Brush b ? b : new SolidColorBrush(Microsoft.UI.Colors.Gray);
+    /// <summary>A style from the app's resources (Themes/Styles.xaml).</summary>
+    public static Style StyleRes(string key) => (Style)Application.Current.Resources[key];
 
     public Visibility HasText(string? s) => string.IsNullOrEmpty(s) ? Visibility.Collapsed : Visibility.Visible;
 
@@ -144,7 +151,7 @@ public sealed partial class BandroomPanel : UserControl
 
     /// <summary>Filled for the segments up to the level; the meter never uses brass or a status colour.</summary>
     public Brush Segment(int level, int index) =>
-        index <= level ? Res("BcTextMutedBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        index <= level ? ThemeBrushes.For(this, "BcTextMutedBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 }
 
 /// <summary>Glyph helpers usable from data templates.</summary>

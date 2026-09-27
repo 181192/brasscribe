@@ -84,6 +84,14 @@ ROWS = [
     ("More_About", "About Brasscribe Bandroom", "Om Brasscribe Bandroom"),
     ("More_Remove", "Remove Brasscribe from this PC…", "Fjern Brasscribe fra denne PC-en …"),
     ("More_Quit", "Quit Brasscribe Bandroom", "Avslutt Brasscribe Bandroom"),
+    # Settings (the settings.* rows) and Appearance (design/system.md §10)
+    ("Settings_Title", "Settings", "Innstillinger"),
+    ("Settings_Login", "Start when I log in", "Start når jeg logger på"),
+    ("Appearance_Title", "Appearance", "Utseende"),  # (+) design/system.md §10
+    ("Appearance_System", "Match system", "Følg systemet"),  # (+)
+    ("Appearance_Light", "Light", "Lyst"),  # (+)
+    ("Appearance_Dark", "Dark", "Mørkt"),  # (+)
+    ("Appearance_Contrast", "Your contrast theme is on, so Windows chooses the colours.", "Kontrasttemaet ditt er på, så Windows velger fargene."),  # (+)
     ("Tray_Open", "Open", "Åpne"),
     ("Tech_Summary", "Details for the band's tech person", "Detaljer for den tekniske i bandet"),
     ("Tech_Address", "Address", "Adresse"),

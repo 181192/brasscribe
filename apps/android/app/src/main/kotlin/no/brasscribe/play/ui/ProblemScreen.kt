@@ -134,6 +134,8 @@ fun SettingsScreen(vm: PlayViewModel) {
         }
         SectionLabel(stringResource(R.string.settings_display))
         RowGroup {
+            AppearanceRow(vm)
+            RowDivider()
             // Per-app language is a system setting from Android 13; before that the app follows the phone.
             if (android.os.Build.VERSION.SDK_INT >= 33) {
                 ListRow(stringResource(R.string.settings_language), { open(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, withPackage = true) },

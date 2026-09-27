@@ -231,11 +231,12 @@ fun ListRow(
     chevron: Boolean = onClick != null,
     enabled: Boolean = true,
     trailing: (@Composable RowScope.() -> Unit)? = null,
+    role: Role = Role.Button,
 ) {
     val c = BrasscribeTheme.colors
     Row(
         modifier.fillMaxWidth().heightIn(min = 60.dp)
-            .then(if (onClick != null) Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(enabled = enabled, role = role, onClick = onClick) else Modifier)
             .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),

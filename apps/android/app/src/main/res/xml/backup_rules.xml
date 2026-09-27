@@ -3,4 +3,6 @@
     <exclude domain="file" path="takes" />
     <!-- Paired-computer credentials: encrypted with a Keystore key that a backup cannot carry. -->
     <exclude domain="sharedpref" path="credentials.xml" />
+    <!-- Settings › Display › Appearance is per phone (design/system.md §10). -->
+    <exclude domain="sharedpref" path="device.xml" />
 </full-backup-content>

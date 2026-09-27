@@ -174,6 +174,12 @@ NB = {
     "Stopped unexpectedly": "Stoppet uventet",
     "Takes effect the next time Brasscribe starts.": "Gjelder fra neste gang Brasscribe starter.",
     "Text size": "Tekststørrelse",
+    "Appearance": "Utseende",
+    "Match system": "Følg systemet",
+    "Light": "Lyst",
+    "Dark": "Mørkt",
+    "Increase contrast is on, so Brasscribe uses its high-contrast colours.":
+        "Øk kontrast er på, så Brasscribe bruker høykontrastfargene.",
     "The band writer isn't downloaded yet.": "Bandskriveren er ikke lastet ned ennå.",
     "The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.":
         "Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto.",

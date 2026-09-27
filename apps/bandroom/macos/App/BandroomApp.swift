@@ -162,11 +162,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     let model = AppModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        switch ProcessInfo.processInfo.environment["BANDROOM_APPEARANCE"] {
-        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
-        case "light": NSApp.appearance = NSAppearance(named: .aqua)
-        default: break
-        }
+        // Settings › Appearance, before any window shows (BANDROOM_APPEARANCE still wins, for screenshots).
+        AppearanceChoice.current().apply()
         Notifier.setUp(delegate: self)
     }
 

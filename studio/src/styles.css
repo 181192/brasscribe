@@ -98,6 +98,9 @@ ul { padding-left: 1.25rem; }
 .engine-status.up::before { background: var(--bc-success); }
 .engine-status.down::before { background: var(--bc-error); border-radius: 1px; }
 .lang-switch select { font-size: var(--meta); }
+.theme-switch { display: flex; flex-wrap: wrap; align-items: center; gap: var(--bc-space-1) var(--bc-space-2); font-size: var(--meta); }
+.theme-switch select { font-size: var(--meta); }
+.theme-note { flex-basis: 100%; margin: 0; color: var(--bc-text-muted); max-width: 32rem; }
 main { padding: var(--bc-space-6) var(--gutter) var(--bc-space-16); max-width: 100rem; margin: 0 auto; overflow-wrap: anywhere; }
 main td, main th { overflow-wrap: normal; }
 .app-footer { padding: var(--bc-space-4) var(--gutter); color: var(--bc-text-muted); font-size: var(--meta); box-shadow: inset 0 1px 0 var(--bc-border); }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Brasscribe.Bandroom.Core;
+using Brasscribe.Bandroom.Core.Appearance;
 using Brasscribe.Bandroom.Core.Engine;
 using Brasscribe.Bandroom.Core.Pairing;
 using Brasscribe.Bandroom.Core.State;
@@ -18,9 +19,9 @@ namespace Brasscribe.Bandroom;
 /// the engine, runs the first-run setup, polls status, and routes phones asking to pair.
 ///
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
-/// flyout|devices|confirm-stop|window|pair|allow (one view with sample content, for screenshots and the
-/// accessibility scan), --state running|busy|attention|stopped|error|setup|starting, --theme light|dark,
-/// --lang en|nb.
+/// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
+/// the accessibility scan), --state running|busy|attention|stopped|error|setup|starting, --theme light|dark
+/// (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
 public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
 {
@@ -34,6 +35,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     private FlyoutWindow? _flyout;
     private PanelWindow? _window;
     private PairWindow? _pairWindow;
+    private SettingsWindow? _settingsWindow;
+    private Windows.UI.ViewManagement.AccessibilitySettings _accessibility = null!;
+    private AppearanceViewModel _appearance = null!;
+    private ThemedWindows _themes = null!;
     private DemoEngine? _demoEngine;
     private EngineSupervisor? _supervisor;
     private BandroomController? _controller;
@@ -49,9 +54,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
         UnhandledException += (_, e) => WriteCrash(e.Exception);
+        // Themes are set per window (ThemedWindows), never here: Application.RequestedTheme can't change later.
         _theme = Option("--theme");
-        if (_theme is "light") RequestedTheme = ApplicationTheme.Light;
-        else if (_theme is "dark") RequestedTheme = ApplicationTheme.Dark;
         _demo = _args.Contains("--demo") || Option("--show") is not null;
         string lang = Option("--lang") ?? (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "nb" or "no" or "nn" ? "nb" : "en");
         _s = new ReswStrings(Path.Combine(AppContext.BaseDirectory, "Strings", lang == "nb" ? "nb-NO" : "en-US", "Resources.resw"), lang);
@@ -79,6 +83,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         _ui = DispatcherQueue.GetForCurrentThread();
+        StartAppearance();
         _vm = new FlyoutViewModel(_s, this, this);
         _vm.PropertyChanged += (_, e) =>
         {
@@ -98,7 +103,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
             WriteCrash(e); // no notification area: the window form still works
         }
 
-        _flyout = new FlyoutWindow(new BandroomPanel(_vm, this), () => _tray?.Bounds(), _theme);
+        _flyout = new FlyoutWindow(new BandroomPanel(_vm, this), () => _tray?.Bounds(), _themes);
         _flyout.Opened += () => { if (_controller is not null) { _controller.FlyoutOpen = true; _ = _controller.TickAsync(); } };
         _flyout.Closed2 += () => { if (_controller is not null) _controller.FlyoutOpen = false; };
         _flyout.EscapedToIcon += () => _tray?.Focus();
@@ -112,6 +117,22 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         bool background = _args.Contains("--background")
             || AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.StartupTask;
         if (!_demo && !background) OpenWindow();
+    }
+
+    /// <summary>
+    /// Settings › Appearance (design/system.md §10): stored on this PC, applied to every window at once. A
+    /// Windows contrast theme always wins; the choice is kept for when it's turned off.
+    /// </summary>
+    private void StartAppearance()
+    {
+        _accessibility = new Windows.UI.ViewManagement.AccessibilitySettings();
+        AppearanceChoice? forced = _theme is null ? null : AppearanceRules.Parse(_theme);
+        // Sample-content runs never touch the user's stored choice.
+        var store = _demo ? null : new AppearanceStore(_paths.AppearanceFile);
+        _appearance = new AppearanceViewModel(_s, store, _accessibility.HighContrast, forced);
+        _themes = new ThemedWindows(_appearance.Resolved);
+        _appearance.ThemeChanged += _themes.Set;
+        _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
     }
 
     // ----- Real mode -----
@@ -260,6 +281,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
                     OpenPairWindow();
                     OnPairRequest(_demoEngine.AddRequest());
                     break;
+                case "settings":
+                    OpenSettings();
+                    break;
             }
         });
     }
@@ -289,7 +313,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     {
         if (_window is null)
         {
-            _window = new PanelWindow(new BandroomPanel(_vm, this), _s["WindowTitle"], _theme);
+            _window = new PanelWindow(new BandroomPanel(_vm, this), _s["WindowTitle"], _themes);
             _window.Closed += (_, _) => _window = null;
         }
         _window.Activate();
@@ -328,7 +352,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         if (_pairWindow is null)
         {
             var pair = new PairViewModel(_s, () => CurrentApi, this);
-            _pairWindow = new PairWindow(pair, _theme);
+            _pairWindow = new PairWindow(pair, _themes);
             _pairWindow.Closed += (_, _) => _pairWindow = null;
             _ = pair.OpenAsync();
         }
@@ -350,7 +374,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         }
         var pair = new PairViewModel(_s, () => CurrentApi, this);
         var vm = pair.AddRequest(r, Decide);
-        var w = new AllowWindow(vm, vm.Title, _theme);
+        var w = new AllowWindow(vm, vm.Title, _themes);
         w.Activate();
         Announce(_s.Format("Notify_PairRequest", r.Name));
     }
@@ -416,6 +440,17 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     }
 
     public bool StartAtLoginChangeable => _startup.Changeable;
+
+    public void OpenSettings()
+    {
+        _flyout?.HideFlyout();
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(_appearance, this, _s, _themes);
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+        _settingsWindow.Activate();
+    }
 
     public void OpenRemoveSettings() => _ = Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:appsfeatures"));
 

@@ -6,7 +6,7 @@
 param(
     [Parameter(Mandatory)] [string] $Exe,
     [Parameter(Mandatory)] [string] $Out,
-    [string[]] $Scenes = @("flyout", "flyout:busy", "flyout:attention", "flyout:stopped", "flyout:error", "devices", "confirm-stop", "window", "pair", "allow"),
+    [string[]] $Scenes = @("flyout", "flyout:busy", "flyout:attention", "flyout:stopped", "flyout:error", "devices", "confirm-stop", "window", "pair", "allow", "settings"),
     [string[]] $Themes = @("light", "dark"),
     [string[]] $Languages = @("en", "nb"),
     [int] $Settle = 5

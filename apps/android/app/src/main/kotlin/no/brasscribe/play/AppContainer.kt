@@ -83,6 +83,16 @@ class AppContainer(private val context: Context) {
     val credentials = CredentialStore(PrefsStore(context.getSharedPreferences(CREDENTIALS_PREFS, Context.MODE_PRIVATE)), KeystoreCipher())
     val settings = EngineSettings(context, credentials)
     private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
+    private val appearanceStore = AppearanceStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))
+
+    /** Settings › Display › Appearance. Compose state, so the theme changes at once when it is set. */
+    var appearance: Appearance by androidx.compose.runtime.mutableStateOf(appearanceStore.load())
+        private set
+
+    fun updateAppearance(value: Appearance) {
+        appearanceStore.save(value)
+        appearance = value
+    }
 
     /** The first-run screen (three points and Get started) has been seen. */
     /** Scores open with the realistic sound (SFZ instruments) instead of the standard one. */
