@@ -74,9 +74,12 @@ public struct EngineRecord: Codable, Equatable, Sendable {
     /// The computer's own name: "Studio Mac" from "Brasscribe on Studio Mac".
     public var computerName: String { Self.computerName(fromServerName: serverName) }
 
+    /// Also drops the " (2)" an mDNS instance name gains after a name clash.
     public static func computerName(fromServerName name: String) -> String {
         let prefix = "Brasscribe on "
-        return name.hasPrefix(prefix) ? String(name.dropFirst(prefix.count)) : name
+        var n = name.hasPrefix(prefix) ? String(name.dropFirst(prefix.count)) : name
+        if let r = n.range(of: #" \(\d+\)$"#, options: .regularExpression) { n.removeSubrange(r) }
+        return n
     }
 
     public func rotationDue(now: Date) -> Bool { rotateAfter.map { now >= $0 } ?? false }

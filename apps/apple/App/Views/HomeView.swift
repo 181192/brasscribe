@@ -26,6 +26,12 @@ struct HomeView: View {
                         .foregroundStyle(Color.Brasscribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                ConnectionStatusRow()
+                    .padding(.horizontal, Space.s4)
+                    .padding(.vertical, Space.s2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.border))
                 if wide { wideWaysIn } else { phoneWaysIn }
                 HelperLine(systemImage: BrasscribeIcon.info.systemName,
                            text: String(localized: "Links to streaming sites can't be downloaded. Play the music and record it instead."))

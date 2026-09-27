@@ -64,7 +64,8 @@ public struct ConnectionMachine: Equatable, Sendable {
         case .start(let name), .connectRequested(let name):
             serverName = name
             if case .needsPairing = state, event == .start(serverName: name) { return nil }
-            if case .connected = state { return 0 }
+            // back in the foreground: keep showing the last known state while checking
+            if case .connected = state { failingSince = nil; attempt = 0; return 0 }
             state = .reconnecting(serverName: name)
             failingSince = now
             attempt = 0
@@ -85,6 +86,8 @@ public struct ConnectionMachine: Equatable, Sendable {
                 state = .offline
                 return nil
             }
+            // one missed heartbeat keeps "Connected": the row changes after two in a row
+            if case .connected = state, attempt < 2 { return Self.backoff(attempt: attempt) }
             state = .reconnecting(serverName: serverName)
             return min(Self.backoff(attempt: attempt), max(0, Self.giveUpAfter - now.timeIntervalSince(since)))
         case .unauthorized:

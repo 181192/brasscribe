@@ -21,6 +21,16 @@
         }
       }
     },
+    "NSCameraUsageDescription": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe Play skanner koden datamaskinen viser, for å koble seg til den."
+          }
+        }
+      }
+    },
     "NSLocalNetworkUsageDescription": {
       "localizations": {
         "nb": {

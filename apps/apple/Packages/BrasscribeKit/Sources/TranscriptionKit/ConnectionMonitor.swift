@@ -15,6 +15,8 @@ public final class ConnectionMonitor {
     public private(set) var lastSeen: Date?
     /// True while showing a staged state (screenshots): no heartbeats run.
     public private(set) var staged = false
+    /// Heartbeats done since launch; the first result is not announced.
+    public private(set) var checks = 0
 
     /// An address for loopback use without pairing (Brasscribe on this same Mac).
     public var localAddress: URL?
@@ -31,6 +33,8 @@ public final class ConnectionMonitor {
                 now: @escaping () -> Date = Date.init) {
         self.store = store; self.session = session; self.find = find; self.now = now
         record = Self.pick((try? store.all()) ?? [])
+        // with a stored engine, the first thing to show is "Looking for …", never "Not connected"
+        if let record, record.token != nil { machine = ConnectionMachine(state: .reconnecting(serverName: record.serverName)) }
     }
 
     /// The record to use: the last one that answered, else any.
@@ -114,12 +118,14 @@ public final class ConnectionMonitor {
     /// One heartbeat: the last address, then the network by server id. Returns the delay to the next one.
     @discardableResult
     public func heartbeat() async -> TimeInterval? {
+        defer { checks += 1 }
         guard var r = record ?? localRecord() else { return machine.handle(.forgotten, at: now()) }
         var result = await check(r, at: r.lastAddress)
         if case .ok = result {} else if result != .unauthorized, !r.isProvisional, let found = await find(r.serverID),
                                          found.absoluteString != r.lastAddress {
             result = await check(r, at: found.absoluteString)
         }
+        if staged { return nil }
         switch result {
         case .ok(let updated):
             r = updated
@@ -146,6 +152,16 @@ public final class ConnectionMonitor {
         let svc = CompanionService(baseURL: url, token: r.token, session: session)
         var out = r
         out.lastAddress = address
+        if r.token == nil {
+            // Brasscribe on this same computer trusts loopback: its heartbeat is /v1/health
+            guard let h = try? await svc.health(timeout: 5), !h.authRequired else { return .unreachable }
+            if let id = h.serverID {
+                if !r.isProvisional, id != r.serverID { return .otherServer }
+                out.serverID = id
+            }
+            if let n = h.serverName { out.serverName = n }
+            return .ok(out)
+        }
         do {
             let me = try await svc.thisDevice()
             if !r.isProvisional, me.serverID != r.serverID { return .otherServer }

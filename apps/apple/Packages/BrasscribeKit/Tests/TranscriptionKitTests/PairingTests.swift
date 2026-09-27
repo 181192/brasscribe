@@ -45,6 +45,9 @@ import Testing
     var r = EngineRecord(serverID: "s", serverName: "Brasscribe on Studio Mac", token: "t", lastAddress: "http://10.0.0.2:8765")
     #expect(r.computerName == "Studio Mac")
     #expect(EngineRecord.computerName(fromServerName: "Band laptop") == "Band laptop")
+    #expect(EngineRecord.computerName(fromServerName: "Brasscribe on Kalli's MacBook (2)") == "Kalli's MacBook")
+    #expect(EngineBrowser.Engine(name: "Brasscribe on Studio (2)").computerName == "Studio")
+    #expect(EngineBrowser.Engine(name: "Brasscribe on Studio (2)", host: "Studio Mac").computerName == "Studio Mac")
     #expect(!r.rotationDue(now: now))
     r.rotateAfter = now.addingTimeInterval(-1)
     #expect(r.rotationDue(now: now))
@@ -154,6 +157,10 @@ private func freshDefaults() -> UserDefaults {
     #expect(m.handle(.heartbeatOK(serverName: "Brasscribe on X"), at: t0) == 20)
     #expect(m.state == .connected(serverName: "Brasscribe on X"))
     #expect(m.handle(.heartbeatOK(serverName: "Brasscribe on X"), at: t0 + 20) == 20)
+    // back in the foreground: still "Connected" while the first check runs
+    m.handle(.suspended, at: t0 + 30)
+    #expect(m.handle(.start(serverName: "Brasscribe on X"), at: t0 + 300) == 0)
+    #expect(m.state == .connected(serverName: "Brasscribe on X"))
 }
 
 @Test func connectionBacksOffThenGivesUpAfterTwoMinutes() {
@@ -163,11 +170,15 @@ private func freshDefaults() -> UserDefaults {
     m.handle(.heartbeatOK(serverName: "B"), at: t0)
     var t = t0 + 20
     var delays: [TimeInterval] = []
+    var states: [ConnectionState] = []
     while let d = m.handle(.heartbeatFailed, at: t) {
-        #expect(m.state == .reconnecting(serverName: "B"))
+        states.append(m.state)
         delays.append(d)
         t += d
     }
+    // one missed heartbeat keeps "Connected"; the second in a row shows "Looking for …"
+    #expect(states.first == .connected(serverName: "B"))
+    #expect(states.dropFirst().allSatisfy { $0 == .reconnecting(serverName: "B") })
     #expect(Array(delays.prefix(6)) == [2, 4, 8, 16, 30, 30])
     #expect(t.timeIntervalSince(t0 + 20) >= 120)
     #expect(t.timeIntervalSince(t0 + 20) < 125)

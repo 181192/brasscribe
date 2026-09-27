@@ -113,6 +113,8 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
         let path = request.url!.path
         let (code, body, type): (Int, Data, String) = {
             switch (request.httpMethod ?? "GET", path) {
+            case ("GET", "/v1/health") where request.url?.host() == "loop.local":
+                return (200, Data(#"{"status":"ok","version":"1","device":"mps","auth_required":false,"server_id":"srv-local","server_name":"Brasscribe on This Mac"}"#.utf8), "application/json")
             case ("GET", "/v1/health"):
                 return (200, Data(#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
             case ("POST", "/v1/pair"):
@@ -322,6 +324,21 @@ extension URLRequest {
         m.resume(); m.suspend()
         #expect(await m.heartbeat() == nil)
         #expect(m.state == .needsPairing(serverName: "Brasscribe on Studio"))
+    }
+
+    @Test @MainActor func sameComputerConnectsWithoutPairingThroughHealth() async throws {
+        StubEngine.requests = []
+        let (m, store) = monitor([])
+        m.localAddress = URL(string: "http://loop.local:8765")
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on This Mac"))
+        #expect(!StubEngine.requests.contains { $0.url?.path == "/v1/devices/me" })
+        #expect(try store.all().isEmpty)   // nothing secret to keep
+        // an engine elsewhere that wants pairing is not "connected"
+        let (m2, _) = monitor([])
+        m2.localAddress = URL(string: "http://engine.local:8765")
+        #expect(await m2.heartbeat() == nil)
+        #expect(m2.state == .offline)
     }
 
     @Test @MainActor func migratedTokenLearnsItsEngineOnFirstContact() async throws {
