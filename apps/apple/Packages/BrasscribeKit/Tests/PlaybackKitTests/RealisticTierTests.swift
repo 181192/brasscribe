@@ -8,7 +8,8 @@ import ScoreKit
 func repoRoot() -> URL? {
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        if FileManager.default.fileExists(atPath: dir.appending(path: "sounds/mapping.json").path) { return dir }
+        // sounds/band.py: apps/apple/Sounds/mapping.json (staged bundle copy) matches "sounds/" on a case-insensitive volume
+        if FileManager.default.fileExists(atPath: dir.appending(path: "sounds/band.py").path) { return dir }
         dir = dir.deletingLastPathComponent()
     }
     return nil

@@ -150,7 +150,9 @@ public enum BandSounds {
         }
         var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<8 {
-            if FileManager.default.fileExists(atPath: dir.appending(path: "sounds/mapping.json").path) { out.append(repo(dir)); break }
+            // sounds/band.py, not only mapping.json: on a case-insensitive volume apps/apple/Sounds/
+            // (the staged bundle copy) would otherwise pass for the repository's sounds/ folder
+            if FileManager.default.fileExists(atPath: dir.appending(path: "sounds/band.py").path) { out.append(repo(dir)); break }
             dir = dir.deletingLastPathComponent()
         }
         return out

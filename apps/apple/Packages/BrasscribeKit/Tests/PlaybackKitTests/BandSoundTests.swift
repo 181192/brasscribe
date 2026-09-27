@@ -122,9 +122,14 @@ private func unisonScore() throws -> Score {
     e.setSoloed(score.parts[0].id, true)
     let alone = try e.renderScore(fromBeat: 0, beats: 4)
     let sr = Int(both.format.sampleRate)
-    // 1.0–1.8 s: part 2 released at 0.5 s; part 1 must be there at its own level
+    // Part 2's note ends at 0.5 s. Part 1 must keep its own level after that: compare 1.0–1.8 s
+    // with part 1 played alone, and with part 1's own level before 0.5 s. Levels are relative: the
+    // band presets are level-matched to one quiet reference (sounds/build.py TARGET_K_DB), so a
+    // single mf cornet sits near -60 dBFS here and an absolute floor says nothing about cutting.
     let a = both.rms(from: sr, to: sr * 18 / 10), b = alone.rms(from: sr, to: sr * 18 / 10)
-    print("UNISON rms both \(a), part 1 alone \(b)")
-    #expect(b > 0.001)
+    let before = alone.rms(from: sr / 10, to: sr * 4 / 10)
+    print("UNISON rms both \(a), part 1 alone \(b), part 1 before the other's note-off \(before)")
+    #expect(b > 1e-4, "part 1 is silent")
     #expect(abs(20 * log10(a / b)) < 1.5, "part 1 lost level after part 2's note-off")
+    #expect(abs(20 * log10(a / before)) < 3, "part 1 is quieter after part 2's note-off than before it")
 }
