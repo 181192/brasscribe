@@ -123,6 +123,32 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
     }
 
+    /// Show the score sits on its own band: scrolled to the end, the key buttons are fully above it
+    /// and can be pressed, so nothing (and no focused control) is hidden behind it (WCAG 2.4.11).
+    func testShowScoreBandLeavesKeyButtonsClear() throws {
+        app.terminate()
+        app.launchArguments = ["-reset", "-fixture-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "output"]
+        launchApp()
+        let show = app.descendants(matching: .any)["showScore"].firstMatch
+        XCTAssertTrue(show.waitForExistence(timeout: 20))
+        let lower = app.descendants(matching: .any)["keyLower"].firstMatch
+        let higher = app.descendants(matching: .any)["keyHigher"].firstMatch
+        XCTAssertTrue(higher.waitForExistence(timeout: 5))
+        #if os(iOS)
+        app.scrollViews.firstMatch.swipeUp()
+        app.scrollViews.firstMatch.swipeUp()
+        #endif
+        // the band starts one spacing step (12 pt) above the button
+        let top = show.frame.minY - 12
+        for button in [lower, higher] {
+            XCTAssertTrue(button.isHittable, "\(button.identifier) can be pressed")
+            XCTAssertLessThanOrEqual(button.frame.maxY, top + 0.5, "\(button.identifier) ends above the Show the score band")
+        }
+        XCTAssertTrue(show.isHittable)
+        higher.tap()
+        XCTAssertTrue(show.isHittable)
+    }
+
     /// "Listen to this bar" becomes "Stop" in the same place and size, and Stop ends it.
     func testListenInReviewCanBeStopped() throws {
         app.terminate()

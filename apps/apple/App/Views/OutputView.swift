@@ -70,6 +70,10 @@ struct OutputView: View {
             .padding(.vertical, Space.s3)
             .frame(maxWidth: wide ? 880 : .infinity)
             .frame(maxWidth: .infinity)
+            // An opaque band down to the screen edge, with a hairline, so the choices scroll under it
+            // rather than showing through; the inset keeps the last row (and a focused one) above it.
+            .background(Color.Brasscribe.bg.ignoresSafeArea(edges: .bottom))
+            .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
         }
         .navigationTitle(Text(piece.title))
         #if os(iOS)
@@ -124,6 +128,7 @@ struct OutputView: View {
             .buttonStyle(SecondaryButtonStyle(minHeight: 48))
             .help(Text("One semitone lower"))
             .disabled(recordedFifths == nil || semitones <= -6)
+            .accessibilityIdentifier("keyLower")
     }
 
     private var higherButton: some View {
@@ -131,6 +136,7 @@ struct OutputView: View {
             .buttonStyle(SecondaryButtonStyle(minHeight: 48))
             .help(Text("One semitone higher"))
             .disabled(recordedFifths == nil || semitones >= 6)
+            .accessibilityIdentifier("keyHigher")
     }
 
     private var keyBox: some View {
