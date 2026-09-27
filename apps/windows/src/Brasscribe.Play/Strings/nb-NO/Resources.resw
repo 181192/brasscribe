@@ -594,6 +594,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>Én stemme</value>
   </data>
+  <data name="Library_RecordingTitle" xml:space="preserve">
+    <value>Opptak, {0}</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Lite band</value>
   </data>
@@ -601,13 +604,16 @@
     <value>{0} · {1} takter · {2}</value>
   </data>
   <data name="Library_ToCheck" xml:space="preserve">
-    <value>{0} toner å sjekke</value>
+    <value>{0} å sjekke</value>
   </data>
   <data name="Library_ToCheckOne" xml:space="preserve">
-    <value>{0} tone å sjekke</value>
+    <value>{0} å sjekke</value>
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>I dag</value>
+  </data>
+  <data name="Library_Yesterday" xml:space="preserve">
+    <value>I går</value>
   </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hvilket band?</value>

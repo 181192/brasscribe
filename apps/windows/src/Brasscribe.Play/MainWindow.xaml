@@ -105,7 +105,7 @@
             </NavigationView.PaneHeader>
             <NavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="vm:LibraryItem">
-                    <NavigationViewItem AutomationProperties.Name="{x:Bind Title}" AutomationProperties.HelpText="{x:Bind Subtitle}"
+                    <NavigationViewItem MinHeight="60" AutomationProperties.Name="{x:Bind Title}" AutomationProperties.HelpText="{x:Bind Subtitle}"
                                         ToolTipService.ToolTip="{x:Bind Subtitle}" ContextRequested="OnLibraryItemContextRequested">
                         <NavigationViewItem.Icon>
                             <FontIcon Glyph="{x:Bind vm:Screens.LibraryGlyph(OnComputer)}" />
@@ -115,7 +115,11 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <!-- Title plus one subtitle line: "Full band · 132 bars · Today · 215 to check". -->
+                            <StackPanel VerticalAlignment="Center" Padding="0,6">
+                                <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" Style="{StaticResource LabelStyle}" />
+                                <TextBlock Text="{x:Bind Subtitle}" TextTrimming="CharacterEllipsis" Style="{StaticResource MutedStyle}" FontSize="12" />
+                            </StackPanel>
                             <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Width="32" Height="32" Padding="0"
                                     Tag="{x:Bind}" Click="OnLibraryItemOptions" x:Uid="ScoreOptionsButton"
                                     AutomationProperties.HelpText="{x:Bind Title}" ToolTipService.ToolTip="{x:Bind Title}">

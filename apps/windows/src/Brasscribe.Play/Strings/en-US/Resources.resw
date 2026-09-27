@@ -594,6 +594,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>One part</value>
   </data>
+  <data name="Library_RecordingTitle" xml:space="preserve">
+    <value>Recording, {0}</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Small band</value>
   </data>
@@ -601,13 +604,16 @@
     <value>{0} · {1} bars · {2}</value>
   </data>
   <data name="Library_ToCheck" xml:space="preserve">
-    <value>{0} notes to check</value>
+    <value>{0} to check</value>
   </data>
   <data name="Library_ToCheckOne" xml:space="preserve">
-    <value>{0} note to check</value>
+    <value>{0} to check</value>
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>Today</value>
+  </data>
+  <data name="Library_Yesterday" xml:space="preserve">
+    <value>Yesterday</value>
   </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Which band?</value>

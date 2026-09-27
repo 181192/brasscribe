@@ -88,6 +88,17 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
     /// <summary>Every uncertain note of the score.</summary>
     public IReadOnlyList<ReviewItem> AllItems => _all;
 
+    /// <summary>With many marks: "Most of these are probably right. Start with the 12 very unsure ones."</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLead))]
+    public partial string LeadText { get; set; } = "";
+
+    public bool HasLead => LeadText.Length > 0;
+
+    /// <summary>"Keep the rest of this bar (3)": the other open notes in the current note's bar and part.</summary>
+    [ObservableProperty] public partial string KeepBarText { get; set; } = "";
+    [ObservableProperty] public partial bool CanKeepBar { get; set; }
+
     /// <summary>"Check your part first: 12 notes in Solo Cornet, 4 very unsure".</summary>
     [ObservableProperty] public partial string TriageText { get; set; } = "";
 
@@ -171,15 +182,26 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
 
     partial void OnScopeChanged(ReviewScope value) => Apply();
 
-    /// <summary>Order: your part (very unsure first, then by bar), the other brass parts by part and bar, accompaniment last.</summary>
+    /// <summary>More marks than this and the review leads with "Most of these are probably right" (usability review 3, P1-A).</summary>
+    public const int ManyMarks = 50;
+
+    /// <summary>
+    /// Order: your part, the other brass parts, accompaniment last; in each part the very unsure
+    /// notes first, then the rest by bar.
+    /// </summary>
     private void Apply()
     {
         var inScope = Scope == ReviewScope.MyPart && HasMyPart ? _all.Where(i => i.IsMine) : _all;
         var ordered = inScope
             .OrderBy(i => i.IsMine ? 0 : i.IsAccompaniment ? 2 : 1)
-            .ThenBy(i => i.IsMine && !i.IsVeryUncertain ? 1 : 0)
-            .ThenBy(i => i.Part).ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
+            .ThenBy(i => i.Part)
+            .ThenBy(i => i.IsVeryUncertain ? 0 : 1)
+            .ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
             .ToList();
+        int veryUnsure = ordered.Count(i => i.IsVeryUncertain);
+        LeadText = ordered.Count > ManyMarks && veryUnsure > 0
+            ? s.Format(veryUnsure == 1 ? "Review_LeadManyOne" : "Review_LeadMany", veryUnsure)
+            : "";
         Items = ordered;
         Groups.Clear();
         string accompaniment = s["Review_Accompaniment"].ToUpperInvariant();
@@ -215,6 +237,23 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
         score.KeepInComposition(item.Event);
         item.IsKept = true;
         announcer.Announce(s.Format("Review_Kept", item.BarNumber, Left));
+        MoveNext(item);
+    }
+
+    /// <summary>Keeps every open note in the current note's bar (the note itself included) and goes on.</summary>
+    [RelayCommand]
+    private void KeepRestOfBar()
+    {
+        if (Current is not { } item) return;
+        var bar = _all.Where(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex).ToList();
+        foreach (var i in bar)
+        {
+            score.FocusEvent(i.Part, i.BarIndex, i.EventIndex);
+            score.KeepCurrent();
+            score.KeepInComposition(i.Event);
+            i.IsKept = true;
+        }
+        announcer.Announce(s.Format("Review_KeptBar", bar.Count, item.BarNumber, Left));
         MoveNext(item);
     }
 
@@ -358,6 +397,9 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
             HasEvidence = false;
             return;
         }
+        int inBar = _all.Count(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex);
+        CanKeepBar = inBar > 1;
+        KeepBarText = s.Format("Review_KeepBar", inBar);
         int index = Items.ToList().IndexOf(item) + 1;
         Overline = s.Format("Review_Overline", index, Items.Count, item.PartName).ToUpperInvariant();
         Heading = s.Format("Review_BarHeading", item.BarNumber);
