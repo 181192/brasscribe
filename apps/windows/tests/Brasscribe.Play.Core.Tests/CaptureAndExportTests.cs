@@ -43,7 +43,7 @@ public class CaptureAndExportTests
     public void Input_bands(float peak, InputBand band) => Assert.Equal(band, SilenceWatch.Band(peak));
 
     [Theory]
-    [InlineData("C:/m/mikkel.wav", MediaKind.Audio)]
+    [InlineData("C:/m/take.wav", MediaKind.Audio)]
     [InlineData("clip.MP4", MediaKind.Video)]
     [InlineData("score.musicxml", MediaKind.Score)]
     [InlineData("notes.docx", MediaKind.Unsupported)]

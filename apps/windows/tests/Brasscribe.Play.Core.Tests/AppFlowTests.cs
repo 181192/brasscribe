@@ -172,8 +172,8 @@ public class AppFlowTests
         Assert.Contains("On your computer", remote.Subtitle);
 
         // Edit title renames it on the computer, and the list follows.
-        Assert.True(await main.RenameLibraryItemAsync(remote, "  Mikkel  "));
-        Assert.Equal("Mikkel", Assert.Single(main.LibraryItems).Title);
+        Assert.True(await main.RenameLibraryItemAsync(remote, "  Old Hundredth  "));
+        Assert.Equal("Old Hundredth", Assert.Single(main.LibraryItems).Title);
 
         // Check the notes downloads it into this PC's library and opens the review with the evidence.
         await main.OpenLibraryItemAsync(main.LibraryItems[0], review: true);
@@ -317,6 +317,18 @@ public class AppFlowTests
             Assert.Equal("62\u00A0%", Screens.Percent(62, "nb-NO"));
         }
         Assert.All(PreviewScenes.Names, n => Assert.Contains(n, PreviewScenes.Names));
+    }
+
+    [Fact]
+    public void The_screenshot_fixture_opens_with_notes_to_check()
+    {
+        var path = TestPaths.RepoFile("apps/fixtures/old-hundredth/brass-band.musicxml");
+        Assert.NotNull(path);
+        var (main, _) = Build(Engine(""), firstRun: true);
+        Assert.True(PreviewScenes.Show(main, "review", path));
+        Assert.Equal(Screen.Review, main.Screen);
+        Assert.Equal(PreviewScenes.SampleTitle, main.Score.Title);
+        Assert.True(main.Score.UncertainLeft > 0);
     }
 
     [Fact]

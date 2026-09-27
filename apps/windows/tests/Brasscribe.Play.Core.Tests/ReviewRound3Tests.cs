@@ -28,7 +28,7 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     [InlineData("20260815_155324", "Recording, 15 Aug 15:53")]
     [InlineData("2026-08-15 15.53.24.m4a", "Recording, 15 Aug 15:53")]
     [InlineData("REC_20260815-1553", "Recording, 15 Aug 15:53")]
-    [InlineData("Mikkel.m4a", "Mikkel")]
+    [InlineData("Old Hundredth.musicxml", "Old Hundredth")]
     [InlineData("  Abide with Me  ", "Abide with Me")]
     [InlineData("Band 2026", "Band 2026")]
     public void Titles_are_never_a_bare_timestamp(string stored, string shown) =>
@@ -41,7 +41,7 @@ public class ReviewRound3Tests(ITestOutputHelper log)
         var when = new DateTimeOffset(2026, 9, 26, 19, 2, 0, TimeZoneInfo.Local.GetUtcOffset(new DateTime(2026, 9, 26)));
         Assert.Equal("Recording, 26 Sep 19:02", ScoreTitles.Display("", when, s));
         Assert.Equal("Recording, 26 Sep 19:02", ScoreTitles.Display("Recording", when, s));
-        Assert.Contains("Mikkel", ScoreTitles.Duplicates(["Mikkel", "mikkel", "Other"]));
+        Assert.Contains("Old Hundredth", ScoreTitles.Duplicates(["Old Hundredth", "old hundredth", "Other"]));
     }
 
     [Fact]
