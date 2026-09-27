@@ -225,7 +225,7 @@ struct StatusPanel: View {
         Disclosure(title: "Details for the band's tech person", isExpanded: $techOpen) {
             VStack(alignment: .leading, spacing: 10) {
                 Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 10, verticalSpacing: 3) {
-                    techRow("Address", app.addresses.joined(separator: ", "))
+                    techRow("Address", app.addresses.joined(separator: "\n"))
                     techRow("Port", app.supervisor.port.map(String.init) ?? "–")
                     techRow("Version", "\(Bundle.main.shortVersion) (engine \(app.monitor.status?.version ?? "–"))")
                     techRow("Runs on", Strings.runsOn(app.monitor.health?.device))
@@ -245,8 +245,8 @@ struct StatusPanel: View {
 
     private func techRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         GridRow {
-            Text(label).foregroundStyle(Color.Brasscribe.textMuted)
-            Text(value).fixedSize(horizontal: false, vertical: true)
+            Text(label).foregroundStyle(Color.Brasscribe.textMuted).fixedSize()
+            Text(value).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
