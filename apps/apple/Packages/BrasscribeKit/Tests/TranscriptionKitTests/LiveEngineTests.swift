@@ -14,7 +14,7 @@ struct LiveEngineTests {
         #expect(h.status == "ok")
         let names = Set(try await svc.profiles().map(\.name))
         #expect(names.isSuperset(of: Set(SourceProfile.allCases.map(\.rawValue))))
-        await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test") }
+        await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test", platform: "macos") }
     }
 
     /// Full upload → progress → result, when BRASSCRIBE_ENGINE_UPLOAD names an audio file

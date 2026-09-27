@@ -108,6 +108,8 @@ struct ReviewView: View {
             ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { reload(keeping: target) }
         }
         .task { load() }
+        // choosing another note stops the bar that is playing
+        .onChange(of: item?.id) { _, _ in model?.stopListening(announce: false) }
         .onDisappear { model?.stopAll() }
     }
 
@@ -252,16 +254,25 @@ struct ReviewView: View {
         }
     }
 
+    private func bars(_ it: ReviewItem) -> ClosedRange<Int> { it.bar...max(it.bar, it.lastBar ?? it.bar) }
+
+    private func toggleListen(_ it: ReviewItem) { model?.toggleListen(bars: bars(it), original: true) }
+
+    /// "Listen to this bar", and "Stop" in the same place and size while it plays.
     private func listenButton(_ it: ReviewItem) -> some View {
-        Button { model?.listen(toBar: it.bar, original: true) } label: {
-            Label("Listen to this bar", systemImage: BrasscribeIcon.listenBar.systemName).frame(maxWidth: .infinity)
+        let playing = model?.listening == bars(it)
+        return Button { toggleListen(it) } label: {
+            ListenStopLabel(playing: playing).frame(maxWidth: .infinity)
         }
         .buttonStyle(SecondaryButtonStyle(minHeight: 48))
         .keyboardShortcut(.space, modifiers: [])
+        .onKeyPress(.return) { toggleListen(it); return .handled }
+        .accessibilityLabel(playing ? Text("Stop") : Text("Listen to this bar"))
+        .accessibilityIdentifier("listenBar")
     }
 
     private func changeButton(_ it: ReviewItem) -> some View {
-        Button { model?.stopAll(); changing = it } label: {
+        Button { model?.stopListening(announce: false); changing = it } label: {
             Label("Change note…", systemImage: "pencil").frame(maxWidth: .infinity)
         }
         .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 48))
@@ -285,7 +296,8 @@ struct ReviewView: View {
     private var actionButtons: some View {
         HStack(spacing: Space.s3) {
             if wide {
-                Text("Space listens · K keeps").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Text(model?.listening != nil ? "Space stops · K keeps" : "Space listens · K keeps")
+                    .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                 Spacer()
             }
             Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
@@ -346,8 +358,7 @@ struct ReviewView: View {
     }
 
     private func advance(from it: ReviewItem) {
-        model?.stopAll()
-        model?.setLoop(false)
+        model?.stopListening(announce: false)
         if open.filter({ $0.id != it.id }).isEmpty, !allOpen.filter({ $0.id != it.id }).isEmpty { filter = .all }
         let list = open
         let i = list.firstIndex { $0.id == it.id } ?? 0
@@ -385,6 +396,8 @@ struct ReviewView: View {
             if count(.mine) == 0 { filter = .all }
             piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
+            // screenshots: the button as it looks while the bar plays
+            if LaunchOptions.screen == "review-listening", let it = item { m.holdListening(bars: bars(it)) }
         } catch {
             loadError = error.localizedDescription
         }

@@ -115,6 +115,38 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
     }
 
+    /// "Listen to this bar" becomes "Stop" in the same place and size, and Stop ends it.
+    func testListenInReviewCanBeStopped() throws {
+        app.terminate()
+        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "review"]
+        launchApp()
+        let listen = app.buttons["listenBar"].firstMatch
+        XCTAssertTrue(listen.waitForExistence(timeout: 60))
+        XCTAssertEqual(listen.label, "Listen to this bar")
+        let frame = listen.frame
+        listen.tap()
+        XCTAssertTrue(NSPredicate(format: "label == 'Stop'").evaluate(with: listen) || app.buttons["Stop"].waitForExistence(timeout: 3))
+        XCTAssertEqual(listen.frame, frame, "no layout jump")
+        listen.tap()
+        let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == 'Listen to this bar'"), object: listen)
+        wait(for: [back], timeout: 5)
+    }
+
+    /// The connection row: words and an icon, and the way forward for each state.
+    func testConnectionRowStates() throws {
+        for (arg, text, action) in [("offline", "Not connected", "connectionConnect"), ("needs-pairing", "no longer recognises", "connectionPairAgain"),
+                                    ("connected", "Connected to Brasscribe on Studio Mac", nil), ("reconnecting", "Looking for Brasscribe on Studio Mac", nil)] {
+            app.terminate()
+            app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-connection", arg]
+            launchApp()
+            let row = app.descendants(matching: .any)["connectionStatusText"].firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 20), arg)
+            XCTAssertTrue(row.label.contains(text), "\(arg): \(row.label)")
+            if let action { XCTAssertTrue(app.buttons[action].firstMatch.exists, arg) }
+            else { XCTAssertFalse(app.buttons["connectionConnect"].firstMatch.exists, arg) }
+        }
+    }
+
     /// Documented shortcuts: → / ← move by bar, . raises the speed, space plays and pauses.
     func testKeyboardShortcuts() throws {
         #if os(iOS)

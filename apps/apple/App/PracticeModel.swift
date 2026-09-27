@@ -62,6 +62,15 @@ final class PracticeModel {
     var playAlong = false { didSet { applyPlayAlong() } }
     private(set) var mixVersion = 0
 
+    /// The bars "Listen to this bar" is playing once; nil when it isn't.
+    private(set) var listening: ClosedRange<Int>?
+    private var listenEndBeat: Double = 0
+    /// What listening changed, put back when it stops.
+    private var beforeListen: (original: Bool, looping: Bool)?
+    /// Screenshots hold the listening state without playing.
+    private var listenHeld = false
+    private var arming = false
+
     let video: AVPlayer?
     private var timer: Timer?
     private var announcedBar = -1
@@ -93,12 +102,19 @@ final class PracticeModel {
         } catch {
             loadError = error.localizedDescription
         }
+        startTimer()
+    }
+
+    private func startTimer() {
+        guard timer == nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
     }
 
+    /// Leaving the screen: stop everything, including the position updates.
     func stopAll() {
+        finishListening(announce: false)
         engine?.pause()
         timer?.invalidate()
         timer = nil
@@ -188,13 +204,65 @@ final class PracticeModel {
         setLoop(true)
     }
 
-    /// "Listen to this bar": loop it, from the original if available.
-    func listen(toBar i: Int, original: Bool) {
+    /// "Listen to this bar": play these bars once, from the original recording when there is one, then
+    /// go back to the start of the bar. The user's own repeat and sound choice come back afterwards.
+    func listen(toBar i: Int, original: Bool) { listen(bars: i...i, original: original) }
+
+    func listen(bars: ClosedRange<Int>, original: Bool) {
+        guard let engine, !score.measures.isEmpty else { return }
+        let last = score.measures.count - 1
+        let range = max(0, min(bars.lowerBound, last))...max(0, min(bars.upperBound, last))
+        // while setting up, playback is briefly stopped: that must not count as the end
+        arming = true
+        defer { arming = false; tick() }
+        if engine.state != .stopped { engine.pause() }
+        if beforeListen == nil { beforeListen = (hearOriginal, looping) }
+        if looping { engine.setLoop(nil); looping = false }
         hearOriginal = original && hasOriginal
-        loopFrom = i; loopTo = i
-        setLoop(true)
-        goToBar(i)
-        if !isPlaying { togglePlay() }
+        listening = range
+        listenHeld = false
+        let end = score.measures[range.upperBound]
+        listenEndBeat = Double(end.startTick + end.lengthTicks) / Double(Score.ticksPerQuarter)
+        goToBar(range.lowerBound)
+        startTimer()
+        if engine.state == .stopped { togglePlay() }
+        AccessibilityNotifier.announce(String(localized: "Playing \(barsLabel(range))"))
+    }
+
+    /// The Listen button: listen, or stop while these bars are playing.
+    func toggleListen(bars: ClosedRange<Int>, original: Bool) {
+        if listening == bars { stopListening() } else { listen(bars: bars, original: original) }
+    }
+
+    /// Stop "Listen to this bar" (Stop pressed, or another note chosen). Announced only when asked.
+    func stopListening(announce: Bool = true) {
+        guard listening != nil, !listenHeld else { return }
+        engine?.pause()
+        finishListening(announce: announce)
+        tick()
+    }
+
+    /// Show the listening state without sound, for screenshots.
+    func holdListening(bars: ClosedRange<Int>) {
+        listening = bars
+        listenHeld = true
+    }
+
+    private func finishListening(announce: Bool) {
+        guard let range = listening else { return }
+        listening = nil
+        listenHeld = false
+        if let b = beforeListen {
+            beforeListen = nil
+            if hearOriginal != b.original { hearOriginal = b.original }
+            if b.looping { setLoop(true) }
+        }
+        goToBar(range.lowerBound)
+        if announce { AccessibilityNotifier.announce(String(localized: "Stopped")) }
+    }
+
+    private func barsLabel(_ r: ClosedRange<Int>) -> String {
+        r.count == 1 ? barLabel(r.lowerBound) : String(localized: "bars \(r.lowerBound + 1) to \(r.upperBound + 1)")
     }
 
     func setMuted(_ id: String, _ on: Bool) { engine?.setMuted(id, on); mixVersion += 1 }
@@ -213,6 +281,13 @@ final class PracticeModel {
         position = engine.position
         isPlaying = engine.state != .stopped
         if case .countingIn(let b) = engine.state { countInBeat = b } else { countInBeat = nil }
+        // "Listen to this bar" ends with its last bar, or when playback was stopped some other way
+        if listening != nil, !listenHeld, !arming, !isPlaying || position >= listenEndBeat - 0.001 {
+            if isPlaying { engine.pause() }
+            finishListening(announce: true)
+            position = engine.position
+            isPlaying = engine.state != .stopped
+        }
         updateSounding()
         if isPlaying { syncVideo(force: false) }
     }

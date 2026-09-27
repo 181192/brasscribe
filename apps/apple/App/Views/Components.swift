@@ -100,6 +100,18 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
 }
 
+/// "Listen to this bar" / "Stop": both labels take up the space, so switching never moves or resizes the button.
+struct ListenStopLabel: View {
+    var playing: Bool
+    var body: some View {
+        ZStack {
+            Label("Listen to this bar", systemImage: BrasscribeIcon.listenBar.systemName).opacity(playing ? 0 : 1)
+            Label("Stop", systemImage: BrasscribeIcon.stop.systemName).opacity(playing ? 1 : 0)
+        }
+        .accessibilityElement(children: .ignore)
+    }
+}
+
 /// Plain text buttons (Cancel, Skip, Finish later), at least 44 pt tall.
 struct PlainButtonStyle44: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

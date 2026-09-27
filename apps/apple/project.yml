@@ -87,6 +87,10 @@ targets:
         NSMicrophoneUsageDescription: Brasscribe Play records your playing to turn it into a score.
         NSAudioCaptureUsageDescription: Brasscribe Play records the sound playing on this Mac to turn it into a score.
         NSLocalNetworkUsageDescription: Brasscribe Play talks to Brasscribe on your own computer to transcribe recordings.
+        NSCameraUsageDescription: Brasscribe Play scans the code your computer shows, to connect to it.
+        CFBundleURLTypes:
+          - CFBundleURLName: no.brasscribe.pair
+            CFBundleURLSchemes: [brasscribe]
         NSBonjourServices: [_brasscribe._tcp]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

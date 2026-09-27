@@ -651,6 +651,26 @@
         }
       }
     },
+    "Ask again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spør på nytt"
+          }
+        }
+      }
+    },
+    "Asks the computer to allow this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ber datamaskinen om å godkjenne denne enheten."
+          }
+        }
+      }
+    },
     "Audio": {
       "localizations": {
         "nb": {
@@ -871,6 +891,16 @@
         }
       }
     },
+    "Brasscribe on %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på %@"
+          }
+        }
+      }
+    },
     "Brasscribe on your computer": {
       "localizations": {
         "nb": {
@@ -977,6 +1007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sjekk tilkoblingen"
+          }
+        }
+      }
+    },
+    "Check that your computer shows %@, then choose Allow there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk at datamaskinen viser %@, og velg Godkjenn der."
           }
         }
       }
@@ -1097,6 +1137,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dirigentpartitur"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til"
+          }
+        }
+      }
+    },
+    "Connected to %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koblet til %@"
           }
         }
       }
@@ -1247,6 +1307,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vanskelighetsgrad"
+          }
+        }
+      }
+    },
+    "Do this once. This device stays paired, also when the computer restarts or gets a new address.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør dette én gang. Enheten forblir tilkoblet, også når datamaskinen starter på nytt eller får ny adresse."
           }
         }
       }
@@ -1507,6 +1577,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "For utskrift og notestativet"
+          }
+        }
+      }
+    },
+    "Forget": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem"
+          }
+        }
+      }
+    },
+    "Forget this computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem denne datamaskinen"
+          }
+        }
+      }
+    },
+    "Forget this computer?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glemme denne datamaskinen?"
           }
         }
       }
@@ -1791,6 +1891,16 @@
         }
       }
     },
+    "Last answered": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svarte sist"
+          }
+        }
+      }
+    },
     "Last step": {
       "localizations": {
         "nb": {
@@ -1927,6 +2037,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lyttefiler"
+          }
+        }
+      }
+    },
+    "Looking for %@ …": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leter etter %@ …"
           }
         }
       }
@@ -2301,6 +2421,36 @@
         }
       }
     },
+    "Not connected. You can still make scores on this Mac.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Du kan fortsatt lage partitur på denne Macen."
+          }
+        }
+      }
+    },
+    "Not connected. You can still make scores on this iPad.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Du kan fortsatt lage partitur på denne iPaden."
+          }
+        }
+      }
+    },
+    "Not connected. You can still make scores on this phone.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Du kan fortsatt lage partitur på denne telefonen."
+          }
+        }
+      }
+    },
     "Not sure? Choose Brass band.": {
       "localizations": {
         "nb": {
@@ -2401,6 +2551,16 @@
         }
       }
     },
+    "On %@, choose Allow. Check that it shows the same number:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg Godkjenn på %@. Sjekk at den viser det samme tallet:"
+          }
+        }
+      }
+    },
     "On the computer, start Brasscribe with “brasscribe serve --lan”. It shows the pairing code, and this device finds it on the same network.": {
       "localizations": {
         "nb": {
@@ -2437,6 +2597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "På datamaskinen din"
+          }
+        }
+      }
+    },
+    "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klikk på Brasscribe-merket i menylinjen (Mac) eller i hjørnet av oppgavelinjen (Windows) på datamaskinen, og velg Koble til en telefon."
           }
         }
       }
@@ -2691,6 +2861,46 @@
         }
       }
     },
+    "Pair this Mac again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til Macen på nytt"
+          }
+        }
+      }
+    },
+    "Pair this iPad again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til iPaden på nytt"
+          }
+        }
+      }
+    },
+    "Pair this phone again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til telefonen på nytt"
+          }
+        }
+      }
+    },
+    "Paired with %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koblet til %@."
+          }
+        }
+      }
+    },
     "Paired.": {
       "localizations": {
         "nb": {
@@ -2717,6 +2927,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tilkoblingskode"
+          }
+        }
+      }
+    },
+    "Pairing link": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilkoblingslenke"
           }
         }
       }
@@ -2931,6 +3151,16 @@
         }
       }
     },
+    "Playing %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiller %@"
+          }
+        }
+      }
+    },
     "Plays the recording instead of the band, at the same place.": {
       "localizations": {
         "nb": {
@@ -2957,6 +3187,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pop eller rock"
+          }
+        }
+      }
+    },
+    "Port": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
           }
         }
       }
@@ -3341,6 +3581,16 @@
         }
       }
     },
+    "Scan the code": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skann koden"
+          }
+        }
+      }
+    },
     "Score": {
       "localizations": {
         "nb": {
@@ -3367,6 +3617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partiturer"
+          }
+        }
+      }
+    },
+    "Scores already on this device stay. To use the computer again, pair once more.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partiturene som allerede er på denne enheten, blir værende. For å bruke datamaskinen igjen må du koble til på nytt."
           }
         }
       }
@@ -3407,6 +3667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skiller solisten fra bandet"
+          }
+        }
+      }
+    },
+    "Server id": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server-ID"
           }
         }
       }
@@ -3661,6 +3931,16 @@
         }
       }
     },
+    "Space stops · K keeps": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellomrom stopper · K beholder"
+          }
+        }
+      }
+    },
     "Speed": {
       "localizations": {
         "nb": {
@@ -3801,6 +4081,16 @@
         }
       }
     },
+    "Stopped": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet"
+          }
+        }
+      }
+    },
     "Streaming apps usually block recording. You hear the music, but the recording stays silent.": {
       "localizations": {
         "nb": {
@@ -3861,12 +4151,52 @@
         }
       }
     },
+    "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden virket ikke. Sjekk de seks sifrene på datamaskinen, eller velg datamaskinen over og godkjenn den der."
+          }
+        }
+      }
+    },
+    "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden er brukt eller utløpt. Vis en ny på datamaskinen, eller velg datamaskinen over og godkjenn den der."
+          }
+        }
+      }
+    },
+    "That code isn't a Brasscribe pairing code.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er ikke en tilkoblingskode fra Brasscribe."
+          }
+        }
+      }
+    },
     "That didn't work. Check the six digits, and that the computer is on the same network.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Det virket ikke. Sjekk de seks sifrene, og at datamaskinen er på samme nettverk."
+          }
+        }
+      }
+    },
+    "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med brasscribe://pair."
           }
         }
       }
@@ -3897,6 +4227,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bandet spiller partituret, til å øve med"
+          }
+        }
+      }
+    },
+    "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med datamaskinen. Sjekk at Brasscribe på datamaskinen sier Kjører, og at begge er på samme nettverk."
+          }
+        }
+      }
+    },
+    "The computer didn't allow this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen godkjente ikke denne enheten."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this Mac.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne Macen lenger."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this iPad.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne iPaden lenger."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this phone.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne telefonen lenger."
           }
         }
       }
@@ -4011,6 +4391,16 @@
         }
       }
     },
+    "The request ran out before it was allowed on the computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forespørselen gikk ut før den ble godkjent på datamaskinen."
+          }
+        }
+      }
+    },
     "The score couldn't be arranged": {
       "localizations": {
         "nb": {
@@ -4107,6 +4497,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dette avgjør hvordan musikken tas fra hverandre. Brasscribe gjetter aldri."
+          }
+        }
+      }
+    },
+    "This device's id": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enhetens ID"
           }
         }
       }
@@ -4331,6 +4731,16 @@
         }
       }
     },
+    "Use link": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk lenken"
+          }
+        }
+      }
+    },
     "Use the demo instead of a computer": {
       "localizations": {
         "nb": {
@@ -4391,6 +4801,16 @@
         }
       }
     },
+    "Waiting for your computer …": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venter på datamaskinen …"
+          }
+        }
+      }
+    },
     "What": {
       "localizations": {
         "nb": {
@@ -4447,6 +4867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hvilke toner"
+          }
+        }
+      }
+    },
+    "Without Brasscribe Bandroom, start the engine with “brasscribe serve --lan”.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uten Brasscribe Bandroom starter du motoren med «brasscribe serve --lan»."
           }
         }
       }
@@ -4767,6 +5197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "tilgjengelig"
+          }
+        }
+      }
+    },
+    "bars %lld to %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "takt %lld til %lld"
           }
         }
       }
