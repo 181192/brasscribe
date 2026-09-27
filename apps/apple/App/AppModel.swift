@@ -21,6 +21,7 @@ enum Route: Hashable {
     case source(PendingSource)
     case transcribe(UUID)
     case review(Piece)
+    case output(Piece)
     case score(Piece)
     case problem(Problem)
 }
@@ -294,7 +295,8 @@ final class AppModel {
             guard let self else { return }
             do {
                 let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
-                                         video: src.videoURL, fixtureDirectory: self.useDemoService ? self.fixtureDirectory : nil)
+                                         video: src.videoURL, fixtureDirectory: self.useDemoService ? self.fixtureDirectory : nil,
+                                         output: output)
                 self.refresh()
                 if let i = self.path.firstIndex(of: .transcribe(job.id)) { self.path[i] = .review(p) } else { self.path.append(.review(p)) }
                 self.jobs[job.id] = nil
@@ -313,6 +315,26 @@ final class AppModel {
         let p = try Piece.create(title: title, profile: nil, result: result, original: original, video: video, fixtureDirectory: nil)
         refresh()
         path.append(.score(p))
+    }
+
+    /// Arrange a piece again on this device for another band, difficulty or key, and open it.
+    /// The engine's PDF and braille no longer match, so those are made on this device too.
+    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws {
+        guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths) else {
+            throw TranscriptionError.artifactUnavailable(.musicXML)
+        }
+        try xml.write(to: piece.scoreURL)
+        var p = piece
+        p.output = output
+        p.fixtureDirectory = nil
+        p.remoteArtifacts = [.musicXML, .composition]
+        if let score = try? MusicXMLParser.parse(xml) {
+            p.bars = score.measures.count
+            p.toCheck = ReviewList.items(score: score, uncertainty: UncertaintyIndex(composition: comp)).count
+        }
+        try p.save()
+        refresh()
+        if andOpen { open(p) }
     }
 
     func delete(_ p: Piece) {

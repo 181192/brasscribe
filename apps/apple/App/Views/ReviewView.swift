@@ -18,8 +18,12 @@ struct ReviewView: View {
     @State private var evidence: NoteEvidence?
     @State private var composition: Composition?
     @State private var changing: ReviewItem?
-    @State private var confirmLater = false
+    @State private var confirmLater = LaunchOptions.screen == "finish-later"
     @State private var loadError: String?
+    @State private var filter: Filter = .mine
+
+    /// Triage: your own part first (very unsure first), then the other parts, then all.
+    enum Filter: Hashable { case mine, others, all }
 
     private var wide: Bool {
         #if os(macOS)
@@ -29,8 +33,30 @@ struct ReviewView: View {
         #endif
     }
 
-    private var open: [ReviewItem] { items.filter { !checked.contains($0.id) } }
-    private var item: ReviewItem? { items.first { $0.id == current } ?? open.first }
+    /// Every note still to check, in every part.
+    private var allOpen: [ReviewItem] { items.filter { !checked.contains($0.id) } }
+    private var myPartID: String? { model?.myPart }
+
+    /// The notes still to check under the chosen filter; in your part the very unsure come first.
+    private var open: [ReviewItem] {
+        switch filter {
+        case .mine:
+            return allOpen.filter { $0.partID == myPartID }
+                .sorted { ($0.level == .veryUncertain ? 0 : 1, $0.bar, $0.tick) < ($1.level == .veryUncertain ? 0 : 1, $1.bar, $1.tick) }
+        case .others: return allOpen.filter { $0.partID != myPartID }
+        case .all: return allOpen
+        }
+    }
+
+    private func count(_ f: Filter) -> Int {
+        switch f {
+        case .mine: return allOpen.filter { $0.partID == myPartID }.count
+        case .others: return allOpen.filter { $0.partID != myPartID }.count
+        case .all: return allOpen.count
+        }
+    }
+
+    private var item: ReviewItem? { open.first { $0.id == current } ?? open.first }
 
     var body: some View {
         Group {
@@ -38,7 +64,7 @@ struct ReviewView: View {
                 ContentUnavailableView("Couldn't open the notes", systemImage: "exclamationmark.triangle", description: Text(loadError))
             } else if model == nil {
                 ProgressView()
-            } else if open.isEmpty {
+            } else if allOpen.isEmpty {
                 allChecked
             } else if wide {
                 HStack(spacing: 0) {
@@ -52,19 +78,23 @@ struct ReviewView: View {
         }
         .pageBackground()
         .navigationTitle(Text("\(piece.title) · Check the notes"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
-            if !open.isEmpty {
+            if !allOpen.isEmpty {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Finish later (\(open.count) left)") { confirmLater = true }
+                    Button("Finish later (\(allOpen.count) left)") { confirmLater = true }
+                        .accessibilityIdentifier("openScore")
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) { if !open.isEmpty, item != nil { actionBar } }
+        .safeAreaInset(edge: .bottom) { if !allOpen.isEmpty, item != nil { actionBar } }
         .alert("Finish checking later?", isPresented: $confirmLater) {
-            Button("Finish later") { app.path = [.score(piece)] }
+            Button("Finish later") { finish() }
             Button("Keep checking", role: .cancel) {}
         } message: {
-            Text("\(open.count) notes keep their ? marks. You can check them any time from the score.")
+            Text("\(allOpen.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”.")
         }
         .sheet(item: $changing) { target in
             ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { reload(keeping: target) }
@@ -144,9 +174,10 @@ struct ReviewView: View {
 
     @ViewBuilder private var detail: some View {
         if let it = item, let model {
-            let index = (items.firstIndex { $0.id == it.id } ?? 0) + 1
+            let index = (open.firstIndex { $0.id == it.id } ?? 0) + 1
             VStack(alignment: .leading, spacing: Space.s4) {
-                SectionLabel(String(localized: "\(index) of \(items.count) · \(it.partName) · \(open.count) left"))
+                triage
+                SectionLabel(String(localized: "\(index) of \(open.count) · \(it.partName)"))
                 DisplayTitle(text: barLabel(it))
                 BarSnippet(xml: xml, partID: it.partID, bar: it.bar, noteTick: it.tick, level: it.level, score: model.score)
                     .card(padding: Space.s3)
@@ -165,6 +196,24 @@ struct ReviewView: View {
                 }
             }
             .accessibilityElement(children: .contain)
+        }
+    }
+
+    /// "Check your part first: 12 notes in Solo Cornet, 4 very unsure", and which notes to show.
+    private var triage: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            if filter == .mine, let id = myPartID, let part = model?.score.part(id: id), count(.mine) > 0 {
+                let n = count(.mine), v = open.filter { $0.level == .veryUncertain }.count
+                Text("Check your part first").font(Font.Brasscribe.title2).accessibilityAddTraits(.isHeader)
+                Text(v == 0 ? String(localized: "\(n) notes in \(part.displayName).")
+                            : String(localized: "\(n) notes in \(part.displayName), \(v) very unsure, first."))
+                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+            }
+            Segmented(label: String(localized: "Which notes"), selection: $filter,
+                      options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                                (Filter.others, String(localized: "Other parts (\(count(.others)))")),
+                                (Filter.all, String(localized: "All parts (\(count(.all)))"))])
+            .accessibilityIdentifier("reviewFilter")
         }
     }
 
@@ -199,14 +248,15 @@ struct ReviewView: View {
         }
         .padding(.horizontal, wide ? Space.s8 : Space.s5)
         .padding(.vertical, Space.s3)
-        .background(Color.Brasscribe.bg.opacity(0.97))
+        .background(Color.Brasscribe.bg)
     }
 
     private var allChecked: some View {
         VStack(spacing: Space.s4) {
             ContentUnavailableView("All notes checked", systemImage: BrasscribeIcon.done.systemName,
                                    description: Text("The ? marks are gone. Your score is ready to practise."))
-            Button { app.path = [.score(piece)] } label: { Text("Show the score") }.buttonStyle(.primary)
+            Button { finish() } label: { Text("Continue") }.buttonStyle(.primary)
+                .accessibilityIdentifier("openScore")
         }
         .padding(Space.s8)
     }
@@ -216,7 +266,7 @@ struct ReviewView: View {
     private func keep() {
         guard let it = item else { return }
         checked.insert(it.id)
-        piece.saveChecked(checked, remaining: open.count)
+        piece.saveChecked(checked, remaining: allOpen.count)
         app.refresh()
         advance(from: it)
     }
@@ -226,8 +276,25 @@ struct ReviewView: View {
     private func advance(from it: ReviewItem) {
         model?.stopAll()
         model?.setLoop(false)
-        let i = items.firstIndex { $0.id == it.id } ?? 0
-        current = (items[(i + 1)...] + items[..<i]).first { !checked.contains($0.id) && $0.id != it.id }?.id
+        if open.filter({ $0.id != it.id }).isEmpty, !allOpen.filter({ $0.id != it.id }).isEmpty { filter = .all }
+        let list = open
+        let i = list.firstIndex { $0.id == it.id } ?? 0
+        let after = i + 1 <= list.count ? Array(list[min(i + 1, list.count)...] + list[..<min(i, list.count)]) : list
+        current = after.first { !checked.contains($0.id) && $0.id != it.id }?.id
+    }
+
+    /// Back to the score if Review was opened from it, otherwise on to "How should the score be?".
+    private func finish() {
+        model?.stopAll()
+        piece.saveChecked(checked, remaining: allOpen.count)
+        app.refresh()
+        if app.path.count >= 2, case .score = app.path[app.path.count - 2] {
+            app.path.removeLast()
+        } else if let i = app.path.lastIndex(of: .review(piece)) {
+            app.path[i] = .output(piece)
+        } else {
+            app.path.append(.output(piece))
+        }
     }
 
     // MARK: data
@@ -243,7 +310,8 @@ struct ReviewView: View {
             evidence = piece.loadEvidence()
             checked = piece.loadChecked()
             items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
-            piece.saveChecked(checked, remaining: open.count)
+            if count(.mine) == 0 { filter = .all }
+            piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
         } catch {
             loadError = error.localizedDescription
@@ -366,17 +434,20 @@ struct BarSnippet: View {
                         let doc = page.svg
                         let s = min(1, size.width / max(1, doc.size.width))
                         ctx.scaleBy(x: s, y: s)
-                        let ink = CGColor(gray: scheme == .dark ? 0.95 : 0.07, alpha: 1)
+                        let ink = Color.Brasscribe.ink.resolve(in: ctx.environment).cgColor
                         ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, keepDocumentColors: false) }
                         if let id = targetNoteID(page), let f = doc.frames[id] {
                             let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
-                            ctx.stroke(Path(roundedRect: f.insetBy(dx: -4, dy: -4), cornerRadius: 4), with: .color(.Brasscribe.text), lineWidth: 2)
-                            let size = max(12, f.height * 1.4)
-                            let centre = CGPoint(x: f.midX, y: f.minY - size)
+                            ctx.stroke(Path(roundedRect: f.insetBy(dx: -4, dy: -4), cornerRadius: 4), with: .color(.Brasscribe.focus), lineWidth: BrasscribeDesign.Score.focusWidth)
+                            // 1.6 staff spaces, above the staff, as in the score
+                            let lines = page.staffLines.values.first
+                            let space = max(3, (lines?.height ?? f.height * 4) / 4)
+                            let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
+                            let centre = CGPoint(x: f.midX, y: min(lines?.minY ?? f.minY, f.minY) - space * 0.5 - size * 0.6)
                             ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: centre)
                             if level == .veryUncertain {
                                 ctx.stroke(Path(roundedRect: CGRect(x: centre.x - size * 0.45, y: centre.y - size * 0.62, width: size * 0.9, height: size * 1.24),
-                                                cornerRadius: 1.5), with: .color(color), lineWidth: 1.5)
+                                                cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
                             }
                         }
                     }

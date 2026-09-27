@@ -34,8 +34,8 @@ def test_mode_is_named_from_the_tonic():
 
 def test_key_changes_and_very_uncertain_marks_are_written(tmp_path):
     solo = _bars(C_MAJOR, 0, 4) + _bars(A_MAJOR, 4, 4)
-    solo[1].confidence = 0.3
-    solo[2].confidence = 0.55
+    solo[1].confidence = 0.3  # very unsure: boxed
+    solo[20].confidence = 0.55  # uncertain, far from the other: its own mark
     comp = Composition("k", [Voice("solo", VoiceRole.MELODY, solo, layer="solo")], [Meter(0, 4)],
                        [KeySig(0, 0), KeySig(4 * 96, 3)])
     arr = arrange_layers(comp)

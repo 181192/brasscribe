@@ -67,9 +67,24 @@
   --bc-type-numeric-size: 1.0625rem;
   --bc-type-numeric-line: 1.2941;
   --bc-type-numeric-weight: 500;
-  --bc-type-studio-body-size: 0.875rem;
-  --bc-type-studio-body-line: 1.4286;
+  --bc-type-studio-body-size: 1rem;
+  --bc-type-studio-body-line: 1.5;
   --bc-type-studio-body-weight: 400;
+  --bc-type-studio-table-size: 0.9375rem;
+  --bc-type-studio-table-line: 1.5;
+  --bc-type-studio-table-weight: 400;
+  --bc-type-studio-meta-size: 0.875rem;
+  --bc-type-studio-meta-line: 1.5;
+  --bc-type-studio-meta-weight: 400;
+  --bc-type-studio-mono-size: 0.875rem;
+  --bc-type-studio-mono-line: 1.5;
+  --bc-type-studio-mono-weight: 400;
+  --bc-type-studio-heading-size: 1.25rem;
+  --bc-type-studio-heading-line: 1.3;
+  --bc-type-studio-heading-weight: 600;
+  --bc-type-studio-subheading-size: 1.0625rem;
+  --bc-type-studio-subheading-line: 1.4;
+  --bc-type-studio-subheading-weight: 600;
   --bc-space-0: 0rem;
   --bc-space-1: 0.25rem;
   --bc-space-2: 0.5rem;
@@ -104,7 +119,9 @@
   --bc-score-focus-gap: 2px;
   --bc-score-loop-edge-width: 3px;
   --bc-score-selection-edge-width: 1px;
-  --bc-touch-min: 32px;
+  --bc-touch-min: 2.75rem;
+  --bc-control-min: 2.5rem;
+  --bc-target-gap: 0.5rem;
   --bc-content-max: 45rem;
 }
 
