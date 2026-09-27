@@ -15,6 +15,7 @@ public sealed partial class SettingsDialog : ContentDialog
         ViewModel = viewModel;
         _main = main;
         InitializeComponent();
+        ConnectionStatus.Show(viewModel.Connection);
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
         CoreVersion.Text = App.Strings.Format("Settings_CoreVersion", main.Core.IsNative ? main.Core.Version : App.Strings["Settings_CoreManaged"]);
@@ -43,7 +44,7 @@ public sealed partial class SettingsDialog : ContentDialog
     private async void OnUnpair(object sender, RoutedEventArgs e) => await ViewModel.UnpairCommand.ExecuteAsync(null);
 
     /// <summary>Connect checks again at once; Pair again goes to the code box (or Allow on the computer next to it).</summary>
-    private void OnConnectionAction(object sender, RoutedEventArgs e)
+    private void OnConnectionAction(object? sender, EventArgs e)
     {
         if (ViewModel.Connection.State == ConnectionState.NeedsPairing) PairingCodeBox.Focus(FocusState.Programmatic);
         else
