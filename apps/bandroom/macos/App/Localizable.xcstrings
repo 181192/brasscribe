@@ -231,6 +231,16 @@
         }
       }
     },
+    "Appearance": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utseende"
+          }
+        }
+      }
+    },
     "Arranging for brass band": {
       "localizations": {
         "nb": {
@@ -551,6 +561,16 @@
         }
       }
     },
+    "Dark": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mørkt"
+          }
+        }
+      }
+    },
     "Data folder": {
       "localizations": {
         "nb": {
@@ -741,6 +761,16 @@
         }
       }
     },
+    "Increase contrast is on, so Brasscribe uses its high-contrast colours.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene."
+          }
+        }
+      }
+    },
     "Instrument separator": {
       "localizations": {
         "nb": {
@@ -851,6 +881,16 @@
         }
       }
     },
+    "Light": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyst"
+          }
+        }
+      }
+    },
     "Listening tools": {
       "localizations": {
         "nb": {
@@ -867,6 +907,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lag partitur på denne datamaskinen"
+          }
+        }
+      }
+    },
+    "Match system": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følg systemet"
           }
         }
       }
