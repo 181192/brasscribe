@@ -288,9 +288,6 @@
   <data name="ExportButtonLabel.Text" xml:space="preserve">
     <value>Del eller skriv ut</value>
   </data>
-  <data name="ExportConductor.Content" xml:space="preserve">
-    <value>Dirigentpartitur</value>
-  </data>
   <data name="ExportDialog.CloseButtonText" xml:space="preserve">
     <value>Avbryt</value>
   </data>
@@ -404,6 +401,9 @@
   </data>
   <data name="Export_Scope_MyPart" xml:space="preserve">
     <value>{0} (deg)</value>
+  </data>
+  <data name="Export_Scope_QuartetScore" xml:space="preserve">
+    <value>Partitur (alle 4 stemmer)</value>
   </data>
   <data name="Export_SummaryMany" xml:space="preserve">
     <value>{0} filer</value>
@@ -645,6 +645,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>Én stemme</value>
   </data>
+  <data name="Library_Quartet" xml:space="preserve">
+    <value>Kvartett</value>
+  </data>
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Opptak, {0}</value>
   </data>
@@ -677,6 +680,12 @@
   </data>
   <data name="LineupFullTitle.Text" xml:space="preserve">
     <value>Fullt brassband</value>
+  </data>
+  <data name="LineupQuartetChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Kvartett</value>
+  </data>
+  <data name="LineupQuartetTitle.Text" xml:space="preserve">
+    <value>Kvartett</value>
   </data>
   <data name="LineupSmallBody.Text" xml:space="preserve">
     <value>10–15 musikere, stemmene slått sammen</value>
@@ -819,6 +828,12 @@
   <data name="Output_NeedsEngine" xml:space="preserve">
     <value>Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem.</value>
   </data>
+  <data name="Output_QuartetBody" xml:space="preserve">
+    <value>4 musikere, én på hver stemme</value>
+  </data>
+  <data name="Output_QuartetNeedsGroup" xml:space="preserve">
+    <value>Trenger et opptak av hele gruppen</value>
+  </data>
   <data name="Output_Ready" xml:space="preserve">
     <value>Partituret er klart</value>
   </data>
@@ -908,6 +923,12 @@
   </data>
   <data name="Player_Soloed" xml:space="preserve">
     <value>Bare {0}</value>
+  </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Ventet i {0}</value>
   </data>
   <data name="Player_Speed" xml:space="preserve">
     <value>Tempo {0} prosent</value>
@@ -1763,11 +1784,5 @@
   </data>
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom ut</value>
-  </data>
-  <data name="Player_SoundsMissing" xml:space="preserve">
-    <value>Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</value>
-  </data>
-  <data name="Player_SoundsMissing_Details" xml:space="preserve">
-    <value>Ventet i {0}</value>
   </data>
 </root>

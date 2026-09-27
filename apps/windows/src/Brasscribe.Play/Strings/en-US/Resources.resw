@@ -288,9 +288,6 @@
   <data name="ExportButtonLabel.Text" xml:space="preserve">
     <value>Share or print</value>
   </data>
-  <data name="ExportConductor.Content" xml:space="preserve">
-    <value>Conductor's score</value>
-  </data>
   <data name="ExportDialog.CloseButtonText" xml:space="preserve">
     <value>Cancel</value>
   </data>
@@ -404,6 +401,9 @@
   </data>
   <data name="Export_Scope_MyPart" xml:space="preserve">
     <value>{0} (you)</value>
+  </data>
+  <data name="Export_Scope_QuartetScore" xml:space="preserve">
+    <value>Score (all 4 parts)</value>
   </data>
   <data name="Export_SummaryMany" xml:space="preserve">
     <value>{0} files</value>
@@ -645,6 +645,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>One part</value>
   </data>
+  <data name="Library_Quartet" xml:space="preserve">
+    <value>Quartet</value>
+  </data>
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Recording, {0}</value>
   </data>
@@ -677,6 +680,12 @@
   </data>
   <data name="LineupFullTitle.Text" xml:space="preserve">
     <value>Full brass band</value>
+  </data>
+  <data name="LineupQuartetChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Quartet</value>
+  </data>
+  <data name="LineupQuartetTitle.Text" xml:space="preserve">
+    <value>Quartet</value>
   </data>
   <data name="LineupSmallBody.Text" xml:space="preserve">
     <value>10–15 players, parts doubled up</value>
@@ -819,6 +828,12 @@
   <data name="Output_NeedsEngine" xml:space="preserve">
     <value>How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.</value>
   </data>
+  <data name="Output_QuartetBody" xml:space="preserve">
+    <value>4 players, one on each part</value>
+  </data>
+  <data name="Output_QuartetNeedsGroup" xml:space="preserve">
+    <value>Needs a recording of the whole group</value>
+  </data>
   <data name="Output_Ready" xml:space="preserve">
     <value>The score is ready</value>
   </data>
@@ -908,6 +923,12 @@
   </data>
   <data name="Player_Soloed" xml:space="preserve">
     <value>Only {0}</value>
+  </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>The band sounds are missing. Reinstall Brasscribe Play to hear the band.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Expected at {0}</value>
   </data>
   <data name="Player_Speed" xml:space="preserve">
     <value>Speed {0} percent</value>
@@ -1763,11 +1784,5 @@
   </data>
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom out</value>
-  </data>
-  <data name="Player_SoundsMissing" xml:space="preserve">
-    <value>The band sounds are missing. Reinstall Brasscribe Play to hear the band.</value>
-  </data>
-  <data name="Player_SoundsMissing_Details" xml:space="preserve">
-    <value>Expected at {0}</value>
   </data>
 </root>

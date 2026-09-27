@@ -15,7 +15,8 @@ public sealed record LibraryEntry(
     int Bars,
     int NotesToCheck,
     string? JobId = null,
-    string? EvidencePath = null);
+    string? EvidencePath = null,
+    string? Lineup = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, WriteIndented = true)]
 [JsonSerializable(typeof(List<LibraryEntry>))]
@@ -45,8 +46,9 @@ public sealed class ScoreLibrary
     public event EventHandler? Changed;
 
     /// <summary>Stores a score Brasscribe made; the same job replaces its earlier entry.</summary>
+    /// <remarks><paramref name="lineup"/> is the engine's name of the lineup it was arranged for (full, minimal, quartet).</remarks>
     public LibraryEntry AddMade(string title, string musicXml, Composition? composition, int parts, int bars, int notesToCheck, string? jobId,
-        Engine.Evidence? evidence = null)
+        Engine.Evidence? evidence = null, string? lineup = null)
     {
         string id = jobId is { Length: > 0 } ? Safe(jobId) : Guid.NewGuid().ToString("N")[..12];
         string dir = Path.Combine(_root, id);
@@ -65,7 +67,7 @@ public sealed class ScoreLibrary
             evidencePath = Path.Combine(dir, "evidence.json");
             File.WriteAllText(evidencePath, Engine.Evidence.Serialize(evidence));
         }
-        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId, evidencePath));
+        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId, evidencePath, lineup));
     }
 
     /// <summary>Confidence and what each transcriber heard, when the score came with it.</summary>
@@ -111,7 +113,7 @@ public sealed class ScoreLibrary
         Save();
     }
 
-    public void SaveMusicXml(string id, string musicXml, string? compositionJson = null)
+    public void SaveMusicXml(string id, string musicXml, string? compositionJson = null, string? lineup = null)
     {
         int i = _entries.FindIndex(e => e.Id == id);
         if (i < 0) return;
@@ -122,7 +124,7 @@ public sealed class ScoreLibrary
             composition.Title = _entries[i].Title;
             WriteAtomically(compositionPath, CompositionJson.Serialize(composition));
         }
-        _entries[i] = _entries[i] with { Updated = DateTimeOffset.Now };
+        _entries[i] = _entries[i] with { Updated = DateTimeOffset.Now, Lineup = lineup ?? _entries[i].Lineup };
         Save();
     }
 

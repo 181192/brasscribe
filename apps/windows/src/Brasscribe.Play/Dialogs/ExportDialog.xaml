@@ -27,8 +27,9 @@
                              Content="{x:Bind ViewModel.MyPartLabel, Mode=OneWay}" />
                 <RadioButton x:Name="EveryPartChoice" x:Uid="ExportEveryPart" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
                              Checked="OnScopeChecked" Tag="1" />
-                <RadioButton x:Name="ConductorChoice" x:Uid="ExportConductor" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
-                             Checked="OnScopeChecked" Tag="2" />
+                <!-- "Conductor's score", or "Score (all 4 parts)" for a quartet (no conductor). -->
+                <RadioButton x:Name="ConductorChoice" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
+                             Checked="OnScopeChecked" Tag="2" Content="{x:Bind ViewModel.ConductorLabel, Mode=OneWay}" />
             </StackPanel>
         </Border>
         <TextBlock x:Uid="ExportEveryPartTip" Style="{StaticResource MutedStyle}" FontSize="12" />

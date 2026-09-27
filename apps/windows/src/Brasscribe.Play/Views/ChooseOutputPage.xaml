@@ -32,11 +32,22 @@
                                 <TextBlock x:Uid="LineupFullBody" Style="{StaticResource MutedStyle}" />
                             </StackPanel>
                         </RadioButton>
-                        <RadioButton x:Name="SmallBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12"
+                        <RadioButton x:Name="SmallBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"
                                      x:Uid="LineupSmallChoice">
                             <StackPanel Spacing="2">
                                 <TextBlock x:Uid="LineupSmallTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
                                 <TextBlock x:Uid="LineupSmallBody" Style="{StaticResource MutedStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <!-- A solo take has no harmony for a quartet: the card stays focusable (IsEnabled would drop it from
+                             the tab order), is dimmed, says why, and choosing it is undone with the reason read aloud. -->
+                        <RadioButton x:Name="QuartetChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12"
+                                     x:Uid="LineupQuartetChoice"
+                                     AutomationProperties.HelpText="{x:Bind ViewModel.QuartetHelpText, Mode=OneWay}">
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Uid="LineupQuartetTitle" Style="{StaticResource LabelStyle}" FontSize="16"
+                                           Opacity="{x:Bind views:Shown.Dimmed(ViewModel.QuartetAvailable), Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.QuartetDescription, Mode=OneWay}" />
                             </StackPanel>
                         </RadioButton>
                     </RadioButtons>

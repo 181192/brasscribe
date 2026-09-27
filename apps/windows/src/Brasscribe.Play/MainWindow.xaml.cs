@@ -127,7 +127,7 @@ public sealed partial class MainWindow : Window
             Screen.Review => (song, _s.Format("Title_CheckNotes", song), ""),
             Screen.ChooseOutput => (song, song, ""),
             Screen.Score when score.IsPartView => (_s["Back_FullScore"], song, ""),
-            Screen.Score => (_s["Back_Home"], song, _s.Format("Title_ScoreSubtitle", _s[score.Parts.Count <= 6 ? "Library_SmallBand" : "Library_FullBand"], score.Player.BarCount)),
+            Screen.Score => (_s["Back_Home"], song, ViewModel.ScoreSubtitle),
             _ => ((string?)null, "", ""),
         };
         BackButton.Visibility = back is not null && ViewModel.BackCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed;

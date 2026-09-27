@@ -453,7 +453,13 @@ public static class PartNames
         ["E♭ Bass"] = "Ess-bass",
         ["B♭ Bass"] = "B-bass",
         ["Percussion"] = "Slagverk",
+        // The quartet: 1st Cornet, 2nd Cornet, Tenor Horn, Euphonium.
+        ["1st Cornet"] = "1. kornett",
+        ["Tenor Horn"] = "Althorn",
     };
+
+    /// <summary>The English part names this table knows.</summary>
+    public static IEnumerable<string> Known => Nb_.Keys;
 
     public static string Nb(string en) => Nb_.TryGetValue(en, out var nb) ? nb : en;
 

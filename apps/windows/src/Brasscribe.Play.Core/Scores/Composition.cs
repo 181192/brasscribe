@@ -27,6 +27,8 @@ public sealed class Composition
     /// Neighbouring uncertain notes of one voice, reviewed together (music/README.md, Confidence and
     /// review marks); null in files written before review groups.
     /// </summary>
+    /// <remarks>Left out when null: the core omits an empty list and rejects <c>"review": null</c>.</remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<ReviewSpan>? Review { get; set; }
 
     [JsonExtensionData]

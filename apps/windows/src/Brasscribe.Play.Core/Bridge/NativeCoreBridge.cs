@@ -6,6 +6,7 @@ using Brasscribe.Play.Core.Engine;
 using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.TalkingScore;
+using Brasscribe.Play.Core.ViewModels;
 
 namespace Brasscribe.Play.Core.Bridge;
 
@@ -23,7 +24,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>Every export this bridge calls; an older library without them is not used.</summary>
     internal static readonly string[] RequiredExports =
     [
-        "bc_version", "bc_string_free", "bc_composition_normalize", "bc_arrange_musicxml", "bc_arrange_layers_band",
+        "bc_version", "bc_string_free", "bc_composition_normalize", "bc_arrange_musicxml", "bc_arrange_with", "bc_arrange_layers_band",
         "bc_humanize_json", "bc_talking_score_new", "bc_talking_score_free", "bc_talking_score_json", "bc_talking_announce_json",
     ];
 
@@ -131,6 +132,25 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         return Take(xml);
     }
 
+    public string? ArrangeMusicXmlWith(Composition composition, ArrangementOptions options)
+    {
+        Check(bc_arrange_with(CompositionJson.Serialize(composition), ArrangeOptions(options), out var xml, out var err), err);
+        return Take(xml);
+    }
+
+    /// <summary>The options JSON of bc_arrange_with: the core's lineup name, the difficulty, a key or a transposition.</summary>
+    internal static string ArrangeOptions(ArrangementOptions options)
+    {
+        var o = new JsonObject
+        {
+            ["lineup"] = Lineups.Core(Lineups.Of(options)),
+            ["difficulty"] = options.Difficulty,
+        };
+        if (options.Key is { } key) o["key"] = key;
+        if (options.Transpose is { } t) o["transpose"] = t;
+        return o.ToJsonString();
+    }
+
     public BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options)
     {
         if (inputs.Midi.Length != 6 || inputs.Wav.Length != 4) throw new ArgumentException("six MIDI layers and four stems expected", nameof(inputs));
@@ -166,7 +186,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         static JsonArray Floats(IEnumerable<double> v, double nanAs) => new(v.Select(x => (JsonNode?)JsonValue.Create(double.IsFinite(x) ? x : nanAs)).ToArray());
         var o = new JsonObject
         {
-            ["lineup"] = options.Lineup == "minimal" ? "minimal" : "band",
+            ["lineup"] = Lineups.Core(Lineups.Of(options)),
             ["difficulty"] = options.Difficulty,
         };
         if (options.Key is { } key) o["key"] = key;
@@ -235,6 +255,9 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     private static partial int bc_arrange_musicxml(string compositionJson, string arranger, out nint xml, out nint err);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int bc_arrange_with(string compositionJson, string options, out nint xml, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     private static partial int bc_arrange_layers_band(nint[] midi, nuint[] midiLen, nint[] wav, nuint[] wavLen,

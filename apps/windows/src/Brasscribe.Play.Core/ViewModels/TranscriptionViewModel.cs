@@ -232,6 +232,14 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             StageText = _s["Transcribe_Cancelled"];
             _announcer.Announce(StageText, AnnouncementKind.Important);
         }
+        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && Lineups.Parse(options.Lineup) == Lineup.Quartet)
+        {
+            // The engine refuses a quartet for a solo take; say why in the app's own words, never its detail.
+            ErrorText = _s["Output_QuartetNeedsGroup"];
+            Failure = TranscriptionFailure.Failed;
+            _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
+            FailedWith?.Invoke(this, Failure);
+        }
         catch (EngineException e)
         {
             ErrorText = e.Message;
