@@ -358,7 +358,7 @@ private fun PartChips(
     val left = remember(composition, checkedMap) {
         voices.associate { v ->
             val done = checkedMap[v.id].orEmpty()
-            v.id to partViewFor(composition, v.id, done, vm.container.core).events.count { it.note != null && it.uncertainty != Uncertainty.CONFIDENT && it.index !in done }
+            v.id to reviewGroups(composition, v.id, partViewFor(composition, v.id, done, vm.container.core)).count { g -> g.members.any { it.index !in done } }
         }
     }
     val own = voices.filter { it.role == VoiceRole.MELODY }
