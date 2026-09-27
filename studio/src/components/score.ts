@@ -5,6 +5,7 @@ import type * as AT from "@coderline/alphatab";
 import { lang, t } from "../i18n";
 import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
+import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
 import { announce, clear, h, menu, nextId, prefersReducedMotion } from "../ui/dom";
@@ -26,6 +27,26 @@ export interface NoteMark {
 }
 
 const ASSETS = new URL("assets/alphatab/", document.baseURI).href;
+const BAND = new URL("assets/band/", document.baseURI).href;
+
+/**
+ * The band sounds (one preset per part, built by sounds/band.py) and their part map, copied into
+ * the assets by build.mjs when the checkout has them. Null when they are missing: then alphaTab's
+ * General MIDI set plays and the status line says so.
+ */
+let bandSounds: Promise<PartSoundResolver | null> | null = null;
+function loadBandSounds(): Promise<PartSoundResolver | null> {
+  const json = (f: string) => fetch(`${BAND}${f}`).then((r) => (r.ok ? r.json() : null));
+  bandSounds ??= Promise.all([json("mapping.json"), json("band.json")])
+    .then(([m, info]: [Mapping | null, { singleVoice?: boolean } | null]) =>
+      (m ? new PartSoundResolver(m, info?.singleVoice ?? false) : null))
+    .catch(() => null)
+    .then((r) => {
+      if (!r) console.warn(`Band sounds not found under ${BAND}: playing alphaTab's General MIDI sounds instead.`);
+      return r;
+    });
+  return bandSounds;
+}
 
 /**
  * A design token as a concrete colour. Tokens can be system colours (forced
@@ -71,6 +92,9 @@ export class ScoreElement extends HTMLElement {
   lastAnnouncement = "";
   private view!: HTMLDivElement;
   private statusEl!: HTMLElement;
+  /** Band sounds, or null when they are missing (undefined before the first load). */
+  private band: PartSoundResolver | null | undefined;
+  private trackSounds: (TrackSound | null)[] = [];
   private playBtn!: HTMLButtonElement;
   private barInput!: HTMLInputElement;
   private loopFrom!: HTMLInputElement;
@@ -220,12 +244,14 @@ export class ScoreElement extends HTMLElement {
     // alphaTab owns its container's attributes, so the stacking wrapper is a separate element.
     this.view.append(this.bands, h("div", { class: "score-surface" }, surface), this.marks);
     this.watchTheme();
+    const band = await loadBandSounds();
+    this.band = band;
     const settings: AT.json.SettingsJson = {
       core: { fontDirectory: `${ASSETS}font/`, logLevel: "warning", includeNoteBounds: true, enableLazyLoading: false },
       display: { layoutMode: "page", scale: this.scale, staveProfile: "score", resources: this.resources() },
       player: {
         playerMode: "enabledSynthesizer",
-        soundFont: `${ASSETS}soundfont/sonivox.sf2`,
+        soundFont: band ? `${BAND}brasscribe-band.sf2` : `${ASSETS}soundfont/sonivox.sf2`,
         scrollElement: this.view,
         enableCursor: true,
         enableAnimatedBeatCursor: !prefersReducedMotion(),
@@ -236,6 +262,7 @@ export class ScoreElement extends HTMLElement {
     } as unknown as AT.json.SettingsJson;
     const api = new alphaTab.AlphaTabApi(surface, settings);
     this.api = api;
+    api.masterVolume = MASTER_VOLUME;
     const rendered = new Promise<void>((resolve, reject) => {
       api.postRenderFinished.on(() => {
         this.drawMarks();
@@ -245,8 +272,14 @@ export class ScoreElement extends HTMLElement {
       });
       api.error.on((e: Error) => reject(e));
     });
-    api.scoreLoaded.on((score: AT.model.Score) => this.onScore(score));
+    api.scoreLoaded.on((score: AT.model.Score) => {
+      this.applyBandSounds(score);
+      this.onScore(score);
+    });
+    api.midiLoad.on((midi: AT.midi.MidiFile) => addReleaseTail(midi));
+    api.midiLoaded.on(() => this.applyTrackGains());
     api.playerReady.on(() => {
+      this.applyTrackGains();
       this.ready = true;
       this.dispatchEvent(new CustomEvent("playerready"));
       this.updateStatus();
@@ -280,6 +313,44 @@ export class ScoreElement extends HTMLElement {
     const indexes = this.tracks ?? (this.xml ? this.xml.parts.map((_, i) => i) : undefined);
     api.load(bytes, indexes);
     await rendered;
+  }
+
+  /**
+   * Every part on its own channel with its band preset (mapping.json `resolve`), before the MIDI
+   * is generated; the MusicXML's own program and bank changes would override it, so they go.
+   */
+  private applyBandSounds(score: AT.model.Score): void {
+    this.trackSounds = [];
+    if (!this.band) return;
+    const channels = playbackChannels(score.tracks.map((t) => t.staves.some((st) => st.isPercussion)));
+    score.tracks.forEach((track, i) => {
+      const sound = this.band!.resolve(track.name, null, track.playbackInfo.program)?.sound ?? null;
+      this.trackSounds.push(sound);
+      track.playbackInfo.primaryChannel = channels[i];
+      track.playbackInfo.secondaryChannel = channels[i];
+      if (!sound) {
+        console.warn(`No band sound for part "${track.name}" (program ${track.playbackInfo.program}).`);
+        return;
+      }
+      track.playbackInfo.program = sound.percussion ? 0 : sound.program;
+      track.playbackInfo.bank = sound.percussion ? 0 : sound.bank;
+      for (const staff of track.staves)
+        for (const bar of staff.bars)
+          for (const voice of bar.voices)
+            for (const beat of voice.beats)
+              beat.automations = beat.automations.filter(
+                (a) => a.type !== alphaTab.model.AutomationType.Instrument && a.type !== alphaTab.model.AutomationType.Bank);
+    });
+  }
+
+  /** Part balance as channel volume (channel_gain_db): the band SoundFont does not carry it. */
+  private applyTrackGains(): void {
+    const score = this.api?.score;
+    if (!score || !this.trackSounds.length) return;
+    score.tracks.forEach((track, i) => {
+      const s = this.trackSounds[i];
+      if (s) this.api!.changeTrackVolume([track], Math.pow(10, s.gainDb / 20));
+    });
   }
 
   private partLabel(i: number): string {
@@ -743,6 +814,7 @@ export class ScoreElement extends HTMLElement {
       t("score.status.bar", { n: this.current + 1, total: this.bars.length || "–" }),
       `${mmss(this.position.time)} / ${mmss(this.position.endTime)}`,
       this.playing ? t("score.status.playing") : this.ready ? t("score.status.stopped") : t("score.status.loadingPlayer"),
+      this.api && this.band === null ? t("score.status.basicSounds") : "",
       t("score.status.speed", { v: this.speedOut?.textContent ?? "100%" }),
       this.loop ? t("score.loopRange", { a: this.loop.from + 1, b: this.loop.to + 1 }) : "",
       this.api?.score ? t("score.status.part", { name: this.partLabel(this.partIndex) }) : "",
@@ -765,4 +837,15 @@ declare global {
   interface HTMLElementTagNameMap {
     "bs-score": ScoreElement;
   }
+}
+
+/** alphaSynth stops every voice dead at the last MIDI event; a no-op controller event after the last note lets the final release sound. */
+function addReleaseTail(midi: AT.midi.MidiFile): void {
+  const events = midi.events;
+  if (!events.length) return;
+  const last = Math.max(...events.map((e) => e.tick));
+  const tempos = events.filter((e): e is AT.midi.TempoChangeEvent => e instanceof alphaTab.midi.TempoChangeEvent && e.tick <= last);
+  const usPerBeat = tempos.length ? tempos[tempos.length - 1].microSecondsPerQuarterNote : 500000;
+  const tail = Math.round((RELEASE_TAIL_S * 1e6) / usPerBeat * midi.division);
+  midi.addEvent(new alphaTab.midi.ControlChangeEvent(0, last + tail, 0, alphaTab.midi.ControllerType.ExpressionControllerFine, 0));
 }
