@@ -155,7 +155,9 @@ struct ExportView: View {
                 Segmented(label: String(localized: "What"), selection: $scope,
                           options: (myPart != nil ? [(Scope.mine, myLabel)] : [])
                             + [(Scope.every, String(localized: "Every part")), (Scope.conductor, String(localized: "Conductor's score"))])
-                Text("Every part: one PDF per player.").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                if scope == .every {
+                    Text("Every part: one PDF per player.").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                }
             } else {
                 VStack(spacing: 0) {
                     if myPart != nil { radio(myLabel, nil, .mine); Divider().overlay(Color.Brasscribe.border) }
@@ -206,7 +208,7 @@ struct ExportView: View {
                         HStack(spacing: Space.s3) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("More formats").font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                Text("MusicXML, MIDI, talking score, braille").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                Text("MusicXML, MIDI and 2 more").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted).lineLimit(1)
                             }
                             Spacer()
                             Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Brasscribe.textMuted)

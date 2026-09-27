@@ -150,7 +150,8 @@ struct HomeView: View {
                                     Spacer(minLength: Space.s2)
                                     if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                                 }
-                                .frame(minHeight: 60)
+                                .padding(.vertical, Space.s3)
+                                .frame(minHeight: 64)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -240,7 +241,7 @@ struct FirstRunView: View {
                           text: String(localized: "Play the piece, record a rehearsal, or open a file you have."))
                     point(icon: UncertainMark(level: .veryUncertain), title: String(localized: "Check the marked notes"),
                           text: String(localized: "Notes Brasscribe isn't sure about get a “?”. You decide."))
-                    point(icon: Image(systemName: BrasscribeIcon.solo.systemName), title: String(localized: "Practise with the band"),
+                    point(icon: Image(systemName: BrasscribeIcon.playAlong.systemName), title: String(localized: "Practise with the band"),
                           text: String(localized: "Mute your part, slow it down, loop the hard bars."))
                     HelperLine(systemImage: BrasscribeIcon.info.systemName,
                                text: String(localized: "Recordings stay on your own devices."))

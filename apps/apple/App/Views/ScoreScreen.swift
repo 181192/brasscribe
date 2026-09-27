@@ -39,7 +39,7 @@ struct ScoreScreen: View {
     }
 
     private var currentTitle: String {
-        app.pieces.first(where: { $0.id == piece.id })?.title ?? piece.title
+        app.pieces.first(where: { $0.id == piece.id })?.displayTitle ?? piece.displayTitle
     }
 
     private var editToolbar: some ToolbarContent {
@@ -220,7 +220,6 @@ struct ScoreToolbar: View {
 
     /// "As written for B♭" names the key of the part shown; all parts is just "As written".
     private var writtenLabel: String {
-        guard wide else { return String(localized: "As written") }
         let keys = ["C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
         guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "As written") }
         let k = ((p.transposeSemitones % 12) + 12) % 12
@@ -278,7 +277,7 @@ struct ScoreToolbar: View {
     private var pitch: some View {
         Segmented(label: String(localized: "Pitch"), selection: $model.pitchMode,
                   options: [(PitchMode.written, writtenLabel),
-                            (PitchMode.concert, wide ? String(localized: "Concert pitch") : String(localized: "Concert"))])
+                            (PitchMode.concert, String(localized: "Concert pitch"))])
         .accessibilityIdentifier("pitchMode")
         .help(Text("Written is what you read on your part. Concert is how it sounds on a piano."))
     }
@@ -366,6 +365,7 @@ struct PlayerBar: View {
             } else {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
+                    hear
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: Space.s2)], spacing: Space.s2) { chipsPhone }
                 }
                 .card(padding: Space.s4)
@@ -552,12 +552,6 @@ struct PlayerBar: View {
         Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
         Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")
         muteMyPart
-        if model.hasOriginal {
-            Toggle(isOn: $model.hearOriginal) { Label("Recording", systemImage: BrasscribeIcon.original.systemName) }
-                .toggleStyle(.chip)
-                .accessibilityHint(Text("Plays the recording instead of the band, at the same place."))
-                .accessibilityIdentifier("originalToggle")
-        }
     }
 }
 
@@ -679,7 +673,7 @@ struct SmallToggleStyle: ToggleStyle {
                 if configuration.isOn { Image(systemName: "checkmark").font(.caption.weight(.bold)) }
                 configuration.label.labelStyle(.titleAndIcon)
             }
-            .font(Font.Brasscribe.caption.weight(.semibold))
+            .font(labelFont)
             .foregroundStyle(Color.Brasscribe.text)
             .padding(.horizontal, Space.s2)
             .frame(minHeight: minHeight)
@@ -695,11 +689,19 @@ struct SmallToggleStyle: ToggleStyle {
         .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 
+    private var labelFont: Font {
+        #if os(iOS)
+        Font.Brasscribe.caption.weight(.semibold)
+        #else
+        .system(size: 13, weight: .semibold)
+        #endif
+    }
+
     private var minHeight: CGFloat {
         #if os(iOS)
         44
         #else
-        36
+        30
         #endif
     }
 }

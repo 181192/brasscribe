@@ -7,6 +7,28 @@ import TranscriptionKit
 enum ScreenshotScenes {
     @MainActor static func open(_ name: String, app: AppModel, openScore: () -> Piece?) {
         switch name {
+        case "home-full":
+            // a lived-in library: named scores, an imported file, a timestamp-named file and a microphone take
+            guard let first = openScore() else { return }
+            let day: TimeInterval = 86_400
+            let library: [(String, TimeInterval, Lineup, Int?)] = [
+                ("Deep Harmony", 1 * day, .fullBand, 0), ("Abide with Me", 2 * day, .minimalBand, 12),
+                ("20260815_155324", 5 * day, .fullBand, nil), ("", 8 * day, .minimalBand, 4), ("Floral Dance", 12 * day, .fullBand, 0),
+            ]
+            for (title, ago, lineup, toCheck) in library {
+                guard var p = try? Piece.create(title: title.isEmpty ? ScoreTitles.recording(at: Date().addingTimeInterval(-ago)) : title,
+                                                profile: .brassBand, result: TranscriptionResult(jobID: "fixture", composition: first.loadComposition(),
+                                                musicXML: (try? Data(contentsOf: first.scoreURL)) ?? Data(), available: [.musicXML]),
+                                                original: nil, video: nil, fixtureDirectory: nil, output: OutputChoice(lineup: lineup)) else { continue }
+                p.created = Date().addingTimeInterval(-ago)
+                if let toCheck { p.toCheck = toCheck }
+                try? p.save()
+            }
+            var mikkel = first
+            mikkel.output = OutputChoice()
+            try? mikkel.save()
+            app.refresh()
+            app.path = []
         case "source":
             app.startDemo()
         case "transcribing", "transcribing-cancel":

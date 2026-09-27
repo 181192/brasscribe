@@ -90,7 +90,7 @@ struct ReviewView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if !allOpen.isEmpty {
+            if !allOpen.isEmpty, wide {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Finish later (\(open.count) left)") { confirmLater = true }
                         .accessibilityIdentifier("openScore")
@@ -239,9 +239,13 @@ struct ReviewView: View {
                     .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
             }
             Segmented(label: String(localized: "Which notes"), selection: $filter,
-                      options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
-                                (Filter.others, String(localized: "Other parts (\(count(.others)))")),
-                                (Filter.all, String(localized: "All parts (\(count(.all)))"))])
+                      options: wide
+                        ? [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                           (Filter.others, String(localized: "Other parts (\(count(.others)))")),
+                           (Filter.all, String(localized: "All parts (\(count(.all)))"))]
+                        : [(Filter.mine, String(localized: "Yours (\(count(.mine)))")),
+                           (Filter.others, String(localized: "Others (\(count(.others)))")),
+                           (Filter.all, String(localized: "All (\(count(.all)))"))])
             .accessibilityIdentifier("reviewFilter")
         }
     }
@@ -263,6 +267,20 @@ struct ReviewView: View {
     }
 
     private var actionBar: some View {
+        VStack(spacing: Space.s1) {
+            if !wide {
+                Button("Finish later (\(open.count) left)") { confirmLater = true }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("openScore")
+            }
+            actionButtons
+        }
+        .padding(.horizontal, wide ? Space.s8 : Space.s5)
+        .padding(.vertical, wide ? Space.s3 : Space.s2)
+        .background(Color.Brasscribe.bg)
+    }
+
+    private var actionButtons: some View {
         HStack(spacing: Space.s3) {
             if wide {
                 Text("Space listens · K keeps").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
@@ -275,9 +293,6 @@ struct ReviewView: View {
                 .keyboardShortcut("k", modifiers: [])
                 .accessibilityIdentifier("keepNext")
         }
-        .padding(.horizontal, wide ? Space.s8 : Space.s5)
-        .padding(.vertical, Space.s3)
-        .background(Color.Brasscribe.bg)
     }
 
     private var allChecked: some View {
@@ -527,7 +542,7 @@ struct BarSnippet: View {
                 page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
             }
         }
-        .frame(height: 124)
+        .frame(height: 108)
     }
 
     /// The Verovio note at the reviewed onset: same order within the first bar as the parsed notes.
