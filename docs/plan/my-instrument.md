@@ -52,7 +52,9 @@ The same window cuts the melody of the non-layered arrangers (`pipeline.rs:545`,
 
 **Data.** ChoraleBricks v1.1.0 (`data/choralebricks/01_AudioAndAnnotations`). Every chorale voice is recorded separately on several instruments, with note annotations at sounding pitch. The measurement covers all 93 brass stems across the 10 chorales.
 
-**Method.** Each stem went through the desktop SwiftF0 and Basic Pitch adapters (`ml/adapters/*/run.sh`). The solo rule was then applied as on the phone: SwiftF0 as the spine, with Basic Pitch confirming and also standing in for MuScriptor. It was run twice, once with today's window and once with the instrument's own range (`Instrument.pro`). Scoring used mir_eval onset F1 with 100 ms tolerance. The scripts are in the Benchmark section (§7) as the proposed CI suite.
+**Method.** Each stem went through the desktop SwiftF0 and Basic Pitch adapters (`ml/adapters/*/run.sh`). The solo rule was then applied as on the phone: SwiftF0 as the spine, with Basic Pitch confirming and also standing in for MuScriptor. It was run twice, once with today's window and once with the instrument's own range (`Instrument.pro`). Scoring used mir_eval onset F1 with 100 ms tolerance.
+
+The scripts and raw results are in [`my-instrument/`](my-instrument/): `run_adapters.sh`, `measure.py`, `results.json`, `section.py`, `run_urmp.sh` and `measure_urmp.py`. Run them from the `eval` project with `uv run python …`. §7.1 turns them into a CI suite.
 
 | Instrument (stems) | Played range (2–98 %) | Notes below E3 | SwiftF0 F1 | Basic Pitch F1 | Solo rule, today's window: F1 / recall | Solo rule, instrument's range: F1 / recall | Octave errors | Basic Pitch agrees | Solo Cornet moves an octave | Own reading range moves an octave |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -71,11 +73,22 @@ The same window cuts the melody of the non-layered arrangers (`pipeline.rs:545`,
   - So a solo take must be written in the octave it was played in. Move a note only when it is outside the instrument's professional range, which almost always means a tracker octave error. `_place_line` is the right tool for arranging a line onto a part. It is the wrong tool for writing down the player's own notes.
 - **"Basic Pitch agrees"** is the share of kept notes that Basic Pitch also found. On tuba it is only 55 %. The confidence model (`confidence.rs` `p_correct`) weighs model agreement, so correct tuba notes are likely to get "?" marks much more often than cornet notes. The real "?" rate was not measured here, and the model (`calibration.json`) has no feature for the register. It is a benchmark item (§7) and a possible recalibration.
 
+**Cross-check on real instruments: URMP.** URMP (`data/urmp/Dataset`) has separately recorded real trumpet, French horn, tenor trombone and tuba tracks. They went through the same rule and scoring (`measure_urmp.py`). Tracks whose pitch contradicts their file tag are skipped, because URMP tags are sometimes wrong.
+
+| Instrument (stems) | Played range | Notes below E3 | SwiftF0 F1 | Solo rule, today's window: F1 / recall | Solo rule, instrument's range: F1 / recall | Octave errors |
+|---|---|---|---|---|---|---|
+| Trumpet (22) | G3–F5 | 0 % | 0.97 | 0.96 / 0.94 | 0.96 / 0.94 | 0.0 % |
+| French horn (5) | D3–A♯4 | 5 % | 0.97 | 0.93 / 0.89 | 0.95 / 0.93 | 0.0 % |
+| Trombone (8) | F2–D4 | 43 % | 0.96 | **0.64 / 0.54** | 0.96 / 0.95 | 0.3 % |
+| Tuba (5) | A♯1–G3 | 87 % | 0.94 | **0.21 / 0.12** | 0.93 / 0.91 | 0.9 % |
+
+URMP gives the same picture on real trombones and tubas as ChoraleBricks did: the trackers are fine, and the window is the whole loss.
+
 **Caveats. This is an honest measurement, not the phone.**
-- **Proxy instruments.** ChoraleBricks "Baritone" is the German Bariton, close to a euphonium, and was measured against the euphonium's range. French horn stands in for tenor horn. The trombone plays the chorale's bass line, which sits low for a tenor trombone. The tuba plays an octave below the notated chorale.
+- **Proxy instruments.** URMP covers real trombone and tuba (above). There is no recording of a real euphonium, tenor horn or E♭ Bass. ChoraleBricks "Baritone" is the German Bariton, close to a euphonium, and was measured against the euphonium's range. French horn stands in for tenor horn. The trombone plays the chorale's bass line, which sits low for a tenor trombone. The tuba plays an octave below the notated chorale.
 - **Recording conditions.** These are clean close-mic studio stems. A phone in a practice room adds room sound and noise. `docs/research/pitch-benchmark-notes.md` puts SwiftF0 at the top of its tracker benchmark under noise and reverb, but not on brass.
 - **Runtime.** These are the desktop Python adapters, not the Core ML and TFLite conversions the phones run. `convert/swift-f0/parity.py` checks the conversion against the reference. The phone runtime was not measured here.
-- **SwiftF0 has a floor of about 46.9 Hz (F♯1).** Tuba and B♭ Bass pedal notes below it cannot be tracked by the phone or the engine. This is a real model limit, not the window.
+- **SwiftF0 has a floor.** The lowest pitch it reports is 46.875 Hz (`swift_f0.FMIN`), a quarter-tone above F♯1. Tuba and B♭ Bass pedal notes from F♯1 down cannot be tracked by the phone or the engine. This is a real model limit, not the window.
 - **The octave-move columns are approximate.** The tick mapping (48 ticks per second) only estimates where the phrases break.
 
 ### 1.3 Measured: can the player's inner part be picked out of a section recording?
@@ -149,15 +162,17 @@ This is `reads: "treble" | "bass" | null` (null = the brass-band default). The M
 
 ### 2.3 Seat → part, when the lineup lacks the seat
 
-The small band has 8 parts and the quartet 4, so a seat often has no part of its own. Resolve it with one **explicit table** in core, not a heuristic. Build it by these rules, in order:
+The small band has 8 parts and the quartet 4, so a seat often has no part of its own. Resolve it with one **explicit table** in core. **The table is authoritative.** These rules only explain how it was built, in order:
 1. the same part
-2. a part in the same key (so the player can read it without transposing)
-3. the part that plays the same role (tune, bass or inner)
-4. the closest reading range
+2. a part the player can play: the closest range
+3. of those, a part in the same key, so the player can read it without transposing
+4. then the same instrument family, and the same role (tune, bass or inner)
+
+"Different key" below compares transpositions (`chromatic % 12`): B♭ parts (cornet, flugelhorn, baritone, trombone, euphonium, B♭ Bass), E♭ parts (soprano, tenor horn, E♭ Bass), and the bass trombone at concert pitch.
 
 | Seat | Full band | Small band | Quartet |
 |---|---|---|---|
-| Soprano Cornet | same | Solo Cornet | 1st Cornet |
+| Soprano Cornet (E♭) | same | Solo Cornet *(different key)* | 1st Cornet *(different key)* |
 | Solo Cornet | same | same | 1st Cornet |
 | Repiano Cornet, 3rd Cornet | same | 2nd Cornet | 2nd Cornet |
 | 2nd Cornet | same | same | same |
@@ -167,9 +182,10 @@ The small band has 8 parts and the quartet 4, so a seat often has no part of its
 | 1st Baritone, 2nd Baritone | same | Euphonium | Euphonium |
 | 1st Trombone | same | same | Euphonium |
 | 2nd Trombone | same | 1st Trombone | Euphonium |
-| Bass Trombone | same | E♭ Bass *(different key)* | Euphonium *(different key)* |
+| Bass Trombone (concert, bass clef) | same | E♭ Bass *(different key)* | Euphonium *(different key)* |
 | Euphonium | same | same | same |
-| E♭ Bass, B♭ Bass | same | same | Euphonium *(different key)* |
+| E♭ Bass | same | same | Euphonium *(different key)* |
+| B♭ Bass | same | same | Euphonium |
 | Percussion | same | none | none |
 
 - **Core API.** `seat_part(lineup, seat) -> SeatPart { part: Option<String>, exact: bool, same_key: bool }`, in `instruments.py` and `instruments.rs`, and over FFI. It is one table for all three apps. The apps never keep their own copy.
@@ -215,9 +231,12 @@ It follows `design/system.md` (rules §1, components §5), `design/brand/brand.m
 - **Layout.**
   - A serif title, "What do you play?", and one sentence: "Brasscribe shows your part first and mutes it when you play along. You can change it in Settings."
   - The instruments, as a radio group of two-column tiles, each at least 56 pt tall. **Nothing is pre-selected** (the same rule as "What is this?", `system.md:104`).
-  - After an instrument is chosen, **Which part?** appears under it as a segmented control, if the instrument has more than one part. For euphonium, baritone, trombones and basses, **You read** appears too, with the brass-band default selected.
+  - After an instrument is chosen, **Which part?** appears under it, if the instrument has more than one part.
+    - It is a radio group with **nothing selected**, so a 3rd cornet player is never quietly filed as Solo Cornet.
+    - It is laid out as a segmented row, or as a vertical list at large text sizes.
+  - For euphonium, baritone, trombones and basses, **You read** appears too, with the brass-band default selected. A default is safe here: a wrong clef is obvious on the first score and is changed in one tap.
 - **Actions.**
-  - Primary: **Continue**. It is inactive until an instrument is chosen, and says why: "Choose your instrument, or I conduct or listen".
+  - Primary: **Continue**. It is inactive until an instrument, and a part where there is a choice, are chosen, and it says why: "Choose your instrument, or I conduct or listen".
   - Plain: **I conduct or listen**. This sets the seat to none, and scores open on every part.
   - Navbar: **Not now**. This skips without setting anything and behaves like today. Settings shows "Not set". Brasscribe doesn't ask again.
 - **Changes.** None until Continue is pressed (3.2.2).
@@ -225,7 +244,7 @@ It follows `design/system.md` (rules §1, components §5), `design/brand/brand.m
 
 ### 3.2 Settings
 
-- A new first section, **You** / «Deg», above Sound (`system.md:113`). It has one row: **What you play**, with the value "1st Baritone · treble clef in B♭", or "Not set". The row opens the same picker as the first run.
+- A new first section, **You** / «Instrumentet ditt», above Sound (`system.md:113`). It has one row: **What you play**, with the value "1st Baritone · treble clef in B♭", or "Not set". The row opens the same picker as the first run.
 - The caption says what changes and what doesn't: "New scores open on your part. Scores you already have keep the part you chose for them."
 - **Changing the setting never re-arranges an existing score.** It changes the default for new scores, and "your part" in scores where the player never picked one.
 
@@ -296,28 +315,28 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 | continue hint | Choose your instrument, or “I conduct or listen”. | Velg instrumentet ditt, eller «Jeg dirigerer eller lytter». |
 | none | I conduct or listen | Jeg dirigerer eller lytter |
 | skip | Not now | Ikke nå |
-| settings section | You | Deg |
+| settings section | You | Instrumentet ditt |
 | settings row | What you play | Hva du spiller |
 | settings not set | Not set | Ikke valgt |
 | settings caption | New scores open on your part. Scores you already have keep the part you chose for them. | Nye partiturer åpner på stemmen din. Partiturer du har fra før, beholder stemmen du valgte. |
-| make mine | Make this my part | Gjør dette til min stemme |
+| make mine | Make this my part | Gjør til min stemme |
 | who played | Who played this? | Hvem spilte? |
 | who plays tune | Who plays the tune? · Solo Cornet (as usual) · You: Euphonium | Hvem spiller melodien? · Solokornett (som vanlig) · Deg: eufonium |
 | solo one part | A solo recording gives one part: yours. | Et soloopptak gir én stemme: din. |
 | write for another | Write for another instrument… | Skriv for et annet instrument … |
 | source: yours | From your recording | Fra opptaket ditt |
 | source: recording | From the recording | Fra opptaket |
-| source: arranged | Arranged from the band's harmony | Arrangert fra harmoniene i bandet |
+| source: arranged | Arranged from the band's harmony | Arrangert ut fra harmoniene i bandet |
 | explain: recording | Brasscribe wrote down the notes it heard for this part. | Brasscribe skrev ned tonene den hørte for denne stemmen. |
 | explain: arranged | Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part. | Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din. |
 | review arranged title | Your part is arranged | Stemmen din er arrangert |
 | review arranged body | Nobody played the {part} part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check. | Ingen spilte {part} alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke. |
 | review arranged actions | Check the other parts · Show my part | Sjekk de andre stemmene · Vis stemmen min |
-| mapped, same key | This {lineup} has no {seat}. Your part here is {part}, the closest: the same key and clef. | {Lineup} har ingen {seat}. Her er stemmen din {part}, den nærmeste: samme stemming og nøkkel. |
-| mapped, other key | The {lineup} has no {seat}. Your part here is {part}, written for {key}. | {Lineup} har ingen {seat}. Her er stemmen din {part}, skrevet for {key}. |
+| mapped, same key | This {lineup} has no {seat}. Your part here is {part}, the closest: the same key and clef. | {Det fulle bandet / Det lille bandet / Kvartetten} har ingen {seat}. Her er stemmen din {part}, den nærmeste: samme stemming og nøkkel. (One definite form per lineup, not a template on the lineup name.) |
+| mapped, other key | The {lineup} has no {seat}. Your part here is {part}, written for {key}. | {Det fulle bandet / Det lille bandet / Kvartetten} har ingen {seat}. Her er stemmen din {part}, skrevet for {key}. |
 | key on your part | {key} on your part | {key} på stemmen din |
 | written for | Written for {instrument} in {key}, {clef} | Skrevet for {instrument} i {key}, {clef} |
-| PDF footer | Arranged by Brasscribe from the band's harmony. | Arrangert av Brasscribe fra harmoniene i bandet. |
+| PDF footer | Arranged by Brasscribe from the band's harmony. | Arrangert av Brasscribe ut fra harmoniene i bandet. |
 | old computer | Brasscribe on your computer is too old to write for your instrument. Update it to use this. | Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette. |
 
 ### 3.9 Accessibility (WCAG 2.2 AA)
@@ -537,7 +556,7 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
    - Step 1 of §9 is checked on its own before any behaviour changes.
 2. **Python = Rust.** Every new conformance case (solo seats × readings, lead=seat, `seat_part` table) is identical in both.
 3. **Solo takes are written for the player** (the `solo-instruments` suite, §7.1). On the ChoraleBricks stems, with a seat:
-   - **Recall.** Solo-rule recall is at least 0.93 on baritone and trombone and 0.85 on tuba (today: 0.70, 0.44, 0).
+   - **Recall.** Solo-rule recall is at least 0.93 on baritone and trombone and 0.85 on tuba (today: 0.70, 0.44, 0). These thresholds are provisional: they come from the simplified rule in §1.2. Confirm them against the full-path baseline from step 2 of §9, which adds quantization.
    - **Octave.** No in-range played note is written in another octave (`place_as_played`). Every octave move is logged as a warning, and moves are at most 1 % of notes.
    - **One part.** The output has one part named by the seat, with the seat's transposition and clef, and the key signature for that transposition.
    - **Bass clef reading.** With `reads=bass`, the part is written in bass clef at concert pitch, with no `<transpose>`.
@@ -576,7 +595,7 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
   - Run with and without the seat, so the table in §1.2 is regenerated on every change.
   - Run with the full solo-path code (`arrange_layers_song` with the seat), not the bench's copy of the rule.
 - **Gate.** The §6.3 numbers.
-- **Script.** The one-off script that produced §1.2 lives outside the repo. The implementation agent ports it into `eval/brasscribe_eval/solo_instruments_bench.py`.
+- **Script.** Port `docs/plan/my-instrument/measure.py` and `measure_urmp.py` into `eval/brasscribe_eval/solo_instruments_bench.py`.
 
 ### 7.2 "?" rate on low brass (measure first, then decide)
 

@@ -19,14 +19,13 @@
     window.SCORES.miReview = {
       sp: 8.5, key: 2, time: false, names: false, top: 62, bars: [{ n: 6 }, { n: 7 }],
       staves: [{ name: "Euphonium", bars: [ev("h4v q3 q2"), ev("q1 q2u h3")] }],
-      focus: { staff: 0, bar: 0, ev: 0 }, focusGap: 3,
       label: "Bars 6 and 7. Bar 6, beat 1: written E, minim, very uncertain.",
     };
   })();
 </script>
 <script src="mockup.js"></script>
 <style>
-  .src { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 10px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; color: var(--bc-text); background: var(--bc-surface); box-shadow: inset 0 0 0 1px var(--bc-border-strong); white-space: nowrap; }
+  .src { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 10px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; color: var(--bc-text); background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); white-space: nowrap; }
   .src .i { width: 18px; height: 18px; color: var(--bc-text-muted); }
   .legend { display: flex; gap: var(--bc-space-4); flex-wrap: wrap; font-size: 0.9375rem; color: var(--bc-text-muted); }
   .legend span { display: inline-flex; gap: 6px; align-items: center; }
@@ -55,7 +54,7 @@
       <div class="staff" data-score="miReview" style="height: 150px"></div>
       <p style="font-size: 1.0625rem">Written E, minim. <span class="muted">Very uncertain: it could also be an F♯.</span></p>
       <div class="actions">
-        <button class="btn secondary compact touch48"><i data-i="listen-bar" class="sm"></i>Listen to bar</button>
+        <button class="btn secondary compact touch48"><i data-i="listen-bar" class="sm"></i>Listen to this bar</button>
         <button class="btn outline compact touch48">Change note…</button>
       </div>
     </div>
