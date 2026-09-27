@@ -69,9 +69,9 @@ extension ScreenshotScenes {
         switch LaunchOptions.screen {
         case "score":
             m.countIn = true
-            m.loopFrom = 11; m.loopTo = 12
+            m.loopFrom = 8; m.loopTo = 9
             m.setLoop(true)
-            m.goToBar(12)
+            m.goToBar(9)
         case "part":
             m.goToBar(8)
         default:
