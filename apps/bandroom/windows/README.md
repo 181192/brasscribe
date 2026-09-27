@@ -75,7 +75,17 @@ dotnet publish src/Brasscribe.Bandroom -c Release -p:Platform=x64 -r win-x64 `
   Play on the same PC must read `engine.json` through the package's redirected path: verify before shipping.
 - Assets come from `design/dist/icons/windows/Assets` (linked by the project, never copied).
 
+## What CI checks (`windows.yml`, job `bandroom`)
+
+Core tests; the WinUI build with the bundled workspace; a start without pixi (window, notification-area icon,
+admin credential ACL); a start with pixi, where the first run installs the `default` environment from
+`pixi.lock`, the engine reaches Running, `engine.json` is written without the credential, health, devices and an
+open-until-closed pairing window answer with the bearer, and the engine's process tree ends with Bandroom; an
+Axe.Windows scan of six views; screenshots (artifact `bandroom-windows-screenshots`).
+
 ## Not done yet
+
+- The MSIX build itself: the manifest and StartupTask path are written but not yet built or installed in CI.
 
 - The four-step first-run window (§3.2: check this computer, the Hugging Face licence step, download progress
   with Pause, Ready) and the model downloads after the licence step. Today setup installs the environments in the
