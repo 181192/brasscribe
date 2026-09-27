@@ -1,7 +1,7 @@
 """Make the site's screenshots from the apps' own screenshots, as listed in site/shots.txt.
 
-Each source is cropped to its frame's ratio (phones 9:20 from the top, desktops 16:10 from the
-top), scaled to twice its largest display size, then written as WebP, plus a quantised PNG for
+Each source is cropped to its frame's ratio (see SIZES; too tall keeps the top, too wide keeps the
+middle), scaled to twice its largest display size, then written as WebP, plus a quantised PNG for
 light variants (the <img> fallback). Needs cwebp and pngquant on PATH.
 Usage: uv run --with pillow python site/make_shots.py
 """
@@ -16,7 +16,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "shots"
-SIZES = {"phone": (600, 1334), "desktop": (1440, 900)}
+SIZES = {"phone": (600, 1334), "tablet": (600, 864), "desktop": (1440, 900), "mac": (1440, 828)}
 LIMIT = 250 * 1024
 
 
@@ -44,11 +44,18 @@ def main() -> int:
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
-    rows = [
-        line.split()
-        for line in (ROOT / "site" / "shots.txt").read_text().splitlines()
-        if line.strip() and not line.startswith("#")
-    ]
+    rows, names = [], {}
+    for line in (ROOT / "site" / "shots.txt").read_text().splitlines():
+        if not line.strip() or line.startswith("#"):
+            continue
+        if "=" in line and " " not in line.strip():  # NAME=path, used as $NAME below
+            key, value = line.strip().split("=", 1)
+            names[key] = value
+            continue
+        cols = line.split()
+        for key, value in names.items():
+            cols = [c.replace(f"${key}", value) for c in cols]
+        rows.append(cols)
     tmp = Path(tempfile.mkdtemp())
     for slot, kind, *srcs in rows:
         w, h = SIZES[kind]
@@ -58,7 +65,8 @@ def main() -> int:
             if src == "-":
                 continue
             name = f"{slot}-{lang}-{theme}"
-            img = crop_to(Image.open(ROOT / src).convert("RGB"), w, h)
+            # A macOS window capture has transparent rounded corners: keep them.
+            img = crop_to(Image.open(ROOT / src).convert("RGBA" if kind == "mac" else "RGB"), w, h)
             png = tmp / f"{name}.png"
             img.save(png)
             run("cwebp", "-quiet", "-q", "82", "-m", "6", "-sharp_yuv", str(png), "-o", str(OUT / f"{name}.webp"))

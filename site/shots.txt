@@ -1,20 +1,28 @@
-# Screenshots used on the site, one slot per line. site/make-shots.sh turns them into site/shots/.
-# Columns: slot  kind  en-light  en-dark  nb-light  nb-dark   ("-" = none; the page then falls back
-# to the light file). kind "phone" is cropped to 9:20 and 600 px wide, "desktop" to 16:10 and 1440 px.
-# To use other shots (e.g. iPhone or macOS), change the paths here and run site/make-shots.sh again.
-first-run     phone    apps/android/docs/screenshots/design/01-first-run-light.png          apps/android/docs/screenshots/design/01-first-run-dark.png          apps/android/docs/screenshots/design/01-first-run-nb.png          -
-home          phone    apps/android/docs/screenshots/design/02-home-light.png               apps/android/docs/screenshots/design/02-home-dark.png               apps/android/docs/screenshots/design/02-home-nb.png               -
-what-is-this  phone    apps/android/docs/screenshots/design/03-what-is-this-light.png       apps/android/docs/screenshots/design/03-what-is-this-dark.png       apps/android/docs/screenshots/design/03-what-is-this-nb.png       -
-making        phone    apps/android/docs/screenshots/design/04-making-the-score-light.png   apps/android/docs/screenshots/design/04-making-the-score-dark.png   apps/android/docs/screenshots/design/04-making-the-score-nb.png   -
-review        phone    apps/android/docs/screenshots/design/05-review-light.png             apps/android/docs/screenshots/design/05-review-dark.png             apps/android/docs/screenshots/design/05-review-nb.png             -
-output        phone    apps/android/docs/screenshots/design/08-output-light.png             apps/android/docs/screenshots/design/08-output-dark.png             apps/android/docs/screenshots/design/08-output-nb.png             -
-score         phone    apps/android/docs/screenshots/design/11-score-all-parts-light.png    apps/android/docs/screenshots/design/11-score-all-parts-dark.png    apps/android/docs/screenshots/design/11-score-all-parts-nb.png    -
-part          phone    apps/android/docs/screenshots/design/09-score-part-light.png         apps/android/docs/screenshots/design/09-score-part-dark.png         apps/android/docs/screenshots/design/09-score-part-nb.png         -
-parts         phone    apps/android/docs/screenshots/design/10-parts-sheet-light.png        apps/android/docs/screenshots/design/10-parts-sheet-dark.png        apps/android/docs/screenshots/design/10-parts-sheet-nb.png        -
-speed         phone    apps/android/docs/screenshots/design/12-speed-sheet-light.png        apps/android/docs/screenshots/design/12-speed-sheet-dark.png        apps/android/docs/screenshots/design/12-speed-sheet-nb.png        -
-repeat        phone    apps/android/docs/screenshots/design/13b-repeat-on-light.png         apps/android/docs/screenshots/design/13b-repeat-on-dark.png         apps/android/docs/screenshots/design/13b-repeat-on-nb.png         -
-share         phone    apps/android/docs/screenshots/design/14-share-or-print-light.png     apps/android/docs/screenshots/design/14-share-or-print-dark.png     apps/android/docs/screenshots/design/14-share-or-print-nb.png     -
-large-text    phone    apps/android/docs/screenshots/design/05-review-font200.png           -                                                                   -                                                                 -
-boxed         phone    apps/android/docs/screenshots/design/18-very-uncertain-boxed-zoom200-light.png -                                                                 -                                                                 -
-computer      desktop  studio/docs/screenshots/themes/viewer-light.png                      studio/docs/screenshots/themes/viewer-dark.png                      studio/docs/screenshots/themes/viewer-nb.png                      -
-studio        desktop  studio/docs/screenshots/themes/run-light.png                         studio/docs/screenshots/themes/run-dark.png                         studio/docs/screenshots/themes/run-nb.png                         -
+# Screenshots used on the site, one slot per line. `uv run --with pillow python site/make_shots.py`
+# turns them into site/shots/<slot>-<en|nb>-<light|dark>.webp (plus a .png for light).
+# Columns: slot  kind  en-light  en-dark  nb-light  nb-dark   ("-" = none).
+# Kinds: phone = 9:20, 600 px wide; tablet = iPad portrait, 600 px; desktop = 16:10, 1440 px
+# (cropped from the top); mac = a macOS window with its own title bar, 1440 px at its own ratio.
+# The Apple apps have no Norwegian screenshots, so the nb columns use the Android nb shots.
+# To swap a shot, change its paths here, run the script, and update the alt text on the pages.
+A=apps/apple/docs/screenshots
+D=apps/android/docs/screenshots/design
+S=studio/docs/screenshots/themes
+first-run     phone    $A/iphone-first-run-light.png   $A/iphone-first-run-dark.png   $D/01-first-run-nb.png        -
+home          phone    $A/iphone-home-light.png        $A/iphone-home-dark.png        $D/02-home-nb.png             -
+what-is-this  phone    $A/iphone-source-light.png      $A/iphone-source-dark.png      $D/03-what-is-this-nb.png     -
+making        phone    $A/iphone-transcribing-light.png $A/iphone-transcribing-dark.png $D/04-making-the-score-nb.png -
+review        phone    $A/iphone-review-light.png      $A/iphone-review-dark.png      $D/05-review-nb.png           -
+output        phone    $A/iphone-output-light.png      $A/iphone-output-dark.png      $D/08-output-nb.png           -
+score         phone    $A/iphone-score-light.png       $A/iphone-score-dark.png       $D/11-score-all-parts-nb.png  -
+part          phone    $A/iphone-part-light.png        $A/iphone-part-dark.png        $D/09-score-part-nb.png       -
+share         phone    $A/iphone-export-light.png      $A/iphone-export-dark.png      $D/14-share-or-print-nb.png   -
+parts         phone    $D/10-parts-sheet-light.png     $D/10-parts-sheet-dark.png     $D/10-parts-sheet-nb.png      -
+speed         phone    $D/12-speed-sheet-light.png     $D/12-speed-sheet-dark.png     $D/12-speed-sheet-nb.png      -
+repeat        phone    $D/13b-repeat-on-light.png      $D/13b-repeat-on-dark.png      $D/13b-repeat-on-nb.png       -
+large-text    phone    $D/05-review-font200.png        -                              -                             -
+boxed         phone    $D/18-very-uncertain-boxed-zoom200-light.png -                 -                             -
+practise      tablet   $A/ipad-score-light.png         $A/ipad-score-dark.png         -                             -
+mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        -                             -
+computer      desktop  $S/viewer-light.png             $S/viewer-dark.png             $S/viewer-nb.png              -
+studio        desktop  $S/run-light.png                $S/run-dark.png                $S/run-nb.png                 -

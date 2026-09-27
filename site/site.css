@@ -120,6 +120,10 @@ section + section { border-top: 1px solid var(--bc-border); }
 .phones { display: flex; gap: var(--bc-space-6); justify-content: center; align-items: flex-start; }
 .phones .device { width: 46%; max-width: 280px; }
 .phones .device:nth-child(2) { margin-top: var(--bc-space-12); }
+.device.tablet { padding: 2.6%; border-radius: 6.5% / 4.6%; }
+.device.tablet img { aspect-ratio: 600 / 864; border-radius: 4.2% / 2.9%; }
+.tablets { display: flex; justify-content: center; }
+.tablets .device { max-width: 440px; }
 
 .window {
   border-radius: var(--bc-radius-lg); overflow: hidden;
@@ -135,6 +139,9 @@ section + section { border-top: 1px solid var(--bc-border); }
 .window-bar span { flex: 1; text-align: center; margin-right: 44px; overflow: hidden; text-overflow: ellipsis; }
 .window img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; }
 .studio-shot { margin: var(--bc-space-10) 0 0; }
+/* A macOS capture brings its own title bar and rounded corners. */
+.window.native { border: 0; background: none; box-shadow: none; overflow: visible; }
+.window.native img { aspect-ratio: auto; border-radius: 1.3% / 2.2%; box-shadow: 0 0 0 1px var(--bc-border-strong), var(--bc-elevation-3); }
 
 /* How it works: one phone per step */
 .flow {
