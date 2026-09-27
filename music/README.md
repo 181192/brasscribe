@@ -29,6 +29,7 @@ defaults: files written before a field existed stay valid.
 | `first_downbeat` | int | index into `beat_times` of tick 0 (may be negative when the first bar starts before the first detected beat) |
 | `ticks_per_beat` | int | 24 |
 | `free_regions` | FreeRegion[] | optional, default `[]` |
+| `review` | `{voice, start, end, notes, very}`[] | optional, absent when empty. Neighbouring uncertain notes of one voice reviewed together: `[start, end)` ticks, `notes` marked notes in it, `very` when any is very unsure. The score shows one "?" per item (boxed when `very`) with a dashed bracket over items of more than one note. See *Confidence and review marks* |
 | `sections` | `{tick, label}`[] | optional, default `[]`. Rehearsal marks (A, B, …; no I) at bar lines |
 | `arrangement` | object | optional, absent for default options. `{lineup: band|minimal, difficulty: faithful|standard|easier, transpose_semitones}`: how the arrangement was made. Pitches and keys in the file are already transposed |
 | `dynamics` | `{tick, layer, mark}`[] | optional, default `[]`. A marking (`pp` `p` `mp` `mf` `f` `ff`) for one textural layer from `tick` on; the parts playing that layer show it at their next note |
@@ -50,7 +51,7 @@ defaults: files written before a field existed stay valid.
 | `pitch` | int | concert MIDI pitch (GM drum number in a `drums` layer) |
 | `start` | int | ticks |
 | `dur` | int | **written** duration in ticks |
-| `confidence` | float 0–1 | below 0.7 the score colours the note red |
+| `confidence` | float 0–1 | calibrated probability that the note is right (solo notes; see *Confidence and review marks*) |
 | `sources` | string[] | which transcribers or stages produced it |
 | `onset_s`, `offset_s` | float \| null | performed onset and offset in seconds |
 | `performed_dur` | int \| null | optional. **Performed** length in ticks: `offset_s - onset_s` mapped through the tick map. `null` = unknown |
@@ -105,3 +106,27 @@ note of the melody that starts inside it carries a `fermata`.
 
 `Composition.transposed(n)` and `keys.semitones_to(key, "Bb" | "Am" | "-2:minor")` move a piece to a
 concert key; the arranger then places every part in range as usual.
+
+## Confidence and review marks
+
+`confidence.py`: a solo note's `confidence` is the probability that it is right (pitch and onset
+match the score). Logistic regression over:
+
+| Input | Meaning |
+|---|---|
+| `mus`, `bp`, `mus_bp` | MuScriptor / Basic Pitch also found the note (SwiftF0 always did). A Basic Pitch file standing in for MuScriptor counts once |
+| `log_dur` | log of the note length in seconds (≥ 0.02) |
+| `support` | mean SwiftF0 voicing confidence over the note's first 0.3 s, over frames within 1 semitone (octave-folded) of its pitch, else 0 |
+| `no_contour` | 1 when there is no contour (then `support` = 0) |
+| `separated` | 1 when the solo was separated from a mix (a stem), 0 when recorded alone |
+| `sep_support`, `sep_voted` | `separated` × `support`, `separated` × (`mus` or `bp`) |
+
+`calibration.json` holds the weights, the clamping `ranges` (`log_dur`, `support` and `sep_support`
+are clamped into them before scoring), `mark_risk` and `very_risk`. `eval/brasscribe_eval/confidence_bench.py`
+fits it on notes with ground truth and checks it on held-out recordings.
+
+A note is **marked** when `1 - confidence >= mark_risk` and **very unsure** when `>= very_risk`.
+Marked notes of one voice form one review group when at most one unmarked note lies between
+them, no rest of a beat or more separates them, and the group spans at most two bars. Each
+group gets one "?" (boxed when any member is very unsure) at its first note, that note is
+coloured, and a dashed bracket spans groups of more than one note.

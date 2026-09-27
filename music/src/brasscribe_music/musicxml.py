@@ -13,11 +13,13 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from music21 import articulations, chord, clef, dynamics, expressions, instrument, interval, key, meter, note, pitch, stream, tempo
+from music21 import articulations, chord, clef, dynamics, expressions, instrument, interval, key, meter, note, pitch, spanner, stream, tempo
 from music21 import bar as m21bar
 
 from .instruments import Instrument as BandInstrument
 
+from .confidence import Model as CalibrationModel
+from .confidence import review_groups
 from .quantize import TICKS_PER_BEAT, QNote
 from .rhythm_spelling import SINGLE as _SINGLE
 from .rhythm_spelling import TRIPLET as _TRIPLET
@@ -148,7 +150,8 @@ class FreeSpan:
 
 
 # Uncertainty encoding (docs/accessibility/visual-design-tokens.md §2): colour plus a "?" above the
-# note, boxed below VERY_UNCERTAIN, so it survives black-and-white print.
+# note, boxed when very unsure, so it survives black-and-white print. Thresholds come from the
+# calibration (confidence.py); neighbouring marks in a bar are merged into one review group.
 UNCERTAIN_COLOUR = "#0063A6"
 VERY_UNCERTAIN_COLOUR = "#B04A00"
 VERY_UNCERTAIN = 0.4
@@ -242,6 +245,7 @@ def _dash_free_barlines(score: stream.Score, spans: list[FreeSpan], pickup_ticks
 
 def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
                 pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None,
+                very_below: float = 0.4,
                 key_changes: list[tuple[int, int]] | None = None,
                 rehearsal: list[tuple[int, str]] | None = None,
                 free_spans: list[FreeSpan] | None = None) -> stream.Score:
@@ -303,7 +307,15 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             for x, y in _pieces(a, b, bar):
                 part.insert(x / TICKS_PER_BEAT, note.Rest(quarterLength=(y - x) / TICKS_PER_BEAT))
 
-        for start, end, pitches, conf, arts in _events(p.notes):
+        evs = _events(p.notes)
+        # Review groups: neighbouring marked notes in one bar share one "?" (at the group's first note,
+        # boxed when any member is very unsure) and a dashed bracket over the group.
+        groups = [] if is_drums(p) else review_groups([(s0, e0, c0) for s0, e0, _, c0, _ in evs], bar,
+                                                      low_confidence, very_below)
+        lead = {g.start: g for g in groups}
+        firsts: dict[int, object] = {}
+        lasts: dict[int, object] = {}
+        for start, end, pitches, conf, arts in evs:
             tick = start
             start -= pickup_ticks
             end -= pickup_ticks
@@ -328,15 +340,26 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                     _tie(el, i, len(segs))
                     # Staccato on the attack, fermata on the held end.
                     _articulate(el, {x for x in arts if (x == "staccato" and i == 0) or (x == "fermata" and i == len(segs) - 1)})
-                if conf < low_confidence and i == 0:
-                    # Colour and "?" on the attack; tied continuations stay plain.
-                    el.style.color = VERY_UNCERTAIN_COLOUR if conf < VERY_UNCERTAIN else UNCERTAIN_COLOUR
-                    if not is_drums(p):
-                        part.insert(a / TICKS_PER_BEAT, _uncertainty_mark(conf < VERY_UNCERTAIN))
+                g = lead.get(tick)
+                if g is not None and i == 0:
+                    # Colour and "?" on the group's first attack; its other notes stay plain under the bracket.
+                    el.style.color = VERY_UNCERTAIN_COLOUR if g.very else UNCERTAIN_COLOUR
+                    part.insert(a / TICKS_PER_BEAT, _uncertainty_mark(g.very))
+                if not is_drums(p) and i == 0:
+                    firsts[tick] = el
+                if not is_drums(p):
+                    lasts[tick] = el
                 part.insert(a / TICKS_PER_BEAT, el)
             cursor = end
         if cursor < total:
             rest(cursor, total)
+        for g in groups:
+            if g.notes > 1:
+                ticks = [t for t in firsts if g.start <= t < g.end]
+                if ticks and max(ticks) != min(ticks):
+                    line = spanner.Line(firsts[min(ticks)], lasts[max(ticks)])
+                    line.lineType, line.startTick, line.endTick = "dashed", "down", "down"
+                    part.insert(0, line)
         if dropped:
             warnings.warn(f"{p.name}: {dropped} note(s) before the first bar were not written")
         score.insert(0, part)
@@ -516,7 +539,9 @@ def build_band_score(arrangement, comp) -> stream.Score:
     fifths = comp.keys[0].fifths if comp.keys else None
     changes = [(k.tick, k.fifths) for k in comp.keys[1:]]
     spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
-    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=0.7, key_fifths=fifths, key_changes=changes,
+    model = CalibrationModel.load()
+    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=1 - model.mark_risk,
+                       very_below=1 - model.very_risk, key_fifths=fifths, key_changes=changes,
                        rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
                        free_spans=spans)
 

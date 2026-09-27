@@ -52,6 +52,7 @@ class Contour:
     t: np.ndarray
     midi: np.ndarray  # fractional MIDI pitch; nan where no pitch
     loudness_db: np.ndarray
+    confidence: np.ndarray | None = None  # SwiftF0 voicing confidence per frame
 
     @staticmethod
     def load(path: Path) -> Contour:
@@ -59,7 +60,8 @@ class Contour:
         hz = d["pitch_hz"].astype(float)
         with np.errstate(divide="ignore", invalid="ignore"):
             midi = np.where(hz > 0, 69 + 12 * np.log2(hz / 440.0), np.nan)
-        return Contour(d["t"].astype(float), midi, d["loudness_db"].astype(float))
+        conf = d["confidence"].astype(float) if "confidence" in d.files else None
+        return Contour(d["t"].astype(float), midi, d["loudness_db"].astype(float), conf)
 
 
 def contour_offsets(c: Contour, notes: list[tuple[float, int]], tol: float = 0.6, drop_db: float = 60.0,

@@ -24,6 +24,10 @@ from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
 from brasscribe_music.beats import clean_beats_gated, downbeat_rate, labels_on, solo_meter
+from brasscribe_music.confidence import Model as CalibrationModel
+from brasscribe_music.confidence import features as confidence_features
+from brasscribe_music.confidence import p_correct, review_groups
+from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
 from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
 from brasscribe_music.keys import key_plan, semitones_to
@@ -35,7 +39,7 @@ from brasscribe_music.structure import bar_features, letters, section_starts
 from brasscribe_music.separation import check_stem
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
 from brasscribe_music.dynamics import layer_dynamics
-from brasscribe_music.score_model import Dynamic, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from brasscribe_music.score_model import Dynamic, ReviewItem, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
@@ -172,22 +176,33 @@ def main() -> None:
     pickup = first_down * TICKS_PER_BEAT
     half = TICKS_PER_BEAT // 2
 
-    # Solo: SwiftF0 is the spine (best single source on separated solo stems); a note
-    # counts as confirmed when MuScriptor or Basic Pitch also has it. Measured on
-    # solo_vote_bench: confirmed 0.91-0.99 precise, SwiftF0-only 0.54, notes without
-    # SwiftF0 0.02-0.36 (dropped).
+    # Solo: SwiftF0 is the spine (best single source on separated solo stems); notes without
+    # SwiftF0 are dropped (0.02-0.36 precise on solo_vote_bench). Each note's confidence is the
+    # calibrated probability that it is right (confidence.py: agreement class, length, contour
+    # support, separated or not), fitted by confidence_bench on notes with ground truth.
     solo_sw = pitched(L / "solo-sw.mid")
     votes = {"sw": line(solo_sw, 52, 88, top=True), "mus": line(solo_mus, 52, 88, top=True),
              "bp": line(solo_bp, 52, 88, top=True)}
-    cand = [{"pitch": c.pitch, "onset": float(np.median(c.onsets)), "offset": float(np.median(c.offsets)),
-             "confidence": {3: 0.98, 2: 0.91}.get(len(c.sources), 0.54)}
-            for c in cluster(votes) if "sw" in c.sources]
-    solo_line = line(cand, 52, 88, top=True)
+    # Basic Pitch standing in for MuScriptor (the solo path) is one vote for the confidence, not two;
+    # the clustering (and so every note's timing) is unchanged.
+    mus_is_bp = sorted((n["onset"], n["pitch"]) for n in solo_mus) == sorted((n["onset"], n["pitch"]) for n in solo_bp)
     if args.solo_contour is None and (L / "solo-sw.contour.npz").exists():
         args.solo_contour = L / "solo-sw.contour.npz"
+    solo_contour = Contour.load(args.solo_contour) if args.solo_contour else None
+    separated = any((L / f"{n}.wav").exists() for n in ("bass", "drums", "orchestra"))
+    model = CalibrationModel.load()
+    cand = []
+    for c in cluster(votes):
+        if "sw" not in c.sources:
+            continue
+        on, off = float(np.median(c.onsets)), float(np.median(c.offsets))
+        src = set(c.sources) - ({"mus"} if mus_is_bp else set())
+        x = confidence_features(src, off - on, contour_support(solo_contour, on, c.pitch), separated)
+        cand.append({"pitch": c.pitch, "onset": on, "offset": off, "confidence": round(p_correct(x, model), 3)})
+    solo_line = line(cand, 52, 88, top=True)
     if args.solo_contour:
         # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
-        ends = contour_offsets(Contour.load(args.solo_contour), [(n["onset"], n["pitch"]) for n in solo_line],
+        ends = contour_offsets(solo_contour, [(n["onset"], n["pitch"]) for n in solo_line],
                                **SEPARATED_STEM)
         for n, e in zip(solo_line, ends):
             n["offset"] = max(n["offset"], e)
@@ -252,6 +267,14 @@ def main() -> None:
     lineup = "band" if args.lineup in ("band", "full") else args.lineup
     if lineup != "band" or args.difficulty != "faithful" or shift:
         comp.arrangement = {"lineup": lineup, "difficulty": args.difficulty, "transpose_semitones": shift}
+    # Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
+    bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
+    comp.review = [ReviewItem(v.id, g.start, g.end, g.notes, g.very) for v in comp.voices if v.layer != "drums"
+                   for g in review_groups([(n.start, n.end, n.confidence) for n in v.notes], bar_ticks,
+                                          1 - model.mark_risk, 1 - model.very_risk)]
+    marked = sum(n.confidence < 1 - model.mark_risk for n in solo)
+    print(f"solo notes marked uncertain: {marked} of {len(solo)} ({marked / max(1, len(solo)):.0%}), "
+          f"{sum(1 for r in comp.review if r.voice == 'solo')} review groups")
     comp.to_json(args.out / "composition.json")
 
     arr = arrange_layers(comp, BRASS_BAND if lineup == "band" else MINIMAL_BAND, difficulty=args.difficulty)
