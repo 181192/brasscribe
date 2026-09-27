@@ -148,7 +148,7 @@ NB = {
     "Running · Making a score": "Kjører · Lager partitur",
     "Runs on": "Kjører på",
     "Scan with the camera, or in Brasscribe on the phone.": "Skann med kameraet, eller i Brasscribe på telefonen.",
-    "Separating the instruments": "Skiller instrumentene fra hverandre",
+    "Separating the instruments": "Skiller instrumentene",
     "Separating the soloist from the band": "Skiller solisten fra bandet",
     "Server": "Server",
     "Set up Brasscribe": "Gjør Brasscribe klar",
