@@ -105,7 +105,14 @@ jobs:
           $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -PassThru
           $deadline = (Get-Date).AddSeconds(90)
           while ($p.MainWindowHandle -eq 0 -and -not $p.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500; $p.Refresh() }
-          if ($p.HasExited) { throw "The app exited with code $($p.ExitCode)" }
+          if ($p.HasExited) {
+            $log = Join-Path $env:LOCALAPPDATA "Brasscribe/Play/crash.log"
+            if (Test-Path $log) { Get-Content $log }
+            Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-5) } -ErrorAction SilentlyContinue |
+              Where-Object { $_.ProviderName -in "Application Error", ".NET Runtime", "Windows Error Reporting" } |
+              ForEach-Object { "$($_.ProviderName): $($_.Message)" }
+            throw "The app exited with code $($p.ExitCode)"
+          }
           if ($p.MainWindowHandle -eq 0) { throw "No window after 90 s" }
           Write-Host "Window: $($p.MainWindowTitle)"
           Stop-Process -Id $p.Id -Force

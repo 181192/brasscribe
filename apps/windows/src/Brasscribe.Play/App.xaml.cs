@@ -18,6 +18,8 @@ public partial class App : Application
 
     public App()
     {
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
+        UnhandledException += (_, e) => WriteCrash(e.Exception);
         var settings = new JsonSettingsStore();
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
@@ -26,6 +28,19 @@ public partial class App : Application
         if (Option("--theme") is { } theme) RequestedTheme = theme == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
         InitializeComponent();
         Settings = settings;
+    }
+
+    /// <summary>An unhandled exception, appended to crash.log next to settings.json (read by the CI smoke test).</summary>
+    private static void WriteCrash(Exception? e)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, "crash.log"), $"{DateTimeOffset.Now:O} {e}{Environment.NewLine}");
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     /// <summary>The value after a command-line switch ("--show score" gives "score").</summary>
