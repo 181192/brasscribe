@@ -23,6 +23,19 @@ public class BrasscribeCoreTests
     }
 
     [Fact]
+    public void ArrangesForTheQuartet()
+    {
+        var xml = BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet");
+        foreach (var part in new[] { "1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium" })
+        {
+            Assert.Contains($"<part-name>{part}</part-name>", xml);
+        }
+        Assert.DoesNotContain("<part-name>Solo Cornet</part-name>", xml);
+        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "nonet"));
+        Assert.Equal(1, e.Code);
+    }
+
+    [Fact]
     public void NormalizesComposition()
     {
         var json = BrasscribeCore.NormalizeComposition(Composition);

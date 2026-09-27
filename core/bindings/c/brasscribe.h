@@ -38,6 +38,12 @@ int32_t bc_arrange_musicxml(const char *composition_json,
                             char **out,
                             char **err);
 
+// Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
+// `options` may be null (defaults) or
+// `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
+//   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]).
+int32_t bc_arrange_with(const char *composition_json, const char *options, char **out, char **err);
+
 // Solo-with-band arrangement from six MIDI files (solo SwiftF0, solo
 // MuScriptor, solo Basic Pitch, bass, orchestra, drums, in that order) and a
 // beat table. Writes the Composition JSON to `*out_composition` and MusicXML
@@ -46,7 +52,7 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 // `options_json` may be null (defaults) or
 // `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
 //   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
-//   "key_changes": true, "lineup": "band" | "minimal",
+//   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 //   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
 //   "transpose": null}`: the SwiftF0 contour of the solo stem (where
 // sustained notes end), free-time detection on/off, a fixed BPM for free-time

@@ -681,6 +681,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_arrange_musicxml(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_arrange_song(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_choose_metrical_level(
@@ -796,6 +798,8 @@ internal object UniffiLib {
     external fun uniffi_brasscribe_ffi_fn_func_arrange_layers_song(`layers`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`soloContour`: RustBuffer.ByValue,`freeTime`: Byte,`freeTempo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml(`compositionJson`: RustBuffer.ByValue,`arranger`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(`compositionJson`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_arrange_song(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -949,6 +953,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() and 0xFFFF) != 31318) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() and 0xFFFF) != 19742) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 47821) {
@@ -2168,6 +2175,72 @@ public object FfiConverterTypeTalkingScore: FfiConverter<TalkingScore, Long> {
 
 
 /**
+ * Options of [`arrange_musicxml_with`].
+ */
+data class ArrangeOptions (
+    /**
+     * "band" (= "full", the 18-part contest band), "minimal" (8 parts) or "quartet"
+     * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium). A composition without layers
+     * (a whole-band recording) is arranged for the minimal band or the quartet; "band"
+     * gives the minimal band there.
+     */
+    var `lineup`: kotlin.String = "band" 
+    , 
+    /**
+     * "faithful", "standard" or "easier".
+     */
+    var `difficulty`: kotlin.String = "faithful" 
+    , 
+    /**
+     * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+     */
+    var `key`: kotlin.String? = null 
+    , 
+    /**
+     * Transpose by this many semitones (instead of `key`).
+     */
+    var `transpose`: kotlin.Int? = null 
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOptions> {
+    override fun read(buf: ByteBuffer): ArrangeOptions {
+        return ArrangeOptions(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ArrangeOptions) = (
+            FfiConverterString.allocationSize(value.`lineup`) +
+            FfiConverterString.allocationSize(value.`difficulty`) +
+            FfiConverterOptionalString.allocationSize(value.`key`) +
+            FfiConverterOptionalInt.allocationSize(value.`transpose`)
+    )
+
+    override fun write(value: ArrangeOptions, buf: ByteBuffer) {
+            FfiConverterString.write(value.`lineup`, buf)
+            FfiConverterString.write(value.`difficulty`, buf)
+            FfiConverterOptionalString.write(value.`key`, buf)
+            FfiConverterOptionalInt.write(value.`transpose`, buf)
+    }
+}
+
+
+
+/**
  * Everything the band arrangement writes.
  */
 data class BandOutput (
@@ -2660,7 +2733,8 @@ data class LayersSongOptions (
     var `keyChanges`: kotlin.Boolean
     , 
     /**
-     * "band" (the 18-part contest band) or "minimal" (8 parts).
+     * "band" (the 18-part contest band), "minimal" (8 parts) or "quartet"
+     * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium, one player each).
      */
     var `lineup`: kotlin.String
     , 
@@ -4164,6 +4238,24 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
         
         FfiConverterString.lower(`compositionJson`),
         FfiConverterString.lower(`arranger`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
+         * return MusicXML (written pitch). The options are recorded in the composition's
+         * `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+         */
+    @Throws(CoreException::class) fun `arrangeMusicxmlWith`(`compositionJson`: kotlin.String, `options`: ArrangeOptions): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(
+    
+        
+        FfiConverterString.lower(`compositionJson`),
+        FfiConverterTypeArrangeOptions.lower(`options`),_status)
 }
     )
     }

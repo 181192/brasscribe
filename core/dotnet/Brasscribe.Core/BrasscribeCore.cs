@@ -26,7 +26,7 @@ public sealed record LayerMidi(byte[] SoloSwiftF0, byte[] SoloMuScriptor, byte[]
 public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]? Drums = null, byte[]? Orchestra = null);
 
 /// <summary>Options of the solo-with-band arrangement.</summary>
-/// <param name="Lineup">"band" (18 parts) or "minimal" (8 parts).</param>
+/// <param name="Lineup">"band" (18 parts), "minimal" (8 parts) or "quartet" (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium).</param>
 /// <param name="Difficulty">"faithful", "standard" or "easier".</param>
 /// <param name="Key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).</param>
 /// <param name="Transpose">Semitones to transpose the whole arrangement by (instead of Key).</param>
@@ -136,6 +136,19 @@ public static class BrasscribeCore
     /// <param name="arranger">"auto", "layers" (solo with band) or "minimal".</param>
     public static string ArrangeMusicXml(string compositionJson, string arranger = "auto") =>
         Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_musicxml(compositionJson, arranger, out o, out e));
+
+    /// <summary>Re-arrange a Composition for a lineup and difficulty (optionally transposed); returns MusicXML at written pitch.</summary>
+    /// <param name="lineup">"band" (18 parts), "minimal" (8 parts) or "quartet". A composition without layers (a whole-band
+    /// take) is arranged for the minimal band or the quartet; "band" gives the minimal band there.</param>
+    /// <param name="difficulty">"faithful", "standard" or "easier".</param>
+    /// <param name="key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]), or null.</param>
+    /// <param name="transpose">Semitones to transpose by (instead of key), or null.</param>
+    public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
+        string? key = null, int? transpose = null)
+    {
+        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose });
+        return Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_with(compositionJson, options, out o, out e));
+    }
 
     /// <summary>Solo-with-band arrangement from layer transcriptions and a beat table ("time position" per line).</summary>
     /// <param name="soloContour">SwiftF0 contour of the solo stem (frame times, pitch in Hz, loudness in dB), or null.</param>
@@ -315,6 +328,10 @@ public static class BrasscribeCore
         [DllImport(Lib)]
         public static extern int bc_arrange_musicxml([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string arranger, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib)]
+        public static extern int bc_arrange_with([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
         public static extern int bc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,

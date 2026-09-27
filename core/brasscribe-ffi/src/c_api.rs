@@ -85,6 +85,25 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
     run(out, err, || crate::arrange_impl(&json, &arranger).map_err(map_err))
 }
 
+/// Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
+/// `options` may be null (defaults) or
+/// `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
+///   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]).
+#[no_mangle]
+pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, options: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(json) = from_c(composition_json) else { return BC_NULL };
+    run(out, err, || {
+        let opts = options_json(options)?;
+        let o = crate::ArrangeOptions {
+            lineup: opts.get("lineup").and_then(|v| v.as_str()).unwrap_or("band").to_string(),
+            difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
+            key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
+            transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+        };
+        crate::arrange_with_impl(&json, &o).map_err(map_err)
+    })
+}
+
 /// Solo-with-band arrangement from six MIDI files (solo SwiftF0, solo
 /// MuScriptor, solo Basic Pitch, bass, orchestra, drums, in that order) and a
 /// beat table. Writes the Composition JSON to `*out_composition` and MusicXML
@@ -93,7 +112,7 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// `options_json` may be null (defaults) or
 /// `{"solo_contour": {"times": [...], "pitch_hz": [...], "loudness_db": [...]},
 ///   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
-///   "key_changes": true, "lineup": "band" | "minimal",
+///   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 ///   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
 ///   "transpose": null}`: the SwiftF0 contour of the solo stem (where
 /// sustained notes end), free-time detection on/off, a fixed BPM for free-time

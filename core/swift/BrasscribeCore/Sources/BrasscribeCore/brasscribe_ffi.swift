@@ -1077,6 +1077,101 @@ public func FfiConverterTypeTalkingScore_lower(_ value: TalkingScore) -> UInt64 
 
 
 /**
+ * Options of [`arrange_musicxml_with`].
+ */
+public struct ArrangeOptions: Equatable, Hashable {
+    /**
+     * "band" (= "full", the 18-part contest band), "minimal" (8 parts) or "quartet"
+     * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium). A composition without layers
+     * (a whole-band recording) is arranged for the minimal band or the quartet; "band"
+     * gives the minimal band there.
+     */
+    public var lineup: String
+    /**
+     * "faithful", "standard" or "easier".
+     */
+    public var difficulty: String
+    /**
+     * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+     */
+    public var key: String?
+    /**
+     * Transpose by this many semitones (instead of `key`).
+     */
+    public var transpose: Int32?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * "band" (= "full", the 18-part contest band), "minimal" (8 parts) or "quartet"
+         * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium). A composition without layers
+         * (a whole-band recording) is arranged for the minimal band or the quartet; "band"
+         * gives the minimal band there.
+         */lineup: String = "band", 
+        /**
+         * "faithful", "standard" or "easier".
+         */difficulty: String = "faithful", 
+        /**
+         * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+         */key: String? = nil, 
+        /**
+         * Transpose by this many semitones (instead of `key`).
+         */transpose: Int32? = nil) {
+        self.lineup = lineup
+        self.difficulty = difficulty
+        self.key = key
+        self.transpose = transpose
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension ArrangeOptions: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeArrangeOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ArrangeOptions {
+        return
+            try ArrangeOptions(
+                lineup: FfiConverterString.read(from: &buf), 
+                difficulty: FfiConverterString.read(from: &buf), 
+                key: FfiConverterOptionString.read(from: &buf), 
+                transpose: FfiConverterOptionInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ArrangeOptions, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.lineup, into: &buf)
+        FfiConverterString.write(value.difficulty, into: &buf)
+        FfiConverterOptionString.write(value.key, into: &buf)
+        FfiConverterOptionInt32.write(value.transpose, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeArrangeOptions_lift(_ buf: RustBuffer) throws -> ArrangeOptions {
+    return try FfiConverterTypeArrangeOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeArrangeOptions_lower(_ value: ArrangeOptions) -> RustBuffer {
+    return FfiConverterTypeArrangeOptions.lower(value)
+}
+
+
+/**
  * Everything the band arrangement writes.
  */
 public struct BandOutput: Equatable, Hashable {
@@ -1681,7 +1776,8 @@ public struct LayersSongOptions: Equatable, Hashable {
      */
     public var keyChanges: Bool
     /**
-     * "band" (the 18-part contest band) or "minimal" (8 parts).
+     * "band" (the 18-part contest band), "minimal" (8 parts) or "quartet"
+     * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium, one player each).
      */
     public var lineup: String
     /**
@@ -1719,7 +1815,8 @@ public struct LayersSongOptions: Equatable, Hashable {
          * Allow key changes (otherwise one key for the whole piece).
          */keyChanges: Bool, 
         /**
-         * "band" (the 18-part contest band) or "minimal" (8 parts).
+         * "band" (the 18-part contest band), "minimal" (8 parts) or "quartet"
+         * (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium, one player each).
          */lineup: String, 
         /**
          * "faithful", "standard" or "easier".
@@ -3333,6 +3430,20 @@ public func arrangeMusicxml(compositionJson: String, arranger: String)throws  ->
 })
 }
 /**
+ * Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
+ * return MusicXML (written pitch). The options are recorded in the composition's
+ * `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+ */
+public func arrangeMusicxmlWith(compositionJson: String, options: ArrangeOptions)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(
+        FfiConverterString.lower(compositionJson),
+        FfiConverterTypeArrangeOptions_lower(options),uniffiCallStatus
+    )
+})
+}
+/**
  * Minimal-band arrangement from melody, optional melody support, bass and harmony transcriptions.
  */
 public func arrangeSong(melody: Data, melodySupport: Data?, bass: Data, harmony: [Data], beatsText: String, title: String)throws  -> SongOutput  {
@@ -3516,6 +3627,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() != 31318) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() != 19742) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_arrange_song() != 47821) {

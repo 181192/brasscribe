@@ -72,6 +72,82 @@ pub fn arrange_musicxml(composition_json: String, arranger: String) -> Result<St
     arrange_impl(&composition_json, &arranger)
 }
 
+/// Options of [`arrange_musicxml_with`].
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct ArrangeOptions {
+    /// "band" (= "full", the 18-part contest band), "minimal" (8 parts) or "quartet"
+    /// (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium). A composition without layers
+    /// (a whole-band recording) is arranged for the minimal band or the quartet; "band"
+    /// gives the minimal band there.
+    #[uniffi(default = "band")]
+    pub lineup: String,
+    /// "faithful", "standard" or "easier".
+    #[uniffi(default = "faithful")]
+    pub difficulty: String,
+    /// Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
+    #[uniffi(default = None)]
+    pub key: Option<String>,
+    /// Transpose by this many semitones (instead of `key`).
+    #[uniffi(default = None)]
+    pub transpose: Option<i32>,
+}
+
+impl Default for ArrangeOptions {
+    fn default() -> Self {
+        ArrangeOptions { lineup: "band".into(), difficulty: "faithful".into(), key: None, transpose: None }
+    }
+}
+
+/// Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
+/// return MusicXML (written pitch). The options are recorded in the composition's
+/// `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+#[uniffi::export]
+pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) -> Result<String, CoreError> {
+    arrange_with_impl(&composition_json, &options)
+}
+
+pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> Result<String, CoreError> {
+    use brasscribe_core::instruments::{lineup_by_name, lineup_key, minimal_band, quartet};
+
+    let mut comp = Composition::from_json_str(composition_json).map_err(invalid)?;
+    let key = lineup_key(&o.lineup).map_err(invalid)?;
+    let difficulty = if o.difficulty.is_empty() { "faithful" } else { o.difficulty.as_str() };
+    if !brasscribe_core::difficulty::MODES.contains(&difficulty) {
+        return Err(invalid(format!("difficulty must be one of {:?}", brasscribe_core::difficulty::MODES)));
+    }
+    if o.key.is_some() && o.transpose.is_some() {
+        return Err(invalid("give a key or a transposition, not both"));
+    }
+    let shift = match (&o.transpose, &o.key) {
+        (Some(t), _) => *t,
+        (None, Some(k)) => {
+            let first = comp.keys.first().ok_or_else(|| invalid("composition has no key"))?;
+            brasscribe_core::keys::semitones_to(first, k).map_err(invalid)?
+        }
+        _ => 0,
+    };
+    let before = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).and_then(|v| v.as_i64()).unwrap_or(0);
+    if shift != 0 {
+        comp = comp.transposed(shift);
+    }
+    let layered = comp.voices.iter().any(|v| v.layer.is_some());
+    // Only the layered arranger writes the full band.
+    let key = if !layered && key == "band" { "minimal" } else { key };
+    let mut a = serde_json::Map::new();
+    a.insert("lineup".into(), key.into());
+    a.insert("difficulty".into(), difficulty.into());
+    a.insert("transpose_semitones".into(), (before + shift as i64).into());
+    comp.arrangement = Some(serde_json::Value::Object(a));
+    let arr = if layered {
+        let lineup = lineup_by_name(key).map_err(invalid)?;
+        brasscribe_core::arranger::arrange_layers_opts(&comp, lineup, &brasscribe_core::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })
+    } else {
+        brasscribe_core::arranger::arrange_opts(&comp, if key == "quartet" { quartet() } else { minimal_band() }, difficulty)
+    }
+    .map_err(failed)?;
+    Ok(write_score(&band_score(&arr, &comp)))
+}
+
 pub(crate) fn arrange_impl(composition_json: &str, arranger: &str) -> Result<String, CoreError> {
     let comp = Composition::from_json_str(composition_json).map_err(invalid)?;
     let layered = match arranger {
@@ -153,7 +229,8 @@ pub struct LayersSongOptions {
     pub beat_cleanup: bool,
     /// Allow key changes (otherwise one key for the whole piece).
     pub key_changes: bool,
-    /// "band" (the 18-part contest band) or "minimal" (8 parts).
+    /// "band" (the 18-part contest band), "minimal" (8 parts) or "quartet"
+    /// (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium, one player each).
     pub lineup: String,
     /// "faithful", "standard" or "easier".
     pub difficulty: String,
