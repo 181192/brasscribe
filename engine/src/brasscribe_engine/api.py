@@ -392,7 +392,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         path, filename = job_input(body)
         title = body.title or profiles.default_title(body.profile, Path(filename))
         params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
-                  "key": body.key, "transpose": body.transpose}
+                  "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
         if not body.muscriptor:
             params["muscriptor"] = False
         try:
@@ -422,11 +422,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
                                title: str | None = Form(None), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
-                               key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11)) -> m.Job:
+                               key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11),
+                               seat: m.Seat | None = Form(None), reads: m.Reads | None = Form(None),
+                               lead: m.Lead = Form("lineup")) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
-                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose), request)
+                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
+                                      reads=reads, lead=lead), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:
@@ -759,6 +762,18 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if r["status"] != "not_run":
             roundtrip_file(job_id).write_text(json.dumps(r, indent=1))
         return m.Roundtrip(**r)
+
+    @app.get("/v1/jobs/{job_id}/part-sources", response_model=m.PartSources, operation_id="getPartSources",
+             tags=["results"], dependencies=[Depends(auth)])
+    def get_part_sources(job_id: str) -> m.PartSources:
+        """Where each part comes from: the player's own recording, the recording, or arranged from the harmony."""
+        from brasscribe_music.arranger import part_sources
+        from brasscribe_music.score_model import Composition
+
+        comp = jobs.run_dir(job_or_404(job_id).id) / "outputs" / "composition.json"
+        if not comp.exists():
+            raise HTTPException(404, "job has no Composition output")
+        return m.PartSources(parts=part_sources(Composition.from_json(comp)))
 
     @app.get("/v1/jobs/{job_id}/validation", response_model=list[m.ValidationIssue], operation_id="getValidation",
              tags=["inspection"], dependencies=[Depends(auth)])

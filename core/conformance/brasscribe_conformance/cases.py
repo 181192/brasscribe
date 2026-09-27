@@ -29,7 +29,19 @@ MIKKEL_VARIANTS = [
     ("layers-transpose-down-3", ["--transpose", "-3"]),
     ("layers-quartet", ["--lineup", "quartet"]),
     ("layers-quartet-easier", ["--lineup", "quartet", "--difficulty", "easier"]),
+    # A seat changes no notes of a band take; reading bass clef rewrites only the seat's part.
+    ("layers-seat-euphonium-bass-clef", ["--seat", "euphonium", "--reads", "bass"]),
+    ("layers-minimal-seat-2nd-baritone", ["--lineup", "minimal", "--seat", "2nd-baritone", "--reads", "bass"]),
+    # The tune on the player's part: Euphonium solo with band (the countermelody moves to Solo Horn).
+    ("layers-lead-seat-euphonium", ["--lead", "seat", "--seat", "euphonium"]),
+    ("layers-lead-seat-euphonium-easier", ["--lead", "seat", "--seat", "euphonium", "--difficulty", "easier"]),
+    ("layers-minimal-lead-seat-1st-horn", ["--lineup", "minimal", "--lead", "seat", "--seat", "1st-horn"]),
+    ("layers-lead-seat-flugelhorn", ["--lead", "seat", "--seat", "flugelhorn"]),
 ]
+# Song lineup options on the chorales: the tune on the player's part (non-layered arranger).
+SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]
+# ChoraleBricks instrument -> the seat its solo take is written for.
+SOLO_SEATS = [("bar", "1st-baritone"), ("tb", "1st-trombone"), ("tba", "eb-bass"), ("fho", "solo-horn")]
 # Eval sets whose songs are also arranged for the quartet (song and bench cases): the chorales,
 # which a brass quartet plays.
 QUARTET_SETS = ("choralebricks-brass4",)
@@ -108,11 +120,36 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
                                                            "beats": beats, "title": song.name}))
             if eval_set.name in QUARTET_SETS:
                 cases.append(Case(f"{base}/song-quartet", "song", {**cases[-3].args, "options": QUARTET}))
+                cases.append(Case(f"{base}/song-lead-seat", "song", {**cases[-4].args, "options": SONG_SEAT}))
             if _has_quarter(song / "reference.json"):
                 cases.append(Case(f"{base}/bench", "bench", {"reference": song / "reference.json", "title": song.name}))
                 if eval_set.name in QUARTET_SETS:
                     cases.append(Case(f"{base}/bench-quartet", "bench", {**cases[-1].args, "options": QUARTET}))
                 cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
+    # Solo takes written for a seat (the frozen ChoraleBricks stems of eval/fixtures/choralebricks-solo): one stem
+    # per low or middle brass instrument, with no seat, with its seat and, where the seat offers it, in bass clef.
+    solo_fx = REPO / "eval" / "fixtures" / "choralebricks-solo"
+    for abbr, seat in SOLO_SEATS:
+        stems = sorted(solo_fx.glob(f"*/*_{abbr}.sw.mid"))
+        if not stems:
+            continue
+        sw = stems[0]
+        stem, song = sw.name[: -len(".sw.mid")], sw.parent
+        layers = work / "_solo-layers" / f"{song.name}-{stem}"
+        layers.mkdir(parents=True, exist_ok=True)
+        for name, src in (("solo-sw.mid", f"{stem}.sw.mid"), ("solo-bp.mid", f"{stem}.bp.mid"), ("solo-mus.mid", f"{stem}.bp.mid")):
+            link = layers / name
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(song / src)
+        base = {"layers": layers, "beats": song / f"{stem}.beats", "title": stem, "contour": song / f"{stem}.contour.npz"}
+        variants = [("no-seat", ["--lineup", "minimal"]), (seat, ["--lineup", "minimal", "--seat", seat])]
+        from brasscribe_music.instruments import seat_by_id
+
+        if "bass" in seat_by_id(seat).reads and seat_by_id(seat).band_part.instrument.clef != "bass":
+            variants.append((f"{seat}-bass-clef", ["--lineup", "minimal", "--seat", seat, "--reads", "bass"]))
+        for tag, options in variants:
+            cases.append(Case(f"solo-seat/{song.name}/{stem}/{tag}", "layers", {**base, "options": options}))
     # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
     # layered output from the Python reference is kept next to it.
     ent = DATA / "runs" / "apple" / "entertainer-ref"

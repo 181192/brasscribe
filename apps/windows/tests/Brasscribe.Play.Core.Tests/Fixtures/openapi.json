@@ -211,6 +211,15 @@
             ],
             "title": "Key"
           },
+          "lead": {
+            "default": "lineup",
+            "enum": [
+              "lineup",
+              "seat"
+            ],
+            "title": "Lead",
+            "type": "string"
+          },
           "lineup": {
             "anyOf": [
               {
@@ -232,10 +241,56 @@
             "title": "Profile",
             "type": "string"
           },
+          "reads": {
+            "anyOf": [
+              {
+                "enum": [
+                  "treble",
+                  "bass"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reads"
+          },
           "render_audio": {
             "default": true,
             "title": "Render Audio",
             "type": "boolean"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "soprano-cornet",
+                  "solo-cornet",
+                  "repiano-cornet",
+                  "2nd-cornet",
+                  "3rd-cornet",
+                  "flugelhorn",
+                  "solo-horn",
+                  "1st-horn",
+                  "2nd-horn",
+                  "1st-baritone",
+                  "2nd-baritone",
+                  "1st-trombone",
+                  "2nd-trombone",
+                  "bass-trombone",
+                  "euphonium",
+                  "eb-bass",
+                  "bb-bass",
+                  "percussion"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat"
           },
           "title": {
             "anyOf": [
@@ -1104,6 +1159,16 @@
             "description": "target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it",
             "title": "Key"
           },
+          "lead": {
+            "default": "lineup",
+            "description": "who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); seat writes it on the seat's part, for the full and minimal bands only. The solo profile with a seat always uses seat",
+            "enum": [
+              "lineup",
+              "seat"
+            ],
+            "title": "Lead",
+            "type": "string"
+          },
           "lineup": {
             "anyOf": [
               {
@@ -1144,11 +1209,59 @@
             "title": "Profile",
             "type": "string"
           },
+          "reads": {
+            "anyOf": [
+              {
+                "enum": [
+                  "treble",
+                  "bass"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the clef the seat's part is written in: bass is at concert pitch (offered for baritone, euphonium, trombones and basses); default: the brass-band part's own",
+            "title": "Reads"
+          },
           "render_audio": {
             "default": true,
             "description": "also render an MP3 of the score",
             "title": "Render Audio",
             "type": "boolean"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "enum": [
+                  "soprano-cornet",
+                  "solo-cornet",
+                  "repiano-cornet",
+                  "2nd-cornet",
+                  "3rd-cornet",
+                  "flugelhorn",
+                  "solo-horn",
+                  "1st-horn",
+                  "2nd-horn",
+                  "1st-baritone",
+                  "2nd-baritone",
+                  "1st-trombone",
+                  "2nd-trombone",
+                  "bass-trombone",
+                  "euphonium",
+                  "eb-bass",
+                  "bb-bass",
+                  "percussion"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the player's seat. A solo take is written for it: one part, the seat's, in its range and in the octave played. A band take's notes do not change; the seat names the player's part. Default: none",
+            "title": "Seat"
           },
           "source_id": {
             "anyOf": [
@@ -1818,6 +1931,29 @@
           "identical"
         ],
         "title": "PartComparison",
+        "type": "object"
+      },
+      "PartSources": {
+        "description": "Where each part of the job's score comes from, in score order (derived from the Composition).",
+        "properties": {
+          "parts": {
+            "additionalProperties": {
+              "enum": [
+                "your-recording",
+                "recording",
+                "arranged"
+              ],
+              "type": "string"
+            },
+            "description": "your-recording: a solo take's own line; recording: a line heard in the recording (the tune, the bass line, the countermelody, the drums); arranged: voiced from the band's harmony",
+            "title": "Parts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "parts"
+        ],
+        "title": "PartSources",
         "type": "object"
       },
       "ProfileInfo": {
@@ -4266,6 +4402,65 @@
           }
         },
         "summary": "Get Musicxml",
+        "tags": [
+          "results"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/part-sources": {
+      "get": {
+        "description": "Where each part comes from: the player's own recording, the recording, or arranged from the harmony.",
+        "operationId": "getPartSources",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartSources"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Part Sources",
         "tags": [
           "results"
         ]

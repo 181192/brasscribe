@@ -253,7 +253,7 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     score.metadata = None
     from music21 import metadata
     md = metadata.Metadata(title=title)
-    md.composer = "arr. brasscribe"
+    md.composer = "arr. Brasscribe"
     score.insert(0, md)
 
     # Spell every note from the whole ensemble at concert pitch (ps13), and pick the key.
@@ -381,6 +381,7 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
         (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
     _plain_spellings(written)
     written.write("musicxml", fp=str(path))
+    _drop_repeated_title(path)
     if sounds:
         _add_instrument_sounds(path, sounds)
     return path
@@ -495,6 +496,18 @@ def _plain_spellings(score: stream.Score) -> None:
             q.octave = midi // 12 - 1
             q.octave += (midi - q.midi) // 12
             p.step, p.accidental, p.octave = q.step, q.accidental, q.octave
+
+
+def _drop_repeated_title(path: Path) -> None:
+    """Leave out <movement-title> when it repeats <work-title>: readers show it as a subtitle
+    ("Old Hundredth / Old Hundredth")."""
+    import re
+
+    raw = path.read_text(encoding="utf-8")
+    work = re.search(r"<work-title>(.*?)</work-title>", raw, re.S)
+    move = re.search(r"\n[ \t]*<movement-title>(.*?)</movement-title>", raw, re.S)
+    if work and move and work.group(1) == move.group(1):
+        path.write_text(raw[:move.start()] + raw[move.end():], encoding="utf-8")
 
 
 def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:

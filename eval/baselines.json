@@ -487,6 +487,181 @@
           "higher_is_better": false
         }
       }
+    },
+    "solo-instruments": {
+      "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's",
+      "metrics": {
+        "baritone.sw_f1": 0.972,
+        "baritone.bp_f1": 0.869,
+        "baritone.today_f1": 0.776,
+        "baritone.today_recall": 0.693,
+        "baritone.cornet_moved": {
+          "value": 0.917,
+          "higher_is_better": false
+        },
+        "baritone.seat_f1": 0.97,
+        "baritone.seat_recall": 0.955,
+        "baritone.octave_err": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "baritone.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "baritone.bp_agrees": 0.977,
+        "baritone.q_false_alarm": {
+          "value": 0.005,
+          "higher_is_better": false
+        },
+        "baritone.q_hit": 0.0,
+        "flugelhorn.sw_f1": 0.955,
+        "flugelhorn.bp_f1": 0.96,
+        "flugelhorn.today_f1": 0.947,
+        "flugelhorn.today_recall": 0.92,
+        "flugelhorn.cornet_moved": {
+          "value": 0.117,
+          "higher_is_better": false
+        },
+        "flugelhorn.seat_f1": 0.95,
+        "flugelhorn.seat_recall": 0.921,
+        "flugelhorn.octave_err": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "flugelhorn.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "flugelhorn.bp_agrees": 0.979,
+        "flugelhorn.q_false_alarm": {
+          "value": 0.002,
+          "higher_is_better": false
+        },
+        "flugelhorn.q_hit": 0.463,
+        "trumpet.sw_f1": 0.96,
+        "trumpet.bp_f1": 0.875,
+        "trumpet.today_f1": 0.952,
+        "trumpet.today_recall": 0.931,
+        "trumpet.cornet_moved": {
+          "value": 0.232,
+          "higher_is_better": false
+        },
+        "trumpet.seat_f1": 0.955,
+        "trumpet.seat_recall": 0.932,
+        "trumpet.octave_err": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "trumpet.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "trumpet.bp_agrees": 0.979,
+        "trumpet.q_false_alarm": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
+        "trumpet.q_hit": 0.438,
+        "tuba.sw_f1": 0.885,
+        "tuba.bp_f1": 0.483,
+        "tuba.today_f1": 0.0,
+        "tuba.today_recall": 0.0,
+        "tuba.seat_f1": 0.866,
+        "tuba.seat_recall": 0.853,
+        "tuba.octave_err": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "tuba.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "tuba.bp_agrees": 0.725,
+        "tuba.q_false_alarm": {
+          "value": 0.036,
+          "higher_is_better": false
+        },
+        "tuba.q_hit": 0.158,
+        "horn.sw_f1": 0.902,
+        "horn.bp_f1": 0.799,
+        "horn.today_f1": 0.9,
+        "horn.today_recall": 0.83,
+        "horn.cornet_moved": {
+          "value": 0.558,
+          "higher_is_better": false
+        },
+        "horn.seat_f1": 0.901,
+        "horn.seat_recall": 0.831,
+        "horn.octave_err": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "horn.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "horn.bp_agrees": 0.968,
+        "horn.q_false_alarm": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
+        "horn.q_hit": 0.0,
+        "trombone.sw_f1": 0.967,
+        "trombone.bp_f1": 0.789,
+        "trombone.today_f1": 0.555,
+        "trombone.today_recall": 0.436,
+        "trombone.cornet_moved": {
+          "value": 1.0,
+          "higher_is_better": false
+        },
+        "trombone.seat_f1": 0.967,
+        "trombone.seat_recall": 0.96,
+        "trombone.octave_err": {
+          "value": 0.002,
+          "higher_is_better": false
+        },
+        "trombone.seat_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "trombone.bp_agrees": 0.932,
+        "trombone.q_false_alarm": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "trombone.q_hit": 0.208,
+        "seat_gates": 1.0
+      }
+    },
+    "seat-voices": {
+      "source": "docs/plan/my-instrument.md §1.3 and §7.3: each seat's voice from the brass4 mixes by range",
+      "metrics": {
+        "muscriptor-medium.S_f1": 0.924,
+        "muscriptor-medium.S_recall": 0.95,
+        "muscriptor-medium.A_f1": 0.829,
+        "muscriptor-medium.A_recall": 0.818,
+        "muscriptor-medium.T_f1": 0.305,
+        "muscriptor-medium.T_recall": 0.294,
+        "muscriptor-medium.B_f1": 0.686,
+        "muscriptor-medium.B_recall": 0.71,
+        "basic-pitch.S_f1": 0.357,
+        "basic-pitch.S_recall": 0.76,
+        "basic-pitch.A_f1": 0.378,
+        "basic-pitch.A_recall": 0.348,
+        "basic-pitch.T_f1": 0.246,
+        "basic-pitch.T_recall": 0.173,
+        "basic-pitch.B_f1": 0.3,
+        "basic-pitch.B_recall": 0.656,
+        "consensus.S_f1": 0.804,
+        "consensus.S_recall": 0.84,
+        "consensus.A_f1": 0.55,
+        "consensus.A_recall": 0.439,
+        "consensus.T_f1": 0.276,
+        "consensus.T_recall": 0.179,
+        "consensus.B_f1": 0.382,
+        "consensus.B_recall": 0.401
+      }
     }
   }
 }

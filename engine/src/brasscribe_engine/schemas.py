@@ -9,6 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field
 JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled"]
 Lineup = Literal["full", "minimal", "quartet"]
 Difficulty = Literal["faithful", "standard", "easier"]
+# The player's seat: one of the contest band's parts (brasscribe_music.instruments.SEATS).
+Seat = Literal["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn",
+               "solo-horn", "1st-horn", "2nd-horn", "1st-baritone", "2nd-baritone", "1st-trombone",
+               "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion"]
+Reads = Literal["treble", "bass"]
+Lead = Literal["lineup", "seat"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -160,6 +166,23 @@ class JobCreate(BaseModel):
                                               "(-2, -2:minor); the arrangement is transposed to it")
     transpose: int | None = Field(None, ge=-11, le=11, description="transpose the arrangement by this many semitones "
                                                                   "(instead of key)")
+    seat: Seat | None = Field(None, description="the player's seat. A solo take is written for it: one part, the "
+                                                "seat's, in its range and in the octave played. A band take's notes "
+                                                "do not change; the seat names the player's part. Default: none")
+    reads: Reads | None = Field(None, description="the clef the seat's part is written in: bass is at concert pitch "
+                                                  "(offered for baritone, euphonium, trombones and basses); default: "
+                                                  "the brass-band part's own")
+    lead: Lead = Field("lineup", description="who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); "
+                                             "seat writes it on the seat's part, for the full and minimal bands only. "
+                                             "The solo profile with a seat always uses seat")
+
+
+class PartSources(BaseModel):
+    """Where each part of the job's score comes from, in score order (derived from the Composition)."""
+
+    parts: dict[str, Literal["your-recording", "recording", "arranged"]] = Field(
+        description="your-recording: a solo take's own line; recording: a line heard in the recording (the tune, the "
+                    "bass line, the countermelody, the drums); arranged: voiced from the band's harmony")
 
 
 class StageState(BaseModel):

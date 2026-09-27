@@ -272,6 +272,50 @@ def voice_satb_cases(rng) -> list[dict]:
     return out
 
 
+def seat_cases() -> list[dict]:
+    """seat_part for every seat in every lineup name, and which clefs every seat may read."""
+    from brasscribe_music.instruments import CLEF_READINGS, SEAT_IDS, check_reads, seat_part
+
+    out = []
+    for seat in SEAT_IDS:
+        for lineup in ("band", "full", "", "minimal", "quartet"):
+            sp = seat_part(lineup or None, seat)
+            out.append({"seat": seat, "lineup": lineup, "part": sp.part, "exact": sp.exact, "same_key": sp.same_key})
+        for reads in (*CLEF_READINGS, "alto"):
+            try:
+                check_reads(seat, reads)
+                ok = True
+            except ValueError:
+                ok = False
+            out.append({"seat": seat, "reads": reads, "ok": ok})
+    return out
+
+
+def part_sources_cases() -> list[dict]:
+    """part_sources on compositions with every combination of layers with notes, lineups and arrangers."""
+    from dataclasses import asdict
+    from itertools import product
+
+    from brasscribe_music.arranger import part_sources
+    from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+
+    roles = {"solo": VoiceRole.MELODY, "bass": VoiceRole.BASS, "strings": VoiceRole.HARMONY, "brass": VoiceRole.HARMONY,
+             "drums": VoiceRole.RHYTHM}
+    out = []
+    arrangements = [None, *({"lineup": k, "difficulty": "faithful", "transpose_semitones": 0}
+                            for k in ("band", "minimal", "quartet", "orchestra"))]
+    for on in product((False, True), repeat=5):
+        for arrangement in arrangements:
+            voices = [Voice(k, r, [Note(60, 0, 24)] if o else [], None, k) for (k, r), o in zip(roles.items(), on)]
+            c = Composition("t", voices, [Meter(0, 4)], [KeySig(0, 0)], arrangement=arrangement)
+            out.append({"composition": asdict(c), "sources": list(part_sources(c).items())})
+    for arrangement in arrangements[:4]:
+        c = Composition("t", [Voice("melody", VoiceRole.MELODY, [Note(60, 0, 24)]), Voice("bass", VoiceRole.BASS, [])],
+                        [Meter(0, 4)], [KeySig(0, 0)], arrangement=arrangement)
+        out.append({"composition": asdict(c), "sources": list(part_sources(c).items())})
+    return out
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
@@ -279,7 +323,8 @@ def main() -> None:
                        ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
                        ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
                        ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng)),
-                       ("voice_satb", voice_satb_cases(rng))):
+                       ("voice_satb", voice_satb_cases(rng)), ("seats", seat_cases()),
+                       ("part_sources", part_sources_cases())):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 
