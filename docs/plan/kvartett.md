@@ -239,7 +239,27 @@ Every table must resolve "1st Cornet" and "Tenor Horn". If one doesn't, the resu
 - `design/mockups/choose-output.html:42-43,74-75` and `design/mockups/png/choose-output-*.png`: third card
 - `site/guide/index.html:172`, `site/nb/guide/index.html:170`, `site/nb/index.html:132-136`, `site/shots/output-*.png`: "Full brass band, small band or quartet"
 
-Existing inconsistency, not fixed here: the small band is "Lite korps" on Apple (`make-string-catalog.py:143`) and on the nb site, but "Lite band" on Android, Windows and in the mockup. The new label is "Kvartett" everywhere.
+This change also fixes an inconsistency in the picker strings. The small band is "Lite korps" on Apple (`make-string-catalog.py:143`, `:197`) and on the nb site (`site/nb/index.html:132,136`, `site/nb/guide/index.html:164`), but "Lite band" on Android, Windows and in the mockup. Every surface gets **«Lite band»**, because this change edits the same strings anyway. The new label is "Kvartett" everywhere.
+
+### 2.10 Share or print, and the disabled card
+
+**Share or print.** `design/system.md:72,116` fixes the scope labels as **Solo Cornet (you)** / **Every part** / **Conductor's score** (nb **Solokornett (deg)** / **Alle stemmer** / **Dirigentpartitur**). For a quartet:
+- "(you)" follows the user's part: **1st Cornet (you)** / **1. kornett (deg)**. That is the lineup's lead by default, or the part the user picked.
+- A quartet has no conductor. The third option becomes **Score (all 4 parts)** / **Partitur (alle 4 stemmer)**.
+
+Change `design/system.md:116` and the export sheet in each app:
+- Apple: the export sheet
+- Android: the share sheet (see `apps/android/README.md:52`)
+- Windows: `ViewModels/ExportViewModel.cs:60`
+
+All three take the scope labels from the recorded lineup, not from fixed strings.
+
+**Disabled quartet card on solo takes.**
+- The reason is visible text on the card itself, not only a hint or tooltip: **"Needs a recording of the whole group"** / **«Trenger et opptak av hele gruppen»**. It replaces the card's description line while the card is disabled.
+- The card stays focusable, so screen readers reach it and read the reason:
+  - Compose: no `enabled = false` on the selectable (`OutputScreen.kt:91` does this today). Use `Modifier.semantics { disabled() }` with the reason as the description, and ignore the click.
+  - SwiftUI: keep the button, add `.accessibilityValue` with the reason, and make the action do nothing. Don't use `.disabled(true)`.
+  - WinUI: `IsEnabled=false` removes the card from the tab order. Keep it enabled, style it as dimmed, and cancel the selection in `OnLineupChanged` with an announcement. Set `AutomationProperties.HelpText` to the reason.
 
 ---
 
@@ -259,7 +279,9 @@ Existing inconsistency, not fixed here: the small band is "Lite korps" on Apple 
    - The MP3 export contains all four parts, with no "not in mapping.json" warning.
 7. **Apps.**
    - The picker shows three cards in en and nb.
-   - Quartet is disabled for a solo take and says why.
+   - Quartet is disabled for a solo take. The reason is visible on the card, and the card is still reachable with VoiceOver, TalkBack and Narrator (§2.10).
+   - Share or print on a quartet offers "1st Cornet (you)", "Every part" and "Score (all 4 parts)", with the nb equivalents.
+   - «Lite band» everywhere, and no «Lite korps» left in the apps or on the site.
    - Choosing it on an engine job sends `lineup=quartet`.
    - The re-arrange path on device (after an edit) keeps the quartet.
    - The library subtitle reads "Quartet".
@@ -307,6 +329,8 @@ Other branches are changing the apps' connection and pairing UI and the engine's
 | `apps/windows/.../MainViewModel.cs`, `MainWindow.xaml.cs` | `feat/windows-listen-stop-connection`, `feat/bandroom-windows` | high |
 | string catalogs: Android `values*/strings.xml`, Apple `make-string-catalog.py` + `Localizable.xcstrings`, Windows `gen_resw.py` + `Resources.resw` | every app UI branch | high. Add strings at the end of each block and regenerate after rebasing. |
 | screenshots under `apps/*/docs/screenshots`, `site/shots` | design branches | medium. Retake last. |
+| `sounds/mapping.json`, `sounds/seating.json`, `sounds/render.py` | `feat/band-sound-per-instrument` (maps every part to a real-sample preset, with a check that fails on a GM fallback) | high. The quartet names and banks (§1.1) have been sent to that branch. Add the quartet rows on top of it once it lands, and make its GM-fallback check cover the quartet lineup. |
+| `design/system.md` (Share or print labels) | design branches | medium |
 
 Do the app steps last and rebase onto `main` just before them.
 
@@ -365,15 +389,16 @@ pixi run bench-cpu                                                     # or: bra
    *Done when:* `pixi run test` and `(cd studio && npm test)` pass, and one brass-band job with `lineup=quartet` renders an MP3 with 4 audible parts.
 7. **Apple.**
    - Rebase onto `main` first.
-   - Apply the §2.7 Apple rows and regenerate the string catalog.
+   - Apply the §2.7 Apple rows and §2.10 (share labels, disabled card, «Lite band»), and regenerate the string catalog.
 
    *Done when:* `(cd apps/apple && make test)` passes.
 8. **Android.**
-   - Apply the §2.7 Android rows and run `./gradlew :engine-client:syncOpenApi`.
+   - Apply the §2.7 Android rows and §2.10, and run `./gradlew :engine-client:syncOpenApi`.
 
    *Done when:* `(cd apps/android && ./gradlew testDebugUnitTest lint)` passes.
 9. **Windows, then screenshots and docs.**
-   - Apply the §2.7 Windows rows and run `gen_resw.py`.
+   - Apply the §2.7 Windows rows and §2.10, and run `gen_resw.py`.
+   - Update `design/system.md:116` with the quartet share labels.
    - Retake the output screenshots on all three apps, the mockup PNGs and `site/shots`.
    - Update the site guide text and the READMEs.
 
