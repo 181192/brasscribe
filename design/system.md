@@ -166,3 +166,8 @@ Bandroom installs the engine on a Mac or Windows PC, runs it in the background a
 - **State is a shape.** The menu-bar and tray icon is the mark plus a badge shape per state, and the tooltip spells the state out. Status colours go on icons only.
 - **Brass stays on the progress bar.** Health meters are neutral, and health is in words: Calm / Busy / Very busy, not percentages.
 - **The QR code is always black on a white plate**, in every theme, with the six-digit code and a no-code "choose the computer on the phone, then Allow" path beside it.
+
+## 9. Music stand
+
+The score alone, for reading from a stand: one part, in pages, with a control layer that hides itself and a **Leave** that always stays. It follows the device's orientation, and a phone can lock it from inside. The way in is one **Music stand** button in the score toolbar, plus F, F11 on Windows, and full screen on the Mac. The spec, copy deck, WCAG mapping and platform plan are in [`music-stand.md`](music-stand.md).
+

@@ -97,6 +97,7 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | Transposed view | As written for B♭ / Concert pitch (phone: As written / Concert) | Notert for B♭ / Klingende | Written pitch, transposing score |
 | Talking score (toolbar) | Read aloud (format name in Share or print stays "Talking score") | Les opp | Talking score in the toolbar |
 | Video | Show video | Vis video | Video |
+| The score alone, for the stand | Music stand · leave: Leave (name: "Leave the music stand") | Notestativ · Gå ut («Gå ut av notestativet») | Full screen, Performance mode, Full skjerm, Fremføringsmodus |
 | Output (hand the score over) | Share or print ("Export" only in the desktop menu bar) | Del eller skriv ut | Export, Eksporter |
 | Export scope | Solo Cornet (you) / Every part / Conductor's score | Solokornett (deg) / Alle stemmer / Dirigentpartitur | My part, All parts, Full score |
 | Choose output | How should the score be? · Which band? · How hard? (Easier / As played) · Key | Hvordan skal partituret bli? · Hvilket band? · Hvor vanskelig? (Enklere / Som spilt) · Toneart | lineup, difficulty, faithful |

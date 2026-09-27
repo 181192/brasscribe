@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: music stand, tablet on its side</title>
+<link rel="stylesheet" href="mockup.css">
+<link rel="stylesheet" href="music-stand.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="music-stand.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .top { top: 12px; left: 24px; right: 24px; justify-content: space-between; }
+  .controls { left: 50%; transform: translateX(-50%); bottom: 20px; padding: 10px 14px; }
+  .controls .crow { flex-wrap: nowrap; gap: var(--bc-space-4); }
+  .controls .transport { gap: 4px; display: flex; align-items: center; }
+  .page-title { text-align: center; padding: 4px 0 6px; }
+  .page-title .eyebrow { margin: 0; }
+</style>
+</head>
+<body>
+<div class="stand stand-tab" role="main" aria-label="Music stand">
+  <div class="corner top">
+    <span class="pill info" role="status"><span>Mikkel</span><span class="muted" data-nb="· Solokornett · takt 14 · side 1–2 av 6">· Solo Cornet · bar 14 · pages 1–2 of 6</span></span>
+    <button class="pill" aria-label="Leave the music stand"><i data-i="close" class="sm"></i><span data-nb="Gå ut">Leave</span></button>
+  </div>
+
+  <!-- Two pages side by side; a turn moves the right page to the left, so the next line is always in view. -->
+  <div class="spread">
+    <div class="page">
+      <div class="page-title"><p class="eyebrow" data-nb="Solokornett i B♭">Solo Cornet in B♭</p></div>
+      <div data-score="standTab0"></div><div data-score="standTab1"></div><div data-score="standTab2"></div>
+      <div data-score="standTab3"></div><div data-score="standTab4"></div><div data-score="standTab5"></div>
+      <div class="foot">1</div>
+    </div>
+    <div class="page">
+      <div class="page-title"><p class="eyebrow">&nbsp;</p></div>
+      <div data-score="standTab6"></div><div data-score="standTab7"></div><div data-score="standTab8"></div>
+      <div data-score="standTab9"></div><div data-score="standTab10"></div><div data-score="standTab11"></div>
+      <div class="foot">2</div>
+    </div>
+  </div>
+
+  <div class="controls ctl" role="toolbar" aria-label="Music stand controls">
+    <div class="crow">
+      <span class="transport">
+        <button class="icon-btn filled" aria-label="Previous page"><i data-i="page-prev"></i></button>
+        <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+        <button class="play" aria-label="Pause"><i data-i="pause"></i></button>
+        <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+        <button class="icon-btn filled" aria-label="Next page"><i data-i="page-next"></i></button>
+      </span>
+      <span class="stepper"><button class="icon-btn" aria-label="Slower"><i data-i="minus" class="sm"></i></button><span class="v" data-nb="Tempo 100 %">Speed 100%</span><button class="icon-btn" aria-label="Faster"><i data-i="plus" class="sm"></i></button></span>
+      <span class="chip"><i data-i="loop" class="sm"></i><span data-nb="Gjenta">Repeat</span></span>
+      <span class="chip on"><span data-nb="Solokornett (deg)">Solo Cornet (you)</span></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
