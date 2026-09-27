@@ -288,9 +288,37 @@ class ScoreController(
             else if (!_state.value.realistic) { notesPerChannel.clear(); view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn) }
         }
         if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
-        view.api.playPause()
+        if (_state.value.playing) fadeThen { view.api.playPause() } else view.api.playPause()
     }
-    fun stop() { view.api.stop(); RealisticSynth.fadeOut() }
+    fun stop() { RealisticSynth.fadeOut(); fadeThen { view.api.stop() } }
+
+    /**
+     * Stop and pause: the band fades out over [STOP_FADE_MS] before the player stops, so a note
+     * is not cut with a click and a long release does not ring on after the user asked for
+     * silence. Seeking keeps the natural release (it does not come through here).
+     */
+    private var fading: android.animation.ValueAnimator? = null
+    private fun fadeThen(action: () -> Unit) {
+        fading?.cancel()
+        val volume = view.api.masterVolume
+        fading = android.animation.ValueAnimator.ofFloat(1f, 0f).apply {
+            duration = STOP_FADE_MS
+            addUpdateListener { view.api.masterVolume = volume * (it.animatedValue as Float) }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                private var done = false
+                private fun finish() {
+                    if (done) return
+                    done = true
+                    action()
+                    view.api.masterVolume = volume
+                    fading = null
+                }
+                override fun onAnimationEnd(animation: android.animation.Animator) = finish()
+                override fun onAnimationCancel(animation: android.animation.Animator) = finish()
+            })
+            start()
+        }
+    }
 
     fun setSpeed(percent: Int) {
         val p = percent.coerceIn(25, 150)
@@ -554,3 +582,5 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
     (this and 0xFF).toDouble(),
     ((this ushr 24) and 0xFF).toDouble(),
 )
+
+private const val STOP_FADE_MS = 80L
