@@ -96,6 +96,8 @@ class PairingState(BaseModel):
     fingerprint: str | None = Field(None, description="SHA-256 of the TLS key (SPKI), base64url; null while the "
                                                        "engine serves plain HTTP")
     uri: str = Field(description="pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]")
+    locked_until: str | None = Field(None, description="ISO 8601; set while too many wrong codes have locked "
+                                                        "pairing, so the computer can say so. The code stays the same")
 
 
 class PairRequestCreate(BaseModel):

@@ -1745,6 +1745,18 @@
             "title": "Hosts",
             "type": "array"
           },
+          "locked_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ISO 8601; set while too many wrong codes have locked pairing, so the computer can say so. The code stays the same",
+            "title": "Locked Until"
+          },
           "open": {
             "title": "Open",
             "type": "boolean"

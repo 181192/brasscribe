@@ -165,3 +165,11 @@ def wait_with(client, job_id, headers, timeout=30):
             return j
         time.sleep(0.05)
     raise AssertionError("job did not finish")
+
+
+def test_pairing_state_says_when_wrong_codes_have_locked_it(client):
+    assert client.get("/v1/pairing").json()["locked_until"] is None
+    client.app.state.pairing.locked_until = time.time() + 60
+    assert client.get("/v1/pairing").json()["locked_until"]
+    client.app.state.pairing.locked_until = 0
+    assert client.get("/v1/pairing").json()["locked_until"] is None
