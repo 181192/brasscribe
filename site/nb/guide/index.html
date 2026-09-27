@@ -70,16 +70,18 @@
     <section id="open">
       <h2>Åpne eller spill inn</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../../assets/shots/home-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../../assets/shots/home-phone-light.png" alt="Startsiden, med Åpne et opptak, Spill inn og Partiturene dine. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/home-nb-light.webp">
+            <img src="../../assets/shots/home-nb-light.png" width="600" height="1334" loading="lazy" alt="Startsiden: Åpne et opptak, Spill inn med mikrofonen, Spill inn det som spilles, Åpne et partitur og Prøv eksempelet.">
+          </picture>
+        </div>
       </figure>
       <p>Velg én av disse på startsiden:</p>
       <ul>
         <li><strong>Åpne et opptak:</strong> en lyd- eller videofil du har (MP3, WAV, M4A, MP4 og de fleste andre formater). Du kan også dele en fil til Brasscribe fra en annen app, eller slippe den i vinduet på datamaskinen.</li>
         <li><strong>Spill inn med mikrofonen:</strong> spill stemmen din selv, eller ta opp øvelsen.</li>
-        <li><strong>Spill inn det som spilles:</strong> ta opp lyden fra en annen app, eller alt enheten spiller.</li>
+        <li><strong>Spill inn det som spilles</strong> (Android og Windows): ta opp lyden fra en annen app, eller alt enheten spiller.</li>
       </ul>
       <p>Lenker til strømmetjenester kan ikke lastes ned. Spill musikken og ta den opp i stedet. Strømmeapper stopper som regel opptak, så mikrofonen er veien rundt det.</p>
       <p>Partiturene dine ligger under <strong>Partiturene dine</strong> på startsiden.</p>
@@ -88,7 +90,12 @@
     <section id="what">
       <h2>Hva er dette?</h2>
       <figure class="phone">
-        <img src="../../assets/shots/what-is-this-nb-phone-light.png" alt="Hva er dette? med de fire valgene og hvor partituret lages." loading="lazy" width="390" height="844">
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/what-is-this-nb-light.webp">
+            <img src="../../assets/shots/what-is-this-nb-light.png" width="600" height="1334" loading="lazy" alt="Hva er dette? med de fire valgene og hvor partituret lages.">
+          </picture>
+        </div>
       </figure>
       <p>Brasscribe spør hva opptaket er. Svaret ditt avgjør hvordan den lytter. Den gjetter aldri, og ingenting er valgt for deg første gang.</p>
       <div class="table-scroll" role="region" aria-labelledby="what-caption" tabindex="0">
@@ -109,10 +116,12 @@
     <section id="making">
       <h2>Partituret lages</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../../assets/shots/transcribing-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../../assets/shots/transcribing-phone-light.png" alt="Partituret lages: steget som pågår som overskrift, prosent, tid igjen og en liste over alle stegene. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/making-nb-light.webp">
+            <img src="../../assets/shots/making-nb-light.png" width="600" height="1334" loading="lazy" alt="Partituret lages: steget som pågår som overskrift, prosent, tid igjen og en liste over alle stegene.">
+          </picture>
+        </div>
       </figure>
       <p>Brasscribe viser hvert steg med vanlige ord, som <em>Finner pulsen</em> og <em>Arrangerer for brassband</em>, med prosent og tid igjen. Noen minutter musikk tar vanligvis noen minutter.</p>
       <p>Du kan gå fra skjermen. For å stoppe velger du <strong>Avbryt</strong>: appen spør først, og opptaket blir liggende i Partiturene dine.</p>
@@ -121,10 +130,12 @@
     <section id="check">
       <h2>Sjekk tonene</h2>
       <figure class="phone">
-        <picture>
-          <source srcset="../../assets/shots/review-phone-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../../assets/shots/review-phone-light.png" alt="Én usikker tone sjekkes: takten, stemmen og den noterte tonen, med Lytt til denne takten, Hopp over og Behold, gå til neste. Skjermbildet er på engelsk." loading="lazy" width="390" height="844">
-        </picture>
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/review-nb-light.webp">
+            <img src="../../assets/shots/review-nb-light.png" width="600" height="1334" loading="lazy" alt="Én usikker tone sjekkes: takten på en notelinje, stemmen og den noterte tonen, med Lytt til denne takten, Endre tone, Behold, gå til neste, og Hopp over.">
+          </picture>
+        </div>
       </figure>
       <p>Når partituret er klart, viser Brasscribe tonene den var usikker på, én om gangen.</p>
       <ul>
@@ -135,6 +146,7 @@
       <ul>
         <li><strong>Lytt til denne takten</strong> spiller takten fra opptaket, om og om igjen.</li>
         <li><strong>Behold, gå til neste</strong> hvis den er riktig. Spørsmålstegnet fjernes.</li>
+        <li><strong>Endre tone …</strong> hvis den er feil: velg riktig tone, så fjernes spørsmålstegnet.</li>
         <li><strong>Hopp over</strong> lar tonen være merket og går videre.</li>
       </ul>
       <p>Du trenger ikke sjekke alle tonene nå. <strong>Fortsett senere</strong> beholder spørsmålstegnene, og <strong>«9 toner merket ? · Sjekk dem»</strong> over partituret tar deg tilbake når som helst.</p>
@@ -143,12 +155,17 @@
     <section id="output">
       <h2>Hvordan skal partituret bli?</h2>
       <figure class="phone">
-        <img src="../../assets/shots/choose-output-nb-phone-light.png" alt="Hvordan skal partituret bli? med Hvilket band?, Hvor vanskelig? og Toneart." loading="lazy" width="390" height="844">
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/output-nb-light.webp">
+            <img src="../../assets/shots/output-nb-light.png" width="600" height="1334" loading="lazy" alt="Hvordan skal partituret bli? med Hvilket band?, Hvor vanskelig? og Toneart, og Vis partituret.">
+          </picture>
+        </div>
       </figure>
       <p>Tre spørsmål på én skjerm. Brasscribe husker svarene for hver låt.</p>
       <ul>
         <li><strong>Hvilket band?</strong> Fullt brassband (rundt 25 musikere) eller lite band (10–15 musikere, stemmene slått sammen).</li>
-        <li><strong>Hvor vanskelig?</strong> <em>Som spilt</em>, eller <em>Enklere</em>: melodien beholdes, men høye toner og raske løp unngås.</li>
+        <li><strong>Hvor vanskelig?</strong> <em>Som spilt</em>, <em>Litt enklere</em> eller <em>Enklere</em>: melodien beholdes, men høye toner og raske løp unngås.</li>
         <li><strong>Toneart:</strong> som i opptaket, eller trinn opp og ned til tonearten du vil ha.</li>
       </ul>
       <p>Ingenting endres før du velger <strong>Vis partituret</strong>. Du kan komme tilbake og endre det senere, og ingenting går tapt.</p>
@@ -156,32 +173,48 @@
 
     <section id="score">
       <h2>Partituret og avspilleren</h2>
-      <figure>
-        <picture>
-          <source srcset="../../assets/shots/score-desktop-dark.png" media="(prefers-color-scheme: dark)">
-          <img src="../../assets/shots/score-desktop-light.png" alt="Hele partituret på datamaskinen, med verktøylinjen over og avspilleren nederst. Skjermbildet er på engelsk." loading="lazy" width="1440" height="900">
-        </picture>
+      <figure class="phone pair">
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/score-nb-light.webp">
+            <img src="../../assets/shots/score-nb-light.png" width="600" height="1334" loading="lazy" alt="Hele partituret på telefonen, med stemmevelgeren og Notert eller Klingende over, og avspilleren under.">
+          </picture>
+        </div>
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/parts-nb-light.webp">
+            <img src="../../assets/shots/parts-nb-light.png" width="600" height="1334" loading="lazy" alt="Stemmer-arket: Alle stemmer eller Min stemme, og Lyd av og Bare denne for hver stemme.">
+          </picture>
+        </div>
       </figure>
       <h3>Lese</h3>
       <ul>
         <li><strong>Alle stemmer ▾</strong> bytter mellom hele partituret og én stemme. Din egen stemme kan vises stort, som en side.</li>
         <li><strong>Notert for B♭ / Klingende:</strong> notert er det du leser på stemmen din; klingende er slik det låter på et piano.</li>
-        <li>Zoom inn og ut. Over 200 % brytes partituret om til én stemme som ruller sidelengs.</li>
+        <li>Zoom inn og ut. Over 200&nbsp;% brytes partituret om til én stemme som ruller sidelengs.</li>
       </ul>
       <h3>Øve</h3>
       <ul>
         <li><strong>Spill av</strong> starter fra markøren. Forrige og neste takt flytter én takt om gangen.</li>
-        <li><strong>Tempo:</strong> fra 25 % til 150 %. Tempoet vises som «♩ = 102 (ned fra 136)».</li>
+        <li><strong>Tempo:</strong> fra 25&nbsp;% til 150&nbsp;%. Tempoet vises som «♩ = 102 (ned fra 136)».</li>
         <li><strong>Gjenta takt</strong> [12] til [13] spiller en passasje om og om igjen. <strong>Slutt å gjenta</strong> slår det av.</li>
         <li><strong>Inntelling:</strong> én takt med klikk før musikken starter. <strong>Metronom:</strong> et klikk på hvert slag.</li>
         <li><strong>Lyd av min stemme:</strong> stemmen din blir stille, så du kan spille den selv.</li>
         <li>I stemmelisten slår <strong>Lyd av</strong> av en stemme, og <strong>Bare denne</strong> spiller én stemme alene.</li>
-        <li><strong>Hør: Band / Opptak</strong> bytter til originalopptaket fra samme takt.</li>
+        <li>På iPhone, iPad og Mac bytter <strong>Originalopptak</strong> til opptaket på samme sted. På Windows velger du <strong>Hør bandet</strong> eller <strong>Opptaket</strong>.</li>
       </ul>
     </section>
 
     <section id="share">
       <h2>Del eller skriv ut</h2>
+      <figure class="phone">
+        <div class="device">
+          <picture>
+            <source type="image/webp" srcset="../../assets/shots/share-nb-light.webp">
+            <img src="../../assets/shots/share-nb-light.png" width="600" height="1334" loading="lazy" alt="Del eller skriv ut: Solokornett (deg), Alle stemmer eller Dirigentpartitur, så formatene, med Skriv ut, Del og Lagre i Filer.">
+          </picture>
+        </div>
+      </figure>
       <p>Velg <strong>Del eller skriv ut</strong>, så hva og hvordan.</p>
       <div class="table-scroll" role="region" aria-labelledby="share-what" tabindex="0">
         <table>
@@ -214,6 +247,15 @@
     <section id="computer">
       <h2>Brasscribe på datamaskinen</h2>
       <p>For et fullt band lager Brasscribe på datamaskinen (Mac eller PC) partituret og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder.</p>
+      <figure class="wide">
+        <div class="window">
+          <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>Brasscribe Studio · Partiturvisning</span></div>
+          <picture>
+          <source type="image/webp" srcset="../../assets/shots/computer-nb-light.webp">
+          <img src="../../assets/shots/computer-nb-light.png" width="1440" height="900" loading="lazy" alt="Et brassbandpartitur i nettleseren på datamaskinen, med avspilling, gjentatte takter, tempo og en stemmemeny over hele partituret.">
+          </picture>
+        </div>
+      </figure>
       <ol>
         <li>Start Brasscribe på datamaskinen. Den viser en sekssifret kode.</li>
         <li>Sett telefonen på <strong>samme Wi-Fi</strong> som datamaskinen.</li>
