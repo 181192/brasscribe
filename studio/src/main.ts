@@ -9,7 +9,7 @@ import "./components/stagegraph";
 import "./components/stems";
 import type { ScoreElement } from "./components/score";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
-import { clear, h } from "./ui/dom";
+import { clear, h, wireMenus } from "./ui/dom";
 import { lockup } from "./ui/icons";
 import { benchView } from "./views/bench";
 import { compareView } from "./views/compare";
@@ -34,6 +34,15 @@ const routes: Route[] = [
 
 let cleanup: (() => void) | void;
 
+// Below 768 px (and so at 200 % zoom on a laptop) the nav is behind a Menu button; above it, the disclosure is always open.
+const narrow = matchMedia("(max-width: 48rem)");
+function syncNav(): void {
+  (document.getElementById("nav-menu") as HTMLDetailsElement).open = !narrow.matches;
+}
+narrow.addEventListener("change", syncNav);
+syncNav();
+wireMenus();
+
 function route(initial = false): void {
   const main = document.getElementById("main")!;
   const raw = location.hash.replace(/^#\/?/, "") || "runs";
@@ -44,6 +53,10 @@ function route(initial = false): void {
     if (a.dataset.route === r.name) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }
+  const quality = document.getElementById("nav-quality") as HTMLDetailsElement;
+  quality.classList.toggle("current", !!quality.querySelector("[aria-current]"));
+  quality.open = false;
+  if (narrow.matches) (document.getElementById("nav-menu") as HTMLDetailsElement).open = false;
   if (typeof cleanup === "function") cleanup();
   clear(main);
   document.title = `${r.title()} – Brasscribe Studio`;
@@ -62,7 +75,7 @@ function renderStatus(): void {
   const el = document.getElementById("engine-status")!;
   el.classList.toggle("up", !!health);
   el.classList.toggle("down", health === null);
-  if (health) clear(el, t("app.engine", { version: health.version, device: health.device.toUpperCase() }), " · ", h("span", { class: "mono" }, location.host));
+  if (health) clear(el, t("app.engine", { version: health.version, device: health.device.toUpperCase() }));
   else el.textContent = health === undefined ? t("app.connecting") : t("app.engineDown");
 }
 

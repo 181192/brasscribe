@@ -2,54 +2,69 @@
 import { api } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, loading, pill, table, token } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, more, pill, table, token, viewHead } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
   const suitesEl = h("div", {}, loading());
   const lastEl = h("div", { "aria-live": "polite" });
   const trendEl = h("div", {}, loading());
   clear(root,
-    h("h1", {}, t("nav.bench")),
-    h("p", {}, t("bench.intro1"), h("code", {}, "eval/baselines.json"), t("bench.intro2")),
+    viewHead(t("nav.bench"), [t("bench.purpose"), " ", infoTip(t("bench.gateTerm"), t("bench.gateTip"))]),
     h("section", { "aria-labelledby": "suites-h" }, h("h2", { id: "suites-h" }, t("bench.suites")), suitesEl),
-    h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), lastEl),
+    lastEl,
     h("section", { "aria-labelledby": "trend-h" }, h("h2", { id: "trend-h" }, t("bench.trend")), trendEl));
 
-  const loadTrend = () => api.suiteHistory().then((hist) => clear(trendEl, trend(hist))).catch((e) => clear(trendEl, errorNotice(e)));
-  api.suites().then((suites) => {
-    clear(suitesEl, suiteTable(suites, async (name, mode, btn) => {
-      btn.disabled = true;
-      clear(lastEl, loading(t("bench.running", { name, mode })));
-      try {
-        const run = await api.runSuite(name, mode);
-        clear(lastEl, benchResult(run));
-        announce(t("bench.gateAnnounce", { name, state: run.passed ? t("bench.passed") : t("bench.failed") }));
-        void loadTrend();
-      } catch (e) {
-        clear(lastEl, errorNotice(e));
-      } finally {
-        btn.disabled = false;
-      }
-    }));
+  let hist: SuiteRun[] = [];
+  let suites: SuiteInfo[] = [];
+  const renderSuites = () => clear(suitesEl, suiteTable(suites, hist, async (name, mode, btn) => {
+    btn.disabled = true;
+    clear(lastEl, h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), loading(t("bench.running", { name, mode }))));
+    try {
+      const run = await api.runSuite(name, mode);
+      clear(lastEl, h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), benchResult(run)));
+      announce(t("bench.gateAnnounce", { name, state: run.passed ? t("bench.passed") : t("bench.failed") }));
+      await loadTrend();
+    } catch (e) {
+      clear(lastEl, errorNotice(e));
+    } finally {
+      btn.disabled = false;
+    }
+  }));
+  const loadTrend = () => api.suiteHistory().then((hh) => {
+    hist = hh;
+    clear(trendEl, trend(hh));
+    if (suites.length) renderSuites();
+  }).catch((e) => clear(trendEl, errorNotice(e)));
+  api.suites().then((s) => {
+    suites = s;
+    renderSuites();
   }).catch((e) => clear(suitesEl, errorNotice(e)));
   void loadTrend();
-  clear(lastEl, h("p", { class: "hint" }, t("bench.hint")));
 }
 
-function suiteTable(suites: SuiteInfo[], run: (name: string, mode: "cached" | "live", btn: HTMLButtonElement) => void): HTMLElement {
-  const groups = ["cpu", "all"];
-  const btn = (name: string, mode: "cached" | "live", label?: string) => {
-    const b: HTMLButtonElement = h("button", { type: "button", "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode, b) },
+function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], run: (name: string, mode: "cached" | "live", btn: HTMLButtonElement) => void): HTMLElement {
+  const btn = (name: string, mode: "cached" | "live", label?: string, cls = "ghost") => {
+    const b: HTMLButtonElement = h("button", { type: "button", class: cls, "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode, b) },
       label ?? (mode === "cached" ? t("bench.run") : t("bench.runLive")));
     return b;
   };
-  return h("div", {},
-    h("div", { class: "row" }, groups.map((g) => btn(g, "cached", g === "cpu" ? t("bench.runAllCpu") : t("bench.runAll")))),
-    table(t("bench.suites"), [t("bench.col.suite"), t("bench.col.on"), t("bench.col.desc"), t("bench.col.needs"), ""], suites.map((s) => [
-      h("span", { class: "mono" }, s.name), s.cpu ? t("bench.cpu") : t("bench.gpu"), s.description,
-      h("span", { class: "small mono" }, s.requires.join(", ") || "–"),
+  const latest = (name: string) => [...hist].filter((r) => r.suite === name).sort((a, b) => b.time - a.time)[0];
+  const rows = (list: SuiteInfo[]) => list.map((s) => {
+    const last = latest(s.name);
+    return [
+      h("span", {}, h("span", { class: "mono" }, s.name), h("span", { class: "sub" }, s.description),
+        s.requires.length ? more(t("bench.col.needs"), h("span", { class: "mono" }, s.requires.join(", ")), { count: s.requires.length }) : null),
+      last ? h("span", {}, pill(last.status), h("span", { class: "sub" }, fmt.date(last.time))) : h("span", { class: "muted" }, t("bench.never")),
       h("span", { class: "row" }, btn(s.name, "cached"), s.cpu ? null : btn(s.name, "live")),
-    ])));
+    ];
+  });
+  const head = [t("bench.col.suite"), t("bench.col.last"), ""];
+  const cpu = suites.filter((s) => s.cpu);
+  const gpu = suites.filter((s) => !s.cpu);
+  return h("div", {},
+    h("div", { class: "actions" }, btn("cpu", "cached", t("bench.runAllCpu"), "primary"), btn("all", "cached", t("bench.runAllGpu"))),
+    cpu.length ? [h("h3", {}, t("bench.cpuGroup")), table(t("bench.cpuGroup"), head, rows(cpu), { hideCaption: true })] : null,
+    gpu.length ? [h("h3", {}, t("bench.gpuGroup")), table(t("bench.gpuGroup"), head, rows(gpu), { hideCaption: true })] : null);
 }
 
 export function benchResult(run: BenchRun): HTMLElement {

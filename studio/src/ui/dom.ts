@@ -103,10 +103,84 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
  * A file chooser with localised text: the native input (visually hidden but
  * focusable) plus a styled "Choose a file…" label and the chosen file's name.
  */
-export function filePicker(input: HTMLInputElement): HTMLElement {
+export function filePicker(input: HTMLInputElement, opts: { primary?: boolean; label?: string } = {}): HTMLElement {
   const name = h("span", { class: "file-name", "aria-live": "polite" }, t("file.none"));
   input.addEventListener("change", () => (name.textContent = input.files?.[0]?.name ?? t("file.none")));
-  return h("span", { class: "file-pick" }, input, h("label", { class: "button ghost", for: input.id }, t("file.choose")), name);
+  return h("span", { class: "file-pick" }, input, h("label", { class: `button ${opts.primary ? "primary" : "ghost"}`, for: input.id }, opts.label ?? t("file.choose")), name);
+}
+
+/**
+ * The head of a view: its title, one purpose line, and (optionally) its
+ * actions on the right. `title` may be an existing h1 element.
+ */
+export function viewHead(title: string | HTMLElement, purpose: Child, ...actions: Child[]): HTMLElement {
+  const h1 = typeof title === "string" ? h("h1", {}, title) : title;
+  const acts = actions.flat(Infinity as 1).filter(Boolean);
+  return h("div", { class: "view-head" },
+    h("div", { class: "view-title" }, h1, purpose ? h("p", { class: "purpose" }, purpose) : null),
+    acts.length ? h("div", { class: "actions" }, acts) : null);
+}
+
+/**
+ * An info tip (toggletip): a small "i" button that shows a plain explanation
+ * of a term right after it. The text is in the page, so it reads the same
+ * for pointer, keyboard and screen-reader users; Esc closes it.
+ */
+export function infoTip(term: string, text: string): HTMLElement {
+  const out = h("span", { class: "tip-text", role: "status", hidden: true });
+  const btn = h("button", { type: "button", class: "tip-btn", "aria-expanded": "false", "aria-label": t("tip.about", { term }) }, "i");
+  const set = (open: boolean) => {
+    btn.setAttribute("aria-expanded", String(open));
+    out.hidden = !open;
+    out.textContent = open ? text : "";
+  };
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    set(btn.getAttribute("aria-expanded") !== "true");
+  });
+  btn.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") set(false);
+  });
+  return h("span", { class: "tip" }, btn, out);
+}
+
+let menusWired = false;
+/** Close open menus on Esc or a click outside them. */
+export function wireMenus(): void {
+  if (menusWired) return;
+  menusWired = true;
+  document.addEventListener("click", (e) => {
+    for (const d of Array.from(document.querySelectorAll<HTMLDetailsElement>("details.menu[open]"))) {
+      if (!d.contains(e.target as Node)) d.open = false;
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    for (const d of Array.from(document.querySelectorAll<HTMLDetailsElement>("details.menu[open]"))) {
+      if (d.contains(document.activeElement)) d.querySelector("summary")?.focus();
+      d.open = false;
+    }
+  });
+}
+
+/** A button that opens a short list of actions (links or buttons). */
+export function menu(label: Child, items: Child[], opts: { className?: string } = {}): HTMLDetailsElement {
+  wireMenus();
+  const d = h("details", { class: `menu ${opts.className ?? ""}` }, h("summary", {}, label), h("div", { class: "menu-list" }, items));
+  // Choosing an action closes the menu (a confirm step inside it keeps it open).
+  d.addEventListener("click", (e) => {
+    const el = (e.target as HTMLElement).closest("a");
+    if (el && d.contains(el)) d.open = false;
+  });
+  return d;
+}
+
+/** A closed-by-default disclosure for raw detail: "summary (count)" then the content. */
+export function more(summary: string, content: Child, opts: { count?: number | string; open?: boolean } = {}): HTMLDetailsElement {
+  return h("details", { class: "more", open: opts.open ?? false },
+    h("summary", {}, summary, opts.count !== undefined ? h("span", { class: "count" }, ` (${opts.count})`) : null),
+    content);
 }
 
 export function loading(label?: string): HTMLElement {
@@ -158,6 +232,14 @@ export const fmt = {
   },
   hash(h: string | null | undefined): string {
     return h ? h.slice(0, 12) : "–";
+  },
+  /** A path as the contributor knows it: from the repository's data/ (or another top folder), never absolute. */
+  path(p: string | null | undefined): string {
+    if (!p) return "–";
+    const s = p.replace(/\\/g, "/");
+    if (!s.startsWith("/") && !/^[A-Za-z]:\//.test(s)) return s;
+    const top = s.match(/\/((?:data|eval|core|models|music|engine|studio|docs)\/.*)$/);
+    return top ? top[1] : s.split("/").slice(-2).join("/");
   },
 };
 

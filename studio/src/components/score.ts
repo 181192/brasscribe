@@ -7,7 +7,7 @@ import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
-import { announce, clear, h, nextId, prefersReducedMotion } from "../ui/dom";
+import { announce, clear, h, menu, nextId, prefersReducedMotion } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 declare const alphaTab: typeof AT;
@@ -115,27 +115,32 @@ export class ScoreElement extends HTMLElement {
     });
     this.view.addEventListener("keydown", (e) => this.onKey(e));
     this.statusEl = h("p", { class: "score-status", "aria-live": "off" }, t("score.none"));
+    // Enter (or leaving the field) in "Bar" jumps there.
+    this.barInput.addEventListener("change", () => this.goBar(Number(this.barInput.value) - 1, true));
+    // Four groups stay visible (Play, Position, Repeat, View); the rest is under "More".
     const transport = h("div", { class: "transport", role: "group", "aria-label": t("score.player") },
-      h("div", { class: "group" },
+      h("div", { class: "group", role: "group", "aria-label": t("score.groupPlay") },
         this.playBtn,
-        h("button", { type: "button", onclick: () => this.stop() }, ...labelled("stop", t("score.stop"))),
-        h("button", { type: "button", "aria-keyshortcuts": "P", onclick: () => this.playBar() }, ...labelled("listen-bar", t("score.playBar")))),
-      h("div", { class: "group" },
+        h("button", { type: "button", onclick: () => this.stop() }, ...labelled("stop", t("score.stop")))),
+      h("div", { class: "group", role: "group", "aria-label": t("score.groupPosition") },
         h("button", { type: "button", class: "icon-only", "aria-label": t("score.prevBar"), "aria-keyshortcuts": "Alt+ArrowUp", onclick: () => this.goBar(this.current - 1) }, icon("previous-bar")),
         h("label", { for: `${id}-bar` }, t("score.bar")), this.barInput,
-        h("button", { type: "button", onclick: () => this.goBar(Number(this.barInput.value) - 1, true) }, t("score.go")),
         h("button", { type: "button", class: "icon-only", "aria-label": t("score.nextBar"), "aria-keyshortcuts": "Alt+ArrowDown", onclick: () => this.goBar(this.current + 1) }, icon("next-bar"))),
       h("div", { class: "group", role: "group", "aria-label": t("score.loop") },
         h("label", { for: `${id}-lf` }, t("score.loopFrom")), this.loopFrom,
         h("label", { for: `${id}-lt` }, t("score.loopTo")), this.loopTo, this.loopBtn),
-      h("div", { class: "group" },
-        h("label", { for: `${id}-speed` }, icon("speed"), t("score.speed")), this.speed, this.speedOut,
-        h("button", { type: "button", onclick: () => this.setSpeed(1) }, t("score.reset"))),
-      h("div", { class: "group", role: "group", "aria-label": t("score.zoom") },
-        h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomOut"), onclick: () => this.zoom(this.scale - 0.1) }, icon("zoom-out")),
-        this.zoomOut,
-        h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomIn"), onclick: () => this.zoom(this.scale + 0.1) }, icon("zoom-in"))),
-      h("div", { class: "group" }, h("label", { for: `${id}-part` }, t("score.show")), this.partSelect));
+      h("div", { class: "group", role: "group", "aria-label": t("score.groupView") }, h("label", { for: `${id}-part` }, t("score.show")), this.partSelect),
+      menu(t("score.more"), [
+        h("button", { type: "button", "aria-keyshortcuts": "P", onclick: () => this.playBar() }, ...labelled("listen-bar", t("score.playBar"))),
+        h("div", { class: "group", role: "group", "aria-label": t("score.speed") },
+          h("label", { for: `${id}-speed`, class: "group-label" }, t("score.speed")), this.speed, this.speedOut,
+          h("button", { type: "button", class: "ghost", onclick: () => this.setSpeed(1) }, t("score.reset"))),
+        h("div", { class: "group", role: "group", "aria-label": t("score.zoom") },
+          h("span", { class: "group-label", "aria-hidden": "true" }, t("score.zoom")),
+          h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomOut"), onclick: () => this.zoom(this.scale - 0.1) }, icon("zoom-out")),
+          this.zoomOut,
+          h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomIn"), onclick: () => this.zoom(this.scale + 0.1) }, icon("zoom-in"))),
+      ]));
     const help = h("p", { id: `${id}-help`, class: "visually-hidden" }, t("score.help"));
 
     // Talking score panel.

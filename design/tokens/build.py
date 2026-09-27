@@ -627,7 +627,9 @@ def web_outputs() -> dict[str, str | bytes]:
         C.append(f"  --bc-ease-{k}: cubic-bezier({', '.join(fmt(x) for x in v['$value'])});")
     for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
         C.append(f"  --bc-score-{k}: {fmt(dimension(TOKENS['score'][k]))}px;")
-    C.append(f"  --bc-touch-min: {fmt(dimension(TOKENS['size']['touch-min-web']))}px;")
+    C.append(f"  --bc-touch-min: {fmt(dimension(TOKENS['size']['touch-min-web']) / 16)}rem;")
+    C.append(f"  --bc-control-min: {fmt(dimension(TOKENS['size']['control-min-web']) / 16)}rem;")
+    C.append(f"  --bc-target-gap: {fmt(dimension(TOKENS['size']['target-gap-web']) / 16)}rem;")
     C.append(f"  --bc-content-max: {fmt(dimension(TOKENS['size']['content-max']) / 16)}rem;")
     C += ["}", "",
           "/* Dark: follow the system unless the page pins a theme with data-theme. */",
