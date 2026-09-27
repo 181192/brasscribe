@@ -221,3 +221,23 @@ fn quarter_conversion_matches_reference() {
         assert_eq!(got_t, want_t, "tuplet of {ql:?}");
     }
 }
+
+#[test]
+fn voice_satb_matches_reference() {
+    use brasscribe_core::arranger::{chord_root, perfect_parallels, voice_satb};
+    let opt = |v: &Value| v.as_i64().map(|x| x as i32);
+    let pair = |v: &Value| (v[0].as_i64().unwrap() as i32, v[1].as_i64().unwrap() as i32);
+    for (i, c) in load("voice_satb").iter().enumerate() {
+        let pcs: Vec<i32> = i64s(&c["pcs"]).into_iter().map(|x| x as i32).collect();
+        let (sop, bass, top) = (opt(&c["soprano"]), opt(&c["bass"]), opt(&c["soprano_top"]));
+        let prev: Option<[Option<i32>; 4]> = c["prev"].as_array().map(|p| [opt(&p[0]), opt(&p[1]), opt(&p[2]), opt(&p[3])]);
+        let got = voice_satb(&pcs, sop, bass, prev.as_ref(), pair(&c["alto_range"]), pair(&c["tenor_range"]), top);
+        let want = c["pair"].as_array().map(|_| pair(&c["pair"]));
+        assert_eq!(got, want, "case {i}");
+        assert_eq!(chord_root(&pcs, bass.map(|b| b.rem_euclid(12))) as i64, c["root"].as_i64().unwrap(), "root {i}");
+        if let Some(p) = prev {
+            let cur = [sop, got.map(|g| g.0), got.map(|g| g.1), bass];
+            assert_eq!(perfect_parallels(&p, &cur) as i64, c["parallels"].as_i64().unwrap(), "parallels {i}");
+        }
+    }
+}

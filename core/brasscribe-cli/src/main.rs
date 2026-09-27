@@ -3,11 +3,12 @@
 //!
 //! ```text
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
-//!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal]
+//!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal|quartet]
 //!                               [--difficulty faithful|standard|easier] [--key KEY | --transpose N]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
+//!                               [--lineup minimal|quartet]
 //! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
-//! brasscribe-core arrange-reference --reference JSON --out DIR [--title T]
+//! brasscribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
 //! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
 //! brasscribe-core meter --beats FILE --notes JSON --out FILE     (beats per bar and bar phase; notes [{onset, offset}])
@@ -201,7 +202,8 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 bass: midi(Path::new(&a.one("bass")?))?,
                 harmony: a.many("harmony").iter().map(|p| midi(Path::new(p))).collect::<R<Vec<_>>>()?,
             };
-            let r = pipeline::arrange_song(&inp, &beats(Path::new(&a.one("beats")?))?, &title)?;
+            let opts = pipeline::SongOptions { lineup: a.opt("lineup").unwrap_or_default() };
+            let r = pipeline::arrange_song_opts(&inp, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
         }
         "lead-sheet" => {
@@ -217,7 +219,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         }
         "arrange-reference" => {
             let v: Value = serde_json::from_slice(&read(Path::new(&a.one("reference")?))?).map_err(|e| e.to_string())?;
-            let r = pipeline::arrange_reference(&v, &title)?;
+            let r = pipeline::arrange_reference_with(&v, &title, &a.opt("lineup").unwrap_or_default())?;
             out_band(Path::new(&a.one("out")?), &r)
         }
         "quantize" => {

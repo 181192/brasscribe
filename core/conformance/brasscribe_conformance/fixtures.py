@@ -246,13 +246,40 @@ def confidence_cases(rng) -> list[dict]:
     return out
 
 
+def voice_satb_cases(rng) -> list[dict]:
+    """voice_satb, chord_root and parallel counting on random slots in the quartet's ranges."""
+    from brasscribe_music.arranger import _perfect_parallels, chord_root, voice_satb
+    from brasscribe_music.difficulty import easy_range
+    from brasscribe_music.instruments import QUARTET
+
+    alto, tenor = QUARTET.by_name("2nd Cornet"), QUARTET.by_name("Tenor Horn")
+    ranges = [(alto.instrument.preferred, tenor.instrument.preferred), (easy_range(alto), easy_range(tenor))]
+    out = []
+    for k in range(400):
+        pcs = sorted({int(x) for x in rng.integers(0, 12, size=int(rng.integers(1, 6)))})
+        sop = None if rng.random() < 0.1 else int(rng.integers(58, 82))
+        top = None if sop is None or rng.random() < 0.5 else sop + int(rng.integers(0, 8))
+        bass = None if rng.random() < 0.1 else int(rng.integers(36, 62))
+        prev = None if rng.random() < 0.2 else [None if rng.random() < 0.1 else int(rng.integers(lo, hi))
+                                                for lo, hi in ((58, 82), (52, 76), (46, 68), (36, 62))]
+        ra, rt = ranges[k % 2]
+        got = voice_satb(pcs, sop, bass, prev, ra, rt, top)
+        cur = [sop, *(got or (None, None)), bass]
+        out.append({"pcs": pcs, "soprano": sop, "soprano_top": top, "bass": bass, "prev": prev,
+                    "alto_range": list(ra), "tenor_range": list(rt), "pair": list(got) if got else None,
+                    "root": chord_root(pcs, bass % 12 if bass is not None else None),
+                    "parallels": _perfect_parallels(prev, cur) if prev else None})
+    return out
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
     for name, data in (("spelling", spelling_cases(rng)), ("quantize", quantize_cases(rng)),
                        ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
                        ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
-                       ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng))):
+                       ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng)),
+                       ("voice_satb", voice_satb_cases(rng))):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 

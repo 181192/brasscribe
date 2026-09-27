@@ -34,6 +34,15 @@ pub fn easy_range(part: &Part) -> (i32, i32) {
     (lo, (lo + 12).max(hi - EASY_TOP_TRIM))
 }
 
+/// The range a mode keeps a part in: the easy range for easier, else the reading range.
+pub fn mode_range(part: &Part, mode: &str) -> (i32, i32) {
+    if mode == "easier" {
+        easy_range(part)
+    } else {
+        part.instrument.preferred()
+    }
+}
+
 fn harmony_at(parts: &[(String, Vec<Note>)], tick: i64, exclude: &str) -> HashSet<i32> {
     parts
         .iter()
@@ -152,6 +161,12 @@ fn fold(notes: &[Note], lo: i32, hi: i32) -> Vec<Note> {
 
 /// Parts rewritten for a difficulty mode (faithful returns them unchanged).
 pub fn apply_difficulty(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: &str) -> Result<Vec<(String, Vec<Note>)>, String> {
+    apply_difficulty_only(parts, lineup, mode, None)
+}
+
+/// [`apply_difficulty`] on the parts named in `only` (all when None); every entry of `parts`
+/// (also one that is not a part of the lineup) still counts for the harmony the 16th merges read.
+pub fn apply_difficulty_only(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: &str, only: Option<&[&str]>) -> Result<Vec<(String, Vec<Note>)>, String> {
     if !MODES.contains(&mode) {
         return Err(format!("difficulty must be one of {MODES:?}"));
     }
@@ -162,11 +177,17 @@ pub fn apply_difficulty(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: 
     let mut out: Vec<(String, Vec<Note>)> = source.clone();
     for part in &lineup.parts {
         let name = part.name;
+        if only.is_some_and(|o| !o.contains(&name)) {
+            continue;
+        }
         let Some(pi) = source.iter().position(|(n, _)| n == name) else { continue };
         if source[pi].1.is_empty() || part.instrument.clef == Clef::Percussion {
             continue;
         }
         let solo = name == lineup.lead;
+        // Four-part lineups voice their inner parts straight into the mode's range
+        // (arranger::voice_satb); folding one of them on its own could cross it over its neighbour.
+        let fold_it = !(lineup.satb && name != lineup.lead && name != lineup.bass);
         // The chord at a tick, from every other part as it currently stands.
         let others: Vec<(String, Vec<Note>)> = source.iter().enumerate().filter(|(k, _)| *k != pi).map(|(_, x)| x.clone()).collect();
         let chord_at = |mine: &[Note], t: i64| -> HashSet<i32> {
@@ -177,14 +198,22 @@ pub fn apply_difficulty(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: 
         let notes = if mode == "standard" {
             let m = merge_sixteenths(&mut mine, &chord_at, false, false);
             let (lo, hi) = part.instrument.preferred();
-            fold(&m, lo, hi)
+            if fold_it {
+                fold(&m, lo, hi)
+            } else {
+                m
+            }
         } else {
             let mut m = merge_sixteenths(&mut mine, &chord_at, true, solo);
             if !solo {
                 m = min_eighth(&m);
             }
             let (lo, hi) = easy_range(part);
-            fold(&m, lo, hi)
+            if fold_it {
+                fold(&m, lo, hi)
+            } else {
+                m
+            }
         };
         source[pi].1 = mine;
         if let Some(o) = out.iter_mut().find(|(n, _)| n == name) {

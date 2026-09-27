@@ -48,12 +48,13 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
     if case.kind == "song":
         return [b, "arrange-song", "--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support",
                 str(a["support"]), "--bass", str(a["bass"]), "--harmony", *map(str, a["harmony"]), "--out", str(out),
-                "--title", a["title"]]
+                "--title", a["title"], *a.get("options", [])]
     if case.kind == "lead":
         return [b, "lead-sheet", "--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support",
                 str(a["support"]), "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]]
     if case.kind == "bench":
-        return [b, "arrange-reference", "--reference", str(a["reference"]), "--out", str(out), "--title", a["title"]]
+        return [b, "arrange-reference", "--reference", str(a["reference"]), "--out", str(out), "--title", a["title"],
+                *a.get("options", [])]
     if case.kind == "meter":
         return [b, "meter", "--beats", str(a["beats"]), "--notes", str(a["notes"]), "--out", str(out / "meter.json")]
     if case.kind == "quant":

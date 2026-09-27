@@ -15,6 +15,11 @@
 //!   bass            -> E♭ Bass, B♭ Bass, Bass Trombone doubling while the choir plays
 //!   drums           -> Percussion (drum kit, unpitched)
 //!
+//! A four-part lineup (the quartet) voices its two inner parts together as alto
+//! and tenor with the chorale rules of [`voice_satb`]; in the layered arranger
+//! strings, keys and orchestral brass become one set of harmony slots for them,
+//! with no countermelody, drums or soprano doubling.
+//!
 //! Hard limits come from the instrument table and are never violated; anything
 //! that cannot be placed is left out and reported instead.
 
@@ -22,6 +27,9 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::harmony::{harmony_slots, Slot};
 use crate::instruments::{brass_band, minimal_band, Lineup, Part};
+
+/// Not a part name: the source harmony as chord context for the difficulty modes.
+const HARMONY_CONTEXT: &str = " harmony";
 use crate::model::{Composition, Note, VoiceRole};
 
 /// A rest of two beats or more starts a new phrase.
@@ -200,6 +208,8 @@ pub fn layer_of_part(lineup: &Lineup, name: &str) -> Option<&'static str> {
         Some("solo")
     } else if name == lineup.bass || Some(name) == lineup.second_bass {
         Some("bass")
+    } else if lineup.satb {
+        Some("strings")
     } else if PAD_PARTS.contains(&name) || name == "Euphonium" {
         Some("strings")
     } else if CHOIR_PARTS.contains(&name) {
@@ -233,13 +243,14 @@ fn sounding_at(notes: &[Note], tick: i64) -> Vec<&Note> {
     notes.iter().filter(|n| n.start <= tick && tick < n.end()).collect()
 }
 
-/// Assign one pitch per inner part (high to low) from the chord's pitch classes.
-fn voice_slot(pcs: &[i32], parts: &[&Part], ceiling: i32, floor: i32, prev: &HashMap<&'static str, i32>) -> Vec<(&'static str, i32)> {
+/// Assign one pitch per inner part (high to low) from the chord's pitch classes
+/// (inside each part's reading range, or its entry in `ranges`, parallel to `parts`).
+fn voice_slot(pcs: &[i32], parts: &[&Part], ceiling: i32, floor: i32, prev: &HashMap<&'static str, i32>, ranges: Option<&[(i32, i32)]>) -> Vec<(&'static str, i32)> {
     let mut chosen: Vec<(&'static str, i32)> = Vec::new();
     let mut used: Vec<i32> = Vec::new();
     let mut upper = ceiling;
-    for part in parts {
-        let (lo, hi) = part.instrument.preferred();
+    for (i, part) in parts.iter().enumerate() {
+        let (lo, hi) = ranges.map(|r| r[i]).unwrap_or_else(|| part.instrument.preferred());
         let hi = hi.min(upper - 1);
         let lo = lo.max(floor + 1);
         let options: Vec<i32> = (lo..=hi).filter(|p| pcs.contains(&p.rem_euclid(12))).collect();
@@ -273,11 +284,193 @@ fn by_comfort_desc<'a>(parts: impl Iterator<Item = &'a Part>) -> Vec<&'a Part> {
     v
 }
 
+// ---------------------------------------------------------------------------
+// Four-part voicing (quartet): alto and tenor chosen together per harmony slot.
+// ---------------------------------------------------------------------------
+
+/// Root of a slot's chord: the first pitch class (ascending) with the most of: a
+/// triad (third and perfect fifth above it), a fifth above it, a third above it,
+/// the bass on it.
+pub fn chord_root(pcs: &[i32], bass_pc: Option<i32>) -> i32 {
+    let mut sorted = pcs.to_vec();
+    sorted.sort();
+    let has = |pc: i32| pcs.contains(&pc.rem_euclid(12));
+    let mut best = sorted[0];
+    let mut key: Option<(i32, i32, i32, i32)> = None;
+    for &r in &sorted {
+        let third = has(r + 4) || has(r + 3);
+        let fifth = has(r + 7);
+        let k = ((third && fifth) as i32, fifth as i32, third as i32, (Some(r) == bass_pc) as i32);
+        if key.is_none_or(|kk| k > kk) {
+            best = r;
+            key = Some(k);
+        }
+    }
+    best
+}
+
+/// Pairs of voices (listed high to low) that move in the same direction from one
+/// perfect fifth or octave (unison) to another of the same kind.
+pub fn perfect_parallels(prev: &[Option<i32>], cur: &[Option<i32>]) -> usize {
+    let mut n = 0;
+    for i in 0..cur.len() {
+        for j in i + 1..cur.len() {
+            let (Some(a0), Some(b0), Some(a1), Some(b1)) = (prev[i], prev[j], cur[i], cur[j]) else { continue };
+            let (iv0, iv1) = ((a0 - b0).rem_euclid(12), (a1 - b1).rem_euclid(12));
+            if iv0 == iv1 && (iv0 == 0 || iv0 == 7) && a1 != a0 && b1 != b0 && (a1 > a0) == (b1 > b0) {
+                n += 1;
+            }
+        }
+    }
+    n
+}
+
+/// (alto, tenor) for one harmony slot under `soprano` and over `bass`, or None
+/// when no pair keeps the rules.
+///
+/// Hard rules: S > A >= T > B (only alto and tenor may share a note), S-A and
+/// A-T at most an octave, both notes chord tones. Among the pairs that keep
+/// them, the smallest of (in order):
+///   1. chord tones left out (the fifth of a triad does not count)
+///   2. parallel perfect fifths and octaves against the previous slot, over all voice pairs
+///   3. doubling: 1 for a missing fifth, 1 per extra copy of a tone other than
+///      the root and the bass's own tone
+///   4. movement |dA| + |dT| from the previous slot
+///   5. the higher alto, then the higher tenor
+///
+/// `prev` is the previous slot's [S, A, T, B]. A lead that moves during the
+/// slot is given as its lowest note (`soprano`, for crossing) and its highest
+/// (`soprano_top`, for spacing; default `soprano`). The same order as the
+/// Python reference (arranger.voice_satb), frozen after tuning on the chorales.
+pub fn voice_satb(pcs: &[i32], soprano: Option<i32>, bass: Option<i32>, prev: Option<&[Option<i32>; 4]>, alto_range: (i32, i32), tenor_range: (i32, i32), soprano_top: Option<i32>) -> Option<(i32, i32)> {
+    let mut s: Vec<i32> = pcs.iter().map(|p| p.rem_euclid(12)).collect();
+    s.sort();
+    s.dedup();
+    let top = soprano_top.or(soprano);
+    let bass_pc = bass.map(|b| b.rem_euclid(12));
+    let root = chord_root(&s, bass_pc);
+    let fifth = Some((root + 7).rem_euclid(12)).filter(|f| s.contains(f));
+    let mut best: Option<(i32, i32)> = None;
+    let mut best_key: Option<(usize, usize, i64, i32, i32, i32)> = None;
+    for a in alto_range.0..=alto_range.1 {
+        if !s.contains(&a.rem_euclid(12)) {
+            continue;
+        }
+        if let Some(sp) = soprano {
+            if !(a < sp && top.unwrap_or(sp) - a <= 12) {
+                continue;
+            }
+        }
+        for t in tenor_range.0..=tenor_range.1 {
+            if !s.contains(&t.rem_euclid(12)) || t > a || a - t > 12 || bass.is_some_and(|b| t <= b) {
+                continue;
+            }
+            let have: Vec<i32> = [soprano, Some(a), Some(t), bass].iter().flatten().map(|v| v.rem_euclid(12)).collect();
+            let missing: Vec<i32> = s.iter().copied().filter(|pc| !have.contains(pc)).collect();
+            let essential = missing.iter().filter(|pc| Some(**pc) != fifth).count();
+            let mut doubling: i64 = fifth.is_some_and(|f| missing.contains(&f)) as i64;
+            let mut distinct = have.clone();
+            distinct.sort();
+            distinct.dedup();
+            for pc in distinct {
+                if pc != root && Some(pc) != bass_pc {
+                    doubling += have.iter().filter(|h| **h == pc).count() as i64 - 1;
+                }
+            }
+            let (par, mv) = match prev {
+                Some(p) => (
+                    perfect_parallels(p, &[soprano, Some(a), Some(t), bass]),
+                    p[1].map(|x| (a - x).abs()).unwrap_or(0) + p[2].map(|x| (t - x).abs()).unwrap_or(0),
+                ),
+                None => (0, 0),
+            };
+            let key = (essential, par, doubling, mv, -a, -t);
+            if best_key.is_none_or(|k| key < k) {
+                best = Some((a, t));
+                best_key = Some(key);
+            }
+        }
+    }
+    best
+}
+
+/// Alto and tenor of a four-part lineup, slot by slot (start, end, pitch classes, confidence).
+fn voice_satb_slots(arr: &mut Arrangement, slots: &[(i64, i64, Vec<i32>, f64)], lead_notes: &[Note], bass_notes: &[Note], difficulty: &str) {
+    let lineup = arr.lineup.clone();
+    let inner = by_comfort_desc(lineup.parts.iter().filter(|p| p.name != lineup.lead && p.name != lineup.bass));
+    let (alto, tenor) = (inner[0], inner[1]);
+    let ra = crate::difficulty::mode_range(alto, difficulty);
+    let rt = crate::difficulty::mode_range(tenor, difficulty);
+    for p in &inner {
+        arr.get_mut(p.name);
+    }
+    let mut prev: Option<[Option<i32>; 4]> = None;
+    let mut prev_named: HashMap<&'static str, i32> = HashMap::new();
+    for (start, end, pcs, conf) in slots {
+        // The inner parts hold through the slot: keep them under the lead's lowest note in it and
+        // over the bass's highest, so a moving line never crosses them.
+        let top: Vec<i32> = lead_notes.iter().filter(|n| n.start < *end && n.end() > *start).map(|n| n.pitch).collect();
+        let bot: Vec<i32> = bass_notes.iter().filter(|n| n.start < *end && n.end() > *start).map(|n| n.pitch).collect();
+        let sop = top.iter().copied().min();
+        let bas = bot.iter().copied().max();
+        let (a, t) = match voice_satb(pcs, sop, bas, prev.as_ref(), ra, rt, top.iter().copied().max()) {
+            Some((a, t)) => (Some(a), Some(t)),
+            None => {
+                arr.warnings.push(format!("{}/{}: slot at tick {} voiced without the four-part rules", alto.name, tenor.name, start));
+                let v = voice_slot(pcs, &[alto, tenor], sop.unwrap_or(90), bas.unwrap_or(30), &prev_named, Some(&[ra, rt]));
+                let get = |name: &str| v.iter().find(|(n, _)| *n == name).map(|(_, p)| *p);
+                (get(alto.name), get(tenor.name))
+            }
+        };
+        for (part, p) in [(alto, a), (tenor, t)] {
+            if let Some(p) = p {
+                arr.get_mut(part.name).push(Note::new(p, *start, end - start, *conf, vec!["arranger".into()]));
+                prev_named.insert(part.name, p);
+            }
+        }
+        prev = Some([sop, a, t, bas]);
+    }
+}
+
+/// Four-part lineups: the difficulty mode applied to lead and bass before the inner
+/// parts are voiced against them (so a later change to the outer parts cannot cross
+/// an inner one). The 16th merges read the chord from the other outer part and the
+/// source harmony.
+fn outer_difficulty(arr: &mut Arrangement, difficulty: &str, harmony: &[Note]) -> Result<(), String> {
+    let lineup = arr.lineup.clone();
+    let names = [lineup.lead, lineup.bass];
+    let mut parts: Vec<(String, Vec<Note>)> = names.iter().map(|n| (n.to_string(), arr.part_notes(n).to_vec())).collect();
+    parts.push((HARMONY_CONTEXT.to_string(), harmony.to_vec()));
+    let out = crate::difficulty::apply_difficulty_only(parts, &lineup, difficulty, Some(&names))?;
+    for (name, notes) in out {
+        if names.contains(&name.as_str()) {
+            arr.set(&name, notes);
+        }
+    }
+    Ok(())
+}
+
+/// Four-part lineups: the difficulty mode on the inner parts only (voiced in its range already).
+fn inner_difficulty(arr: &mut Arrangement, difficulty: &str) -> Result<(), String> {
+    let lineup = arr.lineup.clone();
+    let inner: Vec<&str> = lineup.parts.iter().map(|p| p.name).filter(|n| *n != lineup.lead && *n != lineup.bass).collect();
+    arr.parts = crate::difficulty::apply_difficulty_only(std::mem::take(&mut arr.parts), &lineup, difficulty, Some(&inner))?;
+    Ok(())
+}
+
 pub fn arrange(comp: &Composition) -> Arrangement {
     arrange_with(comp, minimal_band())
 }
 
 pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
+    arrange_opts(comp, lineup, "faithful").expect("faithful arrangement")
+}
+
+/// Melody, bass and harmony voices arranged for `lineup`; `difficulty` as in difficulty.rs.
+pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Result<Arrangement, String> {
+    if !crate::difficulty::MODES.contains(&difficulty) {
+        return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
+    }
     let mut arr = Arrangement::new(lineup.clone());
     let melody: Vec<Note> = comp.voices_with(VoiceRole::Melody).flat_map(|v| v.notes.iter().cloned()).collect();
     let bass: Vec<Note> = comp.voices_with(VoiceRole::Bass).flat_map(|v| v.notes.iter().cloned()).collect();
@@ -312,6 +505,10 @@ pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
     for p in &inner {
         arr.set(p.name, Vec::new());
     }
+    if lineup.satb {
+        outer_difficulty(&mut arr, difficulty, &harmony)?;
+    }
+    let mut satb_slots: Vec<(i64, i64, Vec<i32>, f64)> = Vec::new();
     let mut slots: Vec<i64> = harmony.iter().map(|n| n.start).collect();
     slots.sort();
     slots.dedup();
@@ -338,13 +535,24 @@ pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
             end = if nxt - end <= MIN_REST_TICKS { nxt } else { end.min(nxt) };
         }
         let conf = sounding.iter().map(|n| n.confidence).fold(f64::INFINITY, f64::min);
-        let voicing = voice_slot(&pcs, &inner, ceiling, floor, &prev);
+        if lineup.satb {
+            satb_slots.push((s, end, pcs, conf));
+            continue;
+        }
+        let voicing = voice_slot(&pcs, &inner, ceiling, floor, &prev, None);
         for (name, p) in &voicing {
             arr.get_mut(name).push(Note::new(*p, s, end - s, conf, vec!["arranger".into()]));
         }
         prev.extend(voicing);
     }
-    arr
+    if lineup.satb {
+        let (lead_notes, bass_notes) = (arr.part_notes(lead.name).to_vec(), arr.part_notes(eb.name).to_vec());
+        voice_satb_slots(&mut arr, &satb_slots, &lead_notes, &bass_notes, difficulty);
+        inner_difficulty(&mut arr, difficulty)?;
+        return Ok(arr);
+    }
+    arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, difficulty)?;
+    Ok(arr)
 }
 
 pub const PAD_PARTS: [&str; 6] = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"];
@@ -370,7 +578,7 @@ fn voice_layer(arr: &mut Arrangement, slots: &[Slot], part_names: &[&str], ceili
         let ceiling = top.first().map(|n| n.pitch).unwrap_or(default_ceiling);
         // Pads may sit below a bass line that climbs into the tenor register.
         let floor = bot.first().map(|n| n.pitch.min(43)).unwrap_or(30);
-        let voicing = voice_slot(pcs, &parts, ceiling, floor, &prev);
+        let voicing = voice_slot(pcs, &parts, ceiling, floor, &prev, None);
         for (name, p) in &voicing {
             arr.get_mut(name).push(Note::new(*p, *start, end - start, conf, vec!["arranger".into()]));
         }
@@ -542,6 +750,25 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         top.push(n.clone());
     }
     let counter: Vec<Note> = top.into_iter().filter(|n| n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat).collect();
+    if lineup.satb {
+        // One set of harmony slots from the whole accompaniment, voiced as alto and tenor.
+        let mut acc = strings.clone();
+        acc.extend(keys.iter().cloned());
+        acc.extend(brass.iter().cloned());
+        outer_difficulty(&mut arr, &opts.difficulty, &acc)?;
+        let mut slots = harmony_slots(&acc, end, 4, 0.35);
+        if figuration {
+            slots = figurate(&slots, &acc.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
+        }
+        let slots: Vec<(i64, i64, Vec<i32>, f64)> = slots.into_iter().map(|(s, e, pcs)| (s, e, pcs, 0.8)).collect();
+        let (lead_notes, bass_notes) = (arr.part_notes(lead).to_vec(), arr.part_notes(eb.name).to_vec());
+        voice_satb_slots(&mut arr, &slots, &lead_notes, &bass_notes, &opts.difficulty);
+        if !layer(comp, "drums").is_empty() {
+            arr.warnings.push(format!("{}: drums left out (no percussion part)", lineup.name));
+        }
+        inner_difficulty(&mut arr, &opts.difficulty)?;
+        return Ok(arr);
+    }
     if lineup.has("Euphonium") {
         let euph = lineup.by_name("Euphonium");
         arr.set(euph.name, place_smooth(&counter, euph));

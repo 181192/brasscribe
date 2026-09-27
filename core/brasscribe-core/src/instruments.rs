@@ -306,14 +306,33 @@ pub fn minimal_band() -> Lineup {
     }
 }
 
-/// Lineup option values: "band" (the default; "full" and "" are aliases) and "minimal".
-pub const LINEUP_KEYS: [&str; 2] = ["band", "minimal"];
+/// Brass quartet of the British brass-band tradition: one player per part, melody on top, the
+/// Euphonium as the bass, 2nd Cornet and Tenor Horn voiced as alto and tenor.
+pub fn quartet() -> Lineup {
+    Lineup {
+        name: "Brass quartet",
+        parts: vec![
+            ps("1st Cornet", &CORNET, 1, "1st Cnt.", Some(1)),
+            ps("2nd Cornet", &CORNET, 1, "2nd Cnt.", Some(4)),
+            ps("Tenor Horn", &TENOR_HORN, 1, "Ten. Hn.", Some(1)),
+            ps("Euphonium", &EUPHONIUM, 1, "Euph.", Some(3)),
+        ],
+        lead: "1st Cornet",
+        bass: "Euphonium",
+        second_bass: None,
+        satb: true,
+    }
+}
+
+/// Lineup option values: "band" (the default; "full" and "" are aliases), "minimal" and "quartet".
+pub const LINEUP_KEYS: [&str; 3] = ["band", "minimal", "quartet"];
 
 /// The canonical option value of a lineup name ("full" and "" -> "band").
 pub fn lineup_key(name: &str) -> Result<&'static str, String> {
     match name {
         "" | "band" | "full" => Ok("band"),
         "minimal" => Ok("minimal"),
+        "quartet" => Ok("quartet"),
         other => Err(format!("unknown lineup {other}")),
     }
 }
@@ -322,6 +341,7 @@ pub fn lineup_key(name: &str) -> Result<&'static str, String> {
 pub fn lineup_by_name(name: &str) -> Result<Lineup, String> {
     Ok(match lineup_key(name)? {
         "minimal" => minimal_band(),
+        "quartet" => quartet(),
         _ => brass_band(),
     })
 }

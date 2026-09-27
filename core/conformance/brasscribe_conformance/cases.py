@@ -27,7 +27,13 @@ MIKKEL_VARIANTS = [
     ("layers-minimal-easier", ["--lineup", "minimal", "--difficulty", "easier"]),
     ("layers-key-bb", ["--key", "Bb"]),
     ("layers-transpose-down-3", ["--transpose", "-3"]),
+    ("layers-quartet", ["--lineup", "quartet"]),
+    ("layers-quartet-easier", ["--lineup", "quartet", "--difficulty", "easier"]),
 ]
+# Eval sets whose songs are also arranged for the quartet (song and bench cases): the chorales,
+# which a brass quartet plays.
+QUARTET_SETS = ("choralebricks-brass4",)
+QUARTET = ["--lineup", "quartet"]
 
 
 def mikkel_contour() -> Path | None:
@@ -100,8 +106,12 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
                                                        "title": song.name}))
             cases.append(Case(f"{base}/layers", "layers", {"layers": work / "_layers" / base, "song": song,
                                                            "beats": beats, "title": song.name}))
+            if eval_set.name in QUARTET_SETS:
+                cases.append(Case(f"{base}/song-quartet", "song", {**cases[-3].args, "options": QUARTET}))
             if _has_quarter(song / "reference.json"):
                 cases.append(Case(f"{base}/bench", "bench", {"reference": song / "reference.json", "title": song.name}))
+                if eval_set.name in QUARTET_SETS:
+                    cases.append(Case(f"{base}/bench-quartet", "bench", {**cases[-1].args, "options": QUARTET}))
                 cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
     # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
     # layered output from the Python reference is kept next to it.

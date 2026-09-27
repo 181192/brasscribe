@@ -69,13 +69,19 @@ def run(case: Case, out: Path) -> None:
     elif case.kind == "song":
         _main(arrange_song, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
                              "--bass", str(a["bass"]), "--harmony", *map(str, a["harmony"]), "--out", str(out),
-                             "--title", a["title"], "--no-render"])
+                             "--title", a["title"], "--no-render", *a.get("options", [])])
     elif case.kind == "lead":
         _main(lead_sheet, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
                            "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]])
     elif case.kind == "bench":
+        from brasscribe_music.instruments import lineup_by_name
+
+        opts = a.get("options", [])
+        lineup = opts[opts.index("--lineup") + 1] if "--lineup" in opts else "minimal"
         comp = arrange_bench.composition_from_reference(a["reference"].parent, a["title"])
-        _, arr = arrange_bench.evaluate(comp)
+        if lineup != "minimal":
+            comp.arrangement = {"lineup": lineup, "difficulty": "faithful", "transpose_semitones": 0}
+        _, arr = arrange_bench.evaluate(comp, lineup_by_name(lineup))
         comp.to_json(out / "composition.json")
         write_musicxml(build_band_score(arr, comp), out / "brass-band.musicxml", band_sounds(arr))
     elif case.kind == "quant":

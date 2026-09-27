@@ -497,10 +497,14 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
 /// when its voices carry layers (with the lineup and difficulty recorded in
 /// `arrangement`), else the minimal arranger.
 pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
+    let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
     if !comp.voices.iter().any(|v| v.layer.is_some()) {
+        if opt("lineup").as_deref() == Some("quartet") {
+            let difficulty = opt("difficulty").filter(|d| !d.is_empty()).unwrap_or_else(|| "faithful".into());
+            return crate::arranger::arrange_opts(comp, crate::instruments::quartet(), &difficulty);
+        }
         return Ok(arrange(comp));
     }
-    let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
     // Anything but a known lineup arranges for the band, as before lineups carried their roles.
     let lineup = crate::instruments::lineup_by_name(opt("lineup").as_deref().unwrap_or("band")).unwrap_or_else(|_| crate::instruments::brass_band());
     let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
@@ -524,9 +528,42 @@ fn melody_votes(melody: &MidiFile, support: Option<&MidiFile>) -> Vec<RawNote> {
     cand.iter().map(|c| c.raw()).collect()
 }
 
+/// Options of the song arrangement.
+#[derive(Debug, Clone, Default)]
+pub struct SongOptions {
+    /// "minimal" (8 parts; the default when empty) or "quartet".
+    pub lineup: String,
+}
+
+/// The option value of a song lineup and the lineup ("" -> minimal).
+fn song_lineup(name: &str) -> Result<(&'static str, crate::instruments::Lineup), String> {
+    match name {
+        "" | "minimal" => Ok(("minimal", crate::instruments::minimal_band())),
+        "quartet" => Ok(("quartet", crate::instruments::quartet())),
+        other => Err(format!("unknown song lineup {other} (minimal or quartet)")),
+    }
+}
+
+/// Records a non-default lineup of the non-layered arrangers in the composition.
+fn record_lineup(comp: &mut Composition, key: &str) {
+    if key != "minimal" {
+        let mut a = serde_json::Map::new();
+        a.insert("lineup".into(), key.into());
+        a.insert("difficulty".into(), "faithful".into());
+        a.insert("transpose_semitones".into(), 0.into());
+        comp.arrangement = Some(serde_json::Value::Object(a));
+    }
+}
+
 /// Minimal brass-band arrangement: melody (MuScriptor confirmed by Basic Pitch),
 /// bass line, and the accompaniment reduced to a per-beat harmonic rhythm.
 pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<BandResult, String> {
+    arrange_song_opts(inp, beats, title, &SongOptions::default())
+}
+
+/// [`arrange_song`] for a lineup (minimal band or quartet), recorded in the composition.
+pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &SongOptions) -> Result<BandResult, String> {
+    let (lineup_key, lineup) = song_lineup(&opts.lineup)?;
     let mel_all = inp.melody.pitched();
     let bass_all = inp.bass.pitched();
     let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();
@@ -554,7 +591,7 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
     let plain = |id: &str, role, notes: Vec<Note>| Voice { id: id.into(), role, notes, instrument_hint: None, layer: None };
     let tonal: Vec<&Note> = melody.iter().chain(bass.iter()).chain(harm.iter()).collect();
     let fifths = tonal_key(&tonal);
-    let comp = Composition {
+    let mut comp = Composition {
         title: title.into(),
         voices: vec![plain("melody", VoiceRole::Melody, melody.clone()), plain("bass", VoiceRole::Bass, bass.clone()), plain("harmony", VoiceRole::Harmony, harm.clone())],
         meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
@@ -568,7 +605,8 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
         review: Vec::new(),
         arrangement: None,
     };
-    let arrangement = arrange(&comp);
+    record_lineup(&mut comp, lineup_key);
+    let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
 }
@@ -666,8 +704,15 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
 
 /// Arranger benchmark path: reference -> Composition -> minimal band score.
 pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, String> {
-    let comp = composition_from_reference(reference, title)?;
-    let arrangement = arrange(&comp);
+    arrange_reference_with(reference, title, "")
+}
+
+/// [`arrange_reference`] for a lineup (minimal band or quartet), recorded in the composition.
+pub fn arrange_reference_with(reference: &Value, title: &str, lineup: &str) -> Result<BandResult, String> {
+    let (lineup_key, lineup) = song_lineup(lineup)?;
+    let mut comp = composition_from_reference(reference, title)?;
+    record_lineup(&mut comp, lineup_key);
+    let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
 }
