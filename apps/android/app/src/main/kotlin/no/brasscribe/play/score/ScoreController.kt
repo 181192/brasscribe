@@ -496,6 +496,7 @@ class ScoreController(
 data class ScorePalette(
     val paper: Int, val ink: Int, val staff: Int, val cursor: Int, val uncertain: Int, val veryUncertain: Int,
     val loopTint: Int, val highContrast: Boolean, val adlibTint: Int = loopTint,
+    val selectionTint: Int = adlibTint, val selectionEdge: Int = ink,
 )
 
 internal const val BOXED_QUESTION = "\u2370"

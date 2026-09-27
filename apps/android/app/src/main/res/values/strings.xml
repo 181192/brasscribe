@@ -436,4 +436,39 @@
     <string name="octave_down">Octave down</string>
     <string name="octave_up">Octave up</string>
     <string name="demo_where">The example, no computer needed</string>
+    <string name="review_most_right">Most of these are probably right. Listen to a few, then keep the rest bar by bar.</string>
+    <plurals name="review_keep_bar">
+        <item quantity="one">Keep this bar</item>
+        <item quantity="other">Keep the rest of this bar (%d)</item>
+    </plurals>
+    <plurals name="review_most_right_start_very">
+        <item quantity="one">Most of these are probably right. Start with the %d very unsure one.</item>
+        <item quantity="other">Most of these are probably right. Start with the %d very unsure ones.</item>
+    </plurals>
+    <string name="review_card_title_bars">Bars %1$d–%2$d · %3$s</string>
+    <plurals name="review_title_places">
+        <item quantity="one">Check %d place</item>
+        <item quantity="other">Check %d places</item>
+    </plurals>
+    <plurals name="review_your_part_places">
+        <item quantity="one">%1$d place in %2$s.</item>
+        <item quantity="other">%1$d places in %2$s.</item>
+    </plurals>
+    <plurals name="review_group_notes">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+    <string name="home_full_band">Full band</string>
+    <plurals name="home_bars">
+        <item quantity="one">%d bar</item>
+        <item quantity="other">%d bars</item>
+    </plurals>
+    <plurals name="home_to_check">
+        <item quantity="one">%d to check</item>
+        <item quantity="other">%d to check</item>
+    </plurals>
+    <plurals name="score_marked_places">
+        <item quantity="one">%d place marked ?</item>
+        <item quantity="other">%d places marked ?</item>
+    </plurals>
 </resources>

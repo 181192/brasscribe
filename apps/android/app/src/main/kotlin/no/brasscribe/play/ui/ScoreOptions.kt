@@ -91,5 +91,29 @@ fun scoreSubtitle(entry: ScoreEntry): String {
     }
     val date = android.text.format.DateUtils.getRelativeTimeSpanString(entry.updated, System.currentTimeMillis(),
         android.text.format.DateUtils.DAY_IN_MILLIS).toString()
-    return listOfNotNull(profile, date, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
+    // "Full band · 132 bars · Today · 83 to check" for the phone's scores (review 3).
+    val core = androidx.compose.ui.platform.LocalContext.current.let { (it.applicationContext as no.brasscribe.play.PlayApplication).container.core }
+    val saved = entry.saved
+    // Worked out off the main thread: decoding and grouping a full band takes a moment per score.
+    val facts by androidx.compose.runtime.produceState<Triple<Int, Int, Int?>?>(null, saved?.id, saved?.updated) {
+        saved ?: return@produceState
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { factsOf(saved, core) }
+    }
+    val band = facts?.first?.let { if (it > 1) stringResource(R.string.home_full_band) else stringResource(R.string.lineup_solo) } ?: profile
+    val bars = facts?.second?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
+    val left = facts?.third?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
+    return listOfNotNull(band, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
+}
+
+/** Parts, bars and review items left of a saved score. */
+private fun factsOf(saved: no.brasscribe.play.SavedScore, core: no.brasscribe.play.model.CoreBridge): Triple<Int, Int, Int?> {
+    run {
+        val parts = no.brasscribe.play.model.MusicXmlParts.names(saved.musicXml)
+        val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(saved.musicXml)
+            ?.groupValues?.get(1)?.let { Regex("<measure\\b").findAll(it).count() } ?: 0
+        val checked = saved.checked.mapNotNull { k -> k.substringBefore(':').let { v -> k.substringAfter(':').toIntOrNull()?.let { v to it } } }
+            .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
+        val left = saved.compositionJson?.let { j -> runCatching { itemsToCheck(core.decodeComposition(j), checked, core) }.getOrNull() }
+        return Triple(parts.size, bars, left)
+    }
 }

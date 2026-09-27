@@ -21,6 +21,12 @@ data class Composition(
     @SerialName("first_downbeat") val firstDownbeat: Int = 0,
     @SerialName("ticks_per_beat") val ticksPerBeat: Int = DEFAULT_TICKS_PER_BEAT,
     @SerialName("free_regions") val freeRegions: List<FreeRegion> = emptyList(),
+    /**
+     * Neighbouring uncertain notes of one voice to review together (music/README.md, "Confidence and
+     * review marks"): [start, end) ticks. Null when the engine did not group them; then every marked
+     * note is its own item.
+     */
+    val review: List<ReviewItem>? = null,
 ) {
     val endTick: Int get() = voices.maxOfOrNull { v -> v.notes.maxOfOrNull { it.end } ?: 0 } ?: 0
     val startTick: Int get() = minOf(0, voices.minOfOrNull { v -> v.notes.minOfOrNull { it.start } ?: 0 } ?: 0)
@@ -93,6 +99,10 @@ enum class Articulation {
     @SerialName("tenuto") TENUTO,
     @SerialName("marcato") MARCATO,
 }
+
+/** One review item: `notes` marked notes of [voice] in [start, end) ticks; `very` when any is very unsure. */
+@Serializable
+data class ReviewItem(val voice: String, val start: Int, val end: Int, val notes: Int = 1, val very: Boolean = false)
 
 @Serializable
 data class Meter(val tick: Int, val beats: Int, @SerialName("beat_unit") val beatUnit: Int = 4)

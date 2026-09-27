@@ -194,7 +194,7 @@ fun HomeScreen(vm: PlayViewModel) {
                     scores.forEachIndexed { index, entry ->
                         if (index > 0) RowDivider()
                         ListRow(
-                            entry.title,
+                            no.brasscribe.play.ScoreTitles.display(entry.title, entry.updated),
                             { vm.openEntry(entry) },
                             subtitle = if (opening == entry.id) stringResource(R.string.opening_score) else scoreSubtitle(entry),
                             icon = if (entry.onComputer) R.drawable.ic_bc_computer else R.drawable.ic_bc_score,

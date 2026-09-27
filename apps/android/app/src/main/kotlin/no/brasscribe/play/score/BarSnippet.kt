@@ -17,6 +17,7 @@ import android.content.Context
  */
 class BarSnippet(context: Context) {
     val view: AlphaTabView = AlphaTabView(context, null)
+    private val selection = NotationOverlay.attach(view, under = true)
     private val overlay = NotationOverlay.attach(view, under = false)
     private var score: Score? = null
     private var loadedXml: String? = null
@@ -32,11 +33,12 @@ class BarSnippet(context: Context) {
         }
         view.api.updateSettings()
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        view.api.postRenderFinished.on { overlay.refresh() }
+        view.api.postRenderFinished.on { selection.refresh(); overlay.refresh() }
     }
 
     fun setPalette(p: ScorePalette) {
         overlay.palette = p
+        selection.palette = p
         view.setBackgroundColor(p.paper)
         view.settings.display.resources.apply {
             mainGlyphColor = p.ink.toColor(); secondaryGlyphColor = p.ink.toColor(); scoreInfoColor = p.ink.toColor()
@@ -46,7 +48,7 @@ class BarSnippet(context: Context) {
     }
 
     /** Shows [bar] (1-based) of the single-part [musicXml], ringing the note [offsetQuarters] into the bar. */
-    fun show(musicXml: String, bar: Int, offsetQuarters: Double) {
+    fun show(musicXml: String, bar: Int, offsetQuarters: Double, barCount: Int = 1) {
         val s = if (musicXml == loadedXml) score else runCatching {
             ScoreLoader.loadScoreFromBytes(Uint8Array(musicXml.toByteArray().asUByteArray()), view.settings)
         }.getOrNull()?.also { loaded ->
@@ -58,11 +60,12 @@ class BarSnippet(context: Context) {
         val staff = s.tracks[0].staves[0]
         val b = (bar - 1).coerceIn(0, staff.bars.length.toInt() - 1)
         view.settings.display.startBar = (b + 1).toDouble()
-        view.settings.display.barCount = 1.0
+        view.settings.display.barCount = barCount.coerceIn(1, 2).toDouble()
         view.api.updateSettings()
         val voice = staff.bars[b].voices[0]
         val notes = (0 until voice.beats.length.toInt()).map { voice.beats[it] }.filter { !it.isRest }
         overlay.ring = notes.minByOrNull { kotlin.math.abs(it.playbackStart / 960.0 - offsetQuarters) }
+        selection.ring = overlay.ring
         view.api.renderScore(s, DoubleList(0.0))
     }
 

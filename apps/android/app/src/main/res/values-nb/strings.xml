@@ -434,4 +434,39 @@
     <string name="octave_down">Oktav ned</string>
     <string name="octave_up">Oktav opp</string>
     <string name="demo_where">Eksempelet, uten datamaskin</string>
+    <string name="review_most_right">De fleste er nok riktige. Lytt til noen, og behold resten takt for takt.</string>
+    <plurals name="review_keep_bar">
+        <item quantity="one">Behold denne takten</item>
+        <item quantity="other">Behold resten av takten (%d)</item>
+    </plurals>
+    <plurals name="review_most_right_start_very">
+        <item quantity="one">De fleste er nok riktige. Begynn med den %d svært usikre.</item>
+        <item quantity="other">De fleste er nok riktige. Begynn med de %d svært usikre.</item>
+    </plurals>
+    <string name="review_card_title_bars">Takt %1$d–%2$d · %3$s</string>
+    <plurals name="review_title_places">
+        <item quantity="one">Sjekk %d sted</item>
+        <item quantity="other">Sjekk %d steder</item>
+    </plurals>
+    <plurals name="review_your_part_places">
+        <item quantity="one">%1$d sted i %2$s.</item>
+        <item quantity="other">%1$d steder i %2$s.</item>
+    </plurals>
+    <plurals name="review_group_notes">
+        <item quantity="one">%d tone</item>
+        <item quantity="other">%d toner</item>
+    </plurals>
+    <string name="home_full_band">Fullt band</string>
+    <plurals name="home_bars">
+        <item quantity="one">%d takt</item>
+        <item quantity="other">%d takter</item>
+    </plurals>
+    <plurals name="home_to_check">
+        <item quantity="one">%d å sjekke</item>
+        <item quantity="other">%d å sjekke</item>
+    </plurals>
+    <plurals name="score_marked_places">
+        <item quantity="one">%d sted merket ?</item>
+        <item quantity="other">%d steder merket ?</item>
+    </plurals>
 </resources>

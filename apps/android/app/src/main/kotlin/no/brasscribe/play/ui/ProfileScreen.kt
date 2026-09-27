@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
@@ -82,14 +83,17 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
             .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics { collectionItemInfo = CollectionItemInfo(index, 1, 0, 1) }
             .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = if (enabled) c.text else c.textMuted)
             if (desc != null) Text(desc, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
-        RadioButton(selected = selected, onClick = null, enabled = enabled,
-            colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
+        // The radio has its own column, top-aligned, so large text never runs under it (review 3, P2-D).
+        Box(Modifier.padding(start = BrasscribeSpace.s2).width(40.dp), contentAlignment = Alignment.TopEnd) {
+            RadioButton(selected = selected, onClick = null, enabled = enabled,
+                colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
+        }
     }
 }
 
