@@ -8,7 +8,10 @@ environments) or an installed package.
     BRASSCRIBE_MODELS       model weights (default: <data>/models, else <repo>/models)
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
     BRASSCRIBE_GPU_LOCK     machine-wide mutex for heavy model runs (default: /tmp/brasscribe-gpu.lock)
-    BRASSCRIBE_TOKEN        shared token for LAN clients (default: generated per server start)
+    BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
+    BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
+    BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
+    BRASSCRIBE_COMPUTER_NAME     name people know this computer by, for "Brasscribe on <name>" (default: host name)
     BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/convert/reports, else <repo>/models/convert/reports)
     BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
 """
@@ -38,6 +41,12 @@ class Settings:
     gpu_lock: Path = field(default_factory=lambda: _env_path("BRASSCRIBE_GPU_LOCK", DEFAULT_GPU_LOCK))
     models_override: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_MODELS", Path()) if os.environ.get("BRASSCRIBE_MODELS") else None)
     token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_TOKEN"))
+    device_idle_days: float = field(default_factory=lambda: float(os.environ.get("BRASSCRIBE_DEVICE_IDLE_DAYS") or 180))
+
+    @property
+    def state_dir(self) -> Path:
+        """Server identity and paired devices; kept apart from caches so clearing a cache never unpairs."""
+        return _env_path("BRASSCRIBE_STATE", self.data_dir / "companion")
 
     @property
     def models_dir(self) -> Path:

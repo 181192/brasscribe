@@ -104,12 +104,17 @@ def test_lan_clients_must_pair(settings):
         assert c.get("/v1/jobs", headers={"Authorization": "Bearer wrong"}).status_code == 401
 
 
-def test_pairing_code_rotates_after_failures(settings):
-    app = create_app(settings, trust_loopback=False)
-    code = app.state.pairing.code
-    for _ in range(5):
-        app.state.pairing.pair("x")
-    assert app.state.pairing.code != code or app.state.pairing.failures == 0
+def test_wrong_codes_lock_pairing_but_never_change_the_code_on_screen(settings):
+    with TestClient(create_app(settings, trust_loopback=False)) as c:
+        code = c.app.state.pairing.code
+        statuses = [c.post("/v1/pair", json={"code": "000000" if code != "000000" else "111111"}).status_code
+                    for _ in range(6)]
+        assert statuses == [403] * 5 + [429]
+        r = c.post("/v1/pair", json={"code": code})
+        assert r.status_code == 429 and int(r.headers["Retry-After"]) > 0
+        assert c.app.state.pairing.code == code
+        c.app.state.pairing.locked_until = 0  # the lock has passed
+        assert c.post("/v1/pair", json={"code": code}).status_code == 200
 
 
 def test_studio_placeholder_served(client):
