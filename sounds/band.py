@@ -121,7 +121,8 @@ def main() -> None:
     ap.add_argument("-o", "--out", default=str(BUILT.parent / "band" / "brasscribe-band.sf2"))
     args = ap.parse_args()
     mapping = json.loads((HERE / "mapping.json").read_text())
-    brass = {name: p for name, p in mapping["parts"].items() if p["players"][0]["target"] != "msbasic-drums"}
+    brass = {name: p for name, p in mapping["parts"].items()
+             if p["players"][0]["target"] != "msbasic-drums" and "preset_of" not in p}
     loudest = max(p.get("gain_db", 0.0) for p in brass.values())
     bank = Bank()
     table = []
@@ -143,6 +144,9 @@ def main() -> None:
             short = name.replace("♭", "b").replace("Cornet", "Cnt").replace("Trombone", "Tbn").replace("Baritone", "Bar")
             bank.presets.append(sf2.RawPreset(f"{short} {art}"[:19], bs["program"], b, zones))
         table.append((name, bs["program"], bs["bank"], bs["staccato_bank"], "+".join(targets), channel_gain))
+    for part in mapping["parts"].values():  # one-player parts that play a section principal's preset
+        if "preset_of" in part:
+            part["band_soundfont"] = dict(mapping["parts"][part["preset_of"]]["band_soundfont"])
     drum = mapping["parts"]["Percussion"]["band_soundfont"]
     drum["channel_gain_db"] = round(mapping["parts"]["Percussion"].get("gain_db", 0.0) - loudest, 1)
     bank.drum_kit(MSBASIC, drum["program"])

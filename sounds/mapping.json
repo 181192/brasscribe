@@ -463,6 +463,43 @@
         "channel_gain_db": -7.0
       }
     },
+    "1st Cornet": {
+      "instrument": "bb-cornet",
+      "players": [
+        {
+          "target": "cornet-a"
+        }
+      ],
+      "seat": "solo-cornets",
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -7.0
+      },
+      "preset_of": "Solo Cornet",
+      "note": "One player. Plays the Solo Cornet preset of the band SoundFont (same bank and program)."
+    },
     "Repiano Cornet": {
       "instrument": "bb-cornet",
       "players": [
@@ -643,6 +680,43 @@
         },
         "channel_gain_db": -3.0
       }
+    },
+    "Tenor Horn": {
+      "instrument": "eb-tenor-horn",
+      "players": [
+        {
+          "target": "tenor-horn"
+        }
+      ],
+      "seat": "solo-horn",
+      "gain_db": 1.0,
+      "transposition": {
+        "chromatic": -9,
+        "diatonic": -5,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          45,
+          75
+        ],
+        "comfortable": [
+          45,
+          72
+        ]
+      },
+      "band_soundfont": {
+        "program": 60,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 61,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -3.0
+      },
+      "preset_of": "Solo Horn",
+      "note": "One player. Plays the Solo Horn preset of the band SoundFont (same bank and program)."
     },
     "1st Horn": {
       "instrument": "eb-tenor-horn",
@@ -1047,5 +1121,242 @@
     "about": "One SoundFont for the whole band, built by sounds/band.py. Every brass part has its own sustain preset at (bank, program) and a staccato preset at (staccato_bank = bank + 64, program). The program is the part's General MIDI program from music/src/brasscribe_music/instruments.py (gm_program), so a GM player that ignores banks still plays the right family; bank 0 of each program is the section principal (Solo Cornet, 1st Trombone, E-flat Bass, Solo Horn), which is also what a bank-less lookup finds. Percussion is bank 128 program 0 on MIDI channel 10. MusicXML numbers are 1-based: <midi-program> = program + 1, <midi-bank> = bank + 1.",
     "layering": "A part whose players use more than one target (the cornet desks) layers those targets in its preset, detuned by +-3 cents, so one MIDI channel sounds like a section; the second voice adds about 3 dB, which channel_gain_db compensates.",
     "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine."
+  },
+  "lineups": {
+    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/brasscribe-core/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset.",
+    "Brass band": [
+      "Soprano Cornet",
+      "Solo Cornet",
+      "Repiano Cornet",
+      "2nd Cornet",
+      "3rd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Horn",
+      "2nd Horn",
+      "1st Baritone",
+      "2nd Baritone",
+      "1st Trombone",
+      "2nd Trombone",
+      "Bass Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass",
+      "Percussion"
+    ],
+    "Minimal brass": [
+      "Solo Cornet",
+      "2nd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass"
+    ],
+    "Brass quartet": [
+      "1st Cornet",
+      "2nd Cornet",
+      "Tenor Horn",
+      "Euphonium"
+    ]
+  },
+  "resolve": {
+    "about": "How every player turns a score part into a band SoundFont preset. The same steps on every platform; sounds/partsound.py is the reference and sounds/partsound-vectors.json the shared test vectors. A brass part never falls back to General MIDI or a test tone: if steps 1-4 all miss, step 5 still picks a brass preset from the GM program family, and only a non-brass GM program is left unresolved (the app then says so).",
+    "normalize": "lowercase; '♭' -> 'b', '♯' -> '#'; every run of whitespace (including U+00A0) -> one space; trim.",
+    "steps": [
+      "1. exact: the normalized name equals a normalized key of parts",
+      "2. alias: the normalized name is a key of aliases",
+      "3. keyword: the first keywords entry whose text is a substring of the normalized name",
+      "4. instrument: the MusicXML <instrument-sound> id, or an instrument id from instruments.py, in instruments",
+      "5. program: the part's 0-based General MIDI program in programs"
+    ],
+    "aliases": {
+      "1st cornet": "1st Cornet",
+      "cornet 1": "1st Cornet",
+      "cornet i": "1st Cornet",
+      "principal cornet": "Solo Cornet",
+      "2nd cornet": "2nd Cornet",
+      "cornet 2": "2nd Cornet",
+      "cornet ii": "2nd Cornet",
+      "tenor horn": "Tenor Horn",
+      "horn": "Tenor Horn",
+      "eb horn": "Tenor Horn",
+      "eb tenor horn": "Tenor Horn",
+      "alto horn": "Tenor Horn",
+      "flugel": "Flugelhorn",
+      "flugel horn": "Flugelhorn",
+      "flügelhorn": "Flugelhorn",
+      "sop": "Soprano Cornet",
+      "soprano": "Soprano Cornet",
+      "eb cornet": "Soprano Cornet",
+      "eb soprano cornet": "Soprano Cornet",
+      "baritone": "1st Baritone",
+      "euph": "Euphonium",
+      "euphonium 1": "Euphonium",
+      "euphonium 2": "Euphonium",
+      "trombone": "1st Trombone",
+      "tenor trombone": "1st Trombone",
+      "bass trombone": "Bass Trombone",
+      "b. tbn.": "Bass Trombone",
+      "tuba": "E♭ Bass",
+      "bass": "E♭ Bass",
+      "eb tuba": "E♭ Bass",
+      "bb tuba": "B♭ Bass",
+      "basses": "E♭ Bass",
+      "drums": "Percussion",
+      "drum kit": "Percussion",
+      "drum set": "Percussion",
+      "kit": "Percussion"
+    },
+    "keywords": [
+      [
+        "soprano",
+        "Soprano Cornet"
+      ],
+      [
+        "repiano",
+        "Repiano Cornet"
+      ],
+      [
+        "flugel",
+        "Flugelhorn"
+      ],
+      [
+        "flügel",
+        "Flugelhorn"
+      ],
+      [
+        "3rd cornet",
+        "3rd Cornet"
+      ],
+      [
+        "2nd cornet",
+        "2nd Cornet"
+      ],
+      [
+        "1st cornet",
+        "1st Cornet"
+      ],
+      [
+        "cornet",
+        "Solo Cornet"
+      ],
+      [
+        "trumpet",
+        "Solo Cornet"
+      ],
+      [
+        "2nd horn",
+        "2nd Horn"
+      ],
+      [
+        "1st horn",
+        "1st Horn"
+      ],
+      [
+        "solo horn",
+        "Solo Horn"
+      ],
+      [
+        "2nd baritone",
+        "2nd Baritone"
+      ],
+      [
+        "baritone",
+        "1st Baritone"
+      ],
+      [
+        "euph",
+        "Euphonium"
+      ],
+      [
+        "horn",
+        "Tenor Horn"
+      ],
+      [
+        "bass trombone",
+        "Bass Trombone"
+      ],
+      [
+        "2nd trombone",
+        "2nd Trombone"
+      ],
+      [
+        "trombone",
+        "1st Trombone"
+      ],
+      [
+        "bb bass",
+        "B♭ Bass"
+      ],
+      [
+        "b-flat bass",
+        "B♭ Bass"
+      ],
+      [
+        "bb tuba",
+        "B♭ Bass"
+      ],
+      [
+        "eb bass",
+        "E♭ Bass"
+      ],
+      [
+        "e-flat bass",
+        "E♭ Bass"
+      ],
+      [
+        "tuba",
+        "E♭ Bass"
+      ],
+      [
+        "bass",
+        "E♭ Bass"
+      ],
+      [
+        "perc",
+        "Percussion"
+      ],
+      [
+        "drum",
+        "Percussion"
+      ]
+    ],
+    "instruments": {
+      "brass.cornet.soprano": "Soprano Cornet",
+      "eb-soprano-cornet": "Soprano Cornet",
+      "brass.cornet": "Solo Cornet",
+      "bb-cornet": "Solo Cornet",
+      "brass.trumpet": "Solo Cornet",
+      "brass.flugelhorn": "Flugelhorn",
+      "flugelhorn": "Flugelhorn",
+      "brass.alto-horn": "Tenor Horn",
+      "eb-tenor-horn": "Tenor Horn",
+      "brass.french-horn": "Tenor Horn",
+      "brass.baritone-horn": "1st Baritone",
+      "baritone": "1st Baritone",
+      "brass.trombone": "1st Trombone",
+      "tenor-trombone": "1st Trombone",
+      "brass.trombone.bass": "Bass Trombone",
+      "bass-trombone": "Bass Trombone",
+      "brass.euphonium": "Euphonium",
+      "euphonium": "Euphonium",
+      "brass.tuba": "E♭ Bass",
+      "eb-bass": "E♭ Bass",
+      "bb-bass": "B♭ Bass",
+      "drum.group.set": "Percussion",
+      "drum-kit": "Percussion"
+    },
+    "programs": {
+      "56": "Solo Cornet",
+      "59": "Solo Cornet",
+      "61": "Solo Cornet",
+      "62": "Solo Cornet",
+      "63": "Solo Cornet",
+      "57": "1st Trombone",
+      "58": "E♭ Bass",
+      "60": "Tenor Horn"
+    }
   }
 }

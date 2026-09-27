@@ -46,7 +46,7 @@ def main() -> None:
     ap.add_argument("--rate", type=int, default=22050)
     args = ap.parse_args()
     mapping = json.loads((SOUNDS / "mapping.json").read_text())
-    brass = {n: p for n, p in mapping["parts"].items() if p["players"][0]["target"] != "msbasic-drums"}
+    brass = {n: p for n, p in mapping["parts"].items() if p["players"][0]["target"] != "msbasic-drums" and "preset_of" not in p}
     bank = band.Bank()
     for name, part in brass.items():
         bs = part["band_soundfont"]
