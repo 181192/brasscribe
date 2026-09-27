@@ -469,4 +469,8 @@
         <item quantity="one">%d sted merket ?</item>
         <item quantity="other">%d steder merket ?</item>
     </plurals>
+    <plurals name="review_start_very">
+        <item quantity="one">Begynn med den %d svært usikre.</item>
+        <item quantity="other">Begynn med de %d svært usikre.</item>
+    </plurals>
 </resources>

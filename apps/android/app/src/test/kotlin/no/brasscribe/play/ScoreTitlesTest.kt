@@ -18,7 +18,7 @@ class ScoreTitlesTest {
         assertEquals("Recording, 26 Sep 19:02", ScoreTitles.display("20260815_155324.m4a", at, Locale.US))
         assertEquals("Recording, 26 Sep 19:02", ScoreTitles.display("take-1790415563026.wav", at, Locale.US))
         assertEquals("Abide with Me", ScoreTitles.display("Abide with Me.mp3", at, Locale.US))
-        assertEquals("Mikkel — solo cornet & brass band", ScoreTitles.display("Mikkel — solo cornet & brass band", at, Locale.US))
+        assertEquals("Mikkel — solo cornet & brass band", ScoreTitles.display("Mikkel — solo cornet & brass band (draft)", at, Locale.US))
         assertTrue(ScoreTitles.display("20260815_155324", at, Locale.forLanguageTag("nb")).startsWith("Opptak, 26. sep"))
     }
 }

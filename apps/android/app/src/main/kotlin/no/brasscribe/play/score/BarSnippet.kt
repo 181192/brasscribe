@@ -16,6 +16,8 @@ import android.content.Context
  * ink ring round the note being checked.
  */
 class BarSnippet(context: Context) {
+    /** Called with the bottom of the rendered staff system, in dp. */
+    var onStaffBottom: (Float) -> Unit = {}
     val view: AlphaTabView = AlphaTabView(context, null)
     private val selection = NotationOverlay.attach(view, under = true)
     private val overlay = NotationOverlay.attach(view, under = false)
@@ -33,7 +35,17 @@ class BarSnippet(context: Context) {
         }
         view.api.updateSettings()
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        view.api.postRenderFinished.on { selection.refresh(); overlay.refresh() }
+        view.api.postRenderFinished.on {
+            selection.refresh(); overlay.refresh()
+            // Where the staff system ends: the view is cut off there, below the notes and the dynamics,
+            // so alphaTab's "rendered by alphaTab" line under it stays out of sight (credited in About).
+            val lookup = view.api.boundsLookup
+            val systems = lookup?.staffSystems
+            if (systems != null && systems.length > 0) {
+                val b = systems[systems.length.toInt() - 1].realBounds
+                onStaffBottom((b.y + b.h).toFloat())
+            }
+        }
     }
 
     fun setPalette(p: ScorePalette) {

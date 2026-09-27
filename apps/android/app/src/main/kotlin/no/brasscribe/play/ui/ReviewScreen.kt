@@ -220,6 +220,8 @@ fun ReviewScreen(vm: PlayViewModel) {
                         Lead(pluralStringResource(if (grouped != null) R.plurals.review_your_part_places else R.plurals.review_your_part_count,
                             todo.size, todo.size, partName) + " " + when {
                             // Many marks: most are right, so say where to start (review 3, P1-A).
+                            // Mostly very unsure: don't call them "probably right".
+                            veryCount * 2 > todo.size -> pluralStringResource(R.plurals.review_start_very, veryCount, veryCount)
                             todo.size > MANY_MARKS && veryCount > 0 -> pluralStringResource(R.plurals.review_most_right_start_very, veryCount, veryCount)
                             todo.size > MANY_MARKS -> stringResource(R.string.review_most_right)
                             veryCount > 0 -> pluralStringResource(R.plurals.review_very_first, veryCount, veryCount)
@@ -367,8 +369,8 @@ private fun PartChips(
     val name = { v: no.brasscribe.play.model.Voice -> partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName } }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
         own.forEach { v -> PracticeChip("${name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
-        if (accompaniment.isNotEmpty()) {
-            val n = accompaniment.sumOf { left[it.id] ?: 0 }
+        val n = accompaniment.sumOf { left[it.id] ?: 0 }
+        if (accompaniment.isNotEmpty() && (n > 0 || voiceId in accompaniment.map { it.id })) {
             PracticeChip(stringResource(R.string.review_accompaniment, n), open, { open = !open }, role = Role.Button,
                 trailingIcon = R.drawable.ic_bc_choose)
             if (open) accompaniment.forEach { v -> PracticeChip("${name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
@@ -385,6 +387,8 @@ data class ReviewGroup(val head: PartEvent, val members: List<PartEvent>, val ve
  */
 fun reviewGroups(composition: Composition, voiceId: String, view: PartView): List<ReviewGroup> {
     val notes = view.events.filter { it.note != null }
+    // With the engine's groups, only the parts it grouped have anything to check (the coloured notes).
+    if (composition.review != null && composition.review!!.none { it.voice == voiceId }) return emptyList()
     val grouped = composition.review?.filter { it.voice == voiceId }?.takeIf { it.isNotEmpty() }
     return grouped?.mapNotNull { g ->
         val members = notes.filter { e -> e.note!!.start.let { it >= g.start && it < g.end } }
@@ -631,8 +635,13 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
             c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb(),
             c.selectionTint.toArgb(), c.selectionEdge.toArgb()))
     }
+    var height by remember { mutableStateOf(128f) }
+    androidx.compose.runtime.DisposableEffect(snippet) {
+        snippet.onStaffBottom = { bottom -> snippet.view.post { height = bottom + 6f } }
+        onDispose { snippet.onStaffBottom = {} }
+    }
     androidx.compose.runtime.LaunchedEffect(musicXml, bar, offsetQuarters, barCount) { snippet.show(musicXml, bar, offsetQuarters, barCount) }
-    Box(Modifier.fillMaxWidth().height(128.dp).clipToBounds().clearAndSetSemantics {}) {
+    Box(Modifier.fillMaxWidth().height(height.dp).clipToBounds().clearAndSetSemantics {}) {
         androidx.compose.ui.viewinterop.AndroidView(factory = { snippet.view }, modifier = Modifier.matchParentSize())
         // Drags on the staff scroll the page: this layer takes the touches before alphaTab's own scroll views.
         Box(Modifier.matchParentSize().pointerInput(Unit) {})

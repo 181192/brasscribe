@@ -27,7 +27,8 @@ object ScoreTitles {
 
     /** The title to show for a score saved as [raw] at [updated]. */
     fun display(raw: String, updated: Long, locale: Locale = Locale.getDefault()): String {
-        val name = withoutExtension(raw)
+        // "(draft)" belongs to the engine's file, not to the player's score.
+        val name = withoutExtension(raw).replace(Regex("""\s*\((draft|utkast)\)\s*$""", RegexOption.IGNORE_CASE), "").trim()
         return if (name.isBlank() || isTimestamp(name)) recording(updated, locale) else name
     }
 }

@@ -471,4 +471,8 @@
         <item quantity="one">%d place marked ?</item>
         <item quantity="other">%d places marked ?</item>
     </plurals>
+    <plurals name="review_start_very">
+        <item quantity="one">Start with the %d very unsure one.</item>
+        <item quantity="other">Start with the %d very unsure ones.</item>
+    </plurals>
 </resources>
