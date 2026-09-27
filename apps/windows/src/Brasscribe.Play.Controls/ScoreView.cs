@@ -41,7 +41,7 @@ public sealed partial class ScoreView : UserControl
     private readonly Canvas _pages;
     private readonly Canvas _overlay;
     private readonly Canvas _marks;
-    private readonly Rectangle _focusBox;
+    private readonly Canvas _selectUnder;
     private ScoreViewModel? _viewModel;
     private ScoreViewAutomationPeer? _peer;
 
@@ -56,7 +56,7 @@ public sealed partial class ScoreView : UserControl
         _overlay = new Canvas { IsHitTestVisible = false };
         _cursorOver = new Canvas { IsHitTestVisible = false };
         _marks = new Canvas { IsHitTestVisible = false };
-        _surface = new Grid { Children = { _underlay, _cursorUnder, _pages, _overlay, _cursorOver, _marks } };
+        _surface = new Grid { Children = { _underlay, _cursorUnder, _selectUnder, _pages, _overlay, _cursorOver, _marks } };
         _scroller = new ScrollViewer
         {
             Content = _surface,
@@ -67,8 +67,7 @@ public sealed partial class ScoreView : UserControl
         };
         Content = _scroller;
 
-        _focusBox = new Rectangle { StrokeThickness = 2, Fill = null, Visibility = Visibility.Collapsed, RadiusX = 2, RadiusY = 2 };
-        _marks.Children.Add(_focusBox);
+        _selectUnder = new Canvas { IsHitTestVisible = false };
 
         _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
         _scroller.SizeChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
@@ -77,6 +76,7 @@ public sealed partial class ScoreView : UserControl
             ApplyBrushes();
             SetOverlay(_items);
             SetCursor(_cursor);
+            SetFocusRect(FocusRect, CurrentEvents, _lastStaff);
         };
         Loaded += (_, _) => ApplyBrushes();
         GotFocus += (_, _) => _peer?.RaiseFocusedTextChanged();
@@ -232,10 +232,10 @@ public sealed partial class ScoreView : UserControl
         Draw(items, _cursorUnder, _cursorOver);
     }
 
-    private void Draw(IReadOnlyList<OverlayItem> items, Canvas under, Canvas over)
+    private void Draw(IReadOnlyList<OverlayItem> items, Canvas under, Canvas over, bool clearOver = true)
     {
         under.Children.Clear();
-        over.Children.Clear();
+        if (clearOver) over.Children.Clear();
         foreach (var item in items)
         {
             var b = item.Box;
@@ -258,6 +258,19 @@ public sealed partial class ScoreView : UserControl
                 case OverlayKind.AdlibText:
                     Add(over, new TextBlock { Text = item.Text, FontSize = 17, FontStyle = Windows.UI.Text.FontStyle.Italic, Foreground = Brush("BcInkBrush"),
                         FontFamily = DisplayItalic }, b.X, b.Y);
+                    break;
+                case OverlayKind.GroupBracket:
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = b.W, Y2 = 0, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5, StrokeDashArray = [3, 2] }, b.X, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5 }, b.X, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5 }, b.X + b.W, b.Y);
+                    break;
+                case OverlayKind.SelectionTint: Add(under, Fill(b, "BcSelectionTintBrush")); break;
+                case OverlayKind.SelectionCaret:
+                    Add(over, new Polygon
+                    {
+                        Points = [new Point(b.W / 2, 0), new Point(b.W, b.H), new Point(0, b.H)],
+                        Fill = Brush("BcSelectionEdgeBrush"),
+                    }, b.X, b.Y);
                     break;
                 case OverlayKind.UncertainMark:
                     Add(over, Mark(b, "BcUncertainBrush", boxed: false), b.X, b.Y);
@@ -321,23 +334,27 @@ public sealed partial class ScoreView : UserControl
         canvas.Children.Add(e);
     }
 
-    /// <summary>Shows the keyboard focus on a note or bar and scrolls it into view above the player bar.</summary>
-    public void SetFocusRect(Rect? rect, IReadOnlyList<ScoreEventItem> currentEvents)
+    private IReadOnlyList<OverlayItem> _selection = [];
+    private Rect? _lastStaff;
+
+    /// <summary>
+    /// Shows the note under the talking-score cursor and scrolls it into view above the player bar: a
+    /// selection-tint column over the staff and a caret below it (usability review 3, P2-A). It is not
+    /// a box, which would read as the boxed "?" for very uncertain notes.
+    /// </summary>
+    public void SetFocusRect(Rect? rect, IReadOnlyList<ScoreEventItem> currentEvents, Rect? staff = null)
     {
         if (!ReferenceEquals(CurrentEvents, currentEvents)) EventsVersion++;
         CurrentEvents = currentEvents;
         FocusRect = rect;
-        if (rect is { } r)
-        {
-            const double gap = 2;
-            _focusBox.Width = r.Width + 2 * gap + 4;
-            _focusBox.Height = r.Height + 2 * gap + 4;
-            Canvas.SetLeft(_focusBox, r.X - gap - 2);
-            Canvas.SetTop(_focusBox, r.Y - gap - 2);
-            _focusBox.Visibility = Visibility.Visible;
-            EnsureVisible(r);
-        }
-        else _focusBox.Visibility = Visibility.Collapsed;
+        _lastStaff = staff;
+        _selection = rect is { } r
+            ? ScoreOverlay.Selection(new Box(r.X, r.Y, r.Width, r.Height), staff is { } st ? new Box(st.X, st.Y, st.Width, st.Height) : new Box(r.X, r.Y, r.Width, r.Height))
+            : [];
+        _selectUnder.Children.Clear();
+        foreach (var c in _marks.Children.OfType<Polygon>().ToList()) _marks.Children.Remove(c);
+        Draw(_selection, _selectUnder, _marks, clearOver: false);
+        if (rect is { } visible) EnsureVisible(visible);
         _peer?.RaiseChildrenChanged();
     }
 
@@ -444,7 +461,7 @@ public sealed partial class ScoreView : UserControl
 
     private void ApplyBrushes()
     {
-        _focusBox.Stroke = Brush("BcFocusBrush");
+        SetFocusRect(FocusRect, CurrentEvents, _lastStaff);
     }
 
     private Brush Brush(string key) =>

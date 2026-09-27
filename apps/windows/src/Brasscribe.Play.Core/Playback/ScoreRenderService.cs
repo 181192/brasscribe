@@ -138,9 +138,8 @@ public static class ScoreStyler
                 if (voice is null) continue;
                 foreach (var ev in part.Bars[b].Events)
                 {
-                    if (ev.Confidence is not { } conf || ev.Checked) continue;
-                    var level = Scores.Note.CertaintyOf(conf);
-                    if (level == Scores.Certainty.Confident) continue;
+                    if (!ev.IsUncertain) continue; // with review groups, only each group's first note
+                    var level = ev.IsVeryUncertain ? Scores.Certainty.VeryUncertain : Scores.Certainty.Uncertain;
                     double tick = ev.Tick * AlphaTabTicksPerQuarter / MusicXmlTalkingScoreBuilder.TicksPerQuarter;
                     var beat = voice.Beats.FirstOrDefault(x => Math.Abs(x.PlaybackStart - tick) < 1);
                     if (beat is null) continue;

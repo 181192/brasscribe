@@ -356,6 +356,8 @@ code = {
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),
     "Review_Overline": ("{0} of {1} · {2}", "{0} av {1} · {2}"),
+    "Review_BarsHeading": ("Bars {0}–{1}", "Takt {0}–{1}"),
+    "Review_GroupLine": ("{0} notes together, from: {1}", "{0} toner sammen, fra: {1}"),
     "Review_BarHeading": ("Bar {0}", "Takt {0}"),
     "Review_NoteWritten": ("Written {0}", "Notert {0}"),
     "Review_NoteConcert": ("Concert {0}", "Klingende {0}"),

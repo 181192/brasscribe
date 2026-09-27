@@ -102,9 +102,8 @@ public static class ScoreGeometry
             {
                 foreach (var ev in part.Bars[b].Events)
                 {
-                    if (ev.Confidence is not { } c || ev.Checked) continue;
-                    var level = Scores.Note.CertaintyOf(c);
-                    if (level == Scores.Certainty.Confident) continue;
+                    if (!ev.IsUncertain) continue;
+                    var level = ev.IsVeryUncertain ? Scores.Certainty.VeryUncertain : Scores.Certainty.Uncertain;
                     var beat = BeatAt(score, t, b, ev.Tick);
                     if (beat is null || bounds.FindBeat(beat) is not { } bb) continue;
                     double staffTop = bb.BarBounds?.VisualBounds is { } bar ? bar.Y : bb.VisualBounds.Y;
@@ -116,6 +115,33 @@ public static class ScoreGeometry
             }
         }
         return ScoreOverlay.OnePerBeat(result);
+    }
+
+    /// <summary>A dashed bracket over each open review group of more than one note, from its first to its last note.</summary>
+    public static IReadOnlyList<Box> GroupBrackets(Score score, BoundsLookup bounds, TalkingScoreDocument ts, IEnumerable<int> tracks)
+    {
+        var result = new List<Box>();
+        foreach (int t in tracks)
+        {
+            if (t >= ts.Parts.Count) continue;
+            var part = ts.Parts[t];
+            for (int b = 0; b < part.Bars.Count; b++)
+                foreach (var lead in part.Bars[b].Events.Where(e => e.IsUncertain && e.ReviewLead && e.ReviewNotes > 1))
+                {
+                    var members = Review.ReviewGroups.Members(part, lead.ReviewGroup)
+                        .Select(m => BeatAt(score, t, m.Bar, m.Event.Tick) is { } beat && bounds.FindBeat(beat) is { } bb ? Box.From(bb.VisualBounds) : (Box?)null)
+                        .OfType<Box>().ToList();
+                    if (members.Count < 2) continue;
+                    // One bracket per system line the group spans.
+                    foreach (var line in members.GroupBy(m => Math.Round(m.Y / 4)))
+                    {
+                        double x0 = line.Min(m => m.X), x1 = line.Max(m => m.X + m.W);
+                        double top = line.Min(m => m.Y);
+                        result.Add(new Box(x0, top - 6, x1 - x0, 6));
+                    }
+                }
+        }
+        return result;
     }
 
     /// <summary>

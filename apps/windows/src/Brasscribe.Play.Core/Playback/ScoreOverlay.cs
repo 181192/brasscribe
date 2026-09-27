@@ -27,6 +27,12 @@ public enum OverlayKind
     UncertainMark,
     /// <summary>A boxed "?" above a very uncertain note (confidence below 0.4), in <c>very-uncertain</c>.</summary>
     VeryUncertainMark,
+    /// <summary>A dashed bracket over a review group of several notes, in <c>staff</c> (the "?" carries the level).</summary>
+    GroupBracket,
+    /// <summary>The selected note: a <c>selection-tint</c> column behind it (not a box, which reads as the boxed "?").</summary>
+    SelectionTint,
+    /// <summary>A caret under the staff at the selected note, in <c>selection-edge</c>.</summary>
+    SelectionCaret,
 }
 
 public sealed record OverlayItem(OverlayKind Kind, Box Box, string? Text = null);
@@ -63,7 +69,14 @@ public static class ScoreOverlay
         IReadOnlyList<AdlibRegion> Adlib,
         Box? CursorBeat,
         Box? CursorBar,
-        bool HighContrast);
+        bool HighContrast)
+    {
+        /// <summary>Review groups of several notes, one box per system line (see ScoreGeometry.GroupBrackets).</summary>
+        public IReadOnlyList<Box> Groups { get; init; } = [];
+
+        /// <summary>The selected note and the staff it is on (usability review 3, P2-A).</summary>
+        public (Box Note, Box Staff)? Selection { get; init; }
+    }
 
     public static IReadOnlyList<OverlayItem> Build(Input input)
     {
@@ -108,6 +121,9 @@ public static class ScoreOverlay
 
         items.AddRange(Cursor(input.CursorBeat, input.CursorBar, input.Loop, input.HighContrast));
 
+        foreach (var g in input.Groups) items.Add(new(OverlayKind.GroupBracket, g));
+        if (input.Selection is { } sel) items.AddRange(Selection(sel.Note, sel.Staff));
+
         // Uncertainty: above whichever is higher, the staff or the notehead, centred on the head.
         foreach (var head in input.Uncertain)
         {
@@ -132,6 +148,17 @@ public static class ScoreOverlay
         if (bar is { } b && !highContrast && !loop.Any(l => Overlaps(l, b))) items.Add(new(OverlayKind.CursorTint, b));
         if (beat is { } line) items.Add(new(OverlayKind.CursorLine, line with { W = CursorWidth }));
         return items;
+    }
+
+    /// <summary>The selected note as a tint column over the staff's height and a caret below it.</summary>
+    public static IReadOnlyList<OverlayItem> Selection(Box note, Box staff)
+    {
+        double pad = 4, cx = note.X + note.W / 2;
+        return
+        [
+            new(OverlayKind.SelectionTint, new Box(note.X - pad, staff.Y - pad, note.W + 2 * pad, staff.H + 2 * pad)),
+            new(OverlayKind.SelectionCaret, new Box(cx - 6, staff.Y + staff.H + pad + 2, 12, 8)),
+        ];
     }
 
     /// <summary>Marks of heads that share a beat on one staff are drawn once: a chord gets one "?", at its most uncertain level.</summary>

@@ -132,6 +132,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         MusicXml = musicXml;
         Composition = composition;
         Document = _core.BuildTalkingScore(musicXml, composition);
+        Review.ReviewGroups.Attach(Document, composition);
         Title = Document.Title;
         HasFreeTime = Document.FreeRegions.Count > 0;
         _nav = new ScoreNavigator(Document, Settings());
@@ -156,6 +157,23 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     /// <summary>Arranges the score again from a changed Composition (the native core); null when that can't be done here.</summary>
     public Func<Composition, string?>? Rearrange { get; set; }
+
+    /// <summary>
+    /// A kept review group: every printed note of it in this part loses its mark and its Composition
+    /// notes get confidence 1, so the group stays kept when the score is loaded or arranged again.
+    /// </summary>
+    public void KeepGroup(int partIndex, TsEvent lead)
+    {
+        if (Document is null || lead.ReviewGroup < 0 || partIndex < 0 || partIndex >= Document.Parts.Count) return;
+        foreach (var (_, ev) in Review.ReviewGroups.Members(Document.Parts[partIndex], lead.ReviewGroup)) ev.Checked = true;
+        if (Composition is { Review: { } spans } composition && lead.ReviewGroup < spans.Count)
+        {
+            var span = spans[lead.ReviewGroup];
+            foreach (var n in Review.ReviewGroups.NotesOf(composition, span)) n.Confidence = 1.0;
+            if (MusicXml is not null) PersistEditedScore?.Invoke(MusicXml, CompositionJson.Serialize(composition));
+        }
+        UpdateUncertain();
+    }
 
     /// <summary>A kept note: its Composition note gets confidence 1, so it stays kept when the score is arranged again.</summary>
     public void KeepInComposition(TsEvent ev)

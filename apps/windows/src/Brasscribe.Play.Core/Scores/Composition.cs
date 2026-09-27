@@ -23,6 +23,11 @@ public sealed class Composition
     public int TicksPerBeat { get; set; } = DefaultTicksPerBeat;
     /// <summary>Free-time (ad lib.) passages; empty in files written before free-time detection.</summary>
     public List<FreeRegion> FreeRegions { get; set; } = [];
+    /// <summary>
+    /// Neighbouring uncertain notes of one voice, reviewed together (music/README.md, Confidence and
+    /// review marks); null in files written before review groups.
+    /// </summary>
+    public List<ReviewSpan>? Review { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -154,4 +159,14 @@ public sealed class FreeRegion
     /// <summary>proportional or tempo.</summary>
     public string Notation { get; set; } = "proportional";
     public string Label { get; set; } = "ad lib.";
+}
+
+/// <summary>One review group: marked notes of <see cref="Voice"/> in ticks [Start, End), <see cref="Very"/> when any is very unsure.</summary>
+public sealed class ReviewSpan
+{
+    public required string Voice { get; set; }
+    public int Start { get; set; }
+    public int End { get; set; }
+    public int Notes { get; set; }
+    public bool Very { get; set; }
 }

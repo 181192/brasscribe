@@ -38,9 +38,13 @@ public static class ScorePreview
         Fill(canvas, palette.Background, 0, 0, w, h);
         float ox = (float)(pad - view.X), oy = (float)(pad - view.Y);
 
-        foreach (var item in overlay.Where(i => i.Kind is OverlayKind.AdlibTint or OverlayKind.LoopTint or OverlayKind.CursorTint))
+        foreach (var item in overlay.Where(i => i.Kind is OverlayKind.AdlibTint or OverlayKind.LoopTint or OverlayKind.CursorTint or OverlayKind.SelectionTint))
         {
-            var c = item.Kind switch { OverlayKind.AdlibTint => palette.AdLibTint, OverlayKind.LoopTint => palette.LoopTint, _ => palette.CursorTint };
+            var c = item.Kind switch
+            {
+                OverlayKind.AdlibTint => palette.AdLibTint, OverlayKind.LoopTint => palette.LoopTint,
+                OverlayKind.SelectionTint => palette.SelectionTint, _ => palette.CursorTint,
+            };
             Fill(canvas, c, ox + item.Box.X, oy + item.Box.Y, item.Box.W, item.Box.H);
         }
 
@@ -80,6 +84,21 @@ public static class ScorePreview
                 case OverlayKind.DashedBarLine:
                     for (double d = 0; d < b.H; d += 7)
                         Fill(canvas, palette.Staff, x - 0.5f, y + (float)d, 1, Math.Min(4, b.H - d));
+                    break;
+                case OverlayKind.GroupBracket:
+                    for (double d = 0; d < b.W; d += 8)
+                        Fill(canvas, palette.Staff, x + (float)d, y, Math.Min(5, b.W - d), 1.5);
+                    Fill(canvas, palette.Staff, x, y, 1.5, b.H);
+                    Fill(canvas, palette.Staff, x + (float)b.W - 1.5f, y, 1.5, b.H);
+                    break;
+                case OverlayKind.SelectionCaret:
+                    canvas.Color = AlphaSkiaCanvas.RgbaToColor(palette.Text.R, palette.Text.G, palette.Text.B, 255);
+                    canvas.BeginPath();
+                    canvas.MoveTo(x + (float)b.W / 2, y);
+                    canvas.LineTo(x + (float)b.W, y + (float)b.H);
+                    canvas.LineTo(x, y + (float)b.H);
+                    canvas.ClosePath();
+                    canvas.Fill();
                     break;
                 case OverlayKind.Outline:
                     Stroke(canvas, palette.Ink, x, y, b.W, b.H, 1);

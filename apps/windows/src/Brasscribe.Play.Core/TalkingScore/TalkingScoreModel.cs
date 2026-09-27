@@ -69,8 +69,37 @@ public sealed class TsEvent
     public int Bars { get; set; } = 1;
     public TsHeldFrom? HeldFrom { get; set; }
 
+    /// <summary><see cref="ReviewGroup"/> when the Composition has no review groups: each note is judged on its own.</summary>
+    public const int NoReviewGroups = -1;
+    /// <summary><see cref="ReviewGroup"/> of a note outside every review group.</summary>
+    public const int NotInReviewGroup = -2;
+
+    /// <summary>
+    /// The review group (index into Composition.review) this note belongs to, or <see cref="NoReviewGroups"/> /
+    /// <see cref="NotInReviewGroup"/>. With groups, one "?" stands for the whole group, at its first note.
+    /// </summary>
+    [JsonIgnore] public int ReviewGroup { get; set; } = NoReviewGroups;
+    /// <summary>The first note of its review group in this part: where the "?" is and what the review shows.</summary>
+    [JsonIgnore] public bool ReviewLead { get; set; }
+    /// <summary>The MusicXML colours this note (the arranger marks the notes it was unsure of in the part that plays them).</summary>
+    [JsonIgnore] public bool PrintedMark { get; set; }
+    /// <summary>The group has a very unsure note (boxed "?").</summary>
+    [JsonIgnore] public bool ReviewVery { get; set; }
+    /// <summary>Marked notes in the group (on the lead).</summary>
+    [JsonIgnore] public int ReviewNotes { get; set; }
+    /// <summary>Bar index of the group's last note (on the lead).</summary>
+    [JsonIgnore] public int ReviewEndBar { get; set; } = -1;
+
     [JsonIgnore]
-    public bool IsUncertain => !Checked && Confidence is < Scores.Note.UncertainBelow;
+    public bool IsUncertain => !Checked && ReviewGroup switch
+    {
+        NoReviewGroups => Confidence is < Scores.Note.UncertainBelow,
+        NotInReviewGroup => false,
+        _ => ReviewLead,
+    };
+
+    [JsonIgnore]
+    public bool IsVeryUncertain => ReviewGroup >= 0 ? ReviewVery : Confidence is < Scores.Note.VeryUncertainBelow;
 }
 
 public sealed class TsBar
