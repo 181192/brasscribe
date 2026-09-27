@@ -635,8 +635,9 @@ HEADER = """<?xml version="1.0" encoding="utf-8"?>
 
 
 # ---- the music stand (design/music-stand.md §9) ----
-icon_button("MusicStandButton", "Music stand", "Notestativ",
-            "The music alone, for playing from the stand (F)", "Bare notene, til å spille fra notestativet (F)")
+name("MusicStandButton", "Music stand", "Notestativ")
+tip("MusicStandButton", "The music alone, for playing from the stand (F)", "Bare notene, til å spille fra notestativet (F)")
+help_("MusicStandButton", "F or F11. Esc leaves it.", "F eller F11. Esc går ut.")
 prop("MusicStandLabel", "Text", "Music stand", "Notestativ")
 prop("MusicStandItem", "Text", "Music stand", "Notestativ")
 name("StandBand", "Music stand", "Notestativ")

@@ -70,6 +70,10 @@ public sealed partial class MusicStandLayer : UserControl
     private void OnPreviousPage(object sender, RoutedEventArgs e) => Score?.Stand.PreviousPage();
     private void OnNextPage(object sender, RoutedEventArgs e) => Score?.Stand.NextPage();
 
+    // Through the score's commands, so the new speed is announced (WCAG 4.1.3).
+    private void OnSlower(object sender, RoutedEventArgs e) => Score?.Execute(ScoreCommand.Slower);
+    private void OnFaster(object sender, RoutedEventArgs e) => Score?.Execute(ScoreCommand.Faster);
+
     /// <summary>Repeat: off, or the bars chosen before; with none chosen yet, the bar fields (typed, no dragging).</summary>
     private void OnRepeat(object sender, RoutedEventArgs e)
     {

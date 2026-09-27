@@ -21,6 +21,7 @@ public sealed partial class MusicStandViewModel : ObservableObject
     private readonly IStrings _s;
     private StandPages _pages = StandPages.Empty;
     private int _savedPart = -1;
+    private bool _savedTalkingScore;
     private int _followed = -1;
     private bool _applyingPart;
 
@@ -111,6 +112,9 @@ public sealed partial class MusicStandViewModel : ObservableObject
         bool reader = screenReader ?? DetectScreenReader?.Invoke() ?? false;
         Layer = NewLayer(HintSeen);
         _savedPart = _score.SelectedPartIndex;
+        // The stand is the music: Read aloud's text list gives way while it is open.
+        _savedTalkingScore = _score.ShowTalkingScore;
+        _score.ShowTalkingScore = false;
         _followed = -1;
         _applyingPart = true;
         OnlyMyPart = true;
@@ -134,6 +138,7 @@ public sealed partial class MusicStandViewModel : ObservableObject
         if (!IsOpen) return;
         IsOpen = false;
         if (_score.SelectedPartIndex != _savedPart) _score.ShowPartQuietly(_savedPart);
+        _score.ShowTalkingScore = _savedTalkingScore;
         _pages = StandPages.Empty;
         Page = 0;
         IsLayerShown = false;

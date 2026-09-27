@@ -754,13 +754,13 @@
     <value>Only this: {0}</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>The music alone, for playing from the stand (F)</value>
+    <value>F or F11. Esc leaves it.</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Music stand</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Music stand</value>
+    <value>The music alone, for playing from the stand (F)</value>
   </data>
   <data name="MusicStandItem.Text" xml:space="preserve">
     <value>Music stand</value>

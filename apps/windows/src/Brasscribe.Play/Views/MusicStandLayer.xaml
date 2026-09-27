@@ -47,14 +47,12 @@
                     <Border x:Name="Speed" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1"
                             CornerRadius="{StaticResource BcRadiusMd}" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <Button x:Uid="StandSlower" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
-                                    Command="{x:Bind Score.Player.SlowerBy5Command, Mode=OneWay}">
+                            <Button x:Uid="StandSlower" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" Click="OnSlower">
                                 <FontIcon Glyph="{StaticResource BcIconMinus}" FontSize="14" />
                             </Button>
                             <TextBlock Style="{StaticResource LabelStyle}" VerticalAlignment="Center" MinWidth="96" TextAlignment="Center"
                                        Text="{x:Bind Score.Stand.SpeedText, Mode=OneWay}" />
-                            <Button x:Uid="StandFaster" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
-                                    Command="{x:Bind Score.Player.FasterBy5Command, Mode=OneWay}">
+                            <Button x:Uid="StandFaster" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" Click="OnFaster">
                                 <FontIcon Glyph="{StaticResource BcIconPlus}" FontSize="14" />
                             </Button>
                         </StackPanel>

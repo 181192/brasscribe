@@ -414,7 +414,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         StandInteraction(showLayer: e.Key == Windows.System.VirtualKey.Tab);
         if (XamlRoot is not null && FocusManager.GetFocusedElement(XamlRoot) is TextBox or NumberBox) return;
         if (ScoreView.MapKey(e.Key) is not { } key || key == ScoreKey.Space) return; // Space presses the focused button
-        if (ScoreKeyMap.Map(key, ScoreView.Modifiers(), ViewModel.SingleKeyShortcuts, stand: true) is not { } command) return;
+        // Single-key shortcuts (F, L, -, +) work only while the score has focus (WCAG 2.1.4).
+        if (ScoreKeyMap.Map(key, ScoreView.Modifiers(), singleKeyShortcuts: false, stand: true) is not { } command) return;
         ViewModel.Stand.KeyPressed();
         ViewModel.Execute(command);
         e.Handled = true;

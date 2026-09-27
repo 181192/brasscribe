@@ -754,13 +754,13 @@
     <value>Bare denne: {0}</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Bare notene, til å spille fra notestativet (F)</value>
+    <value>F eller F11. Esc går ut.</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Notestativ</value>
   </data>
   <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Notestativ</value>
+    <value>Bare notene, til å spille fra notestativet (F)</value>
   </data>
   <data name="MusicStandItem.Text" xml:space="preserve">
     <value>Notestativ</value>

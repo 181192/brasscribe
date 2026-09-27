@@ -80,8 +80,16 @@ public sealed partial class ScoreView : UserControl
         };
         Grid.SetColumn(_mirrorHost, 1);
         Content = _frame;
-        _surface.ManipulationStarted += (_, e) => _swipeStart = e.Position.X;
-        _surface.ManipulationCompleted += OnSurfaceManipulationCompleted;
+        _frame.ManipulationStarted += (_, e) => _swipeStart = e.Position.X;
+        _frame.ManipulationCompleted += OnSurfaceManipulationCompleted;
+        // In the stand a tap anywhere on the music (either page, or the gutter) only shows or hides the
+        // controls: it never moves the cursor or checks a note.
+        _frame.Tapped += (_, e) =>
+        {
+            if (!IsStand) return;
+            e.Handled = true;
+            StandTapped?.Invoke(this, EventArgs.Empty);
+        };
         AddHandler(PointerWheelChangedEvent, new PointerEventHandler(OnStandWheel), handledEventsToo: true);
 
         _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
@@ -98,13 +106,7 @@ public sealed partial class ScoreView : UserControl
         // The "?" marks can be tapped (a 44 epx target around each) to check that note.
         _surface.Tapped += (_, e) =>
         {
-            if (IsStand)
-            {
-                // In the stand a tap only shows or hides the controls: it never moves the cursor or checks a note.
-                e.Handled = true;
-                StandTapped?.Invoke(this, EventArgs.Empty);
-                return;
-            }
+            if (IsStand) return; // the frame handles it
             var p = e.GetPosition(_surface);
             var hit = _items.FirstOrDefault(i => i.Kind is OverlayKind.UncertainMark or OverlayKind.VeryUncertainMark
                                                  && Math.Abs(i.Box.X + i.Box.W / 2 - p.X) <= 22 && Math.Abs(i.Box.Y + i.Box.H / 2 - p.Y) <= 22);
@@ -428,7 +430,11 @@ public sealed partial class ScoreView : UserControl
             _scroller.HorizontalScrollMode = mode;
             _scroller.VerticalScrollBarVisibility = value ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto;
             _scroller.HorizontalScrollBarVisibility = value ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto;
-            _surface.ManipulationMode = value ? ManipulationModes.TranslateX | ManipulationModes.TranslateRailsX : ManipulationModes.System;
+            _frame.ManipulationMode = value ? ManipulationModes.TranslateX | ManipulationModes.TranslateRailsX : ManipulationModes.System;
+            // Hit-testable everywhere in the stand, so the right page and the gutter take taps and swipes too.
+            _frame.Background = value ? new SolidColorBrush(Colors.Transparent) : null;
+            _mirrorHost.Background = value ? new SolidColorBrush(Colors.Transparent) : null;
+            _mirrorHost.IsHitTestVisible = value;
             if (!value) IsSpread = false;
         }
     }
@@ -525,7 +531,7 @@ public sealed partial class ScoreView : UserControl
     private void OnSurfaceManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
         if (!IsStand || _viewModel is null) return;
-        double startX = _swipeStart - _scroller.HorizontalOffset;
+        double startX = _swipeStart;
         int direction = Brasscribe.Play.Core.Stand.StandGesture.Swipe(startX, ActualWidth, e.Cumulative.Translation.X, e.Cumulative.Translation.Y);
         if (direction == 0) return;
         e.Handled = true;

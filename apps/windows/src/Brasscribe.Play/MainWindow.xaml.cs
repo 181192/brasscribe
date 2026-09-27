@@ -215,7 +215,7 @@ public sealed partial class MainWindow : Window
     private void OnToggleTalkingScoreAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        if (ContentFrame.Content is not ScoreScreen score) return;
+        if (ContentFrame.Content is not ScoreScreen score || ViewModel.Score.Stand.IsOpen) return;
         ViewModel.Score.ShowTalkingScore = !ViewModel.Score.ShowTalkingScore;
         score.FocusScore();
     }
