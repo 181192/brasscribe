@@ -177,4 +177,11 @@ schemes:
       targets:
         BrasscribePlay_macOS: all
     test:
-      targets: [BrasscribePlayTests_macOS, BrasscribePlayUITests_macOS]
+      # no UI tests here: they drive the real pointer and keyboard (make test-mac-ui, on an idle Mac or in CI)
+      targets: [BrasscribePlayTests_macOS]
+  BrasscribePlay-macOS-UITests:
+    build:
+      targets:
+        BrasscribePlay_macOS: all
+    test:
+      targets: [BrasscribePlayUITests_macOS]

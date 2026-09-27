@@ -44,15 +44,13 @@ package-test:
 	cd ../../capture && swift test
 
 test: project package-test
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test \
-		-skip-testing:BrasscribePlayUITests_macOS
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
 # only on a Mac nobody is using, or in CI.
 test-mac-ui: project
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test \
-		-only-testing:BrasscribePlayUITests_macOS
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' test
 
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
