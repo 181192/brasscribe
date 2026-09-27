@@ -55,21 +55,21 @@ public sealed class FlyoutViewModelTests
     {
         var vm = Make();
         vm.Apply(Snap());
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Notes", 0.62, 3), queued: 1));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Notes", 0.62, 3), queued: 1));
         Assert.True(vm.IsBusy);
         Assert.Equal("Running · Making a score", vm.StatusWord);
         Assert.Equal("Writing down the notes", vm.JobStep);
-        Assert.Equal("“Mikkel”", vm.JobSource);
+        Assert.Equal("“Old Hundredth”", vm.JobSource);
         Assert.Equal("62% · about 3 min left", vm.JobProgressText);
         Assert.Equal("1 more waiting", vm.QueueText);
         Assert.Equal(TrayBadge.Pie, vm.Badge);
         Assert.Equal(4, vm.PieEighths);
         Assert.Equal(["Running · Making a score"], _said.Said);
         // The same reading again: nothing new to say.
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Notes", 0.63, 3)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Notes", 0.63, 3)));
         Assert.Single(_said.Said);
         // 10 points later: progress is announced.
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Notes", 0.73, 2)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Notes", 0.73, 2)));
         Assert.Equal("Writing down the notes, 73% · about 2 min left", _said.Said[^1]);
     }
 
@@ -77,12 +77,12 @@ public sealed class FlyoutViewModelTests
     public async Task Stop_while_busy_confirms_and_keep_going_does_nothing()
     {
         var vm = Make();
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Notes", 0.62, 3)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Notes", 0.62, 3)));
         string? focus = null;
         vm.FocusRequested += f => focus = f;
         await vm.StopCommand.ExecuteAsync(null);
         Assert.Equal(FlyoutView.Confirm, vm.View);
-        Assert.Equal("Stop while “Mikkel” is being made?", vm.ConfirmTitle);
+        Assert.Equal("Stop while “Old Hundredth” is being made?", vm.ConfirmTitle);
         Assert.Equal("Stop now", vm.ConfirmPrimaryLabel);
         Assert.Equal("Keep going", vm.ConfirmSecondaryLabel);
         Assert.Equal("ConfirmTitle", focus);
@@ -99,13 +99,13 @@ public sealed class FlyoutViewModelTests
     public async Task Stop_names_the_phone_that_sent_the_recording_when_the_engine_says()
     {
         var vm = Make();
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Layers", 0.3, 5, "Kari's iPhone")));
-        Assert.Equal("“Mikkel” from Kari's iPhone", vm.JobSource);
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Layers", 0.3, 5, "Kari's iPhone")));
+        Assert.Equal("“Old Hundredth” from Kari's iPhone", vm.JobSource);
         Assert.Equal("Separating the soloist from the band", vm.JobStep);
         await vm.StopCommand.ExecuteAsync(null);
         Assert.Equal("Kari's iPhone keeps the recording and can send it again.", vm.ConfirmBody);
         vm.ConfirmCancelCommand.Execute(null);
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Separate", 0.3, 5)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Separate", 0.3, 5)));
         Assert.Equal("Separating the instruments", vm.JobStep);
         await vm.StopCommand.ExecuteAsync(null);
         Assert.Equal("The phone keeps the recording and can send it again.", vm.ConfirmBody);
@@ -125,15 +125,15 @@ public sealed class FlyoutViewModelTests
     public async Task Restart_when_done_waits_for_the_job()
     {
         var vm = Make();
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Notes", 0.62, 3)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Notes", 0.62, 3)));
         await vm.RestartCommand.ExecuteAsync(null);
-        Assert.Equal("Restart when “Mikkel” is done?", vm.ConfirmTitle);
+        Assert.Equal("Restart when “Old Hundredth” is done?", vm.ConfirmTitle);
         Assert.Equal("Restart when done", vm.ConfirmPrimaryLabel);
         Assert.Equal("Restart now", vm.ConfirmTertiaryLabel);
         await vm.ConfirmPrimaryCommand.ExecuteAsync(null);
         Assert.True(vm.RestartPending);
         Assert.Empty(_actions.Calls);
-        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Layout", 0.95, 1)));
+        vm.Apply(Snap(job: new JobView("Old Hundredth", "Step_Layout", 0.95, 1)));
         Assert.Empty(_actions.Calls);
         vm.Apply(Snap());
         Assert.Equal(["restart"], _actions.Calls);

@@ -140,11 +140,11 @@ public sealed class StateTests
         var jobs = new List<JobInfo>
         {
             new("j0", "p", "Old", "succeeded", 1, 2, 3, 1, []),
-            new("j1", "p", "Mikkel", "running", 1_000_000, 1_000_000, null, 0.5,
+            new("j1", "p", "Old Hundredth", "running", 1_000_000, 1_000_000, null, 0.5,
                 [new("beats", "ran"), new("transcribe.muscriptor", "started"), new("arrange", "pending")]),
         };
         var job = JobView.From(jobs, now)!;
-        Assert.Equal("Mikkel", job.Title);
+        Assert.Equal("Old Hundredth", job.Title);
         Assert.Equal("Step_Notes", job.StepKey);
         Assert.Equal(10, job.MinutesLeft);
         Assert.Null(JobView.From([jobs[0]], now));
