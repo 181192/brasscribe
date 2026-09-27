@@ -21,8 +21,9 @@
   outline: 1px solid var(--bc-border-strong); outline-offset: -1px; box-shadow: var(--bc-elevation-2);
   font-weight: 600; font-size: 0.9375rem; white-space: nowrap; border: 0; }
 .pill .i { width: 20px; height: 20px; }
-.pill.info { font-variant-numeric: tabular-nums; font-weight: 600; }
-.pill.info .muted { font-weight: 500; }
+.standpos { display: inline-flex; align-items: baseline; gap: 6px; min-height: 48px; align-items: center; padding: 0 4px;
+  font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--bc-text); white-space: nowrap; }
+.standpos .muted { font-weight: 500; }
 .corner { position: absolute; display: flex; gap: 8px; z-index: 3; align-items: center; }
 
 /* the control layer */

@@ -12,6 +12,9 @@
 <style>
   .music { position: absolute; left: 12px; right: 12px; top: 112px; }
   .top { top: 56px; left: 16px; right: 16px; justify-content: space-between; }
+  /* Upright there is no room for one line: the part on top, the place under it. */
+  .top .standpos { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.25; min-width: 0; }
+  .top .standpos .muted { font-size: 0.875rem; }
   .controls { left: 12px; right: 12px; bottom: 42px; }
   .transport { justify-content: center; gap: var(--bc-space-3); }
 </style>
@@ -22,7 +25,7 @@
 
   <!-- Always there: where you are, and the way out. They sit in the band under the camera, never over the music. -->
   <div class="corner top">
-    <span class="pill info" role="status"><span data-nb="Takt 13">Bar 13</span><span class="muted" data-nb="· side 1 av 8">· page 1 of 8</span></span>
+    <span class="standpos" role="status"><span data-nb="Solokornett (deg)">Solo Cornet (you)</span><span class="muted" data-nb="Takt 13 · side 1 av 8">Bar 13 · page 1 of 8</span></span>
     <button class="pill" aria-label="Leave the music stand"><i data-i="close" class="sm"></i><span data-nb="Gå ut">Leave</span></button>
   </div>
 
@@ -50,8 +53,9 @@
       <span class="chip"><i data-i="loop" class="sm"></i><span data-nb="Gjenta">Repeat</span></span>
     </div>
     <div class="crow">
-      <span class="chip on"><span data-nb="Solokornett (deg)">Solo Cornet (you)</span></span>
-      <span class="chip"><i data-i="rotation-lock" class="sm"></i><span data-nb="Lås retning">Lock rotation</span></span>
+      <!-- Hidden when no seat is set (a conductor has no "your part"). -->
+      <span class="chip on"><span data-nb="Bare stemmen min">Only my part</span></span>
+      <span class="chip"><i data-i="rotation-lock" class="sm"></i><span data-nb="Lås retningen">Lock rotation</span></span>
     </div>
   </div>
 

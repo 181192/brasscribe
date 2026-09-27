@@ -169,5 +169,5 @@ Bandroom installs the engine on a Mac or Windows PC, runs it in the background a
 
 ## 9. Music stand
 
-The score alone, for reading from a stand: one part, in pages, with a control layer that hides itself and a **Leave** that always stays. It follows the device's orientation, and a phone can lock it from inside. The way in is one **Music stand** button in the score toolbar, plus F, F11 on Windows, and full screen on the Mac. The spec, copy deck, WCAG mapping and platform plan are in [`music-stand.md`](music-stand.md).
+The score alone, for reading from a stand: one part, in pages, with a control layer that hides itself and a **Leave** that always stays. It follows the device's orientation, and a phone can lock it from inside. The way in is one **Music stand** button in the score toolbar, plus F (and F11 on Windows); on the Mac the green button stays the normal full screen. The spec, copy deck, WCAG mapping and platform plan are in [`music-stand.md`](music-stand.md).
 
