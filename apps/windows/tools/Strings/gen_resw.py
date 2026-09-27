@@ -344,6 +344,8 @@ code = {
     "Review_Count": ("{0} notes to check", "{0} toner å sjekke"),
     "Review_LeadMany": ("Most of these are probably right. Start with the {0} very unsure ones.", "De fleste av disse er nok riktige. Begynn med de {0} svært usikre."),
     "Review_LeadManyOne": ("Most of these are probably right. Start with the {0} very unsure one.", "De fleste av disse er nok riktige. Begynn med den {0} svært usikre."),
+    "Review_LeadStart": ("Start with the {0} very unsure ones.", "Begynn med de {0} svært usikre."),
+    "Review_LeadStartOne": ("Start with the {0} very unsure one.", "Begynn med den {0} svært usikre."),
     "Review_KeepBar": ("Keep the rest of this bar ({0})", "Behold resten av takten ({0})"),
     "Review_KeptBar": ("Kept {0} notes in bar {1}. {2} left", "Beholdt {0} toner i takt {1}. {2} igjen"),
     "Review_Triage": ("Check your part first: {0} notes in {1}, {2} very unsure", "Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre"),

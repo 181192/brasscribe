@@ -85,8 +85,10 @@ public class ReviewRound3Tests(ITestOutputHelper log)
         // Very unsure first within the part.
         var solo = review.Items.Where(i => i.IsMine).ToList();
         Assert.True(solo.TakeWhile(i => i.IsVeryUncertain).Count() == solo.Count(i => i.IsVeryUncertain));
-        // More than 50 marks: the lead line.
-        Assert.StartsWith("Most of these are probably right. Start with the ", review.LeadText);
+        // More than 50 places: the lead line. Most of the golden's are very unsure, so it only says where to start.
+        int very = review.Items.Count(i => i.IsVeryUncertain);
+        Assert.Equal(very * 2 > review.Items.Count ? $"Start with the {very} very unsure ones." : $"Most of these are probably right. Start with the {very} very unsure ones.",
+            review.LeadText);
 
         // A group of several notes is one item; Keep keeps all its notes.
         var group = review.AllItems.First(i => i.IsGroup);

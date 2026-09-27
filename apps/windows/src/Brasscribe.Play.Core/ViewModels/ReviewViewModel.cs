@@ -204,9 +204,10 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
             .ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
             .ToList();
         int veryUnsure = ordered.Count(i => i.IsVeryUncertain);
-        LeadText = ordered.Count > ManyMarks && veryUnsure > 0
-            ? s.Format(veryUnsure == 1 ? "Review_LeadManyOne" : "Review_LeadMany", veryUnsure)
-            : "";
+        // When most places are very unsure, "most of these are probably right" would not be true.
+        LeadText = ordered.Count <= ManyMarks || veryUnsure == 0 ? ""
+            : veryUnsure * 2 > ordered.Count ? s.Format(veryUnsure == 1 ? "Review_LeadStartOne" : "Review_LeadStart", veryUnsure)
+            : s.Format(veryUnsure == 1 ? "Review_LeadManyOne" : "Review_LeadMany", veryUnsure);
         Items = ordered;
         Groups.Clear();
         string accompaniment = s["Review_Accompaniment"].ToUpperInvariant();

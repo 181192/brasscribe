@@ -1065,6 +1065,12 @@
   <data name="Review_LeadManyOne" xml:space="preserve">
     <value>De fleste av disse er nok riktige. Begynn med den {0} svært usikre.</value>
   </data>
+  <data name="Review_LeadStart" xml:space="preserve">
+    <value>Begynn med de {0} svært usikre.</value>
+  </data>
+  <data name="Review_LeadStartOne" xml:space="preserve">
+    <value>Begynn med den {0} svært usikre.</value>
+  </data>
   <data name="Review_LevelAlternative" xml:space="preserve">
     <value>{0}: det kan også være {1}.</value>
   </data>

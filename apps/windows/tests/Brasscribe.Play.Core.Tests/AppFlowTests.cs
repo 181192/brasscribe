@@ -245,6 +245,7 @@ public class AppFlowTests
         Assert.True(main.HasLibrary);
         Assert.Equal("Test tune", main.LibraryItems[0].Title);
         Assert.Contains("Today · 1 to check", main.LibraryItems[0].Subtitle);
+        Assert.Equal(main.Review.AllItems.Count, main.Library!.Entries[0].NotesToCheck); // Home says what Review has
 
         // Keeping the last note goes on to "How should the score be?"; unchanged, it just shows the score.
         main.Review.KeepCommand.Execute(null);

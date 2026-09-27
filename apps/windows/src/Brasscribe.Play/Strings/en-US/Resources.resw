@@ -1065,6 +1065,12 @@
   <data name="Review_LeadManyOne" xml:space="preserve">
     <value>Most of these are probably right. Start with the {0} very unsure one.</value>
   </data>
+  <data name="Review_LeadStart" xml:space="preserve">
+    <value>Start with the {0} very unsure ones.</value>
+  </data>
+  <data name="Review_LeadStartOne" xml:space="preserve">
+    <value>Start with the {0} very unsure one.</value>
+  </data>
   <data name="Review_LevelAlternative" xml:space="preserve">
     <value>{0}: it could also be {1}.</value>
   </data>
