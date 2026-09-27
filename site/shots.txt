@@ -1,27 +1,25 @@
 # Screenshots used on the site, one slot per line. `uv run --with pillow python site/make_shots.py`
-# turns them into site/shots/<slot>-<en|nb>-<light|dark>.webp (plus a .png for light).
+# turns them into site/shots/<slot>-<en|nb>-<light|dark>[-1x].<avif|webp> (plus a .png for light).
 # Columns: slot  kind  en-light  en-dark  nb-light  nb-dark   ("-" = none).
-# Kinds: phone = 9:20, 600 px wide; tablet = iPad portrait, 600 px; desktop = 16:10, 1440 px
-# (cropped from the top); mac = a macOS window with its own title bar, 1440 px at its own ratio.
-# Where the Apple apps have no Norwegian screenshot, the nb column uses the Android nb shot.
+# Kinds: phone = iPhone portrait, 600 px wide at 2x; tablet = iPad portrait, 720 px; desktop = 16:10,
+# 1440 px (cropped from the top); mac = a macOS window with its own title bar, 1440 px at its own ratio.
+# Only screens showing the Old Hundredth fixture, or no score title at all.
+# The home page shows iPhone screens only, apart from the Mac and iPad in the hero. There is no
+# Norwegian Mac screenshot without another title, so both pages use the English Mac score.
 # To swap a shot, change its paths here, run the script, and update the alt text on the pages.
 A=apps/apple/docs/screenshots
-D=apps/android/docs/screenshots/design
 S=studio/docs/screenshots/themes
-first-run     phone    $A/iphone-first-run-light.png   $A/iphone-first-run-dark.png   $D/01-first-run-nb.png        -
 home          phone    $A/iphone-home-full-light.png   $A/iphone-home-full-dark.png   $A/iphone-nb-home-full-light.png $A/iphone-nb-home-full-dark.png
-what-is-this  phone    $A/iphone-source-light.png      $A/iphone-source-dark.png      $D/03-what-is-this-nb.png     -
-making        phone    $A/iphone-transcribing-light.png $A/iphone-transcribing-dark.png $D/04-making-the-score-nb.png -
+what-is-this  phone    $A/iphone-source-light.png      $A/iphone-source-dark.png      $A/iphone-nb-source-light.png $A/iphone-nb-source-dark.png
+making        phone    $A/iphone-transcribing-light.png $A/iphone-transcribing-dark.png $A/iphone-nb-transcribing-light.png $A/iphone-nb-transcribing-dark.png
 review        phone    $A/iphone-review-light.png      $A/iphone-review-dark.png      $A/iphone-nb-review-light.png $A/iphone-nb-review-dark.png
 output        phone    $A/iphone-output-light.png      $A/iphone-output-dark.png      $A/iphone-nb-output-light.png $A/iphone-nb-output-dark.png
 score         phone    $A/iphone-score-light.png       $A/iphone-score-dark.png       $A/iphone-nb-score-light.png  $A/iphone-nb-score-dark.png
 part          phone    $A/iphone-part-light.png        $A/iphone-part-dark.png        $A/iphone-nb-part-light.png   $A/iphone-nb-part-dark.png
 share         phone    $A/iphone-export-light.png      $A/iphone-export-dark.png      $A/iphone-nb-export-light.png $A/iphone-nb-export-dark.png
-speed         phone    $D/12-speed-sheet-light.png     $D/12-speed-sheet-dark.png     $D/12-speed-sheet-nb.png      -
-repeat        phone    $D/13b-repeat-on-light.png      $D/13b-repeat-on-dark.png      $D/13b-repeat-on-nb.png       -
-large-text    phone    $D/05-review-font200.png        -                              -                             -
-boxed         phone    $D/18-very-uncertain-boxed-zoom200-light.png -                 -                             -
-practise      tablet   $A/ipad-score-light.png         $A/ipad-score-dark.png         -                             -
+large-text    phone    $A/iphone-review-large-text-light.png $A/iphone-review-large-text-dark.png $A/iphone-nb-review-large-text-light.png $A/iphone-nb-review-large-text-dark.png
+# always shown dark, whatever the page's theme: the dark screen is in the light column
+dark-mode     phone    $A/iphone-part-dark.png         -                              $A/iphone-nb-part-dark.png    -
+ipad-review   tablet   $A/ipad-review-light.png        $A/ipad-review-dark.png        $A/ipad-nb-review-light.png   $A/ipad-nb-review-dark.png
 mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        -                             -
 computer      desktop  $S/viewer-light.png             $S/viewer-dark.png             $S/viewer-nb.png              -
-studio        desktop  $S/run-light.png                $S/run-dark.png                $S/run-nb.png                 -

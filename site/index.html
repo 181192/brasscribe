@@ -58,19 +58,34 @@
           <li>Windows</li>
         </ul>
       </div>
-      <div class="phones">
-        <div class="device">
+      <div class="device-group" role="group" aria-label="Brasscribe Play on Mac, iPad and iPhone">
+        <div class="mac-frame">
           <picture>
-            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/first-run-en-dark.webp">
-            <source type="image/webp" srcset="assets/shots/first-run-en-light.webp">
-            <img src="assets/shots/first-run-en-light.png" width="600" height="1334" fetchpriority="high" alt="The first screen on iPhone: Scores for your band, from any recording. Three points: record or import, check the marked notes, practise with the band.">
+            <!-- hidden below 561 px (see site.css), so it loads nothing there -->
+            <source media="(max-width: 560px)" srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/mac-score-en-dark-1x.avif 720w, assets/shots/mac-score-en-dark.avif 1440w" sizes="(max-width: 900px) 84vw, 620px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/mac-score-en-dark-1x.webp 720w, assets/shots/mac-score-en-dark.webp 1440w" sizes="(max-width: 900px) 84vw, 620px">
+            <source type="image/avif" srcset="assets/shots/mac-score-en-light-1x.avif 720w, assets/shots/mac-score-en-light.avif 1440w" sizes="(max-width: 900px) 84vw, 620px">
+            <source type="image/webp" srcset="assets/shots/mac-score-en-light-1x.webp 720w, assets/shots/mac-score-en-light.webp 1440w" sizes="(max-width: 900px) 84vw, 620px">
+            <img src="assets/shots/mac-score-en-light.png" width="1440" height="1040" fetchpriority="high" alt="Brasscribe Play on a Mac: the full score of Old Hundredth with bars 9 to 10 repeating, the player below with Speed, Repeat bars and Count-in, and every part with Mute and Only this on the right.">
           </picture>
         </div>
-        <div class="device">
+        <div class="tablet-frame">
           <picture>
-            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/review-en-dark.webp">
-            <source type="image/webp" srcset="assets/shots/review-en-light.webp">
-            <img src="assets/shots/review-en-light.png" width="600" height="1334" alt="Check the notes on iPhone: Your part first: 4 notes in Solo Cornet. Yours (4), Others (0) or All (4). Bar 2 of the Solo Cornet: written F sharp, crotchet, uncertain, with Listen to this bar, Change note, the notes still to check, Skip and Keep, go to next.">
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/ipad-review-en-dark-1x.avif 360w, assets/shots/ipad-review-en-dark.avif 720w" sizes="(max-width: 560px) 62vw, (max-width: 900px) 33vw, 250px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/ipad-review-en-dark-1x.webp 360w, assets/shots/ipad-review-en-dark.webp 720w" sizes="(max-width: 560px) 62vw, (max-width: 900px) 33vw, 250px">
+            <source type="image/avif" srcset="assets/shots/ipad-review-en-light-1x.avif 360w, assets/shots/ipad-review-en-light.avif 720w" sizes="(max-width: 560px) 62vw, (max-width: 900px) 33vw, 250px">
+            <source type="image/webp" srcset="assets/shots/ipad-review-en-light-1x.webp 360w, assets/shots/ipad-review-en-light.webp 720w" sizes="(max-width: 560px) 62vw, (max-width: 900px) 33vw, 250px">
+            <img src="assets/shots/ipad-review-en-light.png" width="720" height="1036" alt="Check the notes on iPad: the 4 notes to check in Solo Cornet listed on the left, and bar 2 open on the right: written F sharp, crotchet, uncertain, with Listen to this bar, Change note, Skip and Keep, go to next.">
+          </picture>
+        </div>
+        <div class="phone-frame">
+          <picture>
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/part-en-dark-1x.avif 300w, assets/shots/part-en-dark.avif 600w" sizes="(max-width: 560px) 40vw, (max-width: 900px) 19vw, 150px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/part-en-dark-1x.webp 300w, assets/shots/part-en-dark.webp 600w" sizes="(max-width: 560px) 40vw, (max-width: 900px) 19vw, 150px">
+            <source type="image/avif" srcset="assets/shots/part-en-light-1x.avif 300w, assets/shots/part-en-light.avif 600w" sizes="(max-width: 560px) 40vw, (max-width: 900px) 19vw, 150px">
+            <source type="image/webp" srcset="assets/shots/part-en-light-1x.webp 300w, assets/shots/part-en-light.webp 600w" sizes="(max-width: 560px) 40vw, (max-width: 900px) 19vw, 150px">
+            <img src="assets/shots/part-en-light.png" width="600" height="1304" alt="The Solo Cornet part of Old Hundredth on iPhone, as written for B flat, with question marks over the uncertain notes and the player below. Mute my part is on.">
           </picture>
         </div>
       </div>
@@ -84,88 +99,104 @@
       <p class="lead">Brasscribe asks one thing at a time and never guesses. Nothing changes until you press a button.</p>
       <ol class="flow">
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/home-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/home-en-light.webp">
-              <img src="assets/shots/home-en-light.png" width="600" height="1334" loading="lazy" alt="Home on iPhone: Open a recording and Record with the microphone, with Your scores below: Old Hundredth, Deep Harmony and Abide with Me, each with how many notes are left to check.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/home-en-dark-1x.avif 300w, assets/shots/home-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/home-en-dark-1x.webp 300w, assets/shots/home-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/home-en-light-1x.avif 300w, assets/shots/home-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/home-en-light-1x.webp 300w, assets/shots/home-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/home-en-light.png" width="600" height="1304" loading="lazy" alt="Home on iPhone: Open a recording and Record with the microphone, with Your scores below: Old Hundredth, Deep Harmony and Abide with Me, each with how many notes are left to check.">
             </picture>
           </div>
           <h3>Open or record</h3>
           <p>Open a recording you have, or record the rehearsal with the microphone.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/what-is-this-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/what-is-this-en-light.webp">
-              <img src="assets/shots/what-is-this-en-light.png" width="600" height="1334" loading="lazy" alt="What is this? for a 4-minute recording, with four choices: One instrument, Brass band, Soloist with orchestra or band, and Pop or rock.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/what-is-this-en-dark-1x.avif 300w, assets/shots/what-is-this-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/what-is-this-en-dark-1x.webp 300w, assets/shots/what-is-this-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/what-is-this-en-light-1x.avif 300w, assets/shots/what-is-this-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/what-is-this-en-light-1x.webp 300w, assets/shots/what-is-this-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/what-is-this-en-light.png" width="600" height="1304" loading="lazy" alt="What is this? for Band practice.m4a, with four choices: One instrument, Brass band, Soloist with orchestra or band, and Pop or rock.">
             </picture>
           </div>
           <h3>What is this?</h3>
           <p>One instrument, a brass band, a soloist with orchestra or band, or pop and rock. Your answer decides how Brasscribe listens.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/making-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/making-en-light.webp">
-              <img src="assets/shots/making-en-light.png" width="600" height="1334" loading="lazy" alt="Making the score: step 4 of 6, Writing down the notes, 62% and about 2 minutes left, with every step listed.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/making-en-dark-1x.avif 300w, assets/shots/making-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/making-en-dark-1x.webp 300w, assets/shots/making-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/making-en-light-1x.avif 300w, assets/shots/making-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/making-en-light-1x.webp 300w, assets/shots/making-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/making-en-light.png" width="600" height="1304" loading="lazy" alt="Making the score: step 4 of 6, Writing down the notes, 62% and about 2 minutes left, with every step listed.">
             </picture>
           </div>
           <h3>Making the score</h3>
           <p>Each step in plain words, with the percentage and the time left. You can leave the screen; Brasscribe tells you when the score is ready.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/review-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/review-en-light.webp">
-              <img src="assets/shots/review-en-light.png" width="600" height="1334" loading="lazy" alt="Check the notes on iPhone: Your part first: 4 notes in Solo Cornet. Yours (4), Others (0) or All (4). Bar 2 of the Solo Cornet: written F sharp, crotchet, uncertain, with Listen to this bar, Change note, the notes still to check, Skip and Keep, go to next.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/review-en-dark-1x.avif 300w, assets/shots/review-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/review-en-dark-1x.webp 300w, assets/shots/review-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/review-en-light-1x.avif 300w, assets/shots/review-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/review-en-light-1x.webp 300w, assets/shots/review-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/review-en-light.png" width="600" height="1304" loading="lazy" alt="Check the notes on iPhone: Your part first: 4 notes in Solo Cornet. Yours (4), Others (0) or All (4). Bar 2 of the Solo Cornet: written F sharp, crotchet, uncertain, with Listen to this bar, Change note, the notes still to check, Skip and Keep, go to next.">
             </picture>
           </div>
           <h3>Check the notes</h3>
           <p>Notes Brasscribe wasn't sure about get a <span class="q uncertain" aria-hidden="true">?</span>. Start with the very unsure ones in your part. Listen to the bar, then keep or change the notes. Or finish later.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/output-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/output-en-light.webp">
-              <img src="assets/shots/output-en-light.png" width="600" height="1334" loading="lazy" alt="How should the score be? Which band: Full brass band or Small band. How hard: Easier, A bit easier or As played. Key: C major (concert), with Lower and Higher. Button: Show the score.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/output-en-dark-1x.avif 300w, assets/shots/output-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/output-en-dark-1x.webp 300w, assets/shots/output-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/output-en-light-1x.avif 300w, assets/shots/output-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/output-en-light-1x.webp 300w, assets/shots/output-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/output-en-light.png" width="600" height="1304" loading="lazy" alt="How should the score be? Which band: Full brass band or Small band. How hard: Easier, A bit easier or As played. Key: C major (concert), with Lower and Higher. Button: Show the score.">
             </picture>
           </div>
           <h3>How should the score be?</h3>
           <p>Full brass band or a small band, easier or as played, and the key you want. You can change it later. Nothing is lost.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/score-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/score-en-light.webp">
-              <img src="assets/shots/score-en-light.png" width="600" height="1334" loading="lazy" alt="The full score on iPhone with bars 9 to 10 repeating. The player below: Speed, Repeat, Count-in, Metronome, Mute my part and Hear the recording.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/score-en-dark-1x.avif 300w, assets/shots/score-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/score-en-dark-1x.webp 300w, assets/shots/score-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/score-en-light-1x.avif 300w, assets/shots/score-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/score-en-light-1x.webp 300w, assets/shots/score-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/score-en-light.png" width="600" height="1304" loading="lazy" alt="The full score on iPhone with bars 9 to 10 repeating. The player below: Speed, Repeat and Count-in turned on, Metronome and Mute my part.">
             </picture>
           </div>
           <h3>Score and play along</h3>
           <p>The whole band plays back. Read it as written for your instrument or at concert pitch, and practise with the controls under the score.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/part-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/part-en-light.webp">
-              <img src="assets/shots/part-en-light.png" width="600" height="1334" loading="lazy" alt="The Solo Cornet part on iPhone, as written for B flat, with boxed question marks over the very unsure notes. Mute my part is on.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/part-en-dark-1x.avif 300w, assets/shots/part-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/part-en-dark-1x.webp 300w, assets/shots/part-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/part-en-light-1x.avif 300w, assets/shots/part-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/part-en-light-1x.webp 300w, assets/shots/part-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/part-en-light.png" width="600" height="1304" loading="lazy" alt="The Solo Cornet part on iPhone, as written for B flat, with question marks over the uncertain notes. Mute my part is on.">
             </picture>
           </div>
           <h3>Your part</h3>
           <p>Show just your part, as written for your instrument. <strong>Mute my part</strong> lets the band play around you, and in the parts list <strong>Mute</strong> and <strong>Only this</strong> work part by part.</p>
         </li>
         <li>
-          <div class="device">
+          <div class="phone-frame">
             <picture>
-              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/share-en-dark.webp">
-              <source type="image/webp" srcset="assets/shots/share-en-light.webp">
-              <img src="assets/shots/share-en-light.png" width="600" height="1334" loading="lazy" alt="Share or print on iPhone. What: My part (Solo Cornet), Every part or Conductor's score. As: PDF, Audio, or MusicXML, MIDI and 2 more. Show ? marks is on. Print, Share and Save to Files.">
+              <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/share-en-dark-1x.avif 300w, assets/shots/share-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/share-en-dark-1x.webp 300w, assets/shots/share-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/avif" srcset="assets/shots/share-en-light-1x.avif 300w, assets/shots/share-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <source type="image/webp" srcset="assets/shots/share-en-light-1x.webp 300w, assets/shots/share-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 232px">
+              <img src="assets/shots/share-en-light.png" width="600" height="1304" loading="lazy" alt="Share or print on iPhone. What: My part (Solo Cornet), Every part or Conductor's score. As: PDF, Audio, or MusicXML, MIDI and 2 more. Show ? marks is on. Print, Share and Save to Files.">
             </picture>
           </div>
           <h3>Share or print</h3>
@@ -189,12 +220,14 @@
           <li>On iPhone, iPad, Mac and Windows, switch to the <strong>original recording</strong> at the same place to check what the band really played.</li>
         </ul>
       </div>
-      <div class="tablets">
-        <div class="device tablet">
+      <div class="phones single">
+        <div class="phone-frame">
           <picture>
-            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/practise-en-dark.webp">
-            <source type="image/webp" srcset="assets/shots/practise-en-light.webp">
-            <img src="assets/shots/practise-en-light.png" width="600" height="864" loading="lazy" alt="A brass band score on iPad with bars 9 to 10 repeating. The player below: Hear the band or Recording, Speed at 100%, Repeat bars 9 to 10 with Stop repeating, Count-in on, Metronome and Mute my part.">
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/score-en-dark-1x.avif 300w, assets/shots/score-en-dark.avif 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/score-en-dark-1x.webp 300w, assets/shots/score-en-dark.webp 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/avif" srcset="assets/shots/score-en-light-1x.avif 300w, assets/shots/score-en-light.avif 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/webp" srcset="assets/shots/score-en-light-1x.webp 300w, assets/shots/score-en-light.webp 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <img src="assets/shots/score-en-light.png" width="600" height="1304" loading="lazy" alt="The full score on iPhone with bars 9 to 10 repeating. The player below: Speed, Repeat and Count-in turned on, Metronome and Mute my part.">
           </picture>
         </div>
       </div>
@@ -251,16 +284,20 @@
         </div>
       </div>
       <div class="phones">
-        <div class="device">
+        <div class="phone-frame">
           <picture>
-            <source type="image/webp" srcset="assets/shots/large-text-en-light.webp">
-            <img src="assets/shots/large-text-en-light.png" width="600" height="1334" loading="lazy" alt="Checking notes with the text size at 200%: the same screen, with larger text and full-width buttons.">
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/large-text-en-dark-1x.avif 300w, assets/shots/large-text-en-dark.avif 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/large-text-en-dark-1x.webp 300w, assets/shots/large-text-en-dark.webp 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <source type="image/avif" srcset="assets/shots/large-text-en-light-1x.avif 300w, assets/shots/large-text-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <source type="image/webp" srcset="assets/shots/large-text-en-light-1x.webp 300w, assets/shots/large-text-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <img src="assets/shots/large-text-en-light.png" width="600" height="1304" loading="lazy" alt="Check the notes on iPhone with the text size near 200%: Your part first: 4 notes in Solo Cornet, the Yours, Others and All choices stacked, bar 2 of the Solo Cornet, and Finish later, Skip and Keep, go to next in large type at the bottom.">
           </picture>
         </div>
-        <div class="device">
+        <div class="phone-frame">
           <picture>
-            <source type="image/webp" srcset="assets/shots/boxed-en-light.webp">
-            <img src="assets/shots/boxed-en-light.png" width="600" height="1334" loading="lazy" alt="The Solo Cornet part zoomed to 200%, with a boxed question mark above each very uncertain note.">
+            <source type="image/avif" srcset="assets/shots/dark-mode-en-light-1x.avif 300w, assets/shots/dark-mode-en-light.avif 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <source type="image/webp" srcset="assets/shots/dark-mode-en-light-1x.webp 300w, assets/shots/dark-mode-en-light.webp 600w" sizes="(max-width: 520px) 44vw, 260px">
+            <img src="assets/shots/dark-mode-en-light.png" width="600" height="1304" loading="lazy" alt="The Solo Cornet part in dark mode on iPhone, with the same question marks and the player below.">
           </picture>
         </div>
       </div>
@@ -268,7 +305,7 @@
   </section>
 
   <section id="computer" aria-labelledby="computer-title">
-    <div class="wrap hero-grid wide-shot">
+    <div class="wrap hero-grid">
       <div>
         <p class="overline">Where it runs</p>
         <h2 id="computer-title">Your phone, and <em>your computer.</em></h2>
@@ -279,12 +316,16 @@
           <a class="button outline" href="guide/#computer">How to connect your computer</a>
         </div>
       </div>
-      <div class="window native">
-        <picture>
-          <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/mac-score-en-dark.webp">
-          <source type="image/webp" srcset="assets/shots/mac-score-en-light.webp">
-          <img src="assets/shots/mac-score-en-light.png" width="1440" height="828" loading="lazy" alt="Brasscribe Play on a Mac: the full score with bars 9 to 10 repeating, the player below with Hear the band or Recording, and every part with Mute and Only this on the right.">
-        </picture>
+      <div class="phones single">
+        <div class="phone-frame">
+          <picture>
+            <source type="image/avif" media="(prefers-color-scheme: dark)" srcset="assets/shots/home-en-dark-1x.avif 300w, assets/shots/home-en-dark.avif 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/home-en-dark-1x.webp 300w, assets/shots/home-en-dark.webp 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/avif" srcset="assets/shots/home-en-light-1x.avif 300w, assets/shots/home-en-light.avif 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <source type="image/webp" srcset="assets/shots/home-en-light-1x.webp 300w, assets/shots/home-en-light.webp 600w" sizes="(max-width: 520px) 60vw, 280px">
+            <img src="assets/shots/home-en-light.png" width="600" height="1304" loading="lazy" alt="Home on iPhone, with Connected to Brasscribe on Studio Mac above Open a recording and Record with the microphone.">
+          </picture>
+        </div>
       </div>
     </div>
   </section>
@@ -295,14 +336,6 @@
         <p class="overline">Brasscribe Studio</p>
         <h2 id="studio-title">The workbench for <em>the band's tech person.</em></h2>
         <p class="lead">Studio runs in your browser, served by Brasscribe on your computer. It shows every step of a run, so you can see why a note came out the way it did.</p>
-      </div>
-      <div class="window studio-shot">
-        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>Brasscribe Studio</span></div>
-        <picture>
-          <source type="image/webp" media="(prefers-color-scheme: dark)" srcset="assets/shots/studio-en-dark.webp">
-          <source type="image/webp" srcset="assets/shots/studio-en-light.webp">
-          <img src="assets/shots/studio-en-light.png" width="1440" height="900" loading="lazy" alt="Brasscribe Studio showing one run: the stages from beats, stems and layers through the transcribers to arrange and export, each with its time and device, and an inspector below.">
-        </picture>
       </div>
       <ul class="grid-3 cards">
         <li class="card">
