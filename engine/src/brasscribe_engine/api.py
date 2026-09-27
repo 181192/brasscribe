@@ -169,6 +169,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.Job(id=job.id, profile=job.profile, title=job.title, audio_id=job.audio_id, status=job.status,
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
+                     device_name=job.device_name,
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
 
     def output_file(job_id: str, name: str) -> FileResponse:
@@ -384,7 +385,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
               dependencies=[Depends(auth)])
-    def create_job(body: m.JobCreate) -> m.Job:
+    def create_job(body: m.JobCreate, request: Request) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
         path, filename = job_input(body)
@@ -397,8 +398,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             profiles.arrangement_options(params)
         except ValueError as e:
             raise HTTPException(422, str(e)) from e
+        device = getattr(request.state, "device", None)
         job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
-                          allow_heavy=body.allow_heavy)
+                          allow_heavy=body.allow_heavy, device_name=device.name if device else None)
         return job_model(job)
 
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
@@ -410,19 +412,20 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if not old.audio_path.exists():
             raise HTTPException(409, f"input {old.audio_path} no longer exists")
         job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
-                          allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id)
+                          allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
+                          device_name=old.device_name)
         return job_model(job)
 
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
               tags=["jobs"], dependencies=[Depends(auth)])
-    def create_job_from_upload(file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
+    def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
                                title: str | None = Form(None), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
                                key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
-                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose))
+                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:

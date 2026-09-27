@@ -933,6 +933,18 @@
             "title": "Created",
             "type": "number"
           },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "name of the paired device that started the job; null when started on the engine's own computer (Studio, loopback) or with a static token",
+            "title": "Device Name"
+          },
           "error": {
             "anyOf": [
               {

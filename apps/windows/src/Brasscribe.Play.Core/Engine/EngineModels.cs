@@ -48,7 +48,8 @@ public sealed record Job(
     double? Finished = null,
     double Progress = 0.0,
     IReadOnlyList<string>? Outputs = null,
-    string? PreviousRunId = null)
+    string? PreviousRunId = null,
+    string? DeviceName = null)
 {
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;

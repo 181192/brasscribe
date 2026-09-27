@@ -125,6 +125,8 @@ data class Job(
     val outputs: List<String> = emptyList(),
     /** The job this one re-runs, if any. */
     @SerialName("previous_run_id") val previousRunId: String? = null,
+    /** The paired device that started the job; null when started on the engine's own computer. */
+    @SerialName("device_name") val deviceName: String? = null,
 )
 
 @Serializable

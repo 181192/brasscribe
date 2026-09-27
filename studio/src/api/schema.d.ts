@@ -1315,6 +1315,11 @@ export interface components {
             audio_id?: string | null;
             /** Created */
             created: number;
+            /**
+             * Device Name
+             * @description name of the paired device that started the job; null when started on the engine's own computer (Studio, loopback) or with a static token
+             */
+            device_name?: string | null;
             /** Error */
             error?: string | null;
             /** Finished */

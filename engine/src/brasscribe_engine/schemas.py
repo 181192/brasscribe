@@ -177,6 +177,8 @@ class Job(BaseModel):
     error: str | None = None
     progress: float = Field(0.0, description="share of stages finished, 0..1")
     previous_run_id: str | None = Field(None, description="the job this one re-runs, if any")
+    device_name: str | None = Field(None, description="name of the paired device that started the job; null when "
+                                    "started on the engine's own computer (Studio, loopback) or with a static token")
     stages: list[StageState]
     outputs: list[str] = Field(default_factory=list, description="names fetchable under /v1/jobs/{id}/artifacts/{name}")
 
