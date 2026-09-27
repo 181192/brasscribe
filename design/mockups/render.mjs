@@ -43,6 +43,11 @@ const SCREENS = {
   "server-pair": [["desktop", "light"], ["desktop", "dark"], ["desktop", "hc"]],
   "server-pair-nb": [["desktop", "light"]],
   "server-needs-attention": [["desktop", "light"], ["desktop", "dark"]],
+  "my-instrument-first-run": [["phone", "light"], ["phone", "dark"]],
+  "my-instrument-first-run-nb": [["phone", "light"]],
+  "my-instrument-settings": [["phone", "light"], ["desktop", "light"]],
+  "my-instrument-score": [["phone", "light"], ["phone", "dark"], ["desktop", "light"]],
+  "my-instrument-review": [["phone", "light"], ["desktop", "dark"]],
 };
 
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".woff2": "font/woff2", ".ttf": "font/ttf", ".svg": "image/svg+xml", ".png": "image/png" };
