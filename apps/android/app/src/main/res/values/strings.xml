@@ -71,8 +71,6 @@
         <item quantity="other">%d notes to check</item>
     </plurals>
     <string name="companion_status_fixture">Using the built-in demo</string>
-    <string name="companion_status_connected">Connected to %1$s</string>
-    <string name="companion_status_none">Not connected. A full band needs Brasscribe on your computer.</string>
     <string name="imported">Opened %1$s, %2$s</string>
     <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
     <string name="reading_file">Opening %1$s</string>
@@ -201,7 +199,6 @@
     <string name="playing_bar_original">Playing bar %1$d, the recording</string>
     <string name="playing_bar_score">Playing bar %1$d, the score</string>
     <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
-    <string name="stop_listening">Stop listening</string>
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
     <string name="review_continue">Choose output</string>
@@ -363,8 +360,6 @@
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>
-    <string name="companion_connected">Connected to Brasscribe %1$s on %2$s, using %3$s</string>
-    <string name="companion_failed">Couldn\'t connect. Check that Brasscribe is open on the computer and that both are on the same network. (%1$s)</string>
     <string name="companion_tech_details">Start the server on the computer with “brasscribe serve --lan”. The address is shown when it starts, for example http://192.168.1.20:8765.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
@@ -475,4 +470,37 @@
         <item quantity="one">Start with the %d very unsure one.</item>
         <item quantity="other">Start with the %d very unsure ones.</item>
     </plurals>
+
+    <!-- Connection to the computer, pairing, and listening to a bar. -->
+    <string name="conn_connected">Connected to %1$s</string>
+    <string name="conn_reconnecting">Looking for %1$s …</string>
+    <string name="conn_offline">Not connected. You can still make scores on this phone.</string>
+    <string name="conn_needs_pairing">The computer no longer recognises this phone.</string>
+    <string name="conn_pair_again">Pair this phone again</string>
+    <string name="server_name_format">Brasscribe on %1$s</string>
+    <string name="listen_stop">Stop</string>
+    <string name="listen_stopped">Stopped</string>
+    <string name="listen_ended">End of bar %1$d</string>
+    <string name="pair_scan">Scan the code on the computer</string>
+    <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
+    <string name="pair_link_invalid">That code isn\'t from Brasscribe on a computer.</string>
+    <string name="pair_link_title">Connect to %1$s?</string>
+    <string name="pair_link_unreachable">Couldn\'t find %1$s. Check that the phone and the computer are on the same Wi-Fi.</string>
+    <string name="pair_needs_update">Update Brasscribe Play to connect to this computer.</string>
+    <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>
+    <string name="pair_code_wrong">That code didn\'t work. Check the code on the computer and try again.</string>
+    <string name="pair_code_locked">Too many tries. Wait a minute, then try again.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Brasscribe is open on the computer and that both are on the same network.</string>
+    <string name="pair_ask">Ask on the computer instead</string>
+    <string name="pair_ask_again">Ask again</string>
+    <string name="pair_ask_waiting">On the computer, choose Allow when it shows this number:</string>
+    <string name="pair_ask_waiting_spoken">On the computer, choose Allow when it shows %1$s</string>
+    <string name="pair_ask_denied">The computer said no. Ask again, or type the code.</string>
+    <string name="pair_ask_expired">Nobody answered on the computer. Ask again.</string>
+    <string name="pair_forget">Forget this computer</string>
+    <string name="pair_forgotten">This phone no longer connects to the computer.</string>
+    <string name="conn_detail_address">Address: %1$s</string>
+    <string name="conn_detail_server_id">Server id: %1$s</string>
+    <string name="conn_detail_last_seen">Last answered: %1$s</string>
+    <string name="conn_detail_last_error">Last error: %1$s</string>
 </resources>

@@ -6,17 +6,19 @@ import android.media.AudioTrack
 import no.brasscribe.play.audio.PcmAudio
 
 /**
- * Loops short clips ("Listen to this bar": the original bar, a short gap, then the score's bar) with a
- * static AudioTrack. Only one clip plays at a time.
+ * Plays short clips once ("Listen to this bar": the original bar, a short gap, then the score's bar) with
+ * a static AudioTrack. Only one clip plays at a time.
  */
-class ClipPlayer {
+class ClipPlayer : ClipOutput {
     private var track: AudioTrack? = null
 
     val playing: Boolean get() = track?.playState == AudioTrack.PLAYSTATE_PLAYING
 
-    fun playLooped(clips: List<PcmAudio>, gapS: Double = 0.4) {
+    override fun play(clips: List<PcmAudio>): Long = play(clips, 0.4)
+
+    fun play(clips: List<PcmAudio>, gapS: Double): Long {
         stop()
-        if (clips.isEmpty()) return
+        if (clips.isEmpty()) return 0
         val rate = clips.first().sampleRate
         val gap = FloatArray((gapS * rate).toInt())
         val joined = clips.flatMap { c ->
@@ -24,7 +26,7 @@ class ClipPlayer {
             listOf(samples, gap)
         }
         val total = joined.sumOf { it.size }
-        if (total == 0) return
+        if (total == 0) return 0
         val data = FloatArray(total)
         var at = 0
         for (part in joined) { System.arraycopy(part, 0, data, at, part.size); at += part.size }
@@ -35,12 +37,12 @@ class ClipPlayer {
             .setBufferSizeInBytes(total * 4)
             .build()
         t.write(data, 0, total, AudioTrack.WRITE_BLOCKING)
-        t.setLoopPoints(0, total, -1)
         t.play()
         track = t
+        return total * 1000L / rate
     }
 
-    fun stop() {
+    override fun stop() {
         track?.run { runCatching { stop() }; release() }
         track = null
     }

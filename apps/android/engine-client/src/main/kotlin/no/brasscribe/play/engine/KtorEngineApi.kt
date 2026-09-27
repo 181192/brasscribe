@@ -45,7 +45,7 @@ class KtorEngineApi(
     engine: HttpClientEngine,
     @Volatile var token: String? = null,
     configure: HttpClientConfig<*>.() -> Unit = {},
-) : EngineApi {
+) : EngineApi, AutoCloseable {
     private val http = HttpClient(engine) {
         expectSuccess = false
         install(ContentNegotiation) { json(BrasscribeJson) }
@@ -64,11 +64,30 @@ class KtorEngineApi(
 
     override suspend fun health(): Health = http.get("v1/health") { auth() }.ok().body()
 
-    override suspend fun pair(code: String, deviceName: String?): PairResponse =
+    // The current token goes along: the engine then replaces this device's entry instead of adding a second one.
+    override suspend fun pair(code: String, deviceName: String?, platform: String?): PairResponse =
         http.post("v1/pair") {
+            auth()
             contentType(ContentType.Application.Json)
-            setBody(PairRequest(code, deviceName))
+            setBody(PairRequest(code, deviceName, platform))
         }.ok().body<PairResponse>().also { token = it.token }
+
+    override suspend fun thisDevice(): DeviceSelf = http.get("v1/devices/me") { auth() }.ok().body()
+
+    override suspend fun rotateToken(): RotateResponse = http.post("v1/devices/me/rotate") { auth() }.ok().body()
+
+    override suspend fun unpairThisDevice() {
+        http.delete("v1/devices/me") { auth() }.ok()
+    }
+
+    override suspend fun requestPairing(deviceName: String?, platform: String?): PairRequestInfo =
+        http.post("v1/pair/requests") {
+            contentType(ContentType.Application.Json)
+            setBody(PairRequestCreate(deviceName, platform))
+        }.ok().body()
+
+    override suspend fun pollPairingRequest(requestId: String): PairRequestResult =
+        http.get("v1/pair/requests/$requestId").ok().body()
 
     override suspend fun profiles(): List<ProfileInfo> = http.get("v1/profiles") { auth() }.ok().body()
 
@@ -169,7 +188,7 @@ class KtorEngineApi(
 
     private suspend fun bytes(path: String): ByteArray = http.get(path) { auth() }.ok().bodyAsBytes()
 
-    fun close() = http.close()
+    override fun close() = http.close()
 
     private fun io.ktor.client.request.forms.FormBuilder.appendFile(filename: String, bytes: ByteArray) {
         append("file", bytes, Headers.build {

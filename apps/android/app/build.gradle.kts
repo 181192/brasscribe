@@ -163,6 +163,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.play.services.code.scanner)
     implementation(libs.alphatab)
     implementation(libs.alphaskia.android)
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
@@ -174,6 +175,7 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)

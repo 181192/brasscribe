@@ -105,6 +105,7 @@ fun SettingsScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     var realistic by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.realisticByDefault) }
+    val connection by vm.connection.state.collectAsState()
     fun open(action: String, withPackage: Boolean = false) = runCatching {
         context.startActivity(android.content.Intent(action).apply {
             if (withPackage) data = android.net.Uri.fromParts("package", context.packageName, null)
@@ -115,11 +116,7 @@ fun SettingsScreen(vm: PlayViewModel) {
         RowGroup {
             ListRow(
                 stringResource(R.string.companion_title), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, icon = R.drawable.ic_bc_computer,
-                subtitle = when {
-                    vm.container.usingFixture -> stringResource(R.string.companion_status_fixture)
-                    vm.container.settings.paired -> stringResource(R.string.companion_status_connected, vm.container.engineLabel())
-                    else -> stringResource(R.string.companion_status_none)
-                },
+                subtitle = if (vm.container.usingFixture) stringResource(R.string.companion_status_fixture) else connectionText(vm, connection),
             )
         }
         SectionLabel(stringResource(R.string.sound))

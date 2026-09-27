@@ -58,6 +58,8 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.platform.testTag as tagged
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
@@ -158,6 +160,8 @@ fun ReviewScreen(vm: PlayViewModel) {
     var picked by rememberSaveable(voiceId) { mutableStateOf<Int?>(null) }
     val current = todo.firstOrNull { it.index == picked } ?: todo.firstOrNull()
     var confirmLater by remember { mutableStateOf(false) }
+    // Keep, Skip or picking another note moves to another bar: what was playing stops.
+    LaunchedEffect(current?.index) { vm.stopListening(announce = false) }
     var changing by remember { mutableStateOf(false) }
 
     fun advance(from: Int, announce: Boolean = true) {
@@ -320,7 +324,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                             val fr = remember(focus, e.index) { focus.getOrPut(e.index) { FocusRequester() } }
                             EventChip(
                                 e, spoken[e.index], e.index in checked, fr,
-                                listen = { vm.listenToBar(e.bar) },
+                                listen = { vm.listenToBar(e.bar) }, playing = playingBar == e.bar,
                                 check = { vm.markChecked(voiceId, e.index, todo.count { it.index != e.index }) },
                                 next = { nextUncertain(e.index) },
                                 label = e.stop.event.written?.let { no.brasscribe.play.model.Announcer.pitchLabel(it, lang) } ?: "–",
@@ -435,7 +439,8 @@ private fun NoteCard(
     evidence: NoteEvidence?, pitchLabel: (Int) -> String,
 ) {
     val c = BrasscribeTheme.colors
-    val listenLabel = stringResource(R.string.action_listen_bar)
+    // While the bar plays, the same button (and TalkBack action) is Stop.
+    val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
     val level = stringResource(if (very ?: (e.uncertainty == Uncertainty.VERY_UNCERTAIN)) R.string.level_very_uncertain else R.string.level_uncertain)
@@ -448,7 +453,7 @@ private fun NoteCard(
                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
                     contentDescription = "$spoken. $levelSentence"
                     customActions = listOf(
-                        CustomAccessibilityAction(listenLabel) { listen(); true },
+                        CustomAccessibilityAction(listenLabel) { if (playing) stop() else listen(); true },
                         CustomAccessibilityAction(checkLabel) { keep(); true },
                         CustomAccessibilityAction(nextLabel) { next(); true },
                     )
@@ -464,8 +469,7 @@ private fun NoteCard(
                 Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
             if (evidence != null) EvidencePanel(evidence, pitchLabel)
-            if (playing) OutlineButton(stringResource(R.string.stop_listening), stop, icon = R.drawable.ic_bc_stop)
-            else SecondaryButton(stringResource(R.string.action_listen_bar), listen, icon = R.drawable.ic_bc_listen_bar)
+            ListenButton(playing, listen, stop)
             OutlineButton(stringResource(R.string.change_note), changeNote, icon = R.drawable.ic_bc_transpose)
         }
     }
@@ -573,10 +577,10 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
 @Composable
 private fun EventChip(
     e: PartEvent, spoken: String, checked: Boolean, focus: FocusRequester,
-    listen: () -> Unit, check: () -> Unit, next: () -> Unit, label: String,
+    listen: () -> Unit, check: () -> Unit, next: () -> Unit, label: String, playing: Boolean = false,
 ) {
     val t = BrasscribeTheme.colors
-    val listenLabel = stringResource(R.string.action_listen_bar)
+    val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
     val uncertain = e.uncertainty != Uncertainty.CONFIDENT && !checked
@@ -647,4 +651,18 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
         // Drags on the staff scroll the page: this layer takes the touches before alphaTab's own scroll views.
         Box(Modifier.matchParentSize().pointerInput(Unit) {})
     }
+}
+
+/**
+ * "Listen to this bar", which turns into "Stop" while the bar plays: one button, same place and size,
+ * only the words and the icon change. Enter and Space press it like any button.
+ */
+@Composable
+fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier) {
+    SecondaryButton(
+        stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar),
+        if (playing) stop else listen,
+        modifier.tagged("listen-bar"),
+        icon = if (playing) R.drawable.ic_bc_stop else R.drawable.ic_bc_listen_bar,
+    )
 }
