@@ -29,8 +29,12 @@ struct YourComputerSection: View {
 
     private var paired: Bool { app.connection.record?.token != nil }
     private var showPairing: Bool {
-        if case .needsPairing = app.connection.state { return true }
-        return !paired
+        switch app.connection.state {
+        case .needsPairing: return true
+        // Brasscribe on this same Mac needs no pairing
+        case .connected: return false
+        default: return !paired
+        }
     }
 
     var body: some View {

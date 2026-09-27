@@ -66,18 +66,22 @@ public final class ConnectionMonitor {
         machine.handle(.suspended, at: now())
     }
 
+    /// Whether "Connect" can try right away (a paired engine, or Brasscribe on this same computer);
+    /// otherwise it means pairing.
+    public var canConnect: Bool { record != nil || localAddress != nil }
+
     /// "Connect", from the offline row.
     public func connect() {
-        guard !staged, let record else { return }
+        guard !staged, canConnect else { return }
         active = true
-        schedule(machine.handle(.connectRequested(serverName: record.serverName), at: now()))
+        schedule(machine.handle(.connectRequested(serverName: record?.serverName ?? ""), at: now()))
     }
 
     /// The network changed, or a request just failed: check now instead of waiting.
     public func poke() {
         guard !staged, active, record != nil || localAddress != nil else { return }
         if case .needsPairing = state { return }
-        if case .offline = state, record != nil { connect(); return }
+        if case .offline = state { connect(); return }
         schedule(0)
     }
 

@@ -341,6 +341,22 @@ extension URLRequest {
         #expect(m2.state == .offline)
     }
 
+    @Test @MainActor func connectOnThisMacProbesAgainInsteadOfPairing() async throws {
+        let (m, _) = monitor([])
+        m.localAddress = URL(string: "http://down.local:8765")   // Brasscribe not running yet
+        #expect(m.canConnect)
+        #expect(await m.heartbeat() == nil)
+        #expect(m.state == .offline)
+        m.localAddress = URL(string: "http://loop.local:8765")   // now it is
+        m.connect(); m.suspend()
+        #expect(m.state == .reconnecting(serverName: ""))
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on This Mac"))
+        // with neither a paired engine nor one on this computer, Connect means pairing
+        let (none, _) = monitor([])
+        #expect(!none.canConnect)
+    }
+
     @Test @MainActor func migratedTokenLearnsItsEngineOnFirstContact() async throws {
         let provisional = EngineRecord(serverID: "", serverName: "", token: "tok", lastAddress: "http://engine.local:8765",
                                        rotateAfter: nil)

@@ -73,7 +73,8 @@ final class AppModel {
 
     /// Where to send work: the paired engine's last address, or the typed one.
     var engineURL: URL {
-        connection.record?.baseURL ?? URL(string: companionURL) ?? URL(string: "http://localhost:8765")!
+        // a staged record (screenshots) is only for show
+        (connection.staged ? nil : connection.record?.baseURL) ?? URL(string: companionURL) ?? URL(string: "http://localhost:8765")!
     }
 
     /// Engine output folder used by the demo service (tests and screenshots set it).

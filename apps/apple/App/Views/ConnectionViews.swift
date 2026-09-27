@@ -90,7 +90,7 @@ struct ConnectionStatusRow: View {
         switch state {
         case .offline:
             Button("Connect") {
-                if app.connection.record != nil { app.connection.connect() } else { app.showSettings = true }
+                if app.connection.canConnect { app.connection.connect() } else { app.showSettings = true }
             }
             .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
             .accessibilityIdentifier("connectionConnect")
