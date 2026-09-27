@@ -50,6 +50,10 @@ public sealed partial class MainWindow : Window
         back.Invoked += OnBackAccelerator;
         Root.KeyboardAccelerators.Add(back);
 
+        // Back goes through the view model. Clearing BackStack after Navigate throws when a
+        // navigation is still in progress (a screen change during Loaded), so keep none at all.
+        ContentFrame.IsNavigationStackEnabled = false;
+
         ViewModel.PropertyChanged += OnViewModelChanged;
         ViewModel.Score.PropertyChanged += (_, e) =>
         {
@@ -90,7 +94,6 @@ public sealed partial class MainWindow : Window
             bool motion = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled && !ViewModel.Settings.ReduceMotion;
             NavigationTransitionInfo transition = motion ? new DrillInNavigationTransitionInfo() : new SuppressNavigationTransitionInfo();
             ContentFrame.Navigate(type, ViewModel, transition);
-            ContentFrame.BackStack.Clear();
         }
         UpdateTitleBar();
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => (ContentFrame.Content as IScreenPage)?.FocusHeading());
