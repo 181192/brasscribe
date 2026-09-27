@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <Authors>brasscribe</Authors>
+    <Product>Brasscribe Bandroom</Product>
+    <Company>brasscribe</Company>
+    <Copyright>brasscribe contributors (non-commercial)</Copyright>
+    <!-- Lets the Windows-only projects compile against reference assemblies on macOS and Linux. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <BrasscribeWindowsTfm>net10.0-windows10.0.20348.0</BrasscribeWindowsTfm>
+    <BrasscribeWindowsMinVersion>10.0.19041.0</BrasscribeWindowsMinVersion>
+    <!-- The repository root: design/ (theme, icons, the mark) and the pixi workspace are linked from there, never copied. -->
+    <RepoRoot>$(MSBuildThisFileDirectory)..\..\..\</RepoRoot>
+    <DesignDir>$(RepoRoot)design\</DesignDir>
+  </PropertyGroup>
+</Project>

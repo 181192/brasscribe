@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Brasscribe Bandroom styles on top of the generated design tokens (Themes/BrasscribeTheme.xaml, linked
+    from design/dist/windows). Colours come only from the Bc* brushes; in a Windows contrast theme those map
+    to system colours. The flyout uses 40 epx buttons (touch-friendly, §7) and 14 epx body text.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <!-- The one primary button is ink on light and paper on dark, never the system accent. -->
+        <ResourceDictionary x:Key="Light">
+            <Color x:Key="SystemAccentColor">#FF1B1A17</Color>
+            <Color x:Key="SystemAccentColorDark1">#FF1B1A17</Color>
+            <Color x:Key="SystemAccentColorDark2">#FF2B2824</Color>
+            <Color x:Key="SystemAccentColorDark3">#FF3A3732</Color>
+            <Color x:Key="SystemAccentColorLight1">#FF2B2824</Color>
+            <Color x:Key="SystemAccentColorLight2">#FF3A3732</Color>
+            <Color x:Key="SystemAccentColorLight3">#FF5E5A52</Color>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <Color x:Key="SystemAccentColor">#FFEDEBE6</Color>
+            <Color x:Key="SystemAccentColorDark1">#FFD9D6CF</Color>
+            <Color x:Key="SystemAccentColorDark2">#FFC4C0B8</Color>
+            <Color x:Key="SystemAccentColorDark3">#FFB4B0A7</Color>
+            <Color x:Key="SystemAccentColorLight1">#FFF2F0EB</Color>
+            <Color x:Key="SystemAccentColorLight2">#FFEDEBE6</Color>
+            <Color x:Key="SystemAccentColorLight3">#FFFBFAF7</Color>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast" />
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- ===== Text ===== -->
+    <Style x:Key="PanelHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="BodyStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCalloutTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="MutedStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCalloutTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="StrongStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="CaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- Small capitals over a group: "THIS COMPUTER", "NOW". -->
+    <Style x:Key="OverlineStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CharacterSpacing" Value="80" />
+    </Style>
+    <Style x:Key="DisplayHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcDisplayTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="FontSize" Value="36" />
+        <Setter Property="LineHeight" Value="44" />
+    </Style>
+    <Style x:Key="MonoStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LineHeight" Value="20" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+    </Style>
+
+    <!-- ===== Buttons: 12 epx corners, one primary per view ===== -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="2" />
+    </Style>
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource BcOnSecondaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+    </Style>
+    <!-- Outline: Restart, Stop, Update now, the tech buttons. -->
+    <Style x:Key="OutlineButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinWidth" Value="40" />
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+    </Style>
+    <!-- Plain: Open Studio, Remove, Back. -->
+    <Style x:Key="PlainButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinWidth" Value="44" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+    </Style>
+    <!-- A card that is a button: the Phones and tablets row. -->
+    <Style x:Key="RowButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+    </Style>
+
+    <!-- ===== Surfaces ===== -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="Padding" Value="12" />
+    </Style>
+    <Style x:Key="IconWellStyle" TargetType="Border">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+    </Style>
+    <!-- One segment of the neutral 3-segment meter; never brass or a status colour. -->
+    <Style x:Key="MeterSegmentStyle" TargetType="Border">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="7" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcTextMutedBrush}" />
+    </Style>
+    <!-- The progress bar is the one working brand moment: brass fill. -->
+    <Style x:Key="BrassProgressStyle" TargetType="ProgressBar">
+        <Setter Property="Foreground" Value="{ThemeResource BcBrassBrush}" />
+        <Setter Property="Background" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Height" Value="6" />
+        <Setter Property="MinHeight" Value="6" />
+        <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style x:Key="IconStyle" TargetType="FontIcon">
+        <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    </Style>
+</ResourceDictionary>

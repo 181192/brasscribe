@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths: &paths
       - "apps/windows/**"
+      - "apps/bandroom/**"
       - "core/**"
       - "design/**"
       - "docs/accessibility/talking-score-vectors.json"
@@ -184,4 +185,155 @@ jobs:
           name: dist-windows-x64
           path: ${{ runner.temp }}/out/*.zip
           if-no-files-found: error
+
+  # Brasscribe Bandroom for Windows (apps/bandroom/windows): Core tests, the WinUI 3 tray app build, a smoke
+  # test of the real start (admin credential, data folder, window form), an Axe.Windows scan of every view
+  # and screenshots to compare with design/mockups/png/server-*.
+  bandroom:
+    name: bandroom (test, build and scan)
+    if: ${{ !inputs.release }}
+    runs-on: windows-latest
+    timeout-minutes: 75
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: apps/bandroom/windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: apps/bandroom/windows/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-bandroom-${{ runner.os }}-${{ hashFiles('apps/bandroom/windows/Directory.Packages.props', 'apps/bandroom/windows/**/*.csproj') }}
+          restore-keys: nuget-bandroom-${{ runner.os }}-
+
+      - name: Core tests
+        run: >
+          dotnet test tests/Brasscribe.Bandroom.Core.Tests -c $env:CONFIGURATION
+          --logger "trx;LogFileName=bandroom-core.trx" --results-directory "$env:RUNNER_TEMP/bandroom-results"
+
+      - name: Build Bandroom (WinUI 3, unpackaged, x64)
+        run: dotnet build src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
+
+      - name: Locate the exe
+        id: exe
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
+          if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/brasscribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py")) {
+            if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
+          }
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+
+      # The real start: no engine can be installed here (no pixi, about 10 GB), so it stays in "Setting up",
+      # but the admin credential, the log, the icon and the window form must all work.
+      - name: Smoke test (the real start shows its window and keeps running)
+        run: |
+          $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -PassThru
+          $deadline = (Get-Date).AddSeconds(90)
+          while ($p.MainWindowHandle -eq 0 -and -not $p.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500; $p.Refresh() }
+          Start-Sleep -Seconds 8
+          $data = Join-Path $env:LOCALAPPDATA "Brasscribe"
+          $crash = Join-Path $data "logs/bandroom-crash.log"
+          if ($p.HasExited) {
+            if (Test-Path $crash) { Get-Content $crash }
+            throw "Bandroom exited with code $($p.ExitCode)"
+          }
+          if ($p.MainWindowHandle -eq 0) { throw "No window after 90 s" }
+          Write-Host "Window: $($p.MainWindowTitle)"
+          Get-Content (Join-Path $data "logs/engine.log")
+          $token = Join-Path $data "bandroom/admin-token"
+          if (-not (Test-Path $token)) { throw "no admin credential" }
+          $acl = Get-Acl $token
+          $acl.Access | Format-Table IdentityReference, FileSystemRights, AccessControlType, IsInherited
+          if ($acl.AreAccessRulesProtected -ne $true -or @($acl.Access).Count -ne 1) { throw "the admin credential is readable by more than this user" }
+          Stop-Process -Id $p.Id -Force
+          if (Test-Path $crash) { Get-Content $crash; throw "Bandroom logged an unhandled exception" }
+          if (-not (Select-String -Path (Join-Path $data "logs/engine.log") -Pattern "notification-area icon added" -Quiet)) { throw "the notification-area icon was not added" }
+
+      # The engine for real: the first run installs the engine environment from pixi.lock (no torch, about
+      # 0.5 GB), Bandroom starts it in its job object, and the owner endpoints answer with the admin bearer.
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.81.0
+          run-install: false
+
+      - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
+        timeout-minutes: 30
+        run: |
+          $data = Join-Path $env:LOCALAPPDATA "Brasscribe"
+          $log = Join-Path $data "logs/engine.log"
+          $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -ArgumentList "--background" -PassThru
+          $deadline = (Get-Date).AddMinutes(25)
+          while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
+            if (Select-String -Path $log -Pattern "the engine is running on port" -Quiet) { break }
+            Start-Sleep -Seconds 10
+          }
+          Get-Content $log -Tail 40
+          if ($p.HasExited) { throw "Bandroom exited with code $($p.ExitCode)" }
+          if (-not (Select-String -Path $log -Pattern "the engine is running on port" -Quiet)) { throw "the engine did not reach Running" }
+          $engine = Get-Content (Join-Path $data "engine.json") -Raw | ConvertFrom-Json
+          $engine | ConvertTo-Json
+          $token = (Get-Content (Join-Path $data "bandroom/admin-token") -Raw).Trim()
+          if ((Get-Content (Join-Path $data "engine.json") -Raw) -match [regex]::Escape($token)) { throw "engine.json holds the admin credential" }
+          $base = "http://127.0.0.1:$($engine.port)"
+          $auth = @{ Authorization = "Bearer $token" }
+          Invoke-RestMethod "$base/v1/health" | ConvertTo-Json
+          Invoke-RestMethod "$base/v1/devices" -Headers $auth | ConvertTo-Json
+          $pair = Invoke-RestMethod -Method Post "$base/v1/pairing" -Headers $auth -ContentType "application/json" -Body '{"ttl_s":null,"single_use":true,"extend":false}'
+          $pair | ConvertTo-Json
+          if (-not $pair.open -or $pair.expires_at) { throw "the pairing window did not open without expiry" }
+          Invoke-RestMethod -Method Delete "$base/v1/pairing" -Headers $auth | Out-Null
+          # The engine's whole tree: pixi and everything under it (python, the serve entry point).
+          $all = @(Get-CimInstance Win32_Process)
+          $engineProcs = @($all | Where-Object { $_.ProcessId -eq $engine.pid })
+          for ($i = 0; $i -lt $engineProcs.Count; $i++) {
+            $engineProcs += @($all | Where-Object { $_.ParentProcessId -eq $engineProcs[$i].ProcessId -and $_.ProcessId -notin $engineProcs.ProcessId })
+          }
+          $engineProcs | Format-Table ProcessId, ParentProcessId, Name -AutoSize
+          if ($engineProcs.Count -lt 2) { throw "expected pixi and its python child, found $($engineProcs.Count) processes" }
+          Stop-Process -Id $p.Id -Force
+          Start-Sleep -Seconds 5
+          $left = @($engineProcs | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
+          if ($left.Count -gt 0) { $left | Format-Table ProcessId, Name; throw "the engine outlived Bandroom" }
+
+      - name: Accessibility scan (Axe.Windows)
+        run: >
+          dotnet run --project tools/AxeScan -c $env:CONFIGURATION --
+          "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/bandroom-axe"
+          flyout devices confirm-stop window pair allow
+
+      - name: Screenshots
+        if: ${{ !cancelled() && steps.exe.outputs.path != '' }}
+        run: ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out "$env:RUNNER_TEMP/bandroom-screenshots"
+
+      - name: Crash log
+        if: ${{ failure() }}
+        run: |
+          $log = Join-Path $env:LOCALAPPDATA "Brasscribe/logs/bandroom-crash.log"
+          if (Test-Path $log) { Get-Content $log } else { "no bandroom-crash.log" }
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandroom-windows-screenshots
+          path: ${{ runner.temp }}/bandroom-screenshots
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload test and scan results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandroom-windows-results
+          path: |
+            ${{ runner.temp }}/bandroom-results
+            ${{ runner.temp }}/bandroom-axe
+          retention-days: 14
+          if-no-files-found: ignore
 

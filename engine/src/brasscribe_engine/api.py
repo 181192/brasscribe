@@ -146,7 +146,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                               single_use=w.single_use, server_id=app.state.identity.server_id,
                               server_name=app.state.server_name, hosts=list(app.state.hosts), fingerprint=None,
                               uri=pairing_uri(app.state.identity.server_id, app.state.server_name,
-                                              list(app.state.hosts), code))
+                                              list(app.state.hosts), code),
+                              locked_until=iso(w.locked_until) if w.retry_after() > 0 else None)
 
     jobs: JobManager = app.state.jobs
     from .conformance import ConformanceRunner

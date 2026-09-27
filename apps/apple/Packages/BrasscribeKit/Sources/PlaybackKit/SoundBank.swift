@@ -83,11 +83,14 @@ public struct SoundBank: Sendable {
 
     /// AUSampler streams SoundFont samples from disk by default, preloading only their start.
     /// When a read is late the voice plays silence: measured as 20–110 dB dropouts inside held
-    /// notes on a cold file cache. Load every sample into memory instead.
+    /// notes on a cold file cache. Load every sample into memory instead. The property exists
+    /// only in the macOS SDK; iOS has no switch for it.
     static func loadIntoMemory(_ sampler: AVAudioUnitSampler) {
+        #if os(macOS)
         var off: UInt32 = 0
         AudioUnitSetProperty(sampler.audioUnit, kMusicDeviceProperty_StreamFromDisk, kAudioUnitScope_Global, 0,
                              &off, UInt32(MemoryLayout<UInt32>.size))
+        #endif
     }
 
     /// Load the instrument for `part` into its sampler. Returns false when the sampler keeps its
