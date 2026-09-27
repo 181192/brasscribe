@@ -81,6 +81,7 @@ for (const [screen, variants] of Object.entries(SCREENS)) {
     const base = nb ? screen.slice(0, -3) : screen;
     await page.goto(`http://127.0.0.1:${port}/mockups/${base}.html?device=${device}${nb ? "&lang=nb" : ""}${hc ? "&theme=high-contrast" : ""}`);
     await page.waitForSelector("body[data-ready]");
+    await page.waitForTimeout(50);
     await page.evaluate(() => document.fonts.ready);
     const file = join(OUT, `${screen}-${device}-${theme}.png`);
     await page.screenshot({ path: file, fullPage: false });
