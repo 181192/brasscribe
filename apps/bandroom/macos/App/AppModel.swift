@@ -270,6 +270,38 @@ final class AppModel {
         loginItemEnabled = SMAppService.mainApp.status == .enabled
     }
 
+    // MARK: remove from this Mac (§3.10)
+
+    /// The downloads folder in GB, when there is one to keep or delete.
+    func downloadsGB() -> Double? {
+        Uninstaller(paths: paths).downloadsSize().map { Double($0) / 1_000_000_000 }
+    }
+
+    /// Stops the engine, unregisters the login item, deletes the data folder (all of it, or all but
+    /// the downloads) and the logs, forgets the access key and settings, moves the app to the Bin and
+    /// quits. Scores on the phones are theirs and are not touched.
+    func removeFromThisMac(deleteDownloads: Bool) {
+        logger.write("removing Brasscribe from this Mac (delete downloads: \(deleteDownloads))")
+        if demo { NSApp.terminate(nil); return }
+        monitor.stop()
+        supervisor.shutdown()
+        releaseSleep()
+        try? SMAppService.mainApp.unregister()
+        do {
+            try Uninstaller(paths: paths).remove(keepDownloads: !deleteDownloads)
+        } catch {
+            logger.write("remove: \(error)")
+        }
+        HuggingFaceKey.delete()
+        if let id = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: id) }
+        let app = Bundle.main.bundleURL
+        NSWorkspace.shared.recycle([app]) { _, error in
+            // Where the app can't be moved (a read-only disk image), show it so it can be dragged to the Bin.
+            if error != nil { NSWorkspace.shared.activateFileViewerSelecting([app]) }
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
+    }
+
     func finishSetup(startAtLogin: Bool) {
         setupComplete = true
         if startAtLogin && environment["BANDROOM_NO_LOGIN_ITEM"] == nil { setLoginItem(true) }
@@ -374,6 +406,10 @@ enum HuggingFaceKey {
         var out: AnyObject?
         guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let data = out as? Data else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+
+    static func delete() {
+        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)
     }
 
     @discardableResult

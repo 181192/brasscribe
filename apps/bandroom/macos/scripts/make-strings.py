@@ -132,6 +132,11 @@ NB = {
     "Processor only: slower": "Bare prosessoren: tregere",
     "QR code for pairing with Brasscribe on %@. It holds the same code: %@.":
         "QR-kode for å koble til Brasscribe på %@. Den inneholder den samme koden: %@.",
+    "Also delete the downloads (%@ GB)": "Slett også nedlastingene (%@ GB)",
+    "Phones can't make full-band scores here after this. Scores on your phones stay.": "Etterpå kan ikke telefonene lage partitur for fullt band her. Partitur på telefonene blir liggende.",
+    "Remove Brasscribe from this Mac…": "Fjern Brasscribe fra denne Macen …",
+    "Remove Brasscribe from this Mac?": "Fjerne Brasscribe fra denne Macen?",
+    "The downloads stay in %@, so installing again doesn't fetch them again.": "Nedlastingene blir liggende i %@, så en ny installasjon slipper å hente dem på nytt.",
     "Quit Brasscribe Bandroom": "Avslutt Brasscribe Bandroom",
     "Read the licence": "Les lisensen",
     "Ready": "Klar",

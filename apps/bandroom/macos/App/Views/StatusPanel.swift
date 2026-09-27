@@ -10,7 +10,10 @@ struct StatusPanel: View {
     @State private var techOpen = false
     @State private var confirm: Confirmation?
 
-    enum Confirmation: Equatable { case stop, restart }
+    enum Confirmation: Equatable { case stop, restart, remove }
+    /// "Also delete the downloads", on by default (§3.10).
+    @State var deleteDownloads = true
+    @State var downloadsGB: Double?
 
     @FocusState private var dialogFocus: Bool
 
@@ -76,7 +79,11 @@ struct StatusPanel: View {
                 .accessibilityFocused($voiceOverOnStatus)
             }
             Spacer(minLength: 4)
-            MoreMenu()
+            MoreMenu {
+                downloadsGB = app.downloadsGB()
+                deleteDownloads = true
+                confirm = .remove
+            }
         }
     }
 
@@ -252,6 +259,31 @@ struct StatusPanel: View {
 
     // MARK: confirmations (system rule 9)
 
+    /// Remove Brasscribe from this Mac? (§3.10): what goes, what stays; Cancel has the focus.
+    @ViewBuilder private var removeDialog: some View {
+        Text("Remove Brasscribe from this Mac?").brFont(.bodyStrong).multilineTextAlignment(.center)
+            .accessibilityAddTraits(.isHeader)
+        Text("Phones can't make full-band scores here after this. Scores on your phones stay.")
+            .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+        if let gb = downloadsGB {
+            let size = gb.formatted(.number.precision(.fractionLength(gb < 10 ? 1 : 0)))
+            Toggle(isOn: $deleteDownloads) { Text("Also delete the downloads (\(size) GB)").brFont(.callout) }
+                .toggleStyle(.checkbox)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if !deleteDownloads {
+                Text("The downloads stay in \(app.paths.models.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")), so installing again doesn't fetch them again.")
+                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        Button { confirm = nil; app.removeFromThisMac(deleteDownloads: downloadsGB != nil && deleteDownloads) } label: { Text("Remove") }
+            .buttonStyle(.brPrimary)
+        Button { confirm = nil } label: { Text("Cancel") }.buttonStyle(.brPlain).keyboardShortcut(.cancelAction)
+            .focused($dialogFocus)
+    }
+
     @ViewBuilder private func confirmation(_ c: Confirmation) -> some View {
         let title = app.monitor.job?.title ?? String(localized: "this score")
         ZStack {
@@ -281,6 +313,8 @@ struct StatusPanel: View {
                         .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
                     Button { confirm = nil } label: { Text("Cancel") }.buttonStyle(.brPlain).keyboardShortcut(.cancelAction)
                         .focused($dialogFocus)
+                case .remove:
+                    removeDialog
                 }
             }
             .padding(16)
@@ -457,6 +491,8 @@ struct ExpiredCard: View {
 struct MoreMenu: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openSettings) private var openSettings
+    /// Asks before removing: the confirmation lives in the panel.
+    var onRemove: () -> Void
 
     var body: some View {
         Menu {
@@ -468,6 +504,7 @@ struct MoreMenu: View {
                 NSApp.orderFrontStandardAboutPanel(nil)
             }
             Divider()
+            Button("Remove Brasscribe from this Mac…") { onRemove() }
             Button("Quit Brasscribe Bandroom") { NSApp.terminate(nil) }
         } label: {
             Image(systemName: "ellipsis").font(.system(size: 15, weight: .bold)).frame(width: 28, height: 28)

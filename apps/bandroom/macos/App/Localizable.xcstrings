@@ -211,6 +211,16 @@
         }
       }
     },
+    "Also delete the downloads (%@ GB)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slett også nedlastingene (%@ GB)"
+          }
+        }
+      }
+    },
     "Another program on this computer is in the way.": {
       "localizations": {
         "nb": {
@@ -1081,6 +1091,16 @@
         }
       }
     },
+    "Phones can't make full-band scores here after this. Scores on your phones stay.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etterpå kan ikke telefonene lage partitur for fullt band her. Partitur på telefonene blir liggende."
+          }
+        }
+      }
+    },
     "Phones can't send recordings until you start it.": {
       "localizations": {
         "nb": {
@@ -1207,6 +1227,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fjerne %@?"
+          }
+        }
+      }
+    },
+    "Remove Brasscribe from this Mac?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjerne Brasscribe fra denne Macen?"
+          }
+        }
+      }
+    },
+    "Remove Brasscribe from this Mac…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern Brasscribe fra denne Macen …"
           }
         }
       }
@@ -1527,6 +1567,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nedlastingen stoppet"
+          }
+        }
+      }
+    },
+    "The downloads stay in %@, so installing again doesn't fetch them again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedlastingene blir liggende i %@, så en ny installasjon slipper å hente dem på nytt."
           }
         }
       }
