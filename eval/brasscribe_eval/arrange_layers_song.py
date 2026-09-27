@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 import soundfile as sf
-from brasscribe_music.arranger import arrange_layers
+from brasscribe_music.arranger import Arrangement, arrange_layers
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
@@ -48,11 +48,16 @@ from .lead_sheet import line
 
 
 def pitched(path: Path) -> list[dict]:
+    """The pitched notes of a MIDI file; none when the file is absent (a solo take has only a solo layer)."""
+    if not path.exists():
+        return []
     pm = pretty_midi.PrettyMIDI(str(path))
     return [{"pitch": n.pitch, "onset": n.start, "offset": n.end} for i in pm.instruments if not i.is_drum for n in i.notes]
 
 
 def drums_of(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
     pm = pretty_midi.PrettyMIDI(str(path))
     return [{"pitch": n.pitch, "onset": n.start, "offset": n.end} for i in pm.instruments if i.is_drum for n in i.notes]
 
@@ -80,7 +85,7 @@ def written_line(qnotes, times: np.ndarray, pickup: int, source: str) -> list[No
     return out
 
 
-def main() -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--layers", type=Path, required=True)
     ap.add_argument("--beats", type=Path, required=True)
@@ -101,7 +106,11 @@ def main() -> None:
     tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
     tr.add_argument("--transpose", type=int, help="transpose the whole arrangement by N semitones")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
-    args = ap.parse_args()
+    return ap.parse_args(argv)
+
+
+def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
+    """The Composition and its arrangement (writes separation-check.json into args.out when the layer audio is there)."""
     L = args.layers
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -276,16 +285,7 @@ def main() -> None:
     marked = sum(n.confidence < 1 - model.mark_risk for n in solo)
     print(f"solo notes marked uncertain: {marked} of {len(solo)} ({marked / max(1, len(solo)):.0%}), "
           f"{sum(1 for r in comp.review if r.voice == 'solo')} review groups")
-    comp.to_json(args.out / "composition.json")
-
     arr = arrange_layers(comp, lineup_by_name(lineup), difficulty=args.difficulty)
-    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
-    if not args.no_render:
-        musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
-    # Individual parts (mscore -P crashes): one MusicXML per part, all rendered in one MuseScore launch.
-    parts = split_parts(xml, args.out / "parts")
-    for pdf in [] if args.no_render else musescore.convert_many([(f, f.with_suffix(".pdf")) for f in parts], style=PART_STYLE):
-        print(f"(no pdf for {pdf.name})")
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
@@ -294,6 +294,20 @@ def main() -> None:
           f"warnings {len(arr.warnings)}")
     for r in comp.free_regions:
         print(f"free time {r.start_s:.2f}-{r.end_s:.2f} s -> ticks {r.start}-{r.end} at {r.tempo_bpm:.1f} BPM ({r.notation.value})")
+    return comp, arr
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    comp, arr = build(args)
+    comp.to_json(args.out / "composition.json")
+    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
+    if not args.no_render:
+        musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
+    # Individual parts (mscore -P crashes): one MusicXML per part, all rendered in one MuseScore launch.
+    parts = split_parts(xml, args.out / "parts")
+    for pdf in [] if args.no_render else musescore.convert_many([(f, f.with_suffix(".pdf")) for f in parts], style=PART_STYLE):
+        print(f"(no pdf for {pdf.name})")
     print(xml, "pdf" if xml.with_suffix(".pdf").exists() else "(no pdf)", "mp3" if xml.with_suffix(".mp3").exists() else "(no mp3)")
 
 
