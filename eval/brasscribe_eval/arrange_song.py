@@ -33,6 +33,50 @@ def to_notes(qnotes, pickup: int, source: str) -> list[Note]:
     return [Note(q.pitch, q.start - pickup, q.end - q.start, q.confidence, [source], q.onset_s, q.offset_s) for q in qnotes]
 
 
+def song_composition(beats: Path, melody: Path, melody_support: Path | None, bass_mid: Path, harmony: list[Path],
+                     title: str) -> Composition:
+    """Melody, bass and harmony voices of a transcribed song on its beat grid (tick 0 = first downbeat)."""
+    b = np.loadtxt(beats)
+    pos = b[:, 1].astype(int)
+    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
+    first_down = int(np.argmax(pos == 1))
+    # Fix the metrical level once from all transcribed onsets, then quantize every stream on that grid.
+    all_onsets = np.array([n["onset"] for f in [melody, bass_mid, *harmony] for n in load_notes(f)])
+    times = choose_level(b[:, 0], all_onsets)
+    if len(times) != len(b):
+        beats_per_bar *= 2
+        first_down *= 2
+    # Tick 0 is the downbeat at or before the earliest note, so nothing precedes bar 1.
+    earliest = float(BeatMap(times).to_beats(np.array([all_onsets.min()]))[0])
+    while first_down > earliest + 1e-6:
+        first_down -= beats_per_bar
+    pickup = first_down * TICKS_PER_BEAT
+
+    sources = {"mus": load_notes(melody)}
+    if melody_support:
+        sources["bp"] = load_notes(melody_support)
+    cand, _ = consensus(sources, {"mus": 0.6, "bp": 0.4}, 0.5)
+    mel_raw = line(cand, 52, 88, top=True)
+    melody = to_notes(fill_gaps(quantize(mel_raw, times, monophonic=True, auto_level=False), TICKS_PER_BEAT // 2), pickup, "melody")
+    bass = to_notes(fill_gaps(quantize(line(load_notes(bass_mid), 28, 55, top=False), times, monophonic=True, auto_level=False),
+                              TICKS_PER_BEAT // 2), pickup, "bass")
+
+    mel_keys = {(round(n["onset"], 2), n["pitch"]) for n in mel_raw}
+    acc = [n for f in harmony for n in load_notes(f)
+           if 40 <= n["pitch"] <= 84 and (round(n["onset"], 2), n["pitch"]) not in mel_keys]
+    acc_q = to_notes(quantize(acc, times, auto_level=False), pickup, "accompaniment")
+    end = max(n.end for n in melody + bass + acc_q)
+    harm = slots_to_notes(harmony_slots(acc_q, end), confidence=0.8)
+
+    comp = Composition(title, [Voice("melody", VoiceRole.MELODY, melody), Voice("bass", VoiceRole.BASS, bass),
+                                    Voice("harmony", VoiceRole.HARMONY, harm)],
+                       [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down)
+    tonal = melody + bass + harm
+    _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
+    comp.keys = [KeySig(0, fifths)]
+    return comp
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--beats", type=Path, required=True)
@@ -48,44 +92,7 @@ def main() -> None:
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
-    b = np.loadtxt(args.beats)
-    pos = b[:, 1].astype(int)
-    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
-    first_down = int(np.argmax(pos == 1))
-    # Fix the metrical level once from all transcribed onsets, then quantize every stream on that grid.
-    all_onsets = np.array([n["onset"] for f in [args.melody, args.bass, *args.harmony] for n in load_notes(f)])
-    times = choose_level(b[:, 0], all_onsets)
-    if len(times) != len(b):
-        beats_per_bar *= 2
-        first_down *= 2
-    # Tick 0 is the downbeat at or before the earliest note, so nothing precedes bar 1.
-    earliest = float(BeatMap(times).to_beats(np.array([all_onsets.min()]))[0])
-    while first_down > earliest + 1e-6:
-        first_down -= beats_per_bar
-    pickup = first_down * TICKS_PER_BEAT
-
-    sources = {"mus": load_notes(args.melody)}
-    if args.melody_support:
-        sources["bp"] = load_notes(args.melody_support)
-    cand, _ = consensus(sources, {"mus": 0.6, "bp": 0.4}, 0.5)
-    mel_raw = line(cand, 52, 88, top=True)
-    melody = to_notes(fill_gaps(quantize(mel_raw, times, monophonic=True, auto_level=False), TICKS_PER_BEAT // 2), pickup, "melody")
-    bass = to_notes(fill_gaps(quantize(line(load_notes(args.bass), 28, 55, top=False), times, monophonic=True, auto_level=False),
-                              TICKS_PER_BEAT // 2), pickup, "bass")
-
-    mel_keys = {(round(n["onset"], 2), n["pitch"]) for n in mel_raw}
-    acc = [n for f in args.harmony for n in load_notes(f)
-           if 40 <= n["pitch"] <= 84 and (round(n["onset"], 2), n["pitch"]) not in mel_keys]
-    acc_q = to_notes(quantize(acc, times, auto_level=False), pickup, "accompaniment")
-    end = max(n.end for n in melody + bass + acc_q)
-    harm = slots_to_notes(harmony_slots(acc_q, end), confidence=0.8)
-
-    comp = Composition(args.title, [Voice("melody", VoiceRole.MELODY, melody), Voice("bass", VoiceRole.BASS, bass),
-                                    Voice("harmony", VoiceRole.HARMONY, harm)],
-                       [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down)
-    tonal = melody + bass + harm
-    _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
-    comp.keys = [KeySig(0, fifths)]
+    comp = song_composition(args.beats, args.melody, args.melody_support, args.bass, args.harmony, args.title)
     if args.lineup != "minimal":
         comp.arrangement = {"lineup": args.lineup, "difficulty": "faithful", "transpose_semitones": 0}
     comp.to_json(args.out / "composition.json")
@@ -95,7 +102,8 @@ def main() -> None:
     if not args.no_render:
         pdf.unlink(missing_ok=True)
         musescore.convert(xml, pdf)
-    print(f"{len(melody)} melody / {len(bass)} bass / {len(harm)} harmony notes, {len(arr.warnings)} warnings")
+    n = {v.id: len(v.notes) for v in comp.voices}
+    print(f"{n['melody']} melody / {n['bass']} bass / {n['harmony']} harmony notes, {len(arr.warnings)} warnings")
     print(xml, pdf if pdf.exists() else "(no PDF)")
 
 

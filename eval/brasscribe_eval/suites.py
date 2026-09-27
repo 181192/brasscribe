@@ -264,12 +264,53 @@ def _solo_vote(data: Path, mode: str) -> dict[str, float]:
 # ---------------------------------------------------------------- arrangement
 
 def _arrange(data: Path, mode: str) -> dict[str, float]:
-    from .arrange_bench import composition_from_reference, evaluate
+    from brasscribe_music.instruments import QUARTET
+
+    from .arrange_bench import QUARTET_KEYS, composition_from_reference, evaluate, reference_row
 
     out: dict = {}
     for label, d in _present(data, out):
-        rows = [evaluate(composition_from_reference(s, s.name))[0] for s in _songs(data / "eval" / d)]
+        comps = [composition_from_reference(s, s.name) for s in _songs(data / "eval" / d)]
+        rows = [evaluate(c)[0] for c in comps]
         for k in ("melody_kept", "bass_kept", "harmony_fidelity", "impossible", "uncomfortable", "crossings"):
+            out[f"{label}.{k}"] = _mean(rows, k)
+        if label != "chorales":
+            continue
+        # The quartet on the chorales, whose S A T B are a brass quartet's own parts, in every difficulty.
+        for diff in ("faithful", "standard", "easier"):
+            prefix = "quartet" if diff == "faithful" else f"quartet-{diff}"
+            q = [evaluate(c, QUARTET, diff)[0] for c in comps]
+            for k in QUARTET_KEYS:
+                out[f"{prefix}.{k}"] = _mean(q, k)
+        # The chorales' own voices under the same four-part metrics (how far "no parallels" is from Bach).
+        ref = [reference_row(c) for c in comps]
+        for k in ("parallels_per_100", "spacing_faults", "crossings"):
+            out[f"quartet-reference.{k}"] = _mean(ref, k)
+    return out
+
+
+def _quartet_audio(data: Path, mode: str) -> dict[str, float]:
+    """Record a quartet, get quartet parts: cached MuScriptor and Basic Pitch transcriptions of the
+    ChoraleBricks recordings through arrange_song for the quartet, scored against the chorale."""
+    from brasscribe_music.arranger import arrange
+    from brasscribe_music.instruments import QUARTET
+
+    from .arrange_bench import audio_quartet_row
+    from .arrange_song import song_composition
+
+    d = data / "eval" / SETS["chorales"]
+    _need(data, f"eval/{SETS['chorales']}")
+    sources = {"mus": ("muscriptor-medium.mid", "basic-pitch.mid"), "bp": ("basic-pitch.mid", None)}
+    out: dict = {}
+    for label, (main, support) in sources.items():
+        rows = []
+        for s in _songs(d):
+            mids = [s / main] + ([s / support] if support else [])
+            if not all(m.exists() for m in mids) or not (s / "beat-this.beats").exists():
+                raise SkipSuite(f"no cached {main} / beat-this.beats for {s.name}")
+            comp = song_composition(s / "beat-this.beats", s / main, s / support if support else None, s / main, mids, s.name)
+            rows.append(audio_quartet_row(comp, arrange(comp, QUARTET), s / "reference.json"))
+        for k in rows[0]:
             out[f"{label}.{k}"] = _mean(rows, k)
     return out
 
@@ -478,8 +519,10 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
                      [0.7, 0.8]), ("eval/slakh-trumpet",)),
     Suite("solo-vote", "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)", _solo_vote,
           ("mega53-out-bench", "eval/choralebricks-brass4", "eval/slakh-trumpet")),
-    Suite("arrange", "minimal-band arranger on ground-truth scores (no audio)", _arrange,
+    Suite("arrange", "minimal-band and quartet arrangers on ground-truth scores (no audio)", _arrange,
           ("eval/choralebricks-brass4", "eval/urmp-brass"), ci=True),
+    Suite("quartet-audio", "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
+          _quartet_audio, ("eval/choralebricks-brass4",), ci=True),
     Suite("mikkel-golden", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
           ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
     Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",

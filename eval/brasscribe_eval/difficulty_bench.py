@@ -29,8 +29,8 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.arranger import CHOIR_PARTS, PAD_PARTS, arrange, arrange_layers
-from brasscribe_music.difficulty import KEY_CHANGE_PENALTY, MODES, SOLO_PART, apply_difficulty, easy_range
-from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
+from brasscribe_music.difficulty import KEY_CHANGE_PENALTY, MODES, apply_difficulty, easy_range
+from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND, QUARTET
 from brasscribe_music.keys import key_plan
 from brasscribe_music.score_model import Composition, VoiceRole
 
@@ -50,8 +50,8 @@ def contour(a, b, end: int) -> float:
 
 def metrics(comp: Composition, parts: dict, lineup, faithful_solo=None) -> dict:
     pitched = [(p, n) for p in lineup.parts if p.instrument.clef != "percussion" for n in parts.get(p.name, [])]
-    solo = [n for p, n in pitched if p.name == SOLO_PART]
-    rest = [n for p, n in pitched if p.name != SOLO_PART]
+    solo = [n for p, n in pitched if p.name == lineup.lead]
+    rest = [n for p, n in pitched if p.name != lineup.lead]
     src = [n for v in comp.voices if v.role != VoiceRole.RHYTHM and v.layer != "drums" for n in v.notes]
     band = [n for _, n in pitched]
     jac = []
@@ -85,7 +85,7 @@ def ground_truth(eval_dirs: list[Path]) -> dict:
         for song in sorted(p for p in d.iterdir() if (p / "reference.json").exists()):
             comp = composition_from_reference(song, song.name)
             arr = arrange(comp)
-            faithful_solo = arr.parts[SOLO_PART]
+            faithful_solo = arr.parts[arr.lineup.lead]
             for m in MODES:
                 parts = apply_difficulty(arr.parts, arr.lineup, m)
                 rows[m].append(metrics(comp, parts, arr.lineup, faithful_solo))
@@ -100,17 +100,19 @@ def mikkel(comp_path: Path) -> dict:
     bass = [n for v in comp.voices if v.layer == "bass" for n in v.notes]
     src_on = sorted({n.start for v in comp.voices if v.layer in ("strings", "brass") for n in v.notes if n.start % 12 == 0})
     res = {}
-    for lname, lineup in (("band", BRASS_BAND), ("minimal", MINIMAL_BAND)):
+    for lname, lineup in (("band", BRASS_BAND), ("minimal", MINIMAL_BAND), ("quartet", QUARTET)):
         faithful_solo = None
         for m in MODES:
             arr = arrange_layers(comp, lineup, difficulty=m)
             if m == "faithful":
-                faithful_solo = arr.parts[SOLO_PART]
+                faithful_solo = arr.parts[lineup.lead]
             r = metrics(comp, arr.parts, lineup, faithful_solo)
             pen = KEY_CHANGE_PENALTY[m]
             r["key_changes"] = len(key_plan(tonal, bar, bass=bass, **({"penalty": pen} if pen else {})).keys) - 1
             r["soprano_notes"] = len(arr.parts.get("Soprano Cornet", []))
-            acc = [n.start for name in PAD_PARTS + CHOIR_PARTS for n in arr.parts.get(name, [])]
+            accompaniment = ([p.name for p in lineup.parts if p.name not in (lineup.lead, lineup.bass)] if lineup.satb
+                             else PAD_PARTS + CHOIR_PARTS)
+            acc = [n.start for name in accompaniment for n in arr.parts.get(name, [])]
             accs = set(acc)
             r["figuration_recall"] = round(sum(o in accs for o in src_on) / max(1, len(src_on)), 3)
             r["parts"] = sum(bool(v) for v in arr.parts.values())

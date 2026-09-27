@@ -144,7 +144,7 @@
       }
     },
     "arrange": {
-      "source": "10-benchmark-results.md: Arrangement, ground-truth benchmark",
+      "source": "10-benchmark-results.md: Arrangement, ground-truth benchmark; quartet keys: 'Quartet arrangement'",
       "metrics": {
         "chorales.melody_kept": 1.0,
         "chorales.bass_kept": 1.0,
@@ -179,6 +179,117 @@
         },
         "urmp.crossings": {
           "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet.melody_kept": 1.0,
+        "quartet.bass_kept": 1.0,
+        "quartet.harmony_fidelity": 0.995,
+        "quartet.alto_recall_exact": 0.803,
+        "quartet.alto_recall_pc": 0.803,
+        "quartet.tenor_recall_exact": 0.774,
+        "quartet.tenor_recall_pc": 0.779,
+        "quartet.parallels_per_100": {
+          "value": 0.94,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "quartet.spacing_faults": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet.crossings": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet.impossible": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet.uncomfortable": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-standard.melody_kept": 1.0,
+        "quartet-standard.bass_kept": 1.0,
+        "quartet-standard.harmony_fidelity": 0.995,
+        "quartet-standard.alto_recall_exact": 0.803,
+        "quartet-standard.alto_recall_pc": 0.803,
+        "quartet-standard.tenor_recall_exact": 0.774,
+        "quartet-standard.tenor_recall_pc": 0.779,
+        "quartet-standard.parallels_per_100": {
+          "value": 0.94,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "quartet-standard.spacing_faults": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-standard.crossings": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-standard.impossible": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-standard.uncomfortable": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-easier.melody_kept": 1.0,
+        "quartet-easier.bass_kept": 1.0,
+        "quartet-easier.harmony_fidelity": 0.994,
+        "quartet-easier.alto_recall_exact": 0.793,
+        "quartet-easier.alto_recall_pc": 0.793,
+        "quartet-easier.tenor_recall_exact": 0.769,
+        "quartet-easier.tenor_recall_pc": 0.773,
+        "quartet-easier.parallels_per_100": {
+          "value": 0.94,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "quartet-easier.spacing_faults": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-easier.crossings": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-easier.impossible": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-easier.uncomfortable": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-reference.parallels_per_100": {
+          "value": 0.79,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "quartet-reference.spacing_faults": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "quartet-reference.crossings": {
+          "value": 0.0,
           "tolerance": 0,
           "higher_is_better": false
         }
@@ -311,6 +422,69 @@
         "part_files_identical_frac": {
           "value": 1,
           "tolerance": 0
+        }
+      }
+    },
+    "quartet-audio": {
+      "source": "10-benchmark-results.md: Quartet arrangement, from recordings",
+      "metrics": {
+        "mus.melody_kept": 0.848,
+        "mus.alto_recall_pc": 0.553,
+        "mus.tenor_recall_pc": 0.409,
+        "mus.bass_kept": 0.922,
+        "mus.parallels_per_100": {
+          "value": 5.42,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "mus.spacing_faults": {
+          "value": 0.1,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "mus.crossings": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mus.impossible": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mus.uncomfortable": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "bp.melody_kept": 0.681,
+        "bp.alto_recall_pc": 0.167,
+        "bp.tenor_recall_pc": 0.175,
+        "bp.bass_kept": 0.584,
+        "bp.parallels_per_100": {
+          "value": 2.98,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "bp.spacing_faults": {
+          "value": 2.2,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "bp.crossings": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "bp.impossible": {
+          "value": 0.6,
+          "tolerance": 0.1,
+          "higher_is_better": false
+        },
+        "bp.uncomfortable": {
+          "value": 1.1,
+          "tolerance": 0.1,
+          "higher_is_better": false
         }
       }
     }

@@ -328,6 +328,61 @@ Visible limits:
 - The melody contains many red, unconfirmed 16th runs, probably orchestral figuration rather than trumpet.
 - Percussion is deferred; drum transcription exists but no kit part is written yet.
 
+## Quartet arrangement
+
+The quartet lineup (`instruments.QUARTET`: 1st Cornet, 2nd Cornet, Tenor Horn, Euphonium, one player each) puts the melody on the 1st Cornet and the bass on the Euphonium, and voices 2nd Cornet and Tenor Horn together as alto and tenor with `arranger.voice_satb`. Plan: `docs/plan/kvartett.md`.
+
+**Voicing rules (`voice_satb`, frozen; `arranger.rs` follows them exactly).** Every (alto, tenor) pair in the two parts' ranges is tried. Hard rules: S > A ≥ T > B, S–A and A–T at most an octave, chord tones only. A lead that moves inside a slot counts with its lowest note for crossing and its highest for spacing; a bass with its highest. Among the pairs left, the smallest of, in this order:
+1. chord tones left out (the fifth of a triad does not count)
+2. parallel perfect fifths and octaves against the previous slot, over all six voice pairs
+3. doubling: 1 for a missing fifth, 1 per extra copy of a tone that is neither the root nor the bass's tone
+4. movement |ΔA| + |ΔT|
+5. the higher alto, then the higher tenor
+
+A slot with no legal pair falls back to the band voicer and is reported in the warnings.
+
+**Tuning on the chorales.** ChoraleBricks brass4 is itself a brass quartet playing SATB chorales, so A and T are ground truth for 2nd Cornet and Tenor Horn. The arranger sees only the harmony's pitch classes.
+
+| Scoring order | alto recall (pc) | tenor recall (pc) | parallels / 100 |
+|---|---|---|---|
+| coverage, doubling (third doubled 2), parallels, movement: the plan's first order | 0.70 | 0.65 | 13.7 |
+| coverage, parallels, doubling (third doubled 2), movement | 0.73 | 0.66 | 0.94 |
+| same, a doubled third costs 1 and the bass's tone may be doubled freely (**frozen**) | **0.80** | **0.78** | **0.94** |
+| whole-chorale least-cost path instead of slot by slot (not adopted) | 0.83 | 0.75 | 1.12 |
+| chorales' own voices (reference row) | 1 | 1 | 0.79 |
+
+Parallels must come before doubling: with doubling first the voicer happily moves in octaves with the bass. The remaining misses are mostly alto and tenor swapping the same two pitch classes, and passing tones Bach resolves differently; the voicer cannot tell those apart from pitch classes alone. **`alto_recall_pc` ≥ 0.85 (plan §3.8) is not reached**; the baseline is set at the measured 0.80.
+
+**Symbolic benchmark (`brasscribe bench arrange`, keys `quartet.*`, `quartet-standard.*`, `quartet-easier.*`):**
+
+| Chorales (10) | melody kept | bass kept | harmony fidelity | alto recall exact / pc | tenor recall exact / pc | parallels / 100 | spacing faults | crossings | impossible | uncomfortable |
+|---|---|---|---|---|---|---|---|---|---|---|
+| faithful | 1.00 | 1.00 | 0.995 | 0.803 / 0.803 | 0.774 / 0.779 | 0.94 | 0 | 0 | 0 | 0 |
+| standard | 1.00 | 1.00 | 0.995 | 0.803 / 0.803 | 0.774 / 0.779 | 0.94 | 0 | 0 | 0 | 0 |
+| easier | 1.00 | 1.00 | 0.994 | 0.793 / 0.793 | 0.769 / 0.773 | 0.94 | 0 | 0 | 0 | 0 |
+| reference voices | | | | | | 0.79 | 0 | 0 | | |
+
+The chorale bass (tuba, mean MIDI 38, lowest 28) is below the Euphonium's reading floor (40), so every chorale moves up an octave as a whole phrase. Tenor over bass still holds everywhere.
+
+**From recordings (`brasscribe bench quartet-audio`):** cached transcriptions of the ChoraleBricks recordings through `arrange_song --lineup quartet`, scored in seconds against the chorale (pitch class sounding 50 ms after each reference attack).
+
+| Source | melody kept | bass kept | alto recall (pc) | tenor recall (pc) | parallels / 100 | spacing faults | impossible | uncomfortable |
+|---|---|---|---|---|---|---|---|---|
+| MuScriptor medium, Basic Pitch support | 0.85 | 0.92 | 0.55 | 0.41 | 5.4 | 0.1 | 0 | 0 |
+| Basic Pitch only | 0.68 | 0.58 | 0.17 | 0.18 | 3.0 | 2.2 | 0.6 | 1.1 |
+
+Transcription costs about 0.25 of alto recall and 0.37 of tenor recall on top of the arrangement. The Basic Pitch rows have impossible notes on the 1st Cornet: spurious high notes the lead placement fits per note up to its placement limit (MIDI 84, above the cornet's playable 82). The band's Solo Cornet does the same.
+
+**Mikkel (layered, `difficulty_bench --mikkel`):**
+
+| Mikkel, quartet | Solo / other 16ths | Uncomfortable | Harmony fidelity | Melody kept | Contour | Figuration recall |
+|---|---|---|---|---|---|---|
+| faithful | 38.8 / 2.1% | 35 | 0.714 | 1.0 | 1.0 | 0.41 |
+| standard | 15.4 / 0.5% | 0 | 0.709 | 0.79 | 0.77 | 0.94 |
+| easier | 8.6 / 0% | 0 | 0.708 | 0.74 | 0.71 | 0.95 |
+
+Faithful keeps every transcribed note, so it keeps the solo's 27 uncomfortable and 12 impossible notes (the band's Solo Cornet has the same) and 8 low Euphonium notes. No crossings in any mode; spacing faults only in the 61–86 slots that fell back to the band voicer (warned); parallels 2.2–3.0 per 100 changes.
+
 ## Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)
 
 **Setup.** `eval/brasscribe_eval/solo_vote_bench.py`.
