@@ -195,6 +195,7 @@ Settings › Display has one row, **Appearance** / «Utseende», that forces lig
   |---|---|---|
   | Windows | Your contrast theme is on, so Windows chooses the colours. | Kontrasttemaet ditt er på, så Windows velger fargene. |
   | Studio (forced colours) | Your contrast theme is on, so your computer chooses the colours. | Kontrasttemaet ditt er på, så datamaskinen velger fargene. |
-  | Apple, Android, Studio (more contrast) | Increase contrast is on, so Brasscribe uses its high-contrast colours. | Øk kontrast er på, så Brasscribe bruker høykontrastfargene. |
+  | Apple (Increase Contrast) | Increase contrast is on, so Brasscribe uses its high-contrast colours. | Øk kontrast er på, så Brasscribe bruker høykontrastfargene. |
+  | Android, Studio (more contrast) | Your contrast setting is on, so Brasscribe uses its high-contrast colours. | Kontrastinnstillingen din er på, så Brasscribe bruker høykontrastfargene. |
 
 - **Bandroom** puts the row in its settings (the macOS Settings scene, the Windows settings page), not in the popover or the tray flyout.
