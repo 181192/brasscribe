@@ -1670,6 +1670,11 @@ export interface components {
              * @description ip:port addresses the engine is reachable on
              */
             hosts: string[];
+            /**
+             * Locked Until
+             * @description ISO 8601; set while too many wrong codes have locked pairing, so the computer can say so. The code stays the same
+             */
+            locked_until?: string | null;
             /** Open */
             open: boolean;
             /** Server Id */
