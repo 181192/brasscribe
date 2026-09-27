@@ -156,7 +156,8 @@ def main() -> None:
                                       "channel_gain_db": round(part["balance_lu"] - loudest - (3.0 if layered else 0.0), 1),
                                       "single_voice_gain_db": round(part["balance_lu"] - loudest, 1)}
     drum = mapping["parts"]["Percussion"]["band_soundfont"]
-    drum["channel_gain_db"] = round(mapping["parts"]["Percussion"]["balance_lu"] - loudest, 1)
+    perc = mapping["parts"]["Percussion"]
+    drum["channel_gain_db"] = round(perc["balance_lu"] + perc.get("kit_offset_db", 0.0) - loudest, 1)
     drum["single_voice_gain_db"] = drum["channel_gain_db"]
     drum["layered"] = False
     bank.drum_kit(MSBASIC, drum["program"])

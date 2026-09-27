@@ -1198,7 +1198,7 @@
         }
       ],
       "seat": "percussion",
-      "gain_db": -6.0,
+      "gain_db": -13.0,
       "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass.",
       "transposition": {
         "chromatic": 0,
@@ -1224,11 +1224,13 @@
           "midi-program": 1
         },
         "note": "General MIDI Standard kit from MS Basic (MIT), GM drum note numbers.",
-        "channel_gain_db": -6.0,
-        "single_voice_gain_db": -6.0,
+        "channel_gain_db": -13.0,
+        "single_voice_gain_db": -13.0,
         "layered": false
       },
-      "balance_lu": -6.0
+      "balance_lu": -6.0,
+      "kit_offset_db": -7.0,
+      "kit_offset_note": "The MS Basic kit is not levelled like the brass targets (build.py TARGET_K_DB). Measured on the Mikkel render: at balance_lu alone the kit sat 7.1 LU above its target against the Solo Cornet stem, so gain_db and channel_gain_db carry this offset."
     }
   },
   "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback.",
