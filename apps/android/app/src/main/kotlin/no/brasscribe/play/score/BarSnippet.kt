@@ -48,7 +48,7 @@ class BarSnippet(context: Context) {
     }
 
     /** Shows [bar] (1-based) of the single-part [musicXml], ringing the note [offsetQuarters] into the bar. */
-    fun show(musicXml: String, bar: Int, offsetQuarters: Double) {
+    fun show(musicXml: String, bar: Int, offsetQuarters: Double, barCount: Int = 1) {
         val s = if (musicXml == loadedXml) score else runCatching {
             ScoreLoader.loadScoreFromBytes(Uint8Array(musicXml.toByteArray().asUByteArray()), view.settings)
         }.getOrNull()?.also { loaded ->
@@ -60,7 +60,7 @@ class BarSnippet(context: Context) {
         val staff = s.tracks[0].staves[0]
         val b = (bar - 1).coerceIn(0, staff.bars.length.toInt() - 1)
         view.settings.display.startBar = (b + 1).toDouble()
-        view.settings.display.barCount = 1.0
+        view.settings.display.barCount = barCount.coerceIn(1, 2).toDouble()
         view.api.updateSettings()
         val voice = staff.bars[b].voices[0]
         val notes = (0 until voice.beats.length.toInt()).map { voice.beats[it] }.filter { !it.isRest }

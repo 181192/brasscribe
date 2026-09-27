@@ -145,13 +145,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val nextPart = stringResource(R.string.action_next_part)
     val prevPart = stringResource(R.string.action_prev_part)
     val playBar = stringResource(R.string.action_play_bar)
-    val toCheck = remember(r, checkedMap) {
-        val comp = r.composition
-        comp?.voices.orEmpty().sumOf { v ->
-            val done = checkedMap[v.id].orEmpty()
-            partViewFor(comp!!, v.id, done, vm.container.core).events.count { it.note != null && it.uncertainty != Uncertainty.CONFIDENT && it.index !in done }
-        }
-    }
+    val toCheck = remember(r, checkedMap) { r.composition?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0 }
+    val grouped = r.composition?.review?.isNotEmpty() == true
 
     fun movePart(delta: Int) {
         if (st.parts.isEmpty()) return
@@ -206,7 +201,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             if (writtenTip && !performance) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
             if (toCheck > 0 && !performance) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
                 UncertainMark(false)
-                Text(pluralStringResource(R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
+                Text(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
                     color = c.textMuted, modifier = Modifier.weight(1f))
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
             }

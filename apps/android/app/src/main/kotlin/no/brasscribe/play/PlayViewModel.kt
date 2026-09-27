@@ -287,7 +287,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val file = File(ctx.cacheDir, "takes").apply { mkdirs() }.resolve("take-${System.currentTimeMillis()}.wav")
         viewModelScope.launch {
             withContext(Dispatchers.IO) { WavFile.write(file, audio) }
-            setSource(Source(file.name, kind, audio.seconds, audio, file))
+            // A recording is named by when it was made, never by its file's timestamp (review 3).
+            setSource(Source(ScoreTitles.recording(System.currentTimeMillis()), kind, audio.seconds, audio, file))
             say(R.string.record_stopped, durationText(audio.seconds))
             replaceTop(Screen.PROFILE)
         }
@@ -353,7 +354,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val audio = s.audio!!
         val steps = listOf(Step.DECODE, Step.PITCH, Step.CONFIRM, Step.BEATS, Step.ARRANGE)
         transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 0, steps.size, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device), steps = steps)
-        val title = s.name.substringBeforeLast('.')
+        val title = ScoreTitles.withoutExtension(s.name)
         return withContext(Dispatchers.Default) {
             val wav = s.file?.takeIf { it.extension.equals("wav", true) }?.readBytes()
             container.openSoloPipeline().use { pipeline ->
@@ -452,10 +453,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             if (container.usingFixture) res.getString(R.string.demo_where) else res.getString(R.string.transcribe_where_companion, container.engineLabel()))
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
-        val audio = engine.uploadAudio(s.name, bytes)
+        val audio = engine.uploadAudio(s.file?.name ?: s.name, bytes)
         val created = engine.createJob(
             JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                title = s.name.substringBeforeLast('.')),
+                title = ScoreTitles.withoutExtension(s.name)),
         )
         engineJobId = created.id
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
@@ -493,7 +494,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private fun saveCurrentScore(r: TranscriptionResult, title: String? = null) {
         val scoreTitle = title?.takeIf(String::isNotBlank)
             ?: r.composition?.title?.takeIf(String::isNotBlank)
-            ?: source.value?.name?.substringBeforeLast('.')
+            ?: source.value?.name?.let(ScoreTitles::withoutExtension)
             ?: res.getString(R.string.score_title)
         val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
             jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },

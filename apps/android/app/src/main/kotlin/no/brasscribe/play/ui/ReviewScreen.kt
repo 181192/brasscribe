@@ -138,11 +138,17 @@ fun ReviewScreen(vm: PlayViewModel) {
     val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }
     val spoken = remember(view, lang) { announcements(view, lang, vm.container.core) }
     val notes = view.events.filter { it.note != null }
-    // Triage: the very unsure notes first, then in bar order; skipped notes go to the back of the queue.
+    // What to check: the engine's review groups when it made them (one item per group, Keep keeps the
+    // whole group), else every marked note on its own.
+    val grouped = composition.review?.filter { it.voice == voiceId }?.takeIf { it.isNotEmpty() }
+    val allItems = remember(view, grouped) { reviewGroups(composition, voiceId, view) }
+    // Triage: the very unsure first, then in bar order; skipped items go to the back of the queue.
     var skipped by rememberSaveable(voiceId) { mutableStateOf(listOf<Int>()) }
-    val todo = notes.filter { it.uncertainty != Uncertainty.CONFIDENT && it.index !in checked }
-        .sortedWith(compareBy({ skipped.indexOf(it.index) }, { if (it.uncertainty == Uncertainty.VERY_UNCERTAIN) 0 else 1 }, { it.index }))
-    val veryCount = todo.count { it.uncertainty == Uncertainty.VERY_UNCERTAIN }
+    val items = allItems.filter { g -> g.members.any { it.index !in checked } }
+        .sortedWith(compareBy({ skipped.indexOf(it.head.index) }, { if (it.very) 0 else 1 }, { it.head.index }))
+    val groupOf = items.associateBy { it.head.index }
+    val todo = items.map { it.head }
+    val veryCount = items.count { it.very }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val focus = remember(view) { HashMap<Int, FocusRequester>() }
@@ -163,7 +169,8 @@ fun ReviewScreen(vm: PlayViewModel) {
     }
     // Keep says "Kept. N left" (markChecked); the next note is the card, so it is not read over that.
     fun keep(e: PartEvent) {
-        vm.markChecked(voiceId, e.index, todo.count { it.index != e.index })
+        val members = groupOf[e.index]?.members?.map { it.index } ?: listOf(e.index)
+        vm.markCheckedAll(voiceId, members, todo.count { it.index != e.index })
         advance(e.index, announce = false)
     }
     fun nextUncertain(after: Int) {
@@ -186,12 +193,12 @@ fun ReviewScreen(vm: PlayViewModel) {
             if (current != null) {
                 PrimaryButton(stringResource(R.string.review_keep_next), { keep(current) }, icon = R.drawable.ic_bc_mark_checked)
                 // While a third of the notes carry a "?" (review 3, P1-A), a whole bar can be kept at once.
-                val restOfBar = todo.filter { it.bar == current.bar }
+                val restOfBar = items.filter { it.head.bar == current.bar }
                 val skipButton = @Composable { m: Modifier -> SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, m, icon = R.drawable.ic_bc_skip) }
                 if (restOfBar.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                     skipButton(Modifier.weight(1f))
                     OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
-                        vm.markCheckedAll(voiceId, restOfBar.map { it.index }, todo.size - restOfBar.size)
+                        vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
                         picked = null
                     }, Modifier.weight(1.4f))
                 } else skipButton(Modifier)
@@ -202,11 +209,16 @@ fun ReviewScreen(vm: PlayViewModel) {
             verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
-                    ScreenTitle(if (todo.isEmpty()) stringResource(R.string.review_all_checked) else pluralStringResource(R.plurals.review_title, todo.size, todo.size))
+                    ScreenTitle(when {
+                        todo.isEmpty() -> stringResource(R.string.review_all_checked)
+                        grouped != null -> pluralStringResource(R.plurals.review_title_places, todo.size, todo.size)
+                        else -> pluralStringResource(R.plurals.review_title, todo.size, todo.size)
+                    })
                     val melody = composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
                     if (todo.isNotEmpty() && voiceId == melody) {
                         Text(stringResource(R.string.review_your_part_first), style = MaterialTheme.typography.titleMedium)
-                        Lead(pluralStringResource(R.plurals.review_your_part_count, todo.size, todo.size, partName) + " " + when {
+                        Lead(pluralStringResource(if (grouped != null) R.plurals.review_your_part_places else R.plurals.review_your_part_count,
+                            todo.size, todo.size, partName) + " " + when {
                             // Many marks: most are right, so say where to start (review 3, P1-A).
                             todo.size > MANY_MARKS && veryCount > 0 -> pluralStringResource(R.plurals.review_most_right_start_very, veryCount, veryCount)
                             todo.size > MANY_MARKS -> stringResource(R.string.review_most_right)
@@ -230,8 +242,14 @@ fun ReviewScreen(vm: PlayViewModel) {
                         else no.brasscribe.play.model.Announcer.pitchLabel(
                             no.brasscribe.play.model.SpelledPitch.spell(view.instrument.writtenMidi(concert), fifths), lang)
                     }
+                    val group = groupOf[current.index]
+                    val span = group?.bars ?: (current.bar..current.bar)
+                    val cardTitle = (if (span.first == span.last) stringResource(R.string.review_card_title, current.bar, partName)
+                        else stringResource(R.string.review_card_title_bars, span.first, span.last, partName)) +
+                        (group?.members?.size?.takeIf { it > 1 }?.let { " · " + pluralStringResource(R.plurals.review_group_notes, it, it) } ?: "")
                     NoteCard(
                         current, partName, todo.indexOf(current) + 1, todo.size, spoken[current.index], lang, playingBar == current.bar,
+                        title = cardTitle, very = group?.very,
                         listen = { vm.listenToBar(current.bar) }, stop = vm::stopListening,
                         keep = { keep(current) }, next = { advance(current.index) },
                         changeNote = { changing = true },
@@ -247,7 +265,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                             }
                             val map = remember(composition) { no.brasscribe.play.model.TickMap(composition) }
                             val offset = note?.let { (it.start - map.barStart(current.bar)).toDouble() / composition.ticksPerBeat } ?: 0.0
-                            BarSnippetView(xml, current.bar, offset)
+                            BarSnippetView(xml, current.bar, offset, span.last - span.first + 1)
                         },
                         evidence = evidence, pitchLabel = label,
                     )
@@ -275,7 +293,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                                 stringResource(R.string.bar_heading, e.bar), { picked = e.index },
                                 subtitle = noteLine(e, lang),
                                 chevron = false,
-                                trailing = { UncertainMark(e.uncertainty == Uncertainty.VERY_UNCERTAIN) },
+                                trailing = { UncertainMark(groupOf[e.index]?.very ?: (e.uncertainty == Uncertainty.VERY_UNCERTAIN)) },
                             )
                         }
                         if (rest.size > 4) {
@@ -358,6 +376,31 @@ private fun PartChips(
     }
 }
 
+/** One thing to check: the group's first marked note ([head]), every note in it, and its bars. */
+data class ReviewGroup(val head: PartEvent, val members: List<PartEvent>, val very: Boolean, val bars: IntRange)
+
+/**
+ * The review items of one voice: the engine's groups (`Composition.review`) when it made them, else
+ * every marked note on its own.
+ */
+fun reviewGroups(composition: Composition, voiceId: String, view: PartView): List<ReviewGroup> {
+    val notes = view.events.filter { it.note != null }
+    val grouped = composition.review?.filter { it.voice == voiceId }?.takeIf { it.isNotEmpty() }
+    return grouped?.mapNotNull { g ->
+        val members = notes.filter { e -> e.note!!.start.let { it >= g.start && it < g.end } }
+        val head = members.firstOrNull { it.uncertainty != Uncertainty.CONFIDENT } ?: members.firstOrNull() ?: return@mapNotNull null
+        ReviewGroup(head, members, g.very, head.bar..(members.maxOf { it.bar }))
+    } ?: notes.filter { it.uncertainty != Uncertainty.CONFIDENT }
+        .map { ReviewGroup(it, listOf(it), it.uncertainty == Uncertainty.VERY_UNCERTAIN, it.bar..it.bar) }
+}
+
+/** Review items not yet kept, over every voice: the "N to check" of Home and the score. */
+fun itemsToCheck(composition: Composition, checked: Map<String, Set<Int>>, core: no.brasscribe.play.model.CoreBridge): Int =
+    composition.voices.filter { it.notes.isNotEmpty() }.sumOf { v ->
+        val done = checked[v.id].orEmpty()
+        reviewGroups(composition, v.id, partViewFor(composition, v.id, done, core)).count { g -> g.members.any { it.index !in done } }
+    }
+
 /** Above this many marks the lead says most notes are probably right. */
 private const val MANY_MARKS = 50
 
@@ -381,6 +424,7 @@ private fun noteLine(e: PartEvent, lang: Lang): String {
 @Composable
 private fun NoteCard(
     e: PartEvent, partName: String, position: Int, total: Int, spoken: String, lang: Lang, playing: Boolean,
+    title: String, very: Boolean?,
     listen: () -> Unit, stop: () -> Unit, keep: () -> Unit, next: () -> Unit,
     changeNote: () -> Unit,
     neighbours: List<PartEvent>, checked: Set<Int>, snippet: @Composable () -> Unit = {},
@@ -390,7 +434,7 @@ private fun NoteCard(
     val listenLabel = stringResource(R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
-    val level = stringResource(if (e.uncertainty == Uncertainty.VERY_UNCERTAIN) R.string.level_very_uncertain else R.string.level_uncertain)
+    val level = stringResource(if (very ?: (e.uncertainty == Uncertainty.VERY_UNCERTAIN)) R.string.level_very_uncertain else R.string.level_uncertain)
     val alternative = evidence?.alternativeShift?.let { pitchLabel(evidence.pitch + it) }
     val levelSentence = if (alternative != null) stringResource(R.string.review_could_also_be, level, withArticle(alternative, lang))
         else stringResource(R.string.review_listen_side_by_side, level)
@@ -408,7 +452,7 @@ private fun NoteCard(
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.review_card_title, e.bar, partName), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     Text(stringResource(R.string.review_position, position, total), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 }
                 snippet()
@@ -578,7 +622,7 @@ fun Legend(modifier: Modifier = Modifier) {
 
 /** One bar of the part on a staff, the note ringed (alphaTab, no player). */
 @Composable
-private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double) {
+private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, barCount: Int = 1) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val c = BrasscribeTheme.colors
     val snippet = remember { no.brasscribe.play.score.BarSnippet(context) }
@@ -587,7 +631,7 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double) {
             c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb(),
             c.selectionTint.toArgb(), c.selectionEdge.toArgb()))
     }
-    androidx.compose.runtime.LaunchedEffect(musicXml, bar, offsetQuarters) { snippet.show(musicXml, bar, offsetQuarters) }
+    androidx.compose.runtime.LaunchedEffect(musicXml, bar, offsetQuarters, barCount) { snippet.show(musicXml, bar, offsetQuarters, barCount) }
     Box(Modifier.fillMaxWidth().height(128.dp).clipToBounds().clearAndSetSemantics {}) {
         androidx.compose.ui.viewinterop.AndroidView(factory = { snippet.view }, modifier = Modifier.matchParentSize())
         // Drags on the staff scroll the page: this layer takes the touches before alphaTab's own scroll views.
