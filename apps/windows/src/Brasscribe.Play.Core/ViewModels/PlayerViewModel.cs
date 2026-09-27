@@ -103,6 +103,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         BarCount = _player.BarCount;
         LoopStart = 1;
         LoopEnd = Math.Min(4, BarCount);
+        LoopChosen = false;
         IsLooping = false;
         LoopText = _s["Player_LoopOff"];
         UpdatePositionText(0);
@@ -147,6 +148,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     partial void OnMetronomeChanged(bool value) => _player.Metronome = value;
     partial void OnTransposeChanged(int value) => _player.Transpose = value;
 
+    /// <summary>The player has chosen bars to repeat for this score (not just the defaults).</summary>
+    public bool LoopChosen { get; private set; }
+
     [RelayCommand]
     private void SetLoop()
     {
@@ -156,6 +160,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         LoopStart = a;
         LoopEnd = b;
         _player.SetLoop(a - 1, b - 1);
+        LoopChosen = true;
         IsLooping = true;
         LoopText = _s.Format("Player_LoopSet", a, b);
         _announcer.Announce(LoopText);
@@ -180,6 +185,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void SetLoopStartAt(int bar)
     {
         LoopStart = bar;
+        LoopChosen = true;
         if (LoopEnd < bar) LoopEnd = bar;
         _announcer.Announce(_s.Format("Player_LoopStartAt", bar));
     }

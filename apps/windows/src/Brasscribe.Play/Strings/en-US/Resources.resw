@@ -753,6 +753,21 @@
   <data name="Mixer_Solo" xml:space="preserve">
     <value>Only this: {0}</value>
   </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The music alone, for playing from the stand (F)</value>
+  </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Music stand</value>
+  </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Music stand</value>
+  </data>
+  <data name="MusicStandItem.Text" xml:space="preserve">
+    <value>Music stand</value>
+  </data>
+  <data name="MusicStandLabel.Text" xml:space="preserve">
+    <value>Music stand</value>
+  </data>
   <data name="MuteMyPartLabel.Text" xml:space="preserve">
     <value>Mute my part</value>
   </data>
@@ -1230,6 +1245,9 @@
   <data name="ScoreOptions_EditTitle" xml:space="preserve">
     <value>Edit title</value>
   </data>
+  <data name="ScoreOptions_OpenOnStand" xml:space="preserve">
+    <value>Open on the music stand</value>
+  </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
     <value>toolbar</value>
   </data>
@@ -1355,6 +1373,9 @@
   </data>
   <data name="SettingsLanguageHeading.Text" xml:space="preserve">
     <value>Language</value>
+  </data>
+  <data name="SettingsStandHeading.Text" xml:space="preserve">
+    <value>Music stand</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>built in (the full arranger isn't installed)</value>
@@ -1494,6 +1515,18 @@
   <data name="Shortcut_Speed" xml:space="preserve">
     <value>Slower, faster, normal speed</value>
   </data>
+  <data name="Shortcut_Stand" xml:space="preserve">
+    <value>Music stand, or leave it</value>
+  </data>
+  <data name="Shortcut_StandFirstLast" xml:space="preserve">
+    <value>First or last page</value>
+  </data>
+  <data name="Shortcut_StandLeave" xml:space="preserve">
+    <value>Leave the music stand</value>
+  </data>
+  <data name="Shortcut_StandPage" xml:space="preserve">
+    <value>Next or previous page</value>
+  </data>
   <data name="Shortcut_SwitchSource" xml:space="preserve">
     <value>Hear the band or the recording</value>
   </data>
@@ -1521,6 +1554,9 @@
   <data name="Shortcuts_Score" xml:space="preserve">
     <value>In the score</value>
   </data>
+  <data name="Shortcuts_Stand" xml:space="preserve">
+    <value>On the music stand</value>
+  </data>
   <data name="ShowScoreButton.Content" xml:space="preserve">
     <value>Show the score</value>
   </data>
@@ -1541,6 +1577,156 @@
   </data>
   <data name="SpeedSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Speed</value>
+  </data>
+  <data name="StandBand.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Music stand</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Plus</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Faster</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Faster</value>
+  </data>
+  <data name="StandHint.Text" xml:space="preserve">
+    <value>Tap the music to show the controls.</value>
+  </data>
+  <data name="StandKeepControlsSwitch.Header" xml:space="preserve">
+    <value>Keep the stand controls visible</value>
+  </data>
+  <data name="StandLayer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Music stand controls</value>
+  </data>
+  <data name="StandLeaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Esc, F or F11</value>
+  </data>
+  <data name="StandLeaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Leave the music stand</value>
+  </data>
+  <data name="StandLeaveLabel.Text" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ctrl+Down arrow</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next bar</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next bar</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Right arrow, Down arrow or Page Down</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="StandOnlyMine.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Only my part</value>
+  </data>
+  <data name="StandOnlyMineLabel.Text" xml:space="preserve">
+    <value>Only my part</value>
+  </data>
+  <data name="StandPedalNote.Text" xml:space="preserve">
+    <value>Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Space</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ctrl+Up arrow</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous bar</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous bar</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Left arrow, Up arrow or Page Up</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="StandRepeatFrom.Header" xml:space="preserve">
+    <value>Repeat bars</value>
+  </data>
+  <data name="StandRepeatSet.Content" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="StandRepeatSet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Plays these bars over and over (L)</value>
+  </data>
+  <data name="StandRepeatTo.Header" xml:space="preserve">
+    <value>to</value>
+  </data>
+  <data name="StandRepeatToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Plays the chosen bars over and over (L)</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Minus</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slower</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Slower</value>
+  </data>
+  <data name="StandTurnPagesSwitch.Header" xml:space="preserve">
+    <value>Turn the pages while playing</value>
+  </data>
+  <data name="Stand_Detail" xml:space="preserve">
+    <value>{0} · bar {1} · {2}</value>
+  </data>
+  <data name="Stand_Entered" xml:space="preserve">
+    <value>Music stand. {0}, bar {1} of {2}.</value>
+  </data>
+  <data name="Stand_EnteredTouch" xml:space="preserve">
+    <value>Tap the music to show the controls.</value>
+  </data>
+  <data name="Stand_FirstPage" xml:space="preserve">
+    <value>First page.</value>
+  </data>
+  <data name="Stand_LastPage" xml:space="preserve">
+    <value>Last page.</value>
+  </data>
+  <data name="Stand_Left" xml:space="preserve">
+    <value>Music stand closed.</value>
+  </data>
+  <data name="Stand_Page" xml:space="preserve">
+    <value>page {0} of {1}</value>
+  </data>
+  <data name="Stand_PageTurned" xml:space="preserve">
+    <value>Page {0} of {1}, bars {2} to {3}.</value>
+  </data>
+  <data name="Stand_Pages" xml:space="preserve">
+    <value>pages {0}–{1} of {2}</value>
+  </data>
+  <data name="Stand_PartYours" xml:space="preserve">
+    <value>{0} (you)</value>
+  </data>
+  <data name="Stand_Repeat" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="Stand_RepeatOn" xml:space="preserve">
+    <value>Repeat {0}–{1}</value>
+  </data>
+  <data name="Stand_Speed" xml:space="preserve">
+    <value>Speed {0}</value>
   </data>
   <data name="StartError.Title" xml:space="preserve">
     <value>That didn't work</value>

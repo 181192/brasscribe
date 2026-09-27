@@ -753,6 +753,21 @@
   <data name="Mixer_Solo" xml:space="preserve">
     <value>Bare denne: {0}</value>
   </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Bare notene, til å spille fra notestativet (F)</value>
+  </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Notestativ</value>
+  </data>
+  <data name="MusicStandButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Notestativ</value>
+  </data>
+  <data name="MusicStandItem.Text" xml:space="preserve">
+    <value>Notestativ</value>
+  </data>
+  <data name="MusicStandLabel.Text" xml:space="preserve">
+    <value>Notestativ</value>
+  </data>
   <data name="MuteMyPartLabel.Text" xml:space="preserve">
     <value>Lyd av min stemme</value>
   </data>
@@ -1230,6 +1245,9 @@
   <data name="ScoreOptions_EditTitle" xml:space="preserve">
     <value>Endre navn</value>
   </data>
+  <data name="ScoreOptions_OpenOnStand" xml:space="preserve">
+    <value>Åpne på notestativet</value>
+  </data>
   <data name="ScoreToolbar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.LocalizedLandmarkType" xml:space="preserve">
     <value>verktøylinje</value>
   </data>
@@ -1355,6 +1373,9 @@
   </data>
   <data name="SettingsLanguageHeading.Text" xml:space="preserve">
     <value>Språk</value>
+  </data>
+  <data name="SettingsStandHeading.Text" xml:space="preserve">
+    <value>Notestativ</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>innebygd (den fulle arrangøren er ikke installert)</value>
@@ -1494,6 +1515,18 @@
   <data name="Shortcut_Speed" xml:space="preserve">
     <value>Saktere, raskere, normalt tempo</value>
   </data>
+  <data name="Shortcut_Stand" xml:space="preserve">
+    <value>Notestativ, eller gå ut av det</value>
+  </data>
+  <data name="Shortcut_StandFirstLast" xml:space="preserve">
+    <value>Første eller siste side</value>
+  </data>
+  <data name="Shortcut_StandLeave" xml:space="preserve">
+    <value>Gå ut av notestativet</value>
+  </data>
+  <data name="Shortcut_StandPage" xml:space="preserve">
+    <value>Neste eller forrige side</value>
+  </data>
   <data name="Shortcut_SwitchSource" xml:space="preserve">
     <value>Hør bandet eller opptaket</value>
   </data>
@@ -1521,6 +1554,9 @@
   <data name="Shortcuts_Score" xml:space="preserve">
     <value>I partituret</value>
   </data>
+  <data name="Shortcuts_Stand" xml:space="preserve">
+    <value>På notestativet</value>
+  </data>
   <data name="ShowScoreButton.Content" xml:space="preserve">
     <value>Vis partituret</value>
   </data>
@@ -1541,6 +1577,156 @@
   </data>
   <data name="SpeedSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Tempo</value>
+  </data>
+  <data name="StandBand.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Notestativ</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Pluss</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Raskere</value>
+  </data>
+  <data name="StandFaster.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Raskere</value>
+  </data>
+  <data name="StandHint.Text" xml:space="preserve">
+    <value>Trykk på notene for å vise knappene.</value>
+  </data>
+  <data name="StandKeepControlsSwitch.Header" xml:space="preserve">
+    <value>Vis alltid knappene på notestativet</value>
+  </data>
+  <data name="StandLayer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Knappene på notestativet</value>
+  </data>
+  <data name="StandLeaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Esc, F eller F11</value>
+  </data>
+  <data name="StandLeaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Gå ut av notestativet</value>
+  </data>
+  <data name="StandLeaveLabel.Text" xml:space="preserve">
+    <value>Gå ut</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ctrl+pil ned</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Neste takt</value>
+  </data>
+  <data name="StandNextBar.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Neste takt</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Høyre pil, pil ned eller Page Down</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Neste side</value>
+  </data>
+  <data name="StandNextPage.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Neste side</value>
+  </data>
+  <data name="StandOnlyMine.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Bare stemmen min</value>
+  </data>
+  <data name="StandOnlyMineLabel.Text" xml:space="preserve">
+    <value>Bare stemmen min</value>
+  </data>
+  <data name="StandPedalNote.Text" xml:space="preserve">
+    <value>Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Mellomrom</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Spill av eller pause</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ctrl+pil opp</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Forrige takt</value>
+  </data>
+  <data name="StandPreviousBar.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Forrige takt</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Venstre pil, pil opp eller Page Up</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Forrige side</value>
+  </data>
+  <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Forrige side</value>
+  </data>
+  <data name="StandRepeatFrom.Header" xml:space="preserve">
+    <value>Gjenta takt</value>
+  </data>
+  <data name="StandRepeatSet.Content" xml:space="preserve">
+    <value>Gjenta</value>
+  </data>
+  <data name="StandRepeatSet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spiller disse taktene om og om igjen (L)</value>
+  </data>
+  <data name="StandRepeatTo.Header" xml:space="preserve">
+    <value>til</value>
+  </data>
+  <data name="StandRepeatToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spiller de valgte taktene om og om igjen (L)</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Minus</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Saktere</value>
+  </data>
+  <data name="StandSlower.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Saktere</value>
+  </data>
+  <data name="StandTurnPagesSwitch.Header" xml:space="preserve">
+    <value>Bla om mens musikken spiller</value>
+  </data>
+  <data name="Stand_Detail" xml:space="preserve">
+    <value>{0} · takt {1} · {2}</value>
+  </data>
+  <data name="Stand_Entered" xml:space="preserve">
+    <value>Notestativ. {0}, takt {1} av {2}.</value>
+  </data>
+  <data name="Stand_EnteredTouch" xml:space="preserve">
+    <value>Trykk på notene for å vise knappene.</value>
+  </data>
+  <data name="Stand_FirstPage" xml:space="preserve">
+    <value>Første side.</value>
+  </data>
+  <data name="Stand_LastPage" xml:space="preserve">
+    <value>Siste side.</value>
+  </data>
+  <data name="Stand_Left" xml:space="preserve">
+    <value>Notestativet er lukket.</value>
+  </data>
+  <data name="Stand_Page" xml:space="preserve">
+    <value>side {0} av {1}</value>
+  </data>
+  <data name="Stand_PageTurned" xml:space="preserve">
+    <value>Side {0} av {1}, takt {2} til {3}.</value>
+  </data>
+  <data name="Stand_Pages" xml:space="preserve">
+    <value>side {0}–{1} av {2}</value>
+  </data>
+  <data name="Stand_PartYours" xml:space="preserve">
+    <value>{0} (deg)</value>
+  </data>
+  <data name="Stand_Repeat" xml:space="preserve">
+    <value>Gjenta</value>
+  </data>
+  <data name="Stand_RepeatOn" xml:space="preserve">
+    <value>Gjenta {0}–{1}</value>
+  </data>
+  <data name="Stand_Speed" xml:space="preserve">
+    <value>Tempo {0}</value>
   </data>
   <data name="StartError.Title" xml:space="preserve">
     <value>Det gikk ikke</value>

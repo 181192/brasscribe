@@ -633,6 +633,57 @@ HEADER = """<?xml version="1.0" encoding="utf-8"?>
   </resheader>
 """
 
+
+# ---- the music stand (design/music-stand.md §9) ----
+icon_button("MusicStandButton", "Music stand", "Notestativ",
+            "The music alone, for playing from the stand (F)", "Bare notene, til å spille fra notestativet (F)")
+prop("MusicStandLabel", "Text", "Music stand", "Notestativ")
+prop("MusicStandItem", "Text", "Music stand", "Notestativ")
+name("StandBand", "Music stand", "Notestativ")
+name("StandLeaveButton", "Leave the music stand", "Gå ut av notestativet")
+help_("StandLeaveButton", "Esc, F or F11", "Esc, F eller F11")
+prop("StandLeaveLabel", "Text", "Leave", "Gå ut")
+name("StandLayer", "Music stand controls", "Knappene på notestativet")
+icon_button("StandPreviousPage", "Previous page", "Forrige side", "Left arrow, Up arrow or Page Up", "Venstre pil, pil opp eller Page Up")
+icon_button("StandNextPage", "Next page", "Neste side", "Right arrow, Down arrow or Page Down", "Høyre pil, pil ned eller Page Down")
+icon_button("StandPreviousBar", "Previous bar", "Forrige takt", "Ctrl+Up arrow", "Ctrl+pil opp")
+icon_button("StandNextBar", "Next bar", "Neste takt", "Ctrl+Down arrow", "Ctrl+pil ned")
+icon_button("StandPlayPause", "Play or pause", "Spill av eller pause", "Space", "Mellomrom")
+icon_button("StandSlower", "Slower", "Saktere", "Minus", "Minus")
+icon_button("StandFaster", "Faster", "Raskere", "Plus", "Pluss")
+help_("StandRepeatToggle", "Plays the chosen bars over and over (L)", "Spiller de valgte taktene om og om igjen (L)")
+prop("StandOnlyMineLabel", "Text", "Only my part", "Bare stemmen min")
+name("StandOnlyMine", "Only my part", "Bare stemmen min")
+prop("StandHint", "Text", "Tap the music to show the controls.", "Trykk på notene for å vise knappene.")
+prop("StandRepeatFrom", "Header", "Repeat bars", "Gjenta takt")
+prop("StandRepeatTo", "Header", "to", "til")
+text_button("StandRepeatSet", "Repeat", "Gjenta", "Plays these bars over and over (L)", "Spiller disse taktene om og om igjen (L)")
+prop("SettingsStandHeading", "Text", "Music stand", "Notestativ")
+prop("StandKeepControlsSwitch", "Header", "Keep the stand controls visible", "Vis alltid knappene på notestativet")
+prop("StandTurnPagesSwitch", "Header", "Turn the pages while playing", "Bla om mens musikken spiller")
+prop("StandPedalNote", "Text",
+     "Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.",
+     "Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.")
+add("Stand_PartYours", "{0} (you)", "{0} (deg)")
+add("Stand_Detail", "{0} · bar {1} · {2}", "{0} · takt {1} · {2}")
+add("Stand_Page", "page {0} of {1}", "side {0} av {1}")
+add("Stand_Pages", "pages {0}–{1} of {2}", "side {0}–{1} av {2}")
+add("Stand_Speed", "Speed {0}", "Tempo {0}")
+add("Stand_Repeat", "Repeat", "Gjenta")
+add("Stand_RepeatOn", "Repeat {0}–{1}", "Gjenta {0}–{1}")
+add("Stand_Entered", "Music stand. {0}, bar {1} of {2}.", "Notestativ. {0}, takt {1} av {2}.")
+add("Stand_EnteredTouch", "Tap the music to show the controls.", "Trykk på notene for å vise knappene.")
+add("Stand_PageTurned", "Page {0} of {1}, bars {2} to {3}.", "Side {0} av {1}, takt {2} til {3}.")
+add("Stand_FirstPage", "First page.", "Første side.")
+add("Stand_LastPage", "Last page.", "Siste side.")
+add("Stand_Left", "Music stand closed.", "Notestativet er lukket.")
+add("ScoreOptions_OpenOnStand", "Open on the music stand", "Åpne på notestativet")
+add("Shortcuts_Stand", "On the music stand", "På notestativet")
+add("Shortcut_Stand", "Music stand, or leave it", "Notestativ, eller gå ut av det")
+add("Shortcut_StandPage", "Next or previous page", "Neste eller forrige side")
+add("Shortcut_StandFirstLast", "First or last page", "Første eller siste side")
+add("Shortcut_StandLeave", "Leave the music stand", "Gå ut av notestativet")
+
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):
     lines = [HEADER]
