@@ -82,7 +82,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
 |---|---|---|
 | Phone upright | Top band: the position as plain text on two lines, **Solo Cornet (you)** over **Bar 13 · page 1 of 8**, at the leading edge; **✕ Leave** at the trailing edge | A card at the bottom, three rows: ‹ page · ⏮ bar · **Play** · bar ⏭ · page › / − **Speed 75%** + · **Repeat** / **✓ Only my part** · **Lock rotation** |
 | Phone on its side | Top band: **Solo Cornet (you) · bar 13 · page 4 of 33** (one line of plain text) … **✕ Leave** | Top band, between those two: **Only my part** and **Lock rotation**, as system.md §1.1 toggles. A bottom card with one row: ‹ ⏮ **Play** ⏭ › · − Speed + · **Repeat** |
-| Tablet, desktop | Top band: **Mikkel · Solo Cornet (you) · bar 14 · pages 1–2 of 6** (plain text) … **✕ Leave** | A floating card at the bottom centre, one row: ‹ ⏮ **Play** ⏭ › · − Speed + · **Repeat** · **Only my part**. No rotation lock on tablets (§4.4). |
+| Tablet, desktop | Top band: **Old Hundredth · Solo Cornet (you) · bar 14 · pages 1–2 of 6** (plain text) … **✕ Leave** | A floating card at the bottom centre, one row: ‹ ⏮ **Play** ⏭ › · − Speed + · **Repeat** · **Only my part**. No rotation lock on tablets (§4.4). |
 
 - **Targets.** Everything is at least 48 pt / 48 dp / 48 epx, and Play is the round 56 pt ink primary: the only ink control (system.md §1). The page buttons have a tonal well, so they read differently from the bar buttons.
 - **Speed.** It is two steppers around the value (2.5.7): −5 % and +5 %, at 25–150 %. There is no slider in the stand.
@@ -232,7 +232,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | `stand_part_yours` | Solo Cornet (you) | Solokornett (deg) |
 | `stand_position` | Bar 13 · page 4 of 33 | Takt 13 · side 4 av 33 |
 | `stand_position_line` (on its side) | Solo Cornet (you) · bar 13 · page 4 of 33 | Solokornett (deg) · takt 13 · side 4 av 33 |
-| `stand_position_tablet` | Mikkel · Solo Cornet (you) · bar 14 · pages 1–2 of 6 | Mikkel · Solokornett (deg) · takt 14 · side 1–2 av 6 |
+| `stand_position_tablet` | Old Hundredth · Solo Cornet (you) · bar 14 · pages 1–2 of 6 | Old Hundredth · Solokornett (deg) · takt 14 · side 1–2 av 6 |
 | `stand_prev_page` / `stand_next_page` | Previous page / Next page | Forrige side / Neste side |
 | `stand_prev_bar` / `stand_next_bar` | Previous bar / Next bar | Forrige takt / Neste takt |
 | `play` / `pause` | Play / Pause | Spill av / Pause |

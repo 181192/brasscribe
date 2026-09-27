@@ -77,7 +77,7 @@ let pairingJSON = """
              {"device_id":"b","name":"Pixel 9","platform":"android","paired_at":"\(old)","last_seen":"\(old)","rotated_at":null}]
             """),
             "GET /v1/pairing": (200, pairingJSON),
-            "GET /v1/jobs": (200, #"[{"id":"j1","profile":"solo","title":"Mikkel","status":"running","created":1,"progress":0.5,"stages":[]}]"#),
+            "GET /v1/jobs": (200, #"[{"id":"j1","profile":"solo","title":"Old Hundredth","status":"running","created":1,"progress":0.5,"stages":[]}]"#),
         ])
         let s = try await c.status()
         #expect(s.onlineDevices == 1)

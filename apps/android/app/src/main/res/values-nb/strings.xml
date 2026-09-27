@@ -38,9 +38,8 @@
     <string name="home_record_mic_desc">Spill selv, eller ta opp en øvelse</string>
     <string name="home_record_device">Spill inn det som spilles</string>
     <string name="home_record_device_desc">Fra en annen app på telefonen</string>
-    <string name="home_sample">Prøv eksempelet</string>
-    <string name="home_sample_desc">«Mikkel», kornettsolo med band</string>
     <string name="home_links_tip">Lenker kan ikke lastes ned. Spill inn det som spilles, eller åpne en fil du har.</string>
+    <string name="home_scores_empty">Partiturene dine vises her etter det første opptaket.</string>
     <string name="home_your_scores">Partiturene dine</string>
     <string name="edit_title">Endre navn</string>
     <string name="save">Lagre</string>
@@ -68,7 +67,6 @@
         <item quantity="one">%d tone å sjekke</item>
         <item quantity="other">%d toner å sjekke</item>
     </plurals>
-    <string name="companion_status_fixture">Bruker det innebygde eksempelet</string>
     <string name="imported">Åpnet %1$s, %2$s</string>
     <string name="imported_video">Åpnet %1$s, %2$s. Lyden brukes.</string>
     <string name="reading_file">Åpner %1$s</string>
@@ -123,7 +121,6 @@
     <string name="where_companion">På datamaskinen din</string>
     <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
-    <string name="where_device_no_audio">Eksempelet har ikke noe opptak å lytte til. Åpne eller spill inn noe i stedet.</string>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
 
     <!-- Lager partituret -->
@@ -361,8 +358,6 @@
     <string name="companion_tech_details">Start serveren på datamaskinen med «brasscribe serve --lan». Adressen vises når den starter, for eksempel http://192.168.1.20:8765.</string>
     <string name="companion_allow_heavy">La datamaskinen gjøre det tunge arbeidet</string>
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
-    <string name="companion_use_fixture">Bruk det innebygde eksempelet</string>
-    <string name="companion_use_fixture_desc">Spiller av et ferdig partitur av Mikkel, så du kan prøve appen uten datamaskin.</string>
 
     <!-- Om -->
     <string name="about_title">Om appen og lisenser</string>
@@ -378,7 +373,6 @@
     <string name="key_major">%1$s-dur</string>
     <string name="key_minor">%1$s-moll</string>
     <string name="key_shifted">%1$s fra opptaket</string>
-    <string name="demo_label">Bare et eksempel · ingen datamaskin trengs</string>
     <string name="view_menu">Visning</string>
     <string name="export_what">Hva</string>
     <string name="export_scope_my_part">%1$s (deg)</string>
@@ -428,7 +422,6 @@
     <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
     <string name="octave_down">Oktav ned</string>
     <string name="octave_up">Oktav opp</string>
-    <string name="demo_where">Eksempelet, uten datamaskin</string>
     <string name="review_most_right">De fleste er nok riktige. Lytt til noen, og behold resten takt for takt.</string>
     <plurals name="review_keep_bar">
         <item quantity="one">Behold denne takten</item>

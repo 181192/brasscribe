@@ -54,7 +54,7 @@ class EngineSettings(context: Context, val credentials: CredentialStore) {
 
     val token: String? get() = credential?.token
 
-    /** True once the user connected to a real engine; false means the built-in sample engine. */
+    /** True once the user connected to an engine. */
     var paired: Boolean
         get() = prefs.getBoolean("paired", false)
         set(v) = prefs.edit().putBoolean("paired", v).apply()
@@ -67,10 +67,6 @@ class EngineSettings(context: Context, val credentials: CredentialStore) {
         get() = prefs.getBoolean("allow_heavy", true)
         set(v) = prefs.edit().putBoolean("allow_heavy", v).apply()
 
-    var useFixture: Boolean
-        get() = prefs.getBoolean("fixture", true)
-        set(v) = prefs.edit().putBoolean("fixture", v).apply()
-
     companion object {
         /** The emulator's alias for the host machine, and the engine's default port. */
         const val DEFAULT_URL = "http://10.0.2.2:8765"
@@ -78,7 +74,7 @@ class EngineSettings(context: Context, val credentials: CredentialStore) {
 }
 
 /**
- * Everything the app shares: the core bridge, the engine (companion or built-in sample), the on-device
+ * Everything the app shares: the core bridge, the engine on the paired computer, the on-device
  * pitch model. Created once by [PlayApplication].
  */
 class AppContainer(private val context: Context) {
@@ -104,15 +100,14 @@ class AppContainer(private val context: Context) {
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
     val core: CoreBridge = RustCoreBridge.load() ?: KotlinCoreBridge
 
-    /** Golden Mikkel output packaged in debug builds (assets/fixtures). */
-    val fixtureSource: FixtureSource? = runCatching {
-        context.assets.open("fixtures/composition.json").close()
-        FixtureSource { name -> runCatching { context.assets.open("fixtures/$name").use { it.readBytes() } }.getOrNull() }
-    }.getOrNull()
+    /**
+     * Instrumented tests only: a finished score served in place of a paired computer
+     * (apps/fixtures, packaged in the test APK). Null in the app.
+     */
+    var fixtureSource: FixtureSource? = null
+        set(v) { field = v; cachedEngine = null }
 
-    val hasFixtures: Boolean get() = fixtureSource != null
-
-    val usingFixture: Boolean get() = hasFixtures && (settings.useFixture || !settings.paired)
+    val usingFixture: Boolean get() = fixtureSource != null
 
     private var cachedEngine: Pair<String, EngineApi>? = null
 
@@ -162,7 +157,7 @@ class AppContainer(private val context: Context) {
     /** A second discovery session, for finding the paired engine again by its server id. */
     val reconnectDiscovery by lazy { EngineDiscovery(context) }
 
-    fun engineLabel(): String = if (usingFixture) context.getString(R.string.demo_label) else settings.url.removePrefix("http://").removePrefix("https://")
+    fun engineLabel(): String = if (usingFixture) FixtureEngineApi.SERVER_NAME else settings.url.removePrefix("http://").removePrefix("https://")
 
     /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */
     val hasPitchModel: Boolean by lazy { runCatching { context.assets.open(MODEL_ASSET).close() }.isSuccess }

@@ -5,11 +5,12 @@ import ScoreKit
 import TranscriptionKit
 @testable import BrasscribePlay
 
+/// The Old Hundredth fixture (apps/fixtures/old-hundredth), or BRASSCRIBE_FIXTURES.
 func fixtureDir() -> URL? {
     if let env = ProcessInfo.processInfo.environment["BRASSCRIBE_FIXTURES"] { return URL(fileURLWithPath: env) }
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<6 {
-        let c = dir.appending(path: "data/golden/mikkel-arranged-band")
+        let c = dir.appending(path: "apps/fixtures/old-hundredth")
         if FileManager.default.fileExists(atPath: c.appending(path: "brass-band.musicxml").path) { return c }
         dir = dir.deletingLastPathComponent()
     }
@@ -47,11 +48,15 @@ func fixtureDir() -> URL? {
     #expect(m.myPart == m.score.parts[1].id)
 }
 
-/// A short clip made with ffmpeg from the golden mp3 (data/runs/apple/mikkel-20s.mp4).
+/// A 20 s test pattern with a tone, made with ffmpeg (see PlayUITests): data/runs/apple/test-pattern-20s.mp4.
 func testVideo() -> URL? {
-    guard let d = fixtureDir() else { return nil }
-    let v = d.deletingLastPathComponent().deletingLastPathComponent().appending(path: "runs/apple/mikkel-20s.mp4")
-    return FileManager.default.fileExists(atPath: v.path) ? v : nil
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<8 {
+        let v = dir.appending(path: "data/runs/apple/test-pattern-20s.mp4")
+        if FileManager.default.fileExists(atPath: v.path) { return v }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
 }
 
 /// Importing a video keeps the picture for the synced view and hands its audio to transcription.
@@ -69,7 +74,7 @@ func testVideo() -> URL? {
     #expect(abs(Double(f.length) / f.processingFormat.sampleRate - 20) < 0.5)
 }
 
-@Test(.enabled(if: fixtureDir() != nil)) func rustCoreArrangesTheGoldenCompositionOnDevice() throws {
+@Test(.enabled(if: fixtureDir() != nil)) func rustCoreArrangesTheFixtureCompositionOnDevice() throws {
     let bridge = RustCoreBridge()
     #expect(!bridge.version.isEmpty)
     let data = try Data(contentsOf: fixtureDir()!.appending(path: "composition.json"))
@@ -91,17 +96,17 @@ func testVideo() -> URL? {
 @Test(.enabled(if: fixtureDir() != nil)) func reviewFollowsTheEnginesGroups() throws {
     let dir = try #require(fixtureDir())
     let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
-    try #require(!comp.review.isEmpty, "golden Composition has review groups")
+    try #require(!comp.review.isEmpty, "the fixture Composition has review groups")
     let score = try MusicXMLParser.parse(url: dir.appending(path: "brass-band.musicxml"))
     let items = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp))
     let solo = items.filter { $0.partName == PartNames.display("Solo Cornet") }
     let soloGroups = comp.review.filter { $0.voice == "solo" }
     #expect(solo.count == soloGroups.count)
-    // only the parts the arranger marked: Home's count and Review's are the same 83 places
+    // only the parts the arranger marked: Home's count and Review's are the same places
     #expect(items.count == solo.count)
     #expect(score.parts.filter(\.hasMarks).map(\.name) == ["Solo Cornet"])
     #expect(solo.filter { $0.level == .veryUncertain }.count == soloGroups.filter(\.very).count)
-    // groups are short (the engine aims at two bars; one golden group reaches into a third)
+    // groups are short (the engine aims at two bars; a group may reach into a third)
     #expect(solo.allSatisfy { ($0.lastBar ?? $0.bar) >= $0.bar && ($0.lastBar ?? $0.bar) - $0.bar <= 2 })
     // without groups, every uncertain onset is its own item
     var plain = comp

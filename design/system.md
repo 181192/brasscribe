@@ -59,7 +59,7 @@ Everything else is the platform's own controls, so each app feels native and fam
 ```mermaid
 flowchart LR
   FR[First run<br/>3 points + Get started] --> H
-  H[Home<br/>Import · Record · Record what's playing · Demo · Your scores] --> W
+  H[Home<br/>Import · Record · Record what's playing · Your scores] --> W
   SH[Share sheet / Open with] --> W
   W[What is this?<br/>4 choices + where it runs] --> T
   T[Transcribing<br/>plain steps · time left · Cancel] -->|done| R

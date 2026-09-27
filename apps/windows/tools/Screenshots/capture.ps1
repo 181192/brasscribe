@@ -2,7 +2,7 @@
 # Starts the app once per screen with --show NAME (sample content, see PreviewScenes), waits for the
 # window to settle and captures it with PrintWindow (the whole window, even when partly off screen).
 #
-# Usage: capture.ps1 -Exe BrasscribePlay.exe -Score two-parts.musicxml -Out screenshots
+# Usage: capture.ps1 -Exe BrasscribePlay.exe -Score ../fixtures/old-hundredth/brass-band.musicxml -Out screenshots
 param(
     [Parameter(Mandatory)] [string] $Exe,
     [Parameter(Mandatory)] [string] $Score,

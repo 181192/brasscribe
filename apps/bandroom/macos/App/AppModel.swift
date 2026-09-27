@@ -20,7 +20,7 @@ final class AppModel {
     var setupComplete: Bool {
         didSet { UserDefaults.standard.set(setupComplete, forKey: "setupComplete") }
     }
-    /// "Restart when “Mikkel” is done".
+    /// "Restart when “Old Hundredth” is done".
     var restartWhenDone = false
     var isPairWindowOpen = false
     /// The name on a request that lapsed before it was answered.

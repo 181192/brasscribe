@@ -73,7 +73,7 @@ internal sealed class DemoEngine : IEngineApi
         bool setup = true;
         switch (state)
         {
-            case "busy": job = new JobView("Mikkel", "Step_Notes", 0.62, 3); break;
+            case "busy": job = new JobView("Old Hundredth", "Step_Notes", 0.62, 3); break;
             case "attention": problems.Add(Problems.LowDisk(s, 2_100_000_000, @"C:\Users\Kalli\AppData\Local\Brasscribe")); break;
             case "stopped": engine = EngineState.Stopped; break;
             case "error": engine = EngineState.Error; break;

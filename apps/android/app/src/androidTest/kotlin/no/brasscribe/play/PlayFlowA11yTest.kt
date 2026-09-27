@@ -34,16 +34,21 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.accessibility.AccessibilityChecks
 import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import no.brasscribe.play.engine.FixtureSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Walks the main flow on the built-in sample engine (debug builds carry the golden Mikkel output) with
+ * Walks the main flow on a fixture engine that serves "Old Hundredth" (apps/fixtures/old-hundredth, a
+ * public-domain hymn arranged by the core, packaged in the test APK only) with
  * Compose accessibility checks (ATF) on every action, and asserts the semantics TalkBack depends on:
  * headings, radio roles with collection positions, progress range info, the per-note announcements with
  * their custom actions, and bar navigation on the score.
@@ -62,6 +67,26 @@ class PlayFlowA11yTest {
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
     }
 
+    /**
+     * Opens a source straight onto What is this?, with the fixture engine standing in for a paired
+     * computer: the file picker can't be driven from a test.
+     */
+    private fun openOldHundredth() {
+        val assets = InstrumentationRegistry.getInstrumentation().context.assets
+        (rule.activity.application as PlayApplication).container.fixtureSource =
+            FixtureSource { name -> runCatching { assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
+        val vm = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+        rule.runOnUiThread {
+            vm.setSource(Source("Old Hundredth.wav", SourceKind.FILE, 67.0))
+            vm.navigate(Screen.PROFILE)
+        }
+        rule.waitForIdle()
+    }
+
+    /** Whether the fixture has an engine file (the PDF, MP3 and braille are engine renders it may lack). */
+    private fun fixtureHas(name: String) =
+        runCatching { InstrumentationRegistry.getInstrumentation().context.assets.open("old-hundredth/$name").close() }.isSuccess
+
     private fun waitFor(matcher: SemanticsMatcher, ms: Long = 20_000) =
         rule.waitUntil(ms) { rule.onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
 
@@ -70,7 +95,7 @@ class PlayFlowA11yTest {
 
     @Test
     fun homeButtonsAreLargeLabelledTargets() {
-        for (label in listOf("Open a recording", "Record with the microphone", "Record what's playing", "Try the demo")) {
+        for (label in listOf("Open a recording", "Record with the microphone", "Record what's playing", "Open a score")) {
             val h = rule.onNodeWithText(label).fetchSemanticsNode().boundsInRoot.height / rule.density.density
             assertTrue("$label is $h dp", h >= 48f)
         }
@@ -80,8 +105,8 @@ class PlayFlowA11yTest {
     }
 
     @Test
-    fun sampleFlowFromWhatIsThisToScore() {
-        rule.onNodeWithText("Try the demo").performClick()
+    fun flowFromWhatIsThisToScore() {
+        openOldHundredth()
 
         // What is this? Four radio options, Continue disabled until one is chosen.
         rule.onNode(isHeading() and hasText("What is this?")).assertExists()
@@ -100,7 +125,7 @@ class PlayFlowA11yTest {
         assertTrue(bar.config.contains(SemanticsProperties.ProgressBarRangeInfo))
         rule.onNodeWithText("Cancel").assertExists()
 
-        // Review: the golden solo has uncertain notes, each announced with its uncertainty.
+        // Review: the fixture's solo has uncertain notes, each announced with its uncertainty.
         waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
         val uncertain = rule.onAllNodes(SemanticsMatcher("announces uncertain") { n ->
             n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains(", uncertain") } == true
@@ -132,7 +157,8 @@ class PlayFlowA11yTest {
         }
         val score = rule.onNodeWithTag("score-view").fetchSemanticsNode()
         val summary = score.config[SemanticsProperties.ContentDescription].first()
-        assertTrue(summary, summary.startsWith("Score of Mikkel") && summary.contains("Solo Cornet"))
+        // The title keeps its words together (no-break spaces).
+        assertTrue(summary, summary.replace('\u00A0', ' ').startsWith("Score of Old Hundredth") && summary.contains("Solo Cornet"))
         for (a in listOf("Next bar", "Previous bar", "Next part", "Previous part", "Play this bar")) {
             assertTrue("custom action $a", score.customAction(a) != null)
         }
@@ -151,7 +177,7 @@ class PlayFlowA11yTest {
     /** Full screen on a music stand: the score alone, with only the transport left. */
     @Test
     fun fullScreenLeavesOnlyTheScoreAndTheTransport() {
-        rule.onNodeWithText("Try the demo").performClick()
+        openOldHundredth()
         rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
         waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
@@ -181,7 +207,7 @@ class PlayFlowA11yTest {
 
     @Test
     fun exportsEveryFormatIncludingBraille() {
-        rule.onNodeWithText("Try the demo").performClick()
+        openOldHundredth()
         rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
         waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
@@ -191,30 +217,37 @@ class PlayFlowA11yTest {
         waitFor(hasContentDescription("Share or print"))
         rule.onNodeWithContentDescription("Share or print").performClick()
         rule.onNode(isHeading() and hasText("Share or print")).assertExists()
-        // My part and PDF are the default (print your own part): that makes the Solo Cornet's PDF.
         rule.onNode(hasText("Solo Cornet (you)") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertIsSelected()
         val exports = rule.activity.cacheDir.resolve("exports")
         exports.deleteRecursively()
-        rule.onNodeWithTag("share").performClick()
-        rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == "pdf" && it.name.contains("Solo Cornet") && it.length() > 0 } }
-        val part = exports.listFiles()!!.first { it.extension == "pdf" }
-        assertEquals("%PDF", String(part.readBytes(), 0, 4))
-        Thread.sleep(1500)
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
-        rule.waitForIdle()
-        exports.deleteRecursively()
+        // PDF and braille are the engine's renders: checked when the fixture carries them.
+        val pdf = fixtureHas("brass-band.pdf") && fixtureHas("parts/02-Solo-Cornet.pdf")
+        val braille = fixtureHas("brass-band.brf")
+        if (pdf) {
+            // My part and PDF are the default (print your own part): that makes the Solo Cornet's PDF.
+            rule.onNodeWithTag("share").performClick()
+            rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == "pdf" && it.name.contains("Solo Cornet") && it.length() > 0 } }
+            val part = exports.listFiles()!!.first { it.extension == "pdf" }
+            assertEquals("%PDF", String(part.readBytes(), 0, 4))
+            Thread.sleep(1500)
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+                .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+            rule.waitForIdle()
+            exports.deleteRecursively()
+        }
         // The conductor's score, with the other formats.
         rule.onNode(hasText("Conductor's score") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).performClick()
-        rule.onNode(hasText("PDF") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).assertExists()
-        for (f in listOf("MusicXML", "MIDI", "Talking score", "Braille music")) {
-            rule.onNode(hasText(f) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).performScrollTo().performClick()
+        if (pdf) rule.onNode(hasText("PDF") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).assertExists()
+        for (f in listOf("MusicXML", "MIDI", "Talking score") + listOfNotNull("Braille music".takeIf { braille })) {
+            val box = rule.onNode(hasText(f) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)).performScrollTo()
+            // Without a PDF, MusicXML is the format already chosen.
+            if (box.fetchSemanticsNode().config.getOrNull(SemanticsProperties.ToggleableState) != androidx.compose.ui.state.ToggleableState.On) box.performClick()
         }
-        rule.onNodeWithText("Print").assertHeightIsAtLeast(48.dp)
+        if (pdf) rule.onNodeWithText("Print").assertHeightIsAtLeast(48.dp)
 
         // One Share builds every chosen file (MusicXML, PDF, alphaTab MIDI, talking-score HTML, BRF), then opens the chooser.
         rule.onNodeWithTag("share").performClick()
-        for (ext in listOf("musicxml", "pdf", "mid", "html", "brf")) {
+        for (ext in listOf("musicxml", "mid", "html") + listOfNotNull("pdf".takeIf { pdf }, "brf".takeIf { braille })) {
             runCatching { rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } } }.onFailure {
                 throw AssertionError("no .$ext; files ${exports.listFiles().orEmpty().map { f -> f.name }}", it)
             }
@@ -228,6 +261,7 @@ class PlayFlowA11yTest {
         val html = exports.listFiles()!!.first { it.extension == "html" }.readText()
         // The core's talking score of the arranged score: every part, one line per event.
         assertTrue(html.contains("Solo Cornet") && html.contains("Solo Horn") && html.contains("uncertain"))
+        if (!braille) return
         val brf = exports.listFiles()!!.first { it.extension == "brf" }.readText()
         // North American Braille ASCII with CRLF lines; the music lines fit 40 cells (the title may not).
         val lines = brf.split("\r\n")
@@ -237,7 +271,9 @@ class PlayFlowA11yTest {
     /** Listen to this bar turns into Stop in the same place and size; Space and Enter toggle it; it comes back by itself. */
     @Test
     fun listenToThisBarIsStoppable() {
-        rule.onNodeWithText("Try the demo").performClick()
+        // The score's bar is cut from the engine's rendered MP3.
+        assumeTrue("the fixture has no rendered MP3", fixtureHas("brass-band.mp3"))
+        openOldHundredth()
         rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
         waitFor(isHeading() and hasText("Check ", substring = true), 60_000)

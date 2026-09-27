@@ -23,7 +23,7 @@ object PartNames {
     fun display(name: String, lang: Lang = currentLang()): String =
         (if (lang == Lang.NB) NB[name.replace(' ', ' ').trim()] ?: name else name).replace("-", "-\u200B")
 
-    /** "Mikkel — solo cornet & brass band (draft)" → "Mikkel": the short song title for headers. */
+    /** "Old Hundredth — brass band (draft)" → "Old Hundredth": the short song title for headers. */
     fun shortTitle(title: String): String {
         val t = title.replace('\u00A0', ' ')
         return t.split(Regex("""\s[—–-]\s""")).first().replace(Regex("""\s*\((draft|utkast)\)\s*$""", RegexOption.IGNORE_CASE), "").trim()

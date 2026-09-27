@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths: &paths
       - "apps/windows/**"
+      - "apps/fixtures/**"
       - "apps/bandroom/**"
       - "core/**"
       - "design/**"
@@ -126,12 +127,13 @@ jobs:
           "${{ steps.exe.outputs.path }}" "$env:RUNNER_TEMP/axe"
           tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
 
-      # Every screen in light and dark, named like design/mockups/png (e.g. score-desktop-light.png).
+      # Every screen in light and dark, named like design/mockups/png (e.g. score-desktop-light.png), on
+      # the public-domain Old Hundredth fixture (its review marks fill the Review screens).
       - name: Screenshots
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
         run: >
           ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}"
-          -Score tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+          -Score ../fixtures/old-hundredth/brass-band.musicxml
           -Out "$env:RUNNER_TEMP/screenshots"
 
       # What made the app exit, if it did (App writes unhandled exceptions to crash.log).

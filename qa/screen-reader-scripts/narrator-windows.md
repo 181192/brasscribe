@@ -18,7 +18,7 @@ This is an acceptance script for an app that is not built yet. Step IDs, expecte
 | ID | Do | Expect | Pass if |
 |---|---|---|---|
 | S1 | Launch | "Brasscribe Play, window"; Tab → "Import audio or video, button" | `AppWindow.Title` set |
-| S2 | Enter on Import → FileOpenPicker → choose | "Imported mikkel.wav, 4 minutes 6 seconds" through a UIA notification (`RaiseNotificationEvent`); focus on the "What is this?" heading | |
+| S2 | Enter on Import → FileOpenPicker → choose | "Imported old-hundredth.wav, 4 minutes 6 seconds" through a UIA notification (`RaiseNotificationEvent`); focus on the "What is this?" heading | |
 | S3 | Record (microphone privacy prompt) → Stop | "Recording started"; meter "Input level, good" (`IRangeValueProvider` or `IValueProvider`); "Recording stopped…" | |
 | S4 | Arrows in the radio group | "Solo instrument, radio button, not selected, 1 of 4"; "Continue, button, unavailable" | |
 | S5 | Continue; wait; Cancel → Stop; restart; wait | progress notifications with `AutomationNotificationProcessing.MostRecent` (throttled); "Transcription cancelled"; completion moves focus to the result heading | |

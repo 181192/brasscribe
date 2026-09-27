@@ -8,7 +8,7 @@ class EngineException(val status: Int, message: String) : Exception(message)
 
 /**
  * The engine companion API as Play uses it. [KtorEngineApi] talks to a real engine on the LAN;
- * [FixtureEngineApi] replays the golden Mikkel output for development and tests.
+ * [FixtureEngineApi] replays a finished engine output folder for tests.
  */
 interface EngineApi {
     suspend fun health(): Health

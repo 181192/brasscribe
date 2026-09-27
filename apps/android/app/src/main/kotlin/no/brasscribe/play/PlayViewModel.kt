@@ -56,7 +56,7 @@ enum class Screen { FIRST_RUN, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
 enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED }
 
-enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SAMPLE, SCORE }
+enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
 /** What the user brought in. [file] holds the bytes sent to the engine; [audio] is decoded mono PCM. */
 data class Source(
@@ -271,12 +271,6 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun openSample() {
-        setSource(Source("Mikkel", SourceKind.SAMPLE, 246.0))
-        profile.value = null
-        navigate(Screen.PROFILE)
-    }
-
     private fun displayName(uri: Uri, fallback: String): String =
         getApplication<Application>().contentResolver
             .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
@@ -342,7 +336,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun setSource(s: Source) {
+    /** Internal so instrumented tests can open a source without a file picker. */
+    internal fun setSource(s: Source) {
         source.value = s
         currentSavedScoreId = null
         result.value = null
@@ -499,7 +494,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val engine: EngineApi = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
-            if (container.usingFixture) res.getString(R.string.demo_where) else res.getString(R.string.transcribe_where_companion, container.engineLabel()))
+            res.getString(R.string.transcribe_where_companion, container.engineLabel()))
         val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
         val audio = engine.uploadAudio(s.file?.name ?: s.name, bytes)
         val created = engine.createJob(
@@ -840,7 +835,6 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         s.serverId = serverId
         s.serverName = serverName
         s.paired = true
-        s.useFixture = false
         companionState.value = null
         askAgain.value = null
         sayText(res.getString(R.string.conn_connected, serverDisplayName(serverName)))
@@ -943,11 +937,6 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             connection.retry()
             refreshComputerScores()
         }
-    }
-
-    fun useFixture(on: Boolean) {
-        container.settings.useFixture = on
-        companionState.value = null
     }
 
     override fun onCleared() {

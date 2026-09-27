@@ -50,6 +50,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // The instrumented tests' finished score (apps/fixtures/old-hundredth, a public-domain hymn), in the
+    // test APK only: no app build carries it.
+    sourceSets["androidTest"].assets.srcDir(File(repoRoot, "apps/fixtures"))
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
@@ -95,7 +99,6 @@ kotlin {
  * Assets that come from outside git:
  * - models/: SwiftF0 (1.1 MB), Basic Pitch (0.26 MB) and Beat This! small (9.4 MB) ONNX from convert/ (all MIT),
  *   bundled in every build when present.
- * - fixtures/: the golden Mikkel output, debug builds only, for the built-in sample engine.
  * - sounds/brasscribe-band-mobile.sf2: the phone band SoundFont (apps/android/scripts/mobile_soundfont.py,
  *   VSCO 2 CE CC0, Univ. of Iowa MIS, MS Basic kit MIT), bundled in every build when present, so the
  *   band plays its own instruments without a download. Without it the app says the band sounds are missing.
@@ -112,16 +115,6 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
         from(File(repoRoot, "sounds")) { include("mapping.json") }
         from(File(repoRoot, "data/sounds/band")) { include("brasscribe-band-mobile.sf2") }
     }
-    filePermissions { user { read = true; write = true } }
-}
-val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
-    from(File(repoRoot, "data/golden/mikkel-arranged-band")) {
-        include("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf", "brass-band.mid")
-        // One PDF, braille file and MusicXML per player, for Share or print's "Every part" and "My part".
-        include("parts/*.pdf", "parts/*.brf", "parts/*.musicxml")
-    }
-    into(layout.buildDirectory.dir("generated/brasscribe/fixtures/fixtures"))
-    // The golden output is read-only; the copies must stay writable so the next sync can replace them.
     filePermissions { user { read = true; write = true } }
 }
 
@@ -148,12 +141,9 @@ androidComponents {
         variant.sources.res?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/res").get().asFile.path)
         variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/assets").get().asFile.path)
         variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/models").get().asFile.path)
-        if (variant.buildType == "debug") {
-            variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/fixtures").get().asFile.path)
-        }
     }
 }
-tasks.named("preBuild") { dependsOn(modelAssets, fixtureAssets, designRes, designLicence) }
+tasks.named("preBuild") { dependsOn(modelAssets, designRes, designLicence) }
 
 dependencies {
     implementation(project(":model"))

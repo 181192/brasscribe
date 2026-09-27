@@ -17,7 +17,7 @@ This is an acceptance script for an app that is not built yet. Step IDs, expecte
 | ID | Do | Expect | Pass if |
 |---|---|---|---|
 | S1 | Launch | "Brasscribe Play"; "Import audio or video, Button" | |
-| S2 | Double-tap Import → system picker (Storage Access Framework) → choose; also Share → Play from Files | "Imported mikkel.wav, 4 minutes 6 seconds"; focus on the "What is this?" heading (`paneTitle` / heading) | |
+| S2 | Double-tap Import → system picker (Storage Access Framework) → choose; also Share → Play from Files | "Imported old-hundredth.wav, 4 minutes 6 seconds"; focus on the "What is this?" heading (`paneTitle` / heading) | |
 | S3 | Record → grant the RECORD_AUDIO permission dialog → Stop | "Recording started" (live region polite); level meter: "Input level, good" (`stateDescription`); "Recording stopped, …" | |
 | S4 | Swipe through the radio group | "Not selected, Solo instrument, Radio button, 1 of 4" (`collectionItemInfo`); "Continue, Button, disabled" | positions heard |
 | S5 | Continue; wait; Cancel → Stop; restart; wait | progress through `progressBarRangeInfo` plus a polite live region, throttled; "Transcription cancelled"; completion moves accessibility focus to the result heading | foreground-service notification text is readable too |

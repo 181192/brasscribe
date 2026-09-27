@@ -447,7 +447,7 @@ struct ExportView: View {
         }
     }
 
-    /// Braille comes from Brasscribe on your computer (or the demo folder).
+    /// Braille comes from Brasscribe on your computer (or the fixture folder in UI tests).
     private func remote(_ kind: ArtifactKind) async throws -> Data {
         if let dir = model.piece.fixtureDirectory {
             return try await FixtureService(directory: URL(fileURLWithPath: dir), stepDelay: 0).artifact(kind, jobID: "fixture")

@@ -4291,46 +4291,6 @@
         }
       }
     },
-    "The demo isn't on this device": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demoen finnes ikke på denne enheten"
-          }
-        }
-      }
-    },
-    "The demo recording is not available.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demo-opptaket er ikke tilgjengelig."
-          }
-        }
-      }
-    },
-    "The demo recording wasn't included with this copy of Brasscribe.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demoopptaket fulgte ikke med denne utgaven av Brasscribe."
-          }
-        }
-      }
-    },
-    "The demo runs on this device. Nothing goes online.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demoen kjører på denne enheten. Ingenting sendes til nettet."
-          }
-        }
-      }
-    },
     "The file may be damaged. Your recording is safe.": {
       "localizations": {
         "nb": {
@@ -4671,26 +4631,6 @@
         }
       }
     },
-    "Try the demo": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prøv demoen"
-          }
-        }
-      }
-    },
-    "Try the demo (Mikkel)": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prøv demoen (Mikkel)"
-          }
-        }
-      }
-    },
     "Turn a recording into": {
       "localizations": {
         "nb": {
@@ -4747,16 +4687,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bruk lenken"
-          }
-        }
-      }
-    },
-    "Use the demo instead of a computer": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bruk demoen i stedet for en datamaskin"
           }
         }
       }
@@ -5427,16 +5357,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "din stemme"
-          }
-        }
-      }
-    },
-    "“Mikkel”, cornet solo with band": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "«Mikkel», kornettsolo med band"
           }
         }
       }

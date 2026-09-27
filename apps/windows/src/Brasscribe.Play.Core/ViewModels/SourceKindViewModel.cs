@@ -79,7 +79,7 @@ public sealed partial class SourceKindViewModel : ObservableObject
         SourceLine = value is null ? "" : _s.Format("Kind_SourceLine", value.DisplayName, DurationText(value.Duration));
     }
 
-    /// <summary>"Mikkel.m4a · 4 min 12 s".</summary>
+    /// <summary>"Band practice.m4a · 3 min 5 s".</summary>
     [ObservableProperty] public partial string SourceLine { get; set; } = "";
 
     /// <summary>Where the score is made: "Made on this PC. Nothing goes online."</summary>

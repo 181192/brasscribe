@@ -20,9 +20,10 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
 }
 
 /**
- * Plays the part of the engine using the golden Mikkel output (data/golden/mikkel-arranged-band):
- * every job walks the stages of its profile with timed progress events and then serves the golden
- * Composition, MusicXML, PDF and MP3. Used when no companion engine is paired, and in tests.
+ * Plays the part of the engine from a folder laid out like its output (composition.json,
+ * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present): every job walks the
+ * stages of its profile with timed progress events and then serves those files. Tests only: the JVM
+ * tests replay data/golden, the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
     private val source: FixtureSource,
@@ -45,7 +46,7 @@ class FixtureEngineApi(
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
     override suspend fun profiles(): List<ProfileInfo> = Profile.entries.map {
-        ProfileInfo(it.id, it.id, "Golden Mikkel output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+        ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
     }
 
     override suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef {
@@ -115,11 +116,11 @@ class FixtureEngineApi(
         source.read(name)?.let { Artifact(name, it.size.toLong(), mediaOf(name), "/v1/jobs/$jobId/artifacts/$name") }
     }
 
-    /** The score's files plus the golden per-part files that are packaged (parts/NN-Name.pdf|brf|musicxml). */
+    /** The score's files and per-part files (parts/NN-Name.pdf|brf|musicxml) the fixture has. */
     private val outputs: List<String> by lazy {
-        OUTPUTS + PART_NAMES.flatMapIndexed { i, n ->
+        (OUTPUTS + PART_NAMES.flatMapIndexed { i, n ->
             listOf("pdf", "brf", "musicxml").map { "parts/%02d-%s.%s".format(i + 1, n, it) }
-        }.filter { source.read(it) != null }
+        }).filter { source.read(it) != null }
     }
 
     override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
@@ -130,7 +131,7 @@ class FixtureEngineApi(
     override suspend fun talkingScore(jobId: String, format: String, lang: String, part: String?, pitchMode: String?, verbosity: String): String =
         throw EngineException(404, "the fixture has no talking score; the app builds it with the core")
 
-    override suspend fun manifest(jobId: String): String = """{"run":"$jobId","fixture":"data/golden/mikkel-arranged-band"}"""
+    override suspend fun manifest(jobId: String): String = """{"run":"$jobId","fixture":true}"""
 
     override suspend fun evidence(jobId: String): Evidence = Evidence.EMPTY
 
@@ -146,9 +147,9 @@ class FixtureEngineApi(
 
     companion object {
         const val SERVER_ID = "fixture"
-        const val SERVER_NAME = "Brasscribe on the demo"
+        const val SERVER_NAME = "Brasscribe (test fixture)"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
-        /** The golden score's parts in order, as their file names spell them. */
+        /** The brass band's parts in order, as the engine's file names spell them. */
         val PART_NAMES = listOf(
             "Soprano-Cornet", "Solo-Cornet", "Repiano-Cornet", "2nd-Cornet", "3rd-Cornet", "Flugelhorn", "Solo-Horn", "1st-Horn", "2nd-Horn",
             "1st-Baritone", "2nd-Baritone", "1st-Trombone", "2nd-Trombone", "Bass-Trombone", "Euphonium", "Eb-Bass", "Bb-Bass", "Percussion",

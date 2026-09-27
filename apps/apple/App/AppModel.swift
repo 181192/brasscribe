@@ -13,7 +13,7 @@ struct PendingSource: Identifiable, Hashable {
     var audioURL: URL
     var videoURL: URL?
     var title: String
-    /// The file name shown above "What is this?" ("Mikkel.m4a"); nil for a new recording.
+    /// The file name shown above "What is this?" ("Band practice.m4a"); nil for a new recording.
     var name: String?
 }
 
@@ -77,19 +77,16 @@ final class AppModel {
         (connection.staged ? nil : connection.record?.baseURL) ?? URL(string: companionURL) ?? URL(string: "http://localhost:8765")!
     }
 
-    /// Engine output folder used by the demo service (tests and screenshots set it).
+    /// Engine output folder served by the fixture service. Only UI tests and screenshots set it
+    /// (BRASSCRIBE_FIXTURES); no build of the app carries one.
     let fixtureDirectory: URL? = {
-        let env = ProcessInfo.processInfo.environment
-        if let d = env["BRASSCRIBE_FIXTURES"], FileManager.default.fileExists(atPath: d) { return URL(fileURLWithPath: d) }
-        return Bundle.main.url(forResource: "Demo", withExtension: nil)
+        guard let d = ProcessInfo.processInfo.environment["BRASSCRIBE_FIXTURES"], FileManager.default.fileExists(atPath: d) else { return nil }
+        return URL(fileURLWithPath: d)
     }()
 
     var originalForFixture: URL? {
-        let env = ProcessInfo.processInfo.environment
-        if let o = env["BRASSCRIBE_ORIGINAL"], FileManager.default.fileExists(atPath: o) { return URL(fileURLWithPath: o) }
-        guard let dir = fixtureDirectory else { return nil }
-        let guess = dir.deletingLastPathComponent().deletingLastPathComponent().appending(path: "mikkel/mikkel.wav")
-        return FileManager.default.fileExists(atPath: guess.path) ? guess : nil
+        guard let o = ProcessInfo.processInfo.environment["BRASSCRIBE_ORIGINAL"], FileManager.default.fileExists(atPath: o) else { return nil }
+        return URL(fileURLWithPath: o)
     }
 
     var videoForFixture: URL? {
@@ -97,12 +94,13 @@ final class AppModel {
         return URL(fileURLWithPath: v)
     }
 
-    var useDemoService: Bool {
-        ProcessInfo.processInfo.arguments.contains("-demo-service") || UserDefaults.standard.bool(forKey: "useDemoService")
+    /// UI tests: transcriptions come from the fixture folder instead of a computer.
+    var useFixtureService: Bool {
+        fixtureDirectory != nil && ProcessInfo.processInfo.arguments.contains("-fixture-service")
     }
 
     func service() -> TranscriptionService {
-        if useDemoService, let dir = fixtureDirectory {
+        if useFixtureService, let dir = fixtureDirectory {
             return FixtureService(directory: dir, stepDelay: ProcessInfo.processInfo.arguments.contains("-fast") ? 0.05 : 0.6)
         }
         return CompanionService(baseURL: engineURL, token: connection.record?.token)
@@ -144,7 +142,7 @@ final class AppModel {
     }
 
     func service(for profile: SourceProfile) -> TranscriptionService {
-        if profile == .solo && soloOnDevice && !useDemoService {
+        if profile == .solo && soloOnDevice && !useFixtureService {
             ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
             if ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil { return OnDeviceSoloService() }
         }
@@ -157,7 +155,7 @@ final class AppModel {
 
     /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable.
     func refreshComputerScores() async {
-        guard !useDemoService, let svc = service() as? CompanionService else { computerJobs = []; return }
+        guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
         if let jobs = try? await svc.jobs() { computerJobs = jobs }
     }
 
@@ -223,7 +221,7 @@ final class AppModel {
             try updated.saveMusicXML(MusicXMLNoteEditor.replacingTitle(in: updated.musicXML(), with: cleaned))
             try updated.save()
             pieces[index] = updated
-            if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useDemoService {
+            if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useFixtureService {
                 Task { try? await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
             }
         } catch {
@@ -251,7 +249,6 @@ final class AppModel {
     /// Where the listening happens, for "What is this?" and the transcribing screen.
     func whereItRuns(for profile: SourceProfile?) -> String {
         if let profile, service(for: profile) is OnDeviceSoloService { return String(localized: "On this device. Nothing goes online.") }
-        if useDemoService { return String(localized: "The demo runs on this device. Nothing goes online.") }
         #if os(macOS)
         if let host = engineURL.host(), ["localhost", "127.0.0.1"].contains(host) {
             return String(localized: "Made on this Mac. Nothing goes online.")
@@ -326,16 +323,6 @@ final class AppModel {
         }
     }
 
-    /// Start the demo: the golden Mikkel transcription served by the fixture service.
-    func startDemo() {
-        guard let original = originalForFixture ?? fixtureDirectory?.appending(path: "brass-band.mp3") else {
-            show(.demoMissing)
-            return
-        }
-        UserDefaults.standard.set(true, forKey: "useDemoService")
-        ask(PendingSource(audioURL: original, videoURL: videoForFixture, title: "Mikkel", name: original.lastPathComponent))
-    }
-
     // MARK: transcription
 
     func startTranscription(_ src: PendingSource, profile: SourceProfile, output: OutputChoice) {
@@ -349,7 +336,7 @@ final class AppModel {
             guard let self else { return }
             do {
                 let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
-                                         video: src.videoURL, fixtureDirectory: self.useDemoService ? self.fixtureDirectory : nil,
+                                         video: src.videoURL, fixtureDirectory: self.useFixtureService ? self.fixtureDirectory : nil,
                                          output: output)
                 self.refresh()
                 if let i = self.path.firstIndex(of: .transcribe(job.id)) { self.path[i] = .review(p) } else { self.path.append(.review(p)) }

@@ -56,7 +56,7 @@ public sealed class EngineApiTests
              {"device_id":"d2","name":"Band iPad","platform":"ios","paired_at":"2026-09-01T10:00:00Z","last_seen":"2026-09-24T11:59:30Z","online":true}]
             """);
         h.Routes["GET /v1/jobs"] = (HttpStatusCode.OK, """
-            [{"id":"j1","profile":"p","title":"Mikkel","status":"running","created":1,"started":2,"finished":null,"progress":0.5,"stages":[]},
+            [{"id":"j1","profile":"p","title":"Old Hundredth","status":"running","created":1,"started":2,"finished":null,"progress":0.5,"stages":[]},
              {"id":"j2","profile":"p","title":null,"status":"queued","created":3,"started":null,"finished":null,"progress":0,"stages":[]}]
             """);
         var s = await api.GetStatusAsync();

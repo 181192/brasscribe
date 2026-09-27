@@ -245,7 +245,7 @@ The same commands on every platform. The apps map them to native gestures.
 ```json
 {
   "version": 1,
-  "title": "Mikkel — solo cornet & brass band (draft)",
+  "title": "Old Hundredth",
   "total_bars": 128,
   "free_regions": [
     {"start_bar": 1, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "tempo_bpm": 60, "notation": "proportional", "label": "ad lib."}

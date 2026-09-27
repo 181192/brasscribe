@@ -45,7 +45,8 @@ with `brasscribe_ffi.dll` beside it — the app will not start without it.
 src/Brasscribe.Play/bin/Release/net10.0-windows10.0.20348.0/win-x64/BrasscribePlay.exe
 ```
 
-Open a score from `data/golden/mikkel-arranged-band/`, or point the app at a
+Open a MusicXML score (for example `apps/fixtures/old-hundredth/brass-band.musicxml`, a
+public-domain hymn used for screenshots), or point the app at a
 running engine: start `pixi run serve --lan` in the repo root and enter the
 pairing code the engine prints.
 
