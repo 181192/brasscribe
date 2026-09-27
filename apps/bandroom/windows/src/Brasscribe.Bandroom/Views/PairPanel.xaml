@@ -79,6 +79,13 @@
                             <TextBlock Text="{x:Bind Vm.Limit}" Style="{StaticResource MutedStyle}" />
                         </StackPanel>
                     </Border>
+                    <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.IsLockedOut, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE946;" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="18"
+                                      Foreground="{ThemeResource BcTextBrush}" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Text="{x:Bind Vm.LockoutText}" Style="{StaticResource BodyStyle}" />
+                        </StackPanel>
+                    </Border>
                     <Border x:Name="PairedCard" Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.HasPaired, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon Glyph="&#xE930;" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="18"

@@ -312,6 +312,41 @@ public sealed class PairViewModelTests
     }
 
     [Fact]
+    public async Task Too_many_wrong_codes_shows_the_lockout_until_it_passes_and_says_it_once()
+    {
+        var vm = Make();
+        await vm.OpenAsync();
+        Assert.False(vm.IsLockedOut);
+        _engine.LockedUntil = _time.GetUtcNow().AddSeconds(30).ToString("O");
+        await vm.TickAsync();
+        Assert.True(vm.IsLockedOut);
+        Assert.Equal("Too many wrong codes. Wait a moment, or allow the phone here.", vm.LockoutText);
+        await vm.TickAsync();
+        Assert.Single(_said.Said, "Too many wrong codes. Wait a moment, or allow the phone here.");
+        Assert.True(vm.IsOpen); // the code itself stays the same
+        _time.Advance(TimeSpan.FromSeconds(31));
+        await vm.TickAsync();
+        Assert.False(vm.IsLockedOut);
+        _engine.LockedUntil = null;
+        await vm.TickAsync();
+        Assert.False(vm.IsLockedOut);
+    }
+
+    [Fact]
+    public void Locked_until_is_read_from_the_pairing_state()
+    {
+        var s = System.Text.Json.JsonSerializer.Deserialize<PairingState>("""
+            {"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"x","server_name":"Brasscribe on PC",
+             "hosts":[],"fingerprint":null,"uri":"brasscribe://pair?v=1","locked_until":"2026-09-27T12:00:30+00:00"}
+            """, EngineJson.Options)!;
+        Assert.Equal(DateTimeOffset.Parse("2026-09-27T12:00:30Z"), s.LockedUntilTime);
+        var old = System.Text.Json.JsonSerializer.Deserialize<PairingState>("""
+            {"open":true,"code":"1","expires_at":null,"single_use":true,"server_id":"x","server_name":"n","hosts":[],"fingerprint":null,"uri":"u"}
+            """, EngineJson.Options)!;
+        Assert.Null(old.LockedUntilTime);
+    }
+
+    [Fact]
     public async Task Done_closes_the_pairing_window()
     {
         var vm = Make();

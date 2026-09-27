@@ -44,6 +44,7 @@ public sealed partial class PairViewModel : ObservableObject
     public string AllowBody => _s["Allow_Body"];
     public string AllowMatchLabel => _s["Allow_Match"];
     public string CloseLabel => _s["Close"];
+    public string LockoutText => _s["Pair_Lockout"];
 
     [ObservableProperty] public partial string Way1Before { get; set; } = "";
     [ObservableProperty] public partial string Way1Name { get; set; } = "";
@@ -62,6 +63,8 @@ public sealed partial class PairViewModel : ObservableObject
     [ObservableProperty] public partial bool IsOpen { get; set; }
     [ObservableProperty] public partial string ErrorText { get; set; } = "";
     [ObservableProperty] public partial bool HasError { get; set; }
+    /// <summary>Too many wrong codes: code entry is locked for a while; allowing on the computer still works.</summary>
+    [ObservableProperty] public partial bool IsLockedOut { get; set; }
 
     /// <summary>Phones waiting to be allowed, newest last; the window shows the first.</summary>
     public ObservableCollection<AllowRequestViewModel> Requests { get; } = [];
@@ -110,6 +113,7 @@ public sealed partial class PairViewModel : ObservableObject
         QrPayload = state.Uri;
         QrSpoken = _s.Format("Pair_Qr_A11y", HostName(state.ServerName), CodeDisplay);
         _expiresAt = DateTimeOffset.TryParse(state.ExpiresAt, out var t) ? t : null;
+        ShowLockout(state);
         var host = HostName(state.ServerName);
         // The deck's way 1 with the computer's name in bold: split around it.
         string full = _s.Format("Pair_Way1", "\u0001");
@@ -129,6 +133,14 @@ public sealed partial class PairViewModel : ObservableObject
         }
         IsWaiting = IsOpen;
         WaitingText = _s["Pair_Waiting"];
+    }
+
+    /// <summary>Shows the lockout while now &lt; locked_until, announced once when it starts.</summary>
+    private void ShowLockout(PairingState state)
+    {
+        bool locked = state.LockedUntilTime is { } until && _time.GetUtcNow() < until;
+        if (locked && !IsLockedOut) _announcer.Announce(LockoutText);
+        IsLockedOut = locked;
     }
 
     /// <summary>The name part of "Brasscribe on &lt;name&gt;", so Norwegian can say "Brasscribe på &lt;name&gt;".</summary>
@@ -157,13 +169,11 @@ public sealed partial class PairViewModel : ObservableObject
                     _announcer.Announce(PairedText);
                     PairedFocusRequested?.Invoke();
                 }
-                if (added.Count > 0)
-                {
-                    // The single-use code is spent: the engine closed it.
-                    var state = await api.GetPairingAsync(ct);
-                    IsOpen = state.Open && state.Code is not null;
-                }
             }
+            // The spent single-use code (the engine closes it) and the wrong-code lockout.
+            var current = await api.GetPairingAsync(ct);
+            if (HasPaired) IsOpen = current.Open && current.Code is not null;
+            ShowLockout(current);
             _knownDevices = devices.Select(d => d.DeviceId).ToHashSet();
 
             if (IsOpen && _expiresAt is { } exp && exp - _time.GetUtcNow() < TimeSpan.FromMinutes(2))

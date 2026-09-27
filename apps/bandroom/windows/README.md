@@ -92,7 +92,5 @@ Axe.Windows scan of six views; screenshots (artifact `bandroom-windows-screensho
   background and the flyout shows **Setting up** / **Finish setting up**.
 - Settings page, Check for updates and About (the More menu has Open Studio, Start when I log in, Remove, Quit).
 - Needs-attention detection for Windows Firewall blocking and a Public network (strings and fixes are in place).
-- The lockout line in Pair a phone: the engine answers wrong codes to the phone, not to the computer, so the
-  computer can't know. It needs a field in `GET /v1/pairing` (for example `locked_until`).
 - Actionable toast for a pair request while the Pair window is closed: an always-on-top Allow window is shown instead.
 - The GPU half of Work load (CPU only today).

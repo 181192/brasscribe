@@ -43,7 +43,12 @@ public sealed record PairingState(
     string ServerName,
     IReadOnlyList<string> Hosts,
     string? Fingerprint,
-    string Uri);
+    string Uri,
+    string? LockedUntil = null)
+{
+    /// <summary>Set while too many wrong codes have locked code entry (ISO 8601); null on older engines.</summary>
+    public DateTimeOffset? LockedUntilTime => DateTimeOffset.TryParse(LockedUntil, out var t) ? t : null;
+}
 
 /// <summary>A phone asking to be allowed (approve on the computer).</summary>
 public sealed record PairRequestInfo(string RequestId, string Name, string Platform, string MatchCode, string CreatedAt, string Status)
