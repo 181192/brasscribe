@@ -17,8 +17,48 @@ public protocol CoreBridge: Sendable {
     func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data?
 }
 
+/// Which ensemble the score is arranged for. Raw values are what a saved piece records.
 public enum Lineup: String, CaseIterable, Sendable, Codable {
     case fullBand = "full-band", minimalBand = "minimal-band"
+    /// 1st Cornet, 2nd Cornet, Tenor Horn and Euphonium, one player each.
+    case quartet
+
+    /// The engine's `lineup` value (engine/openapi.json).
+    public var engineValue: String {
+        switch self {
+        case .fullBand: return "full"
+        case .minimalBand: return "minimal"
+        case .quartet: return "quartet"
+        }
+    }
+
+    /// The shared core's lineup name (ArrangeOptions.lineup, LayersSongOptions.lineup).
+    public var coreValue: String {
+        switch self {
+        case .fullBand: return "band"
+        case .minimalBand: return "minimal"
+        case .quartet: return "quartet"
+        }
+    }
+
+    /// The part that carries the tune: the musician's own part by default.
+    public var lead: String {
+        switch self {
+        case .fullBand, .minimalBand: return "Solo Cornet"
+        case .quartet: return "1st Cornet"
+        }
+    }
+
+    /// The lineup a score was arranged for, from the composition's record of it
+    /// (`arrangement.lineup`), when it has one.
+    public init?(recorded value: String?) {
+        switch value {
+        case "band", "full": self = .fullBand
+        case "minimal": self = .minimalBand
+        case "quartet": self = .quartet
+        default: return nil
+        }
+    }
 }
 
 public enum Difficulty: String, CaseIterable, Sendable, Codable {

@@ -60,7 +60,11 @@ struct OnDeviceSoloService: TranscriptionService {
                                bass: empty, orchestra: empty, drums: empty)
         var o = layersSongDefaults()
         o.soloContour = SoloContour(times: solo.contour.times, pitchHz: solo.contour.pitchHz, loudnessDb: solo.contour.loudnessDB)
-        o.lineup = output.lineup == .minimalBand ? "minimal" : "band"
+        switch output.lineup {
+        case .fullBand, .minimalBand: o.lineup = output.lineup.coreValue
+        // the Output screen never offers the quartet for a solo take
+        case .quartet: throw TranscriptionError.needsWholeGroup
+        }
         o.difficulty = output.difficulty.rawValue
         o.key = output.keyFifths.map { String($0) }
         return try arrangeLayersBand(layers: layers, stems: LayerStems(solo: nil, bass: nil, drums: nil, orchestra: nil),

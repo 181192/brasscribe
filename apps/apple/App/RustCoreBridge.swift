@@ -24,11 +24,12 @@ struct RustCoreBridge: CoreBridge {
         swift.talkingScore(for: score, composition: composition, language: language, pitchMode: pitchMode)
     }
 
-    /// Difficulty and key are not offered by the core's arranger yet; they are ignored here
-    /// and applied by the engine when it supports them.
+    /// Arranged by the core for the lineup and difficulty, in the target key (fifths) when one
+    /// is given. A whole-band take has no layers for the full band and gets the small band.
     func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data? {
         let json = String(decoding: try JSONEncoder().encode(composition), as: UTF8.self)
-        let xml = try arrangeMusicxml(compositionJson: json, arranger: lineup == .minimalBand ? "minimal" : "auto")
-        return Data(xml.utf8)
+        let options = ArrangeOptions(lineup: lineup.coreValue, difficulty: difficulty.rawValue,
+                                     key: keyFifths.map { String($0) }, transpose: nil)
+        return Data(try arrangeMusicxmlWith(compositionJson: json, options: options).utf8)
     }
 }

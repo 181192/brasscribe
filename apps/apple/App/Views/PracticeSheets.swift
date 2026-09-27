@@ -146,7 +146,12 @@ struct ExportView: View {
 
     // MARK: what
 
-    private var myLabel: String { myPart.map { String(localized: "My part (\($0.displayName))") } ?? String(localized: "My part") }
+    private var myLabel: String { myPart.map { String(localized: "\($0.displayName) (you)") } ?? String(localized: "My part") }
+
+    /// A quartet has no conductor: its whole score is the four parts.
+    private var scoreLabel: String {
+        model.piece.output?.lineup == .quartet ? String(localized: "Score (all 4 parts)") : String(localized: "Conductor's score")
+    }
 
     @ViewBuilder private var what: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -154,7 +159,7 @@ struct ExportView: View {
             if wide {
                 Segmented(label: String(localized: "What"), selection: $scope,
                           options: (myPart != nil ? [(Scope.mine, myLabel)] : [])
-                            + [(Scope.every, String(localized: "Every part")), (Scope.conductor, String(localized: "Conductor's score"))])
+                            + [(Scope.every, String(localized: "Every part")), (Scope.conductor, scoreLabel)])
                 if scope == .every {
                     Text("Every part: one PDF per player.").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
                 }
@@ -163,7 +168,7 @@ struct ExportView: View {
                     if myPart != nil { radio(myLabel, nil, .mine); Divider().overlay(Color.Brasscribe.border) }
                     radio(String(localized: "Every part"), String(localized: "one PDF per player"), .every)
                     Divider().overlay(Color.Brasscribe.border)
-                    radio(String(localized: "Conductor's score"), nil, .conductor)
+                    radio(scoreLabel, nil, .conductor)
                 }
                 .card(padding: 0)
             }

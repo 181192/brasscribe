@@ -12,7 +12,7 @@ enum ScreenshotScenes {
             guard let first = openScore() else { return }
             let day: TimeInterval = 86_400
             let library: [(String, TimeInterval, Lineup, Int?)] = [
-                ("Deep Harmony", 1 * day, .fullBand, 0), ("Abide with Me", 2 * day, .minimalBand, 12),
+                ("Deep Harmony", 1 * day, .fullBand, 0), ("Abide with Me", 2 * day, .minimalBand, 12), ("Crimond", 3 * day, .quartet, 0),
                 ("20260815_155324", 5 * day, .fullBand, nil), ("", 8 * day, .minimalBand, 4), ("Floral Dance", 12 * day, .fullBand, 0),
             ]
             for (title, ago, lineup, toCheck) in library {

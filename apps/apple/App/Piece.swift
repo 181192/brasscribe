@@ -125,10 +125,20 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try? p.save()
     }
 
+    /// A quartet needs harmony to arrange: not a solo take, and the composition has more than
+    /// the tune (a bass or harmony voice with notes).
+    func canArrangeQuartet(_ comp: Composition?) -> Bool {
+        if profile == .solo { return false }
+        guard let comp else { return false }
+        return comp.voices.contains { v in
+            !v.notes.isEmpty && v.layer != "solo" && v.layer != "drums" && v.role != .melody && v.role != .rhythm
+        }
+    }
+
     /// "Brass band · 64 bars · Today · 3 notes to check"
     var summary: String {
         var bits: [String] = []
-        if let output { bits.append(output.lineup == .fullBand ? String(localized: "Full band") : String(localized: "Small band")) }
+        if let output { bits.append(output.lineup.shortTitle) }
         else if let profile { bits.append(profile.shortTitle) }
         if let bars { bits.append(String(localized: "\(bars) bars")) }
         bits.append(ScoreTitles.day(created))

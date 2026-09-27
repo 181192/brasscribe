@@ -31,6 +31,16 @@
         }
       }
     },
+    "%@ (you)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (deg)"
+          }
+        }
+      }
+    },
     "%@ didn't answer. Check that it's still open.": {
       "localizations": {
         "nb": {
@@ -397,6 +407,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "10–15 musikere, stemmene doblet"
+          }
+        }
+      }
+    },
+    "4 players, one on each part": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 musikere, én på hver stemme"
           }
         }
       }
@@ -2381,6 +2401,16 @@
         }
       }
     },
+    "Needs a recording of the whole group": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenger et opptak av hele gruppen"
+          }
+        }
+      }
+    },
     "New score": {
       "localizations": {
         "nb": {
@@ -3271,6 +3301,16 @@
         }
       }
     },
+    "Quartet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvartett"
+          }
+        }
+      }
+    },
     "Read aloud": {
       "localizations": {
         "nb": {
@@ -3601,6 +3641,16 @@
         }
       }
     },
+    "Score (all 4 parts)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partitur (alle 4 stemmer)"
+          }
+        }
+      }
+    },
     "Score pages": {
       "localizations": {
         "nb": {
@@ -3826,7 +3876,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lite korps"
+            "value": "Lite band"
           }
         }
       }
@@ -4231,12 +4281,12 @@
         }
       }
     },
-    "The band sounds are missing. Reinstall Brasscribe Play to hear the band." : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."
+    "The band sounds are missing. Reinstall Brasscribe Play to hear the band.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."
           }
         }
       }
@@ -4637,6 +4687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gjør et opptak om til"
+          }
+        }
+      }
+    },
+    "Unavailable": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilgjengelig"
           }
         }
       }

@@ -90,6 +90,47 @@ func testVideo() -> URL? {
     #expect(try bridge.score(fromMusicXML: minimal).parts.count > 0)
 }
 
+/// Re-arranging for the quartet on device keeps the quartet: four parts, one per player.
+@Test(.enabled(if: fixtureDir() != nil)) func rustCoreArrangesAQuartetOnDevice() throws {
+    let bridge = RustCoreBridge()
+    let comp = try bridge.composition(fromJSON: Data(contentsOf: fixtureDir()!.appending(path: "composition.json")))
+    for difficulty in Difficulty.allCases {
+        let xml = try #require(try bridge.arrange(comp, lineup: .quartet, difficulty: difficulty, keyFifths: nil))
+        let names = try bridge.score(fromMusicXML: xml).parts.map(\.name)
+        #expect(names == ["1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium"], "\(difficulty)")
+    }
+}
+
+/// Every lineup maps to its own engine and core value; the quartet never becomes the band.
+@Test func lineupValuesAreExhaustive() {
+    let engine = Dictionary(uniqueKeysWithValues: Lineup.allCases.map { ($0, $0.engineValue) })
+    let core = Dictionary(uniqueKeysWithValues: Lineup.allCases.map { ($0, $0.coreValue) })
+    #expect(engine == [.fullBand: "full", .minimalBand: "minimal", .quartet: "quartet"])
+    #expect(core == [.fullBand: "band", .minimalBand: "minimal", .quartet: "quartet"])
+    for l in Lineup.allCases { #expect(Lineup(recorded: l.coreValue) == l && Lineup(recorded: l.engineValue) == l) }
+    #expect(Lineup.quartet.lead == "1st Cornet" && Lineup.fullBand.lead == "Solo Cornet")
+}
+
+@Test func quartetPartsHaveNorwegianNames() {
+    #expect(PartNames.norwegian["1st Cornet"] == "1. kornett")
+    #expect(PartNames.norwegian["Tenor Horn"] == "Althorn")
+}
+
+/// A solo take has nothing for the other three parts: no quartet.
+@Test(.enabled(if: fixtureDir() != nil)) func quartetNeedsTheWholeGroup() throws {
+    let comp = try Composition.decode(Data(contentsOf: fixtureDir()!.appending(path: "composition.json")))
+    var solo = comp
+    solo.voices = comp.voices.filter { $0.layer == "solo" }
+    let result = TranscriptionResult(jobID: "t", composition: comp, musicXML: Data(), available: [])
+    var p = try Piece.create(title: "Quartet check", profile: .orchestraWithSoloist, result: result, original: nil, video: nil,
+                             fixtureDirectory: nil)
+    defer { p.delete() }
+    #expect(p.canArrangeQuartet(comp))
+    #expect(!p.canArrangeQuartet(solo))
+    p.profile = .solo
+    #expect(!p.canArrangeQuartet(comp))
+}
+
 
 /// The engine groups neighbouring uncertain notes (Composition.review): Review has one item
 /// per group, the Solo Cornet carries every solo group, and the level follows `very`.

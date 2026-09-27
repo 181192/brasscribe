@@ -90,7 +90,10 @@ final class PracticeModel {
         loopTo = min(3, score.measures.count - 1)
         video = piece.videoURL.map { AVPlayer(url: $0) }
         video?.isMuted = true
-        myPart = score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id
+        // my part: the lineup's lead (the tune), else the first part
+        let lead = (piece.output?.lineup ?? .fullBand).lead.lowercased()
+        myPart = score.parts.first { $0.name.lowercased().contains(lead) }?.id
+            ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id
     }
 
     func start() {

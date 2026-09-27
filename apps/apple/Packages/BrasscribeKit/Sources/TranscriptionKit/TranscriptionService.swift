@@ -112,6 +112,8 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
     case jobFailed(String)
     case cancelled
     case artifactUnavailable(ArtifactKind)
+    /// A quartet was asked for a take with one line only (the app shows its own words).
+    case needsWholeGroup
 
     public var errorDescription: String? {
         switch self {
@@ -122,6 +124,7 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
         case .jobFailed(let s): return "Transcription failed: \(s)"
         case .cancelled: return "Cancelled."
         case .artifactUnavailable(let k): return "\(k.engineName) is not available for this transcription."
+        case .needsWholeGroup: return "Needs a recording of the whole group"
         }
     }
 }

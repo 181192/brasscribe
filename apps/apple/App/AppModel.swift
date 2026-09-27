@@ -420,7 +420,9 @@ final class TranscriptionJob: Identifiable {
             } catch {
                 guard let self else { return }
                 if case TranscriptionError.notPaired = error { self.onUnauthorized?() }
-                if case TranscriptionError.cancelled = error { self.cancelled = true } else if !Task.isCancelled {
+                if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
+                    self.failure = String(localized: "Needs a recording of the whole group")
+                } else if !Task.isCancelled {
                     self.failure = error.localizedDescription
                 }
             }

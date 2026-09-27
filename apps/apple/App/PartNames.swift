@@ -6,6 +6,7 @@ import ScoreKit
 enum PartNames {
     static let norwegian: [String: String] = [
         "Soprano Cornet": "Sopran", "Solo Cornet": "Solokornett", "Repiano Cornet": "Repiano",
+        "1st Cornet": "1. kornett", "Tenor Horn": "Althorn",
         "2nd Cornet": "2. kornett", "3rd Cornet": "3. kornett", "Flugelhorn": "Flygelhorn",
         "Solo Horn": "Solohorn", "1st Horn": "1. horn", "2nd Horn": "2. horn",
         "1st Baritone": "1. baryton", "2nd Baritone": "2. baryton",
@@ -28,6 +29,17 @@ enum PartNames {
             out = out.replacingOccurrences(of: "<part-abbreviation>\(en)</part-abbreviation>", with: "<part-abbreviation>\(nb)</part-abbreviation>")
         }
         return out
+    }
+}
+
+extension Lineup {
+    /// The lineup as the library and the score's options name it.
+    var shortTitle: String {
+        switch self {
+        case .fullBand: return String(localized: "Full band")
+        case .minimalBand: return String(localized: "Small band")
+        case .quartet: return String(localized: "Quartet")
+        }
     }
 }
 

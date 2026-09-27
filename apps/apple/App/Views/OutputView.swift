@@ -12,6 +12,8 @@ struct OutputView: View {
     @State private var difficulty: Difficulty = .faithful
     @State private var semitones = 0
     @State private var recordedFifths: Int?
+    /// A quartet needs harmony: false for a solo take, which has one line and nothing for the other parts.
+    @State private var quartetPossible = true
     @State private var busy = false
     @State private var failure: String?
 
@@ -77,7 +79,9 @@ struct OutputView: View {
             let chosen = piece.output ?? OutputChoice()
             lineup = chosen.lineup
             difficulty = chosen.difficulty
-            recordedFifths = piece.loadComposition()?.keys.first?.fifths
+            let comp = piece.loadComposition()
+            recordedFifths = comp?.keys.first?.fifths
+            quartetPossible = piece.canArrangeQuartet(comp)
             if let target = chosen.keyFifths, let from = recordedFifths { semitones = Self.semitones(from: from, to: target) }
         }
     }
@@ -87,6 +91,11 @@ struct OutputView: View {
             Text("Which band?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
             radio(String(localized: "Full brass band"), String(localized: "About 25 players"), lineup == .fullBand) { lineup = .fullBand }
             radio(String(localized: "Small band"), String(localized: "10–15 players, parts doubled up"), lineup == .minimalBand) { lineup = .minimalBand }
+            // Unavailable for a solo take: it stays reachable (VoiceOver reads the reason) and does nothing.
+            radio(String(localized: "Quartet"),
+                  quartetPossible ? String(localized: "4 players, one on each part") : String(localized: "Needs a recording of the whole group"),
+                  lineup == .quartet, available: quartetPossible) { if quartetPossible { lineup = .quartet } }
+                .accessibilityIdentifier("lineup-quartet")
         }
     }
 
@@ -184,12 +193,13 @@ struct OutputView: View {
         return 0
     }
 
-    private func radio(_ title: String, _ detail: String, _ on: Bool, _ pick: @escaping () -> Void) -> some View {
+    private func radio(_ title: String, _ detail: String, _ on: Bool, available: Bool = true, _ pick: @escaping () -> Void) -> some View {
         Button(action: pick) {
             HStack(spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(available ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
                     Text(detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 Image(systemName: on ? "largecircle.fill.circle" : "circle").font(.title2)
@@ -203,7 +213,9 @@ struct OutputView: View {
             .contentShape(RoundedRectangle(cornerRadius: Radius.lg))
         }
         .buttonStyle(.plain)
+        .opacity(available ? 1 : 0.6)
         .accessibilityAddTraits(on ? [.isSelected] : [])
+        .accessibilityValue(available ? Text("") : Text("Unavailable"))
     }
 
     private func show() async {

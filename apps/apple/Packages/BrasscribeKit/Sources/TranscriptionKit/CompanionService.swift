@@ -275,9 +275,9 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         if let t = req.title { field("title", t) }
         // The app renders audio itself; skipping it on the engine avoids an extra MuseScore launch.
         field("render_audio", "false")
-        // Arrangement options (engine/openapi.json: lineup full|minimal, difficulty, key as
+        // Arrangement options (engine/openapi.json: lineup full|minimal|quartet, difficulty, key as
         // FIFTHS[:MODE]).
-        field("lineup", req.output.lineup == .minimalBand ? "minimal" : "full")
+        field("lineup", req.output.lineup.engineValue)
         field("difficulty", req.output.difficulty.rawValue)
         if let k = req.output.keyFifths { field("key", String(k)) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
@@ -294,6 +294,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         do { (data, resp) = try await session.upload(for: r, fromFile: tmp) } catch { throw TranscriptionError.unreachable(error.localizedDescription) }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TranscriptionError.notPaired }
+        // The engine refuses a quartet for a solo take; the app says why in its own words.
+        if code == 422 && req.output.lineup == .quartet { throw TranscriptionError.needsWholeGroup }
         guard (200..<300).contains(code) else { throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self)) }
         return try JSONDecoder().decode(Job.self, from: data)
     }
