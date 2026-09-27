@@ -8,6 +8,8 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Composition;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 using Windows.System;
@@ -44,6 +46,8 @@ public sealed partial class ScoreView : UserControl
     private readonly Canvas _selectUnder;
     private ScoreViewModel? _viewModel;
     private ScoreViewAutomationPeer? _peer;
+    private readonly Grid _frame;
+    private readonly Border _mirrorHost;
 
     public ScoreView()
     {
@@ -66,7 +70,19 @@ public sealed partial class ScoreView : UserControl
             ZoomMode = ZoomMode.Disabled,
             IsTabStop = false,
         };
-        Content = _scroller;
+        // The music stand's right-hand page is a live copy of the surface (see ShowStandWindow).
+        _mirrorHost = new Border { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+        AutomationProperties.SetAccessibilityView(_mirrorHost, AccessibilityView.Raw);
+        _frame = new Grid
+        {
+            ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }, new ColumnDefinition { Width = new GridLength(0) } },
+            Children = { _scroller, _mirrorHost },
+        };
+        Grid.SetColumn(_mirrorHost, 1);
+        Content = _frame;
+        _surface.ManipulationStarted += (_, e) => _swipeStart = e.Position.X;
+        _surface.ManipulationCompleted += OnSurfaceManipulationCompleted;
+        AddHandler(PointerWheelChangedEvent, new PointerEventHandler(OnStandWheel), handledEventsToo: true);
 
         _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
         _scroller.SizeChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
@@ -82,6 +98,13 @@ public sealed partial class ScoreView : UserControl
         // The "?" marks can be tapped (a 44 epx target around each) to check that note.
         _surface.Tapped += (_, e) =>
         {
+            if (IsStand)
+            {
+                // In the stand a tap only shows or hides the controls: it never moves the cursor or checks a note.
+                e.Handled = true;
+                StandTapped?.Invoke(this, EventArgs.Empty);
+                return;
+            }
             var p = e.GetPosition(_surface);
             var hit = _items.FirstOrDefault(i => i.Kind is OverlayKind.UncertainMark or OverlayKind.VeryUncertainMark
                                                  && Math.Abs(i.Box.X + i.Box.W / 2 - p.X) <= 22 && Math.Abs(i.Box.Y + i.Box.H / 2 - p.Y) <= 22);
@@ -359,6 +382,7 @@ public sealed partial class ScoreView : UserControl
 
     private void EnsureVisible(Rect r)
     {
+        if (IsStand) return; // the stand moves by whole pages (MusicStandViewModel)
         double viewTop = _scroller.VerticalOffset, viewLeft = _scroller.HorizontalOffset;
         double viewH = Math.Max(0, _scroller.ViewportHeight - BottomObscuredHeight), viewW = _scroller.ViewportWidth;
         double? y = r.Top < viewTop ? r.Top - 24 : r.Bottom > viewTop + viewH ? r.Bottom - viewH + 24 : null;
@@ -368,6 +392,158 @@ public sealed partial class ScoreView : UserControl
     }
 
     public double ZoomFactor { get; set; } = 1.0;
+
+    // ---- the music stand ----
+
+    private bool _isStand;
+    private bool _spread;
+    private double _swipeStart;
+    private SpriteVisual? _mirror;
+    private CompositionVisualSurface? _mirrorSurface;
+
+    /// <summary>A tap on the music while in the stand (it shows or hides the controls).</summary>
+    public event EventHandler? StandTapped;
+
+    /// <summary>Tab or Shift+Tab (true) from the score in the stand: the view shows the layer and moves focus into it.</summary>
+    public event EventHandler<bool>? StandTabbed;
+
+    /// <summary>Any key in the stand (the layer shows).</summary>
+    public event EventHandler? StandKey;
+
+    /// <summary>The right-hand page could not be shown; the stand falls back to a single page.</summary>
+    public event EventHandler? SpreadFailed;
+
+    /// <summary>
+    /// The music stand: no scrolling (the stand has pages), no note cursor following, taps and swipes go
+    /// to the stand, and the mouse wheel turns pages.
+    /// </summary>
+    public bool IsStand
+    {
+        get => _isStand;
+        set
+        {
+            _isStand = value;
+            var mode = value ? ScrollMode.Disabled : ScrollMode.Enabled;
+            _scroller.VerticalScrollMode = mode;
+            _scroller.HorizontalScrollMode = mode;
+            _scroller.VerticalScrollBarVisibility = value ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto;
+            _scroller.HorizontalScrollBarVisibility = value ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto;
+            _surface.ManipulationMode = value ? ManipulationModes.TranslateX | ManipulationModes.TranslateRailsX : ManipulationModes.System;
+            if (!value) IsSpread = false;
+        }
+    }
+
+    public const double StandGutter = 24;
+
+    /// <summary>Two pages side by side: the left column scrolls, the right one mirrors the next page.</summary>
+    public bool IsSpread
+    {
+        get => _spread;
+        set
+        {
+            _spread = value;
+            _frame.ColumnSpacing = value ? StandGutter : 0;
+            _frame.ColumnDefinitions[1].Width = value ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            _mirrorHost.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            if (!value) ClearMirror();
+        }
+    }
+
+    /// <summary>The width one page of the stand is laid out at.</summary>
+    public double StandColumnWidth(bool spread) => spread ? Math.Max(200, (ActualWidth - StandGutter) / 2) : Math.Max(200, ActualWidth);
+
+    /// <summary>
+    /// Shows the stand's window: the left (or only) page from <paramref name="top"/>, and in a spread the
+    /// right page from <paramref name="rightTop"/>. A 200 ms fade marks the turn unless motion is reduced.
+    /// </summary>
+    public void ShowStandWindow(double top, double? rightTop, bool fade)
+    {
+        top = Math.Max(0, top);
+        _scroller.ChangeView(0, top, null, disableAnimation: true);
+        if (_spread && rightTop is { } right) ShowMirror(right);
+        else ClearMirror();
+        if (fade && !ReduceMotion) Fade();
+        // Ask for the pages of both columns now; the scroll itself lands a frame later.
+        var width = Math.Max(0, _scroller.ViewportWidth);
+        var height = Math.Max(0, _scroller.ViewportHeight);
+        ViewportChanged?.Invoke(this, new Rect(0, top, width, height));
+        if (_spread && rightTop is { } r) ViewportChanged?.Invoke(this, new Rect(0, r, width, height));
+    }
+
+    private void ShowMirror(double top)
+    {
+        try
+        {
+            var compositor = ElementCompositionPreview.GetElementVisual(this).Compositor;
+            var size = new System.Numerics.Vector2((float)Math.Max(1, _scroller.ViewportWidth), (float)Math.Max(1, _scroller.ViewportHeight));
+            _mirrorSurface ??= compositor.CreateVisualSurface();
+            _mirrorSurface.SourceVisual = ElementCompositionPreview.GetElementVisual(_surface);
+            _mirrorSurface.SourceOffset = new System.Numerics.Vector2(0, (float)top);
+            _mirrorSurface.SourceSize = size;
+            if (_mirror is null)
+            {
+                var brush = compositor.CreateSurfaceBrush(_mirrorSurface);
+                brush.Stretch = CompositionStretch.None;
+                brush.HorizontalAlignmentRatio = 0;
+                brush.VerticalAlignmentRatio = 0;
+                _mirror = compositor.CreateSpriteVisual();
+                _mirror.Brush = brush;
+                ElementCompositionPreview.SetElementChildVisual(_mirrorHost, _mirror);
+            }
+            _mirror.Size = size;
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or System.Runtime.InteropServices.COMException)
+        {
+            // The copy is a convenience; without it the stand still pages, one page at a time.
+            System.Diagnostics.Trace.TraceWarning($"Music stand right page unavailable: {e.Message}");
+            IsSpread = false;
+            SpreadFailed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void ClearMirror()
+    {
+        if (_mirror is null) return;
+        ElementCompositionPreview.SetElementChildVisual(_mirrorHost, null);
+        _mirror.Dispose();
+        _mirror = null;
+        _mirrorSurface?.Dispose();
+        _mirrorSurface = null;
+    }
+
+    private void Fade()
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(_frame);
+        var fade = visual.Compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0f, 0.2f);
+        fade.InsertKeyFrame(1f, 1f);
+        fade.Duration = TimeSpan.FromMilliseconds(200);
+        visual.StartAnimation("Opacity", fade);
+    }
+
+    /// <summary>A horizontal swipe that starts at least 24 epx from the edges turns a page (the edges belong to the system).</summary>
+    private void OnSurfaceManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+    {
+        if (!IsStand || _viewModel is null) return;
+        double startX = _swipeStart - _scroller.HorizontalOffset;
+        int direction = Brasscribe.Play.Core.Stand.StandGesture.Swipe(startX, ActualWidth, e.Cumulative.Translation.X, e.Cumulative.Translation.Y);
+        if (direction == 0) return;
+        e.Handled = true;
+        if (direction > 0) _viewModel.Stand.NextPage();
+        else _viewModel.Stand.PreviousPage();
+    }
+
+    /// <summary>The mouse wheel turns pages in the stand.</summary>
+    private void OnStandWheel(object sender, PointerRoutedEventArgs e)
+    {
+        if (!IsStand || _viewModel is null) return;
+        int delta = e.GetCurrentPoint(this).Properties.MouseWheelDelta;
+        if (delta == 0) return;
+        e.Handled = true;
+        if (delta < 0) _viewModel.Stand.NextPage();
+        else _viewModel.Stand.PreviousPage();
+    }
+
 
     protected override AutomationPeer OnCreateAutomationPeer() => _peer = new ScoreViewAutomationPeer(this);
 
@@ -380,17 +556,25 @@ public sealed partial class ScoreView : UserControl
         }
         if (e.Key == VirtualKey.Tab)
         {
+            if (IsStand)
+            {
+                // Tab shows the stand's controls and moves into them; there is no trap (WCAG 2.1.2).
+                e.Handled = true;
+                StandTabbed?.Invoke(this, Modifiers().HasFlag(KeyModifiers.Shift));
+                return;
+            }
             base.OnKeyDown(e); // Tab always leaves the score (WCAG 2.1.2)
             return;
         }
+        if (IsStand) StandKey?.Invoke(this, EventArgs.Empty);
         var mods = Modifiers();
-        var key = Map(e.Key);
+        var key = MapKey(e.Key);
         if (key is null)
         {
             base.OnKeyDown(e);
             return;
         }
-        var command = ScoreKeyMap.Map(key.Value, mods, _viewModel.SingleKeyShortcuts);
+        var command = ScoreKeyMap.Map(key.Value, mods, _viewModel.SingleKeyShortcuts, IsStand);
         if (command is null)
         {
             base.OnKeyDown(e);
@@ -416,7 +600,7 @@ public sealed partial class ScoreView : UserControl
         _peer?.RaiseCursorMoved(text);
     }
 
-    private static KeyModifiers Modifiers()
+    public static KeyModifiers Modifiers()
     {
         static bool Down(VirtualKey k) => InputKeyboardSource.GetKeyStateForCurrentThread(k).HasFlag(CoreVirtualKeyStates.Down);
         var m = KeyModifiers.None;
@@ -426,8 +610,15 @@ public sealed partial class ScoreView : UserControl
         return m;
     }
 
-    private static ScoreKey? Map(VirtualKey key) => key switch
+    /// <summary>
+    /// The score's keys from a VirtualKey. F11 is left out on purpose: it is the page's accelerator, so it
+    /// works wherever focus is.
+    /// </summary>
+    public static ScoreKey? MapKey(VirtualKey key) => key switch
     {
+        VirtualKey.F => ScoreKey.F,
+        VirtualKey.PageUp => ScoreKey.PageUp,
+        VirtualKey.PageDown => ScoreKey.PageDown,
         VirtualKey.Left => ScoreKey.Left,
         VirtualKey.Right => ScoreKey.Right,
         VirtualKey.Up => ScoreKey.Up,

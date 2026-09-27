@@ -21,6 +21,11 @@
             <TextBlock x:Uid="SettingsAccessibilityHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <ToggleSwitch x:Uid="SingleKeySwitch" IsOn="{x:Bind ViewModel.SingleKeyShortcuts, Mode=TwoWay}" />
             <ToggleSwitch x:Uid="ReduceMotionSwitch" IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}" />
+            <!-- The music stand (design/music-stand.md §9). Opening on turning the phone is a phone setting, not here. -->
+            <TextBlock x:Uid="SettingsStandHeading" Style="{StaticResource LabelStyle}" Margin="0,8,0,0" AutomationProperties.HeadingLevel="Level3" />
+            <ToggleSwitch x:Uid="StandTurnPagesSwitch" IsOn="{x:Bind ViewModel.StandTurnPages, Mode=TwoWay}" />
+            <ToggleSwitch x:Uid="StandKeepControlsSwitch" IsOn="{x:Bind ViewModel.StandKeepControls, Mode=TwoWay}" />
+            <TextBlock x:Uid="StandPedalNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
             <ComboBox x:Name="VerbosityBox" x:Uid="VerbosityBox" SelectionChanged="OnVerbosityChanged" HorizontalAlignment="Stretch">
                 <ComboBoxItem x:Uid="VerbosityBrief" />
                 <ComboBoxItem x:Uid="VerbosityStandard" />

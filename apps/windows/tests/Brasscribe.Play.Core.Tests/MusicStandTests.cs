@@ -277,6 +277,29 @@ public class StandSizingTests
     }
 }
 
+public class StandGestureAndVisibilityTests
+{
+    [Theory]
+    [InlineData(300, -120, 10, 1)]
+    [InlineData(300, 120, 10, -1)]
+    [InlineData(10, -120, 0, 0)]    // from the left edge: the system's
+    [InlineData(790, 120, 0, 0)]    // from the right edge
+    [InlineData(300, -30, 0, 0)]    // too short
+    [InlineData(300, -80, 100, 0)]  // mostly vertical
+    public void A_swipe_turns_a_page_only_away_from_the_edges(double startX, double dx, double dy, int expected) =>
+        Assert.Equal(expected, StandGesture.Swipe(startX, 800, dx, dy));
+
+    [Fact]
+    public void Visibility_helpers()
+    {
+        Assert.True(Screens.Neither(false, false));
+        Assert.False(Screens.Neither(true, false));
+        Assert.True(Screens.AndNot(true, false));
+        Assert.False(Screens.AndNot(true, true));
+        Assert.True(Screens.Is(true));
+    }
+}
+
 public class MusicStandViewModelTests
 {
     private sealed class Inline : IUiDispatcher { public void Post(Action action) => action(); }

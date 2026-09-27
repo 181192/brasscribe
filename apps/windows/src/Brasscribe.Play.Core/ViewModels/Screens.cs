@@ -29,6 +29,7 @@ public static class Screens
     public static string LibraryGlyph(bool onComputer) => onComputer ? "\uE977" : "\uEC4F";
     public static bool Both(bool a, bool b) => a && b;
     public static bool Neither(bool a, bool b) => !a && !b;
+    public static bool AndNot(bool a, bool b) => a && !b;
     /// <summary>A plain bool, for x:Bind function bindings that must return Visibility (Views/Shown.cs).</summary>
     public static bool Is(bool value) => value;
     /// <summary>A percentage in the UI language's spacing ("75%", "75 %").</summary>

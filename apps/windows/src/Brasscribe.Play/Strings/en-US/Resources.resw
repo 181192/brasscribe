@@ -1662,18 +1662,6 @@
   <data name="StandPreviousPage.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Previous page</value>
   </data>
-  <data name="StandRepeatFrom.Header" xml:space="preserve">
-    <value>Repeat bars</value>
-  </data>
-  <data name="StandRepeatSet.Content" xml:space="preserve">
-    <value>Repeat</value>
-  </data>
-  <data name="StandRepeatSet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Plays these bars over and over (L)</value>
-  </data>
-  <data name="StandRepeatTo.Header" xml:space="preserve">
-    <value>to</value>
-  </data>
   <data name="StandRepeatToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Plays the chosen bars over and over (L)</value>
   </data>
@@ -1722,8 +1710,20 @@
   <data name="Stand_Repeat" xml:space="preserve">
     <value>Repeat</value>
   </data>
+  <data name="Stand_RepeatFrom" xml:space="preserve">
+    <value>Repeat bars</value>
+  </data>
   <data name="Stand_RepeatOn" xml:space="preserve">
     <value>Repeat {0}–{1}</value>
+  </data>
+  <data name="Stand_RepeatSet" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="Stand_RepeatSetHelp" xml:space="preserve">
+    <value>Plays these bars over and over (L)</value>
+  </data>
+  <data name="Stand_RepeatTo" xml:space="preserve">
+    <value>to</value>
   </data>
   <data name="Stand_Speed" xml:space="preserve">
     <value>Speed {0}</value>

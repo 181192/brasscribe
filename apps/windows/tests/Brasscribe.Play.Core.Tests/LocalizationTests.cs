@@ -95,7 +95,7 @@ public partial class LocalizationTests
     private static partial Regex UidRegex();
 
     // Resource keys in code: "Prefix_Name" string literals with a known prefix.
-    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|Connection|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Key|Shortcuts?|Review|Library|Error|Back|Title|FinishLater)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
+    [GeneratedRegex("\"((?:Duration|Screen|Start|Kind|Transcribe|Connection|CancelDialog|Score|Player|Mixer|Export|Output|Settings|Key|Shortcuts?|Review|Library|Error|Back|Title|FinishLater|Stand)(?:_[A-Za-z]+)+|AppWindowTitle)\"")]
     private static partial Regex CodeKeyRegex();
 
     [GeneratedRegex(@"\{(\d+)[^}]*\}")]

@@ -101,10 +101,14 @@ public sealed partial class MusicStandViewModel : ObservableObject
         else Enter();
     }
 
-    /// <summary>Opens the stand on your part; <paramref name="screenReader"/> keeps the layer and drops the touch hint.</summary>
-    public void Enter(bool screenReader = false)
+    /// <summary>Tells whether a screen reader runs (the platform's check; none in tests).</summary>
+    public Func<bool>? DetectScreenReader { get; set; }
+
+    /// <summary>Opens the stand on your part; with a screen reader the layer stays and the touch hint is not said.</summary>
+    public void Enter(bool? screenReader = null)
     {
         if (IsOpen || !_score.IsLoaded) return;
+        bool reader = screenReader ?? DetectScreenReader?.Invoke() ?? false;
         Layer = NewLayer(HintSeen);
         _savedPart = _score.SelectedPartIndex;
         _followed = -1;
@@ -113,12 +117,12 @@ public sealed partial class MusicStandViewModel : ObservableObject
         _applyingPart = false;
         IsOpen = true;
         ApplyPart();
-        Layer.Enter(new StandContext(_score.Player.IsPlaying, screenReader, KeepVisible: KeepControlsVisible));
+        Layer.Enter(new StandContext(_score.Player.IsPlaying, reader, KeepVisible: KeepControlsVisible));
         OnPropertyChanged(nameof(HasMyPart));
         UpdateTexts();
         Opened?.Invoke(this, EventArgs.Empty);
         string said = _s.Format("Stand_Entered", PartText(), CurrentBar, Math.Max(1, _score.Player.BarCount));
-        if (!screenReader) said += " " + _s["Stand_EnteredTouch"];
+        if (!reader) said += " " + _s["Stand_EnteredTouch"];
         _announcer.Announce(said);
     }
 
