@@ -36,13 +36,27 @@ defaults:
   run:
     working-directory: apps/apple
 
+# Newest stable Xcode on the image, selected explicitly rather than the image default.
+env:
+  XCODE_VERSION: "26.6"
+
 jobs:
   build:
     name: ${{ inputs.release && 'release build' || 'test' }}
+    # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+
+      # DEVELOPER_DIR as well as xcode-select: the Makefile and the Rust iOS builds read it.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -61,7 +75,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: apps/apple/Frameworks
-          key: verovio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
 
       - name: Build Verovio.xcframework
         if: steps.verovio.outputs.cache-hit != 'true'
@@ -72,12 +86,12 @@ jobs:
         run: scripts/build-core.sh
 
       # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
+      # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
       - name: Test (packages, macOS app, iPhone simulator app)
         if: ${{ !inputs.release }}
         run: |
-          iphone=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))] | last | .name')
-          echo "iPhone simulator: $iphone"
-          make test IPHONE="$iphone"
+          dest=$(scripts/newest-iphone.sh)
+          make test IPHONE_DEST="$dest"
 
       # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
       - name: Release build of the macOS app

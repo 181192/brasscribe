@@ -7,8 +7,12 @@
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
 FIXTURES ?= $(ROOT)/data/golden/mikkel-arranged-band
-IPHONE ?= iPhone 17
+# IPHONE=<name> picks a simulator by name; by default the newest "iPhone NN Pro" on the newest
+# iOS runtime (scripts/newest-iphone.sh), selected by id.
+IPHONE ?=
 IPAD ?= iPad Air 11-inch (M4)
+comma := ,
+IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(shell DEVELOPER_DIR="$(DEVELOPER_DIR)" scripts/newest-iphone.sh))
 DERIVED := build/DerivedData
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 
@@ -25,7 +29,7 @@ project:
 
 build: project
 	$(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' build
-	$(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPHONE)' build
+	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build
 	$(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPAD)' build
 
 package-test:
@@ -35,7 +39,7 @@ package-test:
 
 test: project package-test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPHONE)' test
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
 
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
