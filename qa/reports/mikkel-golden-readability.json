@@ -29,7 +29,7 @@
     "tuplet_pct": 0.1,
     "tie_stub_pct": 0.4,
     "empty_bar_pct_playing_parts": 24.9,
-    "uncertain_pct": 4.0,
+    "uncertain_pct": 1.5,
     "duplicate_abbreviations": {}
   },
   "parts": [
@@ -64,7 +64,7 @@
       "rests_per_bar": 0.59,
       "short_rest_pct": 10.8,
       "max_notes_per_bar": 14,
-      "uncertain_pct": 27.4,
+      "uncertain_pct": 10.6,
       "colour_only_uncertain": 0,
       "divisi_notes": 0,
       "written_low": "G3",
