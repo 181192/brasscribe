@@ -27,6 +27,7 @@
                             <FontIcon Glyph="{StaticResource BcIconPreviousBar}" FontSize="16" />
                         </Button>
                         <Button x:Name="PlayButton" x:Uid="StandPlayPause" Style="{StaticResource PlayButtonStyle}"
+                                AutomationProperties.Name="{x:Bind Score.Player.PlayPauseName, Mode=OneWay}"
                                 Command="{x:Bind Score.Player.PlayPauseCommand, Mode=OneWay}">
                             <Grid>
                                 <FontIcon Glyph="{StaticResource BcIconPlay}" Visibility="{x:Bind views:Shown.Not(Score.Player.IsPlaying), Mode=OneWay}" />

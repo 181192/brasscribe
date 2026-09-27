@@ -481,3 +481,22 @@ public class StandLayoutTests(Xunit.Abstractions.ITestOutputHelper log)
         Assert.Equal(pages.LastLeftPage, pages.PageOfBar(player.BarCount - 1));
     }
 }
+
+public class PlayPauseNameTests
+{
+    private sealed class Inline : IUiDispatcher { public void Post(Action action) => action(); }
+
+    [Fact]
+    public void The_play_button_is_named_for_what_it_does_now()
+    {
+        var said = new Said();
+        var player = new ScriptedPlayer();
+        var vm = new PlayerViewModel(player, said, ConnectionMonitorTests.Strings(), new Inline());
+        var changed = new List<string?>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        Assert.Equal("Play", vm.PlayPauseName);
+        vm.IsPlaying = true;
+        Assert.Equal("Pause", vm.PlayPauseName);
+        Assert.Contains(nameof(PlayerViewModel.PlayPauseName), changed);
+    }
+}

@@ -882,9 +882,6 @@
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Mellomrom i partituret, Ctrl+Shift+Mellomrom hvor som helst</value>
   </data>
-  <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Spill av eller pause</value>
-  </data>
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Spill av eller pause</value>
   </data>
@@ -926,6 +923,12 @@
   </data>
   <data name="Player_Of" xml:space="preserve">
     <value>av {0}</value>
+  </data>
+  <data name="Player_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Player_Play" xml:space="preserve">
+    <value>Spill av</value>
   </data>
   <data name="Player_PlayAlongOff" xml:space="preserve">
     <value>Stemmen din spiller igjen</value>
@@ -1582,7 +1585,7 @@
     <value>Notestativ</value>
   </data>
   <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Pluss</value>
+    <value>+-tasten</value>
   </data>
   <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Raskere</value>
@@ -1638,9 +1641,6 @@
   <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Mellomrom</value>
   </data>
-  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Spill av eller pause</value>
-  </data>
   <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Spill av eller pause</value>
   </data>
@@ -1666,7 +1666,7 @@
     <value>Spiller de valgte taktene om og om igjen (L)</value>
   </data>
   <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Minus</value>
+    <value>Minus-tasten</value>
   </data>
   <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Saktere</value>

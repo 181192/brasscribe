@@ -65,6 +65,11 @@ public sealed partial class PlayerViewModel : ObservableObject
     public ObservableCollection<MixerPartViewModel> Parts { get; } = [];
 
     [ObservableProperty] public partial bool IsPlaying { get; set; }
+
+    /// <summary>The Play button's accessible name: what pressing it does now ("Play" or "Pause", WCAG 4.1.2).</summary>
+    public string PlayPauseName => _s[IsPlaying ? "Player_Pause" : "Player_Play"];
+
+    partial void OnIsPlayingChanged(bool value) => OnPropertyChanged(nameof(PlayPauseName));
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LastBar))]
     public partial int BarCount { get; set; }

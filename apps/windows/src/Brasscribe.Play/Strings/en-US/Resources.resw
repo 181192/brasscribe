@@ -882,9 +882,6 @@
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Space in the score, Ctrl+Shift+Space anywhere</value>
   </data>
-  <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Play or pause</value>
-  </data>
   <data name="PlayPauseButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Play or pause</value>
   </data>
@@ -926,6 +923,12 @@
   </data>
   <data name="Player_Of" xml:space="preserve">
     <value>of {0}</value>
+  </data>
+  <data name="Player_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Player_Play" xml:space="preserve">
+    <value>Play</value>
   </data>
   <data name="Player_PlayAlongOff" xml:space="preserve">
     <value>Your part plays again</value>
@@ -1582,7 +1585,7 @@
     <value>Music stand</value>
   </data>
   <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Plus</value>
+    <value>The + key</value>
   </data>
   <data name="StandFaster.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Faster</value>
@@ -1638,9 +1641,6 @@
   <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Space</value>
   </data>
-  <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Play or pause</value>
-  </data>
   <data name="StandPlayPause.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Play or pause</value>
   </data>
@@ -1666,7 +1666,7 @@
     <value>Plays the chosen bars over and over (L)</value>
   </data>
   <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Minus</value>
+    <value>The - key</value>
   </data>
   <data name="StandSlower.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Slower</value>

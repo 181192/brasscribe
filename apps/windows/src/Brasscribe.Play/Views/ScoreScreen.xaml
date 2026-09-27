@@ -283,6 +283,7 @@
                     <FontIcon Glyph="{StaticResource BcIconPreviousBar}" FontSize="16" />
                 </Button>
                 <Button x:Name="PlayButton" x:Uid="PlayPauseButton" Style="{StaticResource PlayButtonStyle}"
+                        AutomationProperties.Name="{x:Bind ViewModel.Player.PlayPauseName, Mode=OneWay}"
                         Command="{x:Bind ViewModel.Player.PlayPauseCommand}">
                     <Grid>
                         <FontIcon Glyph="{StaticResource BcIconPlay}" Visibility="{x:Bind ViewModel.Player.IsPlaying, Mode=OneWay, Converter={StaticResource NotVisible}}" />
