@@ -14,7 +14,8 @@ These are **acceptance scripts for apps that are not built yet**. They define wh
 ## Test material
 
 - `qa/fixtures/`: a short solo clip (8 bars, one instrument, with a known free-time opening), prepared locally and never committed as audio. **Open:** it doesn't exist yet. Until it does, use the first 60 s of `data/mikkel/mikkel.wav`, which contains the free-time intro.
-- Expected score for spot checks: the Mikkel golden output, with the Solo Cornet part:
+- Screen-reader walk-throughs use "Old Hundredth" (public domain) as the example title: `apps/fixtures/old-hundredth/` is the finished score the screenshot scripts open (no recording). For S2, any recording works; the examples call it `old-hundredth.wav`.
+- Expected score for the numeric spot checks (bar counts, notes to review): the engine's golden output in `data/golden/` (local test material, never shipped), with the Solo Cornet part:
   - bar 2 beat 1: written B♭4, eighth, uncertain
   - bars 82–88 rest
 
@@ -25,7 +26,7 @@ The expected announcements are in English. Run each script once in nb as well; t
 | ID | Step | Must contain (en) |
 |---|---|---|
 | S1 | Launch | window/screen title "Brasscribe Play"; first focus on the main heading or the "Import" button |
-| S2 | Import a file | "Import audio or video, button". The system file picker opens and is readable. After choosing: "Imported mikkel.wav, 4 minutes 6 seconds" |
+| S2 | Import a file | "Import audio or video, button". The system file picker opens and is readable. After choosing: "Imported old-hundredth.wav, 4 minutes 6 seconds" |
 | S3 | Record from the microphone | "Record, button" → after the permission prompt → "Recording started". The level meter has a value ("input level, good"). "Stop recording, button" → "Recording stopped, 1 minute 2 seconds" |
 | S4 | "What is this?" | heading "What is this?"; 4 options, each with a position: "Solo instrument, 1 of 4", "Brass band, 2 of 4", "Orchestra with soloist, 3 of 4", "Pop or rock, 4 of 4"; "Continue, button" is dimmed until one is chosen |
 | S5 | Transcribe, progress, cancel | status announcements without moving focus: "Transcribing, 10 percent, about 3 minutes left", then at most one every 10 s or per 10% step. "Cancel, button" → confirmation "Stop transcription? Keep going / Stop" → "Transcription cancelled". Start again → on completion "Transcription finished. 128 bars, 17 parts, 230 notes to review", and focus moves to the result heading |
@@ -35,7 +36,7 @@ The expected announcements are in English. Run each script once in nb as well; t
 | S9 | Playback, loop, speed | "Play, button" → "Playing, bar 1" (status). Pause → "Paused, bar 5 beat 3". "Speed, 100 percent, adjustable": step down → "95 percent". Loop without dragging: "Loop from bar, text field" 12, "to bar" 16, "Set loop" → "Loop set, bars 12 to 16". "Loop, switch, on". "Mute Solo Cornet, toggle, off" → "on". "Count-in, switch"; "Metronome, switch" |
 | S10 | Play-along | "Play along, button" → "Your part Solo Cornet is muted. Count-in 1 bar". Count-in numbers are **spoken or shown**, both configurable. No flashing. Stop → "Stopped" |
 | S11 | Talking-score navigation | next/previous note, beat, bar, part, uncertain note; go to bar 82 → "bars 82 to 88: rest, 7 bars"; read bar; play this bar. The strings must match [talking-score-vectors.json](../../docs/accessibility/talking-score-vectors.json) exactly for the vector cases |
-| S12 | Export | "Export, button" → a format list containing: MusicXML score, MusicXML parts, PDF, MIDI, Audio, Talking score text, Braille BRF. Choose "Braille BRF", part "Solo Cornet", then "Save" → "Exported Solo Cornet as braille, file Mikkel - Solo Cornet.brf". The BRF opens in a BRF viewer or on a braille display with part and bar structure intact. Also "Talking score text" → an HTML file with headings per part and bar |
+| S12 | Export | "Export, button" → a format list containing: MusicXML score, MusicXML parts, PDF, MIDI, Audio, Talking score text, Braille BRF. Choose "Braille BRF", part "Solo Cornet", then "Save" → "Exported Solo Cornet as braille, file Old Hundredth - Solo Cornet.brf". The BRF opens in a BRF viewer or on a braille display with part and bar structure intact. Also "Talking score text" → an HTML file with headings per part and bar |
 | S13 | Errors | unsupported file: "Can't open notes.docx. Choose an audio or video file." Companion missing: "Can't reach the computer engine. Start Brasscribe on your computer, then try again." DRM source: "This app blocks recording. Import a file instead." Each is announced when it appears and is reachable afterwards |
 | S14 | Preferences | at the largest text size, every S1–S12 control is reachable and nothing is truncated. Reduced motion stops cursor animation. High contrast / increase contrast switches the theme. Nothing overrides the system screen-reader speech rate or verbosity |
 

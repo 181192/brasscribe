@@ -164,13 +164,13 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
 - **Stop:** stops the engine. The icon stays, showing Stopped, so it can be started again. **Quit Brasscribe Bandroom** in the More menu removes the icon until the next login.
 - **While a score is being made, both confirm** (system rule 9). Stop asks:
 
-  > "Stop while “Mikkel” is being made? Kari's iPhone keeps the recording and can send it again."
+  > "Stop while “Old Hundredth” is being made? Kari's iPhone keeps the recording and can send it again."
   >
   > [Keep going] [Stop now]
 
   Restart asks:
 
-  > "Restart when “Mikkel” is done?"
+  > "Restart when “Old Hundredth” is done?"
   >
   > [Cancel] [Restart now] [**Restart when done**]
 
@@ -356,7 +356,7 @@ Mockups: `mockups/png/server-mac-popover-*` and `mockups/png/server-win-flyout-*
      - About Brasscribe Bandroom
      - Remove Brasscribe from this Mac…
      - Quit Brasscribe Bandroom
-2. **Now** (only when busy): "Writing down the notes", then "“Mikkel” from Kari's iPhone".
+2. **Now** (only when busy): "Writing down the notes", then "“Old Hundredth” from Kari's iPhone".
    - A brass progress bar, with "62 % · about 3 min left".
    - "1 more waiting" when there is a queue.
    - The step names are Play's: Getting the recording ready, Finding the beat, Separating the soloist from the band, Writing down the notes, Arranging for brass band, Laying out the pages.

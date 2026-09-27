@@ -11,7 +11,7 @@ This is an acceptance script for an app that is not built yet. Step IDs, expecte
 | ID | Do | Expect | Pass if |
 |---|---|---|---|
 | S1 | Launch | "Brasscribe Play" then "Import audio or video, button" | |
-| S2 | Double-tap Import → Files picker → choose; or share a file from Files/Voice Memos to Play ("Open in Play") | "Imported mikkel.wav, 4 minutes 6 seconds"; focus on the "What is this?" heading | also works via the share sheet |
+| S2 | Double-tap Import → Files picker → choose; or share a file from Files/Voice Memos to Play ("Open in Play") | "Imported old-hundredth.wav, 4 minutes 6 seconds"; focus on the "What is this?" heading | also works via the share sheet |
 | S3 | Double-tap Record; allow the microphone; after 5 s, a **two-finger double-tap (Magic Tap)** stops recording | "Recording started"; Magic Tap → "Recording stopped, …" | Magic Tap toggles record/stop here and play/pause in the player (`.accessibilityAction(.magicTap)`) |
 | S4 | Swipe right through the options; double-tap "Brass band"; "Continue" | "Solo instrument, 1 of 4"…, then "selected"; "Continue, dimmed, button" before selection | |
 | S5 | Continue; wait; lock the screen, unlock; Cancel → Stop; restart | progress announcements throttled; progress continues after unlock (or a clear message if it can't run in the background); "Transcription cancelled"; completion moves focus to the result heading | no announcement flood; background behaviour stated |
