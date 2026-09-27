@@ -158,7 +158,8 @@
         {
           "library": "iowa-mis",
           "instrument": "trumpet",
-          "why": "Iowa horn stops at F5 (77); the flugel range reaches B♭5 (82). Iowa trumpet notes above it are spectrally matched to the Iowa horn (the flugel's darker, conical tone) on the pitches both have, instead of F5 stretched up 5 semitones."
+          "why": "Iowa horn stops at F5 (77); the flugel range reaches B♭5 (82). Iowa trumpet notes above it are spectrally matched to the Iowa horn (the flugel's darker, conical tone) on the pitches both have, instead of F5 stretched up 5 semitones.",
+          "fill": "range"
         }
       ]
     },
@@ -200,7 +201,8 @@
         {
           "library": "iowa-mis",
           "instrument": "horn",
-          "why": "VSCO horn is sampled every 3-5 semitones with gaps (up to 10-semitone stretch). Iowa horn (chromatic ff, partial mf/pp) fills keys more than 2 semitones from any VSCO note, spectrally matched to VSCO horn."
+          "why": "VSCO horn is sampled every 3-5 semitones with gaps (up to 10-semitone stretch). Iowa horn (chromatic ff, partial mf/pp) fills keys more than 2 semitones from any VSCO note, spectrally matched to VSCO horn.",
+          "fill": "layers"
         }
       ]
     },
@@ -254,7 +256,8 @@
         {
           "library": "iowa-mis",
           "instrument": "tenor-trombone",
-          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones."
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
         }
       ]
     },
@@ -278,7 +281,8 @@
         {
           "library": "iowa-mis",
           "instrument": "tenor-trombone",
-          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones."
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
         }
       ]
     },
@@ -354,7 +358,8 @@
         {
           "library": "iowa-mis",
           "instrument": "tenor-trombone",
-          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones."
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
         }
       ]
     },
@@ -385,7 +390,8 @@
         {
           "library": "iowa-mis",
           "instrument": "tuba",
-          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones."
+          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones. VSCO's mf and ff tuba layers stop at B♭1 (34), so Iowa also fills those layers down to C1.",
+          "fill": "layers"
         }
       ]
     },
@@ -427,7 +433,8 @@
         {
           "library": "iowa-mis",
           "instrument": "tuba",
-          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones."
+          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones. VSCO's mf and ff tuba layers stop at B♭1 (34), so Iowa also fills those layers down to C1.",
+          "fill": "layers"
         }
       ]
     }
@@ -1316,7 +1323,9 @@
       "drums": "Percussion",
       "drum kit": "Percussion",
       "drum set": "Percussion",
-      "kit": "Percussion"
+      "kit": "Percussion",
+      "sop.": "Soprano Cornet",
+      "sop. cnt.": "Soprano Cornet"
     },
     "keywords": [
       [

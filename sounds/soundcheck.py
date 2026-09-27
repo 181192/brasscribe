@@ -232,7 +232,13 @@ def analyse_part(wav: Path, part: dict) -> dict:
     if sus:
         segs = [x2[int((s + 0.3) * SR): int((en - 0.1) * SR)] for s, en, _, _ in sus]
         level = float(meter.integrated_loudness(np.concatenate(segs)))
-    return {"peak_dbfs": round(20 * np.log10(peak + 1e-12), 1), "clipped_samples": clip, "clicks": [round(t, 3) for t in cl],
+    dyn_db = []
+    if "dynamics" in part.get("sections", {}):
+        a_, b_ = part["sections"]["dynamics"]
+        for s_, en, _, _ in [n for n in notes if a_ - 1e-6 <= n[0] <= b_]:
+            seg = x2[int((s_ + 0.1) * SR): int((en - 0.05) * SR)]
+            dyn_db.append(round(float(10 * np.log10(np.mean(seg ** 2) + 1e-14)), 1))
+    return {"dynamics_db": dyn_db, "peak_dbfs": round(20 * np.log10(peak + 1e-12), 1), "clipped_samples": clip, "clicks": [round(t, 3) for t in cl],
             "chops": chops, "dropouts": drops, "release_ms_median": round(float(np.median(releases)), 1) if releases else None,
             "level_lufs": round(level, 1) if level is not None else None}
 

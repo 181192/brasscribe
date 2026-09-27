@@ -262,6 +262,19 @@
    }
   },
   {
+   "name": "Sop.",
+   "instrument": null,
+   "program": null,
+   "expect": {
+    "part": "Soprano Cornet",
+    "step": "alias",
+    "program": 56,
+    "bank": 1,
+    "channel_gain_db": -3.0,
+    "percussion": false
+   }
+  },
+  {
    "name": "Cornet 1",
    "instrument": null,
    "program": null,
