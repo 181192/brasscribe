@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -94,7 +93,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -481,13 +479,14 @@ fun BoxScope.MusicStandOverlay(
             modifier = Modifier.padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3))
     }
 
-    if (turnPill) TurnMusicPill(onTurnMusic, Modifier.align(Alignment.BottomCenter)
+    // With the layer hidden, Turn the music floats low over the music; with it shown, it is in the layer,
+    // so it never sits on the current system.
+    if (turnPill && !ms.layer) TurnMusicPill(onTurnMusic, Modifier.align(Alignment.BottomCenter)
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-        .offset { IntOffset(0, -(if (ms.layer) ms.obscured.roundToInt() else 0)) }
         .padding(bottom = BrasscribeSpace.s6))
 
     if (ms.layer) StandLayer(
-        controller, st, ms, shape, onlyMine, onPage, onBar, onSpeed, onRepeat, onOnlyMine, onLock,
+        controller, st, ms, shape, onlyMine, onPage, onBar, onSpeed, onRepeat, onOnlyMine, onLock, if (turnPill) onTurnMusic else null,
         Modifier.align(Alignment.BottomCenter).onGloballyPositioned { ms.obscured = (ms.viewport - it.positionInParent().y).coerceAtLeast(0f) },
     )
 }
@@ -523,7 +522,7 @@ private fun TurnMusicPill(onClick: () -> Unit, modifier: Modifier) {
 private fun StandLayer(
     controller: ScoreController, st: ScoreUiState, ms: MusicStandState, shape: StandShape, onlyMine: Boolean,
     onPage: (Int) -> Unit, onBar: (Int) -> Unit, onSpeed: (Int) -> Unit, onRepeat: () -> Unit,
-    onOnlyMine: () -> Unit, onLock: () -> Unit, modifier: Modifier,
+    onOnlyMine: () -> Unit, onLock: () -> Unit, onTurnMusic: (() -> Unit)?, modifier: Modifier,
 ) {
     val c = BrasscribeTheme.colors
     val page = ms.page
@@ -566,6 +565,7 @@ private fun StandLayer(
             if (onlyMine || shape.lockAvailable) FlowRow(horizontalArrangement = gap, verticalArrangement = gap) {
                 if (onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
                 if (shape.lockAvailable) LockToggle(ms.locked, onLock)
+                onTurnMusic?.let { TurnMusicPill(it, Modifier) }
             }
         } else FlowRow(
             Modifier.padding(BrasscribeSpace.s3), horizontalArrangement = gap, verticalArrangement = gap,
@@ -576,6 +576,7 @@ private fun StandLayer(
             SpeedStepper(st.speed, onSpeed)
             repeat()
             if (shape.tablet && onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
+            onTurnMusic?.let { TurnMusicPill(it, Modifier) }
         }
     }
 }

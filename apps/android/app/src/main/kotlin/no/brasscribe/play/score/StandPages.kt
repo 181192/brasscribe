@@ -66,13 +66,16 @@ class StandPages(
      */
     fun windowTop(page: Int, bar: Int?, obscured: Float = 0f): Float {
         val p = pages.getOrNull(page) ?: return 0f
-        var top = systems[p.first].top
+        var top = pageTop(page)
         val s = bar?.let(::systemOf)?.takeIf { it in p.first..p.last } ?: return top.coerceAtMost(maxTop).coerceAtLeast(0f)
         val sys = systems[s]
         val clear = viewport - obscured
         if (sys.bottom - top > clear) top = minOf(sys.bottom - clear, sys.top)
         return top.coerceAtMost(maxTop).coerceAtLeast(0f)
     }
+
+    /** The first page starts at the top of the engraving, with the title; the others at their top system. */
+    private fun pageTop(page: Int): Float = if (page == 0) 0f else systems[pages[page].first].top
 
     private val maxTop get() = (content - viewport).coerceAtLeast(0f)
 
@@ -86,7 +89,8 @@ class StandPages(
             var start = 0
             while (true) {
                 var end = start
-                while (end + 1 < systems.size && systems[end + 1].bottom - systems[start].top <= viewport) end++
+                val origin = if (start == 0) 0f else systems[start].top
+                while (end + 1 < systems.size && systems[end + 1].bottom - origin <= viewport) end++
                 out += StandPage(start, end)
                 if (end >= systems.lastIndex) break
                 start = if (end > start) end else start + 1

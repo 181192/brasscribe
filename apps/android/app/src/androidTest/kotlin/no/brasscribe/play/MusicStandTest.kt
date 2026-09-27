@@ -98,7 +98,7 @@ class MusicStandTest {
 
     private fun waitForPages(minPages: Int = 1) {
         try {
-            rule.waitUntil(20_000) { positionText()?.contains(Regex("""page \d+ of (\d+)""")) == true && pageCount() >= minPages }
+            rule.waitUntil(20_000) { positionText()?.contains(Regex("""(?:page|side) \d+ (?:of|av) (\d+)""")) == true && pageCount() >= minPages }
         } catch (e: Throwable) {
             saveScreenshot("failed-pages")
             throw AssertionError("fewer than $minPages pages: '${positionText()}'", e)
@@ -114,9 +114,9 @@ class MusicStandTest {
     private fun positionText(): String? = rule.onAllNodes(hasTestTag("stand-position"), useUnmergedTree = false).fetchSemanticsNodes()
         .firstOrNull()?.let { n -> n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } }
 
-    private fun page() = Regex("""page (\d+) of""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt() ?: -1
-    private fun pageCount() = Regex("""of (\d+)$""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt()
-        ?: Regex("""page \d+ of (\d+)""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt() ?: -1
+    private fun page() = Regex("""(?:page|side) (\d+) (?:of|av)""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt() ?: -1
+    private fun pageCount() = Regex("""(?:of|av) (\d+)$""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt()
+        ?: Regex("""(?:page|side) \d+ (?:of|av) (\d+)""").find(positionText().orEmpty())?.groupValues?.get(1)?.toInt() ?: -1
 
     private fun play() {
         rule.runOnUiThread { vm.scoreController!!.togglePlay() }
