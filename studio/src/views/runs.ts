@@ -2,53 +2,79 @@
 import { api, MissingEndpoint } from "../api/client";
 import type { Job, ProfileInfo, Source } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, filePicker, fmt, h, loading, pill, table } from "../ui/dom";
+import { announce, clear, errorNotice, filePicker, fmt, h, infoTip, loading, more, pill, table, viewHead } from "../ui/dom";
+
+/** A run's display title: the given title, or "Recording, <time>" when there is none or it is a bare timestamp. */
+export function runTitle(j: Job): string {
+  const raw = (j.title ?? "").trim();
+  const m = raw.match(/^(\d{4})(\d{2})(\d{2})[_-]?(\d{2})(\d{2})(\d{2})?$/);
+  if (raw && !m) return raw;
+  const when = m ? fmt.date(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString()) : fmt.date(j.created);
+  return t("runs.untitled", { when });
+}
 
 export function runLink(j: Job): HTMLAnchorElement {
-  return h("a", { href: `#/runs/${encodeURIComponent(j.id)}` }, j.title || j.id);
+  return h("a", { href: `#/runs/${encodeURIComponent(j.id)}`, class: "run-link" }, runTitle(j));
 }
+
+type Filter = "all" | "failed" | "running";
 
 export function runsView(root: HTMLElement): void {
   const listEl = h("div", {}, loading());
   const formEl = h("div", {}, loading());
   const search = h("input", { type: "search", id: "run-search", placeholder: t("runs.searchPlaceholder") });
+  const chips = h("div", { class: "chips", role: "group", "aria-label": t("runs.filter") });
   let jobs: Job[] = [];
+  let filter: Filter = "all";
+  const matches = (j: Job, f: Filter) => f === "all" || (f === "failed" ? j.status === "failed" || j.status === "cancelled" : j.status === "running" || j.status === "queued");
+
+  const renderChips = () => clear(chips, (["all", "failed", "running"] as Filter[]).map((f) =>
+    h("button", { type: "button", class: "chip", "aria-pressed": String(filter === f), onclick: () => { filter = f; renderList(); } },
+      t(`runs.filter.${f}`), h("span", { class: "count" }, String(jobs.filter((j) => matches(j, f)).length)))));
 
   const renderList = () => {
+    renderChips();
+    if (!jobs.length) {
+      clear(listEl, h("div", { class: "empty" },
+        h("p", {}, h("strong", {}, t("runs.none"))),
+        h("p", { class: "hint" }, t("runs.noneBody")),
+        h("p", {}, h("a", { class: "button primary", href: `#/viewer?src=${encodeURIComponent(api.referenceFileUrl("mikkel-arranged-band", "brass-band.musicxml"))}&name=${encodeURIComponent("Mikkel")}` }, t("runs.demo")))));
+      formEl.querySelector("button[type=submit]")?.classList.remove("primary");
+      return;
+    }
     const q = search.value.trim().toLowerCase();
-    const shown = jobs.filter((j) => !q || [j.id, j.title ?? "", j.profile, j.status].some((s) => s.toLowerCase().includes(q)));
+    const shown = jobs.filter((j) => matches(j, filter) && (!q || [j.id, runTitle(j), j.profile, j.status].some((s) => s.toLowerCase().includes(q))));
     clear(listEl,
       h("p", { class: "hint", role: "status" }, t("runs.count", { shown: shown.length, total: jobs.length })),
-      table(t("runs.title"), [t("runs.col.run"), t("runs.col.profile"), t("runs.col.status"), t("runs.col.stages"), t("runs.col.created")], shown.map((j) => {
+      table(t("runs.title"), [t("runs.col.run"), t("runs.col.status"), t("runs.col.profile"), t("runs.col.stages"), t("runs.col.created")], shown.map((j) => {
         const cached = j.stages.filter((s) => s.status === "cached" || s.status === "imported").length;
         const ran = j.stages.filter((s) => s.status === "ran").length;
         return [
-          h("span", {}, runLink(j), h("br", {}), h("span", { class: "small muted mono" }, j.id)),
-          j.profile,
+          h("span", {}, runLink(j), h("span", { class: "sub mono" }, j.id)),
           pill(j.status),
+          j.profile,
           t("runs.stages", { n: j.stages.length, ran, cached }),
           fmt.date(j.created),
         ];
-      }), { hideCaption: true }));
+      }), { hideCaption: true, className: "runs-table" }));
   };
   search.addEventListener("input", renderList);
 
   clear(root,
-    h("h1", {}, t("runs.title")),
-    h("section", { "aria-labelledby": "new-run-h" }, h("h2", { id: "new-run-h" }, t("runs.start")), formEl),
+    viewHead(t("runs.title"), t("runs.purpose")),
+    h("section", { class: "card new-run", "aria-labelledby": "new-run-h" }, h("h2", { id: "new-run-h" }, t("runs.start")), formEl),
     h("section", { "aria-labelledby": "runs-h" },
       h("h2", { id: "runs-h" }, t("runs.all")),
-      h("div", { class: "row" }, h("label", { for: "run-search" }, t("runs.search")), search),
+      h("div", { class: "row list-tools" }, chips, h("div", { class: "field" }, h("label", { for: "run-search" }, t("runs.search")), search)),
       listEl));
 
-  api.jobs().then((j) => {
+  const loaded = api.jobs().then((j) => {
     jobs = j;
-    renderList();
-  }).catch((e) => clear(listEl, errorNotice(e)));
-
+  });
   Promise.all([api.profiles(), api.sources().catch((e) => e as Error)]).then(([profiles, sources]) => {
     clear(formEl, newRunForm(profiles, sources));
-  }).catch((e) => clear(formEl, errorNotice(e)));
+  }).catch((e) => clear(formEl, errorNotice(e))).finally(() => loaded.then(renderList, () => undefined));
+  loaded.then(renderList).catch((e) => clear(listEl, errorNotice(e)));
 }
 
 function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLElement {
@@ -69,35 +95,45 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
   const profile = h("select", { id: "run-profile", "aria-describedby": "run-profile-desc" },
     profiles.map((p) => h("option", { value: p.name, selected: p.name === "orchestra-with-soloist" }, `${p.name}${p.validated ? ` (${t("runs.validated")})` : ""}`)));
   const desc = h("p", { id: "run-profile-desc", class: "hint" });
+  const chain = h("p", {});
   const showDesc = () => {
     const p = profiles.find((x) => x.name === profile.value);
-    desc.textContent = p ? t("runs.profileDesc", { desc: p.description, stages: p.stages.join(" → ") }) : "";
+    // One plain sentence per known profile; the engine's own description and the stage chain sit under "Stages".
+    const plain = p ? t(`runs.profile.${p.name}`) : "";
+    desc.textContent = p ? (plain === `runs.profile.${p.name}` ? p.description : plain) : "";
+    clear(chain, p ? [h("span", {}, p.description), h("br", {}), h("span", { class: "mono" }, p.stages.join(" → "))] : null);
   };
   profile.addEventListener("change", showDesc);
   showDesc();
   const title = h("input", { type: "text", id: "run-title", autocomplete: "off" });
   const audio = h("input", { type: "checkbox", id: "run-audio", checked: true });
   const heavy = h("input", { type: "checkbox", id: "run-heavy", checked: true });
-  const submit = h("button", { type: "submit", class: "primary" }, t("runs.submit"));
+  const submit = h("button", { type: "submit", class: "primary", id: "run-submit" }, t("runs.submit"));
 
+  // Only the control for the chosen source is shown.
+  const fileRow = h("div", { class: "row" }, h("label", { for: "run-file", class: "visually-hidden" }, t("runs.file")), filePicker(file));
+  const sourceRow = h("div", { class: "row" }, h("label", { for: "run-source", class: "visually-hidden" }, t("runs.sourceItem")), sourceSel);
   const form = h("form", { class: "stack", "aria-describedby": "run-error" },
-    h("fieldset", {}, h("legend", {}, t("runs.source")),
+    h("fieldset", { class: "source" }, h("legend", {}, t("runs.source")),
       h("div", { class: "row" }, kind("file", t("runs.file"), true), kind("source", t("runs.sourceItem"))),
-      h("div", { class: "row" }, h("label", { for: "run-file" }, t("runs.file")), filePicker(file)),
-      h("div", { class: "row" }, h("label", { for: "run-source" }, t("runs.sourceItem")), sourceSel),
+      fileRow, sourceRow,
       haveSources ? null : errorNotice(sources)),
-    h("div", { class: "row" }, h("label", { for: "run-profile" }, t("runs.profile")), profile),
-    desc,
-    h("div", { class: "row" }, h("label", { for: "run-title" }, t("runs.titleField")), title),
-    h("div", { class: "row" },
-      h("label", {}, audio, t("runs.renderAudio")),
-      h("label", {}, heavy, t("runs.allowHeavy"))),
+    h("div", { class: "field" },
+      h("span", {}, h("label", { for: "run-profile" }, t("runs.profile")), infoTip(t("runs.profile"), t("runs.profileTip"))),
+      profile, desc,
+      more(t("runs.profileStages"), chain)),
+    h("div", { class: "field" }, h("label", { for: "run-title" }, t("runs.titleField")), title),
+    more(t("runs.options"), h("div", {},
+      h("div", {}, h("label", {}, audio, t("runs.renderAudio"))),
+      h("div", {}, h("label", {}, heavy, t("runs.allowHeavy")), infoTip(t("runs.heavyTerm"), t("runs.heavyTip"))))),
     err,
-    submit);
+    h("div", { class: "actions" }, submit));
   const sync = () => {
     const useFile = (form.querySelector("input[name=source-kind]:checked") as HTMLInputElement).value === "file";
     file.disabled = !useFile;
     sourceSel.disabled = useFile || !haveSources || !sourceSel.options.length;
+    fileRow.hidden = !useFile;
+    sourceRow.hidden = useFile;
   };
   form.addEventListener("change", sync);
   sync();

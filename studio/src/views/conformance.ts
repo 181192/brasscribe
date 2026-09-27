@@ -5,7 +5,7 @@ import { api } from "../api/client";
 import type { Composition, ConformanceReport, ConformanceRun } from "../api/types";
 import { diffCompositions } from "../lib/diff";
 import { locale, t } from "../i18n";
-import { announce, clear, errorNotice, h, loading, pill, table } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, more, pill, table, viewHead } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 interface Pair {
@@ -45,8 +45,7 @@ export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; det
 export function conformanceView(root: HTMLElement): () => void {
   const el = h("div", {}, loading());
   const runner = h("div", { class: "conf-run" });
-  clear(root, h("h1", {}, t("nav.conformance")),
-    h("p", {}, t("conf.intro")),
+  clear(root, viewHead(t("page.conformance"), [t("conf.purpose"), " ", infoTip(t("conf.term"), t("conf.intro"))]),
     runner,
     el);
   let timer = 0;
@@ -72,7 +71,7 @@ export function conformanceView(root: HTMLElement): () => void {
       running ? t("conf.runningSince", { when: fmtTime(r.started ?? 0) })
         : t(r.status === "succeeded" ? (r.exit_code === 0 ? "conf.doneSame" : "conf.doneDiff") : "conf.failed", { when: fmtTime(r.finished ?? 0) }));
     clear(runner, h("div", { class: "row" }, btn, state),
-      r.log_tail ? h("details", {}, h("summary", {}, t("conf.log")), h("pre", { class: "json", tabindex: 0 }, r.log_tail)) : null);
+      r.log_tail ? more(t("conf.log"), h("pre", { class: "json", tabindex: 0 }, r.log_tail)) : null);
     if (running) {
       timer = window.setTimeout(() => void api.conformanceRun().then((n) => {
         showRun(n);
@@ -112,17 +111,28 @@ function summaryView(r: ConformanceReport & { sets: CaseRow[]; time?: string | n
   return h("section", { class: "stack", "aria-label": t("conf.report", { file: r._file ?? "" }) },
     h("p", { class: "row" }, pill(count("fail") ? "fail" : count("missing") ? "missing" : "pass"),
       t("conf.summary", { pass: count("pass"), total: r.sets.length, fail: count("fail"), missing: count("missing") }),
-      h("span", { class: "small muted" }, t("conf.meta", { v: r.core_version ?? "?", sha: String(r.git_sha ?? "–").slice(0, 12), time: r.time ? fmtTime(r.time) : "–", file: r._file ?? "" }))),
+      h("span", { class: "muted" }, t("conf.meta", { v: r.core_version ?? "?", sha: String(r.git_sha ?? "–").slice(0, 12), time: r.time ? fmtTime(r.time) : "–", file: fmt.path(String(r._file ?? "")) }))),
     table(t("conf.perSet"), [t("conf.col.set"), t("conf.col.cases"), t("conf.col.identical"), t("conf.col.different"), t("conf.col.missing")], sets.map((s) => {
       const cs = r.sets.filter((c) => c.set === s);
       return [s, String(cs.length), String(cs.filter((c) => c.status === "pass").length), String(cs.filter((c) => c.status === "fail").length), String(cs.filter((c) => c.status === "missing").length)];
     })),
-    table(t("conf.cases"), [t("conf.col.set"), t("conf.col.item"), t("conf.col.stage"), t("conf.col.status"), t("conf.col.diffs"), t("conf.col.musescore"), t("conf.col.detail")],
-      [...r.sets].sort((a, b) => (a.status === "pass" ? 1 : 0) - (b.status === "pass" ? 1 : 0)).map((c) => [
-        c.set, h("span", { class: "mono small" }, c.item), c.stage, pill(c.status), String(c.diffs ?? "–"),
-        c.musescore ? (c.musescore.written ? (c.musescore.pitches_match ? t("conf.ms.match") : t("conf.ms.differ")) : t("conf.ms.not")) : "–",
-        c.detail ?? "–",
-      ])));
+    caseTables(r.sets));
+}
+
+/** Failing and missing cases in view; every case behind "Show all". */
+function caseTables(cases: CaseRow[]): HTMLElement[] {
+  const head = [t("conf.col.set"), t("conf.col.item"), t("conf.col.stage"), t("conf.col.status"), t("conf.col.diffs"), t("conf.col.musescore"), t("conf.col.detail")];
+  const row = (c: CaseRow) => [
+    c.set, h("span", { class: "mono" }, c.item), c.stage, pill(c.status), String(c.diffs ?? "–"),
+    c.musescore ? (c.musescore.written ? (c.musescore.pitches_match ? t("conf.ms.match") : t("conf.ms.differ")) : t("conf.ms.not")) : "–",
+    c.detail ?? "–",
+  ];
+  const bad = cases.filter((c) => c.status !== "pass");
+  return [
+    bad.length ? h("h3", {}, t("conf.needsAttention")) : h("p", {}, t("conf.allIdentical")),
+    bad.length ? table(t("conf.needsAttention"), head, bad.map(row), { hideCaption: true }) : null,
+    more(t("conf.showAll"), table(t("conf.cases"), head, cases.map(row), { hideCaption: true }), { count: cases.length }),
+  ].filter(Boolean) as HTMLElement[];
 }
 
 function fmtTime(v: string | number): string {
@@ -170,7 +180,9 @@ function pairsView(reports: ConformanceReport[]): HTMLElement[] {
       t("conf.pairs", { pass: count("pass"), fail: count("fail"), missing: count("missing"), n: rows.length })),
     summaries.length ? h("section", {}, h("h2", {}, t("conf.reports")), summaries.map((s) => h("details", {},
       h("summary", {}, String(s._file ?? "report")), h("pre", { class: "json", tabindex: 0 }, JSON.stringify(s, null, 1).slice(0, 20000))))) : null,
-    table(t("conf.items"), [t("conf.col.key"), t("conf.col.py"), t("conf.col.rust"), t("conf.col.status"), t("conf.col.detail")],
-      rows.map((r) => [h("span", { class: "mono small" }, r.p.key), r.p.py ? t("common.yes") : "–", r.p.rust ? t("common.yes") : "–", pill(r.status), r.detail])),
+    rows.some((r) => r.status !== "pass") ? table(t("conf.needsAttention"), [t("conf.col.key"), t("conf.col.py"), t("conf.col.rust"), t("conf.col.status"), t("conf.col.detail")],
+      rows.filter((r) => r.status !== "pass").map((r) => [h("span", { class: "mono" }, r.p.key), r.p.py ? t("common.yes") : "–", r.p.rust ? t("common.yes") : "–", pill(r.status), r.detail])) : null,
+    more(t("conf.showAll"), table(t("conf.items"), [t("conf.col.key"), t("conf.col.py"), t("conf.col.rust"), t("conf.col.status"), t("conf.col.detail")],
+      rows.map((r) => [h("span", { class: "mono" }, r.p.key), r.p.py ? t("common.yes") : "–", r.p.rust ? t("common.yes") : "–", pill(r.status), r.detail])), { count: rows.length }),
   ].filter(Boolean) as HTMLElement[];
 }

@@ -18,6 +18,19 @@ export function columns(stages: StageView[]): StageView[][] {
     .map(([, v]) => v);
 }
 
+const MODELS: Record<string, string> = { muscriptor: "MuScriptor", "basic-pitch": "Basic Pitch", "swift-f0": "SwiftF0", "beat-this": "Beat This" };
+
+/** A stage's plain name ("Notes: solo (MuScriptor)"); the identifier is shown under it. */
+export function stageLabel(name: string): string {
+  const [kind, layer, ...rest] = name.split(".");
+  const tr = (key: string, fallback: string) => (t(key) === key ? fallback : t(key));
+  const k = tr(`stage.k.${kind}`, kind);
+  if (!layer) return k;
+  const model = rest.join(".");
+  const l = tr(`stage.layer.${layer}`, layer);
+  return t("stage.withLayer", { kind: k, layer: l }) + (model ? ` (${MODELS[model] ?? model})` : "");
+}
+
 export class StageGraph extends HTMLElement {
   selected: string | null = null;
   private view: RunView | null = null;
@@ -47,16 +60,19 @@ export class StageGraph extends HTMLElement {
   }
 
   private node(s: StageView): HTMLButtonElement {
+    const fromCache = s.status === "cached" || s.status === "imported";
     const meta = [
-      s.status === "cached" ? t("run.cacheHit") : s.status === "imported" ? t("run.importedHit") : t(`status.${s.status}`),
+      fromCache ? null : t(`status.${s.status}`),
       s.seconds !== undefined && s.seconds !== null ? fmt.seconds(s.seconds) : null,
-      s.device ?? null,
     ].filter(Boolean).join(" · ");
     return h("button", {
       type: "button", class: `stage-node status-${s.status}`, "data-stage": s.name,
       "aria-pressed": String(this.selected === s.name),
       onclick: () => this.dispatchEvent(new CustomEvent("select", { detail: s.name })),
-    }, h("span", { class: "name" }, s.name), h("span", { class: "meta" }, meta));
+    },
+    h("span", { class: "label" }, stageLabel(s.name)),
+    h("span", { class: "name" }, s.name),
+    h("span", { class: "meta" }, fromCache ? h("span", { class: "tag" }, t("run.cachedTag")) : null, meta));
   }
 }
 

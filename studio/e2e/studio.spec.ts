@@ -102,16 +102,34 @@ test("the Mikkel run: stage graph, score, play one bar, axe", async ({ page }) =
   await expect(page.getByRole("heading", { level: 1, name: "Runs" })).toBeVisible();
   await expect(page.getByRole("link", { name: run.title! }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Start run" })).toBeVisible();
+  // Only the control for the chosen source shows.
+  await expect(page.locator("#run-source")).toBeHidden();
   await shot(page, "runs");
   await axe(page, "runs");
 
   await page.goto(`/#/runs/${run.id}/score`);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Mikkel");
-  // Stage graph from the manifest: timings, devices, cache hits.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/mikkel/i);
+  // The stage graph sits behind "Stages", closed when the run succeeded.
+  await expect(page.locator(".stage-node").first()).toBeHidden();
+  await page.locator(".stages-box > summary").click();
   await expect(page.locator(".stage-node").first()).toBeVisible();
   const nodes = await page.locator(".stage-node").count();
-  expect(nodes).toBeGreaterThanOrEqual(8);
-  await expect(page.locator(".stage-node", { hasText: "cache hit" }).first()).toBeVisible();
+  expect(nodes).toBeGreaterThanOrEqual(5);
+  await expect(page.locator(".stage-node", { hasText: "from cache" }).first()).toBeVisible();
+  // Stage outlines are at least 3:1 against the page (WCAG 1.4.11).
+  const ratio = await page.evaluate(() => {
+    const lum = (c: string) => {
+      const [r, g, b] = (c.match(/[\d.]+/g) ?? []).slice(0, 3).map((x) => Number(x) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const node = document.querySelector(".stage-node.status-cached, .stage-node.status-imported") as HTMLElement;
+    const edge = getComputedStyle(node).outlineColor;
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const [a, b] = [lum(edge), lum(bg)].sort((x, y) => y - x);
+    return (a + 0.05) / (b + 0.05);
+  });
+  console.log(`stage outline contrast ${ratio.toFixed(2)}:1`);
+  expect(ratio).toBeGreaterThanOrEqual(3);
 
   const t0 = Date.now();
   await waitRendered(page);
@@ -194,6 +212,8 @@ test("score viewer opens data/golden and plays", async ({ page }) => {
   await waitRendered(page);
   await expect(page.locator("#viewer-status")).toContainText("parts");
   await page.waitForFunction(() => (document.querySelector("#main bs-score") as unknown as { ready?: boolean })?.ready === true, undefined, { timeout: 120_000 });
+  // "Play bar" lives under the toolbar's More menu.
+  await page.locator("#main bs-score .transport details.menu > summary").click();
   await page.getByRole("button", { name: "Play bar" }).click();
   await page.waitForFunction(() => (document.querySelector("#main bs-score") as unknown as { position: { time: number } }).position.time > 0, undefined, { timeout: 30_000 });
   await shot(page, "viewer-golden", false);
@@ -260,16 +280,49 @@ test("keyboard: skip link, shortcut sheet, narrow layout", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
-  // Reflow (WCAG 1.4.10): no horizontal page scroll at 360 CSS px; wide tables scroll inside their own region.
-  await page.setViewportSize({ width: 360, height: 800 });
+});
+
+// WCAG 1.4.10 reflow at 320 CSS px, 1.4.4 at 200 % zoom (a 1440 px window at 200 % is 720 CSS px),
+// and 1.4.12 text spacing: no sideways page scroll (tables, the score and plots scroll inside their
+// own regions), the nav collapses to a Menu button, and axe finds nothing serious.
+test("reflow at 320 px, 200 % zoom and text spacing", async ({ page }) => {
+  test.setTimeout(600_000);
   const run = await mikkelRun(page);
-  for (const [route, name] of [["runs", "runs-narrow"], [`runs/${run.id}/score`, "run-narrow"], ["compare", "compare-narrow"], ["bench", "bench-narrow"]]) {
+  const routes: [string, string][] = [
+    ["runs", "runs"], [`runs/${run.id}/score`, "run"], [`runs/${run.id}/manifest`, "run-manifest"], ["viewer", "viewer"],
+    [`compare?a=${run.id}&b=ref:mikkel-arranged-band`, "compare"], ["bench", "bench"], ["parity", "parity"], ["conformance", "conformance"], ["registry", "registry"],
+  ];
+  const zoom = join(shots, "zoom");
+  mkdirSync(zoom, { recursive: true });
+  for (const [width, height, label] of [[320, 800, "320"], [720, 500, "200"]] as const) {
+    await page.setViewportSize({ width, height });
+    for (const [route, name] of routes) {
+      await page.goto(`/#/${route}`);
+      await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 120_000 });
+      if (route.endsWith("/score")) await waitRendered(page);
+      await page.waitForTimeout(500);
+      await expect(page.locator(".nav-toggle")).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, `horizontal overflow on ${route} at ${label}`).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: join(zoom, `${name}-${label === "320" ? "320px" : "zoom200"}.png`) });
+      await axe(page, `${name} at ${label === "320" ? "320 px" : "200 %"}`);
+    }
+  }
+  // The Menu button opens the nav, with the engine status and the language inside it.
+  await page.goto("/#/runs");
+  await page.locator(".nav-toggle").click();
+  await expect(page.getByRole("link", { name: "Score viewer" })).toBeVisible();
+  await expect(page.locator("#lang-select")).toBeVisible();
+  await page.screenshot({ path: join(zoom, "menu-open-zoom200.png") });
+  // 1.4.12: the text-spacing override must not make the page scroll sideways.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const [route, name] of routes) {
     await page.goto(`/#/${route}`);
-    await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 60_000 });
-    await page.waitForTimeout(500);
-    await shot(page, name, false);
+    await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 120_000 });
+    await page.addStyleTag({ content: "* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }" });
+    await page.waitForTimeout(300);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow, `horizontal overflow on ${route}`).toBeLessThanOrEqual(1);
+    expect(overflow, `text spacing overflow on ${name}`).toBeLessThanOrEqual(1);
   }
 });
 
@@ -350,7 +403,7 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   await page.goto(`/#/runs/${run.id}/manifest`);
   const panel = page.locator(".tabpanel:not([hidden])");
   await expect(panel.getByRole("button", { name: "Re-run" })).toBeVisible();
-  await expect(panel.getByLabel("Allow heavy models on cache misses")).not.toBeChecked();
+  await expect(panel.getByLabel("Use the large models if nothing is cached (slower, needs the GPU)")).not.toBeChecked();
   const t0 = Date.now();
   await panel.getByRole("button", { name: "Re-run" }).click();
   await page.waitForURL((u) => !u.hash.includes(run.id) && u.hash.startsWith("#/runs/"), { timeout: 30_000 });

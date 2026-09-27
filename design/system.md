@@ -83,7 +83,7 @@ flowchart LR
 
 | | Apple (SwiftUI) | Android (Compose) | Windows (WinUI 3) | Studio (HTML) |
 |---|---|---|---|---|
-| Root | iPhone: `NavigationStack`. iPad and macOS: `NavigationSplitView`, with the library in the sidebar. | Single activity with Navigation Compose. On large screens, `NavigationSuiteScaffold` / `ListDetailPaneScaffold`. No bottom bar: Play has only two places, Home and a score. | `NavigationView` (`PaneDisplayMode="Left"`, compact below 1008 epx) with a `Frame` | Top tab bar (`<nav>` with `aria-current`) |
+| Root | iPhone: `NavigationStack`. iPad and macOS: `NavigationSplitView`, with the library in the sidebar. | Single activity with Navigation Compose. On large screens, `NavigationSuiteScaffold` / `ListDetailPaneScaffold`. No bottom bar: Play has only two places, Home and a score. | `NavigationView` (`PaneDisplayMode="Left"`, compact below 1008 epx) with a `Frame` | Top bar (`<nav>` with `aria-current`): Runs, Score viewer, Compare, then a **Quality** menu for the maintainer pages; a **Menu** button below 768 px (so also at 200 % zoom) |
 | Screen title | `.navigationTitle`, large on Home only | `TopAppBar`; `LargeTopAppBar` on Home | `TitleBar` with the app title plus the page `TextBlock` | `<h1>` plus `<title>` |
 | Flow steps | `navigationDestination` push | `composable` routes | `Frame.Navigate` | hash routes |
 | Sheets and dialogs | `.sheet` with `.presentationDetents([.medium, .large])`, `.confirmationDialog` | `ModalBottomSheet`, `AlertDialog` | `ContentDialog` | `<dialog>` |
@@ -130,15 +130,28 @@ Each component lists the native control to use, and where the brand shows.
 
 ![](mockups/png/studio-run-desktop-light.png)
 
-Studio uses the same tokens, the same mark and lockup ("Brasscribe *Studio*"), the same neutrals and the same "?" marks for uncertain notes (validator issues use the warning icon, never "?"), but it is denser:
+Studio uses the same tokens, the same mark and lockup ("Brasscribe *Studio*"), the same neutrals and the same "?" marks for uncertain notes (validator issues use the warning icon, never "?"). It shows more at once than Play, but it is read at the same comfortable size:
 
 | | Play | Studio |
 |---|---|---|
-| Body | 17 pt / 16 dp / 18 epx | 14 px (`studio-body`) |
-| Control height | 44–52 | 32 (≥ 24 for 2.5.8) |
+| Body | 17 pt / 16 dp / 18 epx | 16 px, line-height 1.5 (`studio-body`) |
+| Tables | lists, not tables | 15 px, line-height 1.5, rows ≥ 44 px when they hold controls (`studio-table`) |
+| Secondary text | `callout` / `caption` | 14 px (`studio-meta`); hints, metadata, legends, table headers |
+| Identifiers | never shown | monospace 14 px (`studio-mono`) |
+| Smallest text | `caption` | 14 px (`studio-meta`); nothing in Studio is smaller |
+| Headings | platform styles | page title in the display face (`title-1`); h2 20 px (`studio-heading`); h3 17 px (`studio-subheading`) |
+| Control height | 44–52 | 40 visible (`control-min-web`), 44 hit area (`touch-min-web`), 8 between targets (`target-gap-web`) |
 | Radius | `md` 12 | `xs` 4 / `sm` 8 |
-| Identifiers | never shown | monospace (`font.family.mono`) |
 | Data colours | none | `model-1` … `model-4` (Okabe–Ito), always paired with a pattern or label |
 | Display face | headings | only the wordmark and page titles |
 
+Rules for every Studio screen:
+
+- **Sizes in rem.** Text, spacing and control sizes are rem, so browser zoom to 200 % and the user's own font size work (WCAG 1.4.4). Only hairlines, focus rings and canvas strokes are px.
+- **Reflow.** At 320 CSS px wide (1.4.10) nothing scrolls sideways except tables, the score and plots, each inside its own scroller. Text-spacing overrides (1.4.12: line-height 1.5, letter 0.12 em, word 0.16 em, paragraph 2 em) must not clip or overlap text, so no fixed heights on text.
+- **One purpose, one primary.** Each view opens with its title and a single purpose line, and has one primary action.
+- **Essentials first.** Status, the key numbers and the main action show; raw detail (hashes, manifests, per-stage files and logs, model lists, full tables) sits behind a disclosure (`details`), closed by default.
+- **Plain labels.** Say what a thing does ("From the cache", "Repeat bars"). Where a term of art stays (profile, stem, round trip), an info tip (a toggle button with the explanation in words) explains it.
+- **Few controls at once.** The score toolbar shows four groups, Play / Position / Repeat / View; speed, zoom, "Play bar" and the rest sit under **More**.
+- **8 px rhythm.** Spacing is a multiple of `space-2` (8 px); edges align to the page gutter; headers hold the brand, the nav and one status, nothing else.
 - Load `dist/web/brasscribe.css`, then `dist/web/studio-compat.css`. This maps Studio's current `--bg`, `--text`, `--ok`, `--m1`… variables, so the migration is a two-line change.

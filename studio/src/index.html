@@ -15,15 +15,22 @@
 <a class="skip-link" href="#main" data-i18n="app.skip">Skip to main content</a>
 <header class="app-header">
   <a class="brand" href="#/runs" id="brand" aria-label="Brasscribe Studio">Brasscribe Studio</a>
+  <details class="nav-menu" id="nav-menu">
+  <summary class="nav-toggle" data-i18n="app.menu">Menu</summary>
+  <div class="nav-body">
   <nav class="app-nav" aria-label="Studio" data-i18n-label="app.nav">
     <ul>
       <li><a href="#/runs" data-route="runs" data-i18n="nav.runs">Runs</a></li>
       <li><a href="#/viewer" data-route="viewer" data-i18n="nav.viewer">Score viewer</a></li>
       <li><a href="#/compare" data-route="compare" data-i18n="nav.compare">Compare</a></li>
-      <li><a href="#/bench" data-route="bench" data-i18n="nav.bench">Benchmarks</a></li>
-      <li><a href="#/parity" data-route="parity" data-i18n="nav.parity">Conversion parity</a></li>
-      <li><a href="#/conformance" data-route="conformance" data-i18n="nav.conformance">Core conformance</a></li>
-      <li><a href="#/registry" data-route="registry" data-i18n="nav.registry">Datasets and models</a></li>
+      <li><details class="menu nav-quality" id="nav-quality"><summary data-i18n="nav.quality">Quality</summary>
+        <ul class="menu-list">
+          <li><a href="#/bench" data-route="bench" data-i18n="nav.bench">Benchmarks</a></li>
+          <li><a href="#/parity" data-route="parity" data-i18n="nav.parity">Parity</a></li>
+          <li><a href="#/conformance" data-route="conformance" data-i18n="nav.conformance">Conformance</a></li>
+          <li><a href="#/registry" data-route="registry" data-i18n="nav.registry">Data and models</a></li>
+        </ul>
+      </details></li>
     </ul>
   </nav>
   <div class="header-end">
@@ -35,6 +42,8 @@
     </select>
   </label>
   </div>
+  </div>
+  </details>
 </header>
 <main id="main" tabindex="-1">
   <noscript><p>Studio needs JavaScript. The engine's HTTP API is described at <a href="/docs">/docs</a>.</p></noscript>

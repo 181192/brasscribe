@@ -79,8 +79,8 @@ export function checkCrossing(upper: XmlPart, lower: XmlPart): ValidationIssue[]
   for (const [k, lo] of l) {
     const up = u.get(k);
     if (up && lo.pitch > up.pitch) {
-      out.push({ part: lower.name, bar: lo.bar, beat: lo.beat, kind: "crossing", severity: "warning",
-        message: `${lower.name} ${pitchName(lo.pitch)} sounds above ${upper.name} ${pitchName(up.pitch)}` });
+      out.push({ part: lower.name, upper: upper.name, bar: lo.bar, beat: lo.beat, kind: "crossing", severity: "warning",
+        message: `${lower.name} ${pitchName(lo.pitch)} sounds above ${upper.name} ${pitchName(up.pitch)}` } as ValidationIssue);
     }
   }
   return out;
