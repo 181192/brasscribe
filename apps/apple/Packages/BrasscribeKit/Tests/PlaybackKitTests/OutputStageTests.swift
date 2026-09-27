@@ -119,19 +119,24 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         score = try phrase.score()
     }
 
-    func engine() throws -> PlaybackEngine {
+    /// The Mac's band SoundFont, or the phone one iPhone and iPad bundle.
+    func engine(file: String = "brasscribe-band-16bit.sf2") throws -> PlaybackEngine {
+        var bank = SoundBank.locate(bundle: .main)
+        let (band, status) = BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: [file])
+        bank.band = try #require(band, "\(file): \(status.details)")
         // the room the app ships with: the environment node's hall (no IR file in the bundle)
-        let e = try PlaybackEngine(score: score, soundBank: .locate(bundle: .main), roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
+        let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
         #expect(e.loadedInstruments == score.parts.count)
         return e
     }
 
     /// The full band peaks just under full scale and never clips.
-    @Test func fullBandPeaksNearMinusOneWithoutClipping() throws {
-        let e = try engine()
+    @Test(arguments: ["brasscribe-band-16bit.sf2", "brasscribe-band-mobile.sf2"])
+    func fullBandPeaksNearMinusOneWithoutClipping(file: String) throws {
+        let e = try engine(file: file)
         let buf = try phrase.render(e, score: score)
         let peak = buf.peak
-        print("OUTPUT full band peak \(dB(peak)) dBFS at \(e.outputGainDB) dB")
+        print("OUTPUT \(file) full band peak \(dB(peak)) dBFS at \(e.outputGainDB) dB")
         #expect(peak < 1, "clipped")
         #expect(peak <= OutputStageKernel.ceiling)
         #expect(dB(peak) > -3 && dB(peak) < -0.5, "full band peak \(dB(peak)) dBFS")
@@ -139,13 +144,14 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
 
     /// A solo part is louder than before the level-matched presets (−5.5 dB then), and the stage
     /// does not squash it.
-    @Test func soloCornetIsNotQuieterThanBefore() throws {
-        let e = try engine()
+    @Test(arguments: ["brasscribe-band-16bit.sf2", "brasscribe-band-mobile.sf2"])
+    func soloCornetIsNotQuieterThanBefore(file: String) throws {
+        let e = try engine(file: file)
         let loud = try phrase.render(e, score: score, only: ["Solo Cornet"])
         e.outputGainDB = 0
         let unity = try phrase.render(e, score: score, only: ["Solo Cornet"])
         let lift = dB(loud.peak) - dB(unity.peak)
-        print("OUTPUT solo cornet \(dB(loud.peak)) dBFS, \(dB(unity.peak)) dBFS at unity")
+        print("OUTPUT \(file) solo cornet \(dB(loud.peak)) dBFS, \(dB(unity.peak)) dBFS at unity")
         #expect(lift >= 5.5)
         #expect(abs(lift - PlaybackEngine.defaultOutputGainDB) < 0.5, "a solo part stays below the limiter")
     }

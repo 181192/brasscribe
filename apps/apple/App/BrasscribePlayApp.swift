@@ -35,7 +35,7 @@ struct BrasscribePlayApp: App {
                 }
         }
         #if os(macOS)
-        .defaultSize(width: 1280, height: 900)
+        .defaultSize(WindowFit.defaultSize(visible: NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)))
         // always open a fresh window; a restored "no windows" state left the UI tests with none
         .restorationBehavior(.disabled)
         .commands { PlaybackCommands() }
@@ -429,18 +429,28 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
                 let frame = CGRect(x: v.midX - size.width / 2, y: v.midY - size.height / 2, width: size.width, height: size.height)
                 if w.frame != frame { w.setFrame(frame, display: true) }
             }
-        } else if ProcessInfo.processInfo.arguments.contains("-reset") {
-            // Tests and screenshots (-reset): keep the window whole on the main screen, so no
-            // control lands between two displays.
-            placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
-                guard let w = n.object as? NSWindow, let screen = NSScreen.screens.first else { return }
-                let v = screen.visibleFrame
-                guard !v.contains(w.frame) else { return }
-                let size = CGSize(width: min(w.frame.width, v.width), height: min(w.frame.height, v.height))
-                w.setFrame(CGRect(x: v.minX + (v.width - size.width) / 2, y: v.minY + (v.height - size.height) / 2,
-                                  width: size.width, height: size.height), display: true)
+        } else {
+            // Every window stays whole on its own screen, clear of the Dock and the menu bar: when it
+            // first shows or is restored (a frame saved on a larger display), and when it moves to
+            // another screen.
+            for name in [NSWindow.didBecomeMainNotification, NSWindow.didChangeScreenNotification] {
+                fitting.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { n in
+                    guard let w = n.object as? NSWindow else { return }
+                    MainActor.assumeIsolated { Self.fit(w) }
+                })
             }
         }
+    }
+
+    private var fitting: [NSObjectProtocol] = []
+
+    @MainActor static func fit(_ w: NSWindow) {
+        guard w.canBecomeMain, !w.styleMask.contains(.fullScreen), let screen = w.screen ?? NSScreen.main else { return }
+        // the content's own minimum (the home screen asks for 520 × 640), as a frame size
+        let content = w.frameRect(forContentRect: CGRect(origin: .zero, size: w.contentMinSize)).size
+        let minSize = CGSize(width: max(w.minSize.width, content.width), height: max(w.minSize.height, content.height))
+        let f = WindowFit.clamp(w.frame, into: screen.visibleFrame, minSize: minSize)
+        if f != w.frame { w.setFrame(f, display: true, animate: false) }
     }
 }
 #endif

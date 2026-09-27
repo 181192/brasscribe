@@ -186,6 +186,29 @@ func testVideo() -> URL? {
     #expect(after.count == items.count - 1)
 }
 
+/// Mac windows stay whole on their screen's visible frame (AppKit coordinates, y up).
+@Test func windowFitKeepsAWindowOnItsScreen() {
+    // a laptop's visible frame: the Dock takes the bottom 70 pt, the menu bar the top 33
+    let laptop = CGRect(x: 0, y: 70, width: 1512, height: 879)
+    // fits: stays exactly where it is
+    let small = CGRect(x: 100, y: 200, width: 900, height: 600)
+    #expect(WindowFit.clamp(small, into: laptop) == small)
+    // hangs under the Dock: moves up just enough, same size
+    #expect(WindowFit.clamp(CGRect(x: 100, y: 20, width: 900, height: 600), into: laptop) == CGRect(x: 100, y: 70, width: 900, height: 600))
+    // restored from a big external display: shrinks to the visible frame
+    #expect(WindowFit.clamp(CGRect(x: 2000, y: 100, width: 2400, height: 1100), into: laptop) == laptop)
+    // off the right edge: moves left only as far as needed
+    #expect(WindowFit.clamp(CGRect(x: 1000, y: 200, width: 900, height: 600), into: laptop).maxX == laptop.maxX)
+    // a screen smaller than the minimum: the minimum wins and the top-left is pinned to the visible top-left
+    let tiny = CGRect(x: 0, y: 50, width: 500, height: 600)
+    let pinned = WindowFit.clamp(CGRect(x: 40, y: 60, width: 800, height: 800), into: tiny, minSize: CGSize(width: 520, height: 640))
+    #expect(pinned.size == CGSize(width: 520, height: 640))
+    #expect(pinned.minX == tiny.minX && pinned.maxY == tiny.maxY)
+    // the default size: 1280 × 900, or 90 % of a smaller screen
+    #expect(WindowFit.defaultSize(visible: CGRect(x: 0, y: 0, width: 3840, height: 1175)) == CGSize(width: 1280, height: 900))
+    #expect(WindowFit.defaultSize(visible: laptop) == CGSize(width: 1280, height: 791))
+}
+
 /// Settings → Appearance: Match system (the default and anything unknown) leaves the scheme to the
 /// system; Light and Dark force it.
 @Test @MainActor func appearanceSettingMapsToAColorScheme() {
