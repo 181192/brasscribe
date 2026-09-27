@@ -60,8 +60,9 @@ _ms_spec = importlib.util.spec_from_file_location(
 musescore = importlib.util.module_from_spec(_ms_spec)
 _ms_spec.loader.exec_module(musescore)
 from humanize import TPB, Performance, ScoreNote, humanize  # noqa: E402
+import partsound  # noqa: E402
 
-BUILT = ROOT / "data" / "sounds" / "built"
+BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))
 RAW = ROOT / "data" / "sounds" / "raw"
 MSBASIC = RAW / "msbasic" / "MS Basic.sf3"
 SFIZZ = Path(os.environ.get("SFIZZ_RENDER", ROOT / "data" / "sounds" / "tools" / "bin" / "sfizz_render"))
@@ -383,11 +384,14 @@ def render(args: argparse.Namespace) -> None:
     perf = Performance.load(Path(comp)) if comp else None
     human_stats = {}
     jobs = []  # (part, player index, target, notes, detune, position)
+    part_of: dict[str, str] = {}  # score part name -> mapping.json part (sounds/partsound.py rules)
     for p in parts:
-        pm = mapping["parts"].get(p.name)
-        if pm is None:
-            print(f"warning: part {p.name!r} not in mapping.json, skipped", file=sys.stderr)
+        r = partsound.resolve(p.name, mapping, program=p.program)
+        if r is None:
+            print(f"warning: part {p.name!r} is not a brass-band instrument, skipped", file=sys.stderr)
             continue
+        part_of[p.name] = r.part
+        pm = mapping["parts"][r.part]
         seat = seating["seats"][pm["seat"]]
         players = pm["players"] if args.tier == "realistic" else [pm["players"][0]]
         pos = player_positions(seat, len(players), seating["player_spread_m"])
@@ -437,7 +441,7 @@ def render(args: argparse.Namespace) -> None:
     dry_stems: dict[str, np.ndarray] = {}
     box = ROOMS[args.room]["shoebox"]
     for (p, i, target, _, _, pos), dry in results:
-        pm = mapping["parts"][p.name]
+        pm = mapping["parts"][part_of[p.name]]
         g = 10 ** (pm.get("gain_db", 0.0) / 20)
         dry = dry * g
         dry_stems[p.name] = dry_stems.get(p.name, np.zeros(n)) + dry
