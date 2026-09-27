@@ -50,11 +50,12 @@ public sealed partial class MainViewModel : ObservableObject
         _announcer = announcer;
         _s = strings;
         Review = new ReviewViewModel(score, announcer, strings);
-        // A changed note arranges the whole score again from the Composition (the native core), with the same band.
+        // A changed note arranges the whole score again from the Composition (the native core), with the
+        // lineup, difficulty and key the shown score was arranged with.
         Score.Rearrange = composition =>
         {
             if (!core.IsNative) return null;
-            try { return core.ArrangeMusicXml(composition, Output.Lineup == Lineup.MinimalBand ? "minimal" : "layers"); }
+            try { return core.ArrangeMusicXmlWith(composition, Output.Applied); }
             catch (Bridge.CoreBridgeException e)
             {
                 _announcer.Announce(_s.Format("Output_Failed", e.Message), AnnouncementKind.Important);
@@ -65,7 +66,7 @@ public sealed partial class MainViewModel : ObservableObject
         Library = library;
         Score.PersistEditedScore = (xml, compositionJson) =>
         {
-            if (_libraryId is { } id) Library?.SaveMusicXml(id, xml, compositionJson);
+            if (_libraryId is { } id) Library?.SaveMusicXml(id, xml, compositionJson, Output.Applied.Lineup);
         };
         Score.PersistEvidence = evidence =>
         {
@@ -95,6 +96,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (_lastChoice is { } choice)
             {
+                Output.IsSoloTake = Lineups.IsSoloTake(null, choice.Kind.Profile);
                 Screen = Screen.Transcribing;
                 await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
             }
@@ -121,6 +123,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _lastChoice = choice;
             _result = null;
+            // A solo take has no harmony for a quartet; a quartet chosen for an earlier take goes back to the band.
+            Output.IsSoloTake = Lineups.IsSoloTake(null, choice.Kind.Profile);
             Screen = Screen.Transcribing;
             await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
             if (!Transcription.IsRunning && _result is null && Screen == Screen.Transcribing && Transcription.ErrorText is null)
@@ -130,6 +134,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             bool rearranged = _result is not null && r.AudioId is not null && r.AudioId == _result.AudioId;
             _result = r;
+            Output.IsSoloTake = Lineups.IsSoloTake(r.Composition, r.Profile);
             Output.HasEngineJob = r.AudioId is not null;
             Output.Applied = r.Options ?? ArrangementOptions.Default;
             Output.Title = r.Composition.Title;
@@ -140,7 +145,8 @@ public sealed partial class MainViewModel : ObservableObject
             Score.Evidence = r.Evidence;
             Score.Load(r.MusicXml, r.Composition);
             _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
-                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence).Id;
+                Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence,
+                Lineups.Engine(Lineups.Recorded(r.Composition) ?? Output.AppliedLineup)).Id;
             OpenReviewOrScore(rearranged);
         };
         Transcription.PropertyChanged += (_, e) =>
@@ -248,6 +254,8 @@ public sealed partial class MainViewModel : ObservableObject
             _libraryId = entry.Id;
             Output.HasEngineJob = false;
             Output.LayerSource = null;
+            Output.IsSoloTake = Lineups.IsSoloTake(composition);
+            Output.ShowingSaved(Lineups.Parse(entry.Lineup) ?? Lineups.Recorded(composition), Lineups.RecordedDifficulty(composition));
             Score.Evidence = Library.LoadEvidence(entry);
             Score.Load(xml, composition);
             Screen = Screen.Score;
@@ -335,10 +343,12 @@ public sealed partial class MainViewModel : ObservableObject
                 _result = null;
                 Output.HasEngineJob = false;
                 Output.LayerSource = null;
+                Output.IsSoloTake = Lineups.IsSoloTake(composition, job.Profile);
+                Output.ShowingSaved(Lineups.Recorded(composition), Lineups.RecordedDifficulty(composition));
                 Score.Evidence = evidence;
                 Score.Load(xml, composition);
                 _libraryId = Library?.AddMade(job.Title ?? item.Title, xml, composition, Score.Parts.Count, Score.Player.BarCount,
-                    Score.UncertainLeft, jobId, evidence).Id;
+                    Score.UncertainLeft, jobId, evidence, Lineups.Recorded(composition) is { } recorded ? Lineups.Engine(recorded) : null).Id;
                 Screen = Screen.Score;
             }
             catch (Exception e) when (e is EngineException or HttpRequestException or IOException or FormatException
@@ -460,9 +470,33 @@ public sealed partial class MainViewModel : ObservableObject
                 });
     }
 
+    /// <summary>
+    /// "Full band", "Small band" or "Quartet" from the lineup the score was arranged for; the part
+    /// count only when that is not known (a score file opened as it is).
+    /// </summary>
+    public string LineupLabel(Lineup? lineup, int parts) => (parts, lineup) switch
+    {
+        ( <= 1, _) => _s["Library_OnePart"],
+        (_, Lineup.Quartet) => _s["Library_Quartet"],
+        (_, Lineup.MinimalBand) => _s["Library_SmallBand"],
+        (_, Lineup.FullBand) => _s["Library_FullBand"],
+        ( <= 6, null) => _s["Library_SmallBand"],
+        (_, null) => _s["Library_FullBand"],
+        _ => throw new ArgumentOutOfRangeException(nameof(lineup), lineup, null),
+    };
+
+    /// <summary>The lineup of the score being shown: what it was arranged with, or its parts when it came as a file.</summary>
+    public Lineup? ShownLineup =>
+        Score.Composition is not null ? Output.AppliedLineup
+        : Score.Document is { } doc && Lineups.IsQuartet(doc.Parts.Select(p => p.Name)) ? Lineup.Quartet
+        : null;
+
+    /// <summary>"Quartet · 32 bars" under the score's title.</summary>
+    public string ScoreSubtitle => _s.Format("Title_ScoreSubtitle", LineupLabel(ShownLineup, Score.Parts.Count), Score.Player.BarCount);
+
     private string LibrarySubtitle(LibraryEntry e)
     {
-        string lineup = _s[e.Parts <= 1 ? "Library_OnePart" : e.Parts <= 6 ? "Library_SmallBand" : "Library_FullBand"];
+        string lineup = LineupLabel(Lineups.Parse(e.Lineup), e.Parts);
         string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
         return _s.Format("Library_Subtitle", lineup, e.Bars, WhenText(e.Updated)) + check;
     }
@@ -488,6 +522,7 @@ public sealed partial class MainViewModel : ObservableObject
             _result = null;
             Output.HasEngineJob = false;
             Output.LayerSource = null;
+            Output.IsSoloTake = false;
             Score.Evidence = null;
             Score.Load(xml, null);
             _libraryId = Library?.AddOpened(path, Score.Title is { Length: > 0 } t ? t : Path.GetFileNameWithoutExtension(path),
@@ -503,7 +538,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(IsOnScore))]
     private void OpenExport() =>
-        Export.Prepare(Score, Score.Player.Player as AlphaTabScorePlayer, _result is null ? null : Engine, _result?.JobId, _result?.Outputs);
+        Export.Prepare(Score, Score.Player.Player as AlphaTabScorePlayer, _result is null ? null : Engine, _result?.JobId, _result?.Outputs, ShownLineup);
 
     private bool IsOnScore() => Screen == Screen.Score;
 

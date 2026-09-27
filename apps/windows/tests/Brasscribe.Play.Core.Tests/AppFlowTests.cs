@@ -63,9 +63,10 @@ public class AppFlowTests
     private const string JobDone = """{"id":"j1","profile":"brass-band","status":"succeeded","created":1,"stages":[],"outputs":["brass-band.musicxml","composition.json"]}""";
 
     /// <summary>A fake engine; <paramref name="finalEvent"/> is the job event that ends the stream.</summary>
-    private static FakeHandler Engine(string finalEvent, bool reachable = true) => new((r, _) =>
+    private static FakeHandler Engine(string finalEvent, bool reachable = true, Func<HttpRequestMessage, HttpResponseMessage?>? first = null) => new((r, _) =>
     {
         if (!reachable) throw new HttpRequestException("connection refused");
+        if (first?.Invoke(r) is { } answer) return answer;
         string path = r.RequestUri!.AbsolutePath;
         return (r.Method.Method, path) switch
         {
@@ -402,6 +403,63 @@ public class AppFlowTests
         Assert.Contains("\"key\":\"Eb\"", second);
         Assert.Contains("\"profile\":\"brass-band\"", second);
         Assert.Equal(uploads, engine.Requests.Count(r => r.Request.RequestUri!.AbsolutePath == "/v1/audio"));
+    }
+
+    [Fact]
+    public async Task A_quartet_is_sent_as_quartet_and_labelled_quartet_in_the_library_and_share_sheet()
+    {
+        var engine = Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n");
+        var library = new ScoreLibrary(Path.Combine(Path.GetTempPath(), "brasscribe-lib-" + Guid.NewGuid().ToString("N")));
+        var (main, _) = Build(engine, library: library);
+        Assert.True(main.Output.TryChooseLineup(Lineup.Quartet));
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        main.Kind.ContinueCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Review);
+        main.Review.KeepCommand.Execute(null);
+
+        var job = engine.Requests.Single(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!;
+        Assert.Contains("\"lineup\":\"quartet\"", job);
+        Assert.Equal(Lineup.Quartet, main.Output.Lineup);
+        Assert.Equal("quartet", library.Entries[0].Lineup);
+        Assert.StartsWith("Quartet · ", main.LibraryItems[0].Subtitle);
+        Assert.StartsWith("Quartet · ", main.ScoreSubtitle);
+
+        main.Screen = Screen.Score;
+        main.OpenExportCommand.Execute(null);
+        Assert.Equal("Score (all 4 parts)", main.Export.ConductorLabel);
+        Assert.EndsWith(" (you)", main.Export.MyPartLabel);
+    }
+
+    [Fact]
+    public async Task A_solo_take_goes_back_to_the_band_and_a_refused_quartet_says_why_in_the_apps_words()
+    {
+        const string detail = "a quartet needs a recording of the whole group: a solo take has no harmony for the other parts";
+        var engine = Engine("", first: r => r.Method == HttpMethod.Post && r.RequestUri!.AbsolutePath == "/v1/jobs"
+            && (r.Content?.ReadAsStringAsync().Result ?? "").Contains("\"lineup\":\"quartet\"")
+                ? FakeHandler.Json($$"""{"detail":"{{detail}}"}""", HttpStatusCode.UnprocessableEntity)
+                : null);
+        var (main, said) = Build(engine);
+        Assert.True(main.Output.TryChooseLineup(Lineup.Quartet));
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        var solo = main.Kind.Options.Single(o => o.Kind == SourceKind.Solo);
+
+        // Choosing a solo take puts the band back before the job is sent.
+        main.Kind.Selected = solo;
+        main.Kind.ContinueCommand.Execute(null);
+        await Until(() => engine.Requests.Any(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs"));
+        Assert.Equal(Lineup.FullBand, main.Output.Lineup);
+        Assert.False(main.Output.TryChooseLineup(Lineup.Quartet));
+        Assert.Contains("\"lineup\":\"full\"", engine.Requests.First(r => r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!);
+        await Until(() => !main.Transcription.IsRunning);
+
+        // Should a quartet reach the engine for a solo take anyway, its 422 detail is never shown.
+        await main.Transcription.RunAsync(main.Kind.Source!, solo, new ArrangementOptions("quartet"));
+        Assert.Equal("Needs a recording of the whole group", main.Transcription.ErrorText);
+        Assert.Equal(Screen.Error, main.Screen);
+        Assert.DoesNotContain(said.Items, i => i.Text.Contains("harmony", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -70,7 +70,12 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
     public string Summary => s.Format(FileCount == 1 ? "Export_SummaryOne" : "Export_SummaryMany", FileCount);
     public bool CanPrintNow => printer is { CanPrint: true } && Formats.Any(f => f.Key == "Pdf" && f.Available);
 
-    public void Prepare(ScoreViewModel score, AlphaTabScorePlayer? player, IEngineClient? engine, string? jobId, IReadOnlyCollection<string>? outputs)
+    /// <summary>"Conductor's score" for a band; a quartet has no conductor: "Score (all 4 parts)".</summary>
+    [ObservableProperty] public partial string ConductorLabel { get; set; } = "";
+
+    /// <remarks><paramref name="lineup"/> is the lineup the score was arranged for, null when not known.</remarks>
+    public void Prepare(ScoreViewModel score, AlphaTabScorePlayer? player, IEngineClient? engine, string? jobId, IReadOnlyCollection<string>? outputs,
+        Lineup? lineup = null)
     {
         _sources = new ExportSources(score.MusicXml, score.Document, player, engine, jobId, outputs);
         _settings = new TalkingScoreSettings(score.Language, score.ConcertPitch ? PitchMode.Concert : PitchMode.Written);
@@ -79,7 +84,14 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         _partCount = Parts.Count;
         _myPart = score.SelectedPartIndex >= 0 ? score.SelectedPartIndex
             : score.Player.PlayAlongPart is { } mine ? Math.Max(0, Parts.ToList().FindIndex(p => p.Name == mine.Name)) : 0;
-        MyPartLabel = Parts.Count > 0 ? s.Format("Export_Scope_MyPart", Parts[Math.Clamp(_myPart, 0, Parts.Count - 1)].Name) : s["Export_Scope_Conductor"];
+        ConductorLabel = lineup switch
+        {
+            Lineup.Quartet => s["Export_Scope_QuartetScore"],
+            Lineup.FullBand or Lineup.MinimalBand or null => s["Export_Scope_Conductor"],
+            _ => throw new ArgumentOutOfRangeException(nameof(lineup), lineup, null),
+        };
+        // The part names are already in the score's language ("1. kornett (deg)").
+        MyPartLabel = Parts.Count > 0 ? s.Format("Export_Scope_MyPart", Parts[Math.Clamp(_myPart, 0, Parts.Count - 1)].Name) : ConductorLabel;
 
         var options = exports.Options(_sources).ToDictionary(o => o.Format);
         Formats.Clear();

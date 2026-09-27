@@ -29,6 +29,12 @@ public interface ICoreBridge
     string? ArrangeMusicXml(Composition composition, string arranger = "auto");
 
     /// <summary>
+    /// Arranges a Composition again for a lineup (band, small band or quartet), difficulty and key,
+    /// and returns MusicXML, or null when this core cannot.
+    /// </summary>
+    string? ArrangeMusicXmlWith(Composition composition, ArrangementOptions options);
+
+    /// <summary>
     /// Arranges a score from the layered pipeline's stage files (layer MIDI, stems, beats, solo contour)
     /// with a lineup, difficulty and key, or null when this core cannot.
     /// </summary>
@@ -53,6 +59,8 @@ public sealed class ManagedCoreBridge : ICoreBridge
 
     /// <summary>Arranging needs the Rust core or the engine; the managed bridge has no arranger.</summary>
     public string? ArrangeMusicXml(Composition composition, string arranger = "auto") => null;
+
+    public string? ArrangeMusicXmlWith(Composition composition, ArrangementOptions options) => null;
 
     public BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options) => null;
 

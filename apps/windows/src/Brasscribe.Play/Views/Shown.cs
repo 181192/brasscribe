@@ -19,4 +19,7 @@ public static class Shown
     public static Visibility Both(bool a, bool b) => Of(Screens.Both(a, b));
     public static Visibility UncertainOpen(bool kept, bool veryUncertain) => Of(Screens.UncertainOpen(kept, veryUncertain));
     public static Visibility VeryUncertainOpen(bool kept, bool veryUncertain) => Of(Screens.VeryUncertainOpen(kept, veryUncertain));
+
+    /// <summary>A choice that can't be made is shown dimmed (it stays focusable, with its reason as text).</summary>
+    public static double Dimmed(bool available) => available ? 1.0 : 0.55;
 }

@@ -7,7 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Brasscribe.Play.Core.ViewModels;
 
-public enum Lineup { FullBand, MinimalBand }
+public enum Lineup { FullBand, MinimalBand, Quartet }
 public enum Difficulty { Faithful, Standard, Easier }
 
 /// <summary>
@@ -23,6 +23,42 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
 
     [ObservableProperty] public partial Lineup Lineup { get; set; } = Lineup.FullBand;
     [ObservableProperty] public partial Difficulty Difficulty { get; set; } = Difficulty.Faithful;
+
+    /// <summary>
+    /// The take is one line (a solo recording): there is no harmony for a quartet to play, so the
+    /// quartet card is shown dimmed with the reason and cannot be chosen.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(QuartetAvailable), nameof(QuartetDescription), nameof(QuartetHelpText))]
+    public partial bool IsSoloTake { get; set; }
+
+    partial void OnIsSoloTakeChanged(bool value)
+    {
+        if (value && Lineup == Lineup.Quartet) Lineup = Lineup.FullBand;
+    }
+
+    public bool QuartetAvailable => !IsSoloTake;
+
+    /// <summary>The quartet card's second line: what it is, or why it can't be chosen.</summary>
+    public string QuartetDescription => IsSoloTake ? s["Output_QuartetNeedsGroup"] : s["Output_QuartetBody"];
+
+    /// <summary>The reason for screen readers when the card can't be chosen; empty otherwise.</summary>
+    public string QuartetHelpText => IsSoloTake ? s["Output_QuartetNeedsGroup"] : "";
+
+    /// <summary>
+    /// A lineup card was chosen. The quartet on a solo take is refused with the reason said aloud;
+    /// false tells the page to put the selection back.
+    /// </summary>
+    public bool TryChooseLineup(Lineup lineup)
+    {
+        if (lineup == Lineup.Quartet && !QuartetAvailable)
+        {
+            announcer.Announce(s["Output_QuartetNeedsGroup"], AnnouncementKind.Important);
+            return false;
+        }
+        Lineup = lineup;
+        return true;
+    }
 
     /// <summary>Index into <see cref="Keys"/>.</summary>
     [ObservableProperty]
@@ -92,6 +128,23 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     /// <summary>The options the shown score was arranged with; "Show the score" arranges only when these change.</summary>
     public ArrangementOptions Applied { get; set; } = ArrangementOptions.Default;
 
+    /// <summary>The lineup of the score being shown (what <see cref="Applied"/> says).</summary>
+    public Lineup AppliedLineup => Lineups.Parse(Applied.Lineup) ?? Lineup.FullBand;
+
+    /// <summary>
+    /// A score was opened from "Your scores": the choices follow what it was arranged with, so
+    /// "Show the score" and a changed note keep its lineup.
+    /// </summary>
+    public void ShowingSaved(Lineup? lineup, string? difficulty)
+    {
+        var chosen = lineup ?? Lineup.FullBand;
+        if (chosen == Lineup.Quartet && IsSoloTake) chosen = Lineup.FullBand;
+        Lineup = chosen;
+        Difficulty = difficulty switch { "standard" => Difficulty.Standard, "easier" => Difficulty.Easier, _ => Difficulty.Faithful };
+        KeyIndex = 0;
+        Applied = Options;
+    }
+
     /// <summary>Raised when the score can be shown as it is (nothing changed).</summary>
     public event EventHandler? ShowScoreRequested;
 
@@ -132,7 +185,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     [ObservableProperty] public partial string? StatusText { get; set; }
 
     public ArrangementOptions Options => new(
-        Lineup == Lineup.MinimalBand ? "minimal" : "full",
+        Lineups.Engine(Lineup),
         Difficulty switch { Difficulty.Standard => "standard", Difficulty.Easier => "easier", _ => "faithful" },
         Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } tonic && RecordedKey is { Minor: true } ? tonic + "m" : Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)]);
 
@@ -166,9 +219,10 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         }
         try
         {
-            var xml = core.ArrangeMusicXml(composition, Lineup == Lineup.MinimalBand ? "minimal" : "layers");
+            var options = Options;
+            var xml = core.ArrangeMusicXmlWith(composition, options);
             if (xml is null) return;
-            Applied = Options with { Difficulty = Applied.Difficulty, Key = Applied.Key };
+            Applied = options;
             StatusText = s["Output_Ready"];
             announcer.Announce(StatusText, AnnouncementKind.Important);
             Arranged?.Invoke(this, xml);

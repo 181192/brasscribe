@@ -219,7 +219,6 @@ prop("ExportDialog", "SecondaryButtonText", "Save…", "Lagre …")
 prop("ExportWhatHeading", "Text", "WHAT", "HVA")
 name("ExportScope", "What to share or print", "Hva som skal deles eller skrives ut")
 prop("ExportEveryPart", "Content", "Every part", "Alle stemmer")
-prop("ExportConductor", "Content", "Conductor's score", "Dirigentpartitur")
 prop("ExportEveryPartTip", "Text", "Every part: one PDF per player.", "Alle stemmer: én PDF per musiker.")
 prop("ExportAsHeading", "Text", "AS", "SOM")
 prop("ExportMarksNote", "Text", "Notes Brasscribe wasn't sure about keep their “?” marks.", "Toner Brasscribe var usikker på, beholder «?»-merket.")
@@ -258,6 +257,8 @@ prop("AboutText", "Text",
      "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1).",
      "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1).")
 name("ErrorSteps", "What to do", "Hva du kan gjøre")
+name("LineupQuartetChoice", "Quartet", "Kvartett")
+prop("LineupQuartetTitle", "Text", "Quartet", "Kvartett")
 
 # ---- code strings ----
 code = {
@@ -284,6 +285,7 @@ code = {
     "Library_ToCheck": ("{0} to check", "{0} å sjekke"),
     "Library_Yesterday": ("Yesterday", "I går"),
     "Library_RecordingTitle": ("Recording, {0}", "Opptak, {0}"),
+    "Library_Quartet": ("Quartet", "Kvartett"),
     "Start_Imported": ("Opened {0}, {1}", "Åpnet {0}, {1}"),
     "Start_RecordingName": ("Recording", "Opptak"),
     "Start_RecordingStarted": ("Recording started", "Opptaket har startet"),
@@ -463,6 +465,8 @@ code = {
     "Player_CountInOff": ("Count-in off", "Inntelling av"),
     "Player_MetronomeOn": ("Metronome on", "Metronom på"),
     "Player_MetronomeOff": ("Metronome off", "Metronom av"),
+    "Player_SoundsMissing": ("The band sounds are missing. Reinstall Brasscribe Play to hear the band.", "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."),
+    "Player_SoundsMissing_Details": ("Expected at {0}", "Ventet i {0}"),
     "Mixer_Mute": ("Mute {0}", "Lyd av {0}"),
     "Mixer_Solo": ("Only this: {0}", "Bare denne: {0}"),
     "Export_Format_MusicXmlScore": ("MusicXML, conductor's score", "MusicXML, dirigentpartitur"),
@@ -497,6 +501,7 @@ code = {
     "Export_Reason_NoScore": ("Open or make a score first.", "Åpne eller lag et partitur først."),
     "Export_Done": ("Saved {0}", "Lagret {0}"),
     "Export_DoneMany": ("Saved {0} files in {1}", "Lagret {0} filer i {1}"),
+    "Export_Scope_QuartetScore": ("Score (all 4 parts)", "Partitur (alle 4 stemmer)"),
     "Export_Failed": ("Couldn't save: {0}", "Kunne ikke lagre: {0}"),
     "Output_NeedsEngine": ("How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.", "Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem."),
     "Output_Rearranging": ("Arranging again with your choices", "Arrangerer på nytt med valgene dine"),
@@ -508,6 +513,8 @@ code = {
     "Output_NeedsCore": ("Arranging on this PC needs Brasscribe's arranger, which isn't installed.", "Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert."),
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Output_Failed": ("Couldn't arrange it: {0}", "Kunne ikke arrangere: {0}"),
+    "Output_QuartetBody": ("4 players, one on each part", "4 musikere, én på hver stemme"),
+    "Output_QuartetNeedsGroup": ("Needs a recording of the whole group", "Trenger et opptak av hele gruppen"),
     "Settings_Engine_NeedsCode": ("Your computer asks for a code. Type the six digits it shows, or ask on the computer instead.", "Datamaskinen ber om en kode. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet."),
     "Settings_Engine_Connected": ("Connected to Brasscribe on {0}.", "Koblet til Brasscribe på {0}."),
     "Settings_CoreVersion": ("Arranger on this PC: {0}", "Arrangør på denne PC-en: {0}"),

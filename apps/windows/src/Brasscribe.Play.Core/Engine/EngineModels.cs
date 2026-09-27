@@ -27,7 +27,7 @@ public sealed record JobCreate(
     int? Transpose = null,
     bool Muscriptor = true);
 
-/// <summary>Arrangement choices a job can carry: lineup full|minimal, difficulty faithful|standard|easier, a target key or a transposition.</summary>
+/// <summary>Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a transposition.</summary>
 public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null)
 {
     public static readonly ArrangementOptions Default = new();
