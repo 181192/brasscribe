@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: what do you play?</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="mockup.js"></script>
+<style>
+  /* Instrument tiles: one radio group, nothing pre-selected on first run; chosen = 2 px ink ring + check. */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bc-space-2); margin: 0; padding: 0; border: 0; }
+  .tile { display: flex; align-items: center; gap: var(--bc-space-2); min-height: 44px; padding: 4px var(--bc-space-3);
+          border-radius: var(--bc-radius-md); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border-strong);
+          font-weight: 600; font-size: 0.9375rem; line-height: 1.2; }
+  .tile small { display: block; font-weight: 500; color: var(--bc-text-muted); font-size: 0.8125rem; }
+  .tile.on { box-shadow: inset 0 0 0 2px var(--bc-primary); }
+  .tile.on::after { content: "✓"; margin-left: auto; font-weight: 700; }
+  .q-label { font-weight: 600; font-size: 0.9375rem; margin: var(--bc-space-3) 0 var(--bc-space-2); }
+  .seg.wide { display: flex; }
+  .seg.wide span { flex: 1; min-height: 44px; }
+  /* Radio segments follow the toggle rule: chosen = tonal fill, 1.5 px ink edge and a check. */
+  .seg.wide span.on { background: var(--bc-secondary); color: var(--bc-text); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  .seg.wide span.on::before { content: "✓"; font-weight: 700; margin-right: 6px; }
+  .seg.wide { background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+  .desk-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar"><span></span><span></span><span class="btn plain compact" data-nb="Ikke nå">Not now</span></div>
+  <div class="content" style="padding-top: 0">
+    <h1 class="display" style="font-size: 2rem" data-nb="Hva spiller du?">What do you play?</h1>
+    <p class="callout" style="margin-top: var(--bc-space-2); font-size: 0.9375rem" data-nb="Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger.">Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</p>
+
+    <p class="q-label" data-nb="Instrument">Instrument</p>
+    <fieldset class="tiles" role="radiogroup" aria-label="Instrument">
+      <span class="tile" role="radio" data-nb="Kornett">Cornet</span>
+      <span class="tile" role="radio"><span><span data-nb="Sopran">Soprano</span><small data-nb="Ess-kornett">E♭ cornet</small></span></span>
+      <span class="tile" role="radio" data-nb="Flygelhorn">Flugelhorn</span>
+      <span class="tile" role="radio"><span><span data-nb="Althorn">Tenor horn</span><small data-nb="i Ess">in E♭</small></span></span>
+      <span class="tile on" role="radio" aria-checked="true" data-nb="Baryton">Baritone</span>
+      <span class="tile" role="radio" data-nb="Eufonium">Euphonium</span>
+      <span class="tile" role="radio" data-nb="Trombone">Trombone</span>
+      <span class="tile" role="radio" data-nb="Basstrombone">Bass trombone</span>
+      <span class="tile" role="radio" data-nb="Ess-bass">E♭ Bass</span>
+      <span class="tile" role="radio" data-nb="B-bass">B♭ Bass</span>
+      <span class="tile" role="radio" data-nb="Slagverk">Percussion</span>
+    </fieldset>
+
+    <p class="q-label" data-nb="Hvilken stemme?">Which part?</p>
+    <span class="seg wide" role="radiogroup" aria-label="Which part?"><span data-nb="1. baryton">1st Baritone</span><span data-nb="2. baryton">2nd Baritone</span></span>
+
+    <p class="q-label" data-nb="Du leser">You read</p>
+    <span class="seg wide" role="radiogroup" aria-label="You read"><span class="on" data-nb="G-nøkkel i B">Treble clef in B♭</span><span data-nb="F-nøkkel, klingende">Bass clef, as it sounds</span></span>
+  </div>
+  <div class="bottom" style="display:flex; flex-direction: column; gap: 2px; padding-top: var(--bc-space-2)">
+    <button class="btn primary block" aria-disabled="true" aria-describedby="why" style="opacity: 0.45" data-nb="Fortsett">Continue</button>
+    <p id="why" class="caption" style="text-align:center" data-nb="Velg hvilken stemme du spiller.">Choose which part you play.</p>
+    <button class="btn plain block" style="min-height: 44px" data-nb="Jeg dirigerer eller lytter">I conduct or listen</button>
+  </div>
+  <div class="homebar"></div>
+</div>
+
+<div class="desktop"></div>
+</body>
+</html>

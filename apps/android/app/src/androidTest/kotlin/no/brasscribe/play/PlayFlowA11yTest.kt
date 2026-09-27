@@ -22,6 +22,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
@@ -228,5 +232,39 @@ class PlayFlowA11yTest {
         // North American Braille ASCII with CRLF lines; the music lines fit 40 cells (the title may not).
         val lines = brf.split("\r\n")
         assertTrue("BRF", brf.length > 1000 && lines.size > 50 && lines.count { it.length <= 40 } >= lines.size * 9 / 10)
+    }
+
+    /** Listen to this bar turns into Stop in the same place and size; Space and Enter toggle it; it comes back by itself. */
+    @Test
+    fun listenToThisBarIsStoppable() {
+        rule.onNodeWithText("Try the demo").performClick()
+        rule.onNodeWithText("Soloist with orchestra or band").performClick()
+        rule.onNodeWithText("Continue").performClick()
+        waitFor(isHeading() and hasText("Check ", substring = true), 60_000)
+        val button = rule.onNodeWithTag("listen-bar", useUnmergedTree = false)
+        button.performScrollTo()
+        val before = button.fetchSemanticsNode().boundsInRoot
+        button.performClick()
+        // The score's bar is decoded from the rendered MP3 first.
+        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        val during = button.fetchSemanticsNode().boundsInRoot
+        assertEquals("same place and size", before, during)
+        rule.onNodeWithText("Listen to this bar").assertDoesNotExist()
+        // A hardware keyboard: out of touch mode, so the button can take focus.
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+        rule.waitForIdle()
+        button.requestFocus()
+        button.performKeyInput { pressKey(Key.Spacebar) }
+        runCatching { rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() } }.onFailure {
+            throw AssertionError("after Space: " + button.fetchSemanticsNode().config.toString(), it)
+        }
+        // Announced without a bar over the card.
+        rule.waitUntil(5_000) { rule.onAllNodes(hasContentDescription("Stopped"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        button.requestFocus()
+        button.performKeyInput { pressKey(Key.Enter) }
+        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        // A bar lasts a few seconds: then it is Listen again, without a press.
+        rule.waitUntil(30_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
+        rule.onRoot().tryPerformAccessibilityChecks()
     }
 }

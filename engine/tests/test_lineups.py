@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from brasscribe_engine.talking_score import NB_PART_NAMES
-from brasscribe_music.instruments import LINEUPS, QUARTET, part_banks
+from brasscribe_music.instruments import LINEUPS, part_banks
 
 MAPPING = Path(__file__).resolve().parents[2] / "sounds" / "mapping.json"
 
@@ -33,6 +33,7 @@ def test_rust_nb_names_match():
 def test_every_part_is_in_the_sound_mapping():
     parts = json.loads(MAPPING.read_text())["parts"]
     missing = [p.name for _, p in _pitched() if p.name not in parts]
-    if missing and all(n in {p.name for p in QUARTET.parts} for n in missing):
-        pytest.xfail(f"quartet parts {missing} come with the per-instrument band sounds (sounds/mapping.json)")
     assert not missing
+    lineups = json.loads(MAPPING.read_text())["lineups"]
+    for lineup in LINEUPS.values():
+        assert lineups[lineup.name] == [p.name for p in lineup.parts], lineup.name

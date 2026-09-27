@@ -230,7 +230,7 @@ public class AlphaTabTests(ITestOutputHelper log)
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var dir = TestPaths.RepoRoot is { } root ? Path.Combine(root, "data", "sounds", "built") : null;
         if (golden is null || dir is null || !Directory.Exists(dir)) return;
-        var set = BrassSoundSet.Load(dir);
+        var set = BrassSoundSet.Load(dir, TestPaths.RepoFile("sounds/mapping.json"));
         if (set.Fonts.Count == 0) return;
 
         var output = new BufferedSynthOutput();

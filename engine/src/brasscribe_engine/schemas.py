@@ -45,8 +45,10 @@ class DeviceInfo(BaseModel):
     name: str
     platform: str
     paired_at: str = Field(description="ISO 8601, UTC")
-    last_seen: str = Field(description="ISO 8601, UTC; updated at most every 5 minutes")
+    last_seen: str = Field(description="ISO 8601, UTC; updated on every request the device makes")
     rotated_at: str | None = None
+    online: bool = Field(description="seen in the last 60 seconds (Play apps send GET /v1/devices/me every "
+                                            "20 s while open)")
 
 
 class DeviceSelf(DeviceInfo):
@@ -66,6 +68,19 @@ class PairingOpen(BaseModel):
     ttl_s: float | None = Field(600, description="seconds the code stays valid; null keeps it open until closed")
     single_use: bool = True
     extend: bool = Field(False, description="keep the current code and push its expiry out by ttl_s")
+
+
+class EngineStatus(BaseModel):
+    """What the desktop helper shows about the running engine; polled every few seconds."""
+
+    server_id: str
+    server_name: str = Field(description="'Brasscribe on <computer name>'")
+    version: str
+    online_devices: int = Field(description="paired devices seen in the last 60 seconds")
+    paired_devices: int
+    pairing_open: bool = Field(description="whether a pairing code is accepted right now")
+    jobs_running: int
+    jobs_queued: int
 
 
 class PairingState(BaseModel):
@@ -165,6 +180,8 @@ class Job(BaseModel):
     error: str | None = None
     progress: float = Field(0.0, description="share of stages finished, 0..1")
     previous_run_id: str | None = Field(None, description="the job this one re-runs, if any")
+    device_name: str | None = Field(None, description="name of the paired device that started the job; null when "
+                                    "started on the engine's own computer (Studio, loopback) or with a static token")
     stages: list[StageState]
     outputs: list[str] = Field(default_factory=list, description="names fetchable under /v1/jobs/{id}/artifacts/{name}")
 

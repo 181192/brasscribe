@@ -1,3 +1,4 @@
+import Network
 import ScoreKit
 import SwiftUI
 import TranscriptionKit
@@ -24,7 +25,13 @@ struct BrasscribePlayApp: App {
                 .environment(app)
                 .tint(Color.Brasscribe.primary)
                 .preferredColorScheme(LaunchOptions.colorScheme)
-                .onOpenURL { url in Task { await app.accept(url: url) } }
+                .onOpenURL { url in
+                    if url.scheme?.lowercased() == "brasscribe" {
+                        if let link = PairingLink(url: url) { app.openPairingLink(link) }
+                    } else {
+                        Task { await app.accept(url: url) }
+                    }
+                }
         }
         #if os(macOS)
         .defaultSize(width: 1280, height: 900)
@@ -46,10 +53,77 @@ enum LaunchOptions {
         return args[i + 1] == "dark" ? .dark : .light
     }
 
-    /// `-screen home|source|transcribing|review|score|part|export|first-run|error`
+    /// `-screen home|source|transcribing|review|review-listening|score|part|export|first-run|error`
     static var screen: String? {
         guard let i = args.firstIndex(of: "-screen"), i + 1 < args.count else { return nil }
         return args[i + 1]
+    }
+
+    /// `-connection connected|reconnecting|offline|needs-pairing`: show that connection state without
+    /// talking to a computer (screenshots and UI tests).
+    static var connection: ConnectionState? {
+        guard let i = args.firstIndex(of: "-connection"), i + 1 < args.count else { return nil }
+        let name = "Brasscribe on Studio Mac"
+        switch args[i + 1] {
+        case "connected": return .connected(serverName: name)
+        case "reconnecting": return .reconnecting(serverName: name)
+        case "needs-pairing": return .needsPairing(serverName: name)
+        case "offline": return .offline
+        default: return nil
+        }
+    }
+}
+
+/// Keeps the heartbeat to the computer running while the app is in front, and checks at once when the
+/// network changes.
+struct ConnectionLifecycle: ViewModifier {
+    @Environment(AppModel.self) private var app
+    @Environment(\.scenePhase) private var phase
+    @State private var path = NetworkPathWatcher()
+
+    func body(content: Content) -> some View {
+        content
+            .announcesConnectionChanges(app.connection)
+            .onChange(of: phase, initial: true) { _, p in
+                if let staged = LaunchOptions.connection {
+                    guard !app.connection.staged else { return }
+                    let record = staged == .offline ? nil
+                        : EngineRecord(serverID: "7f3a9c2e", serverName: "Brasscribe on Studio Mac", deviceID: "d-41b2", token: "staged",
+                                       lastAddress: "http://192.168.1.20:8765", lastOK: Date().addingTimeInterval(-12))
+                    app.connection.stage(staged, record: record)
+                    return
+                }
+                switch p {
+                case .active: app.connection.resume()
+                case .background: app.connection.suspend()
+                default: break
+                }
+            }
+            .onChange(of: path.generation) { _, _ in app.connection.poke() }
+            .task { path.start() }
+    }
+}
+
+/// Counts network path changes (Wi-Fi joined, lost, switched).
+@MainActor @Observable
+final class NetworkPathWatcher {
+    private(set) var generation = 0
+    @ObservationIgnored private var monitor: NWPathMonitor?
+    @ObservationIgnored private var updates = 0
+
+    func start() {
+        guard monitor == nil else { return }
+        let m = NWPathMonitor()
+        m.pathUpdateHandler = { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // the first update only reports the current path
+                self.updates += 1
+                if self.updates > 1 { self.generation += 1 }
+            }
+        }
+        m.start(queue: .main)
+        monitor = m
     }
 }
 
@@ -88,6 +162,7 @@ struct RootView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
+        .modifier(ConnectionLifecycle())
         .scoreOptionDialogs()
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
         .sheet(isPresented: $app.showSettings) { SettingsView() }

@@ -30,11 +30,21 @@ public sealed partial class ScoreViewModel : ObservableObject
         _announcer = announcer;
         _s = strings;
         Original = original;
+        player.BarOnceEnded += (_, _) => EndListening();
+        if (original is not null) original.RangeEnded += (_, _) => EndListening();
         // The native core humanizes playback; the managed fallback plays the score's exact timing.
         if (core.IsNative && player.Player is Playback.AlphaTabScorePlayer alphaTab) alphaTab.Humanizer ??= core.Humanize;
     }
 
     public PlayerViewModel Player { get; }
+
+    /// <summary>Set when the band sounds are not installed: one line above the player says so.</summary>
+    public bool BandSoundsMissing => Player.Player is AlphaTabScorePlayer { SoundsMissingFrom: not null };
+    public string BandSoundsMissingText => BandSoundsMissing ? _s["Player_SoundsMissing"] : "";
+    /// <summary>Where the band sounds were expected, for the band's tech person.</summary>
+    public string BandSoundsMissingDetails =>
+        Player.Player is AlphaTabScorePlayer { SoundsMissingFrom: { } path } ? _s.Format("Player_SoundsMissing_Details", path) : "";
+    public string TechDetailsHeading => _s["Error_DetailsHeading"];
     public IOriginalPlayer? Original { get; }
     public TalkingScoreDocument? Document { get; private set; }
     public Composition? Composition { get; private set; }
@@ -414,23 +424,67 @@ public sealed partial class ScoreViewModel : ObservableObject
         Announcement = _nav.Text;
     }
 
-    /// <summary>"Listen to this bar": the original recording when it is loaded and timed, else the score, looped.</summary>
+    /// <summary>A bar from "Listen to this bar" is playing; the button says "Stop" meanwhile.</summary>
+    [ObservableProperty] public partial bool IsListeningToBar { get; private set; }
+
+    private int _listeningBar;
+    private bool _listeningOriginal;
+
+    /// <summary>
+    /// "Listen to this bar", and "Stop" while it plays: the bar once, from the original recording when it
+    /// is loaded and timed, else from the score. It goes back to "Listen" when the bar ends.
+    /// </summary>
     [RelayCommand]
     private void ListenToBar()
     {
+        if (IsListeningToBar)
+        {
+            StopListening();
+            return;
+        }
         if (_nav is null) return;
         int bar = _nav.Bar.Number;
         if (Original is { HasMedia: true } && BarSeconds(_nav.PartIndex, _nav.BarIndex) is { } span)
         {
-            Original.PlayRange(TimeSpan.FromSeconds(span.Start), TimeSpan.FromSeconds(span.End), loop: true);
+            Original.PlayRange(TimeSpan.FromSeconds(span.Start), TimeSpan.FromSeconds(span.End), loop: false);
+            _listeningOriginal = true;
             _announcer.Announce(_s.Format("Score_ListeningOriginal", bar));
         }
         else
         {
-            Player.PlayBar(bar);
+            if (!Player.Player.IsReady)
+            {
+                _announcer.Announce(_s["Player_NotReady"], AnnouncementKind.Important);
+                return;
+            }
+            Player.PlayBarOnce(bar);
+            _listeningOriginal = false;
             _announcer.Announce(_s.Format("Score_ListeningScore", bar));
         }
+        _listeningBar = bar;
+        IsListeningToBar = true;
     }
+
+    /// <summary>Stops "Listen to this bar" (Stop, another place, leaving the screen). Quiet when the move itself is announced.</summary>
+    public void StopListening(bool announce = true)
+    {
+        if (!IsListeningToBar) return;
+        if (_listeningOriginal) Original?.Stop();
+        else Player.StopBarOnce();
+        IsListeningToBar = false;
+        if (announce) _announcer.Announce(_s["Score_ListenStopped"]);
+    }
+
+    /// <summary>The bar played to its end: back to "Listen".</summary>
+    private void EndListening()
+    {
+        if (!IsListeningToBar) return;
+        IsListeningToBar = false;
+        _announcer.Announce(_s.Format("Score_ListenEnded", _listeningBar));
+    }
+
+    /// <summary>Shows the "Stop" state without playing (screenshots of the listening state).</summary>
+    internal void PreviewListening() => IsListeningToBar = true;
 
     /// <summary>Recording time of a bar from the first timed events of it and the next bar.</summary>
     public (double Start, double End)? BarSeconds(int partIndex, int barIndex)
@@ -455,6 +509,8 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     private void Sync(string text, bool announce)
     {
+        // Another bar: "Listen to this bar" was about the old one.
+        if (IsListeningToBar && _nav!.Bar.Number != _listeningBar) StopListening(announce: false);
         Announcement = text;
         CurrentBar = _nav!.Bar.Number;
         CurrentPartIndex = _nav.PartIndex;

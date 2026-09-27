@@ -34,7 +34,9 @@ class EngineContractTest {
         "Composition" to Composition.serializer(), "Voice" to Voice.serializer(), "Note" to Note.serializer(),
         "Meter" to Meter.serializer(), "KeySig" to KeySig.serializer(), "Evidence" to Evidence.serializer(),
         "NoteEvidence" to NoteEvidence.serializer(), "ModelHeard" to ModelHeard.serializer(), "ModelInfo" to ModelInfo.serializer(),
-        "RunUpdate" to RunUpdate.serializer(),
+        "RunUpdate" to RunUpdate.serializer(), "DeviceSelf" to DeviceSelf.serializer(), "RotateResponse" to RotateResponse.serializer(),
+        "PairRequestCreate" to PairRequestCreate.serializer(), "PairRequestInfo" to PairRequestInfo.serializer(),
+        "PairRequestResult" to PairRequestResult.serializer(),
     )
 
     @Test
@@ -44,6 +46,7 @@ class EngineContractTest {
         }.toSet()
         assertEquals("operations not covered", emptySet<String>(), ops - EngineApi.OPERATIONS - EngineApi.NOT_USED)
         assertEquals("operations the spec no longer has", emptySet<String>(), EngineApi.OPERATIONS - ops)
+        // NOT_USED may name computer-only operations the engine is adding (getStatus) before the spec has them.
     }
 
     @Test

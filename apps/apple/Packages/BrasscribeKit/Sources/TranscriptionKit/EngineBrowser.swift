@@ -3,14 +3,27 @@ import Network
 import Observation
 
 /// Finds engines on the local network that advertise `_brasscribe._tcp` (`brasscribe serve --lan`).
-/// Discovery only suggests addresses; the engine still requires pairing.
+/// Discovery only suggests addresses; the engine still requires pairing. The TXT record carries the
+/// engine's stable `id` (matched against a stored credential) and `host`, the computer's own name.
 @MainActor @Observable
 public final class EngineBrowser {
     public static let serviceType = "_brasscribe._tcp"
 
     public struct Engine: Identifiable, Hashable, Sendable {
+        /// The mDNS instance name ("Brasscribe on Studio", maybe with " (2)" after a name clash).
         public let name: String
+        /// The engine's stable server id, from TXT `id`; nil for engines too old to send it.
+        public var serverID: String?
+        /// The computer's name, from TXT `host`.
+        public var host: String?
         public var id: String { name }
+
+        public init(name: String, serverID: String? = nil, host: String? = nil) {
+            self.name = name; self.serverID = serverID; self.host = host
+        }
+
+        /// The computer's name for sentences such as "Brasscribe on {computer}".
+        public var computerName: String { host ?? EngineRecord.computerName(fromServerName: name) }
     }
 
     public private(set) var engines: [Engine] = []
@@ -24,9 +37,13 @@ public final class EngineBrowser {
 
     public func start() {
         guard browser == nil else { return }
-        let b = NWBrowser(for: .bonjour(type: Self.serviceType, domain: nil), using: .tcp)
+        let b = NWBrowser(for: .bonjourWithTXTRecord(type: Self.serviceType, domain: nil), using: .tcp)
         b.browseResultsChangedHandler = { [weak self] results, _ in
-            MainActor.assumeIsolated { self?.update(results.map(\.endpoint)) }
+            let found = results.map { r -> (NWEndpoint, [String: String]) in
+                if case let .bonjour(txt) = r.metadata { return (r.endpoint, txt.dictionary) }
+                return (r.endpoint, [:])
+            }
+            MainActor.assumeIsolated { self?.update(found) }
         }
         b.stateUpdateHandler = { [weak self] state in
             MainActor.assumeIsolated {
@@ -46,12 +63,30 @@ public final class EngineBrowser {
         browser = nil
     }
 
-    private func update(_ found: [NWEndpoint]) {
+    private func update(_ found: [(NWEndpoint, [String: String])]) {
         endpoints = [:]
-        for endpoint in found {
-            if case let .service(name, _, _, _) = endpoint { endpoints[name] = endpoint }
+        var list: [Engine] = []
+        for (endpoint, txt) in found {
+            guard case let .service(name, _, _, _) = endpoint else { continue }
+            endpoints[name] = endpoint
+            list.append(Engine(name: name, serverID: txt["id"].flatMap { $0.isEmpty ? nil : $0 },
+                               host: txt["host"].flatMap { $0.isEmpty ? nil : $0 }))
         }
-        engines = endpoints.keys.sorted().map(Engine.init(name:))
+        engines = list.sorted { $0.name < $1.name }
+    }
+
+    /// Browses (if not already) until the engine with this server id shows up, then resolves its address.
+    /// Nil when it hasn't appeared within `timeout`.
+    public func find(serverID: String, timeout: TimeInterval = 5) async -> URL? {
+        let wasRunning = browser != nil
+        start()
+        defer { if !wasRunning { stop() } }
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline, !Task.isCancelled {
+            if let e = engines.first(where: { $0.serverID == serverID }) { return try? await resolve(e) }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        return nil
     }
 
     /// The engine's base URL, resolved to an IPv4 address and port.

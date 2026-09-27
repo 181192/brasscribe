@@ -174,7 +174,7 @@ def test_last_seen_writes_are_throttled(tmp_path):
     clock.t += 10
     reg.authenticate(token)
     assert (tmp_path / "devices.json").read_text() == before
-    clock.t += companion.SEEN_WRITE_S
+    clock.t += companion.SEEN_FLUSH_S
     reg.authenticate(token)
     assert (tmp_path / "devices.json").read_text() != before
 

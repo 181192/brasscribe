@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Screenshots of every key screen, light and dark, into docs/screenshots/.
-# Usage: scripts/screenshots.sh mac|iphone|ipad [screen …]     (NB=1 for Norwegian, named …-nb-…)
+# Usage: scripts/screenshots.sh mac|iphone|ipad [screen …]     (NB=1 for Norwegian, named …-nb-…;
+#        CONNECTION=offline|reconnecting|needs-pairing for another connection row, default connected)
 # Build first (make build, or xcodebuild … build). The macOS build can carry another bundle
 # id (PLAY_BUNDLE_ID=…) so it runs beside another copy of the app.
 set -uo pipefail
@@ -11,12 +12,15 @@ OUT="$HERE/docs/screenshots"
 mkdir -p "$OUT"
 TARGET="$1"; shift
 SCREENS=("$@")
-[ ${#SCREENS[@]} -eq 0 ] && SCREENS=(home home-full source transcribing transcribing-cancel review finish-later output score part export first-run error)
+[ ${#SCREENS[@]} -eq 0 ] && SCREENS=(home home-full source transcribing transcribing-cancel review review-listening finish-later output score part export first-run error)
 FIXTURES="$ROOT/data/golden/mikkel-arranged-band"
 SF="$ROOT/data/soundfonts/MuseScore_General.sf2"
 WAIT="${WAIT:-12}"
 LANGARGS=(); TAG=""
 if [ "${NB:-0}" = 1 ]; then LANGARGS=(-AppleLanguages "(nb)" -AppleLocale nb_NO); TAG="-nb"; fi
+# the connection row shows a fixed state (connected|reconnecting|offline|needs-pairing); the default is
+# "connected", so no Brasscribe running on this Mac changes the pictures
+LANGARGS+=(-connection "${CONNECTION:-connected}")
 
 shoot_mac() {   # screen appearance
   # through Launch Services: a child of this shell is refused activation and opens no window

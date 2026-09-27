@@ -153,6 +153,14 @@
       "range": [
         52,
         82
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "trumpet",
+          "why": "Iowa horn stops at F5 (77); the flugel range reaches B♭5 (82). Iowa trumpet notes above it are spectrally matched to the Iowa horn (the flugel's darker, conical tone) on the pitches both have, instead of F5 stretched up 5 semitones.",
+          "fill": "range"
+        }
       ]
     },
     "tenor-horn": {
@@ -188,6 +196,14 @@
       "range": [
         45,
         75
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "horn",
+          "why": "VSCO horn is sampled every 3-5 semitones with gaps (up to 10-semitone stretch). Iowa horn (chromatic ff, partial mf/pp) fills keys more than 2 semitones from any VSCO note, spectrally matched to VSCO horn.",
+          "fill": "layers"
+        }
       ]
     },
     "baritone": {
@@ -235,6 +251,14 @@
       "range": [
         40,
         70
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "tenor-trombone",
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
+        }
       ]
     },
     "trombone": {
@@ -252,6 +276,14 @@
       "range": [
         36,
         74
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "tenor-trombone",
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
+        }
       ]
     },
     "bass-trombone": {
@@ -321,6 +353,14 @@
       "range": [
         34,
         74
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "tenor-trombone",
+          "why": "VSCO tenor trombone stops at F4 (65); Iowa tenor trombone runs to C5 (72). Keys more than 2 semitones above the last VSCO note play Iowa samples, spectrally matched to the VSCO trombone on the 26 pitches both have, instead of a VSCO F4 stretched up to 9 semitones.",
+          "fill": "range"
+        }
       ]
     },
     "eb-bass": {
@@ -345,6 +385,14 @@
       "range": [
         24,
         72
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "tuba",
+          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones. VSCO's mf and ff tuba layers stop at B♭1 (34), so Iowa also fills those layers down to C1.",
+          "fill": "layers"
+        }
       ]
     },
     "bb-bass": {
@@ -380,6 +428,14 @@
       "range": [
         22,
         72
+      ],
+      "extend": [
+        {
+          "library": "iowa-mis",
+          "instrument": "tuba",
+          "why": "VSCO tuba starts at F1 (29); Iowa tuba reaches C1 (24). Pedal keys below D1 play Iowa samples spectrally matched to VSCO tuba, instead of F1 stretched down up to 7 semitones. VSCO's mf and ff tuba layers stop at B♭1 (34), so Iowa also fills those layers down to C1.",
+          "fill": "layers"
+        }
       ]
     }
   },
@@ -392,7 +448,7 @@
         }
       ],
       "seat": "soprano",
-      "gain_db": -1.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": 3,
         "diatonic": 2,
@@ -416,8 +472,11 @@
           "midi-program": 57,
           "midi-bank": 2
         },
-        "channel_gain_db": -5.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
     },
     "Solo Cornet": {
       "instrument": "bb-cornet",
@@ -433,6 +492,44 @@
         },
         {
           "target": "cornet-b"
+        }
+      ],
+      "seat": "solo-cornets",
+      "gain_db": -6.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          82
+        ],
+        "comfortable": [
+          52,
+          79
+        ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -3.0,
+        "layered": true,
+        "single_voice_gain_db": 0.0
+      },
+      "balance_lu": 0.0
+    },
+    "1st Cornet": {
+      "instrument": "bb-cornet",
+      "players": [
+        {
+          "target": "cornet-a"
         }
       ],
       "seat": "solo-cornets",
@@ -460,8 +557,13 @@
           "midi-program": 57,
           "midi-bank": 1
         },
-        "channel_gain_db": -7.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": true,
+        "single_voice_gain_db": 0.0
+      },
+      "preset_of": "Solo Cornet",
+      "note": "One player. Plays the Solo Cornet preset of the band SoundFont (same bank and program).",
+      "balance_lu": 0.0
     },
     "Repiano Cornet": {
       "instrument": "bb-cornet",
@@ -471,7 +573,7 @@
         }
       ],
       "seat": "repiano",
-      "gain_db": -1.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": -2,
         "diatonic": -1,
@@ -495,8 +597,11 @@
           "midi-program": 57,
           "midi-bank": 3
         },
-        "channel_gain_db": -5.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
     },
     "2nd Cornet": {
       "instrument": "bb-cornet",
@@ -509,7 +614,7 @@
         }
       ],
       "seat": "second-cornets",
-      "gain_db": -4.0,
+      "gain_db": -7.0,
       "transposition": {
         "chromatic": -2,
         "diatonic": -1,
@@ -533,8 +638,11 @@
           "midi-program": 57,
           "midi-bank": 4
         },
-        "channel_gain_db": -11.0
-      }
+        "channel_gain_db": -7.0,
+        "layered": true,
+        "single_voice_gain_db": -4.0
+      },
+      "balance_lu": -4.0
     },
     "3rd Cornet": {
       "instrument": "bb-cornet",
@@ -547,7 +655,7 @@
         }
       ],
       "seat": "third-cornets",
-      "gain_db": -4.0,
+      "gain_db": -8.0,
       "transposition": {
         "chromatic": -2,
         "diatonic": -1,
@@ -571,8 +679,11 @@
           "midi-program": 57,
           "midi-bank": 5
         },
-        "channel_gain_db": -11.0
-      }
+        "channel_gain_db": -8.0,
+        "layered": true,
+        "single_voice_gain_db": -5.0
+      },
+      "balance_lu": -5.0
     },
     "Flugelhorn": {
       "instrument": "flugelhorn",
@@ -582,7 +693,7 @@
         }
       ],
       "seat": "flugel",
-      "gain_db": 1.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": -2,
         "diatonic": -1,
@@ -606,8 +717,11 @@
           "midi-program": 57,
           "midi-bank": 6
         },
-        "channel_gain_db": -3.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
     },
     "Solo Horn": {
       "instrument": "eb-tenor-horn",
@@ -617,7 +731,7 @@
         }
       ],
       "seat": "solo-horn",
-      "gain_db": 1.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": -9,
         "diatonic": -5,
@@ -641,8 +755,51 @@
           "midi-program": 61,
           "midi-bank": 1
         },
-        "channel_gain_db": -3.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
+    },
+    "Tenor Horn": {
+      "instrument": "eb-tenor-horn",
+      "players": [
+        {
+          "target": "tenor-horn"
+        }
+      ],
+      "seat": "solo-horn",
+      "gain_db": -3.0,
+      "transposition": {
+        "chromatic": -9,
+        "diatonic": -5,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          45,
+          75
+        ],
+        "comfortable": [
+          45,
+          72
+        ]
+      },
+      "band_soundfont": {
+        "program": 60,
+        "bank": 0,
+        "staccato_bank": 64,
+        "musicxml": {
+          "midi-program": 61,
+          "midi-bank": 1
+        },
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "preset_of": "Solo Horn",
+      "note": "One player. Plays the Solo Horn preset of the band SoundFont (same bank and program).",
+      "balance_lu": -3.0
     },
     "1st Horn": {
       "instrument": "eb-tenor-horn",
@@ -652,7 +809,7 @@
         }
       ],
       "seat": "first-horn",
-      "gain_db": 0.0,
+      "gain_db": -5.0,
       "transposition": {
         "chromatic": -9,
         "diatonic": -5,
@@ -676,8 +833,11 @@
           "midi-program": 61,
           "midi-bank": 2
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -5.0,
+        "layered": false,
+        "single_voice_gain_db": -5.0
+      },
+      "balance_lu": -5.0
     },
     "2nd Horn": {
       "instrument": "eb-tenor-horn",
@@ -687,7 +847,7 @@
         }
       ],
       "seat": "second-horn",
-      "gain_db": 0.0,
+      "gain_db": -6.0,
       "transposition": {
         "chromatic": -9,
         "diatonic": -5,
@@ -711,8 +871,11 @@
           "midi-program": 61,
           "midi-bank": 3
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -6.0,
+        "layered": false,
+        "single_voice_gain_db": -6.0
+      },
+      "balance_lu": -6.0
     },
     "1st Baritone": {
       "instrument": "baritone",
@@ -722,7 +885,7 @@
         }
       ],
       "seat": "first-baritone",
-      "gain_db": 0.0,
+      "gain_db": -5.0,
       "transposition": {
         "chromatic": -14,
         "diatonic": -8,
@@ -746,8 +909,11 @@
           "midi-program": 59,
           "midi-bank": 4
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -5.0,
+        "layered": false,
+        "single_voice_gain_db": -5.0
+      },
+      "balance_lu": -5.0
     },
     "2nd Baritone": {
       "instrument": "baritone",
@@ -757,7 +923,7 @@
         }
       ],
       "seat": "second-baritone",
-      "gain_db": 0.0,
+      "gain_db": -6.0,
       "transposition": {
         "chromatic": -14,
         "diatonic": -8,
@@ -781,8 +947,11 @@
           "midi-program": 59,
           "midi-bank": 5
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -6.0,
+        "layered": false,
+        "single_voice_gain_db": -6.0
+      },
+      "balance_lu": -6.0
     },
     "1st Trombone": {
       "instrument": "tenor-trombone",
@@ -792,7 +961,7 @@
         }
       ],
       "seat": "first-trombone",
-      "gain_db": 0.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": -14,
         "diatonic": -8,
@@ -816,8 +985,11 @@
           "midi-program": 58,
           "midi-bank": 1
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
     },
     "2nd Trombone": {
       "instrument": "tenor-trombone",
@@ -827,7 +999,7 @@
         }
       ],
       "seat": "second-trombone",
-      "gain_db": 0.0,
+      "gain_db": -4.0,
       "transposition": {
         "chromatic": -14,
         "diatonic": -8,
@@ -851,8 +1023,11 @@
           "midi-program": 58,
           "midi-bank": 2
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -4.0,
+        "layered": false,
+        "single_voice_gain_db": -4.0
+      },
+      "balance_lu": -4.0
     },
     "Bass Trombone": {
       "instrument": "bass-trombone",
@@ -862,7 +1037,7 @@
         }
       ],
       "seat": "bass-trombone",
-      "gain_db": 0.0,
+      "gain_db": -3.0,
       "transposition": {
         "chromatic": 0,
         "diatonic": 0,
@@ -886,8 +1061,11 @@
           "midi-program": 58,
           "midi-bank": 3
         },
-        "channel_gain_db": -4.0
-      }
+        "channel_gain_db": -3.0,
+        "layered": false,
+        "single_voice_gain_db": -3.0
+      },
+      "balance_lu": -3.0
     },
     "Euphonium": {
       "instrument": "euphonium",
@@ -900,7 +1078,7 @@
         }
       ],
       "seat": "euphoniums",
-      "gain_db": 4.0,
+      "gain_db": -4.0,
       "transposition": {
         "chromatic": -14,
         "diatonic": -8,
@@ -924,8 +1102,11 @@
           "midi-program": 59,
           "midi-bank": 3
         },
-        "channel_gain_db": 0.0
-      }
+        "channel_gain_db": -1.0,
+        "layered": false,
+        "single_voice_gain_db": -1.0
+      },
+      "balance_lu": -1.0
     },
     "E♭ Bass": {
       "instrument": "eb-bass",
@@ -938,7 +1119,7 @@
         }
       ],
       "seat": "eb-basses",
-      "gain_db": 3.0,
+      "gain_db": -4.0,
       "transposition": {
         "chromatic": -21,
         "diatonic": -12,
@@ -962,8 +1143,11 @@
           "midi-program": 59,
           "midi-bank": 1
         },
-        "channel_gain_db": -1.0
-      }
+        "channel_gain_db": -1.0,
+        "layered": false,
+        "single_voice_gain_db": -1.0
+      },
+      "balance_lu": -1.0
     },
     "B♭ Bass": {
       "instrument": "bb-bass",
@@ -976,7 +1160,7 @@
         }
       ],
       "seat": "bb-basses",
-      "gain_db": 3.0,
+      "gain_db": -4.0,
       "transposition": {
         "chromatic": -26,
         "diatonic": -15,
@@ -1000,8 +1184,11 @@
           "midi-program": 59,
           "midi-bank": 2
         },
-        "channel_gain_db": -1.0
-      }
+        "channel_gain_db": -1.0,
+        "layered": false,
+        "single_voice_gain_db": -1.0
+      },
+      "balance_lu": -1.0
     },
     "Percussion": {
       "instrument": "drum-kit",
@@ -1011,7 +1198,7 @@
         }
       ],
       "seat": "percussion",
-      "gain_db": -5.5,
+      "gain_db": -13.0,
       "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass.",
       "transposition": {
         "chromatic": 0,
@@ -1037,8 +1224,13 @@
           "midi-program": 1
         },
         "note": "General MIDI Standard kit from MS Basic (MIT), GM drum note numbers.",
-        "channel_gain_db": -9.5
-      }
+        "channel_gain_db": -13.0,
+        "single_voice_gain_db": -13.0,
+        "layered": false
+      },
+      "balance_lu": -6.0,
+      "kit_offset_db": -7.0,
+      "kit_offset_note": "The MS Basic kit is not levelled like the brass targets (build.py TARGET_K_DB). Measured on the Mikkel render: at balance_lu alone the kit sat 7.1 LU above its target against the Solo Cornet stem, so gain_db and channel_gain_db carry this offset."
     }
   },
   "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback.",
@@ -1047,5 +1239,248 @@
     "about": "One SoundFont for the whole band, built by sounds/band.py. Every brass part has its own sustain preset at (bank, program) and a staccato preset at (staccato_bank = bank + 64, program). The program is the part's General MIDI program from music/src/brasscribe_music/instruments.py (gm_program), so a GM player that ignores banks still plays the right family; bank 0 of each program is the section principal (Solo Cornet, 1st Trombone, E-flat Bass, Solo Horn), which is also what a bank-less lookup finds. Percussion is bank 128 program 0 on MIDI channel 10. MusicXML numbers are 1-based: <midi-program> = program + 1, <midi-bank> = bank + 1.",
     "layering": "A part whose players use more than one target (the cornet desks) layers those targets in its preset, detuned by +-3 cents, so one MIDI channel sounds like a section; the second voice adds about 3 dB, which channel_gain_db compensates.",
     "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine."
+  },
+  "lineups": {
+    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/brasscribe-core/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset.",
+    "Brass band": [
+      "Soprano Cornet",
+      "Solo Cornet",
+      "Repiano Cornet",
+      "2nd Cornet",
+      "3rd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Horn",
+      "2nd Horn",
+      "1st Baritone",
+      "2nd Baritone",
+      "1st Trombone",
+      "2nd Trombone",
+      "Bass Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass",
+      "Percussion"
+    ],
+    "Minimal brass": [
+      "Solo Cornet",
+      "2nd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass"
+    ],
+    "Brass quartet": [
+      "1st Cornet",
+      "2nd Cornet",
+      "Tenor Horn",
+      "Euphonium"
+    ]
+  },
+  "resolve": {
+    "about": "How every player turns a score part into a band SoundFont preset. The same steps on every platform; sounds/partsound.py is the reference and sounds/partsound-vectors.json the shared test vectors. A brass part never falls back to General MIDI or a test tone: if steps 1-4 all miss, step 5 still picks a brass preset from the GM program family, and only a non-brass GM program is left unresolved (the app then says so).",
+    "normalize": "lowercase; '♭' -> 'b', '♯' -> '#'; every run of whitespace (including U+00A0) -> one space; trim.",
+    "steps": [
+      "1. exact: the normalized name equals a normalized key of parts",
+      "2. alias: the normalized name is a key of aliases",
+      "3. keyword: the first keywords entry whose text is a substring of the normalized name",
+      "4. instrument: the MusicXML <instrument-sound> id, or an instrument id from instruments.py, in instruments",
+      "5. program: the part's 0-based General MIDI program in programs"
+    ],
+    "aliases": {
+      "1st cornet": "1st Cornet",
+      "cornet 1": "1st Cornet",
+      "cornet i": "1st Cornet",
+      "principal cornet": "Solo Cornet",
+      "2nd cornet": "2nd Cornet",
+      "cornet 2": "2nd Cornet",
+      "cornet ii": "2nd Cornet",
+      "tenor horn": "Tenor Horn",
+      "horn": "Tenor Horn",
+      "eb horn": "Tenor Horn",
+      "eb tenor horn": "Tenor Horn",
+      "alto horn": "Tenor Horn",
+      "flugel": "Flugelhorn",
+      "flugel horn": "Flugelhorn",
+      "flügelhorn": "Flugelhorn",
+      "sop": "Soprano Cornet",
+      "soprano": "Soprano Cornet",
+      "eb cornet": "Soprano Cornet",
+      "eb soprano cornet": "Soprano Cornet",
+      "baritone": "1st Baritone",
+      "euph": "Euphonium",
+      "euphonium 1": "Euphonium",
+      "euphonium 2": "Euphonium",
+      "trombone": "1st Trombone",
+      "tenor trombone": "1st Trombone",
+      "bass trombone": "Bass Trombone",
+      "b. tbn.": "Bass Trombone",
+      "tuba": "E♭ Bass",
+      "bass": "E♭ Bass",
+      "eb tuba": "E♭ Bass",
+      "bb tuba": "B♭ Bass",
+      "basses": "E♭ Bass",
+      "drums": "Percussion",
+      "drum kit": "Percussion",
+      "drum set": "Percussion",
+      "kit": "Percussion",
+      "sop.": "Soprano Cornet",
+      "sop. cnt.": "Soprano Cornet"
+    },
+    "keywords": [
+      [
+        "soprano",
+        "Soprano Cornet"
+      ],
+      [
+        "repiano",
+        "Repiano Cornet"
+      ],
+      [
+        "flugel",
+        "Flugelhorn"
+      ],
+      [
+        "flügel",
+        "Flugelhorn"
+      ],
+      [
+        "3rd cornet",
+        "3rd Cornet"
+      ],
+      [
+        "2nd cornet",
+        "2nd Cornet"
+      ],
+      [
+        "1st cornet",
+        "1st Cornet"
+      ],
+      [
+        "cornet",
+        "Solo Cornet"
+      ],
+      [
+        "trumpet",
+        "Solo Cornet"
+      ],
+      [
+        "2nd horn",
+        "2nd Horn"
+      ],
+      [
+        "1st horn",
+        "1st Horn"
+      ],
+      [
+        "solo horn",
+        "Solo Horn"
+      ],
+      [
+        "2nd baritone",
+        "2nd Baritone"
+      ],
+      [
+        "baritone",
+        "1st Baritone"
+      ],
+      [
+        "euph",
+        "Euphonium"
+      ],
+      [
+        "horn",
+        "Tenor Horn"
+      ],
+      [
+        "bass trombone",
+        "Bass Trombone"
+      ],
+      [
+        "2nd trombone",
+        "2nd Trombone"
+      ],
+      [
+        "trombone",
+        "1st Trombone"
+      ],
+      [
+        "bb bass",
+        "B♭ Bass"
+      ],
+      [
+        "b-flat bass",
+        "B♭ Bass"
+      ],
+      [
+        "bb tuba",
+        "B♭ Bass"
+      ],
+      [
+        "eb bass",
+        "E♭ Bass"
+      ],
+      [
+        "e-flat bass",
+        "E♭ Bass"
+      ],
+      [
+        "tuba",
+        "E♭ Bass"
+      ],
+      [
+        "bass",
+        "E♭ Bass"
+      ],
+      [
+        "perc",
+        "Percussion"
+      ],
+      [
+        "drum",
+        "Percussion"
+      ]
+    ],
+    "instruments": {
+      "brass.cornet.soprano": "Soprano Cornet",
+      "eb-soprano-cornet": "Soprano Cornet",
+      "brass.cornet": "Solo Cornet",
+      "bb-cornet": "Solo Cornet",
+      "brass.trumpet": "Solo Cornet",
+      "brass.flugelhorn": "Flugelhorn",
+      "flugelhorn": "Flugelhorn",
+      "brass.alto-horn": "Tenor Horn",
+      "eb-tenor-horn": "Tenor Horn",
+      "brass.french-horn": "Tenor Horn",
+      "brass.baritone-horn": "1st Baritone",
+      "baritone": "1st Baritone",
+      "brass.trombone": "1st Trombone",
+      "tenor-trombone": "1st Trombone",
+      "brass.trombone.bass": "Bass Trombone",
+      "bass-trombone": "Bass Trombone",
+      "brass.euphonium": "Euphonium",
+      "euphonium": "Euphonium",
+      "brass.tuba": "E♭ Bass",
+      "eb-bass": "E♭ Bass",
+      "bb-bass": "B♭ Bass",
+      "drum.group.set": "Percussion",
+      "drum-kit": "Percussion"
+    },
+    "programs": {
+      "56": "Solo Cornet",
+      "59": "Solo Cornet",
+      "61": "Solo Cornet",
+      "62": "Solo Cornet",
+      "63": "Solo Cornet",
+      "57": "1st Trombone",
+      "58": "E♭ Bass",
+      "60": "Tenor Horn"
+    }
+  },
+  "balance": {
+    "about": "parts[].balance_lu is the part's loudness as heard in the band at the same dynamic, in LU relative to the Solo Cornet section (whole desk, not one player). Every built target is levelled so its mf layer has the same K-weighted level (sounds/build.py TARGET_K_DB), so balance is only this number: apps set channel volume to channel_gain_db = balance_lu - max(balance_lu) - 3 dB for presets that layer two targets; the offline renderer sets each player to gain_db = balance_lu - 10 log10(players). sounds/checks.py balance measures it back from renders.",
+    "rationale": "Brass-band practice: the solo cornets and the basses carry the band; soprano, repiano, flugel and solo horn sit about 3 LU under the solo cornets; the back-row cornets, horns and baritones lower again (4-6 LU), second parts 1 LU under firsts; trombones just under the cornets; the euphoniums (two players) are the second solo voice at -1; E♭ and B♭ basses (two each) at -1; percussion supports at -6. Heuristic, to be confirmed by listening with players."
   }
 }

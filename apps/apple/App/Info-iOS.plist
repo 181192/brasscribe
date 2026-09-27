@@ -65,6 +65,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>no.brasscribe.pair</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>brasscribe</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
@@ -80,6 +91,8 @@
 	<array>
 		<string>_brasscribe._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Brasscribe Play scans the code your computer shows, to connect to it.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Brasscribe Play talks to Brasscribe on your own computer to transcribe recordings.</string>
 	<key>NSMicrophoneUsageDescription</key>

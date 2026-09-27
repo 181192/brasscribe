@@ -61,7 +61,22 @@ public sealed partial class MainWindow : Window
         };
         ViewModel.Transcription.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TranscriptionViewModel.Title)) UpdateTitleBar(); };
         Root.Loaded += (_, _) => Show(ViewModel.Screen);
+
+        // The heartbeat runs while the window is in front: minimised stops it, restored checks at once.
+        AppWindow.Changed += (sender, args) =>
+        {
+            if (!args.DidPresenterChange && !args.DidVisibilityChange && !args.DidSizeChange) return;
+            bool minimized = sender.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Minimized }
+                             || !sender.IsVisible;
+            if (!HeartbeatEnabled) return;
+            if (minimized) ViewModel.Settings.Connection.Stop();
+            else ViewModel.Settings.Connection.Start();
+        };
+        Closed += (_, _) => ViewModel.Settings.Connection.Stop();
     }
+
+    /// <summary>Off for screenshots (the scenes show a fixed connection state).</summary>
+    public bool HeartbeatEnabled { get; set; } = true;
 
     public MainViewModel ViewModel { get; }
 
@@ -182,7 +197,7 @@ public sealed partial class MainWindow : Window
     private async void OnSettingsAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        await ShowSettingsAsync();
+        await OpenSettingsAsync();
     }
 
     private async void OnShortcutsAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -201,7 +216,7 @@ public sealed partial class MainWindow : Window
     }
 
     private async void OnExportClick(object sender, RoutedEventArgs e) => await ShowExportAsync();
-    private async void OnSettingsClick(object sender, RoutedEventArgs e) => await ShowSettingsAsync();
+    private async void OnSettingsClick(object sender, RoutedEventArgs e) => await OpenSettingsAsync();
     private async void OnShortcutsClick(object sender, RoutedEventArgs e) => await ShowShortcutsAsync();
 
     /// <summary>"Share or print"; focus returns to the button that opened it.</summary>
@@ -214,10 +229,25 @@ public sealed partial class MainWindow : Window
         ExportButton.Focus(FocusState.Programmatic);
     }
 
-    private async Task ShowSettingsAsync()
+    private bool _settingsOpen;
+
+    /// <summary>Settings; with a brasscribe://pair link it pairs from the link while the dialog shows the progress.</summary>
+    public async Task OpenSettingsAsync(string? pairingLink = null)
     {
-        var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot };
-        await dialog.ShowAsync();
+        if (_settingsOpen)
+        {
+            if (pairingLink is not null) await ViewModel.Settings.PairFromLinkAsync(pairingLink);
+            return;
+        }
+        _settingsOpen = true;
+        try
+        {
+            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot };
+            if (pairingLink is not null) dialog.Opened += async (_, _) => await ViewModel.Settings.PairFromLinkAsync(pairingLink);
+            await dialog.ShowAsync();
+            ViewModel.Settings.CancelAsk();
+        }
+        finally { _settingsOpen = false; }
         SettingsButton.Focus(FocusState.Programmatic);
     }
 

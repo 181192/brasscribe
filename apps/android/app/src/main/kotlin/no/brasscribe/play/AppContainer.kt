@@ -13,22 +13,46 @@ import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.model.CoreBridge
 import no.brasscribe.play.model.KotlinCoreBridge
 import no.brasscribe.play.core.RustCoreBridge
+import no.brasscribe.play.connection.Credential
+import no.brasscribe.play.connection.CredentialStore
+import no.brasscribe.play.connection.KeystoreCipher
+import no.brasscribe.play.connection.PrefsStore
 import no.brasscribe.play.pitch.BasicPitch
 import no.brasscribe.play.pitch.BeatThis
 import no.brasscribe.play.pitch.SoloPipeline
 import no.brasscribe.play.pitch.SwiftF0
 
-/** Companion engine settings, kept in SharedPreferences. */
-class EngineSettings(context: Context) {
+/**
+ * Companion engine settings, kept in SharedPreferences. The credential itself is not here: it is in
+ * [credentials] (Keystore-encrypted), keyed by [serverId].
+ */
+class EngineSettings(context: Context, val credentials: CredentialStore) {
     private val prefs = context.getSharedPreferences("engine", Context.MODE_PRIVATE)
 
+    init {
+        // Earlier versions kept the token here in plain text: move it into the encrypted store once.
+        credentials.migrateLegacy(PrefsStore(prefs))
+    }
+
+    /** The last address the engine answered at. */
     var url: String
         get() = prefs.getString("url", null) ?: DEFAULT_URL
         set(v) = prefs.edit().putString("url", v).apply()
 
-    var token: String?
-        get() = prefs.getString("token", null)
-        set(v) = prefs.edit().putString("token", v).apply()
+    /** The engine's stable id; null until an engine has answered (or for a token from an earlier version). */
+    var serverId: String?
+        get() = prefs.getString("server_id", null)
+        set(v) = prefs.edit().putString("server_id", v).apply()
+
+    /** "Brasscribe on <computer>", as the engine calls itself. */
+    var serverName: String
+        get() = prefs.getString("server_name", null) ?: ""
+        set(v) = prefs.edit().putString("server_name", v).apply()
+
+    /** This phone's credential for the current engine, if it has one. */
+    val credential: Credential? get() = credentials.get(serverId ?: CredentialStore.LEGACY_ID)
+
+    val token: String? get() = credential?.token
 
     /** True once the user connected to a real engine; false means the built-in sample engine. */
     var paired: Boolean
@@ -58,7 +82,8 @@ class EngineSettings(context: Context) {
  * pitch model. Created once by [PlayApplication].
  */
 class AppContainer(private val context: Context) {
-    val settings = EngineSettings(context)
+    val credentials = CredentialStore(PrefsStore(context.getSharedPreferences(CREDENTIALS_PREFS, Context.MODE_PRIVATE)), KeystoreCipher())
+    val settings = EngineSettings(context, credentials)
     private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
 
     /** The first-run screen (three points and Get started) has been seen. */
@@ -104,7 +129,7 @@ class AppContainer(private val context: Context) {
         return api
     }
 
-    fun newEngineClient(url: String): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)))
+    fun newEngineClient(url: String, token: String? = null): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)), token)
 
     private fun httpEngine(network: Network?) = OkHttp.create {
         if (network != null) config { socketFactory(network.socketFactory) }
@@ -121,12 +146,21 @@ class AppContainer(private val context: Context) {
         val address = runCatching { InetAddress.getByName(host) }.getOrNull() ?: return null
         if (!address.isSiteLocalAddress && !address.isLinkLocalAddress) return null
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
-        return cm.allNetworks.firstOrNull { n ->
+        val owner = cm.allNetworks.firstOrNull { n ->
             cm.getLinkProperties(n)?.routes?.any { it.destination.prefixLength > 0 && it.matches(address) } == true
         }
+        // Binding is only needed when another network is the default. A network this app may not bind to
+        // (EPERM, seen on emulators) is left to the system's routing instead of failing every request.
+        return owner?.takeIf { it != cm.activeNetwork && canBind(it) }
     }
 
+    private fun canBind(network: Network): Boolean =
+        runCatching { java.net.Socket().use { network.bindSocket(it) } }.isSuccess
+
     val discovery by lazy { EngineDiscovery(context) }
+
+    /** A second discovery session, for finding the paired engine again by its server id. */
+    val reconnectDiscovery by lazy { EngineDiscovery(context) }
 
     fun engineLabel(): String = if (usingFixture) context.getString(R.string.demo_label) else settings.url.removePrefix("http://").removePrefix("https://")
 
@@ -155,17 +189,18 @@ class AppContainer(private val context: Context) {
     }
 
     /**
-     * brasscribe-band.sf2 (sounds/band.py; 16-bit 149 MB or 24-bit 223 MB) copied to the app's external
-     * files under sounds/. Not bundled: it is a separate download like the other sound packs.
+     * A band SoundFont sideloaded to the app's external files under sounds/ (overrides the bundled one).
+     * Without it the score player loads the phone SoundFont bundled in the APK (score/BandSoundFontFile).
      */
-    fun bandSoundFont(): java.io.File? = context.getExternalFilesDir(null)?.resolve("sounds")?.also { it.mkdirs() }?.let { d ->
-        listOf("brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2").map { d.resolve(it) }.firstOrNull { it.isFile }
-            .also { android.util.Log.i("BrasscribePlay", "band SoundFont in $d: ${it?.name ?: "none"}") }
-    }
+    fun bandSoundFont(): java.io.File? = context.getExternalFilesDir(null)?.resolve("sounds")?.also { it.mkdirs() }
+        .let { no.brasscribe.play.score.BandSoundFontFile.sideloaded(context) }
+        .also { android.util.Log.i("BrasscribePlay", "sideloaded band SoundFont: ${it?.name ?: "none"}") }
 
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"
 
     companion object {
+        /** Encrypted credentials; excluded from backup (res/xml/backup_rules.xml, data_extraction_rules.xml). */
+        const val CREDENTIALS_PREFS = "credentials"
         const val MODEL_ASSET = "models/swift-f0-window.onnx"
         const val BASIC_PITCH_ASSET = "models/nmp-b1.onnx"
         const val BEAT_THIS_ASSET = "models/beat-this-small0.onnx"

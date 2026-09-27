@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: music stand, phone upright</title>
+<link rel="stylesheet" href="mockup.css">
+<link rel="stylesheet" href="music-stand.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="music-stand.js"></script>
+<script src="mockup.js"></script>
+<style>
+  .music { position: absolute; left: 12px; right: 12px; top: 112px; }
+  .top { top: 56px; left: 16px; right: 16px; justify-content: space-between; }
+  /* Upright there is no room for one line: the part on top, the place under it. */
+  .top .standpos { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.25; min-width: 0; }
+  .top .standpos .muted { font-size: 0.875rem; }
+  .controls { left: 12px; right: 12px; bottom: 42px; }
+  .transport { justify-content: center; gap: var(--bc-space-3); }
+</style>
+</head>
+<body>
+<div class="stand stand-phone" role="main" aria-label="Music stand">
+  <div class="island" aria-hidden="true"></div>
+
+  <!-- Always there: where you are, and the way out. They sit in the band under the camera, never over the music. -->
+  <div class="corner top">
+    <span class="standpos" role="status"><span data-nb="Solokornett (deg)">Solo Cornet (you)</span><span class="muted" data-nb="Takt 13 · side 1 av 8">Bar 13 · page 1 of 8</span></span>
+    <button class="pill" aria-label="Leave the music stand"><i data-i="close" class="sm"></i><span data-nb="Gå ut">Leave</span></button>
+  </div>
+
+  <div class="music paper">
+    <div data-score="standPhone0"></div>
+    <div data-score="standPhone1"></div>
+    <div data-score="standPhone2"></div>
+    <div data-score="standPhone3"></div>
+    <div data-score="standPhone4"></div>
+    <div data-score="standPhone5"></div>
+    <div data-score="standPhone6"></div>
+  </div>
+
+  <!-- The control layer: shown on a tap on the music, on Tab, and always while a screen reader or switch access is on. -->
+  <div class="controls ctl" role="toolbar" aria-label="Music stand controls">
+    <div class="crow transport">
+      <button class="icon-btn filled" aria-label="Previous page"><i data-i="page-prev"></i></button>
+      <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+      <button class="play" aria-label="Play"><i data-i="play"></i></button>
+      <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+      <button class="icon-btn filled" aria-label="Next page"><i data-i="page-next"></i></button>
+    </div>
+    <div class="crow">
+      <span class="stepper"><button class="icon-btn" aria-label="Slower"><i data-i="minus" class="sm"></i></button><span class="v" data-nb="Tempo 75 %">Speed 75%</span><button class="icon-btn" aria-label="Faster"><i data-i="plus" class="sm"></i></button></span>
+      <span class="chip"><i data-i="loop" class="sm"></i><span data-nb="Gjenta">Repeat</span></span>
+    </div>
+    <div class="crow">
+      <!-- Hidden when no seat is set (a conductor has no "your part"). -->
+      <span class="chip on"><span data-nb="Bare stemmen min">Only my part</span></span>
+      <span class="chip"><i data-i="rotation-lock" class="sm"></i><span data-nb="Lås retningen">Lock rotation</span></span>
+    </div>
+  </div>
+
+  <!-- First time only, while the controls are hidden. It goes on the first tap, and never covers the current system. -->
+  <div class="hint when-hidden not-turn" style="bottom: 48px"><i data-i="info"></i><span data-nb="Trykk på notene for å vise knappene.">Tap the music to show the controls.</span></div>
+
+  <!-- Android only, when the system's auto-rotate is off and the phone is held the other way (the system's own
+       rotate button lives in the navigation bar, which the stand hides). -->
+  <div class="corner only-turn" style="bottom: 48px; left: 50%; transform: translateX(-50%)">
+    <button class="pill" aria-label="Turn the music to fit the phone"><i data-i="rotate" class="sm"></i><span data-nb="Snu notene">Turn the music</span></button>
+  </div>
+
+  <div class="homebar-line" aria-hidden="true"></div>
+</div>
+</body>
+</html>

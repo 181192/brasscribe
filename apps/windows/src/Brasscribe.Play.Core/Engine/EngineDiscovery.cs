@@ -5,10 +5,35 @@ using System.Text;
 
 namespace Brasscribe.Play.Core.Engine;
 
-/// <summary>An engine found on the local network.</summary>
-public sealed record DiscoveredEngine(string Name, Uri BaseAddress)
+/// <summary>
+/// An engine found on the local network. <paramref name="ServerId"/> and <paramref name="Host"/> come from
+/// the TXT record (id=, host=); engines from before pairing-once lack them.
+/// </summary>
+public sealed record DiscoveredEngine(string Name, Uri BaseAddress, string? ServerId = null, string? Host = null)
 {
     public string Address => BaseAddress.ToString();
+
+    /// <summary>The computer's name as people know it: the TXT host, else the instance name without "Brasscribe on " and a " (2)" suffix.</summary>
+    public string ComputerName => Host is { Length: > 0 } h ? h : ServerNames.ComputerName(Name);
+}
+
+/// <summary>Engine display names are always "Brasscribe on &lt;computer&gt;"; the apps put the computer part in their own sentence.</summary>
+public static partial class ServerNames
+{
+    public const string Prefix = "Brasscribe on ";
+
+    public static string ComputerName(string? serverName)
+    {
+        var name = (serverName ?? "").Trim();
+        if (name.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase)) name = name[Prefix.Length..];
+        // mDNS adds " (2)" on a name clash; that is not part of the computer's name.
+        var m = ClashSuffix().Match(name);
+        if (m.Success) name = m.Groups[1].Value;
+        return name.Trim();
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(.*) \(\d+\)$")]
+    private static partial System.Text.RegularExpressions.Regex ClashSuffix();
 }
 
 public interface IEngineDiscovery
@@ -111,6 +136,7 @@ internal sealed class DnsSdRecords
     private readonly Dictionary<string, HashSet<string>> _ptr = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (string Target, int Port)> _srv = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<IPAddress>> _a = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Dictionary<string, string>> _txt = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Adds the records of one DNS message; malformed messages are ignored.</summary>
     public void Add(byte[] message)
@@ -125,6 +151,7 @@ internal sealed class DnsSdRecords
     }
 
     internal void AddSrv(string instance, string target, int port) => _srv[instance] = (target, port);
+    internal void AddTxt(string instance, Dictionary<string, string> values) => _txt[instance] = values;
     internal void AddA(string host, IPAddress address)
     {
         if (!_a.TryGetValue(host, out var list)) _a[host] = list = [];
@@ -141,7 +168,10 @@ internal sealed class DnsSdRecords
             if (!_srv.TryGetValue(instance, out var srv) || !_a.TryGetValue(srv.Target, out var ips)) continue;
             var ip = rank is null ? ips[0] : ips.OrderBy(rank).First();
             var name = instance.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase) ? instance[..^(serviceType.Length + 1)] : instance;
-            engines.Add(new DiscoveredEngine(name, new Uri($"http://{ip}:{srv.Port}/")));
+            _txt.TryGetValue(instance, out var txt);
+            string? id = txt?.GetValueOrDefault("id"), host = txt?.GetValueOrDefault("host");
+            engines.Add(new DiscoveredEngine(name, new Uri($"http://{ip}:{srv.Port}/"),
+                string.IsNullOrWhiteSpace(id) ? null : id, string.IsNullOrWhiteSpace(host) ? null : host));
         }
         return engines;
     }
@@ -149,7 +179,7 @@ internal sealed class DnsSdRecords
 
 internal static class DnsSd
 {
-    private const ushort TypeA = 1, TypePtr = 12, TypeSrv = 33;
+    private const ushort TypeA = 1, TypePtr = 12, TypeTxt = 16, TypeSrv = 33;
 
     /// <summary>A one-question PTR query with the unicast-response bit set.</summary>
     public static byte[] BuildPtrQuery(string serviceType)
@@ -193,6 +223,9 @@ internal static class DnsSd
                     var s = data + 6;
                     into.AddSrv(name, ReadName(m, ref s), U16(m, data + 4));
                     break;
+                case TypeTxt:
+                    into.AddTxt(name, ReadTxt(m, data, length));
+                    break;
                 case TypeA when length == 4:
                     into.AddA(name, new IPAddress(m.AsSpan(data, 4)));
                     break;
@@ -202,6 +235,24 @@ internal static class DnsSd
     }
 
     private static int U16(byte[] m, int at) => (m[at] << 8) | m[at + 1];
+
+    /// <summary>TXT data: length-prefixed "key=value" strings (RFC 6763 §6); keys are case-insensitive.</summary>
+    internal static Dictionary<string, string> ReadTxt(byte[] m, int at, int length)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        int end = at + length;
+        while (at < end)
+        {
+            int len = m[at];
+            if (at + 1 + len > end) throw new InvalidDataException();
+            var entry = Encoding.UTF8.GetString(m, at + 1, len);
+            at += 1 + len;
+            int eq = entry.IndexOf('=');
+            if (eq > 0) values.TryAdd(entry[..eq], entry[(eq + 1)..]);
+            else if (entry.Length > 0) values.TryAdd(entry, "");
+        }
+        return values;
+    }
 
     private static string ReadName(byte[] m, ref int pos)
     {

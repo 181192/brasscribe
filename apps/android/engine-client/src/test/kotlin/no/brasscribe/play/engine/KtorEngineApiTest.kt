@@ -2,6 +2,7 @@ package no.brasscribe.play.engine
 
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -24,7 +25,7 @@ class KtorEngineApiTest {
         val engine = MockEngine { req ->
             seen += req.headers[HttpHeaders.Authorization]
             when (req.url.encodedPath) {
-                "/v1/pair" -> respond("""{"token":"t0k"}""", HttpStatusCode.OK, json)
+                "/v1/pair" -> respond("""{"token":"t0k","device_id":"d1","server_id":"s1","server_name":"Brasscribe on Mac"}""", HttpStatusCode.OK, json)
                 "/v1/jobs/r1" -> respond(job, HttpStatusCode.OK, json)
                 else -> respond("", HttpStatusCode.NotFound)
             }
@@ -34,6 +35,54 @@ class KtorEngineApiTest {
         val j = api.job("r1")
         assertEquals(JobStatus.QUEUED, j.status)
         assertEquals(listOf(null, "Bearer t0k"), seen)
+    }
+
+    @Test
+    fun pairAgainSendsTheCurrentTokenAndPlatform() = runTest {
+        var auth: String? = null
+        var body = ""
+        val engine = MockEngine { req ->
+            auth = req.headers[HttpHeaders.Authorization]
+            body = String(req.body.toByteArray())
+            respond("""{"token":"new","device_id":"d1","server_id":"s1","server_name":"Brasscribe on Mac"}""", HttpStatusCode.OK, json)
+        }
+        val api = KtorEngineApi("http://host", engine, token = "old")
+        val r = api.pair("123456", "Pixel")
+        assertEquals("Bearer old", auth)
+        assertTrue(body, body.contains("\"platform\":\"android\""))
+        assertEquals("s1", r.serverId)
+        assertEquals("new", api.token)
+    }
+
+    @Test
+    fun thisDeviceRotationAndApproveOnComputer() = runTest {
+        val seen = mutableListOf<String>()
+        val engine = MockEngine { req ->
+            seen += "${req.method.value} ${req.url.encodedPath}"
+            when (req.url.encodedPath) {
+                "/v1/devices/me" -> respond("""{"device_id":"d1","name":"Pixel","platform":"android","paired_at":"2026-09-01T10:00:00+00:00",
+                    "last_seen":"2026-09-27T10:00:00+00:00","online":true,"server_id":"s1","rotate_after":"2026-10-01T10:00:00+00:00",
+                    "expires_if_idle_after":"2026-12-26T10:00:00+00:00","rotated_at":null}""", HttpStatusCode.OK, json)
+                "/v1/devices/me/rotate" -> respond("""{"token":"t2","device_id":"d1"}""", HttpStatusCode.OK, json)
+                "/v1/pair/requests" -> respond("""{"request_id":"q1","name":"Pixel","platform":"android","match_code":"4821",
+                    "created_at":"2026-09-27T10:00:00+00:00","status":"pending"}""", HttpStatusCode.Accepted, json)
+                "/v1/pair/requests/q1" -> respond("""{"status":"approved","token":"t3","device_id":"d1","server_id":"s1","server_name":"Brasscribe on Mac"}""",
+                    HttpStatusCode.OK, json)
+                else -> respond("", HttpStatusCode.NotFound)
+            }
+        }
+        val api = KtorEngineApi("http://host", engine, token = "t1")
+        assertEquals("2026-10-01T10:00:00+00:00", api.thisDevice().rotateAfter)
+        assertEquals("t2", api.rotateToken().token)
+        assertEquals("4821", api.requestPairing("Pixel").matchCode)
+        assertEquals("t3", api.pollPairingRequest("q1").token)
+        assertEquals(listOf("GET /v1/devices/me", "POST /v1/devices/me/rotate", "POST /v1/pair/requests", "GET /v1/pair/requests/q1"), seen)
+    }
+
+    @Test
+    fun revokedCredentialIs401() = runTest {
+        val api = KtorEngineApi("http://host", MockEngine { respond("""{"detail":"unknown token"}""", HttpStatusCode.Unauthorized, json) }, token = "x")
+        assertEquals(401, (runCatching { api.thisDevice() }.exceptionOrNull() as EngineException).status)
     }
 
     @Test

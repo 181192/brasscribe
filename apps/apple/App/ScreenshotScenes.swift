@@ -38,7 +38,7 @@ enum ScreenshotScenes {
             app.jobs[job.id] = job
             job.start { _ in }
             app.path = [.transcribe(job.id)]
-        case "review", "finish-later":
+        case "review", "review-listening", "finish-later":
             if let p = openScore() { app.path = [.review(p)] }
         case "output":
             if let p = openScore() { app.path = [.output(p)] }

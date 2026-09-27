@@ -93,7 +93,12 @@ export interface paths {
         };
         /**
          * Get This Device
-         * @description Check the stored credential: 401 means pair again, anything else means it is still good.
+         * @description Check the stored credential, and the paired device's heartbeat (every 20 s while the app is open;
+         *     it keeps the device `online`). 401 means pair again; anything else means the credential is still good.
+         *
+         *     A client on the engine's own computer is trusted without pairing (GET /v1/health says
+         *     `auth_required: false`) and gets 404 here; it uses GET /v1/health as its heartbeat instead and is
+         *     not counted as an online device.
          */
         get: operations["getThisDevice"];
         put?: never;
@@ -835,6 +840,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Status
+         * @description For the desktop helper: who is connected, whether pairing is open, what the engine is doing.
+         */
+        get: operations["getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/suites": {
         parameters: {
             query?: never;
@@ -1136,11 +1161,16 @@ export interface components {
             device_id: string;
             /**
              * Last Seen
-             * @description ISO 8601, UTC; updated at most every 5 minutes
+             * @description ISO 8601, UTC; updated on every request the device makes
              */
             last_seen: string;
             /** Name */
             name: string;
+            /**
+             * Online
+             * @description seen in the last 60 seconds (Play apps send GET /v1/devices/me every 20 s while open)
+             */
+            online: boolean;
             /**
              * Paired At
              * @description ISO 8601, UTC
@@ -1162,11 +1192,16 @@ export interface components {
             expires_if_idle_after: string;
             /**
              * Last Seen
-             * @description ISO 8601, UTC; updated at most every 5 minutes
+             * @description ISO 8601, UTC; updated on every request the device makes
              */
             last_seen: string;
             /** Name */
             name: string;
+            /**
+             * Online
+             * @description seen in the last 60 seconds (Play apps send GET /v1/devices/me every 20 s while open)
+             */
+            online: boolean;
             /**
              * Paired At
              * @description ISO 8601, UTC
@@ -1183,6 +1218,37 @@ export interface components {
             rotated_at?: string | null;
             /** Server Id */
             server_id: string;
+        };
+        /**
+         * EngineStatus
+         * @description What the desktop helper shows about the running engine; polled every few seconds.
+         */
+        EngineStatus: {
+            /** Jobs Queued */
+            jobs_queued: number;
+            /** Jobs Running */
+            jobs_running: number;
+            /**
+             * Online Devices
+             * @description paired devices seen in the last 60 seconds
+             */
+            online_devices: number;
+            /** Paired Devices */
+            paired_devices: number;
+            /**
+             * Pairing Open
+             * @description whether a pairing code is accepted right now
+             */
+            pairing_open: boolean;
+            /** Server Id */
+            server_id: string;
+            /**
+             * Server Name
+             * @description 'Brasscribe on <computer name>'
+             */
+            server_name: string;
+            /** Version */
+            version: string;
         };
         /**
          * Evidence
@@ -1249,6 +1315,11 @@ export interface components {
             audio_id?: string | null;
             /** Created */
             created: number;
+            /**
+             * Device Name
+             * @description name of the paired device that started the job; null when started on the engine's own computer (Studio, loopback) or with a static token
+             */
+            device_name?: string | null;
             /** Error */
             error?: string | null;
             /** Finished */
@@ -2099,6 +2170,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DeviceSelf"];
                 };
+            };
+            /** @description the credential is unknown or revoked: pair again */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description connected, but not as a paired device (a trusted client on the engine's own computer, or the static token); not a revocation */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -3691,6 +3776,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngineStatus"];
                 };
             };
         };

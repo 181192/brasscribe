@@ -21,10 +21,17 @@ public sealed partial class HomePage : Page, IScreenPage
         Main = (MainViewModel)e.Parameter;
         ViewModel = Main.Start;
         Bindings.Update();
+        ConnectionStatus.Show(Main.Settings.Connection);
         _ = Main.RefreshComputerScoresAsync();
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+
+    /// <summary>Connect or Pair again: Settings, where the computer is chosen and paired.</summary>
+    private async void OnConnectionAction(object? sender, EventArgs e)
+    {
+        if (App.MainWindowInstance is { } window) await window.OpenSettingsAsync();
+    }
 
     private void OnScoreCardOptions(object sender, RoutedEventArgs e)
     {

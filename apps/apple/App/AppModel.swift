@@ -44,11 +44,37 @@ final class AppModel {
     var importing = false
 
     // Companion settings
+    /// The address typed under "Details for the band's tech person", used to pair by code. Once paired,
+    /// the engine's record (in the Keychain) holds its last address.
     var companionURL: String = ProcessInfo.processInfo.environment["BRASSCRIBE_COMPANION"] ?? UserDefaults.standard.string(forKey: "companionURL") ?? "http://localhost:8765" {
         didSet { UserDefaults.standard.set(companionURL, forKey: "companionURL") }
     }
-    var companionToken: String? = UserDefaults.standard.string(forKey: "companionToken") {
-        didSet { UserDefaults.standard.set(companionToken, forKey: "companionToken") }
+
+    /// Engine credentials: the Keychain, or memory for tests and screenshots (`-reset`), so those never
+    /// touch or show a real pairing.
+    static func makeCredentialStore() -> CredentialStore {
+        let env = ProcessInfo.processInfo.environment
+        if LaunchOptions.args.contains("-reset") || env["XCTestConfigurationFilePath"] != nil { return InMemoryCredentialStore() }
+        let store = KeychainCredentialStore()
+        // older versions kept the token in UserDefaults: move it once
+        _ = try? CredentialMigration.run(defaults: .standard, store: store)
+        return store
+    }
+
+    /// The paired computer and the connection to it.
+    @ObservationIgnored private(set) lazy var connection: ConnectionMonitor = {
+        let m = ConnectionMonitor(store: AppModel.makeCredentialStore())
+        #if os(macOS)
+        // Brasscribe on this Mac answers without pairing
+        if let url = URL(string: companionURL), ["localhost", "127.0.0.1", "::1"].contains(url.host() ?? "") { m.localAddress = url }
+        #endif
+        return m
+    }()
+
+    /// Where to send work: the paired engine's last address, or the typed one.
+    var engineURL: URL {
+        // a staged record (screenshots) is only for show
+        (connection.staged ? nil : connection.record?.baseURL) ?? URL(string: companionURL) ?? URL(string: "http://localhost:8765")!
     }
 
     /// Engine output folder used by the demo service (tests and screenshots set it).
@@ -79,7 +105,33 @@ final class AppModel {
         if useDemoService, let dir = fixtureDirectory {
             return FixtureService(directory: dir, stepDelay: ProcessInfo.processInfo.arguments.contains("-fast") ? 0.05 : 0.6)
         }
-        return CompanionService(baseURL: URL(string: companionURL) ?? URL(string: "http://localhost:8765")!, token: companionToken)
+        return CompanionService(baseURL: engineURL, token: connection.record?.token)
+    }
+
+    /// This device, as the computer lists it.
+    static var deviceName: String {
+        #if os(iOS)
+        UIDevice.current.name
+        #else
+        Host.current().localizedName ?? "Mac"
+        #endif
+    }
+
+    static var platform: String {
+        #if os(iOS)
+        "ios"
+        #else
+        "macos"
+        #endif
+    }
+
+    /// A `brasscribe://pair` link opened from the camera, a QR scan or a paste: pair, or ask the computer
+    /// to allow this device when the link has no code. Settings shows how it went.
+    var pendingLink: PairingLink?
+
+    func openPairingLink(_ link: PairingLink) {
+        pendingLink = link
+        showSettings = true
     }
 
     /// Solos are transcribed on this device when the models are there (or can be fetched);
@@ -201,7 +253,7 @@ final class AppModel {
         if let profile, service(for: profile) is OnDeviceSoloService { return String(localized: "On this device. Nothing goes online.") }
         if useDemoService { return String(localized: "The demo runs on this device. Nothing goes online.") }
         #if os(macOS)
-        if let host = URL(string: companionURL)?.host, ["localhost", "127.0.0.1"].contains(host) {
+        if let host = engineURL.host(), ["localhost", "127.0.0.1"].contains(host) {
             return String(localized: "Made on this Mac. Nothing goes online.")
         }
         #endif
@@ -288,6 +340,8 @@ final class AppModel {
 
     func startTranscription(_ src: PendingSource, profile: SourceProfile, output: OutputChoice) {
         let job = TranscriptionJob(source: src, profile: profile, output: output, service: service(for: profile))
+        // a 401 from the computer turns the connection row into "pair again"
+        job.onUnauthorized = { [weak self] in self?.connection.poke() }
         jobs[job.id] = job
         // the transcribing screen takes the place of "What is this?"
         if case .source = path.last { path[path.count - 1] = .transcribe(job.id) } else { path.append(.transcribe(job.id)) }
@@ -359,6 +413,7 @@ final class TranscriptionJob: Identifiable {
     var failure: String?
     var cancelled = false
     private var task: Task<Void, Never>?
+    var onUnauthorized: (@MainActor () -> Void)?
 
     init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService) {
         self.source = source; self.profile = profile; self.output = output; self.service = service
@@ -377,6 +432,7 @@ final class TranscriptionJob: Identifiable {
                 }
             } catch {
                 guard let self else { return }
+                if case TranscriptionError.notPaired = error { self.onUnauthorized?() }
                 if case TranscriptionError.cancelled = error { self.cancelled = true } else if !Task.isCancelled {
                     self.failure = error.localizedDescription
                 }

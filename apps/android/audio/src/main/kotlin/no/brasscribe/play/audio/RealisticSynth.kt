@@ -18,7 +18,7 @@ object RealisticSynth {
     /** Loads an .sfz file; its samples are resolved relative to it. */
     fun load(channel: Int, sfz: File): Boolean = available && NativeAudio.sfizzLoadFile(channel, sfz.absolutePath)
 
-    /** A sine instrument with no samples: proves the engine runs when no sound pack is installed. */
+    /** A sine instrument with no samples: for engine tests only; the app never plays it for a part. */
     fun loadTestTone(channel: Int): Boolean =
         available && NativeAudio.sfizzLoadString(channel, "<region> sample=*sine ampeg_attack=0.005 ampeg_release=0.2", "/virtual/test-tone.sfz")
 
@@ -30,7 +30,16 @@ object RealisticSynth {
         if (available) NativeAudio.sfizzNoteAt(channel, note, velocity, delaySeconds)
     }
 
+    /** Hard cut of every voice: only when the tier is torn down. Stop uses [fadeOut], seek [releaseAll]. */
     fun allOff() { if (available) NativeAudio.sfizzAllOff() }
+
+    /** Drops notes not yet played and releases every sounding note, so it fades with its release. */
+    fun releaseAll() { if (available) NativeAudio.sfizzReleaseAll() }
+
+    /** Stop: silence within [STOP_FADE_S] without a click, instead of letting the releases ring on. */
+    fun fadeOut(seconds: Double = STOP_FADE_S) { if (available) NativeAudio.sfizzFadeOut(seconds) }
+
+    const val STOP_FADE_S = 0.08
     fun setGain(channel: Int, gain: Float) { if (available) NativeAudio.sfizzSetGain(channel, gain) }
     fun activeVoices(): Int = if (available) NativeAudio.sfizzActiveVoices() else 0
 

@@ -58,6 +58,12 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.platform.testTag as tagged
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
@@ -158,6 +164,8 @@ fun ReviewScreen(vm: PlayViewModel) {
     var picked by rememberSaveable(voiceId) { mutableStateOf<Int?>(null) }
     val current = todo.firstOrNull { it.index == picked } ?: todo.firstOrNull()
     var confirmLater by remember { mutableStateOf(false) }
+    // Keep, Skip or picking another note moves to another bar: what was playing stops.
+    LaunchedEffect(current?.index) { vm.stopListening(announce = false) }
     var changing by remember { mutableStateOf(false) }
 
     fun advance(from: Int, announce: Boolean = true) {
@@ -320,7 +328,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                             val fr = remember(focus, e.index) { focus.getOrPut(e.index) { FocusRequester() } }
                             EventChip(
                                 e, spoken[e.index], e.index in checked, fr,
-                                listen = { vm.listenToBar(e.bar) },
+                                listen = { vm.listenToBar(e.bar) }, playing = playingBar == e.bar,
                                 check = { vm.markChecked(voiceId, e.index, todo.count { it.index != e.index }) },
                                 next = { nextUncertain(e.index) },
                                 label = e.stop.event.written?.let { no.brasscribe.play.model.Announcer.pitchLabel(it, lang) } ?: "–",
@@ -435,7 +443,8 @@ private fun NoteCard(
     evidence: NoteEvidence?, pitchLabel: (Int) -> String,
 ) {
     val c = BrasscribeTheme.colors
-    val listenLabel = stringResource(R.string.action_listen_bar)
+    // While the bar plays, the same button (and TalkBack action) is Stop.
+    val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
     val level = stringResource(if (very ?: (e.uncertainty == Uncertainty.VERY_UNCERTAIN)) R.string.level_very_uncertain else R.string.level_uncertain)
@@ -448,7 +457,7 @@ private fun NoteCard(
                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
                     contentDescription = "$spoken. $levelSentence"
                     customActions = listOf(
-                        CustomAccessibilityAction(listenLabel) { listen(); true },
+                        CustomAccessibilityAction(listenLabel) { if (playing) stop() else listen(); true },
                         CustomAccessibilityAction(checkLabel) { keep(); true },
                         CustomAccessibilityAction(nextLabel) { next(); true },
                     )
@@ -464,8 +473,7 @@ private fun NoteCard(
                 Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
             if (evidence != null) EvidencePanel(evidence, pitchLabel)
-            if (playing) OutlineButton(stringResource(R.string.stop_listening), stop, icon = R.drawable.ic_bc_stop)
-            else SecondaryButton(stringResource(R.string.action_listen_bar), listen, icon = R.drawable.ic_bc_listen_bar)
+            ListenButton(playing, listen, stop)
             OutlineButton(stringResource(R.string.change_note), changeNote, icon = R.drawable.ic_bc_transpose)
         }
     }
@@ -573,10 +581,10 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
 @Composable
 private fun EventChip(
     e: PartEvent, spoken: String, checked: Boolean, focus: FocusRequester,
-    listen: () -> Unit, check: () -> Unit, next: () -> Unit, label: String,
+    listen: () -> Unit, check: () -> Unit, next: () -> Unit, label: String, playing: Boolean = false,
 ) {
     val t = BrasscribeTheme.colors
-    val listenLabel = stringResource(R.string.action_listen_bar)
+    val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
     val uncertain = e.uncertainty != Uncertainty.CONFIDENT && !checked
@@ -646,5 +654,41 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
         androidx.compose.ui.viewinterop.AndroidView(factory = { snippet.view }, modifier = Modifier.matchParentSize())
         // Drags on the staff scroll the page: this layer takes the touches before alphaTab's own scroll views.
         Box(Modifier.matchParentSize().pointerInput(Unit) {})
+    }
+}
+
+/**
+ * "Listen to this bar", which turns into "Stop" while the bar plays: one button, same place and size,
+ * only the words and the icon change. Both labels are laid out (the other one invisible), so large text
+ * that wraps the longer one does not change the height. Enter and Space both press it.
+ */
+@Composable
+fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier) {
+    val listenText = stringResource(R.string.action_listen_bar)
+    val stopText = stringResource(R.string.listen_stop)
+    androidx.compose.material3.FilledTonalButton(
+        if (playing) stop else listen,
+        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged("listen-bar")
+            // Compose buttons take Enter; Space is added so a keyboard user can start and stop with either.
+            .onPreviewKeyEvent { e ->
+                if (e.key != androidx.compose.ui.input.key.Key.Spacebar) return@onPreviewKeyEvent false
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { if (playing) stop() else listen() }
+                true
+            },
+        shape = no.brasscribe.design.BrasscribeButtonShape,
+    ) {
+        androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+            ListenLabel(listenText, R.drawable.ic_bc_listen_bar, Modifier.alpha(if (playing) 0f else 1f).then(if (playing) Modifier.clearAndSetSemantics { } else Modifier))
+            ListenLabel(stopText, R.drawable.ic_bc_stop, Modifier.alpha(if (playing) 1f else 0f).then(if (playing) Modifier else Modifier.clearAndSetSemantics { }))
+        }
+    }
+}
+
+@Composable
+private fun ListenLabel(text: String, icon: Int, modifier: Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        BcIcon(icon, null)
+        androidx.compose.foundation.layout.Spacer(Modifier.size(BrasscribeSpace.s2))
+        Text(text, textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = MaterialTheme.typography.labelLarge)
     }
 }

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: music stand, phone on its side</title>
+<link rel="stylesheet" href="mockup.css">
+<link rel="stylesheet" href="music-stand.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script src="music-stand.js"></script>
+<script src="mockup.js"></script>
+<style>
+  /* Safe area on its side: 59 pt each side (the camera is on the left here), 21 pt for the home indicator. */
+  .music { position: absolute; left: 59px; right: 59px; top: 64px; }
+  .top { top: 8px; left: 59px; right: 59px; justify-content: space-between; }
+  .top .grp { display: flex; gap: 8px; }
+  .controls { left: 59px; right: 59px; bottom: 25px; padding: 10px 12px; }
+  .controls .crow { flex-wrap: nowrap; justify-content: space-between; }
+  .controls .transport { gap: 4px; }
+  .locked-only { display: none; }
+  [data-state="locked"] .locked-only { display: block; }
+  [data-state="locked"] .unlocked-only { display: none; }
+  [data-state="locked"] .chip.lock { background: var(--bc-secondary); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  [data-state="locked"] .chip.lock::before { content: "✓"; font-weight: 700; margin-right: -2px; }
+  [data-state="locked"] .chip.rep { background: var(--bc-secondary); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  [data-state="locked"] .chip.rep::before { content: "✓"; font-weight: 700; margin-right: -2px; }
+</style>
+</head>
+<body>
+<div class="stand stand-land" role="main" aria-label="Music stand">
+  <div class="island" aria-hidden="true"></div>
+
+  <div class="corner top">
+    <span class="standpos" role="status"><span data-nb="Solokornett (deg)">Solo Cornet (you)</span><span class="muted" data-nb="· takt 13 · side 4 av 33">· bar 13 · page 4 of 33</span></span>
+    <span class="grp">
+      <span class="chip ctl on" style="min-height:48px"><span data-nb="Bare stemmen min">Only my part</span></span>
+      <span class="chip ctl lock" style="min-height:48px"><i data-i="rotation-lock" class="sm"></i><span class="unlocked-only" data-nb="Lås retningen">Lock rotation</span><span class="locked-only" data-nb="Retningen er låst">Rotation locked</span></span>
+      <button class="pill" aria-label="Leave the music stand"><i data-i="close" class="sm"></i><span data-nb="Gå ut">Leave</span></button>
+    </span>
+  </div>
+
+  <div class="music paper">
+    <div class="unlocked-only" data-score="standLand0"></div>
+    <div class="locked-only" data-score="standLand0Loop"></div>
+    <div data-score="standLand1"></div>
+  </div>
+
+  <div class="controls ctl" role="toolbar" aria-label="Music stand controls">
+    <div class="crow">
+      <span class="crow transport">
+        <button class="icon-btn filled" aria-label="Previous page"><i data-i="page-prev"></i></button>
+        <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+        <button class="play" aria-label="Play"><i data-i="play"></i></button>
+        <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+        <button class="icon-btn filled" aria-label="Next page"><i data-i="page-next"></i></button>
+      </span>
+      <span class="stepper"><button class="icon-btn" aria-label="Slower"><i data-i="minus" class="sm"></i></button><span class="v" data-nb="Tempo 75 %">Speed 75%</span><button class="icon-btn" aria-label="Faster"><i data-i="plus" class="sm"></i></button></span>
+      <span class="chip rep"><i data-i="loop" class="sm"></i><span class="unlocked-only" data-nb="Gjenta">Repeat</span><span class="locked-only" data-nb="Gjenta 13–14">Repeat 13–14</span></span>
+    </div>
+  </div>
+
+  <div class="hint when-hidden" style="bottom: 30px"><i data-i="info"></i><span data-nb="Trykk på notene for å vise knappene.">Tap the music to show the controls.</span></div>
+  <div class="homebar-line" aria-hidden="true"></div>
+</div>
+</body>
+</html>

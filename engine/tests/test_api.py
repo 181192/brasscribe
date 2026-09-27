@@ -136,3 +136,32 @@ def test_serve_banner_lists_lan_url_and_pairing_code(settings):
     assert any(line.startswith("LAN URL: ") for line in lines)
     assert any(app.state.pairing.code in line for line in lines)
     assert serve_banner(app, "127.0.0.1", 8765)[1] == ["brasscribe engine on http://127.0.0.1:8765/"]
+
+
+def test_job_names_the_paired_device_that_started_it(settings, audio):
+    with TestClient(create_app(settings, trust_loopback=False)) as c:
+        token = c.post("/v1/pair", json={"code": c.app.state.pairing.code,
+                                          "device_name": "Kari's iPhone", "platform": "ios"}).json()["token"]
+        h = {"Authorization": f"Bearer {token}"}
+        r = c.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())}, data={"profile": "test"},
+                   headers=h)
+        assert r.status_code == 202 and r.json()["device_name"] == "Kari's iPhone"
+        job = wait_with(c, r.json()["id"], h)
+        rerun = c.post(f"/v1/jobs/{job['id']}/rerun", headers=h).json()
+        assert rerun["device_name"] == "Kari's iPhone"
+
+
+def test_job_from_the_engines_own_computer_has_no_device_name(client, audio):
+    r = client.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())}, data={"profile": "test"})
+    assert r.json()["device_name"] is None
+    wait(client, r.json()["id"])
+
+
+def wait_with(client, job_id, headers, timeout=30):
+    end = time.time() + timeout
+    while time.time() < end:
+        j = client.get(f"/v1/jobs/{job_id}", headers=headers).json()
+        if j["status"] in ("succeeded", "failed", "cancelled"):
+            return j
+        time.sleep(0.05)
+    raise AssertionError("job did not finish")

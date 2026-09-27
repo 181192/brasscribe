@@ -2,7 +2,7 @@
 
     brasscribe run <audio> [--profile P] [--out DIR] [--reuse DIR] [--no-heavy] [--cold STAGES] [--check-golden DIR]
     brasscribe bench <suite|group> [--mode cached|live] [--json FILE] [--allow-improved] [--require-data]
-    brasscribe serve [--host H] [--port N] [--lan] [--no-advertise]
+    brasscribe serve [--host H] [--port N] [--lan] [--no-advertise] [--no-trust-local]
     brasscribe studio [--port N] [--lan] [--no-advertise] [--no-browser]   (opens the default browser)
     brasscribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
     brasscribe compare <candidate dir> <reference dir>
@@ -131,6 +131,10 @@ def serve_banner(app, host: str, port: int, ips: list[str] | None = None) -> tup
         n = len(app.state.devices.list())
         if n:
             lines.append(f"Paired devices: {n}  (brasscribe devices list)")
+    if not app.state.trust_loopback:
+        lines.append("Local trust is off: clients on this computer need a token too")
+    if app.state.admin_token:
+        lines.append("Device management needs the admin token (BRASSCRIBE_ADMIN_TOKEN)")
     return local, lines
 
 
@@ -142,7 +146,11 @@ def cmd_serve(args, open_browser: bool = False) -> int:
     from .discovery import advertise
 
     host = "0.0.0.0" if args.lan else args.host
-    app = create_app()
+    try:
+        app = create_app(trust_loopback=False if args.no_trust_local else None)
+    except (OSError, ValueError) as e:  # an unusable admin token file
+        print(f"cannot start: {e}", file=sys.stderr)
+        return 2
     url, lines = serve_banner(app, host, args.port)
     print("\n".join(lines), flush=True)
     if open_browser:
@@ -246,6 +254,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="listen on all interfaces and print the LAN URL and pairing code for the Play apps")
         sv.add_argument("--no-advertise", action="store_true",
                         help="do not announce the engine over Bonjour/mDNS (_brasscribe._tcp) when on the LAN")
+        sv.add_argument("--no-trust-local", action="store_true",
+                        help="require a token from clients on this computer too (as BRASSCRIBE_TRUST_LOCAL=0); use "
+                             "it when a proxy or tunnel on this computer forwards outside traffic to the engine")
         if browser:
             sv.add_argument("--no-browser", action="store_true")
             sv.set_defaults(fn=lambda a: cmd_serve(a, open_browser=not a.no_browser))

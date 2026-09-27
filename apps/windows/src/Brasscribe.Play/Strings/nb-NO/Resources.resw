@@ -60,6 +60,12 @@
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Brasscribe Play</value>
   </data>
+  <data name="AskComputerButton.Content" xml:space="preserve">
+    <value>Spør på datamaskinen i stedet</value>
+  </data>
+  <data name="AskComputerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ingen kode å skrive: velg Godkjenn på datamaskinen</value>
+  </data>
   <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Gå tilbake (Alt+Venstre)</value>
   </data>
@@ -74,6 +80,12 @@
   </data>
   <data name="Back_Home" xml:space="preserve">
     <value>Startside</value>
+  </data>
+  <data name="CancelAskButton.Content" xml:space="preserve">
+    <value>Slutt å vente</value>
+  </data>
+  <data name="CancelAskButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slutt å vente på at datamaskinen godkjenner denne PC-en</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
     <value>Opptaket blir liggende i Partiturene dine, så du kan starte på nytt.</value>
@@ -138,6 +150,39 @@
   <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her</value>
   </data>
+  <data name="ConnectionActionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Koble denne PC-en til Brasscribe på datamaskinen</value>
+  </data>
+  <data name="Connection_Connect" xml:space="preserve">
+    <value>Koble til</value>
+  </data>
+  <data name="Connection_Connected" xml:space="preserve">
+    <value>Koblet til Brasscribe på {0}</value>
+  </data>
+  <data name="Connection_DetailsAddress" xml:space="preserve">
+    <value>Adresse: {0}</value>
+  </data>
+  <data name="Connection_DetailsLastSeen" xml:space="preserve">
+    <value>Svarte sist: {0}</value>
+  </data>
+  <data name="Connection_DetailsServerId" xml:space="preserve">
+    <value>Server-ID: {0}</value>
+  </data>
+  <data name="Connection_NeedsPairing" xml:space="preserve">
+    <value>Datamaskinen kjenner ikke igjen denne PC-en lenger.</value>
+  </data>
+  <data name="Connection_Offline" xml:space="preserve">
+    <value>Ikke tilkoblet. Du kan fortsatt lage partitur på denne PC-en.</value>
+  </data>
+  <data name="Connection_PairAgain" xml:space="preserve">
+    <value>Koble til PC-en på nytt</value>
+  </data>
+  <data name="Connection_Reconnecting" xml:space="preserve">
+    <value>Leter etter Brasscribe på {0} …</value>
+  </data>
+  <data name="Connection_YourComputer" xml:space="preserve">
+    <value>datamaskinen</value>
+  </data>
   <data name="ContinueButton.Content" xml:space="preserve">
     <value>Fortsett</value>
   </data>
@@ -178,10 +223,16 @@
     <value>Endre partiturnavn</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
-    <value>Detaljer for den tekniske i bandet: adresse</value>
+    <value>Adresse</value>
   </data>
   <data name="EngineAddressBox.PlaceholderText" xml:space="preserve">
     <value>http://127.0.0.1:8765</value>
+  </data>
+  <data name="EngineDetails.Header" xml:space="preserve">
+    <value>Detaljer for den tekniske i bandet</value>
+  </data>
+  <data name="EngineDetails.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Detaljer for den tekniske i bandet</value>
   </data>
   <data name="ErrorSteps.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hva du kan gjøre</value>
@@ -657,6 +708,9 @@
   <data name="MarkCheckedItem.Text" xml:space="preserve">
     <value>Behold denne tonen</value>
   </data>
+  <data name="MatchCodeLabel.Text" xml:space="preserve">
+    <value>Datamaskinen viser det samme tallet</value>
+  </data>
   <data name="MetronomeLabel.Text" xml:space="preserve">
     <value>Metronom</value>
   </data>
@@ -772,7 +826,7 @@
     <value>Arrangerer på nytt med valgene dine</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
-    <value>Paringskode</value>
+    <value>Kode</value>
   </data>
   <data name="PairingCodeBox.PlaceholderText" xml:space="preserve">
     <value>De seks sifrene datamaskinen viser</value>
@@ -994,10 +1048,7 @@
     <value>Toner å sjekke</value>
   </data>
   <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Spiller takten fra opptaket i løkke (Mellomrom)</value>
-  </data>
-  <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Lytt til denne takten</value>
+    <value>Spiller takten én gang, fra opptaket når det finnes. Trykk igjen for å stoppe (Mellomrom)</value>
   </data>
   <data name="ReviewListenLabel.Text" xml:space="preserve">
     <value>Lytt til denne takten</value>
@@ -1013,6 +1064,9 @@
   </data>
   <data name="ReviewSnippet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Taktene rundt tonen</value>
+  </data>
+  <data name="ReviewStopLabel.Text" xml:space="preserve">
+    <value>Stopp</value>
   </data>
   <data name="Review_Accompaniment" xml:space="preserve">
     <value>Akkompagnement</value>
@@ -1092,6 +1146,9 @@
   <data name="Review_ListItemVeryUncertain" xml:space="preserve">
     <value>Takt {0}, {1}, svært usikker</value>
   </data>
+  <data name="Review_Listen" xml:space="preserve">
+    <value>Lytt til denne takten</value>
+  </data>
   <data name="Review_MyPartDone" xml:space="preserve">
     <value>Stemmen din er sjekket. Nå de andre stemmene.</value>
   </data>
@@ -1109,6 +1166,9 @@
   </data>
   <data name="Review_ScopeMine" xml:space="preserve">
     <value>Stemmen din ({0})</value>
+  </data>
+  <data name="Review_Stop" xml:space="preserve">
+    <value>Stopp</value>
   </data>
   <data name="Review_Triage" xml:space="preserve">
     <value>Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre</value>
@@ -1175,6 +1235,12 @@
   </data>
   <data name="Score_FullScore" xml:space="preserve">
     <value>Alle stemmer</value>
+  </data>
+  <data name="Score_ListenEnded" xml:space="preserve">
+    <value>Slutt på takt {0}</value>
+  </data>
+  <data name="Score_ListenStopped" xml:space="preserve">
+    <value>Stoppet</value>
   </data>
   <data name="Score_ListeningOriginal" xml:space="preserve">
     <value>Spiller takt {0} fra opptaket</value>
@@ -1275,26 +1341,71 @@
   <data name="Settings_CoreVersion" xml:space="preserve">
     <value>Arrangør på denne PC-en: {0}</value>
   </data>
+  <data name="Settings_Engine_AskBusy" xml:space="preserve">
+    <value>Andre enheter venter på datamaskinen. Prøv igjen om et par minutter.</value>
+  </data>
+  <data name="Settings_Engine_AskDenied" xml:space="preserve">
+    <value>Datamaskinen godkjente ikke denne PC-en. Du kan spørre på nytt.</value>
+  </data>
+  <data name="Settings_Engine_AskExpired" xml:space="preserve">
+    <value>Datamaskinen svarte ikke i tide. Du kan spørre på nytt.</value>
+  </data>
+  <data name="Settings_Engine_AskWaiting" xml:space="preserve">
+    <value>Velg Godkjenn på datamaskinen når den viser dette tallet: {0}</value>
+  </data>
   <data name="Settings_Engine_Chosen" xml:space="preserve">
-    <value>Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.</value>
+    <value>Bruker Brasscribe på {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.</value>
+  </data>
+  <data name="Settings_Engine_ChosenPaired" xml:space="preserve">
+    <value>Bruker Brasscribe på {0}. Denne PC-en er allerede koblet til den.</value>
+  </data>
+  <data name="Settings_Engine_CodeWrong" xml:space="preserve">
+    <value>Den koden virket ikke. Sjekk de seks sifrene på datamaskinen, og prøv igjen.</value>
   </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
-    <value>Koblet til Brasscribe {0} på datamaskinen ({1})</value>
+    <value>Koblet til Brasscribe på {0}.</value>
+  </data>
+  <data name="Settings_Engine_Failed" xml:space="preserve">
+    <value>Noe gikk galt i kontakten med datamaskinen. Prøv igjen.</value>
+  </data>
+  <data name="Settings_Engine_Forgotten" xml:space="preserve">
+    <value>Datamaskinen kjenner ikke igjen denne PC-en lenger. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet.</value>
   </data>
   <data name="Settings_Engine_FoundMany" xml:space="preserve">
     <value>Fant {0} datamaskiner som kjører Brasscribe. Velg én.</value>
   </data>
   <data name="Settings_Engine_FoundOne" xml:space="preserve">
-    <value>Fant {0}. Velg den for å bruke den.</value>
+    <value>Fant Brasscribe på {0}. Velg den for å bruke den.</value>
+  </data>
+  <data name="Settings_Engine_Locked" xml:space="preserve">
+    <value>For mange feil koder. Vent litt, eller spør på datamaskinen i stedet.</value>
   </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
-    <value>Datamaskinen ber om en paringskode. Skriv inn de seks sifrene den viser.</value>
+    <value>Datamaskinen ber om en kode. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet.</value>
   </data>
   <data name="Settings_Engine_NoneFound" xml:space="preserve">
-    <value>Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.</value>
+    <value>Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at Brasscribe på datamaskinen sier at den kjører, og at begge er på samme wifi.</value>
   </data>
   <data name="Settings_Engine_Searching" xml:space="preserve">
     <value>Ser etter Brasscribe på nettverket …</value>
+  </data>
+  <data name="Settings_Engine_Unpaired" xml:space="preserve">
+    <value>Denne PC-en er ikke lenger koblet til Brasscribe på {0}.</value>
+  </data>
+  <data name="Settings_Engine_Unreachable" xml:space="preserve">
+    <value>Fikk ikke kontakt med datamaskinen. Sjekk at Brasscribe kjører der, og at begge er på samme nettverk.</value>
+  </data>
+  <data name="Settings_Link_Invalid" xml:space="preserve">
+    <value>Den lenken er ikke en tilkoblingslenke fra Brasscribe.</value>
+  </data>
+  <data name="Settings_Link_Looking" xml:space="preserve">
+    <value>Leter etter Brasscribe på {0} …</value>
+  </data>
+  <data name="Settings_Link_Newer" xml:space="preserve">
+    <value>Lenken er fra en nyere Brasscribe. Oppdater appen, og prøv igjen.</value>
+  </data>
+  <data name="Settings_Link_NotFound" xml:space="preserve">
+    <value>Fant ikke Brasscribe på {0}. Sjekk at denne PC-en er på samme nettverk som datamaskinen.</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Neste eller forrige takt</value>
@@ -1593,6 +1704,12 @@
   <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
     <value>Skiller solisten fra bandet</value>
   </data>
+  <data name="UnpairButton.Content" xml:space="preserve">
+    <value>Glem denne datamaskinen</value>
+  </data>
+  <data name="UnpairButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Datamaskinen glemmer denne PC-en, og denne PC-en glemmer datamaskinen</value>
+  </data>
   <data name="VerbosityBox.Header" xml:space="preserve">
     <value>Hvor mye «Les opp» sier</value>
   </data>
@@ -1646,5 +1763,11 @@
   </data>
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom ut</value>
+  </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Ventet i {0}</value>
   </data>
 </root>

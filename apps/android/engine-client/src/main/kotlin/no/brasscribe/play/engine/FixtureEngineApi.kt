@@ -34,8 +34,15 @@ class FixtureEngineApi(
     private val cancelled = ConcurrentHashMap.newKeySet<String>()
     private val counter = AtomicInteger()
 
-    override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false)
-    override suspend fun pair(code: String, deviceName: String?) = PairResponse("fixture-token")
+    override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false, serverId = SERVER_ID, serverName = SERVER_NAME)
+    override suspend fun pair(code: String, deviceName: String?, platform: String?) = PairResponse("fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
+    override suspend fun thisDevice() = DeviceSelf("fixture-device", "Phone", "android", "2026-01-01T00:00:00+00:00",
+        "2026-01-01T00:00:00+00:00", true, SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00")
+    override suspend fun rotateToken() = RotateResponse("fixture-token", "fixture-device")
+    override suspend fun unpairThisDevice() = Unit
+    override suspend fun requestPairing(deviceName: String?, platform: String?) =
+        PairRequestInfo("fixture-request", deviceName ?: "Phone", platform ?: "android", "0000", "2026-01-01T00:00:00+00:00", "pending")
+    override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
     override suspend fun profiles(): List<ProfileInfo> = Profile.entries.map {
         ProfileInfo(it.id, it.id, "Golden Mikkel output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
@@ -138,6 +145,8 @@ class FixtureEngineApi(
     private fun now() = System.currentTimeMillis() / 1000.0
 
     companion object {
+        const val SERVER_ID = "fixture"
+        const val SERVER_NAME = "Brasscribe on the demo"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
         /** The golden score's parts in order, as their file names spell them. */
         val PART_NAMES = listOf(

@@ -451,12 +451,20 @@ struct ProblemContent<Actions: View>: View {
 }
 
 enum AccessibilityNotifier {
-    @MainActor static func announce(_ s: String) {
+    /// `polite`: queued after what is being read, for background changes such as the connection.
+    @MainActor static func announce(_ s: String, polite: Bool = false) {
         #if os(iOS)
-        UIAccessibility.post(notification: .announcement, argument: s)
+        if polite {
+            var text = AttributedString(s)
+            text.accessibilitySpeechAnnouncementPriority = .low
+            AccessibilityNotification.Announcement(text).post()
+        } else {
+            UIAccessibility.post(notification: .announcement, argument: s)
+        }
         #else
         NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
-                             userInfo: [.announcement: s, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+                             userInfo: [.announcement: s,
+                                        .priority: (polite ? NSAccessibilityPriorityLevel.medium : .high).rawValue])
         #endif
     }
 }

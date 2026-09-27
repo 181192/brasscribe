@@ -20,6 +20,8 @@ async function loadPlaywright() {
 
 const PHONE = { width: 390, height: 844, deviceScaleFactor: 2 };
 const DESKTOP = { width: 1440, height: 900, deviceScaleFactor: 1 };
+// Landscape phone (iPhone 15, 844 × 390 pt) and landscape tablet (iPad 11", 1194 × 834 pt), for the music stand.
+const VIEWPORTS = { phone: PHONE, desktop: DESKTOP, "phone-land": { width: 844, height: 390, deviceScaleFactor: 2 }, "tablet-land": { width: 1194, height: 834, deviceScaleFactor: 1.5 } };
 const both = [["phone", "light"], ["phone", "dark"], ["desktop", "light"], ["desktop", "dark"]];
 const SCREENS = {
   "home": both,
@@ -43,6 +45,18 @@ const SCREENS = {
   "server-pair": [["desktop", "light"], ["desktop", "dark"], ["desktop", "hc"]],
   "server-pair-nb": [["desktop", "light"]],
   "server-needs-attention": [["desktop", "light"], ["desktop", "dark"]],
+  "my-instrument-first-run": [["phone", "light"], ["phone", "dark"]],
+  "my-instrument-first-run-nb": [["phone", "light"]],
+  "my-instrument-settings": [["phone", "light"], ["desktop", "light"]],
+  "my-instrument-score": [["phone", "light"], ["phone", "dark"], ["desktop", "light"]],
+  "my-instrument-review": [["phone", "light"], ["desktop", "dark"]],
+  // Music stand (design/music-stand.md). A third item is a state, passed as ?state= and added to the file name.
+  "music-stand-entry": [["phone", "light"], ["desktop", "light"]],
+  "music-stand-entry-nb": [["phone", "light"]],
+  "music-stand-phone": [["phone", "light", "shown"], ["phone", "light", "hidden"], ["phone", "light", "turn"], ["phone", "dark", "shown"], ["phone", "hc", "shown"]],
+  "music-stand-phone-nb": [["phone", "light", "shown"]],
+  "music-stand-landscape": [["phone-land", "light", "shown"], ["phone-land", "light", "hidden"], ["phone-land", "light", "locked"], ["phone-land", "dark", "shown"]],
+  "music-stand-tablet": [["tablet-land", "light", "shown"], ["tablet-land", "light", "hidden"], ["tablet-land", "dark", "shown"]],
 };
 
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".woff2": "font/woff2", ".ttf": "font/ttf", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -65,8 +79,8 @@ await mkdir(OUT, { recursive: true });
 const only = process.argv.slice(2);
 for (const [screen, variants] of Object.entries(SCREENS)) {
   if (only.length && !only.includes(screen)) continue;
-  for (const [device, theme] of variants) {
-    const vp = device === "phone" ? PHONE : DESKTOP;
+  for (const [device, theme, state] of variants) {
+    const vp = VIEWPORTS[device];
     // "hc" renders the high-contrast tokens (data-theme="high-contrast"), the palette macOS Increase Contrast uses.
     const hc = theme === "hc";
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.deviceScaleFactor, colorScheme: hc ? "dark" : theme });
@@ -74,10 +88,11 @@ for (const [screen, variants] of Object.entries(SCREENS)) {
     page.on("pageerror", (e) => console.error(screen, e.message));
     const nb = screen.endsWith("-nb");
     const base = nb ? screen.slice(0, -3) : screen;
-    await page.goto(`http://127.0.0.1:${port}/mockups/${base}.html?device=${device}${nb ? "&lang=nb" : ""}${hc ? "&theme=high-contrast" : ""}`);
+    await page.goto(`http://127.0.0.1:${port}/mockups/${base}.html?device=${device}${nb ? "&lang=nb" : ""}${hc ? "&theme=high-contrast" : ""}${state ? `&state=${state}` : ""}`);
     await page.waitForSelector("body[data-ready]");
+    await page.waitForTimeout(50);
     await page.evaluate(() => document.fonts.ready);
-    const file = join(OUT, `${screen}-${device}-${theme}.png`);
+    const file = join(OUT, `${screen}-${device}-${theme}${state ? `-${state}` : ""}.png`);
     await page.screenshot({ path: file, fullPage: false });
     console.log(file.replace(DESIGN + "/", "design/"));
     await ctx.close();

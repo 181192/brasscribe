@@ -5,8 +5,9 @@ import java.io.File
 
 /**
  * Realistic-tier instruments installed on the phone: the SFZ folders that sounds/build.py produces
- * (cornet-a, flugelhorn, tenor-horn, baritone, euphonium, trombone, bass-trombone, eb-bass, bb-bass,
- * soprano-cornet), copied to the app's external files under sounds/. Samples are not bundled.
+ * (one per mapping.json target), copied to the app's external files under sounds/. Samples are not
+ * bundled. Which folder a part plays comes from the band resolver ([BandSoundMap.resolve]), never from
+ * the part name alone, so the realistic tier and the band SoundFont agree on every part.
  */
 class SoundPack(context: Context) {
     val dir: File = File(context.getExternalFilesDir(null), "sounds")
@@ -17,27 +18,20 @@ class SoundPack(context: Context) {
         INSTRUMENTS.forEach { File(dir, "$it/samples").mkdirs() }
     }
 
-    /** The sustain SFZ for a brass-band part name, if that instrument is installed. */
-    fun sfzFor(partName: String): File? {
-        val n = partName.lowercase()
-        val instrument = when {
-            "soprano" in n -> "soprano-cornet"
-            "cornet" in n -> "cornet-a"
-            "flugel" in n -> "flugelhorn"
-            "horn" in n -> "tenor-horn"
-            "baritone" in n -> "baritone"
-            "euphonium" in n -> "euphonium"
-            "bass trombone" in n -> "bass-trombone"
-            "trombone" in n -> "trombone"
-            "e♭ bass" in n || "eb bass" in n || "e-flat bass" in n -> "eb-bass"
-            "b♭ bass" in n || "bb bass" in n || "b-flat bass" in n -> "bb-bass"
-            else -> return null
-        }
-        return File(dir, "$instrument/$instrument-sus.sfz").takeIf { it.isFile }
-    }
+    /** The sustain SFZ of a resolved part's instrument, if it (or a sibling build of the same instrument) is installed. */
+    fun sfzFor(sound: TrackSound): File? = sfzFor(dir, sound)
 
     companion object {
-        val INSTRUMENTS = listOf("soprano-cornet", "cornet-a", "flugelhorn", "tenor-horn", "baritone", "euphonium",
-            "trombone", "bass-trombone", "eb-bass", "bb-bass")
+        val INSTRUMENTS = listOf("soprano-cornet", "cornet-a", "cornet-b", "flugelhorn", "tenor-horn", "baritone",
+            "euphonium", "trombone", "bass-trombone", "eb-bass", "bb-bass")
+
+        /** Builds of the same instrument that can stand in for each other (the two cornet sources). */
+        private val SIBLINGS = mapOf("cornet-a" to listOf("cornet-b"), "cornet-b" to listOf("cornet-a"))
+
+        fun sfzFor(dir: File, sound: TrackSound): File? {
+            val target = sound.target ?: return null
+            return (listOf(target) + SIBLINGS[target].orEmpty())
+                .map { File(dir, "$it/$it-sus.sfz") }.firstOrNull { it.isFile }
+        }
     }
 }

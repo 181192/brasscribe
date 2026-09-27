@@ -60,6 +60,12 @@
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Brasscribe Play</value>
   </data>
+  <data name="AskComputerButton.Content" xml:space="preserve">
+    <value>Ask on the computer instead</value>
+  </data>
+  <data name="AskComputerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>No code to type: choose Allow on the computer</value>
+  </data>
   <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Go back (Alt+Left)</value>
   </data>
@@ -74,6 +80,12 @@
   </data>
   <data name="Back_Home" xml:space="preserve">
     <value>Home</value>
+  </data>
+  <data name="CancelAskButton.Content" xml:space="preserve">
+    <value>Stop waiting</value>
+  </data>
+  <data name="CancelAskButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stop waiting for the computer to allow this PC</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
     <value>The recording stays in Your scores, so you can start again.</value>
@@ -138,6 +150,39 @@
   <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Open Brasscribe on your computer and choose Pair a device, then type the code here</value>
   </data>
+  <data name="ConnectionActionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Connect this PC to Brasscribe on your computer</value>
+  </data>
+  <data name="Connection_Connect" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="Connection_Connected" xml:space="preserve">
+    <value>Connected to Brasscribe on {0}</value>
+  </data>
+  <data name="Connection_DetailsAddress" xml:space="preserve">
+    <value>Address: {0}</value>
+  </data>
+  <data name="Connection_DetailsLastSeen" xml:space="preserve">
+    <value>Last answered: {0}</value>
+  </data>
+  <data name="Connection_DetailsServerId" xml:space="preserve">
+    <value>Server id: {0}</value>
+  </data>
+  <data name="Connection_NeedsPairing" xml:space="preserve">
+    <value>The computer no longer recognises this PC.</value>
+  </data>
+  <data name="Connection_Offline" xml:space="preserve">
+    <value>Not connected. You can still make scores on this PC.</value>
+  </data>
+  <data name="Connection_PairAgain" xml:space="preserve">
+    <value>Pair this PC again</value>
+  </data>
+  <data name="Connection_Reconnecting" xml:space="preserve">
+    <value>Looking for Brasscribe on {0} …</value>
+  </data>
+  <data name="Connection_YourComputer" xml:space="preserve">
+    <value>your computer</value>
+  </data>
   <data name="ContinueButton.Content" xml:space="preserve">
     <value>Continue</value>
   </data>
@@ -178,10 +223,16 @@
     <value>Edit score title</value>
   </data>
   <data name="EngineAddressBox.Header" xml:space="preserve">
-    <value>Details for the band's tech person: address</value>
+    <value>Address</value>
   </data>
   <data name="EngineAddressBox.PlaceholderText" xml:space="preserve">
     <value>http://127.0.0.1:8765</value>
+  </data>
+  <data name="EngineDetails.Header" xml:space="preserve">
+    <value>Details for the band's tech person</value>
+  </data>
+  <data name="EngineDetails.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Details for the band's tech person</value>
   </data>
   <data name="ErrorSteps.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>What to do</value>
@@ -657,6 +708,9 @@
   <data name="MarkCheckedItem.Text" xml:space="preserve">
     <value>Keep this note</value>
   </data>
+  <data name="MatchCodeLabel.Text" xml:space="preserve">
+    <value>The computer shows the same number</value>
+  </data>
   <data name="MetronomeLabel.Text" xml:space="preserve">
     <value>Metronome</value>
   </data>
@@ -772,7 +826,7 @@
     <value>Arranging again with your choices</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
-    <value>Pairing code</value>
+    <value>Code</value>
   </data>
   <data name="PairingCodeBox.PlaceholderText" xml:space="preserve">
     <value>The six digits your computer shows</value>
@@ -994,10 +1048,7 @@
     <value>Notes to check</value>
   </data>
   <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Plays the bar from the recording, looped (Space)</value>
-  </data>
-  <data name="ReviewListenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Listen to this bar</value>
+    <value>Plays the bar once, from the recording when there is one. Press again to stop (Space)</value>
   </data>
   <data name="ReviewListenLabel.Text" xml:space="preserve">
     <value>Listen to this bar</value>
@@ -1013,6 +1064,9 @@
   </data>
   <data name="ReviewSnippet.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>The bars around the note</value>
+  </data>
+  <data name="ReviewStopLabel.Text" xml:space="preserve">
+    <value>Stop</value>
   </data>
   <data name="Review_Accompaniment" xml:space="preserve">
     <value>Accompaniment</value>
@@ -1092,6 +1146,9 @@
   <data name="Review_ListItemVeryUncertain" xml:space="preserve">
     <value>Bar {0}, {1}, very uncertain</value>
   </data>
+  <data name="Review_Listen" xml:space="preserve">
+    <value>Listen to this bar</value>
+  </data>
   <data name="Review_MyPartDone" xml:space="preserve">
     <value>Your part is checked. Now the other parts.</value>
   </data>
@@ -1109,6 +1166,9 @@
   </data>
   <data name="Review_ScopeMine" xml:space="preserve">
     <value>Your part ({0})</value>
+  </data>
+  <data name="Review_Stop" xml:space="preserve">
+    <value>Stop</value>
   </data>
   <data name="Review_Triage" xml:space="preserve">
     <value>Check your part first: {0} notes in {1}, {2} very unsure</value>
@@ -1175,6 +1235,12 @@
   </data>
   <data name="Score_FullScore" xml:space="preserve">
     <value>All parts</value>
+  </data>
+  <data name="Score_ListenEnded" xml:space="preserve">
+    <value>End of bar {0}</value>
+  </data>
+  <data name="Score_ListenStopped" xml:space="preserve">
+    <value>Stopped</value>
   </data>
   <data name="Score_ListeningOriginal" xml:space="preserve">
     <value>Playing bar {0} from the recording</value>
@@ -1275,26 +1341,71 @@
   <data name="Settings_CoreVersion" xml:space="preserve">
     <value>Arranger on this PC: {0}</value>
   </data>
+  <data name="Settings_Engine_AskBusy" xml:space="preserve">
+    <value>Other devices are waiting on the computer. Try again in a couple of minutes.</value>
+  </data>
+  <data name="Settings_Engine_AskDenied" xml:space="preserve">
+    <value>The computer didn't allow this PC. You can ask again.</value>
+  </data>
+  <data name="Settings_Engine_AskExpired" xml:space="preserve">
+    <value>The computer didn't answer in time. You can ask again.</value>
+  </data>
+  <data name="Settings_Engine_AskWaiting" xml:space="preserve">
+    <value>On the computer, choose Allow when it shows this number: {0}</value>
+  </data>
   <data name="Settings_Engine_Chosen" xml:space="preserve">
-    <value>Using {0}. Type the six-digit code it shows, then choose Connect.</value>
+    <value>Using Brasscribe on {0}. Type the six-digit code it shows, then choose Connect.</value>
+  </data>
+  <data name="Settings_Engine_ChosenPaired" xml:space="preserve">
+    <value>Using Brasscribe on {0}. This PC is already paired with it.</value>
+  </data>
+  <data name="Settings_Engine_CodeWrong" xml:space="preserve">
+    <value>That code didn't work. Check the six digits on the computer and try again.</value>
   </data>
   <data name="Settings_Engine_Connected" xml:space="preserve">
-    <value>Connected to Brasscribe {0} on your computer ({1})</value>
+    <value>Connected to Brasscribe on {0}.</value>
+  </data>
+  <data name="Settings_Engine_Failed" xml:space="preserve">
+    <value>Something went wrong talking to your computer. Try again.</value>
+  </data>
+  <data name="Settings_Engine_Forgotten" xml:space="preserve">
+    <value>The computer no longer recognises this PC. Type the six digits it shows, or ask on the computer instead.</value>
   </data>
   <data name="Settings_Engine_FoundMany" xml:space="preserve">
     <value>Found {0} computers running Brasscribe. Choose one.</value>
   </data>
   <data name="Settings_Engine_FoundOne" xml:space="preserve">
-    <value>Found {0}. Choose it to use it.</value>
+    <value>Found Brasscribe on {0}. Choose it to use it.</value>
+  </data>
+  <data name="Settings_Engine_Locked" xml:space="preserve">
+    <value>Too many wrong codes. Wait a moment, or ask on the computer instead.</value>
   </data>
   <data name="Settings_Engine_NeedsCode" xml:space="preserve">
-    <value>Your computer asks for a pairing code. Type the six digits it shows.</value>
+    <value>Your computer asks for a code. Type the six digits it shows, or ask on the computer instead.</value>
   </data>
   <data name="Settings_Engine_NoneFound" xml:space="preserve">
-    <value>No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.</value>
+    <value>No computer running Brasscribe was found on this network. Check that Brasscribe on the computer says Running, and that both are on the same Wi-Fi.</value>
   </data>
   <data name="Settings_Engine_Searching" xml:space="preserve">
     <value>Looking for Brasscribe on your network…</value>
+  </data>
+  <data name="Settings_Engine_Unpaired" xml:space="preserve">
+    <value>This PC is no longer paired with Brasscribe on {0}.</value>
+  </data>
+  <data name="Settings_Engine_Unreachable" xml:space="preserve">
+    <value>Couldn't reach your computer. Check that Brasscribe is running there and that both are on the same network.</value>
+  </data>
+  <data name="Settings_Link_Invalid" xml:space="preserve">
+    <value>That link isn't a Brasscribe pairing link.</value>
+  </data>
+  <data name="Settings_Link_Looking" xml:space="preserve">
+    <value>Looking for Brasscribe on {0} …</value>
+  </data>
+  <data name="Settings_Link_Newer" xml:space="preserve">
+    <value>That link is from a newer Brasscribe. Update this app, then try again.</value>
+  </data>
+  <data name="Settings_Link_NotFound" xml:space="preserve">
+    <value>Couldn't find Brasscribe on {0}. Check that this PC is on the same network as the computer.</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Next or previous bar</value>
@@ -1593,6 +1704,12 @@
   <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
     <value>Separating the soloist from the band</value>
   </data>
+  <data name="UnpairButton.Content" xml:space="preserve">
+    <value>Forget this computer</value>
+  </data>
+  <data name="UnpairButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The computer forgets this PC, and this PC forgets the computer</value>
+  </data>
   <data name="VerbosityBox.Header" xml:space="preserve">
     <value>How much “Read aloud” says</value>
   </data>
@@ -1646,5 +1763,11 @@
   </data>
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom out</value>
+  </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>The band sounds are missing. Reinstall Brasscribe Play to hear the band.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Expected at {0}</value>
   </data>
 </root>

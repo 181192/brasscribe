@@ -120,6 +120,11 @@ fun StatusLine(status: Status?, modifier: Modifier = Modifier) {
         if (visible == status) visible = null
     }
     val s = visible ?: return
+    if (s.quiet) {
+        // Heard, not seen: a polite live region with nothing drawn.
+        androidx.compose.foundation.layout.Box(modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = s.text })
+        return
+    }
     val c = BrasscribeTheme.colors
     Surface(
         modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = c.text, contentColor = c.bg,
@@ -257,6 +262,23 @@ fun InfoNote(text: String, modifier: Modifier = Modifier, @DrawableRes icon: Int
     ) {
         BcIcon(icon, null, tint = if (boxed) c.text else c.textMuted)
         Text(text, style = MaterialTheme.typography.bodyMedium, color = if (boxed) c.text else c.textMuted)
+    }
+}
+
+/**
+ * One line above the player when the band sounds are not installed: what to do next, and where
+ * they were looked for under the tech-person details.
+ */
+@Composable
+fun BandSoundsMissing(expected: String, modifier: Modifier = Modifier) {
+    var details by remember { mutableStateOf(false) }
+    val c = BrasscribeTheme.colors
+    Column(modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s2)) {
+        InfoNote(stringResource(R.string.band_sounds_missing), boxed = false)
+        if (expected.isNotBlank()) {
+            PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })
+            if (details) Text(expected, style = MaterialTheme.typography.bodySmall, color = c.textMuted)
+        }
     }
 }
 

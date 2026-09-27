@@ -74,6 +74,9 @@ public interface IOriginalPlayer
     /// <summary>Playback rate, 1 = normal.</summary>
     double Rate { get; set; }
     TimeSpan Position { get; set; }
+
+    /// <summary>A range played without looping reached its end (raised on the UI thread).</summary>
+    event EventHandler? RangeEnded { add { } remove { } }
 }
 
 public interface ISettingsStore

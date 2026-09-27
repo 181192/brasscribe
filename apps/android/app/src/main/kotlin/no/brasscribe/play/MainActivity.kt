@@ -1,6 +1,8 @@
 package no.brasscribe.play
 
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -37,13 +39,43 @@ class MainActivity : ComponentActivity() {
         setContent { PlayTheme { PlayRoot(vm) } }
     }
 
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
+    // The heartbeat runs while the app is in front (contract: presence); leaving it also stops a bar playing.
+    override fun onStart() {
+        super.onStart()
+        vm.connection.start()
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return
+        val cb = object : ConnectivityManager.NetworkCallback() {
+            // Registering reports the current network at once: that is not a change, so it is skipped.
+            private var first = true
+            override fun onAvailable(network: Network) {
+                if (first) { first = false; return }
+                runOnUiThread { vm.connection.networkChanged() }
+            }
+        }
+        runCatching { cm.registerDefaultNetworkCallback(cb) }.onSuccess { networkCallback = cb }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        vm.connection.stop()
+        vm.stopListening(announce = false)
+        networkCallback?.let { cb -> runCatching { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(cb) } }
+        networkCallback = null
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
     }
 
-    /** Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file. */
+    /** Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; brasscribe://pair pairs. */
     private fun handleIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == no.brasscribe.play.engine.PairLink.SCHEME) {
+            vm.openPairLink(intent.data.toString())
+            return
+        }
         val uri: Uri? = when (intent?.action) {
             Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
             Intent.ACTION_VIEW -> intent.data

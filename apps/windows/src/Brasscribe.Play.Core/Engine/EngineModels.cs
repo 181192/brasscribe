@@ -7,7 +7,8 @@ namespace Brasscribe.Play.Core.Engine;
 // DTOs for the companion engine API (engine/openapi.json, "brasscribe engine" 0.1.0).
 // Property names map to snake_case through EngineJsonContext.
 
-public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok");
+public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok",
+    string? ServerId = null, string? ServerName = null);
 
 public sealed record AudioRef(string AudioId, string Sha256, string Filename, long Bytes);
 
@@ -47,7 +48,8 @@ public sealed record Job(
     double? Finished = null,
     double Progress = 0.0,
     IReadOnlyList<string>? Outputs = null,
-    string? PreviousRunId = null)
+    string? PreviousRunId = null,
+    string? DeviceName = null)
 {
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
@@ -74,9 +76,9 @@ public sealed record StageArtifacts(string Stage, string Status, IReadOnlyList<F
 
 public sealed record ProfileInfo(string Name, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
 
-public sealed record PairRequest(string Code, string? DeviceName = null);
+public sealed record PairRequest(string Code, string? DeviceName = null, string? Platform = null);
 
-public sealed record PairResponse(string Token);
+public sealed record PairResponse(string Token, string? DeviceId = null, string? ServerId = null, string? ServerName = null);
 
 public sealed record ModelInfo(string Model, string Name);
 

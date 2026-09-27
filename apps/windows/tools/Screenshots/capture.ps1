@@ -7,7 +7,7 @@ param(
     [Parameter(Mandatory)] [string] $Exe,
     [Parameter(Mandatory)] [string] $Score,
     [Parameter(Mandatory)] [string] $Out,
-    [string[]] $Scenes = @("first-run", "home", "what-is-this", "transcribing", "review", "choose-output", "score", "part", "export", "error"),
+    [string[]] $Scenes = @("first-run", "home", "home-offline", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"),
     [string[]] $Themes = @("light", "dark"),
     [int] $Settle = 6
 )

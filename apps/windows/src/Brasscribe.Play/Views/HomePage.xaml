@@ -17,7 +17,10 @@
                 <Run x:Uid="HomeHeadingBrass" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic"
                      Foreground="{ThemeResource BcBrassTextBrush}" />
             </TextBlock>
-            <TextBlock x:Uid="HomeIntro" Style="{StaticResource LeadStyle}" Margin="0,-4,0,12" />
+            <TextBlock x:Uid="HomeIntro" Style="{StaticResource LeadStyle}" Margin="0,-4,0,4" />
+
+            <!-- Brasscribe on your computer: connected, looking, not connected or pair again. -->
+            <views:ConnectionRow x:Name="ConnectionStatus" Margin="0,0,0,8" ActionInvoked="OnConnectionAction" />
 
             <!-- The one primary: open a recording (or drop it here). -->
             <Border Style="{StaticResource CardStyle}" BorderBrush="{ThemeResource BcBorderStrongBrush}" Padding="24">

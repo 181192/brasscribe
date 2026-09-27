@@ -28,6 +28,8 @@ android {
         generateLocaleConfig = true
         // alphaTab ships its default SoundFont twice (SF2 and SF3) and only ever opens the SF2.
         ignoreAssetsPattern = "!sonivox.sf3:!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
+        // The band SoundFont is copied out once; stored uncompressed it can be sized and streamed.
+        noCompress += "sf2"
     }
 
     buildTypes {
@@ -50,6 +52,10 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            // The shared resolver vectors (sounds/partsound-vectors.json) and part map.
+            it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
+        }
     }
 
     lint {
@@ -90,6 +96,9 @@ kotlin {
  * - models/: SwiftF0 (1.1 MB), Basic Pitch (0.26 MB) and Beat This! small (9.4 MB) ONNX from convert/ (all MIT),
  *   bundled in every build when present.
  * - fixtures/: the golden Mikkel output, debug builds only, for the built-in sample engine.
+ * - sounds/brasscribe-band-mobile.sf2: the phone band SoundFont (apps/android/scripts/mobile_soundfont.py,
+ *   VSCO 2 CE CC0, Univ. of Iowa MIS, MS Basic kit MIT), bundled in every build when present, so the
+ *   band plays its own instruments without a download. Without it the app says the band sounds are missing.
  */
 val modelAssets = tasks.register<Sync>("syncModelAssets") {
     into(layout.buildDirectory.dir("generated/brasscribe/models"))
@@ -99,7 +108,10 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
         from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
     }
     // The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
-    into("sounds") { from(File(repoRoot, "sounds")) { include("mapping.json") } }
+    into("sounds") {
+        from(File(repoRoot, "sounds")) { include("mapping.json") }
+        from(File(repoRoot, "data/sounds/band")) { include("brasscribe-band-mobile.sf2") }
+    }
     filePermissions { user { read = true; write = true } }
 }
 val fixtureAssets = tasks.register<Sync>("syncFixtureAssets") {
@@ -163,6 +175,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.play.services.code.scanner)
     implementation(libs.alphatab)
     implementation(libs.alphaskia.android)
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
@@ -174,6 +187,7 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)

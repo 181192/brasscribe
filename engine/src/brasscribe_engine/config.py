@@ -11,7 +11,18 @@ environments) or an installed package.
     BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
     BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
     BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
-    BRASSCRIBE_COMPUTER_NAME     name people know this computer by, for "Brasscribe on <name>" (default: host name)
+    BRASSCRIBE_COMPUTER_NAME     name people know this computer by, for "Brasscribe on <name>"
+                                 (default: macOS ComputerName, else the host name)
+    BRASSCRIBE_SERVER_NAME       replaces the whole "Brasscribe on <name>" display name
+    BRASSCRIBE_TRUST_LOCAL       1 (default): clients on this computer (loopback) use the API without a token.
+                                 0: they need a token like any other client. Turn it off whenever something on
+                                 this computer forwards outside traffic to the engine (tailscale serve,
+                                 cloudflared, a reverse proxy, an SSH tunnel): that traffic looks local.
+    BRASSCRIBE_ADMIN_TOKEN       owner credential for device management (/v1/status, /v1/devices, /v1/pairing*):
+                                 `Authorization: Bearer <token>`. While one is set, those endpoints require it
+                                 and loopback alone is not enough. It also works on every other endpoint.
+    BRASSCRIBE_ADMIN_TOKEN_FILE  read the owner credential from this file instead (created with a random token
+                                 if missing; on POSIX it must not be readable by group or others)
     BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/convert/reports, else <repo>/models/convert/reports)
     BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
 """
@@ -29,6 +40,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_GPU_LOCK = Path(tempfile.gettempdir() if sys.platform == "win32" else "/tmp") / "brasscribe-gpu.lock"
 
 
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    return default if not value else value not in ("0", "false", "no", "off")
+
+
 def _env_path(name: str, default: Path) -> Path:
     value = os.environ.get(name)
     return Path(value).expanduser().resolve() if value else default
@@ -42,6 +58,32 @@ class Settings:
     models_override: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_MODELS", Path()) if os.environ.get("BRASSCRIBE_MODELS") else None)
     token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_TOKEN"))
     device_idle_days: float = field(default_factory=lambda: float(os.environ.get("BRASSCRIBE_DEVICE_IDLE_DAYS") or 180))
+    trust_local: bool = field(default_factory=lambda: _env_flag("BRASSCRIBE_TRUST_LOCAL", True))
+    admin_token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_ADMIN_TOKEN") or None)
+    admin_token_file: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_ADMIN_TOKEN_FILE", Path())
+                                          if os.environ.get("BRASSCRIBE_ADMIN_TOKEN_FILE") else None)
+
+    def admin_credential(self) -> str | None:
+        """The owner credential: `admin_token`, else the contents of `admin_token_file` (created with a random
+        token when missing). Refuses a file others can read, so a token another user could copy is never used."""
+        if self.admin_token and self.admin_token.strip():
+            return self.admin_token.strip()
+        path = self.admin_token_file
+        if path is None:
+            return None
+        if not path.exists():
+            import secrets
+
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write(secrets.token_urlsafe(32) + "\n")
+        if os.name == "posix" and path.stat().st_mode & 0o077:
+            raise PermissionError(f"{path} is readable by other users; run chmod 600 {path}")
+        token = path.read_text().strip()
+        if not token:
+            raise ValueError(f"{path} is empty")
+        return token
 
     @property
     def state_dir(self) -> Path:

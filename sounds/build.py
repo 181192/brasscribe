@@ -17,6 +17,7 @@ SF2 uses the first variant of every note).
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -28,22 +29,33 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "music" / "src"))
 from brasscribe_music.instruments import INSTRUMENTS  # noqa: E402
-from dsp import SR, apply_eq, envelope_db, loudest_window_db  # noqa: E402
+from dsp import SR, apply_eq, envelope_db, k_weight, loudest_window_db  # noqa: E402
 import sf2  # noqa: E402
 
 RAW = ROOT / "data" / "sounds" / "raw"
-BUILT = ROOT / "data" / "sounds" / "built"
+BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))  # staging builds
 ANALYSIS = ROOT / "data" / "sounds" / "analysis.json"
 MAPPING = HERE / "mapping.json"
 
 # Nominal dynamic of each layer, by number of layers available (softest first).
 LAYER_DYNAMICS = {1: ["mf"], 2: ["p", "f"], 3: ["pp", "mf", "ff"], 4: ["p", "mf", "f", "ff"]}
 DYN_VELOCITY = {"pp": 30, "p": 48, "mf": 80, "f": 100, "ff": 116}
-# Loudest 300 ms window RMS of each baked sample, dBFS.
+# Level of each baked sample, dBFS: sustain RMS over 80 ms-1.0 s (body_db), staccato loudest 80 ms.
 DYN_LEVEL_DB = {"pp": -30.0, "p": -26.0, "mf": -21.0, "f": -18.5, "ff": -16.0}
 VEL_SPAN_DB = 6.0  # extra dB-linear velocity scaling inside the layers (same in SFZ and SF2)
 MAX_STRETCH = 3  # semitones a sample may be transposed before a neighbouring layer's sample is borrowed
-RELEASE_S = {"sus": 0.20, "stac": 0.10}
+MATCH_MAX_DB = 9.0  # largest boost or cut the spectral match may apply
+EXTEND_BEYOND = 2  # an extension source fills keys more than this many semitones from every primary sample
+# Release after note-off. SFZ ampeg_release (sfizz) and the SF2 volume-envelope release (defined as
+# the time to fall 100 dB) reach -40 dB at different fractions of the stated time; both are set so
+# the tail falls 40 dB in about 250 ms (sustain) and 150 ms (staccato), measured by soundcheck.py.
+RELEASE_S = {"sus": 0.45, "stac": 0.28}
+SF2_RELEASE_S = {"sus": 0.60, "stac": 0.38}
+# Every target's mf layer is scaled so its K-weighted body level (body_db) in the comfortable range
+# is this, so all presets play equally loud at the same velocity and part balance is only the
+# channel gain (mapping.json parts[].balance_lu). Peaks are kept under -1 dBFS by lowering it.
+TARGET_K_DB = -24.0
+MAX_PEAK = 0.89
 DC_BLOCK = [{"type": "highpass", "f": 25, "q": 0.707}]
 
 
@@ -80,20 +92,18 @@ def trim(x: np.ndarray) -> np.ndarray:
 
 
 def make_loop(x: np.ndarray) -> tuple[np.ndarray, tuple[int, int] | None]:
-    """Crossfade loop in the stable sustain. Returns (audio cut after the loop, (start, end)) or no loop."""
+    """Crossfade loop in the stable sustain. Returns (audio cut after the loop, (start, end)) or no loop.
+
+    The sustain is where the level stays within `drop` dB of the peak, starting where it first
+    comes within `rise` dB; a slow swell (a pp note that grows) gets a wider window."""
+    for rise, drop in ((3, 9), (6, 12), (9, 15)):
+        r = _loop_window(x, rise, drop)
+        if r is not None:
+            break
+    else:
+        return x, None
+    a_frame, b_frame = r
     hop = int(0.01 * SR)
-    env = envelope_db(x)
-    peak = env.max()
-    loud = np.nonzero(env > peak - 3)[0]
-    if not len(loud):
-        return x, None
-    a_frame = loud[0] + 8
-    stable = np.nonzero(env > peak - 9)[0]
-    # loop within the first ~3 s of sustain: long enough for natural onset movement,
-    # short enough to keep the instruments small
-    b_frame = min(stable[-1] - 10, a_frame + 300)
-    if (b_frame - a_frame) * hop < int(0.35 * SR):
-        return x, None
     b = b_frame * hop
     length = min(int(1.2 * SR), int((b_frame - a_frame) * hop * 0.8))
     a = b - length
@@ -114,6 +124,34 @@ def make_loop(x: np.ndarray) -> tuple[np.ndarray, tuple[int, int] | None]:
     t = np.linspace(0, 1, xf)
     y[b - xf : b] = x[b - xf : b] * (1 - t) + x[a - xf : a] * t
     return y, (a, b)
+
+
+def _loop_window(x: np.ndarray, rise: float, drop: float) -> tuple[int, int] | None:
+    hop = int(0.01 * SR)
+    env = envelope_db(x)
+    peak = env.max()
+    loud = np.nonzero(env > peak - rise)[0]
+    if not len(loud):
+        return None
+    a_frame = loud[0] + 8
+    stable = np.nonzero(env > peak - drop)[0]
+    # loop within the first ~3 s of sustain: long enough for natural onset movement,
+    # short enough to keep the instruments small
+    b_frame = min(stable[-1] - 10, a_frame + 300)
+    if (b_frame - a_frame) * hop < int(0.35 * SR):
+        return None
+    return a_frame, b_frame
+
+
+def body_db(y: np.ndarray) -> float:
+    """Level of a sustain sample as a short or medium note hears it: RMS over 80 ms-1.0 s.
+
+    The loudest-300 ms window used before let slow-speaking samples (VSCO trombone A#0, D#1)
+    reach their level only after 0.5 s, so short notes on them came out 4-5 dB quiet."""
+    a, b = int(0.08 * SR), min(len(y), int(1.0 * SR))
+    if b - a < int(0.1 * SR):
+        return loudest_window_db(y)
+    return float(10 * np.log10(np.mean(y[a:b] ** 2) + 1e-20))
 
 
 def pick_notes(notes: list[dict], library: str, instrument: str, art: str) -> tuple[list[dict], bool]:
@@ -145,6 +183,63 @@ def order_layers(notes: list[dict]) -> list[str]:
     return sorted(labels, key=lambda d: DYN_RANK[d] if d in DYN_RANK else int(d[1:]))
 
 
+def ltas_db(ys: list[np.ndarray], freqs: np.ndarray) -> np.ndarray:
+    """Mean log power spectrum (dB) of the first second of each sample, level-normalised."""
+    from scipy import signal
+    acc = []
+    for y in ys:
+        seg = y[: int(1.0 * SR)]
+        f, pxx = signal.welch(seg, SR, nperseg=min(4096, len(seg)))
+        p = 10 * np.log10(np.interp(freqs, f, pxx) + 1e-20)
+        band = (freqs > 100) & (freqs < 5000)
+        acc.append(p - p[band].mean())
+    return np.mean(acc, axis=0)
+
+
+def smooth_third_octave(freqs: np.ndarray, d: np.ndarray) -> np.ndarray:
+    out = np.empty_like(d)
+    for i, f in enumerate(freqs):
+        m = (freqs >= f * 2 ** (-1 / 6)) & (freqs <= f * 2 ** (1 / 6))
+        out[i] = d[m].mean() if m.any() else d[i]
+    return out
+
+
+def match_filter(primary: list[tuple[int, np.ndarray]], ext: list[tuple[int, np.ndarray]]) -> tuple[np.ndarray | None, dict]:
+    """Spectral envelope match: a zero-phase FIR that gives the extension source the primary
+    source's long-term spectrum, fitted on the pitches both sources have (1/3-octave smoothed,
+    clipped to +-12 dB, flat outside 60 Hz-10 kHz)."""
+    from scipy import signal
+    common = sorted({m for m, _ in primary} & {m for m, _ in ext})
+    if len(common) < 3:
+        return None, {"common_pitches": common}
+    freqs = np.geomspace(20, 20000, 400)
+    a = ltas_db([y for m, y in primary if m in common], freqs)
+    b = ltas_db([y for m, y in ext if m in common], freqs)
+    d = smooth_third_octave(freqs, a - b)
+    # below the lowest fundamental there is only rumble and room noise: hold the curve flat there
+    f_lo = max(40.0, 0.9 * 440 * 2 ** ((min(common) - 69) / 12))
+    d[freqs < f_lo] = d[np.searchsorted(freqs, f_lo)]
+    d[freqs > 10000] = d[np.searchsorted(freqs, 10000)]
+    d = np.clip(d - d[(freqs > 200) & (freqs < 2000)].mean(), -MATCH_MAX_DB, MATCH_MAX_DB)
+    grid = np.concatenate([[0], freqs, [SR / 2]])
+    gains = 10 ** (np.concatenate([[d[0]], d, [d[-1]]]) / 20)
+    fir = signal.firwin2(2049, grid, gains, fs=SR)
+    at = {str(int(f)): round(float(v), 1) for f, v in zip(freqs[::40], d[::40])}
+    return fir, {"common_pitches": common, "correction_db": at}
+
+
+def apply_fir(y: np.ndarray, fir: np.ndarray) -> np.ndarray:
+    from scipy import signal
+    return signal.fftconvolve(y, fir, mode="same")
+
+
+def layer_of(n: dict, raw_layers: dict[str, list[str]], n_dyns: int) -> int:
+    """Primary layers map 1:1; an extension source's layers are spread over the primary's by rank."""
+    ls = raw_layers[n["_src"]]
+    r = ls.index(n["dyn"])
+    return r if len(ls) == n_dyns else int(round(r * (n_dyns - 1) / max(1, len(ls) - 1)))
+
+
 def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
     inst = INSTRUMENTS[spec["instrument"]]
     lo, hi = inst.pro
@@ -155,45 +250,106 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
     eq = DC_BLOCK + spec["eq"]
     table = {"target": tid, "instrument": inst.id, "range": [lo, hi], "eq": eq, "sample_rate": SR,
              "vel_span_db": VEL_SPAN_DB, "articulations": {}}
+    clo, chi = inst.comfortable
+    target_gain_db = None
     for art, src in (("sus", spec["source"]), ("stac", spec["stac_source"])):
         chosen, derived = pick_notes(notes, src["library"], src["instrument"], art)
-        audio, levels = [], {}
-        for i, n in enumerate(chosen):
-            y = apply_eq(trim(load_segment(n)), eq)
-            audio.append(y)
-            levels[i] = loudest_window_db(y, win=0.3 if art == "sus" else 0.08)
-        layers = order_layers(chosen)
+        chosen = [dict(n, _src="primary") for n in chosen]
+        raw_layers = {"primary": order_layers(chosen)}
+        audio_of = [apply_eq(trim(load_segment(n)), eq) for n in chosen]
+        extensions = []
+        for ext in spec.get("extend", []):
+            cand, ext_derived = pick_notes(notes, ext["library"], ext["instrument"], art)
+            if not cand:
+                continue
+            # "range": fill only beyond the primary's pitch span; "layers": also fill holes inside a
+            # dynamic layer (the extension's layers are spread over the primary's by rank)
+            ext_layers = order_layers(cand)
+            prim_layers = raw_layers["primary"]
+            n_dyn = len(LAYER_DYNAMICS[len(prim_layers)])
+
+            def ext_layer(n: dict) -> int:
+                r = ext_layers.index(n["dyn"])
+                return int(round(r * (n_dyn - 1) / max(1, len(ext_layers) - 1)))
+            if ext.get("fill", "range") == "layers":
+                have_by = {li: {n["midi"] for n in chosen if prim_layers.index(n["dyn"]) == li} for li in range(n_dyn)}
+                fill = [n for n in cand if lo - EXTEND_BEYOND <= n["midi"] <= hi + EXTEND_BEYOND
+                        and min([abs(n["midi"] - h) for h in have_by[ext_layer(n)]] or [99]) > EXTEND_BEYOND]
+            else:
+                have = {n["midi"] for n in chosen}
+                fill = [n for n in cand if lo - EXTEND_BEYOND <= n["midi"] <= hi + EXTEND_BEYOND
+                        and min(abs(n["midi"] - h) for h in have) > EXTEND_BEYOND]
+            if not fill:
+                continue
+            # fit the spectral match on the middle layers of both sources, at the pitches both have
+            mid_p = raw_layers["primary"][len(raw_layers["primary"]) // 2]
+            mid_e = ext_layers[len(ext_layers) // 2]
+            prim = [(n["midi"], y) for n, y in zip(chosen, audio_of) if n["dyn"] == mid_p and n["rr"] == 1]
+            pm = {m for m, _ in prim}
+            ref = [(n["midi"], apply_eq(trim(load_segment(n)), eq)) for n in cand
+                   if n["dyn"] == mid_e and n["rr"] == 1 and n["midi"] in pm]
+            if len(ref) < 3:  # middle layers do not overlap in pitch: fit on every layer
+                prim = [(n["midi"], y) for n, y in zip(chosen, audio_of) if n["rr"] == 1]
+                pm = {m for m, _ in prim}
+                ref = [(n["midi"], apply_eq(trim(load_segment(n)), eq)) for n in cand if n["rr"] == 1 and n["midi"] in pm]
+            fir, info = match_filter(prim, ref)
+            tag = f"{ext['library']}/{ext['instrument']}"
+            raw_layers[tag] = ext_layers
+            for n in fill:
+                y = apply_eq(trim(load_segment(n)), eq)
+                chosen.append(dict(n, _src=tag, _derived=ext_derived))
+                audio_of.append(apply_fir(y, fir) if fir is not None else y)
+            extensions.append({"source": ext, "notes": sorted({n["midi"] for n in fill}), "match": info})
+        layers = raw_layers["primary"]
         dyns = LAYER_DYNAMICS[len(layers)]
         vels = velocity_ranges(dyns)
+        lidx = [layer_of(n, raw_layers, len(dyns)) for n in chosen]
+        scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - (body_db(y) if art == "sus" else loudest_window_db(y, win=0.08))) / 20)
+                  for i, y in enumerate(audio_of)]
+        if target_gain_db is None:  # set once per target, from the sustain's middle layer
+            # every primary sample in the comfortable range, referred to the middle layer's nominal level
+            # (some sources have no middle-layer notes there, e.g. Iowa horn mf stops at B2)
+            mid = DYN_LEVEL_DB[dyns[len(dyns) // 2]]
+            ks = [body_db(k_weight(y)) - (DYN_LEVEL_DB[dyns[lidx[i]]] - mid) for i, y in enumerate(scaled)
+                  if clo <= chosen[i]["midi"] <= chi and chosen[i]["_src"] == "primary"]
+            target_gain_db = TARGET_K_DB - float(np.mean(ks))
         samples = []
+        limited = []
         for i, n in enumerate(chosen):
-            li = layers.index(n["dyn"])
-            y = audio[i] * 10 ** ((DYN_LEVEL_DB[dyns[li]] - levels[i]) / 20)
+            li = lidx[i]
+            y = scaled[i] * 10 ** (target_gain_db / 20)
             peak = np.abs(y).max()
-            if peak > 0.89:  # keep 1 dB headroom
-                y *= 0.89 / peak
+            if peak > MAX_PEAK:  # a few loud low ff notes peak high: limit those alone, keep 1 dB headroom
+                y *= MAX_PEAK / peak
+                limited.append(round(float(20 * np.log10(peak / MAX_PEAK)), 1))
             loop = None
             if art == "sus":
                 y, loop = make_loop(y)
-            elif derived:  # staccato made from a sustain: keep the first 0.6 s
+            elif derived or n.get("_derived"):  # staccato made from a sustain: keep the first 0.6 s
                 y = y[: int(0.6 * SR)].copy()
                 f = int(0.05 * SR)
                 y[-f:] *= np.linspace(1, 0, f)
-            name = f"{tid}_{art}_{n['midi']:03d}_{dyns[li]}_rr{n['rr']}.wav"
+            ext_tag = "" if n["_src"] == "primary" else "_x"
+            name = f"{tid}_{art}_{n['midi']:03d}_{dyns[li]}_rr{n['rr']}{ext_tag}.wav"
             sf.write(str(out / "samples" / name), y.astype(np.float32), SR, subtype="PCM_24")
             samples.append({"file": name, "midi": n["midi"], "cents": n["cents"], "layer": li, "rr": n["rr"],
                             "loop": [int(v) for v in loop] if loop else None, "frames": len(y),
-                            "source": f"{n['file']}" + (f"@{n['start']}-{n['end']}" if n["kind"] == "run" else "")})
+                            "source": f"{n['file']}" + (f"@{n['start']}-{n['end']}" if n["kind"] == "run" else ""),
+                            **({"extension": n["_src"]} if n["_src"] != "primary" else {})})
         regions = []
         for li, dyn in enumerate(dyns):
             for k in range(lo, hi + 1):
-                cost = lambda s: abs(s["midi"] - k) + (0 if s["layer"] == li else MAX_STRETCH + abs(s["layer"] - li))  # noqa: E731
+                # same layer within MAX_STRETCH first; then any layer within MAX_STRETCH (nearest layer
+                # first); a longer stretch only when no layer has a sample that close
+                def cost(s, k=k, li=li):
+                    d = abs(s["midi"] - k)
+                    return d + (0 if s["layer"] == li else MAX_STRETCH + abs(s["layer"] - li)) + (10 if d > MAX_STRETCH else 0)
                 cands = [s for s in samples if s["rr"] == 1] or samples
                 best = min(cands, key=cost)
                 variants = sorted([s for s in samples if s["midi"] == best["midi"] and s["layer"] == best["layer"]],
                                   key=lambda s: s["rr"])
-                # borrow louder samples attenuated; softer ones play at their own level (SF2 attenuation must be >= 0)
-                vol = min(0.0, DYN_LEVEL_DB[dyn] - DYN_LEVEL_DB[dyns[best["layer"]]])
+                # a borrowed sample plays at this layer's level (the gain is baked into a copy below)
+                vol = DYN_LEVEL_DB[dyn] - DYN_LEVEL_DB[dyns[best["layer"]]]
                 key = (best["file"], round(vol, 2))
                 if regions and regions[-1]["_key"] == key and regions[-1]["layer"] == li and regions[-1]["hikey"] == k - 1:
                     regions[-1]["hikey"] = k
@@ -204,10 +360,63 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                                 "tune": int(round(-best["cents"])), "loop": best["loop"]})
         for r in regions:
             r.pop("_key")
+        # A sample borrowed from another layer is brought to this layer's level. Engines disagree on
+        # zone attenuation (FluidSynth applies 0.4 of SF2 initialAttenuation, AVAudioUnitSampler
+        # almost none) and SF2 cannot boost, so the gain is baked into a copy of the sample instead.
+        copies: dict[tuple[str, float], str] = {}
+        for r in regions:
+            if not r["volume_db"]:
+                continue
+            new = []
+            for f in r["variants"]:
+                key = (f, r["volume_db"])
+                if key not in copies:
+                    src_s = next(s_ for s_ in samples if s_["file"] == f)
+                    name = f"{f[:-4]}_gain{int(round(r['volume_db'] * 10)):+d}.wav"
+                    y, _ = sf.read(str(out / "samples" / f), dtype="float64")
+                    y = y * 10 ** (r["volume_db"] / 20)
+                    y = y * min(1.0, MAX_PEAK / (np.abs(y).max() + 1e-12))
+                    sf.write(str(out / "samples" / name), y.astype(np.float32), SR, subtype="PCM_24")
+                    samples.append({**src_s, "file": name, "gain_db": r["volume_db"], "copy_of": f})
+                    copies[key] = name
+                new.append(copies[key])
+            r["variants"] = new
+            r["volume_db"] = 0.0
+        if art == "sus":
+            # Calibrate on what actually plays: velocity 80 (the score default) over the comfortable
+            # range, each key's region sample K-weighted, with the region's volume. The whole target
+            # (sustain and staccato) moves by the difference to TARGET_K_DB.
+            v80 = next(i for i, (a_, b_) in enumerate(vels) if a_ <= 80 <= b_)
+            by_file = {s_["file"]: s_ for s_ in samples}
+            kcache: dict[str, float] = {}
+            lv = []
+            for r in regions:
+                if r["layer"] != v80:
+                    continue
+                f = r["variants"][0]
+                if f not in kcache:
+                    y, _ = sf.read(str(out / "samples" / f), dtype="float64")
+                    kcache[f] = body_db(k_weight(y))
+                lv += [kcache[f] + r["volume_db"]] * sum(1 for k in range(r["lokey"], r["hikey"] + 1) if clo <= k <= chi)
+            corr = TARGET_K_DB - float(np.mean(lv))
+            target_gain_db += corr
+            for s_ in samples:
+                path = out / "samples" / s_["file"]
+                y, _ = sf.read(str(path), dtype="float64")
+                y *= 10 ** (corr / 20)
+                peak = np.abs(y).max()
+                if peak > MAX_PEAK:
+                    y *= MAX_PEAK / peak
+                    limited.append(round(float(20 * np.log10(peak / MAX_PEAK)), 1))
+                sf.write(str(path), y.astype(np.float32), SR, subtype="PCM_24")
+            table["k_level_db_v80"] = round(float(np.mean(lv)) + corr, 2)
         table["articulations"][art] = {
             "source": src, "derived_from_sustain": derived, "layers": dyns, "raw_layers": layers,
-            "velocity": vels, "release_s": RELEASE_S[art], "samples": samples, "regions": regions,
+            "velocity": vels, "release_s": RELEASE_S[art], "sf2_release_s": SF2_RELEASE_S[art],
+            "samples": samples, "regions": regions, "extensions": extensions,
+            "peak_limited_db": sorted(limited, reverse=True),
         }
+    table["target_gain_db"] = round(float(target_gain_db), 2)
     (out / "regions.json").write_text(json.dumps(table, indent=1))
     for art in ("sus", "stac"):
         write_sfz(out / f"{tid}-{art}.sfz", tid, art, table)
@@ -254,7 +463,7 @@ def write_target_sf2(path: Path, tid: str, table: dict) -> None:
     presets = []
     for program, art in enumerate(("sus", "stac")):
         a = table["articulations"][art]
-        ins = sf2.Instrument(name=f"{tid}-{art}", release_s=a["release_s"], vel_span_db=VEL_SPAN_DB)
+        ins = sf2.Instrument(name=f"{tid}-{art}", release_s=a["sf2_release_s"], vel_span_db=VEL_SPAN_DB)
         for r in a["regions"]:
             file = r["variants"][0]
             if file not in index:
