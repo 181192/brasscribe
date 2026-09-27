@@ -33,14 +33,6 @@ struct BrasscribePlayApp: App {
         .commands { PlaybackCommands() }
         #endif
 
-        #if os(macOS)
-        Settings {
-            SettingsView()
-                .environment(app)
-                .tint(Color.Brasscribe.primary)
-                .preferredColorScheme(LaunchOptions.colorScheme)
-        }
-        #endif
     }
 }
 
@@ -64,6 +56,7 @@ enum LaunchOptions {
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
+    @State private var columns: NavigationSplitViewVisibility = .all
 
     /// iPhone: one stack. iPad and Mac: the library in a sidebar next to the stack.
     private var split: Bool {
@@ -78,12 +71,17 @@ struct RootView: View {
         @Bindable var app = app
         Group {
             if split {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $columns) {
                     LibrarySidebar()
                         .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
                 } detail: {
                     flow
                 }
+                .navigationSplitViewStyle(.balanced)
+                #if os(iOS)
+                // on iPad the library steps aside while a score is open; the sidebar button brings it back
+                .onChange(of: app.path.isEmpty) { _, home in columns = home ? .all : .detailOnly }
+                #endif
             } else {
                 flow
             }
@@ -92,14 +90,14 @@ struct RootView: View {
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
         .scoreOptionDialogs()
         .sheet(isPresented: $app.showRecorder) { MicRecordView() }
-        #if os(iOS)
         .sheet(isPresented: $app.showSettings) { SettingsView() }
-        #endif
         #if os(macOS)
         .sheet(isPresented: $app.showCapture) { CaptureView() }
         #endif
         .sheet(isPresented: $app.showFirstRun) { FirstRunView() }
-        .onAppear {
+        .task {
+            // after the split view's navigation stack is in place, or the first path is dropped
+            try? await Task.sleep(for: .milliseconds(100))
             if !UserDefaults.standard.bool(forKey: "firstRunDone") || LaunchOptions.screen == "first-run" { app.showFirstRun = true }
             if LaunchOptions.args.contains("-open-demo-score") { openDemoScore() }
             // UI tests: start from a recording as if it had just been imported
@@ -119,6 +117,7 @@ struct RootView: View {
                     case .source(let s): SourceView(source: s)
                     case .transcribe(let id): TranscribeView(jobID: id)
                     case .review(let p): ReviewView(piece: p)
+                    case .output(let p): OutputView(piece: p)
                     case .score(let p): ScoreScreen(piece: p)
                     case .problem(let p): ProblemView(problem: p)
                     }
@@ -146,58 +145,71 @@ struct RootView: View {
     }
 }
 
-/// iPad and Mac sidebar: the lockup, "Open a recording" and the scores.
+/// iPad and Mac sidebar: the lockup, "Open a recording" and the scores. Plain buttons, not
+/// a selection list: a sidebar selection resets the detail column's navigation stack.
 struct LibrarySidebar: View {
     @Environment(AppModel.self) private var app
 
-    private var selection: Binding<String?> {
-        Binding(get: {
-            for r in app.path.reversed() {
-                switch r {
-                case .score(let p), .review(let p): return p.id.uuidString
-                default: continue
-                }
+    private var openPiece: UUID? {
+        for r in app.path.reversed() {
+            switch r {
+            case .score(let p), .review(let p), .output(let p): return p.id
+            default: continue
             }
-            return nil
-        }, set: { id in
-            if let id, let entry = app.scores.first(where: { $0.id == id }) { app.open(entry) }
-        })
+        }
+        return nil
     }
 
     var body: some View {
-        List(selection: selection) {
-            Button { app.goHome() } label: {
-                Label("Open a recording", systemImage: BrasscribeIcon.importFile.systemName)
-            }
-            .accessibilityIdentifier("sidebarHome")
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Lockup().padding(.horizontal, Space.s3).padding(.bottom, Space.s4)
+                row(title: String(localized: "Open a recording"), icon: BrasscribeIcon.importFile.systemName,
+                    selected: app.path.isEmpty) { app.goHome() }
+                    .accessibilityIdentifier("sidebarHome")
+                SectionLabel(String(localized: "Your scores"))
+                    .padding(.horizontal, Space.s3).padding(.top, Space.s5).padding(.bottom, Space.s1)
                 if app.scores.isEmpty {
-                    Text("Your scores appear here.").foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("Your scores appear here.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .padding(.horizontal, Space.s3)
                 }
                 ForEach(app.scores) { entry in
                     HStack(spacing: Space.s1) {
-                        Label(entry.title, systemImage: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
+                        row(title: entry.title, icon: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName,
+                            selected: entry.piece?.id == openPiece && openPiece != nil) { app.open(entry) }
                         if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                         ScoreOptionsMenu(entry: entry)
                     }
-                    .tag(entry.id)
                     .contextMenu { ScoreOptionItems(entry: entry) }
                     .accessibilityIdentifier("sidebar-\(entry.title)")
                 }
-            } header: { Text("Your scores") }
+            }
+            .padding(Space.s3)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(Color.Brasscribe.surface)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Library"))
         .task { await app.refreshComputerScores() }
-        .safeAreaInset(edge: .top) {
-            HStack { Lockup(); Spacer() }
-                .padding(.horizontal, Space.s4)
-                .padding(.vertical, Space.s2)
-        }
         .navigationTitle(Text(verbatim: "Brasscribe Play"))
         #if os(macOS)
         .toolbar(removing: .title)
         #endif
+    }
+
+    private func row(title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(selected ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                .foregroundStyle(Color.Brasscribe.text)
+                .padding(.horizontal, Space.s3)
+                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                .background(selected ? Color.Brasscribe.surfaceRaised : Color.clear, in: RoundedRectangle(cornerRadius: Radius.sm))
+                .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(selected ? Color.Brasscribe.border : Color.clear))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }
 
@@ -246,6 +258,7 @@ extension FocusedValues {
 /// SwiftUI opens the first window only once the app is active. Launched in the background
 /// (from a script, or relaunched by a UI test) it stayed windowless, so activate at launch.
 final class MacLaunch: NSObject, NSApplicationDelegate {
+    private var placed: NSObjectProtocol?
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -254,6 +267,18 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             if !NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) {
                 NSApp.sendAction(#selector(NSResponder.newWindowForTab(_:)), to: nil, from: nil)
+            }
+        }
+        // Tests and screenshots (-reset): keep the window whole on the main screen, so no
+        // control lands between two displays.
+        if ProcessInfo.processInfo.arguments.contains("-reset") {
+            placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
+                guard let w = n.object as? NSWindow, let screen = NSScreen.screens.first else { return }
+                let v = screen.visibleFrame
+                guard !v.contains(w.frame) else { return }
+                let size = CGSize(width: min(w.frame.width, v.width), height: min(w.frame.height, v.height))
+                w.setFrame(CGRect(x: v.minX + (v.width - size.width) / 2, y: v.minY + (v.height - size.height) / 2,
+                                  width: size.width, height: size.height), display: true)
             }
         }
     }

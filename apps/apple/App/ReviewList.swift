@@ -35,7 +35,7 @@ enum ReviewList {
             }
             for t in order {
                 guard let e = byTick[t] else { continue }
-                out.append(ReviewItem(id: "\(part.id)|\(t)", partID: part.id, partName: part.name, partIndex: k,
+                out.append(ReviewItem(id: "\(part.id)|\(t)", partID: part.id, partName: part.displayName, partIndex: k,
                                       bar: part.notes[e.index].measureIndex, tick: t, noteIndex: e.index, level: e.level))
             }
         }

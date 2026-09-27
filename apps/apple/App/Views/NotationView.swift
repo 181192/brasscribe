@@ -9,6 +9,7 @@ import SwiftUI
 struct NotationView: View {
     @Bindable var model: PracticeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hsize
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
 
@@ -23,6 +24,10 @@ struct NotationView: View {
                         }
                     }
                     .padding(.vertical, BrasscribeDesign.Space.s2)
+                    // The pages are engraved to this width. Pinning it here keeps the
+                    // fixed-width pages from raising the window's minimum size.
+                    .frame(width: max(0, geo.size.width), alignment: .topLeading)
+                    .clipped()
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
                 }
@@ -31,7 +36,11 @@ struct NotationView: View {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
                     model.viewWidth = geo.size.width - 16
-                    if model.viewWidth < 600, model.shownPart == nil { model.shownPart = model.myPart } else { model.relayout() }
+                    if hsize == .compact, model.shownPart == nil, LaunchOptions.screen != "score" {
+                        model.shownPart = model.myPart
+                    } else {
+                        model.relayout()
+                    }
                 }
                 .onChange(of: geo.size.width) { _, w in
                     if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
@@ -39,6 +48,13 @@ struct NotationView: View {
                 .onChange(of: model.layoutVersion) { _, _ in
                     // after (re)engraving, show the current bar
                     DispatchQueue.main.async { proxy.scrollTo("page-\(model.pageNumber(forBar: model.currentBar))", anchor: .top) }
+                }
+                .onChange(of: model.pages.count) { _, _ in
+                    // pages arrive one by one: once the current bar's page is here, show it
+                    let page = model.pageNumber(forBar: model.currentBar)
+                    guard page != lastScrolledBar, model.pages.contains(where: { $0.number == page }) else { return }
+                    lastScrolledBar = page
+                    DispatchQueue.main.async { proxy.scrollTo("page-\(page)", anchor: .top) }
                 }
                 .onChange(of: model.currentBar) { _, bar in
                     let page = model.pageNumber(forBar: bar)
@@ -50,6 +66,8 @@ struct NotationView: View {
                 }
             }
         }
+        // the score scrolls; it never asks the window to be as tall (or wide) as a page
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .overlay {
             if model.pages.isEmpty {
                 ProgressView(String(localized: "Laying out the pages…"))
@@ -64,7 +82,7 @@ struct NotationView: View {
         }
         .accessibilityRotor(Text("Parts")) {
             ForEach(Array(model.displayedParts.enumerated()), id: \.offset) { k, p in
-                AccessibilityRotorEntry(Text(p.name), id: "\(model.currentBar)-\(k)", in: rotorNS)
+                AccessibilityRotorEntry(Text(p.displayName), id: "\(model.currentBar)-\(k)", in: rotorNS)
             }
         }
         .accessibilityRotor(Text("Uncertain notes")) {
@@ -114,7 +132,7 @@ private struct PageView: View {
         let adLib = model.freeTimeBars
         let highContrast = contrast == .increased
         let loopLabel = loop.map { l in
-            l.count == 1 ? String(localized: "Loop \(l.lowerBound + 1)") : String(localized: "Loop \(l.lowerBound + 1)–\(l.upperBound + 1)")
+            l.count == 1 ? String(localized: "Repeat \(l.lowerBound + 1)") : String(localized: "Repeat \(l.lowerBound + 1)–\(l.upperBound + 1)")
         }
         ZStack(alignment: .topLeading) {
             Canvas(opaque: false, rendersAsynchronously: false) { ctx, _ in
@@ -178,7 +196,7 @@ private struct PageView: View {
                         ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)
                         if level == .veryUncertain {
                             let box = CGRect(x: center.x - size * 0.45, y: center.y - size * 0.62, width: size * 0.9, height: size * 1.24)
-                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1, size / 11))
+                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
                         }
                     }
                 }

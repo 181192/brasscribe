@@ -39,20 +39,19 @@ struct HomeView: View {
         .pageBackground()
         .navigationTitle(Text("Home"))
         .toolbar(removing: .title)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .refreshable { await app.refreshComputerScores() }
         .task { await app.refreshComputerScores() }
         .toolbar {
             #if os(iOS)
             if !wide {
-                ToolbarItem(placement: .topBarLeading) { Lockup(product: false) }
+                ToolbarItem(placement: .topBarLeading) { Lockup(product: false).fixedSize() }
             }
             #endif
             ToolbarItemGroup(placement: .primaryAction) {
-                #if os(macOS)
-                SettingsLink { Label("Settings", systemImage: BrasscribeIcon.settings.systemName) }
-                #else
                 Button { app.showSettings = true } label: { Label("Settings", systemImage: BrasscribeIcon.settings.systemName) }
-                #endif
             }
         }
         .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml]) { result in

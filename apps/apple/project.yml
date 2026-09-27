@@ -15,6 +15,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
+    # override on the command line (PLAY_BUNDLE_ID=…) to run beside another build of the app
+    PLAY_BUNDLE_ID: no.brasscribe.play
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
@@ -116,7 +118,7 @@ targets:
               public.mime-type: [application/vnd.recordare.musicxml+xml]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play
+        PRODUCT_BUNDLE_IDENTIFIER: $(PLAY_BUNDLE_ID)
         CODE_SIGN_ENTITLEMENTS: App/BrasscribePlay-${platform}.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
