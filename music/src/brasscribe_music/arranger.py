@@ -2,11 +2,14 @@
 
 Reads a Composition (concert pitch, voices tagged by role) and writes concert
 notes per band part:
-  melody  -> Solo Cornet (octave chosen per phrase to sit in its comfortable range)
-  bass    -> E♭ Bass (lowest comfortable octave), B♭ Bass an octave lower where comfortable
+  melody  -> the lineup's lead, Solo Cornet (octave chosen per phrase to sit in its comfortable range)
+  bass    -> the lineup's bass, E♭ Bass (lowest comfortable octave), and its second bass,
+             B♭ Bass, an octave lower where comfortable
   harmony -> inner parts, voiced per harmony slot from the chord tones sounding
              at that moment: inside each part's range, under the melody, over
              the bass, no crossing, least movement from the previous chord.
+             A four-part lineup (the quartet) voices its two inner parts
+             together as alto and tenor with the chorale rules of voice_satb.
 Hard limits come from instruments.py and are never violated; anything that
 cannot be placed is left out and reported instead.
 """
@@ -138,13 +141,15 @@ def _sounding_at(notes: list[Note], tick: int) -> list[Note]:
     return [n for n in notes if n.start <= tick < n.end]
 
 
-def _voice_slot(pcs: list[int], parts: list[Part], ceiling: int, floor: int, prev: dict[str, int]) -> dict[str, int]:
-    """Assign one pitch per inner part (high to low) from the chord's pitch classes."""
+def _voice_slot(pcs: list[int], parts: list[Part], ceiling: int, floor: int, prev: dict[str, int],
+                ranges: dict[str, tuple[int, int]] | None = None) -> dict[str, int]:
+    """Assign one pitch per inner part (high to low) from the chord's pitch classes
+    (inside each part's reading range, or its entry in `ranges`)."""
     chosen: dict[str, int] = {}
     used: list[int] = []
     upper = ceiling
     for part in parts:
-        lo, hi = part.instrument.preferred
+        lo, hi = ranges[part.name] if ranges else part.instrument.preferred
         hi = min(hi, upper - 1)
         lo = max(lo, floor + 1)
         options = [p for p in range(lo, hi + 1) if p % 12 in pcs]
@@ -162,7 +167,156 @@ def _voice_slot(pcs: list[int], parts: list[Part], ceiling: int, floor: int, pre
     return chosen
 
 
-def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
+# ---------------------------------------------------------------------------
+# Four-part voicing (quartet): alto and tenor chosen together per harmony slot.
+# ---------------------------------------------------------------------------
+
+def chord_root(pcs: list[int], bass_pc: int | None) -> int:
+    """Root of a slot's chord: the first pitch class (ascending) with the most of: a triad (third and
+    perfect fifth above it), a fifth above it, a third above it, the bass on it."""
+    s = set(pcs)
+    best, key = pcs[0], None
+    for r in sorted(pcs):
+        third = (r + 4) % 12 in s or (r + 3) % 12 in s
+        fifth = (r + 7) % 12 in s
+        k = (int(third and fifth), int(fifth), int(third), int(r == bass_pc))
+        if key is None or k > key:
+            best, key = r, k
+    return best
+
+
+def _perfect_parallels(prev: list[int | None], cur: list[int | None]) -> int:
+    """Pairs of voices (listed high to low) that move in the same direction from one perfect
+    fifth or octave (unison) to another of the same kind."""
+    n = 0
+    for i in range(len(cur)):
+        for j in range(i + 1, len(cur)):
+            a0, b0, a1, b1 = prev[i], prev[j], cur[i], cur[j]
+            if None in (a0, b0, a1, b1):
+                continue
+            iv0, iv1 = (a0 - b0) % 12, (a1 - b1) % 12
+            if iv0 == iv1 and iv0 in (0, 7) and a1 != a0 and b1 != b0 and (a1 > a0) == (b1 > b0):
+                n += 1
+    return n
+
+
+def voice_satb(pcs: list[int], soprano: int | None, bass: int | None, prev: list[int | None] | None,
+               alto_range: tuple[int, int], tenor_range: tuple[int, int], soprano_top: int | None = None) -> tuple[int, int] | None:
+    """(alto, tenor) for one harmony slot under `soprano` and over `bass`, or None when no pair
+    keeps the rules.
+
+    Hard rules: S > A >= T > B (only alto and tenor may share a note), S-A and A-T at most an
+    octave, both notes chord tones. Among the pairs that keep them, the smallest of (in order):
+      1. chord tones left out (the fifth of a triad does not count)
+      2. parallel perfect fifths and octaves against the previous slot, over all voice pairs
+      3. doubling: 1 for a missing fifth, 1 per extra copy of a tone other than the root and
+         the bass's own tone
+      4. movement |dA| + |dT| from the previous slot
+      5. the higher alto, then the higher tenor
+    The order was tuned on the ChoraleBricks chorales (eval/brasscribe_eval/arrange_bench.py)
+    and is frozen: the Rust port (arranger.rs) must follow it exactly.
+    `prev` is the previous slot's [S, A, T, B] (None where a voice was silent). A lead that moves
+    during the slot is given as its lowest note (`soprano`, for crossing) and its highest
+    (`soprano_top`, for spacing; default `soprano`).
+    """
+    s = set(pcs)
+    top = soprano if soprano_top is None else soprano_top
+    bass_pc = bass % 12 if bass is not None else None
+    root = chord_root(sorted(s), bass_pc)
+    fifth = (root + 7) % 12 if (root + 7) % 12 in s else None
+    best, best_key = None, None
+    alo, ahi = alto_range
+    tlo, thi = tenor_range
+    for a in range(alo, ahi + 1):
+        if a % 12 not in s or (soprano is not None and not (a < soprano and top - a <= 12)):
+            continue
+        for t in range(tlo, thi + 1):
+            if t % 12 not in s or t > a or a - t > 12 or (bass is not None and t <= bass):
+                continue
+            voices = [v for v in (soprano, a, t, bass) if v is not None]
+            have = [v % 12 for v in voices]
+            missing = [pc for pc in s if pc not in have]
+            essential = sum(pc != fifth for pc in missing)
+            doubling = int(fifth is not None and fifth in missing)
+            for pc in set(have):
+                if pc != root and pc != bass_pc:
+                    doubling += have.count(pc) - 1
+            if prev is not None:
+                par = _perfect_parallels(prev, [soprano, a, t, bass])
+                move = (abs(a - prev[1]) if prev[1] is not None else 0) + (abs(t - prev[2]) if prev[2] is not None else 0)
+            else:
+                par = move = 0
+            key = (essential, par, doubling, move, -a, -t)
+            if best_key is None or key < best_key:
+                best, best_key = (a, t), key
+    return best
+
+
+def _voice_satb_slots(arr: Arrangement, slots: list[tuple[int, int, list[int], float]], lead_notes: list[Note],
+                      bass_notes: list[Note], difficulty: str) -> None:
+    """Alto and tenor of a four-part lineup, slot by slot (start, end, pitch classes, confidence)."""
+    from .difficulty import mode_range
+
+    lineup = arr.lineup
+    inner = [p for p in lineup.parts if p.name not in (lineup.lead, lineup.bass)]
+    inner.sort(key=lambda p: -sum(p.instrument.comfortable))  # high to low
+    alto, tenor = inner
+    ra, rt = mode_range(alto, difficulty), mode_range(tenor, difficulty)
+    for p in inner:
+        arr.parts.setdefault(p.name, [])
+    prev: list[int | None] | None = None
+    prev_named: dict[str, int] = {}
+    for start, end, pcs, conf in slots:
+        # The inner parts hold through the slot: keep them under the lead's lowest note in it and
+        # over the bass's highest, so a moving line never crosses them.
+        top = [n.pitch for n in lead_notes if n.start < end and n.end > start]
+        bot = [n.pitch for n in bass_notes if n.start < end and n.end > start]
+        sop = min(top) if top else None
+        bas = max(bot) if bot else None
+        pair = voice_satb(pcs, sop, bas, prev, ra, rt, max(top) if top else None)
+        if pair is None:
+            arr.warnings.append(f"{alto.name}/{tenor.name}: slot at tick {start} voiced without the four-part rules")
+            voicing = _voice_slot(pcs, [alto, tenor], sop if sop is not None else 90, bas if bas is not None else 30,
+                                  prev_named, {alto.name: ra, tenor.name: rt})
+            a, t = voicing.get(alto.name), voicing.get(tenor.name)
+        else:
+            a, t = pair
+        for part, p in ((alto, a), (tenor, t)):
+            if p is not None:
+                arr.parts[part.name].append(Note(p, start, end - start, conf, ["arranger"]))
+                prev_named[part.name] = p
+        prev = [sop, a, t, bas]
+
+
+HARMONY_CONTEXT = " harmony"  # not a part name: the source harmony as chord context for the difficulty modes
+
+
+def _outer_difficulty(arr: Arrangement, difficulty: str, harmony: list[Note]) -> None:
+    """Four-part lineups: the difficulty mode applied to lead and bass before the inner parts are
+    voiced against them (so a later change to the outer parts cannot cross an inner one). The
+    16th merges read the chord from the other outer part and the source harmony."""
+    from .difficulty import apply_difficulty
+
+    names = (arr.lineup.lead, arr.lineup.bass)
+    parts = {n: arr.parts[n] for n in names}
+    parts[HARMONY_CONTEXT] = harmony
+    out = apply_difficulty(parts, arr.lineup, difficulty, only=names)
+    for n in names:
+        arr.parts[n] = out[n]
+
+
+def _inner_difficulty(arr: Arrangement, difficulty: str) -> dict[str, list[Note]]:
+    """Four-part lineups: the difficulty mode on the inner parts only (voiced in its range already)."""
+    from .difficulty import apply_difficulty
+
+    inner = tuple(p.name for p in arr.lineup.parts if p.name not in (arr.lineup.lead, arr.lineup.bass))
+    return apply_difficulty(arr.parts, arr.lineup, difficulty, only=inner)
+
+
+def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = "faithful") -> Arrangement:
+    """Melody, bass and harmony voices arranged for `lineup`; `difficulty` as in difficulty.py."""
+    from .difficulty import apply_difficulty
+
     arr = Arrangement(lineup)
     melody = [n for v in comp.voices_with(VoiceRole.MELODY) for n in v.notes]
     bass = [n for v in comp.voices_with(VoiceRole.BASS) for n in v.notes]
@@ -185,6 +339,9 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
     inner.sort(key=lambda p: -sum(p.instrument.comfortable))  # high to low
     for p in inner:
         arr.parts[p.name] = []
+    if lineup.satb:
+        _outer_difficulty(arr, difficulty, harmony)
+    satb_slots = []
     slots = sorted({n.start for n in harmony})
     ends = {s: e for s, e in zip(slots, slots[1:])}
     prev: dict[str, int] = {}
@@ -203,11 +360,40 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
             # Hold across tiny gaps (performance/MIDI release offsets) instead of writing 64th rests.
             end = nxt if nxt - end <= MIN_REST_TICKS else min(end, nxt)
         conf = min(n.confidence for n in sounding)
+        if lineup.satb:
+            satb_slots.append((s, end, pcs, conf))
+            continue
         voicing = _voice_slot(pcs, inner, ceiling, floor, prev)
         for name, p in voicing.items():
             arr.parts[name].append(Note(p, s, end - s, conf, ["arranger"]))
         prev.update(voicing)
+    if lineup.satb:
+        _voice_satb_slots(arr, satb_slots, arr.parts[lead.name], arr.parts[eb.name], difficulty)
+        arr.parts = _inner_difficulty(arr, difficulty)
+        return arr
+    arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
     return arr
+
+
+def arrange_composition(comp: Composition) -> Arrangement:
+    """Arrange a Composition the way it was made (as recorded in `comp.arrangement`).
+
+    Voices with layers: the layered arranger with the recorded lineup (default the band) and
+    difficulty. Otherwise the minimal-band arranger, or the quartet when that is recorded.
+    """
+    from .instruments import BRASS_BAND, QUARTET, lineup_by_name
+
+    opts = comp.arrangement or {}
+    difficulty = opts.get("difficulty") or "faithful"
+    if not any(v.layer for v in comp.voices):
+        if opts.get("lineup") == "quartet":
+            return arrange(comp, QUARTET, difficulty)
+        return arrange(comp)
+    try:
+        lineup = lineup_by_name(opts.get("lineup"))
+    except ValueError:
+        lineup = BRASS_BAND
+    return arrange_layers(comp, lineup, difficulty=difficulty)
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +408,11 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
 #                      Bass Trombone doubling while the brass choir plays
 #   drums           -> Percussion (drum kit, unpitched)
 # The Soprano Cornet is left tacet: the source has no part in its register.
+#
+# A four-part lineup (the quartet) plays: solo -> lead (1st Cornet), bass ->
+# bass (Euphonium), strings + keys + orch. brass -> one set of harmony slots
+# voiced as alto and tenor (2nd Cornet, Tenor Horn). It has no countermelody,
+# drums or soprano doubling.
 # ---------------------------------------------------------------------------
 
 def layer_of_part(lineup: Lineup, name: str) -> str | None:
@@ -230,6 +421,8 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
         return "solo"
     if name in (lineup.bass, lineup.second_bass):
         return "bass"
+    if lineup.satb:
+        return "strings"
     if name in PAD_PARTS or name == "Euphonium":
         return "strings"
     if name in CHOIR_PARTS:
@@ -398,6 +591,17 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
             continue
         top.append(n)
     counter = [n for n in top if n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat]
+    if lineup.satb:
+        # One set of harmony slots from the whole accompaniment, voiced as alto and tenor.
+        _outer_difficulty(arr, difficulty, strings + keys + brass)
+        slots = harmony_slots(strings + keys + brass, end)
+        if figuration:
+            slots = _figurate(slots, [n.start for n in strings + keys + brass])
+        _voice_satb_slots(arr, [(s, e, pcs, 0.8) for s, e, pcs in slots], arr.parts[lead], arr.parts[eb.name], difficulty)
+        if _layer(comp, "drums"):
+            arr.warnings.append(f"{lineup.name}: drums left out (no percussion part)")
+        arr.parts = _inner_difficulty(arr, difficulty)
+        return arr
     if "Euphonium" in names:
         euph = lineup.by_name("Euphonium")
         arr.parts[euph.name] = _place_smooth(counter, euph)

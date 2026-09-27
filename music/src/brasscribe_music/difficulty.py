@@ -33,6 +33,11 @@ def easy_range(part: Part) -> tuple[int, int]:
     return lo, max(lo + 12, hi - EASY_TOP_TRIM)
 
 
+def mode_range(part: Part, mode: str) -> tuple[int, int]:
+    """The range a mode keeps a part in: the easy range for easier, else the reading range."""
+    return easy_range(part) if mode == "easier" else part.instrument.preferred
+
+
 def _harmony_at(parts: dict[str, list[Note]], tick: int, exclude: str) -> set[int]:
     return {n.pitch % 12 for name, notes in parts.items() if name != exclude for n in notes
             if n.start <= tick < n.end and name != "Percussion"}
@@ -113,8 +118,13 @@ def _fold(notes: list[Note], lo: int, hi: int) -> list[Note]:
     return out
 
 
-def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str) -> dict[str, list[Note]]:
-    """Parts rewritten for a difficulty mode (faithful returns them unchanged)."""
+def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str,
+                     only: tuple[str, ...] | None = None) -> dict[str, list[Note]]:
+    """Parts rewritten for a difficulty mode (faithful returns them unchanged).
+
+    With `only`, just those parts are rewritten; every entry of `parts` (also one that is not a
+    part of the lineup) still counts for the harmony the 16th merges read.
+    """
     if mode not in MODES:
         raise ValueError(f"difficulty must be one of {MODES}")
     if mode == "faithful":
@@ -122,6 +132,8 @@ def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str) -> dict[st
     out = dict(parts)
     for part in lineup.parts:
         name = part.name
+        if only is not None and name not in only:
+            continue
         notes = parts.get(name, [])
         if not notes or part.instrument.clef == "percussion":
             continue
@@ -130,13 +142,18 @@ def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str) -> dict[st
             return _harmony_at(parts, t, name)
 
         solo = name == lineup.lead
+        # Four-part lineups voice their inner parts straight into the mode's range (arranger.voice_satb);
+        # folding one of them on its own could cross it over its neighbour.
+        fold = not (lineup.satb and name not in (lineup.lead, lineup.bass))
         if mode == "standard":
             notes = _merge_sixteenths(notes, chord_at, always=False)
-            notes = _fold(notes, *part.instrument.preferred)
+            if fold:
+                notes = _fold(notes, *part.instrument.preferred)
         else:
             notes = _merge_sixteenths(notes, chord_at, always=True, keep_contour=solo)
             if not solo:
                 notes = _min_eighth(notes)
-            notes = _fold(notes, *easy_range(part))
+            if fold:
+                notes = _fold(notes, *easy_range(part))
         out[name] = notes
     return out

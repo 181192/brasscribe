@@ -29,7 +29,7 @@ from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
 from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
+from brasscribe_music.instruments import lineup_by_name
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
@@ -93,8 +93,9 @@ def main() -> None:
     ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
     ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
     ap.add_argument("--single-key", action="store_true", help="one key signature for the whole piece")
-    ap.add_argument("--lineup", choices=["band", "full", "minimal"], default="band",
-                    help="band (= full): the 18-part contest band; minimal: the 8-part minimal band")
+    ap.add_argument("--lineup", choices=["band", "full", "minimal", "quartet"], default="band",
+                    help="band (= full): the 18-part contest band; minimal: the 8-part minimal band; "
+                         "quartet: 1st and 2nd Cornet, Tenor Horn and Euphonium")
     ap.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
     tr = ap.add_mutually_exclusive_group()
     tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
@@ -277,7 +278,7 @@ def main() -> None:
           f"{sum(1 for r in comp.review if r.voice == 'solo')} review groups")
     comp.to_json(args.out / "composition.json")
 
-    arr = arrange_layers(comp, BRASS_BAND if lineup == "band" else MINIMAL_BAND, difficulty=args.difficulty)
+    arr = arrange_layers(comp, lineup_by_name(lineup), difficulty=args.difficulty)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     if not args.no_render:
         musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])

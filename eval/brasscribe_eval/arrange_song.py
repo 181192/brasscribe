@@ -1,4 +1,4 @@
-"""End-to-end: transcribed song -> Composition -> minimal brass-band score.
+"""End-to-end: transcribed song -> Composition -> minimal brass-band (or quartet) score.
 
 Melody: top line over MuScriptor-supported notes (Basic Pitch as confirmation).
 Bass: bottom line of the bass-stem transcription.
@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.arranger import arrange
+from brasscribe_music.instruments import lineup_by_name
 from brasscribe_music.harmony import harmony_slots, slots_to_notes
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
@@ -42,6 +43,8 @@ def main() -> None:
     ap.add_argument("--out", type=Path, required=True, help="output directory")
     ap.add_argument("--title", default="Draft")
     ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF export")
+    ap.add_argument("--lineup", choices=["minimal", "quartet"], default="minimal",
+                    help="minimal: the 8-part minimal band; quartet: 1st and 2nd Cornet, Tenor Horn and Euphonium")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -83,8 +86,10 @@ def main() -> None:
     tonal = melody + bass + harm
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
     comp.keys = [KeySig(0, fifths)]
+    if args.lineup != "minimal":
+        comp.arrangement = {"lineup": args.lineup, "difficulty": "faithful", "transpose_semitones": 0}
     comp.to_json(args.out / "composition.json")
-    arr = arrange(comp)
+    arr = arrange(comp, lineup_by_name(args.lineup))
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     pdf = xml.with_suffix(".pdf")
     if not args.no_render:

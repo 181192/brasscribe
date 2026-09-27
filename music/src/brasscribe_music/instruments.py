@@ -201,12 +201,21 @@ MINIMAL_BAND = Lineup("Minimal brass", [
     _p("B♭ Bass", "bb-bass"),
 ], lead="Solo Cornet", bass="E♭ Bass", second_bass="B♭ Bass")
 
-LINEUPS: dict[str, Lineup] = {"band": BRASS_BAND, "minimal": MINIMAL_BAND}
+# Brass quartet of the British brass-band tradition: one player per part, melody on top,
+# the Euphonium as the bass, 2nd Cornet and Tenor Horn voiced as alto and tenor.
+QUARTET = Lineup("Brass quartet", [
+    _p("1st Cornet", "bb-cornet", 1, "1st Cnt.", 1),
+    _p("2nd Cornet", "bb-cornet", 1, "2nd Cnt.", 4),
+    _p("Tenor Horn", "eb-tenor-horn", 1, "Ten. Hn.", 1),
+    _p("Euphonium", "euphonium", 1, "Euph.", 3),
+], lead="1st Cornet", bass="Euphonium", second_bass=None, satb=True)
+
+LINEUPS: dict[str, Lineup] = {"band": BRASS_BAND, "minimal": MINIMAL_BAND, "quartet": QUARTET}
 LINEUP_ALIASES = {"full": "band"}
 
 
 def lineup_by_name(name: str | None) -> Lineup:
-    """The lineup for an option value: band (= full, the default), minimal."""
+    """The lineup for an option value: band (= full, the default), minimal, quartet."""
     key = LINEUP_ALIASES.get(name or "band", name or "band")
     if key not in LINEUPS:
         raise ValueError(f"unknown lineup {name}; one of {', '.join([*LINEUPS, *LINEUP_ALIASES])}")
@@ -214,7 +223,7 @@ def lineup_by_name(name: str | None) -> Lineup:
 
 
 def lineup_key(lineup: Lineup) -> str:
-    """The option value of a lineup (band, minimal)."""
+    """The option value of a lineup (band, minimal, quartet)."""
     return next(k for k, v in LINEUPS.items() if v is lineup)
 
 

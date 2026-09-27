@@ -16,7 +16,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from brasscribe_music.arranger import arrange, arrange_layers
+from brasscribe_music.arranger import arrange_composition
 from brasscribe_music.score_model import Composition
 from music21 import converter
 
@@ -45,13 +45,7 @@ def check(xml: Path, comp_json: Path) -> bool:
     sounds = dict(zip([norm(n) for n in re.findall(r"<part-name>([^<]*)</part-name>", raw)],
                       re.findall(r"<instrument-sound>([^<]+)</instrument-sound>", raw)))
     comp = Composition.from_json(comp_json)
-    opts = comp.arrangement or {}
-    if any(v.layer for v in comp.voices):
-        from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
-        lineup = MINIMAL_BAND if opts.get("lineup") == "minimal" else BRASS_BAND
-        arr = arrange_layers(comp, lineup, difficulty=opts.get("difficulty", "faithful"))
-    else:
-        arr = arrange(comp)
+    arr = arrange_composition(comp)
     want = {norm(k): [n.pitch for n in sorted(v, key=lambda n: n.start)] for k, v in arr.parts.items()}
     back = converter.parse(re_xml).toSoundingPitch()
     ok = True
