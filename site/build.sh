@@ -9,7 +9,7 @@ mkdir -p "$OUT/assets/logo"
 
 # Every page is a directory with an index.html, so URLs have no .html.
 cp "$ROOT"/site/{index.html,site.css,lang.js} "$OUT/"
-cp -R "$ROOT/site/guide" "$ROOT/site/nb" "$OUT/"
+cp -R "$ROOT/site/guide" "$ROOT/site/research" "$ROOT/site/nb" "$OUT/"
 cp -R "$ROOT/design/dist/web/brasscribe.css" "$ROOT/design/dist/web/fonts.css" "$ROOT/design/dist/web/fonts" "$OUT/assets/"
 cp "$ROOT"/design/dist/icons/web/* "$OUT/"
 cp "$ROOT"/design/brand/logo/{lockup-play,lockup-play-on-dark,mark-brass,mark}.svg "$OUT/assets/logo/"
