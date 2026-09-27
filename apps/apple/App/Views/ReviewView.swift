@@ -192,11 +192,11 @@ struct ReviewView: View {
                     Text("\(index) of \(open.count) · \(it.partName)")
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                 }
-                BarSnippet(xml: xml, partID: it.partID, bar: it.bar, noteTick: it.tick, level: it.level, score: model.score)
+                BarSnippet(xml: xml, partID: it.partID, bar: it.bar, lastBar: it.lastBar ?? it.bar, noteTick: it.tick, level: it.level, score: model.score)
                     .card(padding: Space.s2)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text("Written \(noteWords(it))")
+                    Text(it.noteCount > 1 ? String(localized: "\(it.noteCount) notes from written \(noteWords(it))") : String(localized: "Written \(noteWords(it))"))
                         .font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
                     Text(levelSentence(it))
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
@@ -352,7 +352,7 @@ struct ReviewView: View {
             composition = piece.loadComposition()
             evidence = piece.loadEvidence()
             checked = piece.loadChecked()
-            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
+            items = ReviewList.items(score: m.score, composition: m.composition, uncertainty: m.uncertainty)
             if count(.mine) == 0 { filter = .all }
             piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
@@ -385,7 +385,10 @@ struct ReviewView: View {
         return evidence?.note(atScoreTick: n.startTick, concertPitch: p, ticksPerBeat: composition?.ticksPerBeat ?? 24)
     }
 
-    private func barLabel(_ it: ReviewItem) -> String { model?.barLabel(it.bar) ?? "Bar \(it.bar + 1)" }
+    private func barLabel(_ it: ReviewItem) -> String {
+        if let last = it.lastBar, last > it.bar { return String(localized: "Bars \(it.bar + 1)–\(last + 1)") }
+        return model?.barLabel(it.bar) ?? String(localized: "Bar \(it.bar + 1)")
+    }
 
     private func pitchName(_ it: ReviewItem) -> String {
         guard let n = note(it), case .pitched(let p) = n.kind else { return "?" }
@@ -463,6 +466,8 @@ struct BarSnippet: View {
     let xml: String
     let partID: String
     let bar: Int
+    /// The last bar of a review group; one bar of context follows a single-bar item.
+    var lastBar: Int
     let noteTick: Int
     let level: UncertaintyLevel
     let score: Score
@@ -516,8 +521,8 @@ struct BarSnippet: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .task(id: "\(partID)-\(bar)-\(Int(geo.size.width))") {
-                let first = max(1, bar + 1), last = min(score.measures.count, bar + 2)
+            .task(id: "\(partID)-\(bar)-\(lastBar)-\(noteTick)-\(Int(geo.size.width))") {
+                let first = max(1, bar + 1), last = min(score.measures.count, max(lastBar + 1, bar + 2))
                 let xml = self.xml, partID = self.partID, width = geo.size.width
                 page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
             }

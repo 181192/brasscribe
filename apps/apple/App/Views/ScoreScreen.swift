@@ -158,7 +158,7 @@ struct PracticeView: View {
     }
 
     private func refreshToCheck() {
-        let items = ReviewList.items(score: model.score, uncertainty: model.uncertainty)
+        let items = ReviewList.items(score: model.score, composition: model.composition, uncertainty: model.uncertainty)
         let checked = model.piece.loadChecked()
         toCheck = items.filter { !checked.contains($0.id) }.count
     }

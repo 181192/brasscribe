@@ -87,7 +87,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         }
         if let score = try? MusicXMLParser.parse(result.musicXML) {
             p.bars = score.measures.count
-            p.toCheck = ReviewList.items(score: score, uncertainty: result.composition.map(UncertaintyIndex.init) ?? .empty).count
+            p.toCheck = ReviewList.items(score: score, composition: result.composition, uncertainty: result.composition.map(UncertaintyIndex.init) ?? .empty).count
         }
         try p.save()
         return p

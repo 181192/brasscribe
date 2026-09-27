@@ -120,9 +120,26 @@ public struct Composition: Codable, Sendable, Equatable {
     public var freeRegions: [FreeRegion]
     public var dynamics: [Dynamic]
     public var sections: [Section]
+    /// Neighbouring uncertain notes of one voice, reviewed together (music/README.md,
+    /// "Confidence and review marks"). Empty when the engine didn't group them.
+    public var review: [ReviewGroup]
+
+    public struct ReviewGroup: Codable, Sendable, Equatable {
+        public var voice: String
+        /// `[start, end)` in Composition ticks.
+        public var start: Int
+        public var end: Int
+        /// Marked notes in the group.
+        public var notes: Int
+        /// Any of them very unsure.
+        public var very: Bool
+        public init(voice: String, start: Int, end: Int, notes: Int, very: Bool) {
+            self.voice = voice; self.start = start; self.end = end; self.notes = notes; self.very = very
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
-        case title, voices, meters, keys, dynamics, sections
+        case title, voices, meters, keys, dynamics, sections, review
         case freeRegions = "free_regions"
         case beatTimes = "beat_times"
         case firstDownbeat = "first_downbeat"
@@ -141,6 +158,7 @@ public struct Composition: Codable, Sendable, Equatable {
         freeRegions = try c.decodeIfPresent([FreeRegion].self, forKey: .freeRegions) ?? []
         dynamics = try c.decodeIfPresent([Dynamic].self, forKey: .dynamics) ?? []
         sections = try c.decodeIfPresent([Section].self, forKey: .sections) ?? []
+        review = try c.decodeIfPresent([ReviewGroup].self, forKey: .review) ?? []
     }
 
     public static func decode(_ data: Data) throws -> Composition {
