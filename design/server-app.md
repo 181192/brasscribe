@@ -86,6 +86,7 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
    If space is short, this step says so and offers **Choose another disk…**, for example an external drive. Primary: **Continue**.
 2. **Accept one licence.** This is the one place the app names a model (see §3.2.1).
    - Primary: **Sign in with Hugging Face**. It opens the browser. The user accepts the MuScriptor licence there, and the app gets a read-only key back through a loopback redirect.
+   - **Verify** that a Hugging Face OAuth app with a loopback redirect gets a token that can read a gated repo the user has accepted. If it can't, **Paste an access key** becomes the primary, with a button that opens the "new read token" page.
    - Fallback: **Paste an access key instead** reveals a labelled field. It allows paste (WCAG 3.3.8) and has a **Paste** button.
    - **Skip for now** (plain) says what is lost: "Without it, Brasscribe can't write down a full band. You can add it later."
    - The key is stored in the macOS Keychain or the Windows Credential Manager, never in a file.
@@ -119,7 +120,7 @@ Voice rule 4 says model names belong in Studio. The licence step is the **one ex
   - Windows hides tray icons under ^ by default.
 
 ### 3.4 Connect a phone (pair once)
-The model: each phone pairs **once** and gets its own long-lived credential, which can be removed from the computer. The engine-side contract is in `docs/plan/pairing-and-remote-access.md`. The facts this design relies on are listed in §11. Mockup: `mockups/png/server-pair-*`.
+The model: each phone pairs **once** and gets its own long-lived credential, which can be removed from the computer. The engine-side contract is in `docs/plan/pairing-and-remote-access.md`, which lands with the engine's device-pairing work. The facts this design relies on are listed in §11. Mockup: `mockups/png/server-pair-*`.
 
 The **Pair a phone** window offers three ways, easiest first. They all end in the same place.
 
@@ -190,7 +191,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
 
 ### 3.9 Remove a phone
 - Open **Phones and tablets**, then choose **Remove** on a row.
-- It confirms: "Remove Kari's iPhone? It can't send recordings here until it is paired again. Scores already on the phone stay." [Cancel] [**Remove**]
+- It confirms: "Remove Kari's iPhone? It can't send recordings here until it is paired again. Scores already on it stay." [Cancel] [**Remove**]
 - The phone learns this on its next request and says so in its own words.
 
 ### 3.10 Uninstall
@@ -259,6 +260,7 @@ WantedBy=default.target
 | `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
 | `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu.lock`) | default (temp folder) |
 | `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
+| Computer name (new; the engine picks the variable name) | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook" | the device name from Settings › System › About |
 
 - **Environments** go in `<data>/envs`, as a pixi workspace copied from the app, with `PIXI_CACHE_DIR=<data>/cache/pixi`.
 - **Engine command:** `pixi run -e <env> brasscribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
@@ -318,7 +320,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 
 | Problem | Title (en) | Why, one sentence | Primary (the fix) | Secondary | Details for the band's tech person |
 |---|---|---|---|---|---|
-| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
+| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 14–26) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
 | Windows firewall blocked | Phones can't find this computer | Windows Firewall is blocking Brasscribe on this network. | **Allow on private networks** (runs an elevated helper; Windows asks for permission) | – | "Inbound TCP 8765 blocked for python.exe (profile: Private)." |
 | Network is Public (Windows) | Phones can't find this computer | This network is set to Public, so Windows hides this PC. If it's your home or band-room Wi-Fi, set it to Private. | **Open network settings** (`ms-settings:network-status`) | – | "Active profile: Public." |
 | Low disk | Space is running low | 2.1 GB free. Brasscribe needs 3 GB to make a score. | **Free up space…** (the system storage settings) | Delete old results (1.4 GB) | data folder path and size per folder |
@@ -405,7 +407,7 @@ Mockups: `mockups/png/server-mac-popover-*` and `mockups/png/server-win-flyout-*
 | 1.4.1 Use of colour | State = badge **shape** plus word. Status colours sit only on icons. The progress bar has the percentage in text beside it. |
 | 1.4.3, 1.4.11 Contrast | All colours are tokens. New pairs used here: `success`/`warning`/`error` on `surface` (popover ground), `brass` on `surface-raised` (progress on a card), `text-muted` on `surface-raised`. They are added to the token contrast list and pass in light, dark and high contrast (`qa/reports/contrast-design-tokens.md`). |
 | High contrast | macOS **Increase Contrast** uses the `high-contrast` tokens (white on black, no tints). Windows **contrast themes** use system colours (`forced-colors`). **The QR code always stays black on a white plate** with a 4-module quiet zone and a 1 px border, because many scanners can't read inverted codes; it is an image, not text. |
-| 1.4.4 Resize text, 1.4.10 Reflow | The popover width is fixed (360) but its height grows, and the text wraps; it scrolls past 80 % of the screen height. Past 150 % Windows text scale, the tray click opens the **window** form instead of the flyout. The macOS window form follows the per-app text size (macOS 14+). No text is in images except the QR. |
+| 1.4.4 Resize text, 1.4.10 Reflow | The popover width is fixed (360) but its height grows, and the text wraps; it scrolls past 80 % of the screen height. Past 150 % Windows text scale, the tray click opens the **window** form instead of the flyout. The macOS window form should follow the system text size; **verify** whether macOS's per-app text size applies to a third-party SwiftUI window. If it doesn't, add a text-size setting. No text is in images except the QR. |
 | 1.4.13 Content on hover | The tray tooltip is also available through the accessible name. Nothing essential is only in a tooltip. |
 | 2.1.1 Keyboard, 2.4.3 Focus order | See §4 "Keyboard way in". In the popover, **VoiceOver starts on the status line** and **keyboard focus starts on the primary button**. Tab order is the list in §7. Esc closes the panel and returns focus to the menu-bar item or tray icon. In sub-views, Back is first. |
 | 2.2.1 Timing adjustable | The pairing code has no visible time limit (§3.4). Dialogs never time out. Downloads pause and resume. |
@@ -450,6 +452,14 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | primary.try-again | Try again | Prøv igjen |
 | devices.heading | Phones and tablets | Telefoner og nettbrett |
 | devices.summary | {c} connected now · {p} paired | {c} tilkoblet nå · {p} sammenkoblet |
+| devices.summary.none | None connected now · {p} paired | Ingen tilkoblet nå · {p} sammenkoblet |
+| devices.connected | Connected now | Tilkoblet nå |
+| devices.last-used | Last used {when} (3 days ago · 26 September) | Sist brukt {when} (for 3 dager siden · 26. september) |
+| devices.remove | Remove | Fjern |
+| devices.empty | No phones yet. Pair a phone to make full-band scores from it. | Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den. |
+| back | Back | Tilbake |
+| play-still-works.mac | Scores can still be made on this Mac, in Brasscribe Play. (only when Play is installed) | Du kan fortsatt lage partitur på denne Macen, i Brasscribe Play. (bare når Play er installert) |
+| play-still-works.win | Scores can still be made on this PC, in Brasscribe Play. (only when Play is installed) | Du kan fortsatt lage partitur på denne PC-en, i Brasscribe Play. (bare når Play er installert) |
 | computer.heading | This computer | Denne datamaskinen |
 | health.load | Work load | Arbeidsmengde |
 | health.load.values | Calm · Busy · Very busy | Rolig · Travel · Svært travel |
@@ -460,6 +470,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | health.ready | Ready to make scores | Klar til å lage partitur |
 | health.ready.values | Ready · Missing one download | Klar · Mangler én nedlasting |
 | health.speed.gpu | Uses the graphics chip | Bruker grafikkbrikken |
+| health.speed.nvidia | Uses the graphics card (NVIDIA) | Bruker grafikkortet (NVIDIA) |
 | health.speed.cpu | Processor only: slower | Bare prosessoren: tregere |
 | update.row | Version {v} is ready. It installs when nothing is being made. | Versjon {v} er klar. Den installeres når ingenting lages. |
 | update.now | Update now | Oppdater nå |
@@ -474,6 +485,16 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | more.remove.mac | Remove Brasscribe from this Mac… | Fjern Brasscribe fra denne Macen … |
 | more.remove.win | Remove Brasscribe from this PC… | Fjern Brasscribe fra denne PC-en … |
 | more.quit | Quit Brasscribe Bandroom | Avslutt Brasscribe Bandroom |
+| tray.open | Open | Åpne |
+| settings.title | Settings | Innstillinger |
+| settings.login | Start when I log in | Start når jeg logger på |
+| settings.data | Where downloads are kept | Hvor nedlastingene lagres |
+| settings.data.change | Change… | Endre … |
+| settings.hf | Hugging Face access | Tilgang til Hugging Face |
+| settings.hf.change | Sign in again… | Logg inn på nytt … |
+| settings.updates | Updates | Oppdateringer |
+| settings.updates.auto | Install updates automatically | Installer oppdateringer automatisk |
+| settings.about | About | Om |
 | tech.summary | Details for the band's tech person | Detaljer for den tekniske i bandet |
 | tech.address | Address | Adresse |
 | tech.version | Version | Versjon |
@@ -502,7 +523,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | restart.busy.later | Restart when done | Start på nytt når den er ferdig |
 | cancel | Cancel | Avbryt |
 | remove-device.title | Remove {device}? | Fjerne {device}? |
-| remove-device.body | It can't send recordings here until it is paired again. Scores already on the phone stay. | Den kan ikke sende opptak hit før den kobles til igjen. Partitur som allerede er på telefonen, blir liggende. |
+| remove-device.body | It can't send recordings here until it is paired again. Scores already on it stay. | Den kan ikke sende opptak hit før den kobles til igjen. Partitur som allerede ligger på den, blir liggende. |
 | remove-device.ok | Remove | Fjern |
 | uninstall.title.mac | Remove Brasscribe from this Mac? | Fjerne Brasscribe fra denne Macen? |
 | uninstall.body | Phones can't make full-band scores here after this. Scores on your phones stay. | Etterpå kan ikke telefonene lage partitur for fullt band her. Partitur på telefonene blir liggende. |
@@ -515,12 +536,14 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | pair.title | Pair a phone | Koble til en telefon |
 | pair.lead | Do this once for each phone or tablet. It stays paired. | Gjør dette én gang per telefon eller nettbrett. Den forblir tilkoblet. |
 | pair.way1 | On the phone, open Brasscribe › Settings › Your computer and choose **Brasscribe on {host}**. Then allow it here. | Åpne Brasscribe på telefonen › Innstillinger › Datamaskinen din, og velg **Brasscribe på {host}**. Godkjenn den her etterpå. |
-| pair.way2 | Or scan this code with the phone's camera. | Eller skann denne koden med kameraet på telefonen. |
+| pair.way2 | Or scan the QR code with the phone's camera. | Eller skann QR-koden med kameraet på telefonen. |
+| pair.qr.caption | Scan with the camera, or in Brasscribe on the phone. | Skann med kameraet, eller i Brasscribe på telefonen. |
 | pair.way3 | Or type this code on the phone: | Eller skriv inn denne koden på telefonen: |
 | pair.code.a11y | Code: {d1} {d2} {d3}, {d4} {d5} {d6} | Kode: {d1} {d2} {d3}, {d4} {d5} {d6} |
 | pair.qr.a11y | QR code for pairing with Brasscribe on {host}. It holds the same code: {code}. | QR-kode for å koble til Brasscribe på {host}. Den inneholder den samme koden: {code}. |
 | pair.limit | This code works while this window is open, and only once. | Koden virker så lenge dette vinduet er åpent, og bare én gang. |
 | pair.waiting | Waiting for a phone… | Venter på en telefon … |
+| pair.waiting.a11y | Waiting for a phone. | Venter på en telefon. |
 | pair.done | {device} is paired. | {device} er koblet til. |
 | pair.another | Pair another phone | Koble til en telefon til |
 | pair.lockout | Too many wrong codes. Wait a moment, or allow the phone here. | For mange feil koder. Vent litt, eller godkjenn telefonen her. |
@@ -581,7 +604,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.refuse.mac | Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 14 or later. | Brasscribe trenger en Mac med Apple-brikke (M1 eller nyere) og macOS 14 eller nyere. |
 | setup.refuse.win | Brasscribe needs a 64-bit Intel or AMD PC with Windows 10 (22H2) or Windows 11. | Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 10 (22H2) eller Windows 11. |
 
-The macOS Local Network dialog is the system's own. Its button is **Allow** in English and **Tillat** in Norwegian, so the heads-up names the button the user will actually see.
+The macOS Local Network dialog is the system's own, so the heads-up names the button the user will see. That button is **Allow** in English. **Verify** the Norwegian label («Tillat» is assumed) on a Mac set to Norwegian, and the Windows firewall labels, before shipping.
 
 ### 10.5 Needs attention and errors
 
@@ -614,7 +637,7 @@ The macOS Local Network dialog is the system's own. Its button is **Allow** in E
 | notify.ready | Brasscribe is ready. Phones and tablets can make full-band scores now. | Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå. |
 
 ## 11. What this design assumes from the engine
-The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. What this design relies on (all owner endpoints are loopback only):
+The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. That file lands with the engine's device-pairing work and is not on this branch yet. What this design relies on (all owner endpoints are loopback only):
 
 - **The pairing window:** `POST /v1/pairing {ttl_s, single_use, extend}` returns the state: `open`, `code`, `expires_at`, `server_id`, `server_name`, `hosts`, `fingerprint` and `uri`.
   - `ttl_s: null` means no expiry. Bandroom uses that while the Pair window is open.
@@ -630,7 +653,10 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.
   - A request expires after 2 minutes, and at most three wait at once (429 beyond that).
 - **Health:** today `/v1/health` gives the version and device. Work load, memory and free space come from the **native shell** (host APIs), not the engine, so the engine needs no new endpoint for them. Job progress uses the existing `/v1/jobs` and SSE.
-- **The advertised service name** "Brasscribe on {host}" is English today (`discovery.py`). Phones should build the display name from the host in their own language: "Brasscribe på Kallis MacBook".
+- **The computer's name (a request to the engine):**
+  - Today `discovery.py` builds "Brasscribe on {host}" from `socket.gethostname()`. That gives `Kallis-MacBook-Pro`, not the name the user knows, and its TXT record carries only `v`, `api` and `auth`.
+  - The shell passes the user-visible computer name (§5.2). The engine uses it for the mDNS instance name and for `server_name`, and adds a `host=` TXT field.
+  - Phones then build the display name in their own language, "Brasscribe på Kallis MacBook". The popover header and the phone's list then match word for word, and pairing way 1 depends on that.
 
 ## 12. Copy that has to change elsewhere
 These still tell people to type a command, or use other words.
@@ -661,4 +687,9 @@ These still tell people to type a command, or use other words.
 2. **Signing accounts.** Notarised macOS apps need the Apple Developer Program (yearly fee). Signed MSIX needs a code-signing certificate (e.g. Azure Trusted Signing, monthly fee).
    - Unsigned builds show Gatekeeper and SmartScreen warnings that non-technical users won't get past.
    - Is that cost acceptable, and in whose name?
-3. **The name.** Is "Brasscribe Bandroom" right, or would the owner rather keep it plainer? The in-app text doesn't depend on it (§1).
+3. **The LAN front door (§5.3).** Should the signed app own the network connection and forward to the engine?
+   - Yes: the first firewall and Local Network prompts name "Brasscribe Bandroom". It costs a proxy layer, and the engine must stop trusting every loopback client.
+   - No (the plan for the first version): the prompts name Python ("python.exe", "python3.12"), which non-technical users may refuse.
+   - Deciding needs the owner and the pairing work together.
+
+The name "Brasscribe Bandroom" (§1) is a decision, not an open question. If the owner would rather have another name, only the installer, the app lists and About change.
