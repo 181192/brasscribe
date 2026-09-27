@@ -48,13 +48,20 @@ pub struct Contour {
     /// Fractional MIDI pitch; NaN where no pitch.
     pub midi: Vec<f64>,
     pub loudness_db: Vec<f64>,
+    /// SwiftF0 voicing confidence per frame, when the contour has it.
+    pub confidence: Option<Vec<f64>>,
 }
 
 impl Contour {
     /// From per-frame time, pitch in Hz (<= 0 means unvoiced) and loudness.
     pub fn from_hz(t: Vec<f64>, pitch_hz: &[f64], loudness_db: Vec<f64>) -> Contour {
         let midi = pitch_hz.iter().map(|&hz| if hz > 0.0 { 69.0 + 12.0 * (hz / 440.0).log2() } else { f64::NAN }).collect();
-        Contour { t, midi, loudness_db }
+        Contour { t, midi, loudness_db, confidence: None }
+    }
+
+    pub fn with_confidence(mut self, confidence: Option<Vec<f64>>) -> Contour {
+        self.confidence = confidence;
+        self
     }
 }
 

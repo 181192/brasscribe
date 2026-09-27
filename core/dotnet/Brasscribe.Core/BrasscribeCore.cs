@@ -16,8 +16,8 @@ public sealed class BrasscribeException : Exception
 /// <summary>A spelled pitch: step "C".."B", alteration in semitones, octave (C4 = middle C).</summary>
 public readonly record struct SpelledPitch(string Step, int Alter, int Octave);
 
-/// <summary>Frame-level SwiftF0 contour of the solo stem.</summary>
-public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb);
+/// <summary>Frame-level SwiftF0 contour of the solo stem; Confidence (per-frame voicing) feeds the notes' calibrated confidence.</summary>
+public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb, double[]? Confidence = null);
 
 /// <summary>The six layer transcriptions (MIDI file bytes) of a recording.</summary>
 public sealed record LayerMidi(byte[] SoloSwiftF0, byte[] SoloMuScriptor, byte[] SoloBasicPitch, byte[] Bass, byte[] Orchestra, byte[] Drums);
@@ -146,7 +146,7 @@ public static class BrasscribeCore
     {
         var options = JsonSerializer.Serialize(new
         {
-            solo_contour = soloContour is null ? null : new { times = soloContour.Times, pitch_hz = soloContour.PitchHz, loudness_db = soloContour.LoudnessDb },
+            solo_contour = soloContour is null ? null : new { times = soloContour.Times, pitch_hz = soloContour.PitchHz, loudness_db = soloContour.LoudnessDb, confidence = soloContour.Confidence },
             free_time = freeTime,
             free_tempo = freeTempo,
         });
@@ -175,7 +175,7 @@ public static class BrasscribeCore
         var o = options ?? new LayersSongOptions();
         var optionsJson = JsonSerializer.Serialize(new
         {
-            solo_contour = o.SoloContour is null ? null : new { times = o.SoloContour.Times, pitch_hz = o.SoloContour.PitchHz, loudness_db = o.SoloContour.LoudnessDb },
+            solo_contour = o.SoloContour is null ? null : new { times = o.SoloContour.Times, pitch_hz = o.SoloContour.PitchHz, loudness_db = o.SoloContour.LoudnessDb, confidence = o.SoloContour.Confidence },
             free_time = o.FreeTime,
             free_tempo = o.FreeTempo,
             gate = o.Gate,

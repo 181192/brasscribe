@@ -23,6 +23,41 @@ fn i64s(v: &Value) -> Vec<i64> {
 }
 
 #[test]
+fn confidence_and_review_groups_match_reference() {
+    use brasscribe_core::confidence::{features, p_correct, review_groups, support, Model};
+    use brasscribe_core::durations::Contour;
+    let model = Model::load();
+    for (i, c) in load("confidence").iter().enumerate() {
+        let k = &c["contour"];
+        let contour = Contour {
+            t: f64s(&k["t"]),
+            midi: k["midi"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap_or(f64::NAN)).collect(),
+            loudness_db: vec![0.0; k["t"].as_array().unwrap().len()],
+            confidence: if k["confidence"].is_null() { None } else { Some(f64s(&k["confidence"])) },
+        };
+        let use_c = c["use_contour"].as_bool().unwrap();
+        for n in c["notes"].as_array().unwrap() {
+            let sup = support(if use_c { Some(&contour) } else { None }, n["onset"].as_f64().unwrap(), n["pitch"].as_i64().unwrap() as i32);
+            assert_eq!(sup.map(f64::to_bits), n["support"].as_f64().map(f64::to_bits), "case {i}: support");
+            let src = n["sources"].as_array().unwrap().iter().map(|s| s.as_str().unwrap().to_string()).collect();
+            let x = features(&src, n["dur"].as_f64().unwrap(), sup, c["separated"].as_bool().unwrap());
+            assert_eq!(p_correct(&x, &model).to_bits(), n["p"].as_f64().unwrap().to_bits(), "case {i}: p_correct");
+        }
+        let ev: Vec<(i64, i64, f64)> =
+            c["events"].as_array().unwrap().iter().map(|e| (e[0].as_i64().unwrap(), e[1].as_i64().unwrap(), e[2].as_f64().unwrap())).collect();
+        let got: Vec<(i64, i64, i64, bool)> =
+            review_groups(&ev, c["bar"].as_i64().unwrap(), model.mark_below(), model.very_below()).into_iter().map(|g| (g.start, g.end, g.notes, g.very)).collect();
+        let want: Vec<(i64, i64, i64, bool)> = c["groups"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|g| (g[0].as_i64().unwrap(), g[1].as_i64().unwrap(), g[2].as_i64().unwrap(), g[3].as_bool().unwrap()))
+            .collect();
+        assert_eq!(got, want, "case {i}: groups");
+    }
+}
+
+#[test]
 fn solo_meter_matches_reference() {
     use brasscribe_core::beats::{labels_on, solo_meter, track_bar_phase, PHASE_JUMP_COST};
     for (i, c) in load("meter").iter().enumerate() {

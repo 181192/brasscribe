@@ -2080,13 +2080,21 @@ public struct SoloContour: Equatable, Hashable {
     public var times: [Double]
     public var pitchHz: [Double]
     public var loudnessDb: [Double]
+    /**
+     * SwiftF0 voicing confidence per frame (for the notes' calibrated confidence).
+     */
+    public var confidence: [Double]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(times: [Double], pitchHz: [Double], loudnessDb: [Double]) {
+    public init(times: [Double], pitchHz: [Double], loudnessDb: [Double], 
+        /**
+         * SwiftF0 voicing confidence per frame (for the notes' calibrated confidence).
+         */confidence: [Double]? = nil) {
         self.times = times
         self.pitchHz = pitchHz
         self.loudnessDb = loudnessDb
+        self.confidence = confidence
     }
 
     
@@ -2107,7 +2115,8 @@ public struct FfiConverterTypeSoloContour: FfiConverterRustBuffer {
             try SoloContour(
                 times: FfiConverterSequenceDouble.read(from: &buf), 
                 pitchHz: FfiConverterSequenceDouble.read(from: &buf), 
-                loudnessDb: FfiConverterSequenceDouble.read(from: &buf)
+                loudnessDb: FfiConverterSequenceDouble.read(from: &buf), 
+                confidence: FfiConverterOptionSequenceDouble.read(from: &buf)
         )
     }
 
@@ -2115,6 +2124,7 @@ public struct FfiConverterTypeSoloContour: FfiConverterRustBuffer {
         FfiConverterSequenceDouble.write(value.times, into: &buf)
         FfiConverterSequenceDouble.write(value.pitchHz, into: &buf)
         FfiConverterSequenceDouble.write(value.loudnessDb, into: &buf)
+        FfiConverterOptionSequenceDouble.write(value.confidence, into: &buf)
     }
 }
 
@@ -2920,6 +2930,30 @@ fileprivate struct FfiConverterOptionSequenceUInt32: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterSequenceUInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionSequenceDouble: FfiConverterRustBuffer {
+    typealias SwiftType = [Double]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceDouble.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceDouble.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }

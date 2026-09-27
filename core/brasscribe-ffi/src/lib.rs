@@ -114,6 +114,9 @@ pub struct SoloContour {
     pub times: Vec<f64>,
     pub pitch_hz: Vec<f64>,
     pub loudness_db: Vec<f64>,
+    /// SwiftF0 voicing confidence per frame (for the notes' calibrated confidence).
+    #[uniffi(default = None)]
+    pub confidence: Option<Vec<f64>>,
 }
 
 fn midi(b: &[u8]) -> Result<MidiFile, CoreError> {
@@ -213,7 +216,7 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
     };
     let beats = Beats::parse(beats_text).map_err(invalid)?;
     let opts = LayersOptions {
-        solo_contour: o.solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db)),
+        solo_contour: o.solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence)),
         no_free_time: !o.free_time,
         free_tempo: o.free_tempo,
         no_gate: !o.gate,

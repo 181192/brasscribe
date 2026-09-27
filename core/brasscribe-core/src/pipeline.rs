@@ -227,8 +227,8 @@ fn separation(l: &Layers) -> Option<String> {
 /// metrical level, free time, written durations (solo contour), key plan,
 /// dynamics, rehearsal marks, clipping and fermatas, arrangement, score, parts.
 ///
-/// The solo is SwiftF0's line confirmed by MuScriptor and Basic Pitch (3 sources
-/// 0.98, 2 sources 0.91, SwiftF0 alone 0.54; notes without SwiftF0 are dropped).
+/// The solo is SwiftF0's line (notes without SwiftF0 are dropped); each note's
+/// confidence is the calibrated probability that it is right (confidence.rs).
 /// The orchestra residual is split by what the notes do: short notes attacked
 /// together with two or more others are brass-choir hits, the rest strings.
 pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
@@ -332,18 +332,28 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         ("mus".into(), line(&solo_mus, 52, 88, true, MIN_DUR)),
         ("bp".into(), line(&solo_bp, 52, 88, true, MIN_DUR)),
     ];
+    // Basic Pitch standing in for MuScriptor (the solo path) is one vote for the
+    // confidence, not two; the clustering is unchanged.
+    let key_set = |v: &[RawNote]| {
+        let mut k: Vec<(f64, i32)> = v.iter().map(|n| (n.onset, n.pitch)).collect();
+        k.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
+        k
+    };
+    let mus_is_bp = key_set(&solo_mus) == key_set(&solo_bp);
+    let separated = layers.bass_audio.is_some() || layers.drums_audio.is_some() || layers.orchestra_audio.is_some();
+    let model = crate::confidence::Model::load();
     let cand: Vec<RawNote> = cluster(&votes)
         .into_iter()
         .filter(|c| c.sources.contains("sw"))
-        .map(|c| RawNote {
-            pitch: c.pitch,
-            onset: c.median_onset(),
-            offset: c.median_offset(),
-            confidence: Some(match c.sources.len() {
-                3 => 0.98,
-                2 => 0.91,
-                _ => 0.54,
-            }),
+        .map(|c| {
+            let (on, off) = (c.median_onset(), c.median_offset());
+            let mut src = c.sources.clone();
+            if mus_is_bp {
+                src.remove("mus");
+            }
+            let sup = crate::confidence::support(opts.solo_contour.as_ref(), on, c.pitch);
+            let x = crate::confidence::features(&src, off - on, sup, separated);
+            RawNote { pitch: c.pitch, onset: on, offset: off, confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)) }
         })
         .collect();
     let mut solo_line = line(&cand, 52, 88, true, MIN_DUR);
@@ -427,6 +437,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         free_regions: regions,
         dynamics: Vec::new(),
         sections: Vec::new(),
+        review: Vec::new(),
         arrangement: None,
     };
     // Dynamics per layer from its own loudness, per bar.
@@ -466,6 +477,20 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         a.insert("transpose_semitones".into(), shift.into());
         comp.arrangement = Some(serde_json::Value::Object(a));
     }
+    // Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
+    let bar_ticks = bpb * TICKS_PER_BEAT;
+    comp.review = comp
+        .voices
+        .iter()
+        .filter(|v| v.layer.as_deref() != Some("drums"))
+        .flat_map(|v| {
+            let notes: Vec<(i64, i64, f64)> = v.notes.iter().map(|n| (n.start, n.end(), n.confidence)).collect();
+            crate::confidence::review_groups(&notes, bar_ticks, model.mark_below(), model.very_below())
+                .into_iter()
+                .map(|g| crate::model::ReviewItem { voice: v.id.clone(), start: g.start, end: g.end, notes: g.notes, very: g.very })
+                .collect::<Vec<_>>()
+        })
+        .collect();
     let lineup = if lineup_name == "band" { crate::instruments::brass_band() } else { crate::instruments::minimal_band() };
     let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
     let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
@@ -546,6 +571,7 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
         free_regions: Vec::new(),
         dynamics: Vec::new(),
         sections: Vec::new(),
+        review: Vec::new(),
         arrangement: None,
     };
     let arrangement = arrange(&comp);
@@ -570,6 +596,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         title: title.into(),
         pickup_ticks: pickup,
         low_confidence: 0.7,
+        very_below: crate::notation::score::VERY_UNCERTAIN,
         key_fifths: None,
         sounds: Vec::new(),
         free_spans: Vec::new(),
@@ -638,6 +665,7 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         free_regions: Vec::new(),
         dynamics: Vec::new(),
         sections: Vec::new(),
+        review: Vec::new(),
         arrangement: None,
     })
 }
