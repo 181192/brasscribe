@@ -35,6 +35,14 @@ public sealed partial class ScoreViewModel : ObservableObject
     }
 
     public PlayerViewModel Player { get; }
+
+    /// <summary>Set when the band sounds are not installed: one line above the player says so.</summary>
+    public bool BandSoundsMissing => Player.Player is AlphaTabScorePlayer { SoundsMissingFrom: not null };
+    public string BandSoundsMissingText => BandSoundsMissing ? _s["Player_SoundsMissing"] : "";
+    /// <summary>Where the band sounds were expected, for the band's tech person.</summary>
+    public string BandSoundsMissingDetails =>
+        Player.Player is AlphaTabScorePlayer { SoundsMissingFrom: { } path } ? _s.Format("Player_SoundsMissing_Details", path) : "";
+    public string TechDetailsHeading => _s["Error_DetailsHeading"];
     public IOriginalPlayer? Original { get; }
     public TalkingScoreDocument? Document { get; private set; }
     public Composition? Composition { get; private set; }
