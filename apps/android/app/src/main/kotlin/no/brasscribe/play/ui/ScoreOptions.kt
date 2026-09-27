@@ -95,25 +95,37 @@ fun scoreSubtitle(entry: ScoreEntry): String {
     val core = androidx.compose.ui.platform.LocalContext.current.let { (it.applicationContext as no.brasscribe.play.PlayApplication).container.core }
     val saved = entry.saved
     // Worked out off the main thread: decoding and grouping a full band takes a moment per score.
-    val facts by androidx.compose.runtime.produceState<Triple<Int, Int, Int?>?>(null, saved?.id, saved?.updated) {
+    val facts by androidx.compose.runtime.produceState<ScoreFacts?>(null, saved?.id, saved?.updated) {
         saved ?: return@produceState
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { factsOf(saved, core) }
     }
-    val band = facts?.first?.let { if (it > 1) stringResource(R.string.home_full_band) else stringResource(R.string.lineup_solo) } ?: profile
-    val bars = facts?.second?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
-    val left = facts?.third?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
+    // The label comes from the lineup the score was arranged for; the part count only tells a band from a solo.
+    val band = facts?.let { f ->
+        when (f.lineup) {
+            no.brasscribe.play.Lineup.QUARTET -> stringResource(R.string.lineup_quartet)
+            no.brasscribe.play.Lineup.MINIMAL -> stringResource(R.string.lineup_minimal)
+            no.brasscribe.play.Lineup.FULL -> stringResource(R.string.home_full_band)
+            null -> if (f.parts > 1) stringResource(R.string.home_full_band) else stringResource(R.string.lineup_solo)
+        }
+    } ?: profile
+    val bars = facts?.bars?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
+    val left = facts?.left?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
     return listOfNotNull(band, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
 }
 
-/** Parts, bars and review items left of a saved score. */
-private fun factsOf(saved: no.brasscribe.play.SavedScore, core: no.brasscribe.play.model.CoreBridge): Triple<Int, Int, Int?> {
+/** Parts, bars, review items left and the recorded lineup of a saved score. */
+private data class ScoreFacts(val parts: Int, val bars: Int, val left: Int?, val lineup: no.brasscribe.play.Lineup?)
+
+private fun factsOf(saved: no.brasscribe.play.SavedScore, core: no.brasscribe.play.model.CoreBridge): ScoreFacts {
     run {
         val parts = no.brasscribe.play.model.MusicXmlParts.names(saved.musicXml)
         val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(saved.musicXml)
             ?.groupValues?.get(1)?.let { Regex("<measure\\b").findAll(it).count() } ?: 0
         val checked = saved.checked.mapNotNull { k -> k.substringBefore(':').let { v -> k.substringAfter(':').toIntOrNull()?.let { v to it } } }
             .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
-        val left = saved.compositionJson?.let { j -> runCatching { itemsToCheck(core.decodeComposition(j), checked, core) }.getOrNull() }
-        return Triple(parts.size, bars, left)
+        val composition = saved.compositionJson?.let { j -> runCatching { core.decodeComposition(j) }.getOrNull() }
+        val left = composition?.let { runCatching { itemsToCheck(it, checked, core) }.getOrNull() }
+        val lineup = no.brasscribe.play.Lineup.recorded(composition) ?: no.brasscribe.play.Lineup.ofParts(parts)
+        return ScoreFacts(parts.size, bars, left, lineup)
     }
 }

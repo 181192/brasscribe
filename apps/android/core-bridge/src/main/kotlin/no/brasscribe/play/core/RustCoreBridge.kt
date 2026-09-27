@@ -33,6 +33,7 @@ import uniffi.brasscribe_ffi.SoloContour
 import uniffi.brasscribe_ffi.TalkingSettings
 import uniffi.brasscribe_ffi.arrangeLayersBand
 import uniffi.brasscribe_ffi.arrangeMusicxml
+import uniffi.brasscribe_ffi.arrangeMusicxmlWith
 import uniffi.brasscribe_ffi.coreVersion
 import uniffi.brasscribe_ffi.estimateKey
 import uniffi.brasscribe_ffi.humanizePart
@@ -40,6 +41,7 @@ import uniffi.brasscribe_ffi.layersSongDefaults
 import uniffi.brasscribe_ffi.normalizeComposition
 import uniffi.brasscribe_ffi.spellPitches
 import uniffi.brasscribe_ffi.talkingAnnounceJson
+import uniffi.brasscribe_ffi.ArrangeOptions as CoreArrangeOptions
 import uniffi.brasscribe_ffi.ScoreNote as CoreScoreNote
 import uniffi.brasscribe_ffi.TalkingScore as CoreTalkingScore
 import no.brasscribe.play.model.PlayedNote as ModelPlayedNote
@@ -69,7 +71,7 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         val layers = LayerMidi(sw, bp, bp, MidiWriter.EMPTY, MidiWriter.EMPTY, MidiWriter.EMPTY)
         val opts = layersSongDefaults().apply {
             soloContour = take.contour?.let { SoloContour(it.timesS, it.pitchHz, it.loudnessDb) }
-            lineup = if (options.lineup == "minimal") "minimal" else "band"
+            lineup = coreLineup(options.lineup)
             difficulty = options.difficulty
             key = options.key
             transpose = options.transpose
@@ -88,6 +90,10 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
 
     override fun arrangeMusicXml(composition: Composition, arranger: String): String =
         arrangeMusicxml(CompositionJson.encode(composition), arranger)
+
+    override fun arrangeMusicXmlWith(composition: Composition, options: ArrangeOptions): String =
+        arrangeMusicxmlWith(CompositionJson.encode(composition),
+            CoreArrangeOptions(coreLineup(options.lineup), options.difficulty, options.key, options.transpose))
 
     /** The core's announcer, fed the same event JSON as docs/accessibility/talking-score-vectors.json. */
     override fun announce(stop: TsStop, context: TsContext, settings: TsSettings, lang: Lang): String {
@@ -150,6 +156,14 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
             RustCoreBridge(coreVersion())
         } catch (e: Throwable) {
             null
+        }
+
+        /** The core's name of a lineup. An unknown name is an error, never quietly the full band. */
+        fun coreLineup(name: String): String = when (name) {
+            "band", "full" -> "band"
+            "minimal" -> "minimal"
+            "quartet" -> "quartet"
+            else -> throw IllegalArgumentException("unknown lineup $name")
         }
 
         private fun settings(lang: Lang, mode: PitchMode) = TalkingSettings(

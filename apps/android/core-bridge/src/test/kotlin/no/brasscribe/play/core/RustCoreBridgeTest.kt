@@ -7,6 +7,7 @@ import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.KotlinCoreBridge
 import no.brasscribe.play.model.Lang
 import no.brasscribe.play.model.MidiWriter
+import no.brasscribe.play.model.MusicXmlParts
 import no.brasscribe.play.model.PartView
 import no.brasscribe.play.model.PitchMode
 import no.brasscribe.play.model.ScoreNote
@@ -99,6 +100,30 @@ class RustCoreBridgeTest {
         val html = doc.toHtml(Lang.EN, listOf(horn))
         assertTrue(html.contains("Solo Horn"))
         doc.close()
+    }
+
+    @Test
+    fun rearrangesACompositionForTheQuartet() {
+        val c = core()
+        val file = File("../../fixtures/old-hundredth/composition.json")
+        assertTrue("fixture ${file.absolutePath}", file.isFile)
+        val comp = c.decodeComposition(file.readText())
+        val quartet = c.arrangeMusicXmlWith(comp, ArrangeOptions(lineup = "quartet"))
+        assertEquals(listOf("1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium"), MusicXmlParts.names(quartet))
+        val easier = c.arrangeMusicXmlWith(comp, ArrangeOptions(lineup = "quartet", difficulty = "easier"))
+        assertEquals(4, MusicXmlParts.names(easier).size)
+        // The full band through the options is the same score as the old arranger's.
+        assertEquals(c.arrangeMusicXml(comp, "auto"), c.arrangeMusicXmlWith(comp, ArrangeOptions(lineup = "band")))
+        assertTrue(MusicXmlParts.names(c.arrangeMusicXmlWith(comp, ArrangeOptions(lineup = "minimal"))).size in 5..10)
+    }
+
+    @Test
+    fun lineupNamesNeverFallBackToTheBand() {
+        assertEquals("quartet", RustCoreBridge.coreLineup("quartet"))
+        assertEquals("minimal", RustCoreBridge.coreLineup("minimal"))
+        assertEquals("band", RustCoreBridge.coreLineup("full"))
+        assertEquals("band", RustCoreBridge.coreLineup("band"))
+        assertTrue(runCatching { RustCoreBridge.coreLineup("quintet") }.isFailure)
     }
 
     @Test

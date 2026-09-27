@@ -10,6 +10,7 @@ import no.brasscribe.play.model.Lang
 object PartNames {
     private val NB = mapOf(
         "Soprano Cornet" to "Sopran-kornett", "Solo Cornet" to "Solokornett", "Repiano Cornet" to "Repiano-kornett",
+        "1st Cornet" to "1. kornett", "Tenor Horn" to "Althorn",
         "2nd Cornet" to "2. kornett", "3rd Cornet" to "3. kornett", "Flugelhorn" to "Flygelhorn",
         "Solo Horn" to "Solo althorn", "1st Horn" to "1. althorn", "2nd Horn" to "2. althorn",
         "1st Baritone" to "1. baryton", "2nd Baritone" to "2. baryton",

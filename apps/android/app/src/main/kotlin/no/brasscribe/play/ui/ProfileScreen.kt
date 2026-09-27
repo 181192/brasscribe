@@ -43,7 +43,9 @@ import androidx.compose.ui.semantics.CollectionItemInfo
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.collectionInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collectionItemInfo
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -72,26 +74,36 @@ private val CHOICES = listOf(
 /**
  * One choice card: title, one sentence and a radio, announced as "n of m". Chosen cards get a 2 dp
  * ink ring (system.md §5, the chooser), so the state is never colour alone.
+ *
+ * With a [disabledReason] the card is unavailable but stays focusable, so a screen reader still reaches
+ * it: the reason replaces the description line, is its state, and a tap does nothing.
  */
 @Composable
-fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean, index: Int, onClick: () -> Unit) {
+fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean, index: Int, disabledReason: String? = null, onClick: () -> Unit) {
     val c = BrasscribeTheme.colors
+    val available = enabled && disabledReason == null
     Row(
         Modifier.fillMaxWidth().heightIn(min = 64.dp)
             .background(c.surfaceRaised, MaterialTheme.shapes.large)
             .border(if (selected) 2.dp else 1.dp, if (selected) c.text else c.borderStrong, MaterialTheme.shapes.large)
-            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
-            .semantics { collectionItemInfo = CollectionItemInfo(index, 1, 0, 1) }
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = { if (available) onClick() })
+            .semantics {
+                collectionItemInfo = CollectionItemInfo(index, 1, 0, 1)
+                if (disabledReason != null) { disabled(); stateDescription = disabledReason }
+            }
             .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
         verticalAlignment = Alignment.Top,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = if (enabled) c.text else c.textMuted)
-            if (desc != null) Text(desc, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = if (available) c.text else c.textMuted)
+            val line = disabledReason ?: desc
+            // The reason is already the card's state: not read twice.
+            if (line != null) Text(line, style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
+                modifier = if (disabledReason != null) Modifier.clearAndSetSemantics { } else Modifier)
         }
         // The radio has its own column, top-aligned, so large text never runs under it (review 3, P2-D).
         Box(Modifier.padding(start = BrasscribeSpace.s2).width(40.dp), contentAlignment = Alignment.TopEnd) {
-            RadioButton(selected = selected, onClick = null, enabled = enabled,
+            RadioButton(selected = selected, onClick = null, enabled = available,
                 colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
         }
     }

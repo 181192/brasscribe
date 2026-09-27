@@ -215,6 +215,9 @@
     <string name="lineup_minimal_desc">10–15 musikere, stemmene doblet</string>
     <string name="lineup_solo">Bare solostemmen</string>
     <string name="lineup_solo_desc">Bare melodien, til én musiker.</string>
+    <string name="lineup_quartet">Kvartett</string>
+    <string name="lineup_quartet_desc">4 musikere, én på hver stemme</string>
+    <string name="lineup_quartet_needs_group">Trenger et opptak av hele gruppen</string>
     <string name="difficulty">Hvor vanskelig?</string>
     <string name="difficulty_faithful">Som spilt</string>
     <string name="difficulty_standard">Litt enklere</string>
@@ -379,6 +382,7 @@
     <string name="export_scope_every_part">Alle stemmer</string>
     <string name="export_scope_every_part_tip">Én PDF per musiker.</string>
     <string name="export_scope_conductor">Dirigentpartitur</string>
+    <string name="export_scope_score_quartet">Partitur (alle 4 stemmer)</string>
     <string name="export_whole_score_only">%1$s · hele partituret</string>
     <string name="export_made_before_change">Laget før endringene dine. Brasscribe på datamaskinen lager den på nytt.</string>
     <string name="review_your_part_first">Sjekk stemmen din først</string>

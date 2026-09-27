@@ -75,6 +75,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.Lineup
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
@@ -268,7 +269,9 @@ fun ReviewScreen(vm: PlayViewModel) {
                             // The bar on a staff: the arranged part when this is the solo, else the layer on its own.
                             val xml = remember(r.musicXml, voiceId) {
                                 val names = no.brasscribe.play.model.MusicXmlParts.names(r.musicXml)
-                                val solo = names.indexOfFirst { it.equals("Solo Cornet", true) }
+                                val solo = defaultPart(names, Lineup.recorded(composition)).takeIf { i ->
+                                    names.getOrNull(i)?.trim()?.let { n -> Lineup.LEADS.any { it.equals(n, true) } } == true
+                                } ?: -1
                                 if (voiceId == composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id && solo >= 0)
                                     no.brasscribe.play.model.MusicXmlParts.single(r.musicXml, solo)
                                 else vm.container.core.toMusicXml(composition, listOf(no.brasscribe.play.model.PartSpec(voiceId, partName, view.instrument)))
