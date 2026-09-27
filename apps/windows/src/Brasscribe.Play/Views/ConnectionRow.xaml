@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Brasscribe.Play.Views.ConnectionRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels">
+
+    <!-- Brasscribe on your computer, as on every Play app: a bordered row with the state icon and words
+         (never colour alone) on the left, Connect or Pair this PC again on the right. At large text sizes
+         or when narrow the button goes below the words. State changes are announced by the view model. -->
+    <Border Style="{StaticResource StatusRowStyle}">
+        <Grid x:Name="Row" ColumnSpacing="12" RowSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <FontIcon Glyph="{x:Bind vm:Screens.ConnectionGlyph(Connection.State), Mode=OneWay}" FontSize="16"
+                      Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="StatusText" Grid.Column="1" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="{x:Bind Connection.StatusText, Mode=OneWay}" />
+            <Button x:Name="ActionButton" x:Uid="ConnectionActionButton" Grid.Column="2" Style="{StaticResource ActionButtonStyle}"
+                    MinHeight="44" VerticalAlignment="Center" Click="OnAction"
+                    Content="{x:Bind Connection.ActionText, Mode=OneWay}"
+                    Visibility="{x:Bind Connection.HasAction, Mode=OneWay}" />
+        </Grid>
+    </Border>
+</UserControl>

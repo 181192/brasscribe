@@ -28,22 +28,8 @@
             </ComboBox>
 
             <TextBlock x:Uid="SettingsEngineHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
-            <!-- The same status row as Home: icon and words, and Connect or Pair again when needed. -->
-            <Grid ColumnSpacing="10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon Glyph="{x:Bind vm:Screens.ConnectionGlyph(ViewModel.Connection.State), Mode=OneWay}" FontSize="16"
-                          Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock Grid.Column="1" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
-                           Text="{x:Bind ViewModel.Connection.StatusText, Mode=OneWay}" />
-                <Button x:Uid="SettingsConnectionAction" Grid.Column="2" Style="{StaticResource ActionButtonStyle}" MinHeight="44"
-                        VerticalAlignment="Center" Click="OnConnectionAction"
-                        Content="{x:Bind ViewModel.Connection.ActionText, Mode=OneWay}"
-                        Visibility="{x:Bind ViewModel.Connection.HasAction, Mode=OneWay}" />
-            </Grid>
+            <!-- The same status row as Home. -->
+            <views:ConnectionRow x:Name="ConnectionStatus" ActionInvoked="OnConnectionAction" />
             <Button x:Uid="FindEnginesButton" Click="OnFindEngines" />
             <ListView x:Uid="DiscoveredEnginesList" ItemsSource="{x:Bind ViewModel.DiscoveredEngines}" SelectionMode="None"
                       IsItemClickEnabled="True" ItemClick="OnEngineClicked">

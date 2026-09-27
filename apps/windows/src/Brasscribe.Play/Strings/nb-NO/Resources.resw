@@ -151,7 +151,7 @@
     <value>Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her</value>
   </data>
   <data name="ConnectionActionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Åpner Innstillinger for å koble denne PC-en til Brasscribe på datamaskinen</value>
+    <value>Koble denne PC-en til Brasscribe på datamaskinen</value>
   </data>
   <data name="Connection_Connect" xml:space="preserve">
     <value>Koble til</value>
@@ -1322,9 +1322,6 @@
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Innstillinger</value>
-  </data>
-  <data name="SettingsConnectionAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Koble denne PC-en til Brasscribe på datamaskinen</value>
   </data>
   <data name="SettingsDialog.CloseButtonText" xml:space="preserve">
     <value>Lukk</value>

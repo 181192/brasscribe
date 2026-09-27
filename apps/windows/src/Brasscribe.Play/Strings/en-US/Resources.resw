@@ -151,7 +151,7 @@
     <value>Open Brasscribe on your computer and choose Pair a device, then type the code here</value>
   </data>
   <data name="ConnectionActionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Opens Settings to connect this PC to Brasscribe on your computer</value>
+    <value>Connect this PC to Brasscribe on your computer</value>
   </data>
   <data name="Connection_Connect" xml:space="preserve">
     <value>Connect</value>
@@ -1322,9 +1322,6 @@
   </data>
   <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Settings</value>
-  </data>
-  <data name="SettingsConnectionAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Connect this PC to Brasscribe on your computer</value>
   </data>
   <data name="SettingsDialog.CloseButtonText" xml:space="preserve">
     <value>Close</value>

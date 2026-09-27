@@ -414,6 +414,15 @@
         <Setter Property="Padding" Value="16" />
     </Style>
 
+    <!-- The connection status row (Home, Settings): surface fill, 1 px border, 12 px corners, as on Apple and Android. -->
+    <Style x:Key="StatusRowStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource BcSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="Padding" Value="16,10" />
+    </Style>
+
     <!-- The 40 epx icon well of list rows and cards. -->
     <Style x:Key="IconWellStyle" TargetType="Border">
         <Setter Property="Width" Value="40" />
