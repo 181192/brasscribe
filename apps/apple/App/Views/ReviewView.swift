@@ -538,7 +538,7 @@ struct BarSnippet: View {
             }
             .task(id: "\(partID)-\(bar)-\(lastBar)-\(noteTick)-\(Int(geo.size.width))") {
                 let first = max(1, bar + 1), last = min(score.measures.count, max(lastBar + 1, bar + 2))
-                let xml = self.xml, partID = self.partID, width = geo.size.width
+                let xml = PartNames.localized(self.xml), partID = self.partID, width = geo.size.width
                 page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
             }
         }
