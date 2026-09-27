@@ -46,6 +46,10 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try Data(xml.utf8).write(to: scoreURL, options: .atomic)
     }
 
+    func saveComposition(_ c: Composition) throws {
+        try JSONEncoder().encode(c).write(to: compositionURL, options: .atomic)
+    }
+
     func save() throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let enc = JSONEncoder()
@@ -57,10 +61,14 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     static func loadAll() -> [Piece] {
         let fm = FileManager.default
         guard let dirs = try? fm.contentsOfDirectory(at: libraryURL, includingPropertiesForKeys: nil) else { return [] }
+        return dirs.compactMap { load(from: $0.appending(path: "piece.json")) }
+            .sorted { $0.created > $1.created }
+    }
+
+    static func load(from meta: URL) -> Piece? {
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
-        return dirs.compactMap { try? dec.decode(Piece.self, from: Data(contentsOf: $0.appending(path: "piece.json"))) }
-            .sorted { $0.created > $1.created }
+        return try? dec.decode(Piece.self, from: Data(contentsOf: meta))
     }
 
     /// Store a finished transcription with its source media.
@@ -110,7 +118,8 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
 
     func saveChecked(_ ids: Set<String>, remaining: Int) {
         try? JSONEncoder().encode(ids).write(to: checkedURL)
-        var p = self
+        // From disk: the score may have been arranged again since this copy was made.
+        var p = Self.load(from: metaURL) ?? self
         p.toCheck = remaining
         try? p.save()
     }

@@ -9,7 +9,9 @@ struct ChangeNoteSheet: View {
     let xml: String
     let evidence: NoteEvidence.Note?
     let onSave: () -> Void
+    @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @State private var lead: ScoreNote?
     @State private var written: SpelledPitch?
     @State private var original: SpelledPitch?
     @State private var fifths = 0
@@ -85,18 +87,29 @@ struct ChangeNoteSheet: View {
               part.notes.indices.contains(target.noteIndex), case .pitched(let w) = part.notes[target.noteIndex].kind else { return }
         fifths = part.measureFifths.indices.contains(target.bar) ? part.measureFifths[target.bar] : part.writtenFifths
         transpose = part.transposeSemitones
+        lead = part.notes[target.noteIndex]
         original = w
         written = w
     }
 
     private func save() {
-        guard let written else { return }
+        guard let written, let original else { return }
         do {
-            let updated = try MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: written)
-            try piece.saveMusicXML(updated)
             var checked = piece.loadChecked()
             checked.insert(target.id)
-            piece.saveChecked(checked, remaining: max(0, (piece.toCheck ?? 1) - 1))
+            try? JSONEncoder().encode(checked).write(to: piece.checkedURL)
+            // The Composition changes and the core arranges the score again, so parts doubling the line follow;
+            // without the Composition only this printed note changes.
+            if var comp = piece.loadComposition(), let lead, let p = lead.midiPitch,
+               let change = CompositionEdit.change(&comp, scoreTick: lead.startTick, concertPitch: p, by: written.midi - original.midi) {
+                try piece.saveComposition(comp)
+                if let e = piece.loadEvidence() { piece.saveEvidence(CompositionEdit.follow(e, change)) }
+                try app.rearrange(piece, composition: comp, output: piece.output ?? OutputChoice(), open: false)
+            } else {
+                let updated = try MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: written)
+                try piece.saveMusicXML(updated)
+                piece.saveChecked(checked, remaining: max(0, (piece.toCheck ?? 1) - 1))
+            }
             onSave()
             dismiss()
         } catch {

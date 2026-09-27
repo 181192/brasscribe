@@ -319,7 +319,8 @@ final class AppModel {
 
     /// Arrange a piece again on this device for another band, difficulty or key, and open it.
     /// The engine's PDF and braille no longer match, so those are made on this device too.
-    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws {
+    @discardableResult
+    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws -> Piece {
         guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths) else {
             throw TranscriptionError.artifactUnavailable(.musicXML)
         }
@@ -330,11 +331,14 @@ final class AppModel {
         p.remoteArtifacts = [.musicXML, .composition]
         if let score = try? MusicXMLParser.parse(xml) {
             p.bars = score.measures.count
-            p.toCheck = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp)).count
+            let checked = piece.loadChecked()
+            p.toCheck = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp))
+                .filter { !checked.contains($0.id) }.count
         }
         try p.save()
         refresh()
         if andOpen { open(p) }
+        return p
     }
 
     func delete(_ p: Piece) {

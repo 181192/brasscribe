@@ -108,3 +108,33 @@ func testVideo() -> URL? {
     plain.review = []
     #expect(ReviewList.items(score: score, composition: plain, uncertainty: UncertaintyIndex(composition: plain)).count > items.count)
 }
+
+/// Review edits go to the Composition: Change note is arranged again by the Rust core, and a kept
+/// group is certain, so it leaves Review after arranging again.
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func reviewEditsGoThroughTheCore() throws {
+    let dir = try #require(fixtureDir())
+    let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
+    let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+    let r = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: [.musicXML, .composition])
+    let piece = try Piece.create(title: "Edit", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: nil)
+    defer { piece.delete() }
+    let app = AppModel()
+    let score = try MusicXMLParser.parse(xml)
+    let items = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp))
+    let first = try #require(items.first)
+    let lead = score.parts[first.partIndex].notes[first.noteIndex]
+    let pitch = try #require(lead.midiPitch)
+
+    var edited = comp
+    let change = try #require(CompositionEdit.change(&edited, scoreTick: lead.startTick, concertPitch: pitch, by: 2))
+    #expect(change.to == change.from + 2)
+    let arranged = try app.rearrange(piece, composition: edited, output: OutputChoice(), open: false)
+    let again = try arranged.loadScore()
+    let part = try #require(again.part(id: first.partID))
+    #expect(part.notes.contains { $0.startTick == lead.startTick && $0.midiPitch == pitch + 2 })
+
+    CompositionEdit.keep(&edited, item: first, lead: lead)
+    let after = ReviewList.items(score: again, composition: edited, uncertainty: UncertaintyIndex(composition: edited))
+    #expect(!after.contains { $0.id == first.id })
+    #expect(after.count == items.count - 1)
+}

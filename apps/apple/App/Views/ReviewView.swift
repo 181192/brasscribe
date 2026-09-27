@@ -311,10 +311,20 @@ struct ReviewView: View {
 
     private func keep() {
         guard let it = item else { return }
+        keepInComposition([it])
         checked.insert(it.id)
         piece.saveChecked(checked, remaining: allOpen.count)
         app.refresh()
         advance(from: it)
+    }
+
+    /// Kept notes get confidence 1 in the Composition, so they stay kept when the score is arranged again.
+    private func keepInComposition(_ kept: [ReviewItem]) {
+        guard var comp = composition else { return }
+        for k in kept { if let lead = note(k) { CompositionEdit.keep(&comp, item: k, lead: lead) } }
+        guard comp != composition else { return }
+        try? piece.saveComposition(comp)
+        composition = comp
     }
 
     private func skip() { if let it = item { advance(from: it) } }
@@ -326,7 +336,9 @@ struct ReviewView: View {
 
     /// "Keep the rest of this bar": this note and every other open note in the bar.
     private func keepRestOfBar(_ it: ReviewItem) {
-        for o in allOpen where o.partID == it.partID && o.bar == it.bar { checked.insert(o.id) }
+        let bar = allOpen.filter { $0.partID == it.partID && $0.bar == it.bar }
+        keepInComposition(bar)
+        for o in bar { checked.insert(o.id) }
         piece.saveChecked(checked, remaining: allOpen.count)
         app.refresh()
         advance(from: it)
