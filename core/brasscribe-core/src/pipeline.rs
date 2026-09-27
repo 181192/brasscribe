@@ -236,11 +236,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     if !crate::difficulty::MODES.contains(&difficulty) {
         return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
     }
-    let lineup_name = match opts.lineup.as_str() {
-        "" | "band" | "full" => "band",
-        "minimal" => "minimal",
-        other => return Err(format!("unknown lineup {other}")),
-    };
+    let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
     if opts.key.is_some() && opts.transpose.is_some() {
         return Err("give a key or a transposition, not both".into());
     }
@@ -491,7 +487,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
                 .collect::<Vec<_>>()
         })
         .collect();
-    let lineup = if lineup_name == "band" { crate::instruments::brass_band() } else { crate::instruments::minimal_band() };
+    let lineup = crate::instruments::lineup_by_name(lineup_name)?;
     let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
     let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
@@ -505,10 +501,8 @@ pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
         return Ok(arrange(comp));
     }
     let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
-    let lineup = match opt("lineup").as_deref() {
-        Some("minimal") => crate::instruments::minimal_band(),
-        _ => crate::instruments::brass_band(),
-    };
+    // Anything but a known lineup arranges for the band, as before lineups carried their roles.
+    let lineup = crate::instruments::lineup_by_name(opt("lineup").as_deref().unwrap_or("band")).unwrap_or_else(|_| crate::instruments::brass_band());
     let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
     crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
 }

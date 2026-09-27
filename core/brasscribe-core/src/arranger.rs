@@ -194,15 +194,17 @@ fn readable(inst: &crate::instruments::Instrument, pitch: i32) -> bool {
     lo <= pitch && pitch <= hi
 }
 
-/// Which source layer a band part plays in the layered arrangement (for its dynamics).
-pub fn layer_of_part(name: &str) -> Option<&'static str> {
-    if name == "Solo Cornet" {
+/// Which source layer a part of `lineup` plays in the layered arrangement (for its dynamics).
+pub fn layer_of_part(lineup: &Lineup, name: &str) -> Option<&'static str> {
+    if name == lineup.lead {
         Some("solo")
+    } else if name == lineup.bass || Some(name) == lineup.second_bass {
+        Some("bass")
     } else if PAD_PARTS.contains(&name) || name == "Euphonium" {
         Some("strings")
     } else if CHOIR_PARTS.contains(&name) {
         Some("brass")
-    } else if ["E♭ Bass", "B♭ Bass", "Bass Trombone"].contains(&name) {
+    } else if name == "Bass Trombone" {
         Some("bass")
     } else if name == "Percussion" {
         Some("drums")
@@ -286,26 +288,27 @@ pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
         .flat_map(|v| v.notes.iter().cloned())
         .collect();
 
-    let lead = lineup.by_name("Solo Cornet");
+    let lead = lineup.lead_part();
     let placed = place_line(&melody, lead, &mut arr.warnings, 0, false);
     arr.set(lead.name, placed);
 
-    let eb = lineup.by_name("E♭ Bass");
-    let bb = lineup.by_name("B♭ Bass");
+    let eb = lineup.bass_part();
     let placed = place_line(&bass, eb, &mut arr.warnings, 0, true);
     arr.set(eb.name, placed);
-    let low: Vec<Note> = arr
-        .part_notes(eb.name)
-        .iter()
-        .map(|n| {
-            let p = n.pitch - 12;
-            // Octave below only where that stays readable.
-            renote(n, if readable(bb.instrument, p) { p } else { n.pitch })
-        })
-        .collect();
-    arr.set(bb.name, low);
+    if let Some(bb) = lineup.second_bass_part() {
+        let low: Vec<Note> = arr
+            .part_notes(eb.name)
+            .iter()
+            .map(|n| {
+                let p = n.pitch - 12;
+                // Octave below only where that stays readable.
+                renote(n, if readable(bb.instrument, p) { p } else { n.pitch })
+            })
+            .collect();
+        arr.set(bb.name, low);
+    }
 
-    let inner = by_comfort_desc(lineup.parts.iter().filter(|p| ![lead.name, eb.name, bb.name].contains(&p.name)));
+    let inner = by_comfort_desc(lineup.parts.iter().filter(|p| p.name != lead.name && p.name != eb.name && Some(p.name) != lineup.second_bass));
     for p in &inner {
         arr.set(p.name, Vec::new());
     }
@@ -497,27 +500,27 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     }
     let end = comp.end_tick();
 
+    let lead = lineup.lead;
     let solo = layer(comp, "solo");
-    let placed = place_line(&solo, lineup.by_name("Solo Cornet"), &mut arr.warnings, 0, false);
-    arr.set("Solo Cornet", placed);
+    let placed = place_line(&solo, lineup.lead_part(), &mut arr.warnings, 0, false);
+    arr.set(lead, placed);
 
     let bass = layer(comp, "bass");
-    let eb = lineup.by_name("E♭ Bass");
-    let bb = lineup.by_name("B♭ Bass");
+    let eb = lineup.bass_part();
     // A transposed piece re-fits its bass lines (phrases split at their largest
     // leap, spilling above the range rather than below); untransposed
     // arrangements keep their established placement.
     let refit = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).is_some_and(|t| t.as_f64().is_some_and(|x| x != 0.0));
     let placed = place_line_with(&bass, eb, &mut arr.warnings, 0, true, refit);
     arr.set(eb.name, placed);
-    let low: Vec<Note> = arr
-        .part_notes(eb.name)
-        .iter()
-        .map(|n| {
-            renote(n, if readable(bb.instrument, n.pitch - 12) { n.pitch - 12 } else { n.pitch })
-        })
-        .collect();
-    arr.set(bb.name, low);
+    if let Some(bb) = lineup.second_bass_part() {
+        let low: Vec<Note> = arr
+            .part_notes(eb.name)
+            .iter()
+            .map(|n| renote(n, if readable(bb.instrument, n.pitch - 12) { n.pitch - 12 } else { n.pitch }))
+            .collect();
+        arr.set(bb.name, low);
+    }
 
     let strings = layer(comp, "strings");
     let keys = layer(comp, "keys");
@@ -550,7 +553,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     if figuration {
         pad_slots = figurate(&pad_slots, &pad_src.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
     }
-    let solo_notes = arr.part_notes("Solo Cornet").to_vec();
+    let solo_notes = arr.part_notes(lead).to_vec();
     let eb_notes = arr.part_notes(eb.name).to_vec();
     let pads: Vec<&str> = PAD_PARTS.iter().copied().filter(|p| lineup.has(p)).collect();
     voice_layer(&mut arr, &pad_slots, &pads, &solo_notes, &eb_notes, 76, 0.8);
@@ -571,7 +574,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     }
 
     if soprano && lineup.has("Soprano Cornet") {
-        let sop = soprano_doubling(arr.part_notes("Solo Cornet"), lineup.by_name("Soprano Cornet"), &climax_spans(comp));
+        let sop = soprano_doubling(arr.part_notes(lead), lineup.by_name("Soprano Cornet"), &climax_spans(comp));
         arr.set("Soprano Cornet", sop);
     }
 

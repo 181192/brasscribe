@@ -168,19 +168,20 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
     bass = [n for v in comp.voices_with(VoiceRole.BASS) for n in v.notes]
     harmony = [n for v in comp.voices if v.role in (VoiceRole.HARMONY, VoiceRole.COUNTERMELODY) for n in v.notes]
 
-    lead = lineup.by_name("Solo Cornet")
+    lead = lineup.lead_part
     arr.parts[lead.name] = _place_line(melody, lead, arr.warnings)
 
-    eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
+    eb, bb = lineup.bass_part, lineup.second_bass_part
     arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True)
-    low = []
-    for n in arr.parts[eb.name]:
-        p = n.pitch - 12
-        # Octave below only where that stays comfortable; pedal notes are a player's choice, not a default.
-        low.append(_moved(n, p if _readable(bb.instrument, p) else n.pitch))
-    arr.parts[bb.name] = low
+    if bb is not None:
+        low = []
+        for n in arr.parts[eb.name]:
+            p = n.pitch - 12
+            # Octave below only where that stays comfortable; pedal notes are a player's choice, not a default.
+            low.append(_moved(n, p if _readable(bb.instrument, p) else n.pitch))
+        arr.parts[bb.name] = low
 
-    inner = [p for p in lineup.parts if p.name not in (lead.name, eb.name, bb.name)]
+    inner = [p for p in lineup.parts if p.name not in (lead.name, eb.name, lineup.second_bass)]
     inner.sort(key=lambda p: -sum(p.instrument.comfortable))  # high to low
     for p in inner:
         arr.parts[p.name] = []
@@ -223,15 +224,17 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND) -> Arrangement:
 # The Soprano Cornet is left tacet: the source has no part in its register.
 # ---------------------------------------------------------------------------
 
-def layer_of_part(name: str) -> str | None:
-    """Which source layer a band part plays in the layered arrangement (for its dynamics)."""
-    if name == "Solo Cornet":
+def layer_of_part(lineup: Lineup, name: str) -> str | None:
+    """Which source layer a part of `lineup` plays in the layered arrangement (for its dynamics)."""
+    if name == lineup.lead:
         return "solo"
+    if name in (lineup.bass, lineup.second_bass):
+        return "bass"
     if name in PAD_PARTS or name == "Euphonium":
         return "strings"
     if name in CHOIR_PARTS:
         return "brass"
-    if name in ("E♭ Bass", "B♭ Bass", "Bass Trombone"):
+    if name == "Bass Trombone":
         return "bass"
     if name == "Percussion":
         return "drums"
@@ -367,18 +370,20 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         arr.parts[p.name] = []
     end = comp.end_tick
 
+    lead = lineup.lead
     solo = _layer(comp, "solo")
-    arr.parts["Solo Cornet"] = _place_line(solo, lineup.by_name("Solo Cornet"), arr.warnings)
+    arr.parts[lead] = _place_line(solo, lineup.lead_part, arr.warnings)
 
     bass = _layer(comp, "bass")
-    eb, bb = lineup.by_name("E♭ Bass"), lineup.by_name("B♭ Bass")
+    eb, bb = lineup.bass_part, lineup.second_bass_part
     # A transposed piece re-fits its bass lines: phrases wider than the reading range are split at their
     # largest leap, and a phrase may spill above the range rather than below it (onto ledger lines).
     # Untransposed arrangements keep their established placement.
     refit = bool(comp.arrangement and comp.arrangement.get("transpose_semitones"))
     arr.parts[eb.name] = _place_line(bass, eb, arr.warnings, prefer_low=True, bass_overflow_up=refit)
-    arr.parts[bb.name] = [_moved(n, n.pitch - 12 if _readable(bb.instrument, n.pitch - 12) else n.pitch)
-                          for n in arr.parts[eb.name]]
+    if bb is not None:
+        arr.parts[bb.name] = [_moved(n, n.pitch - 12 if _readable(bb.instrument, n.pitch - 12) else n.pitch)
+                              for n in arr.parts[eb.name]]
 
     strings = _layer(comp, "strings")
     keys = _layer(comp, "keys")
@@ -400,12 +405,12 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
     pad_slots = harmony_slots(strings + keys, end)
     if figuration:
         pad_slots = _figurate(pad_slots, [n.start for n in strings + keys])
-    _voice_layer(arr, pad_slots, [p for p in PAD_PARTS if p in names], arr.parts["Solo Cornet"], arr.parts[eb.name], 76, 0.8)
+    _voice_layer(arr, pad_slots, [p for p in PAD_PARTS if p in names], arr.parts[lead], arr.parts[eb.name], 76, 0.8)
 
     choir_slots = harmony_slots(brass, end, max_pcs=3)
     if figuration:
         choir_slots = _figurate(choir_slots, [n.start for n in brass])
-    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names], arr.parts["Solo Cornet"], arr.parts[eb.name],
+    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names], arr.parts[lead], arr.parts[eb.name],
                  79, 0.8)
 
     # Bass trombone reinforces the bass line only while the brass choir is playing.
@@ -416,7 +421,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
 
     if soprano and "Soprano Cornet" in names:
-        arr.parts["Soprano Cornet"] = _soprano_doubling(arr.parts["Solo Cornet"], lineup.by_name("Soprano Cornet"),
+        arr.parts["Soprano Cornet"] = _soprano_doubling(arr.parts[lead], lineup.by_name("Soprano Cornet"),
                                                         _climax_spans(comp))
 
     drums = _layer(comp, "drums")

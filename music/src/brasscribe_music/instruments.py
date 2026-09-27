@@ -128,11 +128,38 @@ class Part:
 
 @dataclass
 class Lineup:
+    """An ensemble in score order, with the roles the arrangers need.
+
+    `lead` plays the melody (the solo layer), `bass` the bass line and
+    `second_bass`, if any, the bass an octave lower where that stays readable.
+    With `satb` the lineup is a four-part group: the parts between lead and
+    bass are voiced together as alto and tenor (arranger.voice_satb).
+    """
+
     name: str
     parts: list[Part] = field(default_factory=list)
+    lead: str = "Solo Cornet"
+    bass: str = "E♭ Bass"
+    second_bass: str | None = "B♭ Bass"
+    satb: bool = False
 
     def by_name(self, name: str) -> Part:
         return next(p for p in self.parts if p.name == name)
+
+    def has(self, name: str) -> bool:
+        return any(p.name == name for p in self.parts)
+
+    @property
+    def lead_part(self) -> Part:
+        return self.by_name(self.lead)
+
+    @property
+    def bass_part(self) -> Part:
+        return self.by_name(self.bass)
+
+    @property
+    def second_bass_part(self) -> Part | None:
+        return self.by_name(self.second_bass) if self.second_bass else None
 
 
 def _p(name: str, inst: str, players: int = 1, short: str = "", bank: int | None = None) -> Part:
@@ -160,7 +187,7 @@ BRASS_BAND = Lineup("Brass band", [
     _p("E♭ Bass", "eb-bass", 2, "E♭ Bass", 1),
     _p("B♭ Bass", "bb-bass", 2, "B♭ Bass", 2),
     _p("Percussion", "drum-kit", 1, "Perc."),
-])
+], lead="Solo Cornet", bass="E♭ Bass", second_bass="B♭ Bass")
 
 # Reduced ensemble for the first arranger milestone.
 MINIMAL_BAND = Lineup("Minimal brass", [
@@ -172,7 +199,38 @@ MINIMAL_BAND = Lineup("Minimal brass", [
     _p("Euphonium", "euphonium"),
     _p("E♭ Bass", "eb-bass"),
     _p("B♭ Bass", "bb-bass"),
-])
+], lead="Solo Cornet", bass="E♭ Bass", second_bass="B♭ Bass")
+
+LINEUPS: dict[str, Lineup] = {"band": BRASS_BAND, "minimal": MINIMAL_BAND}
+LINEUP_ALIASES = {"full": "band"}
+
+
+def lineup_by_name(name: str | None) -> Lineup:
+    """The lineup for an option value: band (= full, the default), minimal."""
+    key = LINEUP_ALIASES.get(name or "band", name or "band")
+    if key not in LINEUPS:
+        raise ValueError(f"unknown lineup {name}; one of {', '.join([*LINEUPS, *LINEUP_ALIASES])}")
+    return LINEUPS[key]
+
+
+def lineup_key(lineup: Lineup) -> str:
+    """The option value of a lineup (band, minimal)."""
+    return next(k for k, v in LINEUPS.items() if v is lineup)
+
+
+def part_banks() -> dict[str, int]:
+    """1-based MusicXML <midi-bank> per part name, over every lineup.
+
+    A part name means the same preset in every lineup (tests check that no
+    name maps to two banks), so one table serves any arrangement. Parts of a
+    lineup without their own bank (the minimal band) take the band's.
+    """
+    banks: dict[str, int] = {}
+    for lineup in LINEUPS.values():
+        for p in lineup.parts:
+            if p.midi_bank is not None:
+                banks.setdefault(p.name, p.midi_bank)
+    return banks
 
 
 @dataclass(frozen=True)

@@ -516,9 +516,9 @@ def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
                 # Schema order: instrument-name, instrument-abbreviation?, instrument-sound?
                 idx = 1 + (si.find("instrument-abbreviation") is not None)
                 si.insert(idx, el)
-    from .instruments import BRASS_BAND
+    from .instruments import part_banks
 
-    _band_midi(root, {p.name: p.midi_bank for p in BRASS_BAND.parts if p.midi_bank})
+    _band_midi(root, part_banks())
     path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
 
 
@@ -531,7 +531,7 @@ def build_band_score(arrangement, comp) -> stream.Score:
         notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence,
                        tuple(a.value for a in n.articulations))
                  for n in arrangement.parts.get(part.name, [])]
-        layer = layer_of_part(part.name)
+        layer = layer_of_part(arrangement.lineup, part.name)
         dyn = [(d.tick, d.mark) for d in getattr(comp, "dynamics", []) if d.layer == layer]
         specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument,
                               abbreviation=part.abbreviation, dynamics=dyn))

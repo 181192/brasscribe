@@ -1774,7 +1774,7 @@ fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
 /// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
 /// every note.
 fn band_midi(root: &mut X) {
-    let banks: Vec<(&'static str, i64)> = crate::instruments::brass_band().parts.iter().filter_map(|p| p.midi_bank.map(|b| (p.name, b))).collect();
+    let banks: Vec<(&'static str, i64)> = crate::instruments::part_banks();
     let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
     let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
     let mut k = 0usize;

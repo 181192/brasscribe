@@ -33,7 +33,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
                     articulations: n.articulations.clone(),
                 })
                 .collect();
-            let layer = layer_of_part(part.name);
+            let layer = layer_of_part(&arr.lineup, part.name);
             let dynamics = comp.dynamics.iter().filter(|d| Some(d.layer.as_str()) == layer).map(|d| (d.tick, d.mark.clone())).collect();
             PartSpec {
                 name: part.name.to_string(),

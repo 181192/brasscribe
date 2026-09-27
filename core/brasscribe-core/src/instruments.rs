@@ -208,13 +208,35 @@ impl Part {
     }
 }
 
+/// An ensemble in score order, with the roles the arrangers need.
+///
+/// `lead` plays the melody (the solo layer), `bass` the bass line and
+/// `second_bass`, if any, the bass an octave lower where that stays readable.
+/// With `satb` the lineup is a four-part group: the parts between lead and
+/// bass are voiced together as alto and tenor (`arranger::voice_satb`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Lineup {
     pub name: &'static str,
     pub parts: Vec<Part>,
+    pub lead: &'static str,
+    pub bass: &'static str,
+    pub second_bass: Option<&'static str>,
+    pub satb: bool,
 }
 
 impl Lineup {
+    pub fn lead_part(&self) -> &Part {
+        self.by_name(self.lead)
+    }
+
+    pub fn bass_part(&self) -> &Part {
+        self.by_name(self.bass)
+    }
+
+    pub fn second_bass_part(&self) -> Option<&Part> {
+        self.second_bass.map(|n| self.by_name(n))
+    }
+
     pub fn by_name(&self, name: &str) -> &Part {
         self.parts.iter().find(|p| p.name == name).unwrap_or_else(|| panic!("no part {name}"))
     }
@@ -256,6 +278,10 @@ pub fn brass_band() -> Lineup {
             ps("B♭ Bass", &BB_BASS, 2, "B♭ Bass", Some(2)),
             ps("Percussion", &PERCUSSION, 1, "Perc.", None),
         ],
+        lead: "Solo Cornet",
+        bass: "E♭ Bass",
+        second_bass: Some("B♭ Bass"),
+        satb: false,
     }
 }
 
@@ -273,7 +299,48 @@ pub fn minimal_band() -> Lineup {
             p("E♭ Bass", &EB_BASS, 1),
             p("B♭ Bass", &BB_BASS, 1),
         ],
+        lead: "Solo Cornet",
+        bass: "E♭ Bass",
+        second_bass: Some("B♭ Bass"),
+        satb: false,
     }
+}
+
+/// Lineup option values: "band" (the default; "full" and "" are aliases) and "minimal".
+pub const LINEUP_KEYS: [&str; 2] = ["band", "minimal"];
+
+/// The canonical option value of a lineup name ("full" and "" -> "band").
+pub fn lineup_key(name: &str) -> Result<&'static str, String> {
+    match name {
+        "" | "band" | "full" => Ok("band"),
+        "minimal" => Ok("minimal"),
+        other => Err(format!("unknown lineup {other}")),
+    }
+}
+
+/// The lineup for an option value (see [`lineup_key`]).
+pub fn lineup_by_name(name: &str) -> Result<Lineup, String> {
+    Ok(match lineup_key(name)? {
+        "minimal" => minimal_band(),
+        _ => brass_band(),
+    })
+}
+
+/// 1-based MusicXML <midi-bank> per part name, over every lineup. A part name
+/// means the same preset in every lineup, so one table serves any
+/// arrangement; parts of a lineup without their own bank take the band's.
+pub fn part_banks() -> Vec<(&'static str, i64)> {
+    let mut out: Vec<(&'static str, i64)> = Vec::new();
+    for key in LINEUP_KEYS {
+        for p in lineup_by_name(key).expect("known lineup").parts {
+            if let Some(b) = p.midi_bank {
+                if !out.iter().any(|(n, _)| *n == p.name) {
+                    out.push((p.name, b));
+                }
+            }
+        }
+    }
+    out
 }
 
 #[derive(Debug, Clone, PartialEq)]

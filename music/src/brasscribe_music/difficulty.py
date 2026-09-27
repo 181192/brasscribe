@@ -25,7 +25,7 @@ EASY_TOP_TRIM = 4  # semitones taken off the top of the reading range
 SIXTEENTH = 6
 EIGHTH = 12
 KEY_CHANGE_PENALTY = {"faithful": None, "standard": None, "easier": 1.0}  # None: the key plan's default
-SOLO_PART = "Solo Cornet"
+SOLO_PART = "Solo Cornet"  # the band lineups' lead; apply_difficulty reads lineup.lead
 
 
 def easy_range(part: Part) -> tuple[int, int]:
@@ -129,7 +129,7 @@ def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str) -> dict[st
         def chord_at(t: int, name=name) -> set[int]:
             return _harmony_at(parts, t, name)
 
-        solo = name == SOLO_PART
+        solo = name == lineup.lead
         if mode == "standard":
             notes = _merge_sixteenths(notes, chord_at, always=False)
             notes = _fold(notes, *part.instrument.preferred)

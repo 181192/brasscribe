@@ -21,6 +21,7 @@ pub const MODES: [&str; 3] = ["faithful", "standard", "easier"];
 pub const EASY_TOP_TRIM: i32 = 4;
 pub const SIXTEENTH: i64 = 6;
 pub const EIGHTH: i64 = 12;
+/// The band lineups' lead; `apply_difficulty` reads `lineup.lead`.
 pub const SOLO_PART: &str = "Solo Cornet";
 
 /// Key-plan change penalty of a mode (None: the key plan's default).
@@ -165,7 +166,7 @@ pub fn apply_difficulty(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: 
         if source[pi].1.is_empty() || part.instrument.clef == Clef::Percussion {
             continue;
         }
-        let solo = name == SOLO_PART;
+        let solo = name == lineup.lead;
         // The chord at a tick, from every other part as it currently stands.
         let others: Vec<(String, Vec<Note>)> = source.iter().enumerate().filter(|(k, _)| *k != pi).map(|(_, x)| x.clone()).collect();
         let chord_at = |mine: &[Note], t: i64| -> HashSet<i32> {

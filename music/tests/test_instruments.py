@@ -76,3 +76,25 @@ def test_double_accidentals_are_simplified():
     assert _simplify("F", 2, 4, 67) == ("G", 0, 4)
     assert _simplify("G", 2, 4, 69) == ("A", 0, 4)
     assert _simplify("C", -2, 5, 70) == ("B", -1, 4)
+
+
+def test_lineups_carry_their_roles():
+    from brasscribe_music.instruments import LINEUPS, MINIMAL_BAND, lineup_by_name
+
+    assert lineup_by_name("full") is BRASS_BAND and lineup_by_name(None) is BRASS_BAND
+    assert lineup_by_name("minimal") is MINIMAL_BAND
+    for lineup in LINEUPS.values():
+        assert lineup.lead_part and lineup.bass_part
+        assert lineup.second_bass is None or lineup.second_bass_part
+
+
+def test_a_part_name_means_one_bank_in_every_lineup():
+    from brasscribe_music.instruments import LINEUPS, part_banks
+
+    banks = part_banks()
+    for lineup in LINEUPS.values():
+        for p in lineup.parts:
+            if p.midi_bank is not None:
+                assert banks[p.name] == p.midi_bank, (lineup.name, p.name)
+            elif p.instrument.clef != "percussion":
+                assert p.name in banks, (lineup.name, p.name)
