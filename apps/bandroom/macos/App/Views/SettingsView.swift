@@ -30,6 +30,7 @@ struct SettingsView: View {
                     Text("Dark").tag(AppearanceChoice.dark)
                 }
                 .pickerStyle(.radioGroup)
+                .labelsHidden() // the section title shows the name; VoiceOver still reads it once
                 .onChange(of: appearance) { _, choice in choice.apply() }
                 // Increase Contrast wins: the choice stays, and AppKit uses the high-contrast colours in either mode.
                 if contrast == .increased {
@@ -44,6 +45,7 @@ struct SettingsView: View {
                     Text("Larger").tag(TextSize.larger)
                 }
                 .pickerStyle(.radioGroup)
+                .labelsHidden()
             }
             Section("Details for the band's tech person") {
                 TextField("Engine from a checkout (folder with pixi.toml)", text: $checkout)
