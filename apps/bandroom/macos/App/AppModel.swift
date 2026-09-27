@@ -54,8 +54,12 @@ final class AppModel {
             token = AdminToken.generate()
         }
         let source = EngineConfiguration.resolveSource(environment: env, defaults: .standard, paths: paths, bundle: .main)
+        let bandSounds = EngineConfiguration.findBandSounds(resources: Bundle.main.resourceURL)
+        logger.write(bandSounds.map { "band sounds: \($0.path)" }
+                     ?? "band sounds missing from the app (Resources/band/brasscribe-band.sf2); Studio plays General MIDI sounds")
         let config = EngineConfiguration(source: source, pixi: EngineConfiguration.findPixi(bundle: .main, environment: env),
-                                         paths: paths, computerName: ComputerName.current(), adminToken: token)
+                                         paths: paths, computerName: ComputerName.current(), adminToken: token,
+                                         bandSounds: bandSounds)
         supervisor = EngineSupervisor(configuration: config, baseEnvironment: AppModel.engineBaseEnvironment(env))
         sampler = HostSampler(volume: paths.data)
         #if DEBUG

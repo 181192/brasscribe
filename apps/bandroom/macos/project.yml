@@ -49,6 +49,10 @@ targets:
       - name: Engine workspace
         script: "\"$SRCROOT/scripts/stage-workspace.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/workspace\""
         basedOnDependencyAnalysis: false
+      # The band sounds Studio plays (the engine gets them through BRASSCRIBE_BAND_SOUNDS_DIR).
+      - name: Band sounds
+        script: "\"$SRCROOT/scripts/stage-band-sounds.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/band\""
+        basedOnDependencyAnalysis: false
     info:
       path: App/Info.plist
       properties:

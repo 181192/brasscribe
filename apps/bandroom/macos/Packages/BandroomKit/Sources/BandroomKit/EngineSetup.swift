@@ -30,10 +30,20 @@ public struct EngineConfiguration: Equatable, Sendable {
     public var computerName: String
     public var adminToken: String
     public var environmentName = "default"
+    /// The band sounds the app bundles (`Contents/Resources/band`), passed to the engine for Studio; nil when missing.
+    public var bandSounds: URL?
 
-    public init(source: EngineSource, pixi: URL?, paths: BandroomPaths, computerName: String, adminToken: String) {
+    public init(source: EngineSource, pixi: URL?, paths: BandroomPaths, computerName: String, adminToken: String,
+                bandSounds: URL? = nil) {
         self.source = source; self.pixi = pixi; self.paths = paths
-        self.computerName = computerName; self.adminToken = adminToken
+        self.computerName = computerName; self.adminToken = adminToken; self.bandSounds = bandSounds
+    }
+
+    /// `band/` in the app's resources when it holds the band SoundFont and its part map.
+    public static func findBandSounds(resources: URL?) -> URL? {
+        guard let dir = resources?.appending(path: "band") else { return nil }
+        let fm = FileManager.default
+        return ["brasscribe-band.sf2", "mapping.json"].allSatisfy { fm.fileExists(atPath: dir.appending(path: $0).path) } ? dir : nil
     }
 
     /// Checkout from BRASSCRIBE_CHECKOUT or the "engineCheckout" setting; otherwise the installed workspace.
@@ -73,6 +83,7 @@ public struct EngineConfiguration: Equatable, Sendable {
         env["BRASSCRIBE_ADMIN_TOKEN"] = adminToken
         env["PYTHONUNBUFFERED"] = "1"
         env.removeValue(forKey: "BRASSCRIBE_TOKEN")
+        if let bandSounds { env["BRASSCRIBE_BAND_SOUNDS_DIR"] = bandSounds.path }
         switch source {
         case .checkout:
             // A checkout brings its own models/ and ml/adapters; the engine finds them from its repo root.

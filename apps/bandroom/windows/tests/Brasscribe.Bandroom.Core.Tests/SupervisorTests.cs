@@ -204,6 +204,21 @@ public sealed class SupervisorTests : IDisposable
         Assert.Equal(Path.Combine(_dir, "cache", "pixi"), spec.Environment["PIXI_CACHE_DIR"]);
         Assert.DoesNotContain("BRASSCRIBE_TOKEN", spec.Environment.Keys);
         Assert.False(Config(cuda: false).Build(8765).Environment.ContainsKey("BRASSCRIBE_CUDA"));
+        Assert.False(spec.Environment.ContainsKey("BRASSCRIBE_BAND_SOUNDS_DIR"));
+    }
+
+    [Fact]
+    public void The_bundled_band_sounds_reach_the_engine()
+    {
+        var app = Path.Combine(_dir, "app");
+        Assert.Null(EngineLaunchConfig.FindBandSounds(app));
+        var band = Directory.CreateDirectory(Path.Combine(app, "band")).FullName;
+        File.WriteAllText(Path.Combine(band, "brasscribe-band.sf2"), "RIFF");
+        Assert.Null(EngineLaunchConfig.FindBandSounds(app)); // no part map: Studio could not use it
+        File.WriteAllText(Path.Combine(band, "mapping.json"), "{}");
+        Assert.Equal(band, EngineLaunchConfig.FindBandSounds(app));
+        var spec = (Config() with { BandSoundsDir = band }).Build(8765);
+        Assert.Equal(band, spec.Environment["BRASSCRIBE_BAND_SOUNDS_DIR"]);
     }
 
     [Fact]

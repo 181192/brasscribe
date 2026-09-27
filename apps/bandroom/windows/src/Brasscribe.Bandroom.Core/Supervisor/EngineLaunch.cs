@@ -23,14 +23,25 @@ public sealed record BandroomPaths(string DataDir)
         new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe"));
 }
 
-/// <summary>What the engine process needs: the pinned pixi, the data folder, the computer's name and the admin credential.</summary>
+/// <summary>
+/// What the engine process needs: the pinned pixi, the data folder, the computer's name, the admin credential
+/// and the band sounds the app bundles (<c>band\</c> next to the exe; null when this build has none).
+/// </summary>
 public sealed record EngineLaunchConfig(
     BandroomPaths Paths,
     string PixiExe,
     string ComputerName,
     string AdminToken,
-    bool UseCuda)
+    bool UseCuda,
+    string? BandSoundsDir = null)
 {
+    /// <summary>The bundled band sounds folder under <paramref name="appDir"/>, if the SoundFont and its part map are there.</summary>
+    public static string? FindBandSounds(string appDir)
+    {
+        string dir = Path.Combine(appDir, "band");
+        return File.Exists(Path.Combine(dir, "brasscribe-band.sf2")) && File.Exists(Path.Combine(dir, "mapping.json")) ? dir : null;
+    }
+
     /// <summary>
     /// <c>pixi run --manifest-path &lt;envs&gt;\pixi.toml --frozen -e default brasscribe serve --lan --port N</c>
     /// with the environment variables config.py reads (spec §5.2) and the admin credential.
@@ -54,6 +65,8 @@ public sealed record EngineLaunchConfig(
                 : Environment.GetEnvironmentVariable("PATH") ?? "",
         };
         if (UseCuda) env["BRASSCRIBE_CUDA"] = "1";
+        // Studio (served by the engine) plays the band SoundFont from here.
+        if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",

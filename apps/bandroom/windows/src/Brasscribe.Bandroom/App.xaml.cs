@@ -128,7 +128,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         string pixi = FindPixi();
         string bundled = Environment.GetEnvironmentVariable("BRASSCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
         string computer = Machine.ComputerName();
-        var config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda);
+        string? band = EngineLaunchConfig.FindBandSounds(AppContext.BaseDirectory);
+        _log.Write(band is null
+            ? "bandroom: band sounds missing next to the exe (band\\brasscribe-band.sf2); Studio plays General MIDI sounds"
+            : $"bandroom: band sounds {band}");
+        var config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda, band);
 
         _launcher = new JobObjectLauncher();
         _bootstrap = new Bootstrapper(_paths, bundled, pixi, _launcher, _log);
