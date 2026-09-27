@@ -52,9 +52,13 @@ public sealed partial class PlayerViewModel : ObservableObject
         _announcer = announcer;
         _s = strings;
         _ui = ui;
-        _player.StateChanged += (_, st) => _ui.Post(() => IsPlaying = st == PlaybackState.Playing);
+        _player.StateChanged += (_, st) => _ui.Post(() => OnState(st));
         _player.PositionChanged += (_, p) => _ui.Post(() => OnPosition(p));
-        _player.Finished += (_, _) => _ui.Post(() => IsPlaying = false);
+        _player.Finished += (_, _) => _ui.Post(() =>
+        {
+            IsPlaying = false;
+            FinishBarOnce(natural: true);
+        });
     }
 
     public IScorePlayer Player => _player;
@@ -195,7 +199,64 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void NextBar() => SeekToBar(Math.Min(Math.Max(1, BarCount), CurrentBar + 1));
 
-    /// <summary>Plays one bar, looped (the "Listen to this bar" action).</summary>
+    private int? _onceBar;
+    private bool _onceEntered, _oncePlaying;
+
+    /// <summary>Raised on the UI thread when a bar started with <see cref="PlayBarOnce"/> has played to its end (or playback stopped some other way).</summary>
+    public event EventHandler? BarOnceEnded;
+
+    /// <summary>True while a bar started with <see cref="PlayBarOnce"/> is playing.</summary>
+    public bool IsPlayingBarOnce => _onceBar is not null;
+
+    /// <summary>
+    /// Plays one bar once ("Listen to this bar"), leaving the practice loop as it was. The bar ends when
+    /// playback leaves it after having been inside it (the first positions after a seek can still report
+    /// the old bar), when the score ends, or when playback stops some other way.
+    /// </summary>
+    public void PlayBarOnce(int bar)
+    {
+        if (!_player.IsReady)
+        {
+            _announcer.Announce(_s["Player_NotReady"], AnnouncementKind.Important);
+            return;
+        }
+        _onceBar = bar - 1;
+        _onceEntered = _oncePlaying = false;
+        _player.SetLoop(null, null);
+        _player.SeekToBar(bar - 1);
+        _player.Play();
+    }
+
+    /// <summary>Stops a bar started with <see cref="PlayBarOnce"/> (Stop, another place, leaving the screen); no event.</summary>
+    public void StopBarOnce()
+    {
+        if (_onceBar is null) return;
+        EndBarOnce();
+    }
+
+    private void FinishBarOnce(bool natural)
+    {
+        if (_onceBar is null) return;
+        EndBarOnce();
+        if (natural) BarOnceEnded?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void EndBarOnce()
+    {
+        _onceBar = null;
+        if (_player.State == PlaybackState.Playing) _player.Pause();
+        if (IsLooping) _player.SetLoop((int)LoopStart - 1, (int)LoopEnd - 1);
+    }
+
+    private void OnState(PlaybackState state)
+    {
+        IsPlaying = state == PlaybackState.Playing;
+        if (_onceBar is null) return;
+        if (state == PlaybackState.Playing) _oncePlaying = true;
+        else if (_oncePlaying) FinishBarOnce(natural: true);
+    }
+
+    /// <summary>Plays one bar, looped.</summary>
     public void PlayBar(int bar)
     {
         _player.SetLoop(bar - 1, bar - 1);
@@ -271,6 +332,15 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private void OnPosition(PlaybackPosition p)
     {
+        if (_onceBar is { } once)
+        {
+            if (p.BarIndex == once) _onceEntered = true;
+            else if (_onceEntered)
+            {
+                FinishBarOnce(natural: true);
+                return;
+            }
+        }
         var (beat, beats) = _player.BeatAt(p);
         if (p.BarIndex == _lastBar && beat == _lastBeat) return;
         bool newBar = p.BarIndex != _lastBar;

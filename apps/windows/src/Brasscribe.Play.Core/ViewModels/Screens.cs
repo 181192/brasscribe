@@ -31,4 +31,15 @@ public static class Screens
     /// <summary>A percentage in the UI language's spacing ("75%", "75 %").</summary>
     public static string PercentOf(double value) => Percent(value);
     public static bool IsOriginal(Playback.ListeningSource source) => source == Playback.ListeningSource.Original;
+    /// <summary>The status row's icon (never colour alone): done, network, attention; the computer when not connected.</summary>
+    public static string ConnectionGlyph(Engine.ConnectionState state) => state switch
+    {
+        Engine.ConnectionState.Connected => "\uE73E",
+        Engine.ConnectionState.Reconnecting => "\uE701",
+        Engine.ConnectionState.NeedsPairing => "\uE7BA",
+        _ => "\uE977",
+    };
+    /// <summary>Two labels share one cell so a button keeps its size when its label changes: the hidden one is transparent.</summary>
+    public static double Opaque(bool shown) => shown ? 1 : 0;
+    public static double OpaqueUnless(bool hidden) => hidden ? 0 : 1;
 }

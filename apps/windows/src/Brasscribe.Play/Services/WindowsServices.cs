@@ -161,14 +161,30 @@ public sealed class JsonSettingsStore : ISettingsStore
 public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
 {
     private readonly MediaPlayer _player = new() { AutoPlay = false };
-    private TimeSpan? _loopStart, _loopEnd;
+    private readonly DispatcherQueue? _queue;
+    private TimeSpan? _loopStart, _loopEnd, _stopAt;
 
-    public MediaPlayerOriginal()
+    public MediaPlayerOriginal(DispatcherQueue? queue = null)
     {
+        _queue = queue;
         _player.PlaybackSession.PositionChanged += (s, _) =>
         {
             if (_loopEnd is { } end && s.Position >= end && _loopStart is { } start) s.Position = start;
+            else if (_stopAt is { } stop && s.Position >= stop) EndRange();
         };
+        _player.MediaEnded += (_, _) => EndRange();
+    }
+
+    /// <summary>A range played once reached its end ("Listen to this bar" goes back to Listen).</summary>
+    public event EventHandler? RangeEnded;
+
+    private void EndRange()
+    {
+        if (_stopAt is null) return;
+        _stopAt = null;
+        _player.Pause();
+        if (_queue is null) RangeEnded?.Invoke(this, EventArgs.Empty);
+        else _queue.TryEnqueue(() => RangeEnded?.Invoke(this, EventArgs.Empty));
     }
 
     public MediaPlayer Player => _player;
@@ -186,7 +202,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
 
     public void Pause()
     {
-        _loopStart = _loopEnd = null;
+        _loopStart = _loopEnd = _stopAt = null;
         _player.Pause();
     }
 
@@ -208,13 +224,14 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     {
         _loopStart = loop ? start : null;
         _loopEnd = loop ? end : null;
+        _stopAt = loop ? null : end;
         _player.PlaybackSession.Position = start;
         _player.Play();
     }
 
     public void Stop()
     {
-        _loopStart = _loopEnd = null;
+        _loopStart = _loopEnd = _stopAt = null;
         _player.Pause();
     }
 

@@ -473,8 +473,12 @@ public sealed partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(OpenExportCommand), nameof(BackCommand))]
     public partial Screen Screen { get; set; } = Screen.Start;
 
-    partial void OnScreenChanged(Screen value) =>
+    partial void OnScreenChanged(Screen value)
+    {
+        // Leaving a screen stops "Listen to this bar".
+        Score.StopListening(announce: false);
         _announcer.Announce(_s[$"Screen_{value}"], AnnouncementKind.Status);
+    }
 
     public void OpenScoreFile(string path)
     {

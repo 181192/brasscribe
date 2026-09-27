@@ -35,4 +35,21 @@ public sealed partial class SettingsDialog : ContentDialog
     private async void OnFindEngines(object sender, RoutedEventArgs e) => await ViewModel.FindEnginesCommand.ExecuteAsync(null);
 
     private void OnEngineClicked(object sender, ItemClickEventArgs e) => ViewModel.UseEngineCommand.Execute(e.ClickedItem as DiscoveredEngine);
+
+    private async void OnAskComputer(object sender, RoutedEventArgs e) => await ViewModel.AskComputerCommand.ExecuteAsync(null);
+
+    private void OnCancelAsk(object sender, RoutedEventArgs e) => ViewModel.CancelAsk();
+
+    private async void OnUnpair(object sender, RoutedEventArgs e) => await ViewModel.UnpairCommand.ExecuteAsync(null);
+
+    /// <summary>Connect checks again at once; Pair again goes to the code box (or Allow on the computer next to it).</summary>
+    private void OnConnectionAction(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Connection.State == ConnectionState.NeedsPairing) PairingCodeBox.Focus(FocusState.Programmatic);
+        else
+        {
+            ViewModel.Connection.Kick();
+            ViewModel.Connection.Start();
+        }
+    }
 }

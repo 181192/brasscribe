@@ -26,6 +26,12 @@ public sealed partial class HomePage : Page, IScreenPage
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
 
+    /// <summary>Connect or Pair again: Settings, where the computer is chosen and paired.</summary>
+    private async void OnConnectionAction(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindowInstance is { } window) await window.OpenSettingsAsync();
+    }
+
     private void OnScoreCardOptions(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: LibraryItem item } button) ScoreOptions.Show(Main, item, button);

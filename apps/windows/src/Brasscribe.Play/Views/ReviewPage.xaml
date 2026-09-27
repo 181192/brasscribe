@@ -116,12 +116,25 @@
                         <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" TextWrapping="Wrap" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Top">
+                        <!-- "Listen to this bar" becomes "Stop" while the bar plays. Both labels share one cell, the hidden
+                             one transparent, so the button keeps its place and size; the accessible name follows the label. -->
                         <Button x:Name="ListenButton" x:Uid="ReviewListenButton" Style="{StaticResource SecondaryButtonStyle}"
-                                Command="{x:Bind ViewModel.ListenCommand}" HorizontalAlignment="Stretch">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" />
-                                <TextBlock x:Uid="ReviewListenLabel" />
-                            </StackPanel>
+                                Command="{x:Bind ViewModel.ListenCommand}" HorizontalAlignment="Stretch"
+                                AutomationProperties.Name="{x:Bind ViewModel.ListenLabel, Mode=OneWay}">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="{StaticResource BcIconListenBar}" FontSize="16" AutomationProperties.AccessibilityView="Raw"
+                                          Opacity="{x:Bind vm:Screens.OpaqueUnless(ViewModel.IsListening), Mode=OneWay}" />
+                                <FontIcon Glyph="{StaticResource BcIconStop}" FontSize="16" AutomationProperties.AccessibilityView="Raw"
+                                          Opacity="{x:Bind vm:Screens.Opaque(ViewModel.IsListening), Mode=OneWay}" />
+                                <TextBlock x:Uid="ReviewListenLabel" Grid.Column="1" AutomationProperties.AccessibilityView="Raw"
+                                           Opacity="{x:Bind vm:Screens.OpaqueUnless(ViewModel.IsListening), Mode=OneWay}" />
+                                <TextBlock x:Uid="ReviewStopLabel" Grid.Column="1" AutomationProperties.AccessibilityView="Raw"
+                                           Opacity="{x:Bind vm:Screens.Opaque(ViewModel.IsListening), Mode=OneWay}" />
+                            </Grid>
                         </Button>
                         <Button x:Name="ChangeNoteButton" x:Uid="ReviewChangeNoteButton" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="OnChangeNote" HorizontalAlignment="Stretch" IsEnabled="{x:Bind ViewModel.HasCurrent, Mode=OneWay}">

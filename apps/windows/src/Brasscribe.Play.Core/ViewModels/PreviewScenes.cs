@@ -10,19 +10,24 @@ namespace Brasscribe.Play.Core.ViewModels;
 public static class PreviewScenes
 {
     public static readonly string[] Names =
-        ["first-run", "home", "what-is-this", "transcribing", "review", "choose-output", "score", "part", "export", "error"];
+        ["first-run", "home", "home-offline", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"];
+
+    /// <summary>The computer in the sample scenes.</summary>
+    public const string SampleServer = "Brasscribe on Studio PC";
 
     /// <summary>Shows <paramref name="scene"/>. Returns false for an unknown name or a score scene without a score.</summary>
     public static bool Show(MainViewModel main, string scene, string? scorePath)
     {
         var sample = new SourceAudio(Path.Combine(Path.GetTempPath(), "Mikkel.m4a"), "Mikkel.m4a", new TimeSpan(0, 4, 12), null, false);
         if (scene != "first-run") main.Settings.FirstRunDone = true;
+        // A fixed connection row: the scenes never talk to a computer.
+        main.Settings.Connection.Show(scene == "home-offline" ? Engine.ConnectionState.Offline : Engine.ConnectionState.Connected, SampleServer);
         switch (scene)
         {
             case "first-run":
                 main.Screen = Screen.FirstRun;
                 return true;
-            case "home":
+            case "home" or "home-offline":
                 main.Screen = Screen.Start;
                 return true;
             case "what-is-this":
@@ -49,6 +54,10 @@ public static class PreviewScenes
         {
             case "review":
                 main.CheckNotesCommand.Execute(null);
+                break;
+            case "review-listening":
+                main.CheckNotesCommand.Execute(null);
+                main.Score.PreviewListening();
                 break;
             case "choose-output":
                 main.Screen = Screen.ChooseOutput;
