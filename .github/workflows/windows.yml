@@ -3,20 +3,9 @@ name: windows
 # Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test, an
 # Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
 # uploaded as dist-windows-x64.
+# Heavy platform builds run only for releases (release.yml) or when started by hand;
+# every push gets the fast Linux checks in ci.yml instead.
 on:
-  push:
-    branches: [main]
-    paths: &paths
-      - "apps/windows/**"
-      - "apps/fixtures/**"
-      - "apps/bandroom/**"
-      - "core/**"
-      - "design/**"
-      - "docs/accessibility/talking-score-vectors.json"
-      - "sounds/mapping.json"
-      - ".github/workflows/windows.yml"
-  pull_request:
-    paths: *paths
   workflow_call:
     inputs:
       release:

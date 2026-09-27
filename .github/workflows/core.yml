@@ -2,15 +2,9 @@ name: core
 
 # Rust workspace (core/): tests on every OS the apps ship on, plus a check that the committed
 # UniFFI/C bindings match the code. With `release`, builds the brasscribe-core CLI instead.
+# Heavy platform builds run only for releases (release.yml) or when started by hand;
+# every push gets the fast Linux checks in ci.yml instead.
 on:
-  push:
-    branches: [main]
-    paths: &paths
-      - "core/**"
-      - "docs/accessibility/talking-score-vectors.json"
-      - ".github/workflows/core.yml"
-  pull_request:
-    paths: *paths
   workflow_call:
     inputs:
       release:

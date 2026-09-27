@@ -3,17 +3,9 @@ name: android
 # Brasscribe Play for Android. Checks: unit tests, lint and a debug build (Kotlin fallback core,
 # stub audio tier). With `release`: the Rust core and sfizz are built in and an unsigned release
 # APK is uploaded as dist-android.
+# Heavy platform builds run only for releases (release.yml) or when started by hand;
+# every push gets the fast Linux checks in ci.yml instead.
 on:
-  push:
-    branches: [main]
-    paths: &paths
-      - "apps/android/**"
-      - "core/android/**"
-      - "design/**"
-      - "docs/accessibility/talking-score-vectors.json"
-      - ".github/workflows/android.yml"
-  pull_request:
-    paths: *paths
   workflow_call:
     inputs:
       release:

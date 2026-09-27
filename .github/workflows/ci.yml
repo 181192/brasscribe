@@ -1,22 +1,16 @@
 name: ci
 
-# Python engine, music library and eval: tests on Linux and Windows, CPU benchmark gate on Linux.
-# The apps, the Rust core and the site have their own workflows.
+# Fast checks on every push and pull request, all on Linux (the cheapest runner).
+# macOS, Windows and Android builds run only for releases (release.yml) or by hand
+# (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml).
 on:
   push:
-    branches: [main]
     paths-ignore: &ignore
-      - "apps/**"
-      - "capture/**"
-      - "core/**"
       - "site/**"
       - "**/*.md"
-      - ".github/workflows/android.yml"
-      - ".github/workflows/apple.yml"
-      - ".github/workflows/core.yml"
+      - "design/mockups/png/**"
+      - "apps/*/docs/screenshots/**"
       - ".github/workflows/pages.yml"
-      - ".github/workflows/release.yml"
-      - ".github/workflows/windows.yml"
   pull_request:
     paths-ignore: *ignore
   workflow_dispatch:
@@ -26,7 +20,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   linux:
@@ -74,19 +68,43 @@ jobs:
           name: bench-ci
           path: bench-ci.json
 
-  windows:
-    name: install and tests (Windows)
-    runs-on: windows-latest
-    timeout-minutes: 30
+  apps:
+    name: Rust core, .NET core logic and Studio (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          pixi-version: v0.81.0
-          environments: default
-          frozen: true
-          cache: true
+          workspaces: core
 
-      - name: Unit tests (engine, music, OpenAPI spec up to date)
-        run: pixi run test
+      - name: Rust core tests (and the host library the .NET tests load)
+        working-directory: core
+        run: |
+          cargo test --release
+          cargo build --release -p brasscribe-ffi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: apps/windows/global.json
+
+      - name: Play for Windows core logic
+        run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
+
+      - name: Bandroom for Windows core logic
+        run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+
+      - name: Studio tests and type-check
+        working-directory: studio
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
