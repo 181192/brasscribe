@@ -79,8 +79,23 @@ class MusicStandTest {
     }
 
     /** Opens the fixture score as a MusicXML file (no transcription), and waits for alphaTab to lay it out. */
-    private fun openScore() {
-        val xml = instrumentation.context.assets.open("old-hundredth/brass-band.musicxml").use { it.readBytes() }
+    /** The hymn's bars [times] over in every part, renumbered: a score long enough for several pages. */
+    private fun repeated(xml: String, times: Int): String {
+        if (times <= 1) return xml
+        val part = Regex("""(<part\s+id="[^"]+"\s*>)(.*?)(</part>)""", RegexOption.DOT_MATCHES_ALL)
+        val measure = Regex("""<measure\b[^>]*>.*?</measure>""", RegexOption.DOT_MATCHES_ALL)
+        return part.replace(xml) { m ->
+            val bars = measure.findAll(m.groupValues[2]).map { it.value }.toList()
+            var n = 0
+            val body = (0 until times).joinToString("\n") {
+                bars.joinToString("\n") { b -> n++; b.replaceFirst(Regex("""number="[^"]*""""), "number=\"$n\"") }
+            }
+            m.groupValues[1] + body + m.groupValues[3]
+        }
+    }
+
+    private fun openScore(times: Int = 1) {
+        val xml = repeated(instrumentation.context.assets.open("old-hundredth/brass-band.musicxml").use { it.readBytes() }.decodeToString(), times).toByteArray()
         val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(xml) }
         rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("stand-enter").fetchSemanticsNodes().isNotEmpty() }
@@ -265,7 +280,8 @@ class MusicStandTest {
             val bmp = instrumentation.uiAutomation.takeScreenshot()
             File(dir, "$tag-$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        openScore()
+        // -e repeat 4: the hymn four times over, so a tablet's spread has pages to show at 100 %.
+        openScore(args.getString("repeat")?.toIntOrNull() ?: 1)
         shot("score-entry")
         // A zoom (-e zoom 200) gives the twelve bars of the hymn enough pages for a tablet's spread.
         openStand(zoom = args.getString("zoom")?.toIntOrNull() ?: 100)

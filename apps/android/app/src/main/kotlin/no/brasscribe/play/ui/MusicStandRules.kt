@@ -63,6 +63,17 @@ object MusicStandRules {
     /** Bars per system (the §3 sizing table): 3 on a phone held upright, 4 on its side and on tablets. */
     fun barsPerSystem(smallestWidthDp: Int, portrait: Boolean) = if (smallestWidthDp < 600 && portrait) 3 else 4
 
+    /**
+     * The width one bar needs at 100 % so its notes never collide (a phone held upright fits three).
+     * The staff size stays the player's own; a narrow screen, or zoom,
+     * takes fewer bars per system instead of squeezing them (§3: drop bars per system first).
+     */
+    const val BAR_DP = 120f
+
+    /** Bars per system for a column [columnDp] wide at [scale]: the §3 number, or fewer, at least 1. */
+    fun barsFitting(wanted: Int, columnDp: Float, scale: Float): Int =
+        (columnDp / (BAR_DP * scale)).toInt().coerceIn(1, wanted)
+
     /** Phones only: Android 16 ignores an app's orientation on displays of 600 dp and wider (§4.4). */
     fun lockAvailable(smallestWidthDp: Int) = smallestWidthDp < 600
 

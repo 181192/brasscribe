@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
@@ -61,8 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -142,6 +139,8 @@ class MusicStandState(
     var pages by mutableStateOf<StandPages?>(null)
     /** Height of the notation window and of the part of it the control layer covers, in pixels. */
     var viewport by mutableFloatStateOf(0f)
+    /** Width of the notation area, in pixels. */
+    var width by mutableFloatStateOf(0f)
     var obscured by mutableFloatStateOf(0f)
     var focusInLayer by mutableStateOf(false)
     /** Focus on Only my part or Lock rotation in the band (a phone on its side): part of the layer too. */
@@ -175,12 +174,7 @@ fun rememberMusicStand(): MusicStandState = rememberSaveable(saver = MusicStandS
 data class StandShape(val tablet: Boolean, val landscape: Boolean, val barsPerSystem: Int) {
     val phoneLandscape get() = !tablet && landscape
     val lockAvailable get() = !tablet
-    /** Two pages side by side: a tablet on its side (§3). */
-    val spread get() = tablet && landscape
 }
-
-/** The gap between the two pages of a spread. */
-val StandGutter = 24.dp
 
 @Composable
 fun standShape(): StandShape {
@@ -298,16 +292,11 @@ fun standPosition(st: ScoreUiState, yours: Int?, title: String, ms: MusicStandSt
     }
     val page = ms.page + 1
     val count = ms.pageCount
-    // "pages 1–2 of 6" while a spread shows two.
-    val right = ms.pages?.let { p -> if (p.spread && ms.page + 1 < p.count) page + 1 else null }
     return StandPosition(
         part,
         stringResource(R.string.stand_position, st.bar, page, count),
-        when {
-            right != null -> stringResource(R.string.stand_position_tablet_spread, title, part, st.bar, page, right, count)
-            shape.tablet -> stringResource(R.string.stand_position_tablet, title, part, st.bar, page, count)
-            else -> stringResource(R.string.stand_position_line, part, st.bar, page, count)
-        },
+        if (shape.tablet) stringResource(R.string.stand_position_tablet, title, part, st.bar, page, count)
+        else stringResource(R.string.stand_position_line, part, st.bar, page, count),
     )
 }
 
@@ -422,21 +411,6 @@ fun BoxScope.MusicStandOverlay(
     val page = ms.page
     val obscured = if (ms.layer) ms.obscured else 0f
     val top = pages?.windowTop(page, st.bar, obscured) ?: 0f
-    // A spread: the right-hand page is a second window onto the same engraving.
-    val spread = pages?.spread == true && shape.spread
-    val rightPage = if (spread && pages != null && page + 1 < pages.count) page + 1 else null
-    val rightTop = rightPage?.let { pages!!.windowTop(it, st.bar, obscured, scrollable = false) } ?: 0f
-    val paper = c.bg.toArgb()
-    if (shape.spread) AndroidView(
-        factory = { controller.mirror },
-        modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().fillMaxWidth(0.5f).padding(start = StandGutter / 2),
-        update = { m ->
-            val v = rightPage?.let { pages!!.visible(it, rightTop) }
-            m.show(rightTop, v?.start ?: 0f, v?.endInclusive ?: 0f, paper)
-            m.live = st.playing
-        },
-    )
-    val leftWidth = if (spread) Modifier.fillMaxWidth(0.5f).padding(end = StandGutter / 2) else Modifier.fillMaxWidth()
     LaunchedEffect(pages, page, top) {
         pages ?: return@LaunchedEffect
         // A page turn cross-fades over 200 ms through the paper; with reduced motion it is instant.
@@ -452,12 +426,12 @@ fun BoxScope.MusicStandOverlay(
     }
     // Above a page after the first (the title block, the page before) and below its last whole
     // system: paper, not half of another system.
-    val shown = pages?.visible(page, top)
+    val shown = pages?.visible(page, top, pages.wantedTop(page, st.bar, obscured))
     if (shown != null && shown.start > 0f) {
-        Box(Modifier.align(Alignment.TopStart).then(leftWidth).height(with(density) { shown.start.toDp() }).background(c.bg))
+        Box(Modifier.align(Alignment.TopStart).fillMaxWidth().height(with(density) { shown.start.toDp() }).background(c.bg))
     }
     if (shown != null && shown.endInclusive < ms.viewport) {
-        Box(Modifier.align(Alignment.BottomStart).then(leftWidth).height(with(density) { (ms.viewport - shown.endInclusive).toDp() }).background(c.bg))
+        Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(with(density) { (ms.viewport - shown.endInclusive).toDp() }).background(c.bg))
     }
     if (veil.value > 0f) Box(Modifier.matchParentSize().alpha(veil.value).background(c.bg))
 

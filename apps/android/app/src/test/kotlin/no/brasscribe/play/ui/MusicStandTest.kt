@@ -70,36 +70,16 @@ class MusicStandTest {
         val p = StandPages(systems(20), viewport = 720f)
         // No layer: the window starts at the page's top system.
         assertEquals(0f, p.windowTop(0, 16, obscured = 0f))
-        // The layer covers the bottom 300 px; bar 16 is in system 5 (500 to 600), so the window moves down.
+        // The layer covers the bottom 300 px; bar 16 is in system 5 (500 to 600), so the window moves
+        // down, to a system top (200), so nothing above is cut in half.
         val top = p.windowTop(0, 16, obscured = 300f)
-        assertEquals(180f, top)
+        assertEquals(200f, top)
         assertTrue("system bottom ${600 - top} clear of ${720 - 300}", 600 - top <= 720 - 300)
         // A bar above the layer leaves the window alone; the next page starts at its own top.
         assertEquals(0f, p.windowTop(0, 4, obscured = 300f))
         assertEquals(600f, p.windowTop(1, 19, obscured = 300f))
         // Below the page's last whole system, paper.
         assertEquals(700f, p.pageBottom(0, 0f))
-    }
-
-    @Test
-    fun aSpreadShowsTwoPagesAndTurnsTheRightPageToTheLeft() {
-        // Five systems a page, no overlap: 12 systems make 3 pages (5, 5, 2).
-        val p = StandPages(systems(12, bars = 4), viewport = 520f, spread = true)
-        assertEquals(listOf(0 to 4, 5 to 9, 10 to 11), p.pages.map { it.first to it.last })
-        // The last view is the last two pages.
-        assertEquals(1, p.lastLeft)
-        assertEquals(1, p.clamp(2))
-        assertEquals(1..40, p.bars(0))
-        assertEquals(21..48, p.bars(1))
-        // A bar on the right-hand page is in view; playback turns when the cursor reaches it.
-        assertEquals(0, p.pageShowing(0, 30))
-        assertEquals(0, p.followPlayback(0, 20))
-        assertEquals(1, p.followPlayback(0, 21))
-        assertEquals(1, p.followPlayback(1, 48))
-        // The page of a bar is a left-hand page.
-        assertEquals(1, p.pageOf(45))
-        // The right page is drawn from anywhere: its window starts at its own top system.
-        assertEquals(500f, p.windowTop(1, null, scrollable = false))
     }
 
     @Test
@@ -115,6 +95,20 @@ class MusicStandTest {
         val top = p.windowTop(last, null)
         assertTrue(p.visible(last, top).start >= p.systems[p.pages[last].first].top - top)
         assertTrue(p.visible(last, top).start > 0f)
+    }
+
+    @Test
+    fun aShortScoreNeverShowsHalfTheTitle() {
+        // A title block (0 to 300) and three systems; the engraving ends at 700, the window is 600 tall.
+        val sys = listOf(StandSystem(300f, 400f, 1, 4), StandSystem(400f, 550f, 5, 8), StandSystem(550f, 700f, 9, 12))
+        val p = StandPages(sys, viewport = 600f, content = 700f)
+        // Bar 7 must sit above a 250 px layer: the window wants to start at a system top (300)...
+        val wanted = p.wantedTop(0, 7, obscured = 250f)
+        assertEquals(300f, wanted)
+        // ...but the engraving ends first, so it starts at 100, and paper covers down to 300: no half title.
+        val top = p.windowTop(0, 7, obscured = 250f)
+        assertEquals(100f, top)
+        assertEquals(200f, p.visible(0, top, wanted).start)
     }
 
     @Test
@@ -167,6 +161,17 @@ class MusicStandTest {
         assertEquals(4, r.barsPerSystem(800, portrait = true))
         assertTrue(r.lockAvailable(411))
         assertFalse(r.lockAvailable(600))
+    }
+
+    @Test
+    fun aNarrowColumnTakesFewerBarsNeverSmallerNotes() {
+        val r = MusicStandRules
+        // A phone upright (411 dp) keeps its 3; on its side (914 dp) and a tablet keep 4.
+        assertEquals(3, r.barsFitting(3, 411f, 1f))
+        assertEquals(4, r.barsFitting(4, 914f, 1f))
+        // Zoomed to 220 %, a 628 dp column holds 2 bars, not 4 squeezed ones; never fewer than 1.
+        assertEquals(2, r.barsFitting(4, 628f, 2.2f))
+        assertEquals(1, r.barsFitting(4, 100f, 4f))
     }
 
     @Test

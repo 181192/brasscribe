@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -285,8 +284,12 @@ fun ScoreScreen(vm: PlayViewModel) {
         else if (ms.open && !sideways && ms.origin == StandOrigin.TURN) leaveStand()
     }
     // The layout (the section 3 sizing table) and your part, once the score is there.
-    LaunchedEffect(ms.open, st.loaded, shape.barsPerSystem) {
-        if (ms.open && st.loaded) controller.setStandLayout(shape.barsPerSystem)
+    // A narrow column (or zoom) takes fewer bars per system, never smaller or squeezed notes.
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val columnDp = if (ms.width <= 0f) 0f else ms.width / density
+    val standBars = if (columnDp <= 0f) shape.barsPerSystem else MusicStandRules.barsFitting(shape.barsPerSystem, columnDp, st.zoom / 100f)
+    LaunchedEffect(ms.open, st.loaded, standBars) {
+        if (ms.open && st.loaded) controller.setStandLayout(standBars)
     }
     LaunchedEffect(ms.open, st.loaded, ms.onlyMine, yours) {
         if (!ms.open || !st.loaded) return@LaunchedEffect
@@ -302,9 +305,9 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
     // The pages follow every new layout (a turn, Only my part, zoom): the place is kept as a bar.
     val renders by controller.renders.collectAsState()
-    LaunchedEffect(ms.open, renders, ms.viewport, shape.spread) {
+    LaunchedEffect(ms.open, renders, ms.viewport) {
         ms.pages = if (ms.open && ms.viewport > 0f) controller.standSystems().let { sys ->
-            StandPages(sys, ms.viewport, maxOf(controller.standContentHeight(), sys.lastOrNull()?.bottom ?: 0f), spread = shape.spread) }.takeIf { it.count > 0 } else null
+            StandPages(sys, ms.viewport, maxOf(controller.standContentHeight(), sys.lastOrNull()?.bottom ?: 0f)) }.takeIf { it.count > 0 } else null
     }
     // Playback turns the pages (Settings can turn that off); a bar moved by hand brings its page.
     LaunchedEffect(ms.open, st.bar, ms.pages) {
@@ -401,17 +404,14 @@ fun ScoreScreen(vm: PlayViewModel) {
             Box(Modifier.weight(1f).fillMaxWidth()
                 .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
                     androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal)) else Modifier)
-                .onSizeChanged { ms.viewport = it.height.toFloat() }) {
+                .onSizeChanged { ms.viewport = it.height.toFloat(); ms.width = it.width.toFloat() }) {
                 if (textView && !performance) {
                     PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
                     AndroidView(
                         factory = { controller.view },
                         // On the stand the surface over it is the score for TalkBack (with page actions).
-                        modifier = if (performance) Modifier.fillMaxHeight()
-                            // A spread lays the engraving out at one page's width; the right page mirrors it.
-                            .then(if (shape.spread) Modifier.fillMaxWidth(0.5f).padding(end = StandGutter / 2) else Modifier.fillMaxWidth())
-                            .clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
+                        modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText
