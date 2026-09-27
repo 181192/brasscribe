@@ -60,6 +60,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.platform.testTag as tagged
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
@@ -655,14 +656,30 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
 
 /**
  * "Listen to this bar", which turns into "Stop" while the bar plays: one button, same place and size,
- * only the words and the icon change. Enter and Space press it like any button.
+ * only the words and the icon change. Both labels are laid out (the other one invisible), so large text
+ * that wraps the longer one does not change the height. Enter and Space press it like any button.
  */
 @Composable
 fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier) {
-    SecondaryButton(
-        stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar),
+    val listenText = stringResource(R.string.action_listen_bar)
+    val stopText = stringResource(R.string.listen_stop)
+    androidx.compose.material3.FilledTonalButton(
         if (playing) stop else listen,
-        modifier.tagged("listen-bar"),
-        icon = if (playing) R.drawable.ic_bc_stop else R.drawable.ic_bc_listen_bar,
-    )
+        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged("listen-bar"),
+        shape = no.brasscribe.design.BrasscribeButtonShape,
+    ) {
+        androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+            ListenLabel(listenText, R.drawable.ic_bc_listen_bar, Modifier.alpha(if (playing) 0f else 1f).then(if (playing) Modifier.clearAndSetSemantics { } else Modifier))
+            ListenLabel(stopText, R.drawable.ic_bc_stop, Modifier.alpha(if (playing) 1f else 0f).then(if (playing) Modifier else Modifier.clearAndSetSemantics { }))
+        }
+    }
+}
+
+@Composable
+private fun ListenLabel(text: String, icon: Int, modifier: Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        BcIcon(icon, null)
+        androidx.compose.foundation.layout.Spacer(Modifier.size(BrasscribeSpace.s2))
+        Text(text, textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+    }
 }

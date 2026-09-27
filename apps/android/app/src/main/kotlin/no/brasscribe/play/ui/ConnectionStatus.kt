@@ -1,6 +1,9 @@
 package no.brasscribe.play.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -50,23 +53,25 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
     val c = BrasscribeTheme.colors
     Row(
         modifier.fillMaxWidth().heightIn(min = 48.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
     ) {
-        BcIcon(connectionIcon(state), null, tint = c.textMuted)
-        Text(
-            connectionText(vm, state), style = MaterialTheme.typography.bodyMedium, color = c.text,
-            modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
-        )
-        when (state) {
-            is ConnectionState.Offline ->
-                // On the connection screen the form below is the way to connect; retrying needs a paired computer.
-                if (!onConnectionScreen || (state as ConnectionState.Offline).paired) PlainButton(stringResource(R.string.companion_connect), {
-                    if ((state as ConnectionState.Offline).paired) vm.connection.retry() else vm.navigate(Screen.COMPANION)
-                })
-            is ConnectionState.NeedsPairing ->
-                if (!onConnectionScreen) PlainButton(stringResource(R.string.conn_pair_again), { vm.navigate(Screen.COMPANION) })
-            else -> Unit
+        BcIcon(connectionIcon(state), null, Modifier.padding(top = BrasscribeSpace.s3), tint = c.textMuted)
+        // The action goes under the words, so neither is squeezed at large text or in Norwegian.
+        Column(Modifier.weight(1f)) {
+            Text(
+                connectionText(vm, state), style = MaterialTheme.typography.bodyMedium, color = c.text,
+                modifier = Modifier.padding(top = BrasscribeSpace.s3).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            val s = state
+            val action: Pair<String, () -> Unit>? = when {
+                s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
+                s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
+                s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }
+                else -> null
+            }
+            // A plain button whose words line up with the sentence above.
+            if (action != null) PlainButton(action.first, action.second, Modifier.offset(x = -BrasscribeSpace.s3))
         }
     }
 }

@@ -146,10 +146,16 @@ class AppContainer(private val context: Context) {
         val address = runCatching { InetAddress.getByName(host) }.getOrNull() ?: return null
         if (!address.isSiteLocalAddress && !address.isLinkLocalAddress) return null
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
-        return cm.allNetworks.firstOrNull { n ->
+        val owner = cm.allNetworks.firstOrNull { n ->
             cm.getLinkProperties(n)?.routes?.any { it.destination.prefixLength > 0 && it.matches(address) } == true
         }
+        // Binding is only needed when another network is the default. A network this app may not bind to
+        // (EPERM, seen on emulators) is left to the system's routing instead of failing every request.
+        return owner?.takeIf { it != cm.activeNetwork && canBind(it) }
     }
+
+    private fun canBind(network: Network): Boolean =
+        runCatching { java.net.Socket().use { network.bindSocket(it) } }.isSuccess
 
     val discovery by lazy { EngineDiscovery(context) }
 

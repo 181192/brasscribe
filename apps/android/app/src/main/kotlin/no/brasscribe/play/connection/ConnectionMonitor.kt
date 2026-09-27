@@ -127,9 +127,11 @@ class ConnectionMonitor(
                     }
                 }
             }
+            // A check can learn the engine's name (a token from an earlier version had none).
+            val name = host.target()?.serverName ?: t.serverName
             when (r) {
                 is Check.Ok -> {
-                    _state.value = ConnectionState.Connected(t.serverName)
+                    _state.value = ConnectionState.Connected(name)
                     _lastAnswered.value = now()
                     failingSince = null
                     failures = 0
@@ -141,7 +143,7 @@ class ConnectionMonitor(
                     delay(heartbeatMs)
                 }
                 Check.Unauthorized -> {
-                    _state.value = ConnectionState.NeedsPairing(t.serverName)
+                    _state.value = ConnectionState.NeedsPairing(name)
                     return
                 }
                 Check.Unreachable -> {

@@ -489,8 +489,8 @@
     <string name="pair_needs_update">Update Brasscribe Play to connect to this computer.</string>
     <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>
     <string name="pair_code_wrong">That code didn\'t work. Check the code on the computer and try again.</string>
-    <string name="pair_code_locked">Too many tries. Wait a minute, then try again.</string>
-    <string name="companion_failed_plain">Couldn\'t connect. Check that Brasscribe is open on the computer and that both are on the same network.</string>
+    <string name="pair_code_locked">Too many wrong codes. Wait a moment, or ask on the computer instead.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Brasscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
     <string name="pair_ask">Ask on the computer instead</string>
     <string name="pair_ask_again">Ask again</string>
     <string name="pair_ask_waiting">On the computer, choose Allow when it shows this number:</string>

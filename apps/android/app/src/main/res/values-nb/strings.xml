@@ -487,12 +487,12 @@
     <string name="pair_needs_update">Oppdater Brasscribe Play for å koble til denne datamaskinen.</string>
     <string name="pair_code_needed">Skriv inn koden datamaskinen viser, eller spør på datamaskinen i stedet.</string>
     <string name="pair_code_wrong">Koden virket ikke. Sjekk koden på datamaskinen og prøv igjen.</string>
-    <string name="pair_code_locked">For mange forsøk. Vent et minutt og prøv igjen.</string>
-    <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Brasscribe er åpen på datamaskinen, og at begge er på samme nett.</string>
+    <string name="pair_code_locked">For mange feil koder. Vent litt, eller spør på datamaskinen i stedet.</string>
+    <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Brasscribe på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
     <string name="pair_ask">Spør på datamaskinen i stedet</string>
     <string name="pair_ask_again">Spør igjen</string>
-    <string name="pair_ask_waiting">Velg Tillat på datamaskinen når den viser dette tallet:</string>
-    <string name="pair_ask_waiting_spoken">Velg Tillat på datamaskinen når den viser %1$s</string>
+    <string name="pair_ask_waiting">Velg Godkjenn på datamaskinen når den viser dette tallet:</string>
+    <string name="pair_ask_waiting_spoken">Velg Godkjenn på datamaskinen når den viser %1$s</string>
     <string name="pair_ask_denied">Datamaskinen sa nei. Spør igjen, eller skriv inn koden.</string>
     <string name="pair_ask_expired">Ingen svarte på datamaskinen. Spør igjen.</string>
     <string name="pair_forget">Glem denne datamaskinen</string>

@@ -34,6 +34,7 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
             }
             return Check.Ok(client.thisDevice().rotateAfter)
         } catch (e: EngineException) {
+            android.util.Log.i("BrasscribePlay", "heartbeat to $url: ${e.status}")
             return when (e.status) {
                 0 -> Check.Unreachable
                 401 -> if (sameServer(client)) Check.Unauthorized else Check.Unreachable
@@ -43,6 +44,7 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
+            android.util.Log.i("BrasscribePlay", "heartbeat to $url failed: $e")
             return Check.Unreachable
         } finally {
             if (!current) client.close()
