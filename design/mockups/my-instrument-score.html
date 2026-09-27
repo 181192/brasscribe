@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brasscribe Play: your part, from the recording or arranged</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="../dist/web/icons.js"></script>
+<script src="scores.js"></script>
+<script>
+  // A small band's score with the player's part (1st Baritone → Euphonium, the closest part in this lineup).
+  (function () {
+    const ev = (s) => s.trim().split(/\s+/).map((t) => {
+      if (t[0] === "r") return { r: t[1] };
+      const m = t.match(/^([whqe])(-?\d+)(.*)$/), e = { d: m[1], s: +m[2] }, f = m[3];
+      if (f.includes("u")) e.u = 1; if (f.includes("v")) e.u = 2;
+      if (f.includes("#")) e.acc = "#"; if (f.includes("b")) e.acc = "b";
+      if (f.includes("[")) e.beam = "start"; else if (f.includes("]")) e.beam = "end";
+      return e;
+    });
+    const bars = (a) => a.map(ev);
+    const solo = bars(["h7 q6 q5", "e4[ e5] q6u q7 q8", "h9 q8 rq", "e7[ e6] e5[ e4] h3"]);
+    const flug = bars(["w4", "h3 h4", "h5 q4 rq", "w3"]);
+    const euph = bars(["h2 h1", "h0 q1 q2", "h3 h2", "w1"]);
+    const bass = bars(["w-3", "h-4 h-3", "h-2 rh", "h-3 h-4"]);
+    const meta = (from, n) => Array.from({ length: n }, (_, i) => ({ n: from + i }));
+    Object.assign(window.SCORES, {
+      miFull: {
+        sp: 8, key: 2, time: [4, 4], nameWidth: 128, staffGap: 52, top: 64, bars: meta(9, 4),
+        staves: [{ name: "Solo Cornet", bars: solo }, { name: "Flugelhorn", bars: flug }, { name: "Euphonium", bars: euph }, { name: "E♭ Bass", bars: bass }],
+        cursor: { bar: 1, frac: 0.4 }, label: "Small band score, bars 9 to 12",
+      },
+      miPart1: { sp: 9, key: 2, time: [4, 4], names: false, top: 64, bars: meta(9, 2), staves: [{ name: "Euphonium", bars: euph.slice(0, 2) }], cursor: { bar: 0, frac: 0.6 } },
+      miPart2: { sp: 9, key: 2, time: false, names: false, top: 64, bars: meta(11, 2), staves: [{ name: "Euphonium", bars: euph.slice(2, 4) }] },
+    });
+  })();
+</script>
+<script src="mockup.js"></script>
+<style>
+  .menu-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; min-height: 44px; padding: 0 10px 0 12px; border-radius: var(--bc-radius-sm); background: var(--bc-secondary); font-size: 0.9375rem; }
+  /* Source label: neutral chrome (icon + words, hairline pill), never a score colour. It is a button that explains itself. */
+  .src { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 8px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; color: var(--bc-text); background: var(--bc-surface); box-shadow: inset 0 0 0 1px var(--bc-border-strong); white-space: nowrap; }
+  .src .i { width: 18px; height: 18px; color: var(--bc-text-muted); }
+  .src.touch { min-height: 44px; }
+  .phead { padding: var(--bc-space-2) var(--bc-space-5) var(--bc-space-3); display: flex; flex-direction: column; gap: var(--bc-space-2); }
+  .phone .scorebox { flex: 1; overflow: hidden; padding: 0 var(--bc-space-3); }
+  .phone .player { margin: 0 var(--bc-space-5) var(--bc-space-2); padding: var(--bc-space-3); }
+  .desktop .scorewrap { flex: 1; display: flex; min-height: 0; }
+  .desktop .scorecol { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .desktop .scorebox { flex: 1; padding: var(--bc-space-2) var(--bc-space-6); overflow: hidden; }
+  .mixer { width: 360px; flex: none; box-shadow: inset 1px 0 0 var(--bc-border); background: var(--bc-surface); padding: var(--bc-space-4); display: flex; flex-direction: column; gap: 4px; }
+  .mix-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; min-height: 52px; font-size: 0.9375rem; padding: 6px var(--bc-space-2); border-radius: var(--bc-radius-sm); }
+  .mix-row .n { font-weight: 500; line-height: 1.25; }
+  .mix-row .srcline { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--bc-text-muted); font-weight: 500; margin-top: -2px; }
+  .mix-row .srcline .i { width: 16px; height: 16px; }
+  .mix-row.mine { background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border); }
+  .mix-row.mine .n { font-weight: 700; box-shadow: inset 3px 0 0 var(--bc-text); padding-left: 8px; margin-left: -8px; }
+  .statusbar { display: flex; align-items: center; gap: var(--bc-space-4); padding: var(--bc-space-2) var(--bc-space-6); box-shadow: inset 0 -1px 0 var(--bc-border); }
+  .dock { flex: none; padding: var(--bc-space-3) var(--bc-space-5); box-shadow: inset 0 1px 0 var(--bc-border); background: var(--bc-surface-raised); display: flex; align-items: center; gap: var(--bc-space-4); white-space: nowrap; }
+  .explain { margin-top: var(--bc-space-3); padding: var(--bc-space-3); font-size: 0.875rem; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
+  <div class="navbar"><span class="back"><i data-i="back"></i>Mikkel</span><span class="menu-btn" style="background:transparent"><b>Euphonium</b><i data-i="choose" class="sm"></i></span><button class="icon-btn" aria-label="More"><i data-i="more"></i></button></div>
+  <div class="phead">
+    <div style="display:flex; align-items:center; gap: var(--bc-space-2); flex-wrap: wrap">
+      <span class="headline">Your part</span>
+      <button class="src touch" aria-label="Arranged from the band's harmony. What does this mean?"><i data-i="parts"></i>Arranged from the band's harmony</button>
+    </div>
+    <p class="notice" role="status" style="font-size: 0.875rem"><i data-i="info" class="sm"></i><span>This small band has no 1st Baritone. Your part here is Euphonium, the closest: the same key and clef.</span></p>
+  </div>
+  <div class="scorebox paper">
+    <div data-score="miPart1"></div>
+    <div data-score="miPart2"></div>
+  </div>
+  <div class="player">
+    <div class="transport">
+      <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+      <button class="play" aria-label="Play"><i data-i="play"></i></button>
+      <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+      <div class="pos" style="margin-left: var(--bc-space-2); flex:1"><b>Bar 9</b> <span>of 64</span></div>
+    </div>
+    <div class="chips" style="display:grid; grid-template-columns: auto auto; gap: var(--bc-space-2); margin-top: var(--bc-space-3); justify-content: start">
+      <span class="chip"><i data-i="speed" class="sm"></i>Speed <span class="val">100%</span></span>
+      <span class="chip"><i data-i="loop" class="sm"></i>Repeat</span>
+      <span class="chip on" style="grid-column: span 2"><i data-i="play-along" class="sm"></i>Mute my part</span>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+
+<div class="desktop">
+  <div class="titlebar">
+    <span class="lights"><i></i><i></i><i></i></span><span class="wt">Mikkel</span><span class="caption">Small band · 64 bars</span><span class="sp"></span>
+    <button class="btn outline compact"><i data-i="export" class="sm"></i>Share or print</button>
+  </div>
+  <div class="toolbar" style="display:flex; align-items:center; gap: var(--bc-space-2); padding: var(--bc-space-3) var(--bc-space-6); box-shadow: inset 0 -1px 0 var(--bc-border)">
+    <span class="menu-btn"><i data-i="parts" class="sm"></i>All parts<i data-i="choose" class="sm"></i></span>
+    <span class="seg" aria-label="Pitch"><span class="on">As written for B♭</span><span>Concert pitch</span></span>
+    <span style="flex:1"></span>
+    <span class="menu-btn">View<i data-i="choose" class="sm"></i></span>
+  </div>
+  <div class="scorewrap">
+    <div class="scorecol">
+      <div class="statusbar"><span class="status-line"><b class="q u">?</b><span class="muted">9 notes marked ? (boxed ? = very unsure)</span><span>·</span><a>Check them</a></span></div>
+      <div class="scorebox paper" data-score="miFull"></div>
+    </div>
+    <aside class="mixer" aria-label="Parts">
+      <div class="side-head" style="padding: 0 var(--bc-space-2) var(--bc-space-2)">Parts</div>
+      <div class="mix-row"><span class="n">Solo Cornet</span><span class="tg"><i data-i="mute"></i>Mute</span><span class="tg"><i data-i="solo"></i>Only this</span><small class="srcline"><i data-i="record-mic"></i>From the recording</small></div>
+      <div class="mix-row"><span class="n">Flugelhorn</span><span class="tg"><i data-i="mute"></i>Mute</span><span class="tg"><i data-i="solo"></i>Only this</span><small class="srcline"><i data-i="parts"></i>Arranged from the band's harmony</small></div>
+      <div class="mix-row mine"><span class="n">Euphonium · your part</span><span class="tg on"><i data-i="mute"></i>Mute</span><span class="tg"><i data-i="solo"></i>Only this</span><small class="srcline"><i data-i="parts"></i>Arranged from the band's harmony</small></div>
+      <div class="mix-row"><span class="n">E♭ Bass</span><span class="tg"><i data-i="mute"></i>Mute</span><span class="tg"><i data-i="solo"></i>Only this</span><small class="srcline"><i data-i="record-mic"></i>From the recording</small></div>
+      <p class="notice" role="status" style="margin-top: var(--bc-space-3); font-size: 0.875rem"><i data-i="info" class="sm"></i><span>This small band has no 1st Baritone. Your part here is Euphonium, the closest: the same key and clef.</span></p>
+      <div class="card explain">
+        <b>Arranged from the band's harmony</b><br>
+        <span class="muted">Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.</span>
+      </div>
+    </aside>
+  </div>
+  <div class="dock" role="toolbar" aria-label="Player">
+    <div class="transport">
+      <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
+      <button class="play" aria-label="Pause"><i data-i="pause"></i></button>
+      <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
+    </div>
+    <div class="pos" style="min-width: 190px"><b>Bar 10, beat 2</b><br><span>♩ = 102</span></div>
+    <span class="seg" aria-label="Hear"><span class="on">Hear the band</span><span>Recording</span></span>
+    <span style="flex:1"></span>
+    <span class="chip on"><i data-i="play-along" class="sm"></i>Mute my part</span>
+  </div>
+</div>
+</body>
+</html>

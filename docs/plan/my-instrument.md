@@ -69,7 +69,7 @@ The same window cuts the melody of the non-layered arrangers (`pipeline.rs:545`,
 - **"Solo Cornet moves an octave"** is the share of *correct* notes (the annotations themselves) that today's placement writes in a different octave from the one played. For every low instrument it is almost all of them.
 - **"Own reading range moves an octave"** is the same, placing into the player's own instrument's reading range. It is still 15–44 % for low brass, because the reading ranges in `instruments.py` are narrower than what players actually play (a chorale bass line sits below the trombone's reading floor of G2).
   - So a solo take must be written in the octave it was played in. Move a note only when it is outside the instrument's professional range, which almost always means a tracker octave error. `_place_line` is the right tool for arranging a line onto a part. It is the wrong tool for writing down the player's own notes.
-- **"Basic Pitch agrees"** is the share of kept notes that Basic Pitch also found. On tuba it is only 55 %. The confidence model (`confidence.rs` `p_correct`) weighs model agreement, so correct tuba notes are likely to get "?" marks much more often than cornet notes. This has not been measured, because the model is calibrated on trumpet stems. It is a benchmark item (§7) and a possible recalibration.
+- **"Basic Pitch agrees"** is the share of kept notes that Basic Pitch also found. On tuba it is only 55 %. The confidence model (`confidence.rs` `p_correct`) weighs model agreement, so correct tuba notes are likely to get "?" marks much more often than cornet notes. The real "?" rate was not measured here, and the model (`calibration.json`) has no feature for the register. It is a benchmark item (§7) and a possible recalibration.
 
 **Caveats. This is an honest measurement, not the phone.**
 - **Proxy instruments.** ChoraleBricks "Baritone" is the German Bariton, close to a euphonium, and was measured against the euphonium's range. French horn stands in for tenor horn. The trombone plays the chorale's bass line, which sits low for a tenor trombone. The tuba plays an octave below the notated chorale.
@@ -409,7 +409,7 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 | `music/src/brasscribe_music/arranger.py:102-127` | Leave `_place_line` alone. Add `place_as_played` next to it. |
 | `arranger.py:165-209` `arrange` | the `lead` argument: melody to `seat_part` when `lead="seat"` |
 | `arranger.py:226-238` `layer_of_part` | the seat part → `solo` when `lead="seat"` (after kvartett, which makes it lineup-aware) |
-| `arranger.py:347-426` `arrange_layers` | `lead` and `seat` arguments: solo take → one part with `place_as_played`; lead=seat → the §4.4 changes at `:371`, `:385-390` (countermelody), `:403`, `:408`, `:418-420` (soprano) |
+| `arranger.py:347-426` `arrange_layers` | `lead` and `seat` arguments: solo take → one part with `place_as_played`; lead=seat → the §4.4 changes at `:371`, `:387-398` (countermelody), `:403`, `:408`, `:418-420` (soprano) |
 | `arranger.py` (new) | `part_sources(comp, arr)`, the §2.4 rules |
 | `music/src/brasscribe_music/difficulty.py:28,132` | `SOLO_PART` → the arrangement's lead part: kvartett's `lineup.lead`, or the seat part when `lead="seat"` |
 | `music/src/brasscribe_music/musicxml.py:34,56-57,287,536` | `PartSpec` clef and transposition from `reads` for the seat part |
