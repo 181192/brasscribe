@@ -408,3 +408,21 @@ mod tests {
         assert_eq!(floordiv(7, -2), -4);
     }
 }
+
+/// Python's built-in `sum()` over floats (3.12+: Neumaier compensated summation, start 0).
+pub fn builtin_sum(xs: impl IntoIterator<Item = f64>) -> f64 {
+    let (mut f, mut c) = (0.0f64, 0.0f64);
+    for x in xs {
+        let t = f + x;
+        if f.abs() >= x.abs() {
+            c += (f - t) + x;
+        } else {
+            c += (x - t) + f;
+        }
+        f = t;
+    }
+    if c != 0.0 && c.is_finite() {
+        f += c;
+    }
+    f
+}

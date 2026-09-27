@@ -19,7 +19,8 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   difficulty       faithful / standard / easier rewrites of the arranged parts
   keys             key plan (key changes, modes), transposition to a concert key
   beats, energy, separation, dynamics, structure
-                   beat cleanup, energy gate, separation check, dynamics, rehearsal marks
+                   beat cleanup, solo meter and bar phase, energy gate, separation check, dynamics, rehearsal marks
+  confidence       calibrated solo-note confidence (logistic model, calibration.json) and review groups
   humanize         deterministic playback humanization (sounds/README.md)
   talking_score    talking score: document from MusicXML, announcer, navigation, text/HTML export
   consensus, lines note voting across transcriptions, monophonic lines

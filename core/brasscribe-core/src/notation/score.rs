@@ -56,7 +56,10 @@ pub struct ScoreSpec {
     pub bpm: f64,
     pub title: String,
     pub pickup_ticks: i64,
+    /// Notes below this confidence are marked "?" (grouped with their neighbours).
     pub low_confidence: f64,
+    /// Marks of groups with a note below this confidence are boxed.
+    pub very_below: f64,
     pub key_fifths: Option<i32>,
     /// Part name -> MusicXML <instrument-sound>.
     pub sounds: Vec<(String, String)>,
@@ -209,6 +212,8 @@ struct Part {
     clef: ClefKind,
     fifths: Option<i32>,
     measures: Vec<Measure>,
+    /// Dashed brackets over review groups: (first element id, last element id), in insertion order.
+    lines: Vec<(u64, u64)>,
 }
 
 impl Part {
@@ -498,6 +503,16 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
                 });
             }
         };
+        // Review groups: neighbouring marked notes share one "?" (at the group's first
+        // note, boxed when any member is very unsure) and a dashed bracket over the group.
+        let groups = if drums {
+            Vec::new()
+        } else {
+            let ns: Vec<(i64, i64, f64)> = part_events[pi].iter().map(|e| (e.start, e.end, e.conf)).collect();
+            crate::confidence::review_groups(&ns, bar, spec.low_confidence, spec.very_below)
+        };
+        let mut firsts: Vec<(i64, u64)> = Vec::new();
+        let mut lasts: Vec<(i64, u64)> = Vec::new();
         let mut cursor = 0i64;
         for ev in &part_events[pi] {
             let tick = ev.start;
@@ -543,15 +558,27 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
                     }
                 };
                 let mut color = None;
-                if ev.conf < spec.low_confidence && i == 0 {
-                    let very = ev.conf < VERY_UNCERTAIN;
-                    color = Some(if very { VERY_UNCERTAIN_COLOUR } else { UNCERTAIN_COLOUR });
-                    if !drums {
-                        push(&mut dirs, a, Dir::Words("?".into(), true, very));
+                if i == 0 {
+                    if let Some(g) = groups.iter().find(|g| g.start == tick) {
+                        color = Some(if g.very { VERY_UNCERTAIN_COLOUR } else { UNCERTAIN_COLOUR });
+                        push(&mut dirs, a, Dir::Words("?".into(), true, g.very));
+                    }
+                }
+                let id = ids.next();
+                if !drums {
+                    if i == 0 {
+                        match firsts.iter_mut().find(|f| f.0 == tick) {
+                            Some(f) => f.1 = id,
+                            None => firsts.push((tick, id)),
+                        }
+                    }
+                    match lasts.iter_mut().find(|f| f.0 == tick) {
+                        Some(f) => f.1 = id,
+                        None => lasts.push((tick, id)),
                     }
                 }
                 flat_els.push(Elem {
-                    id: ids.next(),
+                    id,
                     off: Rat::new(a, TPB),
                     dur: Dur::from_ql(Rat::new(b - a, TPB)),
                     kind,
@@ -566,6 +593,17 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
         }
         if cursor < total {
             rest(ids, &mut flat_els, cursor, total);
+        }
+        let mut lines: Vec<(u64, u64)> = Vec::new();
+        for g in groups.iter().filter(|g| g.notes > 1) {
+            let ticks: Vec<i64> = firsts.iter().map(|f| f.0).filter(|&t| g.start <= t && t < g.end).collect();
+            if let (Some(&lo), Some(&hi)) = (ticks.iter().min(), ticks.iter().max()) {
+                if lo != hi {
+                    let first = firsts.iter().find(|f| f.0 == lo).unwrap().1;
+                    let last = lasts.iter().find(|f| f.0 == hi).unwrap().1;
+                    lines.push((first, last));
+                }
+            }
         }
         // stable: offset, then class order, then insertion
         dirs.sort_by_key(|d| (d.0, d.1, d.2));
@@ -623,6 +661,7 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
             clef,
             fifths: if drums { None } else { Some(fifths) },
             measures,
+            lines,
         });
     }
     (parts, total)
@@ -944,7 +983,7 @@ fn make_tuplet_brackets(m: &mut Measure) {
     m.tuplets = Some(true);
 }
 
-fn split_at_durations(m: &mut Measure, bar: Rat, ids: &mut Ids) {
+fn split_at_durations(m: &mut Measure, bar: Rat, ids: &mut Ids, lines: &mut [(u64, u64)]) {
     let mut out: Vec<Elem> = Vec::with_capacity(m.els.len());
     for e in std::mem::take(&mut m.els) {
         let full_rest = e.is_rest() && e.dur.ql == bar;
@@ -969,6 +1008,11 @@ fn split_at_durations(m: &mut Measure, bar: Rat, ids: &mut Ids) {
         }
         if cur.dur.ql > Rat::ZERO {
             out.push(cur);
+        }
+        // A bracket that ends on the split element ends on its last piece.
+        let last_piece = out.last().map(|x| x.id).unwrap_or(e.id);
+        for l in lines.iter_mut().filter(|l| l.1 == e.id) {
+            l.1 = last_piece;
         }
     }
     m.els = out;
@@ -1454,7 +1498,17 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
                 children.push(dir_xml(d, off));
             }
             for e in m.els.iter().filter(|e| e.off == o) {
+                for (k, l) in part.lines.iter().enumerate() {
+                    if l.0 == e.id {
+                        children.push(bracket_xml(k, "start"));
+                    }
+                }
                 elem_xml(e, bar, &mut children);
+                for (k, l) in part.lines.iter().enumerate() {
+                    if l.1 == e.id {
+                        children.push(bracket_xml(k, "stop"));
+                    }
+                }
                 cur = cur + e.dur.ql;
             }
         }
@@ -1466,6 +1520,15 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
         px.push(mx);
     }
     px
+}
+
+/// A dashed review bracket (spanner number: its index in the part, cycling 1..6).
+fn bracket_xml(k: usize, typ: &str) -> X {
+    X::new("direction").attr("placement", "above").child(
+        X::new("direction-type").child(
+            X::new("bracket").attr("number", ((k % 6) + 1).to_string()).attr("line-type", "dashed").attr("type", typ).attr("line-end", "down"),
+        ),
+    )
 }
 
 /// Assign MIDI channels as the reference exporter does: in part order, skipping
@@ -1601,7 +1664,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
             }
         }
         for m in part.measures.iter_mut() {
-            split_at_durations(m, bar, &mut ids);
+            split_at_durations(m, bar, &mut ids, &mut part.lines);
         }
         if !have_accidentals_been_made(part) {
             make_accidentals(part);

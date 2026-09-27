@@ -212,13 +212,47 @@ def meter_cases(rng) -> list[dict]:
     return out
 
 
+def confidence_cases(rng) -> list[dict]:
+    """Calibrated confidence (features, clamping, logistic) and review groups on random notes."""
+    from brasscribe_music.confidence import Model, features, p_correct, review_groups, support
+    from brasscribe_music.durations import Contour
+
+    model = Model.load()
+    out = []
+    for _ in range(40):
+        n = int(rng.integers(1, 40))
+        t = np.arange(0, 5, 0.01)
+        hz = np.where(rng.random(len(t)) < 0.2, 0.0, 440 * 2 ** ((rng.integers(55, 80, len(t)) - 69) / 12))
+        contour = Contour(t, np.where(hz > 0, 69 + 12 * np.log2(np.where(hz > 0, hz, 1) / 440.0), np.nan),
+                          np.zeros(len(t)), rng.random(len(t)) if rng.random() < 0.8 else None)
+        use = rng.random() < 0.7
+        sep = bool(rng.random() < 0.5)
+        notes = []
+        for _ in range(n):
+            on, dur, p = float(rng.uniform(0, 4.8)), float(rng.exponential(0.3)), int(rng.integers(55, 80))
+            src = {s for s in ("mus", "bp") if rng.random() < 0.5}
+            sup = support(contour if use else None, on, p)
+            x = features(src, dur, sup, sep)
+            notes.append({"onset": on, "dur": dur, "pitch": p, "sources": sorted(src), "support": sup,
+                          "p": p_correct(x, model)})
+        ticks = sorted((int(rng.integers(0, 400)), int(rng.integers(1, 30)), float(rng.random())) for _ in range(n))
+        ev = [(s, s + d, c) for s, d, c in ticks]
+        bar = int(rng.choice([48, 72, 96]))
+        groups = review_groups(ev, bar, 1 - model.mark_risk, 1 - model.very_risk)
+        out.append({"contour": {"t": t.tolist(), "midi": [None if np.isnan(m) else float(m) for m in contour.midi],
+                                "confidence": None if contour.confidence is None else contour.confidence.tolist()},
+                    "use_contour": use, "separated": sep, "notes": notes, "events": ev, "bar": bar,
+                    "groups": [[g.start, g.end, g.notes, g.very] for g in groups]})
+    return out
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
     for name, data in (("spelling", spelling_cases(rng)), ("quantize", quantize_cases(rng)),
                        ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
                        ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
-                       ("meter", meter_cases(rng))):
+                       ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng))):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 

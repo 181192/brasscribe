@@ -149,6 +149,9 @@ pub struct Composition {
     /// Rehearsal marks at bar lines.
     #[serde(default)]
     pub sections: Vec<Section>,
+    /// Neighbouring uncertain notes of one voice, reviewed together (one "?" in the score).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub review: Vec<ReviewItem>,
     /// Options the arrangement was made with (lineup, difficulty,
     /// transpose_semitones); absent = the defaults.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -164,6 +167,18 @@ pub struct Dynamic {
 }
 
 /// A rehearsal mark: section `label` (A, B, ...) starts at `tick` (a bar line).
+/// [start, end) ticks of marked notes of one voice; `notes` marked notes in
+/// it; `very` when any is very unsure.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReviewItem {
+    pub voice: String,
+    pub start: i64,
+    pub end: i64,
+    pub notes: i64,
+    #[serde(default)]
+    pub very: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Section {
     pub tick: i64,
