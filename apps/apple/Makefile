@@ -1,6 +1,7 @@
 # Brasscribe Play for Apple platforms.
 #   make verovio     build Verovio.xcframework (once, ~2 min)
 #   make soundfont   download the baseline SF2 into data/soundfonts
+#   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
 #   make project     generate BrasscribePlay.xcodeproj with XcodeGen
 #   make build       build macOS, iOS Simulator and iPad Simulator
 #   make test        package tests + app unit/UI tests on macOS and an iOS simulator
@@ -16,13 +17,16 @@ IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(she
 DERIVED := build/DerivedData
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 
-.PHONY: verovio soundfont project build test package-test size
+.PHONY: verovio soundfont bandsound project build test package-test size
 
 verovio:
 	./scripts/build-verovio.sh
 
 soundfont:
 	./scripts/fetch-soundfont.sh
+
+bandsound:
+	./scripts/stage-band-sounds.sh
 
 project:
 	xcodegen generate

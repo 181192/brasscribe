@@ -17,3 +17,5 @@ mkdir -p "$HERE/App/Icon.xcassets"
 rm -rf "$HERE/App/Icon.xcassets/AppIcon.appiconset"
 cp -R "$ICONS" "$HERE/App/Icon.xcassets/AppIcon.appiconset"
 printf '{\n  "info": { "author": "xcode", "version": 1 }\n}\n' > "$HERE/App/Icon.xcassets/Contents.json"
+# Band sounds for the app bundle (apps/apple/Sounds, not committed).
+"$HERE/scripts/stage-band-sounds.sh"
