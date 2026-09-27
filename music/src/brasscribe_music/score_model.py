@@ -99,6 +99,20 @@ class Section:
 
 
 @dataclass
+class ReviewItem:
+    """Neighbouring uncertain notes of one voice, reviewed together (one "?" in the score).
+
+    [start, end) ticks; `notes` marked notes in it; `very` when any is very unsure.
+    """
+
+    voice: str
+    start: int
+    end: int
+    notes: int
+    very: bool = False
+
+
+@dataclass
 class Dynamic:
     """A dynamic marking for one textural layer from `tick` on (pp, p, mp, mf, f, ff)."""
 
@@ -144,6 +158,7 @@ class Composition:
     free_regions: list[FreeRegion] = field(default_factory=list)
     dynamics: list[Dynamic] = field(default_factory=list)
     sections: list[Section] = field(default_factory=list)
+    review: list[ReviewItem] = field(default_factory=list)
     arrangement: dict | None = None  # options the arrangement was made with (lineup, difficulty, ...); None = defaults
 
     def free_region_at(self, tick: int) -> FreeRegion | None:
@@ -171,6 +186,8 @@ class Composition:
         d = asdict(self)
         if d.get("arrangement") is None:
             d.pop("arrangement", None)  # files made with the default options stay as they were
+        if not d.get("review"):
+            d.pop("review", None)
         path.write_text(json.dumps(d, indent=1, default=_plain))
 
     def transposed(self, semitones: int) -> Composition:
@@ -193,4 +210,5 @@ class Composition:
                            d.get("beat_times", []), d.get("first_downbeat", 0), d.get("ticks_per_beat", TICKS_PER_BEAT),
                            [FreeRegion.from_dict(r) for r in d.get("free_regions", [])],
                            [Dynamic(**x) for x in d.get("dynamics", [])],
-                           [Section(**x) for x in d.get("sections", [])], d.get("arrangement"))
+                           [Section(**x) for x in d.get("sections", [])], [ReviewItem(**x) for x in d.get("review", [])],
+                           d.get("arrangement"))
