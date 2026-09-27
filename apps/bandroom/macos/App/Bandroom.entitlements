@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- No App Sandbox: Bandroom runs pixi and the engine as child processes and keeps its data in
+     ~/Library/Application Support/Brasscribe, where Play on the same Mac finds engine.json. -->
+<plist version="1.0">
+<dict>
+</dict>
+</plist>
