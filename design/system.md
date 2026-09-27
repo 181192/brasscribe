@@ -14,6 +14,7 @@ Everything else is the platform's own controls, so each app feels native and fam
 - Icon map: [`dist/icon-map.md`](dist/icon-map.md)
 - Voice and naming: [`brand/brand.md`](brand/brand.md)
 - Mockups: [`mockups/png/`](mockups/png/)
+- Brasscribe Bandroom (the engine on your computer, in the menu bar or taskbar corner): [`server-app.md`](server-app.md)
 
 | Home | What is this? | Transcribing | Review | Choose output | Score | Part | Share or print |
 |---|---|---|---|---|---|---|---|
@@ -155,3 +156,13 @@ Rules for every Studio screen:
 - **Few controls at once.** The score toolbar shows four groups, Play / Position / Repeat / View; speed, zoom, "Play bar" and the rest sit under **More**.
 - **8 px rhythm.** Spacing is a multiple of `space-2` (8 px); edges align to the page gutter; headers hold the brand, the nav and one status, nothing else.
 - Load `dist/web/brasscribe.css`, then `dist/web/studio-compat.css`. This maps Studio's current `--bg`, `--text`, `--ok`, `--m1`… variables, so the migration is a two-line change.
+
+## 8. Brasscribe Bandroom: the engine on your computer
+
+![](mockups/png/server-mac-popover-desktop-light.png)
+
+Bandroom installs the engine on a Mac or Windows PC, runs it in the background and lives in the menu bar or the taskbar corner. Its spec is [`server-app.md`](server-app.md): journeys, packaging, states, pairing, accessibility and the full nb/en copy deck. It follows every rule in §1, and these points are specific to it:
+- **The same rules, in a small panel.** One primary per state (usually **Pair a phone**). Restart and Stop are outline buttons. Addresses, ports, versions and logs go only under **Details for the band's tech person**.
+- **State is a shape.** The menu-bar and tray icon is the mark plus a badge shape per state, and the tooltip spells the state out. Status colours go on icons only.
+- **Brass stays on the progress bar.** Health meters are neutral, and health is in words: Calm / Busy / Very busy, not percentages.
+- **The QR code is always black on a white plate**, in every theme, with the six-digit code and a no-code "choose the computer on the phone, then Allow" path beside it.
