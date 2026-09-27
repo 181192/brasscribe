@@ -351,7 +351,7 @@ A slot with no legal pair falls back to the band voicer and is reported in the w
 | whole-chorale least-cost path instead of slot by slot (not adopted) | 0.83 | 0.75 | 1.12 |
 | chorales' own voices (reference row) | 1 | 1 | 0.79 |
 
-Parallels must come before doubling: with doubling first the voicer happily moves in octaves with the bass. The remaining misses are mostly alto and tenor swapping the same two pitch classes, and passing tones Bach resolves differently; the voicer cannot tell those apart from pitch classes alone. **`alto_recall_pc` ≥ 0.85 (plan §3.8) is not reached**; the baseline is set at the measured 0.80.
+Parallels must come before doubling: with doubling first the voicer happily moves in octaves with the bass. The remaining misses are mostly alto and tenor swapping the same two pitch classes, and passing tones the chorales' composers resolve differently (only one of the ten chorales is by Bach); the voicer cannot tell those apart from pitch classes alone. **`alto_recall_pc` ≥ 0.85 (plan §3.8) is not reached**; the baseline is set at the measured 0.80.
 
 **Symbolic benchmark (`brasscribe bench arrange`, keys `quartet.*`, `quartet-standard.*`, `quartet-easier.*`):**
 
