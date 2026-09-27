@@ -24,13 +24,15 @@ ROWS = [
     ("Status_Setup", "Setting up", "Gjøres klar"),
     ("Status_Error", "Stopped unexpectedly", "Stoppet uventet"),
     ("Now_Heading", "Now", "Nå"),
-    ("Now_Title", "“{0}”", "«{0}»"),  # (+) now.source without a device: jobs don't say which phone sent them
+    ("Now_Title", "“{0}”", "«{0}»"),  # (+) now.source when the job doesn't say which phone sent it
+    ("Now_Source", "“{0}” from {1}", "«{0}» fra {1}"),
     ("Now_Progress", "{0}% · about {1} min left", "{0} % · omtrent {1} min igjen"),
     ("Now_Percent", "{0}%", "{0} %"),  # (+)
     ("Now_Queue", "{0} more waiting", "{0} til venter"),
     ("Step_Prepare", "Getting the recording ready", "Gjør opptaket klart"),
     ("Step_Beat", "Finding the beat", "Finner pulsen"),
     ("Step_Separate", "Separating the instruments", "Skiller instrumentene"),
+    ("Step_Layers", "Separating the soloist from the band", "Skiller solisten fra bandet"),
     ("Step_Notes", "Writing down the notes", "Skriver ned tonene"),
     ("Step_Arrange", "Arranging for brass band", "Arrangerer for brassband"),
     ("Step_Layout", "Laying out the pages", "Setter opp sidene"),
@@ -104,7 +106,8 @@ ROWS = [
     # 10.2 Confirmations
     ("Stop_Busy_Title", "Stop while “{0}” is being made?", "Stoppe mens «{0}» lages?"),
     ("Stop_Busy_Title_Untitled", "Stop while a score is being made?", "Stoppe mens et partitur lages?"),  # (+)
-    ("Stop_Busy_Body", "The phone keeps the recording and can send it again.", "Telefonen beholder opptaket og kan sende det på nytt."),
+    ("Stop_Busy_Body", "{0} keeps the recording and can send it again.", "{0} beholder opptaket og kan sende det på nytt."),
+    ("Stop_Busy_Body_Unknown", "The phone keeps the recording and can send it again.", "Telefonen beholder opptaket og kan sende det på nytt."),  # (+) no device on the job
     ("Stop_Busy_Keep", "Keep going", "Fortsett"),
     ("Stop_Busy_Stop", "Stop now", "Stopp nå"),
     ("Restart_Busy_Title", "Restart when “{0}” is done?", "Starte på nytt når «{0}» er ferdig?"),

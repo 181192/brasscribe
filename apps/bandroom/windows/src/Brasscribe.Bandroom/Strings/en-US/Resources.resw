@@ -50,6 +50,9 @@
   <data name="Now_Title" xml:space="preserve">
     <value>“{0}”</value>
   </data>
+  <data name="Now_Source" xml:space="preserve">
+    <value>“{0}” from {1}</value>
+  </data>
   <data name="Now_Progress" xml:space="preserve">
     <value>{0}% · about {1} min left</value>
   </data>
@@ -67,6 +70,9 @@
   </data>
   <data name="Step_Separate" xml:space="preserve">
     <value>Separating the instruments</value>
+  </data>
+  <data name="Step_Layers" xml:space="preserve">
+    <value>Separating the soloist from the band</value>
   </data>
   <data name="Step_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
@@ -285,6 +291,9 @@
     <value>Stop while a score is being made?</value>
   </data>
   <data name="Stop_Busy_Body" xml:space="preserve">
+    <value>{0} keeps the recording and can send it again.</value>
+  </data>
+  <data name="Stop_Busy_Body_Unknown" xml:space="preserve">
     <value>The phone keeps the recording and can send it again.</value>
   </data>
   <data name="Stop_Busy_Keep" xml:space="preserve">

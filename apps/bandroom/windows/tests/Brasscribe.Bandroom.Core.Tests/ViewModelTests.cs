@@ -96,6 +96,22 @@ public sealed class FlyoutViewModelTests
     }
 
     [Fact]
+    public async Task Stop_names_the_phone_that_sent_the_recording_when_the_engine_says()
+    {
+        var vm = Make();
+        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Layers", 0.3, 5, "Kari's iPhone")));
+        Assert.Equal("“Mikkel” from Kari's iPhone", vm.JobSource);
+        Assert.Equal("Separating the soloist from the band", vm.JobStep);
+        await vm.StopCommand.ExecuteAsync(null);
+        Assert.Equal("Kari's iPhone keeps the recording and can send it again.", vm.ConfirmBody);
+        vm.ConfirmCancelCommand.Execute(null);
+        vm.Apply(Snap(job: new JobView("Mikkel", "Step_Separate", 0.3, 5)));
+        Assert.Equal("Separating the instruments", vm.JobStep);
+        await vm.StopCommand.ExecuteAsync(null);
+        Assert.Equal("The phone keeps the recording and can send it again.", vm.ConfirmBody);
+    }
+
+    [Fact]
     public async Task Stop_when_idle_needs_no_confirmation()
     {
         var vm = Make();

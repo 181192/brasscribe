@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
-    <!-- The copy deck is read from the .resw tables next to the exe (Core's ReswStrings), so --lang and tests use the same text. -->
+    <!-- The copy deck is read from the .resw tables next to the exe (Core's ReswStrings), so the language switch and the tests use the same text. -->
     <Content Include="Strings\**\*.resw" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

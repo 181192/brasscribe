@@ -5,12 +5,13 @@ using Brasscribe.Bandroom.Core.State;
 namespace Brasscribe.Bandroom.Core.ViewModels;
 
 /// <summary>The job being made now, in the flyout's words.</summary>
-public sealed record JobView(string? Title, string StepKey, double Fraction, int? MinutesLeft)
+public sealed record JobView(string? Title, string StepKey, double Fraction, int? MinutesLeft, string? Device = null)
 {
     /// <summary>The Play step an engine stage belongs to (Play's step names, §7).</summary>
     public static string StepKeyOf(string? stage) => (stage ?? "").Split('.')[0] switch
     {
-        "separate" or "stems" or "layers" or "separation" => "Step_Separate",
+        "separate" or "stems" or "separation" => "Step_Separate",
+        "layers" => "Step_Layers",
         "beats" or "beat" => "Step_Beat",
         "transcribe" or "contour" or "f0" or "solo" or "vote" => "Step_Notes",
         "arrange" => "Step_Arrange",
@@ -31,7 +32,7 @@ public sealed record JobView(string? Title, string StepKey, double Fraction, int
             double left = elapsed / job.Progress * (1 - job.Progress);
             if (elapsed > 0) minutes = Math.Max(1, (int)Math.Ceiling(left / 60));
         }
-        return new JobView(job.Title, StepKeyOf(stage), job.Progress, minutes);
+        return new JobView(job.Title, StepKeyOf(stage), job.Progress, minutes, job.DeviceName);
     }
 }
 

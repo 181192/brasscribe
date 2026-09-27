@@ -27,8 +27,7 @@
                     <TextBlock x:Name="HeaderText" Text="{x:Bind Vm.Header, Mode=OneWay}" Style="{StaticResource PanelHeadingStyle}"
                                AutomationProperties.HeadingLevel="Level1" />
                     <StackPanel x:Name="StatusLine" Orientation="Horizontal" Spacing="6"
-                                AutomationProperties.Name="{x:Bind Vm.StatusWord, Mode=OneWay}"
-                                AutomationProperties.LiveSetting="Polite">
+                                AutomationProperties.Name="{x:Bind Vm.StatusWord, Mode=OneWay}">
                         <FontIcon x:Name="StatusIcon" Style="{StaticResource IconStyle}" FontSize="16"
                                   Glyph="{x:Bind StatusGlyph(Vm.State), Mode=OneWay}"
                                   Foreground="{x:Bind StatusBrush(Vm.State), Mode=OneWay}"

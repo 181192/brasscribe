@@ -152,7 +152,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
         {
             int pct = StateRules.Percent(job.Fraction);
             JobStep = _s[job.StepKey];
-            JobSource = job.Title is { Length: > 0 } t ? _s.Format("Now_Title", t) : "";
+            JobSource = job.Title is not { Length: > 0 } t ? "" : job.Device is { Length: > 0 } d ? _s.Format("Now_Source", t, d) : _s.Format("Now_Title", t);
             JobPercent = pct;
             JobProgressText = job.MinutesLeft is { } m ? _s.Format("Now_Progress", pct, m) : _s.Format("Now_Percent", pct);
             int queued = snap.Status?.JobsQueued ?? 0;
@@ -309,7 +309,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
         {
             case ConfirmKind.StopBusy:
                 ConfirmTitle = title is { Length: > 0 } ? _s.Format("Stop_Busy_Title", title) : _s["Stop_Busy_Title_Untitled"];
-                ConfirmBody = _s["Stop_Busy_Body"];
+                ConfirmBody = _snapshot?.Job?.Device is { Length: > 0 } device ? _s.Format("Stop_Busy_Body", device) : _s["Stop_Busy_Body_Unknown"];
                 ConfirmPrimaryLabel = _s["Stop_Busy_Stop"];
                 ConfirmSecondaryLabel = _s["Stop_Busy_Keep"];
                 break;

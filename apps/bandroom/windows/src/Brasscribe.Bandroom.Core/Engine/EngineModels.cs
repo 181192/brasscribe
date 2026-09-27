@@ -53,7 +53,7 @@ public sealed record PairRequestInfo(string RequestId, string Name, string Platf
 
 public sealed record StageInfo(string Name, string Status);
 
-/// <summary>GET /v1/jobs row (only the fields Bandroom shows).</summary>
+/// <summary>GET /v1/jobs row (only the fields Bandroom shows). <see cref="DeviceName"/>: the phone that sent it, when the engine says.</summary>
 public sealed record JobInfo(
     string Id,
     string Profile,
@@ -63,7 +63,8 @@ public sealed record JobInfo(
     double? Started,
     double? Finished,
     double Progress,
-    IReadOnlyList<StageInfo>? Stages);
+    IReadOnlyList<StageInfo>? Stages,
+    string? DeviceName = null);
 
 /// <summary>The engine's JSON conventions: snake_case names; nulls are written (ttl_s: null matters).</summary>
 public static class EngineJson
