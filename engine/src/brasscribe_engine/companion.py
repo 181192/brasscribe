@@ -7,10 +7,10 @@ State lives in the companion state directory (BRASSCRIBE_STATE, default <data>/c
     devices.json  {"devices": [...]}: one entry per paired device; tokens are stored only as SHA-256
 
 A device pairs once. Its token stays valid until the device is revoked, the server is reset, or the
-device has not been seen for `idle_days`. A device may rotate its token; the previous token keeps
-working for `grace_s` seconds, or until the new one is first used, so a lost response cannot lock
-the device out. Files are rewritten atomically and re-read when they change on disk, so
-`brasscribe devices revoke` takes effect in a running engine.
+device has not been seen for `idle_days`. A device may rotate its token; the token it rotated with
+keeps working until the new one is first used (at most `grace_s`, 30 days), so a lost response, or a
+retry with the old token, cannot lock the device out. Files are rewritten atomically and re-read when
+they change on disk, so `brasscribe devices revoke` takes effect in a running engine.
 
 The server id is a routing identifier (it lets a client match a rediscovered engine to its stored
 credential), not proof of identity: over plain HTTP anyone can claim it. Proof comes from a pinned
@@ -118,7 +118,7 @@ class Device:
 
 
 class DeviceRegistry:
-    def __init__(self, path: Path, *, idle_days: float = 180.0, grace_s: float = 600.0, clock: Clock = time.time):
+    def __init__(self, path: Path, *, idle_days: float = 180.0, grace_s: float = 30 * 86400.0, clock: Clock = time.time):
         self.path = path
         self.idle_s = idle_days * 86400.0
         self.grace_s = grace_s
@@ -214,7 +214,9 @@ class DeviceRegistry:
                 return dev
         return None
 
-    def rotate(self, device_id: str) -> str | None:
+    def rotate(self, device_id: str, presented: str | None = None) -> str | None:
+        """New token for the device. The token the device rotated with (`presented`, else the current one)
+        stays valid until the new one is used, so a retry after a lost response still works."""
         token = secrets.token_urlsafe(32)
         now = self.clock()
         with self.lock:
@@ -222,7 +224,8 @@ class DeviceRegistry:
             dev = self._devices.get(device_id)
             if not dev:
                 return None
-            dev.prev_hash, dev.prev_until = dev.token_hash, now + self.grace_s
+            dev.prev_hash = token_hash(presented) if presented else dev.token_hash
+            dev.prev_until = now + self.grace_s
             dev.token_hash, dev.rotated_at, dev.last_seen = token_hash(token), now, now
             self._save()
         return token

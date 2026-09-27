@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -138,6 +139,19 @@ def test_previous_token_expires_after_the_grace_period(tmp_path):
     clock.t += 2
     assert reg.authenticate(old) is None
     assert reg.authenticate(new) is not None
+
+
+def test_lost_rotation_responses_never_lock_the_device_out(settings):
+    with lan(settings) as c:
+        old = pair(c)["token"]
+        c.post("/v1/devices/me/rotate", headers=bearer(old))  # response lost: the device still holds `old`
+        c.app.state.devices.clock = lambda: time.time() + 3600  # an hour later
+        assert c.get("/v1/jobs", headers=bearer(old)).status_code == 200
+        c.post("/v1/devices/me/rotate", headers=bearer(old))  # retry, and this response is lost too
+        assert c.get("/v1/jobs", headers=bearer(old)).status_code == 200
+        newest = c.post("/v1/devices/me/rotate", headers=bearer(old)).json()["token"]
+        assert c.get("/v1/jobs", headers=bearer(newest)).status_code == 200
+        assert c.get("/v1/jobs", headers=bearer(old)).status_code == 401
 
 
 def test_idle_devices_are_forgotten(tmp_path):

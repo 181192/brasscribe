@@ -212,8 +212,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     @app.post("/v1/devices/me/rotate", response_model=m.RotateResponse, operation_id="rotateDeviceToken",
               tags=["devices"])
-    def rotate_device_token(device=Depends(this_device)) -> m.RotateResponse:
-        token = app.state.devices.rotate(device.device_id)
+    def rotate_device_token(device=Depends(this_device), authorization: str | None = Header(None)) -> m.RotateResponse:
+        token = app.state.devices.rotate(device.device_id, bearer(authorization))
         if token is None:
             raise HTTPException(401, "this device was revoked")
         return m.RotateResponse(token=token, device_id=device.device_id)

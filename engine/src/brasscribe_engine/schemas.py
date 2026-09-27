@@ -56,8 +56,9 @@ class DeviceSelf(DeviceInfo):
 
 
 class RotateResponse(BaseModel):
-    token: str = Field(description="the new token. The previous one keeps working until this one is first used, "
-                                   "or for 10 minutes")
+    token: str = Field(description="the new token; store it before using it. The token used for this request "
+                                   "keeps working until this one is first used (at most 30 days), so retrying after "
+                                   "a lost response is safe")
     device_id: str
 
 
