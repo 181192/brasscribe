@@ -47,7 +47,12 @@ class MainActivity : ComponentActivity() {
         vm.connection.start()
         val cm = getSystemService(ConnectivityManager::class.java) ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) = runOnUiThread { vm.connection.networkChanged() }
+            // Registering reports the current network at once: that is not a change, so it is skipped.
+            private var first = true
+            override fun onAvailable(network: Network) {
+                if (first) { first = false; return }
+                runOnUiThread { vm.connection.networkChanged() }
+            }
         }
         runCatching { cm.registerDefaultNetworkCallback(cb) }.onSuccess { networkCallback = cb }
     }
