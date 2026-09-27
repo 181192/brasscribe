@@ -112,6 +112,8 @@ public struct Part: Sendable, Equatable, Identifiable {
     public var dynamics: [Int: String] = [:]
     /// Written key signature per measure (follows key changes).
     public var measureFifths: [Int] = []
+    /// The arranger coloured some of its notes as uncertain.
+    public var hasMarks = false
 
     /// Concert key signature in a measure.
     public func concertFifths(inMeasure i: Int) -> Int {

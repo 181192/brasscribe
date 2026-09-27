@@ -444,6 +444,7 @@ NB = {
     "Kept the notes in %@.": "Beholdt tonene i %@.",
     "Most of these are probably right. Listen to a bar, then keep the rest of it.": "De fleste av disse er nok riktige. Lytt til en takt, og behold resten av den.",
     "Most of these are probably right. Start with the %lld very unsure ones.": "De fleste av disse er nok riktige. Begynn med de %lld svært usikre.",
+    "Start with the %lld very unsure ones.": "Begynn med de %lld svært usikre.",
     "MusicXML, MIDI and 2 more": "MusicXML, MIDI og 2 til",
     "Others (%lld)": "Andre (%lld)",
     "Recording, %@ %@": "Opptak, %@ %@",

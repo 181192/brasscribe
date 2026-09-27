@@ -3711,6 +3711,16 @@
         }
       }
     },
+    "Start with the %lld very unsure ones.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begynn med de %lld svært usikre."
+          }
+        }
+      }
+    },
     "Step %lld of %lld": {
       "localizations": {
         "nb": {

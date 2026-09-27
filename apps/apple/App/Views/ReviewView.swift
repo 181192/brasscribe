@@ -227,8 +227,10 @@ struct ReviewView: View {
             if open.count > 50 {
                 // Until the engine marks fewer notes: say so, and point at the ones that matter.
                 let v = open.filter { $0.level == .veryUncertain }.count
-                Text(v > 0 ? String(localized: "Most of these are probably right. Start with the \(v) very unsure ones.")
-                           : String(localized: "Most of these are probably right. Listen to a bar, then keep the rest of it."))
+                // When most are very unsure, "most of these are probably right" would not be true.
+                Text(v * 2 > open.count ? String(localized: "Start with the \(v) very unsure ones.")
+                     : v > 0 ? String(localized: "Most of these are probably right. Start with the \(v) very unsure ones.")
+                     : String(localized: "Most of these are probably right. Listen to a bar, then keep the rest of it."))
                     .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("reviewLead")

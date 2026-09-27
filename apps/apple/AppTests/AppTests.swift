@@ -97,6 +97,9 @@ func testVideo() -> URL? {
     let solo = items.filter { $0.partName == PartNames.display("Solo Cornet") }
     let soloGroups = comp.review.filter { $0.voice == "solo" }
     #expect(solo.count == soloGroups.count)
+    // only the parts the arranger marked: Home's count and Review's are the same 83 places
+    #expect(items.count == solo.count)
+    #expect(score.parts.filter(\.hasMarks).map(\.name) == ["Solo Cornet"])
     #expect(solo.filter { $0.level == .veryUncertain }.count == soloGroups.filter(\.very).count)
     // groups are short (the engine aims at two bars; one golden group reaches into a third)
     #expect(solo.allSatisfy { ($0.lastBar ?? $0.bar) >= $0.bar && ($0.lastBar ?? $0.bar) - $0.bar <= 2 })

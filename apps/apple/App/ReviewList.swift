@@ -35,7 +35,9 @@ enum ReviewList {
         let q = Double(Score.ticksPerQuarter) / Double(comp.ticksPerBeat)
         var out: [ReviewItem] = []
         let voices = Dictionary(comp.voices.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        for (k, part) in score.parts.enumerated() where !part.isPercussion {
+        // Only the parts the arranger marked play the reviewed voices; others that happen to share a pitch don't.
+        let anyMarked = score.parts.contains(where: \.hasMarks)
+        for (k, part) in score.parts.enumerated() where !part.isPercussion && (!anyMarked || part.hasMarks) {
             for g in comp.review {
                 // the part carries the group when it plays the group's first note (onset and pitch class)
                 guard let lead = voices[g.voice]?.notes.filter({ $0.start >= g.start && $0.start < g.end }).min(by: { $0.start < $1.start })

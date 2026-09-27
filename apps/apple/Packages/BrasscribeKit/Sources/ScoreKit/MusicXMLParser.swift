@@ -86,6 +86,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
     var partTranspose: [String: Int] = [:]
     var partPercussion: [String: Bool] = [:]
     var partFifths: [String: Int] = [:]
+    var partMarked: Set<String> = []
     var curPart: String?
     var divisions = 1
     var pos = 0 // in divisions within the current measure
@@ -124,6 +125,9 @@ private final class Delegate: NSObject, XMLParserDelegate {
             pos = 0; lastNoteStart = 0
         case "note":
             note = RawNote()
+            if a["color"] != nil, let p = curPart { partMarked.insert(p) }
+        case "notehead":
+            if a["color"] != nil, let p = curPart { partMarked.insert(p) }
         case "rest": note?.isRest = true
         case "chord": note?.isChord = true
         case "grace": note?.isGrace = true
@@ -268,7 +272,8 @@ private final class Delegate: NSObject, XMLParserDelegate {
                         instrumentSound: info.instrumentSound, midiProgram: perc ? nil : info.midiProgram,
                         midiChannel: info.midiChannel, transposeSemitones: partTranspose[id] ?? 0,
                         isPercussion: perc, writtenFifths: partFifths[id] ?? 0, notes: partNotes[id] ?? [],
-                        dynamics: partDynamics[id] ?? [:], measureFifths: partMeasures[id]?.map(\.fifths) ?? [])
+                        dynamics: partDynamics[id] ?? [:], measureFifths: partMeasures[id]?.map(\.fifths) ?? [],
+                        hasMarks: partMarked.contains(id))
         }
         var tempoList = tempos.sorted { $0.key < $1.key }.map { Score.Tempo(tick: $0.key, bpm: $0.value) }
         if let first = tempoList.first, first.tick > 0 { tempoList.insert(.init(tick: 0, bpm: first.bpm), at: 0) }
