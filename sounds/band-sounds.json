@@ -1,0 +1,13 @@
+{
+ "about": "Pin, fetch and verify the band SoundFonts the apps bundle (they are built, not in git).",
+ "files": {
+  "brasscribe-band-16bit.sf2": {
+   "sha256": "c27bd1c1dd8d928f9b076c907c529d55d3c5180ec117454ca351f1ad4b3cba64",
+   "size": 195102444
+  },
+  "brasscribe-band-mobile.sf2": {
+   "sha256": "fefc7a5b013de29be52effc9987613da23382eea9fe5ca850299bf67f5268307",
+   "size": 77337164
+  }
+ }
+}

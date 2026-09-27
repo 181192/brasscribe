@@ -16,8 +16,10 @@ Sections (seconds at 120 bpm; pitches concert, inside each part's comfortable ra
   detached  the same scale as short staccato notes with gaps: releases, staccato samples
   sweep     chromatic over the part's pro range, 0.5 s per note: stretched samples, range holes
   dynamics  the middle note at velocity 30, 48, 64, 80, 100, 116, 127, 1 s each
-  chord     (band.mid only) every part holds a chord tone for 4 s at mf, three times, while
-            the cornets play 16ths on top: polyphony and balance
+  chord     (band.mid and phrases.json "band") every part holds a chord tone for 4 s at mf, three
+            times, while the cornets play 16ths on top. band.mid has 17 pitched parts on 15
+            channels, so two pairs share a channel: use phrases.json "band" with the app's own
+            channel plan (as the alphaTab harness does) for polyphony checks
 """
 
 from __future__ import annotations

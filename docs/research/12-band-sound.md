@@ -252,10 +252,10 @@ Measured on the Mikkel golden arrangement (`sounds/render.py`, dry stems, LU rel
 
 The project is non-commercial (docs/plan/apps-plan.md §7). Attribution text is in `sounds/manifest.json`.
 
-**Libraries considered and not used.** Their licences were not re-checked online for this change; the notes are what the earlier survey in `docs/plan/research-sound-and-mobile-ml.md` §1 found.
-- **Philharmonia Orchestra samples.** Free for music, but the terms forbid redistributing the samples as a sample library, which a bundled SoundFont is. They have no brass-band instruments either.
+**Libraries considered and not used.** Their licences were not re-checked online for this change. The first three rows come from the survey in `docs/plan/research-sound-and-mobile-ml.md` §1; the Freesound note is my own assessment.
+- **Philharmonia Orchestra samples.** Free for music, but the samples "must not be sold or made available 'as is' (i.e. as samples or as a sampler instrument)", and a playback app is a sampler instrument. The site lists the euphonium under the tuba family; whether the download contains it was not verified.
 - **Sonatina Symphonic Orchestra** (Creative Commons Sampling Plus 1.0, a retired licence). Orchestral trumpet, horn, trombone and tuba only; nothing that VSCO and Iowa do not already cover.
-- **Virtual Playing Orchestra.** A mix of other libraries under their own terms, Philharmonia included. Not clean to redistribute.
+- **Virtual Playing Orchestra.** Redistribution is allowed with credit, but it bundles samples from other libraries under their own licences. It has no cornet, flugel or euphonium.
 - **Freesound CC0.** Single cornet, flugelhorn or euphonium notes turn up, but not chromatic multi-dynamic sets from one player and one microphone. Mixing players makes the band inconsistent, which is the main flaw of mixing VSCO and Iowa today.
 
 No free, redistributable library has a cornet, flugelhorn, E♭ tenor horn, baritone, euphonium or brass-band basses. They are derived as follows:
@@ -296,7 +296,16 @@ For the A/B sets, keep `key.json` away from listeners and score with `sounds/ab-
   - alphaTab at loop wrap and seek (it probably stops voices dead there too).
   - Real-time behaviour on a physical Android phone (xrun count, sfizz memory of about 100 MB estimated).
   - Studio in a browser.
-- **The missing-sounds state needs showing in the UI.** It exists in all three apps, with en/nb copy, and is being shown one line above the player. Apple's text is to move into `Localizable.xcstrings`.
+- **Release builds need the band sounds hosted.** The SoundFonts are built files, not in git, and the release workflows build in CI. Before this change, a CI-built app shipped without them and played only the basic tier. Now:
+  - the Apple, Android and Windows release jobs run `sounds/tools/band_sounds.py fetch`;
+  - it downloads the pinned files (`sounds/band-sounds.json`, sha256) from the repository variable `BRASSCRIBE_BAND_SOUNDS_URL`;
+  - the build **fails** when the variable is unset or a hash does not match.
+
+  To do: upload `brasscribe-band-16bit.sf2` and `brasscribe-band-mobile.sf2`, e.g. as assets of a `band-sounds-<sha>` GitHub release, and set the variable. Re-run `band_sounds.py pin` whenever the SoundFonts are rebuilt.
+- **Memory is not measured on devices.**
+  - Apple loads each part's preset into its own sampler, in memory (needed against cause 1). The sustain samples of all 17 brass presets add up to about 270 MB at 16-bit, or 535 MB if the sampler keeps float32 and does not share samples between instances. That is fine on a Mac, but has to be measured on an iPhone before release. A quartet or the minimal band loads a fraction of it.
+  - Android's alphaTab holds the whole phone SoundFont as floats: about 155 MB, against about 117 MB before. The full 16-bit file ran out of memory at 298 MB of floats.
+- **The missing-sounds line has not been seen running.** It is shown one line above the player bar on Android, Apple and Windows (info icon, en/nb copy, the path under a Details disclosure). Android builds. The Apple app target (it needs the Verovio framework) and the WinUI project (it needs Windows) were not built here.
 - **Sizes grew with the range extensions and baked layer copies.**
 
   | File | Size |
