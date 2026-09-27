@@ -68,7 +68,7 @@ The Playback menu lists the same keys.
 - **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
   and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
   whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
-  Swift. The Rust core's solo-with-band path then writes the score. The models (about 40 MB) download on
+  Swift. The Rust core's solo-with-band path then writes the score. The models (about 6 MB) download on
   demand from the address in Settings, or come from `BRASSCRIBE_MODELS` (a `models/converted/` folder)
   during development. They are not in the app.
 - **Video.** The synced video plays in a player layer with picture in picture

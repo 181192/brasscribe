@@ -10,8 +10,8 @@ public enum OnDeviceModel: String, CaseIterable, Sendable {
     case beatThisHalf = "beat-this/beat-this-small0-fp16"
     case beatThisFull = "beat-this/beat-this-small0-fp32"
 
-    /// Beat This in fp16 (39 MB) on devices. The simulator's Core ML returns zeros for the
-    /// fp16 program, so it gets the fp32 build (78 MB, same parity gate).
+    /// Beat This in fp16 (4.4 MB) on devices. The simulator's Core ML returns zeros for the
+    /// fp16 program, so it gets the fp32 build (8.6 MB, same parity gate).
     public static var beatThis: OnDeviceModel {
         #if targetEnvironment(simulator)
         return .beatThisFull
@@ -40,8 +40,8 @@ public enum OnDeviceModel: String, CaseIterable, Sendable {
         switch self {
         case .swiftF0: return 1.2
         case .basicPitch: return 0.3
-        case .beatThisHalf: return 39
-        case .beatThisFull: return 78
+        case .beatThisHalf: return 4.4
+        case .beatThisFull: return 8.6
         }
     }
 
@@ -123,7 +123,7 @@ public final class ModelStore: @unchecked Sendable {
         return dst
     }
 
-    /// Remove the compiled models (frees about 40 MB).
+    /// Remove the compiled models (frees about 6 MB).
     public func removeAll() {
         try? FileManager.default.removeItem(at: cache)
         lock.withLock { loaded = [:] }

@@ -62,7 +62,7 @@ struct SettingsView: View {
                             .autocorrectionDisabled()
                     } label: { Text("Details for the band's tech person") }
                 } header: { Text("On this device") } footer: {
-                    Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 40 MB) are downloaded once.")
+                    Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")
                 }
 
                 Section {

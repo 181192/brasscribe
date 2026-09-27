@@ -2471,12 +2471,12 @@
         }
       }
     },
-    "One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 40 MB) are downloaded once.": {
+    "One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ett instrument alene kan skrives ned her, uten at noe sendes noe sted. Lyttefilene (omtrent 40 MB) lastes ned én gang."
+            "value": "Ett instrument alene kan skrives ned her, uten at noe sendes noe sted. Lyttefilene (omtrent 6 MB) lastes ned én gang."
           }
         }
       }
@@ -2781,12 +2781,12 @@
         }
       }
     },
-    "Pitch and beat models (about 40 MB) are downloaded once and not included in the app.": {
+    "Pitch and beat models (about 6 MB) are downloaded once and not included in the app.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modellene for tonehøyde og puls (omtrent 40 MB) lastes ned én gang og følger ikke med appen."
+            "value": "Modellene for tonehøyde og puls (omtrent 6 MB) lastes ned én gang og følger ikke med appen."
           }
         }
       }
