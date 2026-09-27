@@ -25,7 +25,9 @@ struct DisplayTitle: View {
     var body: some View {
         Group {
             if let emphasis {
-                Text("\(Text(text).font(Font.Brasscribe.display(size))) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Brasscribe.brassText))")
+                // the whole line carries the display face, so the space between the two parts is display-sized too
+                Text("\(Text(text)) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Brasscribe.brassText))")
+                    .font(Font.Brasscribe.display(size))
             } else {
                 Text(text).font(Font.Brasscribe.display(size))
             }
@@ -187,6 +189,59 @@ struct ChipLabel: View {
     }
 }
 
+/// A segmented choice in the warm greys: the chosen segment is raised with an edge. No
+/// accent colour, so it never reads as the primary. Each segment is at least 44 pt tall.
+struct Segmented<Value: Hashable>: View {
+    let label: String
+    @Binding var selection: Value
+    let options: [(value: Value, title: String)]
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// At the largest text sizes the segments stack, one per row, so none wraps or squeezes.
+    private var stacked: Bool { typeSize >= .accessibility1 }
+
+    var body: some View {
+        if stacked {
+            segments(vertical: true)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                segments(vertical: false)
+                segments(vertical: true)
+            }
+        }
+    }
+
+    private func segments(vertical: Bool) -> some View {
+        let layout = vertical ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(spacing: 2))
+        return layout {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, o in
+                let on = o.value == selection
+                Button { selection = o.value } label: {
+                    Text(o.title)
+                        .font(on ? Font.Brasscribe.label : Font.Brasscribe.body)
+                        .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                        .padding(.horizontal, Space.s3)
+                        .frame(maxWidth: vertical ? .infinity : nil, minHeight: 44, alignment: .leading)
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Brasscribe.surfaceRaised)
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Brasscribe.borderStrong))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? [.isSelected] : [])
+            }
+        }
+        .padding(2)
+        .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+        .fixedSize(horizontal: !vertical, vertical: true)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(label))
+    }
+}
+
 // MARK: surfaces
 
 /// A 40 pt icon well in `secondary`, for list rows and cards.
@@ -210,9 +265,10 @@ struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            // the shadow sits on the card's shape only, never on the text inside it
+            .background(RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Brasscribe.surfaceRaised)
+                .shadow(color: scheme == .dark ? .clear : .black.opacity(0.04), radius: 2, y: 1))
             .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.border, lineWidth: 1))
-            .shadow(color: scheme == .dark ? .clear : .black.opacity(0.04), radius: 2, y: 1)
     }
 }
 
@@ -240,7 +296,7 @@ struct HelperLine: View {
     let systemImage: String
     let text: String
     var body: some View {
-        Label { Text(text) } icon: { Image(systemName: systemImage) }
+        Label { Text(text).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: systemImage) }
             .font(Font.Brasscribe.callout)
             .foregroundStyle(Color.Brasscribe.textMuted)
             .accessibilityElement(children: .combine)
@@ -293,6 +349,7 @@ struct Lockup: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: product ? "Brasscribe Play" : "Brasscribe"))
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -329,8 +386,20 @@ struct UncertaintyLegend: View {
     }
 
     @ViewBuilder private var items: some View {
-        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Uncertain") }
-        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very uncertain") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Brasscribe wasn't sure") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very unsure") }
+    }
+}
+
+extension View {
+    /// Menu pickers: ink text on iOS (they take the tint); the Mac pop-up button keeps its own
+    /// label colour, which a custom tint only dims.
+    @ViewBuilder func menuTint() -> some View {
+        #if os(iOS)
+        tint(Color.Brasscribe.text)
+        #else
+        foregroundStyle(Color.Brasscribe.text)
+        #endif
     }
 }
 

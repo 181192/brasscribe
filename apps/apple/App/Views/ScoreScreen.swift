@@ -2,8 +2,9 @@ import AVKit
 import ScoreKit
 import SwiftUI
 
-/// Score, parts and practice: notation with cursor, transport, mixer, loop, speed,
-/// count-in, metronome, transpose, play-along and original-vs-score with synced video.
+/// Score, parts and practice: notation with cursor, the player, the parts panel (mute or
+/// only this), repeat, speed, count-in, metronome, play-along and band-or-recording with
+/// synced video.
 struct ScoreScreen: View {
     @Environment(AppModel.self) private var app
     let piece: Piece
@@ -23,11 +24,18 @@ struct ScoreScreen: View {
             if let model {
                 PracticeView(model: model)
             } else if let error {
-                ContentUnavailableView(String(localized: "Couldn't open the score"), systemImage: "exclamationmark.triangle", description: Text(error))
+                ProblemContent(title: String(localized: "This score can't be opened"), lead: nil,
+                               reasons: [String(localized: "The file may be damaged. Your recording is safe.")], hint: nil, detail: error) {
+                    EmptyView()
+                }
             } else {
                 ProgressView()
             }
         }
+        .pageBackground()
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     private var currentTitle: String {
@@ -47,8 +55,10 @@ struct ScoreScreen: View {
         guard model == nil else { return }
         do {
             let loaded = try PracticeModel(piece: piece)
+            if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
             loaded.start()
             model = loaded
+            ScreenshotScenes.stage(loaded)
         } catch {
             self.error = error.localizedDescription
         }
@@ -57,30 +67,63 @@ struct ScoreScreen: View {
 
 struct PracticeView: View {
     @Bindable var model: PracticeModel
-    @State private var showMixer = false
+    @Environment(AppModel.self) private var app
+    @State private var showParts = false
+    // the parts panel starts open on the Mac; on iPad it's one tap away, so the score keeps its width
+    #if os(macOS)
+    @State private var showInspector = true
+    #else
+    @State private var showInspector = false
+    #endif
     @State private var showTalking = false
-    @State private var showExport = false
+    @State private var showExport = LaunchOptions.screen == "export"
     @State private var showVideo = true
+    @State private var toCheck = 0
     @FocusState private var focused: Bool
     @Environment(\.horizontalSizeClass) private var hsize
 
+    private var wide: Bool {
+        #if os(macOS)
+        true
+        #else
+        hsize == .regular
+        #endif
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            ScoreToolbar(model: model, showMixer: $showMixer, showTalking: $showTalking, showExport: $showExport)
-            Divider()
+            ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
+                         showTalking: $showTalking, showVideo: $showVideo)
+            StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) }
+            Divider().overlay(Color.Brasscribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
-                if let player = model.video, showVideo {
-                    VideoPiP(player: player)
-                        .frame(width: hsize == .compact ? 160 : 280, height: hsize == .compact ? 90 : 158)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .shadow(radius: 4)
-                        .padding(12)
-                        .accessibilityLabel(Text("Video of the performance, synced to the score"))
+                VStack(alignment: .trailing, spacing: Space.s3) {
+                    if let player = model.video, showVideo {
+                        VideoPiP(player: player)
+                            .frame(width: wide ? 280 : 160, height: wide ? 158 : 90)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                            .shadow(color: .black.opacity(0.15), radius: 4)
+                            .accessibilityLabel(Text("Video of the performance, synced to the score"))
+                    }
+                    if !wide { ZoomButtons(model: model, vertical: true) }
                 }
+                .padding(Space.s3)
             }
-            Divider()
-            TransportBar(model: model)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            PlayerBar(model: model, wide: wide)
+        }
+        .inspector(isPresented: Binding(get: { wide && showInspector }, set: { showInspector = $0 })) {
+            PartsPanel(model: model)
+                .inspectorColumnWidth(min: 260, ideal: 320, max: 400)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showExport = true } label: { Label("Share or print", systemImage: BrasscribeIcon.export.systemName).labelStyle(.titleAndIcon) }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                    .accessibilityIdentifier("shareOrPrint")
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(model.piece.title))
@@ -89,187 +132,624 @@ struct PracticeView: View {
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
-        .onAppear { focused = true }
+        .onAppear { focused = true; refreshToCheck() }
         .focusedSceneValue(\.practice, model)
         .onKeyPress(.rightArrow) { model.nextBar(); return .handled }
         .onKeyPress(.leftArrow) { model.previousBar(); return .handled }
         .onKeyPress(",") { model.changeSpeed(by: -5); return .handled }
         .onKeyPress(".") { model.changeSpeed(by: 5); return .handled }
-        .sheet(isPresented: $showMixer) { MixerView(model: model) }
+        .sheet(isPresented: $showParts) {
+            NavigationStack {
+                ScrollView { PartsPanel(model: model) }
+                    .pageBackground()
+                    .navigationTitle(Text("Parts and sound"))
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showParts = false } } }
+            }
+            .presentationDetents([.medium, .large])
+        }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
         .sheet(isPresented: $showExport) { ExportView(model: model) }
-        .alert(String(localized: "Playback problem"), isPresented: Binding(get: { model.loadError != nil }, set: { _ in })) {
+        .alert(String(localized: "The sound can't play"), isPresented: Binding(get: { model.loadError != nil }, set: { _ in })) {
             Button("OK") {}
-        } message: { Text(model.loadError ?? "") }
+        } message: { Text("The score is still here to read. Try closing and opening it again.") }
+    }
+
+    private func refreshToCheck() {
+        let items = ReviewList.items(score: model.score, uncertainty: model.uncertainty)
+        let checked = model.piece.loadChecked()
+        toCheck = items.filter { !checked.contains($0.id) }.count
+    }
+}
+
+/// "9 notes marked ? · Check them", and the ad lib note when those bars are near.
+struct StatusLine: View {
+    @Bindable var model: PracticeModel
+    let toCheck: Int
+    let wide: Bool
+    let check: () -> Void
+
+    var body: some View {
+        let free = model.freeTimeBars.first { $0.lowerBound - 2 <= model.currentBar && model.currentBar <= $0.upperBound + 2 }
+        if toCheck > 0 || free != nil {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                if toCheck > 0 {
+                    let count = wide ? (toCheck == 1 ? String(localized: "1 note marked ? (boxed ? = very unsure)") : String(localized: "\(toCheck) notes marked ? (boxed ? = very unsure)"))
+                                     : (toCheck == 1 ? String(localized: "1 note marked ?") : String(localized: "\(toCheck) notes marked ?"))
+                    // one button, one wrapping line: "? 9 notes marked ? · Check them"
+                    Button(action: check) {
+                        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                            UncertainMark(level: .uncertain)
+                            Text("\(Text(count).foregroundStyle(Color.Brasscribe.textMuted)) \(Text(verbatim: "·").foregroundStyle(Color.Brasscribe.textMuted)) \(Text("Check them").underline().foregroundStyle(Color.Brasscribe.text))")
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("\(count). Check them"))
+                    .accessibilityIdentifier("checkThem")
+                }
+                if let free {
+                    HelperLine(systemImage: BrasscribeIcon.info.systemName,
+                               text: free.count == 1
+                                ? String(localized: "Bar \(free.lowerBound + 1) has no steady beat (ad lib.). Its rhythms are approximate.")
+                                : String(localized: "Bars \(free.lowerBound + 1)–\(free.upperBound + 1) have no steady beat (ad lib.). Their rhythms are approximate."))
+                }
+            }
+            .font(Font.Brasscribe.callout)
+            .padding(.horizontal, Space.s5)
+            .padding(.bottom, Space.s1)
+            // wrapping text measured at zero width is endlessly tall; a floor keeps the window its size
+            .frame(minWidth: 300, maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
-    @Binding var showMixer: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let wide: Bool
+    @Binding var showParts: Bool
+    @Binding var showInspector: Bool
     @Binding var showTalking: Bool
-    @Binding var showExport: Bool
+    @Binding var showVideo: Bool
+
+    /// "As written for B♭" names the key of the part shown; all parts is just "As written".
+    private var writtenLabel: String {
+        guard wide else { return String(localized: "As written") }
+        let keys = ["C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "As written") }
+        let k = ((p.transposeSemitones % 12) + 12) % 12
+        return k == 0 ? String(localized: "As written") : String(localized: "As written for \(keys[k])")
+    }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) { controls }.padding(.horizontal).padding(.vertical, 8)
-            ScrollView(.horizontal) { HStack(spacing: 12) { controls }.padding(.horizontal).padding(.vertical, 8) }
+        Group {
+            if typeSize >= .accessibility1 {
+                // the largest text sizes: one control per row, nothing squeezed
+                VStack(alignment: .leading, spacing: Space.s2) { parts; pitch; view; inspectorToggle }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s3) { controls }
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        HStack(spacing: Space.s3) { parts; Spacer(minLength: 0); view; inspectorToggle }
+                        pitch
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
+    }
+
+    @ViewBuilder private var inspectorToggle: some View {
+        if wide {
+            Toggle(isOn: $showInspector) { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
+                .toggleStyle(.button)
+                .accessibilityHint(Text("Shows or hides the list of parts, where you can mute them."))
         }
     }
 
-    @ViewBuilder var controls: some View {
+    @ViewBuilder private var controls: some View {
+        parts
+        pitch
+        if wide { ZoomButtons(model: model, vertical: false) }
+        Spacer(minLength: Space.s2)
+        view
+        inspectorToggle
+    }
+
+    private var parts: some View {
         Picker(selection: $model.shownPart) {
             Text("All parts").tag(String?.none)
-            ForEach(model.score.parts) { p in Text(p.name).tag(String?.some(p.id)) }
-        } label: { Text("Show") }
+            ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
+        } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
         .pickerStyle(.menu)
+        .labelsHidden()
+        .menuTint()
         .accessibilityIdentifier("partPicker")
+        .frame(minHeight: 44)
         .fixedSize()
+    }
 
-        Picker(selection: $model.pitchMode) {
-            Text("Written").tag(PitchMode.written)
-            Text("Concert").tag(PitchMode.concert)
-        } label: { Text("Pitch") }
-        .pickerStyle(.segmented)
-        .fixedSize()
+    private var pitch: some View {
+        Segmented(label: String(localized: "Pitch"), selection: $model.pitchMode,
+                  options: [(PitchMode.written, writtenLabel),
+                            (PitchMode.concert, wide ? String(localized: "Concert pitch") : String(localized: "Concert"))])
         .accessibilityIdentifier("pitchMode")
+        .help(Text("Written is what you read on your part. Concert is how it sounds on a piano."))
+    }
 
-        HStack(spacing: 4) {
-            Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass").hitTarget() }
-                .accessibilityLabel(Text("Zoom out"))
-                .keyboardShortcut("-", modifiers: .command)
-            Text("\(Int(model.zoom * 100)) %").monospacedDigit().frame(minWidth: 48)
-                .accessibilityLabel(Text("Zoom \(Int(model.zoom * 100)) percent"))
-            Button { model.zoom = min(4, model.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass").hitTarget() }
-                .accessibilityLabel(Text("Zoom in"))
-                .keyboardShortcut("+", modifiers: .command)
+    private var view: some View {
+        Menu {
+            Button { showTalking = true } label: { Label("Read aloud", systemImage: BrasscribeIcon.talkingScore.systemName) }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+            if model.video != nil {
+                Toggle(isOn: $showVideo) { Label("Show video", systemImage: BrasscribeIcon.video.systemName) }
+            }
+            if !wide {
+                Button { showParts = true } label: { Label("Parts and sound", systemImage: BrasscribeIcon.parts.systemName) }
+                    .keyboardShortcut("p", modifiers: [.command, .shift])
+            }
+        } label: {
+            Label("View", systemImage: BrasscribeIcon.more.systemName)
         }
+        .menuStyle(.button)
+        .tint(Color.Brasscribe.text)
+        .frame(minHeight: 44)
         .fixedSize()
-
-        Spacer(minLength: 8)
-        Button { showMixer = true } label: { Label("Parts and sound", systemImage: "slider.horizontal.3") }
-            .keyboardShortcut("p", modifiers: [.command, .shift])
-        Button { showTalking = true } label: { Label("Talking score", systemImage: "text.bubble") }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-        Button { showExport = true } label: { Label("Export", systemImage: "square.and.arrow.up") }
-            .keyboardShortcut("e", modifiers: [.command, .shift])
+        .accessibilityIdentifier("viewMenu")
     }
 }
 
-struct TransportBar: View {
+struct ZoomButtons: View {
     @Bindable var model: PracticeModel
-    @Environment(\.horizontalSizeClass) private var hsize
+    let vertical: Bool
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 16) {
-                Button { model.previousBar() } label: { Image(systemName: "backward.end.fill").hitTarget() }
-                    .accessibilityLabel(Text("Previous bar"))
-                    .accessibilityIdentifier("previousBar")
-                Button { model.togglePlay() } label: {
-                    Image(systemName: model.isPlaying ? "pause.fill" : "play.fill").font(.title2).frame(minWidth: 44, minHeight: 44)
-                }
-                .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
-                .padShortcut(.space)
-                .accessibilityIdentifier("playPause")
-                Button { model.nextBar() } label: { Image(systemName: "forward.end.fill").hitTarget() }
-                    .accessibilityLabel(Text("Next bar"))
-                    .accessibilityIdentifier("nextBar")
+        let layout = vertical ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: Space.s1))
+        layout {
+            if vertical { zoomIn; zoomOut } else {
+                zoomOut
+                Text(percentText(model.zoom * 100)).monospacedDigit().frame(minWidth: 48)
+                    .accessibilityLabel(Text("Zoom \(percentText(model.zoom * 100))"))
+                zoomIn
+            }
+        }
+        .foregroundStyle(Color.Brasscribe.text)
+        .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+        .fixedSize()
+    }
 
-                VStack(alignment: .leading, spacing: 0) {
-                    if let b = model.countInBeat {
-                        Text("Count-in \(b)").font(.headline)
-                    } else {
-                        Text(model.positionDescription).font(.headline).monospacedDigit().fixedSize()
+    private var zoomIn: some View {
+        Button { model.zoom = min(4, model.zoom + 0.25) } label: { Image(systemName: BrasscribeIcon.zoomIn.systemName).frame(width: 48, height: 48) }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel(Text("Zoom in"))
+            .keyboardShortcut("+", modifiers: .command)
+    }
+    private var zoomOut: some View {
+        Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Image(systemName: BrasscribeIcon.zoomOut.systemName).frame(width: 48, height: 48) }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel(Text("Zoom out"))
+            .keyboardShortcut("-", modifiers: .command)
+    }
+}
+
+/// The player: Play first, previous/next bar, the position with the beat counter beside
+/// it, the tempo, band or recording, then the practice controls. The practice controls wrap
+/// onto more rows and never clip.
+struct PlayerBar: View {
+    @Bindable var model: PracticeModel
+    let wide: Bool
+    @State private var editRepeat = false
+
+    var body: some View {
+        Group {
+            if wide {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s5) { transport; position; hear; Divider().frame(height: 48); practiceWide }
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        HStack(spacing: Space.s5) { transport; position; Spacer(minLength: 0); hear }
+                        practiceWide
                     }
-                    Text(model.hearOriginal ? String(localized: "Original recording") : String(localized: "Score"))
-                        .font(.caption.weight(.semibold))
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("position")
-                .accessibilityValue(Text("\(model.currentBar + 1)"))
-                .accessibilityAddTraits(.updatesFrequently)
-
-                Spacer()
-
-                Toggle(isOn: $model.hearOriginal) { Label("Original", systemImage: "waveform").hitTarget() }
-                    .toggleStyle(.button)
-                    .disabled(!model.hasOriginal)
-                    .padShortcut("o")
-                    .accessibilityHint(Text("Switch between the score and the original recording at the same place."))
-                    .accessibilityIdentifier("originalToggle")
-            }
-            .labelStyle(AdaptiveLabelStyle(compact: hsize == .compact))
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) { practiceControls }
-                VStack(alignment: .leading, spacing: 8) { practiceControls }
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.Brasscribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+            } else {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: Space.s2)], spacing: Space.s2) { chipsPhone }
+                }
+                .card(padding: Space.s4)
+                .padding(.horizontal, Space.s5)
+                .padding(.vertical, Space.s2)
+                .background(Color.Brasscribe.bg)
             }
         }
-        .labelStyle(AdaptiveLabelStyle(compact: hsize == .compact))
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(.background)   // opaque, so text contrast does not depend on the score behind it
+        .labelStyle(.titleAndIcon)
     }
 
-    @ViewBuilder var practiceControls: some View {
-        HStack {
-            Button { model.changeSpeed(by: -5) } label: { Image(systemName: "tortoise").hitTarget() }
-                .accessibilityLabel(Text("Slower"))
+    // MARK: transport
+
+    private var transport: some View {
+        HStack(spacing: Space.s1) {
+            Button { model.previousBar() } label: { Image(systemName: BrasscribeIcon.previousBar.systemName).frame(width: 48, height: 48).contentShape(Rectangle()) }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Previous bar"))
+                .accessibilityIdentifier("previousBar")
+            Button { model.togglePlay() } label: {
+                Image(systemName: model.isPlaying ? BrasscribeIcon.pause.systemName : BrasscribeIcon.play.systemName)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.Brasscribe.onPrimary)
+                    .frame(width: 56, height: 56)
+                    .background(Color.Brasscribe.primary, in: Circle())
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
+            .accessibilitySortPriority(10)
+            .padShortcut(.space)
+            .accessibilityIdentifier("playPause")
+            Button { model.nextBar() } label: { Image(systemName: BrasscribeIcon.nextBar.systemName).frame(width: 48, height: 48).contentShape(Rectangle()) }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Next bar"))
+                .accessibilityIdentifier("nextBar")
+        }
+        .foregroundStyle(Color.Brasscribe.text)
+    }
+
+    private var position: some View {
+        let (bar, beat) = model.score.position(atTick: Int(model.position * Double(Score.ticksPerQuarter)))
+        let beats = model.score.measures.indices.contains(bar - 1) ? model.score.measures[bar - 1].beats : 4
+        let bpm = model.score.tempo(atTick: Int(model.position * Double(Score.ticksPerQuarter)))
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
+                Group {
+                    if let b = model.countInBeat {
+                        Text("Count-in \(b)")
+                    } else if wide {
+                        Text("Bar \(bar), beat \(Int(beat))")
+                    } else {
+                        Text("\(Text("Bar \(bar)").font(Font.Brasscribe.headline)) \(Text("of \(model.score.measures.count)").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted))")
+                    }
+                }
+                .font(Font.Brasscribe.headline)
+                .monospacedDigit()
+                BeatCounter(beats: beats, current: Int(beat))
+            }
+            if wide {
+                Text(model.speedPercent == 100 ? String(localized: "of \(model.score.measures.count) · ♩ = \(Int(bpm.rounded()))")
+                     : String(localized: "of \(model.score.measures.count) · ♩ = \(Int((bpm * model.speedPercent / 100).rounded())) (slowed from \(Int(bpm.rounded())))"))
+                    .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted).monospacedDigit()
+            }
+        }
+        .fixedSize()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(model.countInBeat.map { String(localized: "Count-in \($0)") } ?? model.positionDescription))
+        .accessibilityIdentifier("position")
+        .accessibilityValue(Text("\(model.currentBar + 1)"))
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    @ViewBuilder private var hear: some View {
+        if model.hasOriginal {
+            Segmented(label: String(localized: "Hear the band or the recording"), selection: $model.hearOriginal,
+                      options: [(false, String(localized: "Hear the band")), (true, String(localized: "Recording"))])
+            .accessibilityHint(Text("Switch between the score and the recording at the same place."))
+            .accessibilityIdentifier("originalToggle")
+        }
+    }
+
+    // MARK: practice, desktop and tablet
+
+    @ViewBuilder private var practiceWide: some View {
+        let layout = AnyLayout(FlowLayout(spacing: Space.s3))
+        layout {
+            speedSlider
+            repeatFields
+            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }
+                .toggleStyle(.chip).fixedSize().padShortcut("c")
+                .help(Text("One bar of clicks before the music starts."))
+            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }
+                .toggleStyle(.chip).fixedSize().padShortcut("m")
+            muteMyPart.fixedSize()
+        }
+    }
+
+    private var speedSlider: some View {
+        HStack(spacing: Space.s2) {
+            Text("Speed").font(Font.Brasscribe.label)
             Slider(value: $model.speedPercent, in: 25...150, step: 5) { Text("Speed") }
-                .frame(minWidth: 100, maxWidth: 180)
-                .accessibilityValue(Text("\(Int(model.speedPercent)) percent"))
+                .labelsHidden()
+                .frame(width: 140)
+                .accessibilityValue(Text(percentText(model.speedPercent)))
                 .accessibilityIdentifier("speed")
-            Button { model.changeSpeed(by: 5) } label: { Image(systemName: "hare").hitTarget() }
-                .accessibilityLabel(Text("Faster"))
-            Text("\(Int(model.speedPercent)) %").monospacedDigit().frame(minWidth: 44).accessibilityHidden(true)
+            Text(percentText(model.speedPercent)).monospacedDigit().frame(minWidth: 48, alignment: .trailing).accessibilityHidden(true)
         }
-        HStack(spacing: 6) {
-            Toggle(isOn: Binding(get: { model.looping }, set: { model.setLoop($0) })) { Label("Loop", systemImage: "repeat").hitTarget() }
-                .toggleStyle(.button)
-                .keyboardShortcut("l", modifiers: [.shift])
-                .accessibilityIdentifier("loopToggle")
-            Stepper(value: $model.loopFrom, in: 0...(model.score.measures.count - 1)) {
-                Text("from \(model.loopFrom + 1)").monospacedDigit()
+        .frame(minHeight: 48)
+    }
+
+    private var repeatFields: some View {
+        let last = model.score.measures.count - 1
+        return HStack(spacing: Space.s2) {
+            Image(systemName: BrasscribeIcon.loop.systemName).accessibilityHidden(true)
+            Text("Repeat bars")
+            Stepper(value: $model.loopFrom, in: 0...last) { Text("\(model.loopFrom + 1)").monospacedDigit().frame(minWidth: 28) }
+                .accessibilityLabel(Text("Repeat from bar"))
+                .accessibilityValue(Text("\(model.loopFrom + 1)"))
+                .onChange(of: model.loopFrom) { if model.looping { model.setLoop(true) } }
+            Text("to")
+            Stepper(value: $model.loopTo, in: 0...last) { Text("\(model.loopTo + 1)").monospacedDigit().frame(minWidth: 28) }
+                .accessibilityLabel(Text("Repeat to bar"))
+                .accessibilityValue(Text("\(model.loopTo + 1)"))
+                .onChange(of: model.loopTo) { if model.looping { model.setLoop(true) } }
+            if model.looping {
+                Button { model.setLoop(false) } label: { Text("Stop repeating") }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("loopToggle")
+            } else {
+                Button { model.setLoop(true) } label: { Text("Repeat") }
+                    .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+                    .keyboardShortcut("l", modifiers: [.shift])
+                    .accessibilityIdentifier("loopToggle")
             }
-            .accessibilityLabel(Text("Loop from bar"))
-            .accessibilityValue(Text("\(model.loopFrom + 1)"))
-            .onChange(of: model.loopFrom) { if model.looping { model.setLoop(true) } }
-            Stepper(value: $model.loopTo, in: 0...(model.score.measures.count - 1)) {
-                Text("to \(model.loopTo + 1)").monospacedDigit()
+            // hidden button so plain L repeats the current bar on iPad
+            Button("") { model.toggleLoopCurrentBar() }.padShortcut("l").hidden().frame(width: 0).accessibilityHidden(true)
+        }
+        .font(Font.Brasscribe.label)
+        .frame(minHeight: 48)
+        .fixedSize()
+    }
+
+    private var muteMyPart: some View {
+        Toggle(isOn: $model.playAlong) { Label("Mute my part", systemImage: BrasscribeIcon.playAlong.systemName) }
+            .toggleStyle(.chip)
+            .padShortcut("a")
+            .accessibilityHint(Text("Mutes your part so you can play it with the band."))
+            .accessibilityIdentifier("muteMyPart")
+    }
+
+    // MARK: practice, phone
+
+    @ViewBuilder private var chipsPhone: some View {
+        Menu {
+            ForEach([50.0, 60, 70, 75, 80, 90, 100, 110, 125], id: \.self) { s in
+                Button { model.speedPercent = s } label: {
+                    if model.speedPercent == s { Label(percentText(s), systemImage: "checkmark") } else { Text(percentText(s)) }
+                }
             }
-            .accessibilityLabel(Text("Loop to bar"))
-            .accessibilityValue(Text("\(model.loopTo + 1)"))
-            .onChange(of: model.loopTo) { if model.looping { model.setLoop(true) } }
+        } label: {
+            ChipLabel(title: String(localized: "Speed \(percentText(model.speedPercent))"), systemImage: BrasscribeIcon.speed.systemName,
+                      active: model.speedPercent != 100)
         }
-        .fixedSize()
-        HStack {
-            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: "1.circle").hitTarget() }.toggleStyle(.button)
-                .padShortcut("c")
-            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: "metronome").hitTarget() }.toggleStyle(.button)
-                .padShortcut("m")
-            Toggle(isOn: $model.playAlong) { Label("Play along", systemImage: "music.mic").hitTarget() }.toggleStyle(.button)
-                .accessibilityHint(Text("Mutes your part so you can play it."))
-                .padShortcut("a")
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("speedMenu")
+        .accessibilityValue(Text(percentText(model.speedPercent)))
+        .accessibilityAdjustableAction { d in model.changeSpeed(by: d == .increment ? 5 : -5) }
+
+        Menu {
+            Button { model.loopFrom = model.currentBar; model.loopTo = model.currentBar; model.setLoop(true) } label: {
+                Text("Repeat this bar")
+            }
+            Button { editRepeat = true } label: { Text("Repeat bars \(model.loopFrom + 1) to \(model.loopTo + 1)…") }
+            if model.looping { Button(role: .destructive) { model.setLoop(false) } label: { Text("Stop repeating") } }
+        } label: {
+            ChipLabel(title: String(localized: "Repeat"), systemImage: BrasscribeIcon.loop.systemName, active: model.looping)
         }
-        .fixedSize()
-        // hidden button so plain L loops the current bar
-        Button("") { model.toggleLoopCurrentBar() }.padShortcut("l").hidden().frame(width: 0).accessibilityHidden(true)
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("loopToggle")
+        .accessibilityValue(model.looping ? Text("Bars \(min(model.loopFrom, model.loopTo) + 1) to \(max(model.loopFrom, model.loopTo) + 1)") : Text("Off"))
+        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model) }
+
+        Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
+        Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")
+        muteMyPart
+        if model.hasOriginal {
+            Toggle(isOn: $model.hearOriginal) { Label("Recording", systemImage: BrasscribeIcon.original.systemName) }
+                .toggleStyle(.chip)
+                .accessibilityHint(Text("Plays the recording instead of the band, at the same place."))
+                .accessibilityIdentifier("originalToggle")
+        }
     }
 }
 
-/// Icon only in compact width (VoiceOver still reads the title), title and icon otherwise.
-struct AdaptiveLabelStyle: LabelStyle {
-    let compact: Bool
+/// "Repeat bars [12] to [13]" on the phone.
+struct RepeatSheet: View {
+    @Bindable var model: PracticeModel
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        let last = model.score.measures.count - 1
+        NavigationStack {
+            Form {
+                Stepper(value: $model.loopFrom, in: 0...last) { Text("From bar \(model.loopFrom + 1)").monospacedDigit() }
+                Stepper(value: $model.loopTo, in: 0...last) { Text("To bar \(model.loopTo + 1)").monospacedDigit() }
+                Text("Plays these bars over and over.").foregroundStyle(Color.Brasscribe.textMuted)
+            }
+            .navigationTitle(Text("Repeat bars"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Repeat") { model.setLoop(true); dismiss() } }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// "1 2 3 4" with the current beat bold and underlined. It never flashes.
+struct BeatCounter: View {
+    let beats: Int
+    let current: Int
+    var body: some View {
+        HStack(spacing: Space.s2) {
+            ForEach(1...max(1, min(beats, 12)), id: \.self) { b in
+                Text(verbatim: "\(b)")
+                    .font(b == current ? Font.Brasscribe.headline : Font.Brasscribe.callout)
+                    .underline(b == current)
+                    .foregroundStyle(b == current ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+            }
+        }
+        .monospacedDigit()
+        .accessibilityHidden(true)
+    }
+}
+
+/// Every part with labelled Mute and Only this toggles; your own part is bold with a
+/// leading bar and says "your part". Then the sound settings.
+struct PartsPanel: View {
+    @Bindable var model: PracticeModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s4) {
+                SectionLabel(String(localized: "Parts"))
+                VStack(spacing: Space.s1) {
+                    ForEach(model.score.parts) { p in row(p) }
+                }
+                Text("Your part is muted with “Mute my part”, so you can play along. “Only this” plays one part alone.")
+                    .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                SectionLabel(String(localized: "Sound"))
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    Picker(selection: $model.myPart) {
+                        ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
+                    } label: { Text("My part") }
+                    .pickerStyle(.menu)
+                    .menuTint()
+                    Stepper(value: $model.transpose, in: -12...12) {
+                        Text(model.transpose == 0 ? String(localized: "Pitch as written")
+                             : String(localized: "Move the pitch \(model.transpose > 0 ? "+" : "")\(model.transpose) semitones"))
+                    }
+                    Toggle(isOn: $model.room) { Text("Concert hall sound") }
+                    if !model.soundDescription.isEmpty {
+                        Text(model.soundDescription).font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                    }
+                }
+            }
+            .padding(Space.s4)
+        }
+        .background(Color.Brasscribe.surface)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Parts and sound"))
+    }
+
+    private func row(_ p: Part) -> some View {
+        let mine = p.id == model.myPart
+        return HStack(spacing: Space.s2) {
+            Rectangle().fill(mine ? Color.Brasscribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(p.displayName).font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                if mine { Text("your part").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Toggle(isOn: Binding(get: { model.isMuted(p.id) }, set: { model.setMuted(p.id, $0) })) {
+                Label("Mute", systemImage: BrasscribeIcon.mute.systemName)
+            }
+            .toggleStyle(SmallToggleStyle())
+            .accessibilityLabel(Text("Mute \(p.displayName)"))
+            Toggle(isOn: Binding(get: { model.isSoloed(p.id) }, set: { model.setSoloed(p.id, $0) })) {
+                Label("Only this", systemImage: BrasscribeIcon.solo.systemName)
+            }
+            .toggleStyle(SmallToggleStyle())
+            .accessibilityLabel(Text("Only \(p.displayName)"))
+            .help(Text("Only this: hear this part alone."))
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// The compact on/off used in the parts list: outline when off, tonal fill + ink edge + ✓
+/// when on. 44 pt on touch, 36 pt with a pointer.
+struct SmallToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        if compact { Label(configuration).labelStyle(.iconOnly) } else { Label(configuration).labelStyle(.titleAndIcon) }
+        Button { configuration.isOn.toggle() } label: {
+            HStack(spacing: 4) {
+                if configuration.isOn { Image(systemName: "checkmark").font(.caption.weight(.bold)) }
+                configuration.label.labelStyle(.titleAndIcon)
+            }
+            .font(Font.Brasscribe.caption.weight(.semibold))
+            .foregroundStyle(Color.Brasscribe.text)
+            .padding(.horizontal, Space.s2)
+            .frame(minHeight: minHeight)
+            .background {
+                RoundedRectangle(cornerRadius: Radius.sm)
+                    .fill(configuration.isOn ? Color.Brasscribe.secondary : Color.clear)
+                    .overlay(RoundedRectangle(cornerRadius: Radius.sm)
+                        .strokeBorder(configuration.isOn ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: configuration.isOn ? 1.5 : 1))
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Radius.sm))
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
+    }
+
+    private var minHeight: CGFloat {
+        #if os(iOS)
+        44
+        #else
+        36
+        #endif
     }
 }
 
-/// Muted, synced video of the original performance with system picture-in-picture.
-/// The synced video in a player layer with system picture in picture
-/// (AVPictureInPictureController, iOS/iPadOS and macOS) and an explicit, labelled button
-/// to start it. The video stays muted; the app's audio engine plays.
+/// Lays children out left to right and wraps onto the next row, so nothing clips.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let widest = subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0
+        let width = max(proposal.width ?? .infinity, widest)
+        let rows = arrange(width, subviews)
+        let h = rows.reduce(0) { $0 + $1.height } + spacing * CGFloat(max(0, rows.count - 1))
+        let w = rows.map(\.width).max() ?? 0
+        return CGSize(width: min(width, w), height: h)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(bounds.width, subviews) {
+            var x = bounds.minX
+            for i in row.items {
+                let s = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y + (row.height - s.height) / 2), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> [(items: [Int], width: CGFloat, height: CGFloat)] {
+        var rows: [(items: [Int], width: CGFloat, height: CGFloat)] = []
+        var cur: [Int] = [], w: CGFloat = 0, h: CGFloat = 0
+        for (i, v) in subviews.enumerated() {
+            let s = v.sizeThatFits(.unspecified)
+            if !cur.isEmpty, w + spacing + s.width > width {
+                rows.append((cur, w, h)); cur = []; w = 0; h = 0
+            }
+            w += (cur.isEmpty ? 0 : spacing) + s.width
+            h = max(h, s.height)
+            cur.append(i)
+        }
+        if !cur.isEmpty { rows.append((cur, w, h)) }
+        return rows
+    }
+}
+
+/// Muted, synced video of the original performance in a player layer, with system
+/// picture in picture (AVPictureInPictureController) and a labelled button to start it.
+/// The video stays muted; the app's audio engine plays.
 struct VideoPiP: View {
     let player: AVPlayer
     @State private var pip = PiPModel()
@@ -280,7 +760,7 @@ struct VideoPiP: View {
             Button {
                 pip.toggle()
             } label: {
-                Image(systemName: pip.active ? "pip.exit" : "pip.enter")
+                Image(systemName: pip.active ? "pip.exit" : BrasscribeIcon.pictureInPicture.systemName)
                     .padding(8)
                     .background(.ultraThinMaterial, in: Circle())
                     .hitTarget()
@@ -376,11 +856,12 @@ extension View {
     /// At least 44 × 44 pt to hit (WCAG 2.5.8 asks for 24; Apple's guideline is 44).
     func hitTarget() -> some View { frame(minWidth: 44, minHeight: 44).contentShape(Rectangle()) }
 
-    /// A single-key shortcut on iPad. On macOS the Playback menu carries these keys, so
-    /// they work wherever focus is and are not registered twice.
+    /// A single-key shortcut on iPad (off when the musician turns single-key shortcuts off
+    /// in Settings). On macOS the Playback menu carries these keys, so they work wherever
+    /// focus is and are not registered twice.
     @ViewBuilder func padShortcut(_ key: KeyEquivalent) -> some View {
         #if os(iOS)
-        keyboardShortcut(key, modifiers: [])
+        keyboardShortcut(UserDefaults.standard.object(forKey: "singleKeyShortcuts") as? Bool ?? true ? KeyboardShortcut(key, modifiers: []) : nil)
         #else
         self
         #endif

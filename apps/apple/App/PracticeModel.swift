@@ -25,7 +25,14 @@ final class PracticeModel {
     private var layoutGeneration = 0
 
     // View settings
-    var shownPart: String? { didSet { if shownPart != oldValue { relayout() } } }
+    /// Showing your own part alone is the part view: "Mute my part" comes on, so you play it.
+    var shownPart: String? {
+        didSet {
+            guard shownPart != oldValue else { return }
+            if shownPart != nil, shownPart == myPart { playAlong = true }
+            relayout()
+        }
+    }
     var pitchMode: PitchMode = .written { didSet { if pitchMode != oldValue { relayout() } } }
     var zoom: CGFloat = 1 { didSet { if zoom != oldValue { relayout() } } }
     var viewWidth: CGFloat = 820
@@ -106,7 +113,7 @@ final class PracticeModel {
     func relayout() {
         let xml: String
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }
-        if renderer == nil { renderer = ScoreRenderer(musicXML: xml) }
+        if renderer == nil { renderer = ScoreRenderer(musicXML: PartNames.localized(xml)) }
         guard let r = renderer else { loadError = String(localized: "The notation engine could not start."); return }
         let layout = ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
                                           height: max(600, viewWidth * 1.3))
