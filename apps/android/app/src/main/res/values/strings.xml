@@ -447,6 +447,11 @@
     <string name="settings_display">Display</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_desc">English or Norsk (bokmål), in the phone\'s settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="appearance_system">Match system</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_contrast_note">Your contrast setting is on, so Brasscribe uses its high-contrast colours.</string>
     <string name="settings_text_motion">Text size and reduced motion</string>
     <string name="settings_text_motion_desc">Brasscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="help_1_title">Make a score</string>

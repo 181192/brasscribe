@@ -8,7 +8,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,7 +39,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (savedInstanceState == null) handleIntent(intent)
-        setContent { PlayTheme { PlayRoot(vm) } }
+        setContent {
+            // Settings › Display › Appearance: read before the first frame, so there is no flash.
+            val dark = vm.container.appearance.isDark(isSystemInDarkTheme())
+            SideEffect { applyWindowTheme(dark) }
+            PlayTheme(dark = dark) { PlayRoot(vm) }
+        }
+    }
+
+    /**
+     * The window behind Compose and the system bar icons follow the app's appearance, not the phone's
+     * night mode. Nothing is recreated, so playback and the score position stay as they are.
+     */
+    private var windowDark: Boolean? = null
+    private fun applyWindowTheme(dark: Boolean) {
+        if (windowDark == dark) return
+        windowDark = dark
+        val scrim = android.graphics.Color.TRANSPARENT
+        val bars = if (dark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim)
+        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(if (dark) WINDOW_DARK else WINDOW_LIGHT))
+    }
+
+    private companion object {
+        // The same values as windowBackground in res/values(-night)/themes.xml (token bg).
+        const val WINDOW_LIGHT = 0xFFFBFAF7.toInt()
+        const val WINDOW_DARK = 0xFF131210.toInt()
     }
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
