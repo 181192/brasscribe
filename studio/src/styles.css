@@ -233,8 +233,8 @@ td .sub { display: block; font-size: var(--meta); color: var(--bc-text-muted); }
   font-size: var(--meta); font-weight: 600; line-height: 1.2; white-space: nowrap; color: var(--bc-text-muted);
 }
 .pill .i { width: 1rem; height: 1rem; }
-.pill-pass, .pill-succeeded, .pill-ran, .pill-ok, .pill-identical, .pill-improved { color: var(--bc-success); }
-.pill-fail, .pill-failed, .pill-regressed, .pill-error, .pill-different { color: var(--bc-error); }
+.pill-pass, .pill-ready, .pill-succeeded, .pill-ran, .pill-ok, .pill-identical, .pill-improved { color: var(--bc-success); }
+.pill-fail, .pill-not_ready, .pill-failed, .pill-regressed, .pill-error, .pill-different { color: var(--bc-error); }
 .pill-running, .pill-started, .pill-queued { color: var(--bc-text); }
 .pill-warning, .pill-missing { color: var(--bc-warning); }
 .notice { background: var(--bc-surface); border-radius: var(--bc-radius-sm); box-shadow: inset 3px 0 0 var(--bc-border-strong); padding: var(--bc-space-3) var(--bc-space-4); margin: var(--bc-space-4) 0; max-width: 72ch; }
@@ -292,6 +292,11 @@ button.chip[aria-pressed="true"] .count { color: var(--bc-text); }
 fieldset.source { display: grid; gap: var(--bc-space-2); justify-items: start; padding-top: var(--bc-space-1); }
 /* Headings that are a disclosure's summary. */
 summary > h2.in-summary, summary > h3.in-summary { margin: 0; display: inline; }
+summary > .row { align-items: center; }
+summary > .row > h2.in-summary { display: block; margin: 0; }
+/* A disclosure card that is only its summary line stays compact. */
+details.card:not([open]) { padding-block: var(--bc-space-1); }
+.ready-on { max-width: none; }
 .stages-section { margin-top: var(--bc-space-6); }
 .stages-box > summary { min-height: 3rem; }
 /* Checks below the score: one line per kind of problem. */
@@ -436,6 +441,18 @@ pre.json { background: var(--bc-surface); padding: var(--bc-space-3); border-rad
   /* Menus open in the flow on narrow screens, so they never run off the edge. */
   .menu-list { position: static; margin-top: var(--bc-space-2); min-width: 0; }
   details.menu[open] { flex-basis: 100%; }
+}
+/* Actions that move into a More menu on narrow screens. */
+.narrow-only { display: none !important; }
+@media (max-width: 37.5rem) {
+  .wide-only { display: none !important; }
+  .menu-list > .narrow-only { display: inline-flex !important; }
+  .view-head .actions { flex-wrap: nowrap; }
+  /* The action menus open over the page as a panel as wide as the header, so they never leave the screen. */
+  .view-head { position: relative; }
+  .view-head .actions details.menu { position: static; }
+  .view-head .actions details.menu[open] { flex-basis: auto; }
+  .view-head .actions .menu-list { position: absolute; left: 0; right: 0; top: 100%; margin-top: var(--bc-space-1); min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition-duration: var(--bc-duration-reduced) !important; animation: none !important; }

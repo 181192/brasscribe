@@ -88,11 +88,13 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         m?.git ? [h("dt", {}, "Git"), h("dd", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7), m.git.dirty ? t("run.dirty") : "")] : null,
         m?.devices?.length ? [h("dt", {}, t("manifest.kv.devices")), h("dd", {}, m.devices.join(", "))] : null,
         h("dt", {}, t("run.kv.created")), h("dd", {}, fmt.date(job.created)))));
-    const downloads = [
-      job.outputs?.includes("brass-band.musicxml") ? h("a", { class: "button", href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
-      job.outputs?.includes("brass-band.pdf") ? h("a", { class: "button", href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
-      job.outputs?.includes("brass-band.mid") ? h("a", { class: "button", href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
+    // Built on demand: the same links also sit in More on narrow screens, and a node lives in one place only.
+    const downloads = (cls = "") => [
+      job.outputs?.includes("brass-band.musicxml") ? h("a", { class: `button ${cls}`, href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
+      job.outputs?.includes("brass-band.pdf") ? h("a", { class: `button ${cls}`, href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
+      job.outputs?.includes("brass-band.mid") ? h("a", { class: `button ${cls}`, href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
     ].filter(Boolean);
+    const compare = (cls = "") => h("a", { class: `button ${cls === "narrow-only" ? "" : "ghost"} ${cls}`, href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare"));
     // Re-run is the page's primary only when the run failed; otherwise Play (in the score) is.
     const rerun = TERMINAL.has(job.status) ? h("button", { type: "button", class: job.status === "succeeded" ? "ghost" : "primary", onclick: async (e: Event) => {
       const b = e.currentTarget as HTMLButtonElement;
@@ -108,10 +110,11 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     } }, icon("retry"), t("manifest.rerunBtn")) : null;
     clear(actions,
       !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, icon("close"), t("run.cancel")) : null,
-      downloads.length ? menu([icon("export"), t("run.download")], downloads) : null,
-      h("a", { class: "button ghost", href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare")),
+      // Below 600 px the row is Re-run and More only; Download and Compare move into More.
+      downloads().length ? menu([icon("export"), t("run.download")], downloads(), { className: "wide-only" }) : null,
+      compare("wide-only"),
       rerun,
-      TERMINAL.has(job.status) ? menu(t("run.moreActions"), [deleteButton(job.id)]) : null);
+      TERMINAL.has(job.status) ? menu(t("run.moreActions"), [...downloads("narrow-only"), compare("narrow-only"), deleteButton(job.id)]) : null);
     if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
     // Open the stages on failure, with the failing stage selected (once, so a user's choice stands).
     if (!stagesOpened && job.status !== "succeeded") {

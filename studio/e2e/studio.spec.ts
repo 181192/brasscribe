@@ -282,6 +282,47 @@ test("keyboard: skip link, shortcut sheet, narrow layout", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeHidden();
 });
 
+test("runs page by page, parity names the failing formats, the run actions fit at 320 px", async ({ page }) => {
+  const jobs = (await (await page.request.get("/v1/jobs")).json()) as JobLite[];
+  await page.goto("/#/runs");
+  const rows = page.locator(".runs-table tbody tr");
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBe(Math.min(20, jobs.length));
+  if (jobs.length > 20) {
+    await page.locator("#runs-more").click();
+    expect(await rows.count()).toBe(Math.min(40, jobs.length));
+    await expect(page.locator(".runs-table a.run-link").nth(20)).toBeFocused();
+  }
+  // Untitled re-runs of one recording carry the run's own time, so their titles differ.
+  const titles = await page.locator(".runs-table a.run-link").allTextContents();
+  const untitled = titles.filter((x) => x.startsWith("Recording of"));
+  expect(new Set(untitled).size).toBe(untitled.length);
+
+  await page.goto("/#/parity");
+  await expect(page.locator("details.card").first()).toBeVisible();
+  const below = page.locator(".parity-below tbody tr");
+  const n = await below.count();
+  for (let i = 0; i < n; i++) {
+    const cells = below.nth(i).locator("td");
+    expect((await cells.first().textContent())?.trim(), `variant in failing row ${i}`).not.toBe("");
+    await expect(cells.last()).toContainText("below");
+  }
+  console.log(`parity: ${n} rows below the threshold, each with its variant`);
+
+  const run = await mikkelRun(page);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto(`/#/runs/${run.id}/score`);
+  const acts = page.locator(".view-head .actions");
+  await expect(acts.getByRole("button", { name: "Re-run" })).toBeVisible();
+  const tops = await acts.locator(":scope > *:visible").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+  expect(new Set(tops).size, "run actions on one line at 320 px").toBe(1);
+  await acts.locator("details.menu:not(.wide-only) > summary").click();
+  await expect(acts.getByRole("link", { name: /MusicXML/ })).toBeVisible();
+  await expect(acts.getByRole("link", { name: /^Compare/ }).filter({ visible: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.screenshot({ path: join(shots, "zoom", "run-actions-320px.png") });
+});
+
 // WCAG 1.4.10 reflow at 320 CSS px, 1.4.4 at 200 % zoom (a 1440 px window at 200 % is 720 CSS px),
 // and 1.4.12 text spacing: no sideways page scroll (tables, the score and plots scroll inside their
 // own regions), the nav collapses to a Menu button, and axe finds nothing serious.
