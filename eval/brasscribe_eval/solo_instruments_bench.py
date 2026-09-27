@@ -122,7 +122,9 @@ def _as_dicts(notes) -> list[dict]:
     return [{"pitch": n.pitch, "onset": n.onset_s, "offset": n.offset_s} for n in notes if n.onset_s is not None]
 
 
-def evaluate(seats: bool = False, root: Path = FIXTURES) -> dict[str, dict[str, float]]:
+def evaluate(seats: bool = False, root: Path = FIXTURES, notes: list | None = None) -> dict[str, dict[str, float]]:
+    """Per-instrument metrics; with `notes`, every seat-take note is appended to it as
+    (song, instrument, confidence, pitch, right)."""
     from brasscribe_music.confidence import Model
 
     from .arrange_layers_song import pitched
@@ -155,6 +157,8 @@ def evaluate(seats: bool = False, root: Path = FIXTURES) -> dict[str, dict[str, 
             R["bp_agrees"].append(float(np.mean([any(b["pitch"] == n.pitch and abs(b["onset"] - n.onset_s) <= TOL for b in bp)
                                                   for n in line])) if line else float("nan"))
             right = s["right"]
+            if notes is not None:
+                notes.extend((song.name, label, n.confidence, n.pitch, r) for n, r in zip(line, right))
             marked = [n.confidence < mark for n in line]
             ok = [m for m, r in zip(marked, right) if r]
             bad = [m for m, r in zip(marked, right) if not r]
@@ -174,16 +178,64 @@ def metrics(seats: bool = False, root: Path = FIXTURES) -> dict[str, float]:
             if k != "stems" and not np.isnan(v)}
 
 
+def _logit(p: np.ndarray) -> np.ndarray:
+    p = np.clip(p, 1e-4, 1 - 1e-4)
+    return np.log(p / (1 - p))
+
+
+LOW_REGISTER = 52  # E3, the floor of the solo window without a seat: "low" is the octaves below it
+
+
+def fit_low(notes: list, grid: np.ndarray = np.round(np.arange(-3.0, 6.01, 0.05), 2)) -> dict:
+    """What a low-register input (octaves below E3) would weigh in the confidence model with every other
+    weight held, by maximum
+    likelihood on the seat-take notes; also left out song by song (fitted on the other songs, the
+    "?" rates measured on the one left out)."""
+    from brasscribe_music.confidence import Model
+
+    mark = 1 - Model.load().mark_risk
+    songs = np.array([n[0] for n in notes])
+    z = _logit(np.array([n[2] for n in notes], float))
+    low = np.array([max(0, LOW_REGISTER - n[3]) / 12 for n in notes], float)
+    y = np.array([n[4] for n in notes], float)
+
+    def best(mask: np.ndarray) -> float:
+        ll = [np.sum(y[mask] * -np.log1p(np.exp(-(z[mask] + w * low[mask])))
+                     + (1 - y[mask]) * -np.log1p(np.exp(z[mask] + w * low[mask]))) for w in grid]
+        return float(grid[int(np.argmax(ll))])
+
+    held = np.zeros(len(notes), bool)
+    marked_lo = np.zeros(len(notes), bool)
+    for song in sorted(set(songs)):
+        out = songs == song
+        w = best(~out)
+        marked_lo[out] = 1 / (1 + np.exp(-(z[out] + w * low[out]))) < mark
+        held |= out
+    before = 1 / (1 + np.exp(-z)) < mark
+    rate = lambda m, sel: float(np.mean(m[sel])) if sel.any() else float("nan")  # noqa: E731
+    lowmask = low > 0
+    return {"low": best(np.ones(len(notes), bool)), "notes": len(notes), "low_notes": int(lowmask.sum()),
+            "false_alarm_low_before": rate(before, lowmask & (y == 1)), "false_alarm_low_after": rate(marked_lo, lowmask & (y == 1)),
+            "hit_low_before": rate(before, lowmask & (y == 0)), "hit_low_after": rate(marked_lo, lowmask & (y == 0))}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--fit-low", action="store_true",
+                    help="fit the confidence model's low-register weight on the seat takes (leave-one-song-out check)")
     ap.add_argument("--no-seat", action="store_true", help="only today's path (no seat)")
     ap.add_argument("--json", type=Path)
     args = ap.parse_args()
-    res = evaluate(seats=not args.no_seat)
+    notes: list = []
+    res = evaluate(seats=not args.no_seat or args.fit_low, notes=notes)
     keys = sorted({k for m in res.values() for k in m})
     print(f"{'':11}" + " ".join(f"{k:>13}" for k in keys))
     for label, m in res.items():
         print(f"{label:11}" + " ".join(f"{m.get(k, float('nan')):13.3f}" for k in keys))
+    if args.fit_low:
+        fit = fit_low(notes)
+        print(json.dumps(fit, indent=1))
+        res["fit_low"] = fit
     if args.json:
         args.json.write_text(json.dumps(res, indent=1))
 
