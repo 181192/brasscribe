@@ -23,6 +23,8 @@ final class AppModel {
     /// "Restart when “Mikkel” is done".
     var restartWhenDone = false
     var isPairWindowOpen = false
+    /// The name on a request that lapsed before it was answered.
+    var expiredRequest: String?
     var loginItemEnabled = false
     /// Where the panel is: the main status or the phones list.
     var panelPage: PanelPage = .status
@@ -36,6 +38,8 @@ final class AppModel {
     @ObservationIgnored private var lastAnnounced: DisplayState?
     @ObservationIgnored private let logger: FileLogger
     @ObservationIgnored private let environment = ProcessInfo.processInfo.environment
+    /// BANDROOM_DEMO=busy|idle (Debug builds): canned engine data for screenshots, no engine started.
+    @ObservationIgnored let demo: Bool
 
     init() {
         let env = ProcessInfo.processInfo.environment
@@ -54,9 +58,14 @@ final class AppModel {
                                          paths: paths, computerName: ComputerName.current(), adminToken: token)
         supervisor = EngineSupervisor(configuration: config, baseEnvironment: AppModel.engineBaseEnvironment(env))
         sampler = HostSampler(volume: paths.data)
+        #if DEBUG
+        demo = env["BANDROOM_DEMO"] != nil
+        #else
+        demo = false
+        #endif
         // A checkout that already has its environment needs no first-run setup.
         let checkoutReady: Bool = if case .checkout = source { source.isEnvironmentReady } else { false }
-        setupComplete = UserDefaults.standard.bool(forKey: "setupComplete") || checkoutReady
+        setupComplete = UserDefaults.standard.bool(forKey: "setupComplete") || checkoutReady || demo
         loginItemEnabled = SMAppService.mainApp.status == .enabled
 
         let log = logger
@@ -75,11 +84,21 @@ final class AppModel {
         return env
     }
 
+    func log(_ line: String) { logger.write(line) }
+
     // MARK: lifecycle
 
     func launch() {
         monitor.start()
         startSampling()
+        #if DEBUG
+        if demo {
+            let engine = DemoEngine(busy: environment["BANDROOM_DEMO"] == "busy")
+            monitor.client = engine
+            pairing.client = engine
+            return
+        }
+        #endif
         supervisor.reapStrayEngine()
         if setupComplete {
             supervisor.start()
@@ -99,7 +118,9 @@ final class AppModel {
         pairing.client = client
         // The engine opens a code at start that would stay valid until closed; codes should only work while
         // the Pair window is open (§3.4).
-        if !isPairWindowOpen {
+        if isPairWindowOpen {
+            Task { await pairing.open() }
+        } else {
             Task { _ = try? await client.closePairing() }
         }
     }
@@ -112,7 +133,7 @@ final class AppModel {
                 let snap = await Task.detached { sampler.sample() }.value
                 let models = await Task.detached { ModelCheck.check(models: AppModel.modelsDir(paths)) }.value
                 self?.host = snap
-                self?.models = models
+                self?.models = (self?.demo ?? false) ? .init(missing: []) : models
                 self?.announceIfChanged()
                 try? await Task.sleep(for: .seconds(5))
             }
@@ -133,7 +154,7 @@ final class AppModel {
     var problems: [Problem] {
         var list: [Problem] = []
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
-        if case .running = supervisor.phase, !models.isReady { list.append(.missingDownload) }
+        if case .running = phase, !models.isReady { list.append(.missingDownload) }
         return list
     }
 
@@ -143,11 +164,14 @@ final class AppModel {
 
     var displayState: DisplayState {
         let jobPercent: Int? = (monitor.status?.jobsRunning ?? 0) > 0 ? (monitor.job?.percent ?? 0) : nil
-        return DisplayState.resolve(setupPercent: setupPercent, phase: supervisor.phase, updating: false,
+        return DisplayState.resolve(setupPercent: setupPercent, phase: phase, updating: false,
                                     problems: problems, jobPercent: jobPercent)
     }
 
-    var isRunning: Bool { supervisor.phase == .running }
+    var isRunning: Bool { phase == .running }
+
+    /// The engine's phase; a screenshot demo pretends it runs.
+    var phase: SupervisorPhase { demo ? .running : supervisor.phase }
     var isBusy: Bool { (monitor.status?.jobsRunning ?? 0) > 0 }
     var serverName: String { monitor.status?.serverName ?? "Brasscribe on \(supervisor.configuration.computerName)" }
     var hostName: String { ComputerName.host(fromServerName: serverName) }
@@ -158,7 +182,8 @@ final class AppModel {
         guard comparable != lastAnnounced else { return }
         let first = lastAnnounced == nil
         lastAnnounced = comparable
-        guard !first else { return }
+        // Only while someone is looking at the panel; the Error notification covers the rest (6.3).
+        guard !first, monitor.isPanelOpen else { return }
         AccessibilityNotification.Announcement(Strings.tooltip(state, connected: monitor.status?.onlineDevices ?? 0)).post()
     }
 
@@ -254,8 +279,11 @@ final class AppModel {
 
     // MARK: pairing requests
 
+    @discardableResult
     func decide(_ request: PairRequestInfo, approve: Bool) async -> Bool {
-        (try? await monitor.decide(request, approve: approve)) ?? false
+        let ok = (try? await monitor.decide(request, approve: approve)) ?? false
+        if !ok && approve { expiredRequest = request.name }
+        return ok
     }
 
     private func pairRequestArrived(_ r: PairRequestInfo) {

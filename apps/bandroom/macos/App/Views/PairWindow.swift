@@ -61,7 +61,7 @@ struct PairWindow: View {
         .background(Color.Brasscribe.bg)
         .foregroundStyle(Color.Brasscribe.text)
         .sheet(item: Binding(get: { app.monitor.requests.first }, set: { _ in })) { r in
-            AllowCard(request: r).frame(width: 320).padding(8)
+            AllowCard(request: r, inSheet: true).frame(width: 340)
         }
         .onAppear {
             app.isPairWindowOpen = true
@@ -95,8 +95,6 @@ struct PairWindow: View {
                             .brFont(.code)
                             .textSelection(.enabled)
                             .accessibilityLabel(Text(Strings.codeForVoiceOver(code)))
-                    } else {
-                        Text("––– –––").brFont(.code).foregroundStyle(Color.Brasscribe.textMuted).accessibilityHidden(true)
                     }
                 }
             }
@@ -144,7 +142,7 @@ struct PairWindow: View {
 
     private var qr: some View {
         VStack(alignment: .leading, spacing: 8) {
-            QRPlate(payload: pairing.uri)
+            QRPlate(payload: pairing.uri, isLoading: pairing.phase == .opening)
                 .frame(width: 260, height: 260)
                 .accessibilityElement()
                 .accessibilityLabel(Text("QR code for pairing with Brasscribe on \(pairing.host ?? app.hostName). It holds the same code: \(pairing.displayCode ?? "")."))
@@ -177,6 +175,7 @@ private struct WayRow<Content: View>: View {
 /// theme (§9 High contrast).
 struct QRPlate: View {
     let payload: String?
+    var isLoading = true
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).fill(Color.white)
@@ -192,7 +191,7 @@ struct QRPlate: View {
                         .frame(width: unit * modules, height: unit * modules)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            } else {
+            } else if isLoading {
                 ProgressView().controlSize(.small).tint(.black)
             }
         }

@@ -21,8 +21,7 @@ struct BandroomApp: App {
 
         // The same content as a normal window, for when the menu-bar icon is hidden (§3.3).
         Window(Text("Brasscribe on this Mac"), id: "main") {
-            ScrollView { PanelRoot(isMenuBar: false) }
-                .frame(minWidth: 360, idealWidth: 360, maxWidth: 480, minHeight: 300)
+            PanelRoot(isMenuBar: false)
                 .background(Color.Brasscribe.bg)
                 .environment(app)
                 .environment(\.textScale, textSize.scale)
@@ -58,12 +57,20 @@ struct PanelRoot: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openWindow) private var openWindow
     let isMenuBar: Bool
+    @State private var contentHeight: CGFloat = 400
 
     var body: some View {
-        StatusPanel()
-            .frame(width: 360)
+        // Width fixed at 360, height to fit; past 80 % of the screen height it scrolls (§4).
+        let maxHeight = (NSScreen.main?.visibleFrame.height ?? 900) * 0.8
+        ScrollView {
+            StatusPanel()
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+        }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(width: 360, height: min(contentHeight, maxHeight))
             .background(Color.Brasscribe.bg)
             .background(WindowKeyObserver { key in
+                if app.monitor.isPanelOpen != key { app.log("panel \(isMenuBar ? "popover" : "window") \(key ? "open: polling every 5 s" : "closed: polling every 30 s")") }
                 app.monitor.isPanelOpen = key
                 if !key && isMenuBar { app.panelPage = .status }
             })

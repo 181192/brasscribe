@@ -68,11 +68,12 @@ import Testing
         engine.jobsValue = [
             Job(id: "j1", profile: "solo", title: "Mikkel", status: "running", created: 0, started: clock.now.timeIntervalSince1970 - 300,
                 progress: 0.62, stages: [StageState(name: "beats", kind: "beats", status: "ran"),
-                                         StageState(name: "contour.solo", kind: "transcribe", status: "running")]),
+                                         StageState(name: "contour.solo", kind: "transcribe", status: "running")],
+                deviceName: "Kari's iPhone"),
             Job(id: "j2", profile: "solo", title: "Next", status: "queued", created: 1, progress: 0, stages: []),
         ]
         await m.refresh()
-        #expect(m.job == JobSummary(jobId: "j1", title: "Mikkel", step: .transcribing, percent: 62, minutesLeft: 4, waiting: 1))
+        #expect(m.job == JobSummary(jobId: "j1", title: "Mikkel", deviceName: "Kari's iPhone", step: .transcribing, percent: 62, minutesLeft: 4, waiting: 1))
         #expect(running == [0, 1])
     }
 
@@ -225,7 +226,8 @@ import Testing
         #expect([10, 40, 85, 86].map { WorkLoad.from(percent: $0) } == [.calm, .busy, .busy, .veryBusy])
         #expect([60, 25, 10, 9].map { MemoryLevel.from(freePercent: $0) } == [.plentyFree, .gettingFull, .gettingFull, .almostFull])
         #expect(ComputerName.host(fromServerName: "Brasscribe on Kalli's MacBook") == "Kalli's MacBook")
-        #expect(JobStep.from(kind: "stems") == .separating)
+        #expect(JobStep.from(kind: "stems") == .separatingInstruments)
+        #expect(JobStep.from(kind: "layers") == .separatingSoloist)
         #expect(JobStep.from(kind: "export") == .engraving)
     }
 }

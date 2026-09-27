@@ -196,11 +196,19 @@ public struct Job: Codable, Sendable, Equatable, Identifiable {
     public var finished: Double?
     public var progress: Double
     public var stages: [StageState]
+    /// The phone or tablet that sent the recording, on engines that report it.
+    public var deviceName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, profile, title, status, created, started, finished, progress, stages
+        case deviceName = "device_name"
+    }
 
     public init(id: String, profile: String, title: String?, status: String, created: Double, started: Double? = nil,
-                finished: Double? = nil, progress: Double, stages: [StageState]) {
+                finished: Double? = nil, progress: Double, stages: [StageState], deviceName: String? = nil) {
         self.id = id; self.profile = profile; self.title = title; self.status = status; self.created = created
         self.started = started; self.finished = finished; self.progress = progress; self.stages = stages
+        self.deviceName = deviceName
     }
 }
 

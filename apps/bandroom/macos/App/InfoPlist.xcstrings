@@ -1,0 +1,36 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe Bandroom"
+          }
+        }
+      }
+    },
+    "CFBundleName": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe Bandroom"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefoner og nettbrett i bandet finner denne Macen på nettverket og sender opptakene sine hit."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

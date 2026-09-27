@@ -1,15 +1,16 @@
 import Foundation
 import Observation
 
-/// Play's plain step names (design/server-app.md §7.2).
+/// Play's plain step names (design/server-app.md §7.2), one per engine stage kind, as the phones say them.
 public enum JobStep: String, Equatable, Sendable {
-    case preparing, findingBeat, separating, transcribing, arranging, engraving
+    case preparing, findingBeat, separatingInstruments, separatingSoloist, transcribing, arranging, engraving
 
     /// From the engine's stage kind (profiles.py: beats, stems, layers, transcribe, arrange, export).
     public static func from(kind: String?) -> JobStep {
         switch kind {
         case "beats": .findingBeat
-        case "stems", "layers", "separate": .separating
+        case "stems": .separatingInstruments
+        case "layers": .separatingSoloist
         case "transcribe": .transcribing
         case "arrange": .arranging
         case "export", "engrave", "render": .engraving
@@ -22,14 +23,16 @@ public enum JobStep: String, Equatable, Sendable {
 public struct JobSummary: Equatable, Sendable {
     public var jobId: String
     public var title: String?
+    /// Who sent it: "Kari's iPhone".
+    public var deviceName: String?
     public var step: JobStep
     /// 0…100
     public var percent: Int
     public var minutesLeft: Int?
     public var waiting: Int
 
-    public init(jobId: String, title: String?, step: JobStep, percent: Int, minutesLeft: Int?, waiting: Int) {
-        self.jobId = jobId; self.title = title; self.step = step; self.percent = percent
+    public init(jobId: String, title: String?, deviceName: String? = nil, step: JobStep, percent: Int, minutesLeft: Int?, waiting: Int) {
+        self.jobId = jobId; self.title = title; self.deviceName = deviceName; self.step = step; self.percent = percent
         self.minutesLeft = minutesLeft; self.waiting = waiting
     }
 
@@ -45,7 +48,7 @@ public struct JobSummary: Equatable, Sendable {
             let left = elapsed / progress * (1 - progress)
             minutes = max(1, Int((left / 60).rounded(.up)))
         }
-        return JobSummary(jobId: job.id, title: job.title, step: .from(kind: stage?.kind), percent: Int((progress * 100).rounded()),
+        return JobSummary(jobId: job.id, title: job.title, deviceName: job.deviceName, step: .from(kind: stage?.kind), percent: Int((progress * 100).rounded()),
                           minutesLeft: minutes, waiting: jobs.filter { $0.status == "queued" }.count)
     }
 }

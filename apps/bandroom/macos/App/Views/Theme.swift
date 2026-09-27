@@ -243,15 +243,19 @@ struct Disclosure<Content: View>: View {
                     Text(title).brFont(.bodyStrong)
                     Spacer(minLength: 0)
                 }
-                .frame(minHeight: 28)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.Brasscribe.text)
             .accessibilityValue(isExpanded ? Text("Expanded") : Text("Collapsed"))
-            if isExpanded { content }
+            if isExpanded { content.padding(.bottom, 8) }
         }
-        .card(padding: 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).strokeBorder(Color.Brasscribe.border))
     }
 }
 

@@ -11,7 +11,7 @@ enum Strings {
             connected == 1 ? String(localized: "Brasscribe: running · 1 phone connected")
                 : String(localized: "Brasscribe: running · \(connected) phones connected")
         case .busy(let n): String(localized: "Brasscribe: making a score, \(n)%")
-        case .attention(let p): String(localized: "Brasscribe needs attention: \(problemTitle(p).lowercasedFirst)")
+        case .attention(let p): String(localized: "Brasscribe needs attention: \(problemInSentence(p))")
         case .stopped: String(localized: "Brasscribe: stopped")
         case .updating: String(localized: "Brasscribe: updating")
         case .error: String(localized: "Brasscribe stopped unexpectedly")
@@ -40,6 +40,15 @@ enum Strings {
         }
     }
 
+    /// The problem inside "Brasscribe needs attention: …".
+    static func problemInSentence(_ p: Problem) -> String {
+        switch p {
+        case .lowDisk: String(localized: "space is running low")
+        case .missingDownload: String(localized: "full-band scores need one more step")
+        case .noFreePort: String(localized: "Brasscribe can't start")
+        }
+    }
+
     static func problemWhy(_ p: Problem) -> String {
         switch p {
         case .lowDisk(let gb): String(localized: "\(gb) GB free. Brasscribe needs 3 GB to make a score.")
@@ -60,7 +69,8 @@ enum Strings {
         switch s {
         case .preparing: String(localized: "Getting the recording ready")
         case .findingBeat: String(localized: "Finding the beat")
-        case .separating: String(localized: "Separating the soloist from the band")
+        case .separatingInstruments: String(localized: "Separating the instruments")
+        case .separatingSoloist: String(localized: "Separating the soloist from the band")
         case .transcribing: String(localized: "Writing down the notes")
         case .arranging: String(localized: "Arranging for brass band")
         case .engraving: String(localized: "Laying out the pages")
@@ -125,12 +135,5 @@ enum Strings {
         case "cpu": "CPU"
         default: device ?? "–"
         }
-    }
-}
-
-extension String {
-    var lowercasedFirst: String {
-        guard let f = first else { return self }
-        return f.lowercased() + dropFirst()
     }
 }

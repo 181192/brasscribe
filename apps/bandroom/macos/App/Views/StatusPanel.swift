@@ -12,13 +12,23 @@ struct StatusPanel: View {
 
     enum Confirmation: Equatable { case stop, restart }
 
+    @FocusState private var dialogFocus: Bool
+
     var body: some View {
         ZStack {
-            switch app.panelPage {
-            case .status: status
-            case .phones: PhonesView()
+            Group {
+                switch app.panelPage {
+                case .status: status
+                case .phones: PhonesView()
+                }
             }
-            if let confirm { confirmation(confirm) }
+            // While a confirmation is up, nothing behind it takes focus or reads out.
+            .disabled(confirm != nil)
+            .accessibilityHidden(confirm != nil)
+            if let confirm {
+                confirmation(confirm)
+                    .onAppear { dialogFocus = true }
+            }
         }
         .animation(nil, value: app.panelPage)
     }
@@ -26,13 +36,15 @@ struct StatusPanel: View {
     private var state: DisplayState { app.displayState }
 
     private var status: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             header
+            if let expired = app.expiredRequest { ExpiredCard(name: expired) }
+            if let request = app.monitor.requests.first {
+                // A phone is waiting: allowing it is the one primary until it's answered.
+                AllowCard(request: request)
+            }
             lead
             primaryButton
-            if !app.monitor.requests.isEmpty {
-                ForEach(app.monitor.requests) { AllowCard(request: $0) }
-            }
             if app.isRunning || app.monitor.status != nil { phonesRow }
             if app.isRunning { thisComputer }
             actions
@@ -104,7 +116,8 @@ struct StatusPanel: View {
         switch state {
         case .running, .busy:
             Button { app.openWindow?("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
-                .buttonStyle(.brPrimary).focused($primaryFocused)
+                .buttonStyle(BRButtonStyle(kind: app.monitor.requests.isEmpty ? .primary : .secondary, fullWidth: true))
+                .focused($primaryFocused)
         case .stopped:
             Button { app.start() } label: { Text("Start Brasscribe") }
                 .buttonStyle(.brPrimary).focused($primaryFocused)
@@ -153,7 +166,7 @@ struct StatusPanel: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .card(padding: 10)
+        .card(padding: 6)
     }
 
     // MARK: this computer
@@ -193,7 +206,7 @@ struct StatusPanel: View {
             }
             if app.isRunning {
                 Button { app.openStudio() } label: { Label("Open Studio", systemImage: "arrow.up.forward.square") }
-                    .buttonStyle(.brPlain)
+                    .buttonStyle(BRButtonStyle(kind: .plain, height: 32))
             }
         }
     }
@@ -248,18 +261,26 @@ struct StatusPanel: View {
                 switch c {
                 case .stop:
                     Text("Stop while “\(title)” is being made?").brFont(.bodyStrong).multilineTextAlignment(.center)
-                    Text("The phone keeps the recording and can send it again.")
+                    Group {
+                        if let device = app.monitor.job?.deviceName {
+                            Text("\(device) keeps the recording and can send it again.")
+                        } else {
+                            Text("The phone keeps the recording and can send it again.")
+                        }
+                    }
                         .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
                     Button { confirm = nil; app.stopNow() } label: { Text("Stop now") }.buttonStyle(.brPrimary)
                     Button { confirm = nil } label: { Text("Keep going").frame(maxWidth: .infinity) }
                         .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
                         .keyboardShortcut(.cancelAction)
+                        .focused($dialogFocus)
                 case .restart:
                     Text("Restart when “\(title)” is done?").brFont(.bodyStrong).multilineTextAlignment(.center)
                     Button { confirm = nil; app.restartWhenDone = true } label: { Text("Restart when done") }.buttonStyle(.brPrimary)
                     Button { confirm = nil; app.restartNow() } label: { Text("Restart now").frame(maxWidth: .infinity) }
                         .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
                     Button { confirm = nil } label: { Text("Cancel") }.buttonStyle(.brPlain).keyboardShortcut(.cancelAction)
+                        .focused($dialogFocus)
                 }
             }
             .padding(16)
@@ -310,7 +331,14 @@ struct NowCard: View {
             SectionLabel(text: "Now")
             Text(Strings.step(job.step)).brFont(.heading).foregroundStyle(Color.Brasscribe.text)
             if let title = job.title {
-                Text("“\(title)”").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Group {
+                    if let device = job.deviceName {
+                        Text("“\(title)” from \(device)")
+                    } else {
+                        Text("“\(title)”")
+                    }
+                }
+                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
             }
             BrassProgress(fraction: Double(job.percent) / 100).padding(.vertical, 4)
             HStack {
@@ -364,7 +392,7 @@ struct HealthRow: View {
             Text(value).brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
             if let meter { Meter(level: meter) }
         }
-        .frame(minHeight: 40)
+        .frame(minHeight: 44)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(label))
         .accessibilityValue(Text(value))
@@ -375,15 +403,15 @@ struct HealthRow: View {
 struct AllowCard: View {
     @Environment(AppModel.self) private var app
     let request: PairRequestInfo
-    @State private var expired = false
+    /// In the Pair window's sheet, the sheet is the card.
+    var inSheet = false
 
     var body: some View {
         VStack(spacing: 8) {
+            Mark(size: 28)
             Text("Allow \(request.name)?").brFont(.bodyStrong).multilineTextAlignment(.center)
-            if expired {
-                Text("This request has expired. Choose this computer on the phone again.")
-                    .brFont(.callout).multilineTextAlignment(.center)
-            } else {
+                .accessibilityAddTraits(.isHeader)
+            Group {
                 Text("It can send recordings to this computer and get scores back. You can remove it any time.")
                     .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
                 Text("The phone shows the number:").brFont(.callout)
@@ -396,13 +424,33 @@ struct AllowCard: View {
             }
         }
         .foregroundStyle(Color.Brasscribe.text)
-        .card(padding: 14)
+        .modifier(CardIf(on: !inSheet))
     }
 
     private func decide(_ approve: Bool) {
-        Task {
-            if await !app.decide(request, approve: approve) { expired = true }
+        Task { await app.decide(request, approve: approve) }
+    }
+}
+
+private struct CardIf: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+        if on { content.card(padding: 14) } else { content.padding(16) }
+    }
+}
+
+/// "This request has expired. Choose this computer on the phone again." [OK]
+struct ExpiredCard: View {
+    @Environment(AppModel.self) private var app
+    let name: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Allow \(name)?").brFont(.bodyStrong)
+            Text("This request has expired. Choose this computer on the phone again.").brFont(.callout)
+            Button { app.expiredRequest = nil } label: { Text("OK") }.buttonStyle(.brOutline)
         }
+        .foregroundStyle(Color.Brasscribe.text)
+        .card(padding: 12)
     }
 }
 

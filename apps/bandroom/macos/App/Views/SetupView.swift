@@ -97,7 +97,7 @@ struct SetupView: View {
                 }
                 .buttonStyle(.brPlain)
                 Button { NSWorkspace.shared.open(URL(string: "https://huggingface.co/settings/tokens/new?tokenType=read")!) } label: {
-                    Text("Sign in with Hugging Face")
+                    Text("Get an access key on Hugging Face")
                 }
                 .buttonStyle(.brOutline)
             }

@@ -1,0 +1,1776 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    " dot ": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " punktum "
+          }
+        }
+      }
+    },
+    "%@ is paired.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ er koblet til."
+          }
+        }
+      }
+    },
+    "%@ keeps the recording and can send it again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beholder opptaket og kan sende det på nytt."
+          }
+        }
+      }
+    },
+    "%@ wants to use this computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vil bruke denne datamaskinen."
+          }
+        }
+      }
+    },
+    "%@: %@ · %@ · paired %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ · %@ · sammenkoblet %@"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld GB free": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld GB ledig"
+          }
+        }
+      }
+    },
+    "%lld GB free. Brasscribe needs 3 GB to make a score.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld GB ledig. Brasscribe trenger 3 GB for å lage et partitur."
+          }
+        }
+      }
+    },
+    "%lld connected now · %lld paired": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tilkoblet nå · %lld sammenkoblet"
+          }
+        }
+      }
+    },
+    "%lld more waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld til venter"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        }
+      }
+    },
+    "%lld%% · about %lld min left": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% · omtrent %lld min igjen"
+          }
+        }
+      }
+    },
+    "1. Sign in and choose **Agree** on the MuScriptor page.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Logg inn og velg **Agree** på MuScriptor-siden."
+          }
+        }
+      }
+    },
+    "2. Come back here. Brasscribe downloads it for you.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Kom tilbake hit. Brasscribe laster den ned for deg."
+          }
+        }
+      }
+    },
+    "About Brasscribe Bandroom": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om Brasscribe Bandroom"
+          }
+        }
+      }
+    },
+    "Accept one licence": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godta én lisens"
+          }
+        }
+      }
+    },
+    "Access key from Hugging Face": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilgangsnøkkel fra Hugging Face"
+          }
+        }
+      }
+    },
+    "Address": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse"
+          }
+        }
+      }
+    },
+    "Allow": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godkjenn"
+          }
+        }
+      }
+    },
+    "Allow %@?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godkjenne %@?"
+          }
+        }
+      }
+    },
+    "Almost full": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nesten fullt"
+          }
+        }
+      }
+    },
+    "Another program on this computer is in the way.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et annet program på denne datamaskinen står i veien."
+          }
+        }
+      }
+    },
+    "Arranging for brass band": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrangerer for brassband"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake"
+          }
+        }
+      }
+    },
+    "Back in about a minute. Phones reconnect by themselves.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake om et minutt. Telefonene kobler seg til igjen selv."
+          }
+        }
+      }
+    },
+    "Band writer (MuScriptor)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandskriver (MuScriptor)"
+          }
+        }
+      }
+    },
+    "Beat finder": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taktfinner"
+          }
+        }
+      }
+    },
+    "Brasscribe can't start": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe kan ikke starte"
+          }
+        }
+      }
+    },
+    "Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe gjør det tunge arbeidet her, så telefoner og nettbrett kan lage partitur for hele bandet. Opptakene blir på dine egne enheter."
+          }
+        }
+      }
+    },
+    "Brasscribe is ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe er klar"
+          }
+        }
+      }
+    },
+    "Brasscribe isn't running. Start it from the menu bar, then pair.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe kjører ikke. Start den fra menylinjen, og koble til etterpå."
+          }
+        }
+      }
+    },
+    "Brasscribe needs attention: %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe må sjekkes: %@"
+          }
+        }
+      }
+    },
+    "Brasscribe on %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på %@"
+          }
+        }
+      }
+    },
+    "Brasscribe on this Mac": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på denne Macen"
+          }
+        }
+      }
+    },
+    "Brasscribe stopped unexpectedly": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe stoppet uventet"
+          }
+        }
+      }
+    },
+    "Brasscribe: making a score, %lld%%": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: lager partitur, %lld %%"
+          }
+        }
+      }
+    },
+    "Brasscribe: running · %lld phones connected": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: kjører · %lld telefoner tilkoblet"
+          }
+        }
+      }
+    },
+    "Brasscribe: running · 1 phone connected": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: kjører · 1 telefon tilkoblet"
+          }
+        }
+      }
+    },
+    "Brasscribe: setting up, %lld%%": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: gjøres klar, %lld %%"
+          }
+        }
+      }
+    },
+    "Brasscribe: starting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: starter"
+          }
+        }
+      }
+    },
+    "Brasscribe: stopped": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: stoppet"
+          }
+        }
+      }
+    },
+    "Brasscribe: updating": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe: oppdaterer"
+          }
+        }
+      }
+    },
+    "Busy": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel"
+          }
+        }
+      }
+    },
+    "Calm": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rolig"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
+          }
+        }
+      }
+    },
+    "Check that both are on the same Wi-Fi.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk at begge er på samme wifi."
+          }
+        }
+      }
+    },
+    "Check this computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk datamaskinen"
+          }
+        }
+      }
+    },
+    "Close window": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukk vinduet"
+          }
+        }
+      }
+    },
+    "Code: %@ %@ %@, %@ %@ %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kode: %@ %@ %@, %@ %@ %@"
+          }
+        }
+      }
+    },
+    "Collapsed": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukket"
+          }
+        }
+      }
+    },
+    "Connected now": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilkoblet nå"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "Copy details for the tech person": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopier detaljer til den tekniske i bandet"
+          }
+        }
+      }
+    },
+    "Copy diagnostics": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopier diagnose"
+          }
+        }
+      }
+    },
+    "Data folder": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamappe"
+          }
+        }
+      }
+    },
+    "Details for the band's tech person": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaljer for den tekniske i bandet"
+          }
+        }
+      }
+    },
+    "Do this once for each phone or tablet. It stays paired.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør dette én gang per telefon eller nettbrett. Den forblir tilkoblet."
+          }
+        }
+      }
+    },
+    "Don't allow": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke godkjenn"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferdig"
+          }
+        }
+      }
+    },
+    "Download": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ned"
+          }
+        }
+      }
+    },
+    "Downloading what Brasscribe needs": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laster ned det Brasscribe trenger"
+          }
+        }
+      }
+    },
+    "Engine from a checkout (folder with pixi.toml)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motor fra en utsjekk (mappe med pixi.toml)"
+          }
+        }
+      }
+    },
+    "Expanded": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpnet"
+          }
+        }
+      }
+    },
+    "Fast: uses the graphics chip": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rask: bruker grafikkbrikken"
+          }
+        }
+      }
+    },
+    "Finding the beat": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finner pulsen"
+          }
+        }
+      }
+    },
+    "Finish setting up": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør ferdig oppsettet"
+          }
+        }
+      }
+    },
+    "Free space": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ledig plass"
+          }
+        }
+      }
+    },
+    "Free up space…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frigjør plass …"
+          }
+        }
+      }
+    },
+    "Full-band scores need one more step": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partitur for fullt band trenger ett steg til"
+          }
+        }
+      }
+    },
+    "Get an access key on Hugging Face": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hent en tilgangsnøkkel hos Hugging Face"
+          }
+        }
+      }
+    },
+    "Getting full": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begynner å bli fullt"
+          }
+        }
+      }
+    },
+    "Getting the recording ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør opptaket klart"
+          }
+        }
+      }
+    },
+    "Hugging Face access": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilgang til Hugging Face"
+          }
+        }
+      }
+    },
+    "Instrument separator": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrumentskiller"
+          }
+        }
+      }
+    },
+    "Internet: needed once, for the downloads": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internett: trengs én gang, til nedlastingene"
+          }
+        }
+      }
+    },
+    "It can send recordings to this computer and get scores back. You can remove it any time.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kan sende opptak til denne datamaskinen og få partitur tilbake. Du kan fjerne den når som helst."
+          }
+        }
+      }
+    },
+    "It can't send recordings here until it is paired again. Scores already on it stay.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kan ikke sende opptak hit før den kobles til igjen. Partitur som allerede ligger på den, blir liggende."
+          }
+        }
+      }
+    },
+    "It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kjører i det stille i menylinjen. Se etter Brasscribe-merket øverst på skjermen."
+          }
+        }
+      }
+    },
+    "It tried to start three times. Recordings on your phones are safe.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge."
+          }
+        }
+      }
+    },
+    "Keep going": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "Large": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stor"
+          }
+        }
+      }
+    },
+    "Larger": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Større"
+          }
+        }
+      }
+    },
+    "Last used %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sist brukt %@"
+          }
+        }
+      }
+    },
+    "Laying out the pages": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setter opp sidene"
+          }
+        }
+      }
+    },
+    "Listening tools": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lytteverktøy"
+          }
+        }
+      }
+    },
+    "Make scores on this computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lag partitur på denne datamaskinen"
+          }
+        }
+      }
+    },
+    "Memory": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minne"
+          }
+        }
+      }
+    },
+    "Missing one download": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mangler én nedlasting"
+          }
+        }
+      }
+    },
+    "More": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mer"
+          }
+        }
+      }
+    },
+    "Needs about 15 GB · %lld GB free": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenger omtrent 15 GB · %lld GB ledig"
+          }
+        }
+      }
+    },
+    "Needs attention": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Må sjekkes"
+          }
+        }
+      }
+    },
+    "Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nå spør Macen om Brasscribe får finne enheter på nettverket. Velg **Tillat** så telefonene kan koble seg til."
+          }
+        }
+      }
+    },
+    "No phones yet. Pair a phone to make full-band scores from it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den."
+          }
+        }
+      }
+    },
+    "None connected now · %lld paired": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen tilkoblet nå · %lld sammenkoblet"
+          }
+        }
+      }
+    },
+    "Not enough space: needs about 15 GB, %lld GB free": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nok plass: trenger omtrent 15 GB, %lld GB ledig"
+          }
+        }
+      }
+    },
+    "Now": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nå"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "On the phone, open Brasscribe › Settings › Your computer and choose **Brasscribe on %@**. Then allow it here.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Brasscribe på telefonen › Innstillinger › Datamaskinen din, og velg **Brasscribe på %@**. Godkjenn den her etterpå."
+          }
+        }
+      }
+    },
+    "Open Studio": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Studio"
+          }
+        }
+      }
+    },
+    "Or scan the QR code with the phone's camera.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eller skann QR-koden med kameraet på telefonen."
+          }
+        }
+      }
+    },
+    "Or type this address in Brasscribe on the phone: %@, port %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eller skriv inn denne adressen i Brasscribe på telefonen: %@, port %@"
+          }
+        }
+      }
+    },
+    "Or type this code on the phone:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eller skriv inn denne koden på telefonen:"
+          }
+        }
+      }
+    },
+    "Pair a phone": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til en telefon"
+          }
+        }
+      }
+    },
+    "Pair another phone": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til en telefon til"
+          }
+        }
+      }
+    },
+    "Paired": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sammenkoblet"
+          }
+        }
+      }
+    },
+    "Paste": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lim inn"
+          }
+        }
+      }
+    },
+    "Phone doesn't show this computer?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ser ikke telefonen denne datamaskinen?"
+          }
+        }
+      }
+    },
+    "Phones and tablets": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefoner og nettbrett"
+          }
+        }
+      }
+    },
+    "Phones can't send recordings until you start it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonene kan ikke sende opptak før du starter den."
+          }
+        }
+      }
+    },
+    "Plenty free": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "God plass"
+          }
+        }
+      }
+    },
+    "Port": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
+          }
+        }
+      }
+    },
+    "Processor only: slower": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bare prosessoren: tregere"
+          }
+        }
+      }
+    },
+    "QR code for pairing with Brasscribe on %@. It holds the same code: %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-kode for å koble til Brasscribe på %@. Den inneholder den samme koden: %@."
+          }
+        }
+      }
+    },
+    "Quit Brasscribe Bandroom": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avslutt Brasscribe Bandroom"
+          }
+        }
+      }
+    },
+    "Read the licence": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lisensen"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar"
+          }
+        }
+      }
+    },
+    "Ready to make scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar til å lage partitur"
+          }
+        }
+      }
+    },
+    "Ready. Phones and tablets can send recordings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar. Telefoner og nettbrett kan sende opptak."
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern"
+          }
+        }
+      }
+    },
+    "Remove %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern %@"
+          }
+        }
+      }
+    },
+    "Remove %@?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjerne %@?"
+          }
+        }
+      }
+    },
+    "Restart": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start på nytt"
+          }
+        }
+      }
+    },
+    "Restart now": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start på nytt nå"
+          }
+        }
+      }
+    },
+    "Restart when done": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start på nytt når den er ferdig"
+          }
+        }
+      }
+    },
+    "Restart when “%@” is done?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starte på nytt når «%@» er ferdig?"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjører"
+          }
+        }
+      }
+    },
+    "Running · Making a score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjører · Lager partitur"
+          }
+        }
+      }
+    },
+    "Runs on": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjører på"
+          }
+        }
+      }
+    },
+    "Scan with the camera, or in Brasscribe on the phone.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skann med kameraet, eller i Brasscribe på telefonen."
+          }
+        }
+      }
+    },
+    "Separating the instruments": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skiller instrumentene fra hverandre"
+          }
+        }
+      }
+    },
+    "Separating the soloist from the band": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skiller solisten fra bandet"
+          }
+        }
+      }
+    },
+    "Server": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server"
+          }
+        }
+      }
+    },
+    "Set up Brasscribe": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør Brasscribe klar"
+          }
+        }
+      }
+    },
+    "Setting up": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjøres klar"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Innstillinger …"
+          }
+        }
+      }
+    },
+    "Show logs": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis logger"
+          }
+        }
+      }
+    },
+    "Sign in again…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logg inn på nytt …"
+          }
+        }
+      }
+    },
+    "Skip for now": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hopp over nå"
+          }
+        }
+      }
+    },
+    "Space is running low": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lite ledig plass"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "Start Brasscribe": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Brasscribe"
+          }
+        }
+      }
+    },
+    "Start when I log in": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start når jeg logger på"
+          }
+        }
+      }
+    },
+    "Starting…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starter …"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp"
+          }
+        }
+      }
+    },
+    "Stop now": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp nå"
+          }
+        }
+      }
+    },
+    "Stop while “%@” is being made?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppe mens «%@» lages?"
+          }
+        }
+      }
+    },
+    "Stopped": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet"
+          }
+        }
+      }
+    },
+    "Stopped unexpectedly": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet uventet"
+          }
+        }
+      }
+    },
+    "Takes effect the next time Brasscribe starts.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjelder fra neste gang Brasscribe starter."
+          }
+        }
+      }
+    },
+    "Text size": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekststørrelse"
+          }
+        }
+      }
+    },
+    "The band writer isn't downloaded yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandskriveren er ikke lastet ned ennå."
+          }
+        }
+      }
+    },
+    "The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto."
+          }
+        }
+      }
+    },
+    "The download stopped": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedlastingen stoppet"
+          }
+        }
+      }
+    },
+    "The key is saved in your Keychain.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøkkelen er lagret i nøkkelringen."
+          }
+        }
+      }
+    },
+    "The phone keeps the recording and can send it again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonen beholder opptaket og kan sende det på nytt."
+          }
+        }
+      }
+    },
+    "The phone shows the number:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonen viser tallet:"
+          }
+        }
+      }
+    },
+    "The phone shows the number: %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonen viser tallet: %@"
+          }
+        }
+      }
+    },
+    "This code works while this window is open, and only once.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden virker så lenge dette vinduet er åpent, og bare én gang."
+          }
+        }
+      }
+    },
+    "This computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne datamaskinen"
+          }
+        }
+      }
+    },
+    "This request has expired. Choose this computer on the phone again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forespørselen er utløpt. Velg denne datamaskinen på telefonen igjen."
+          }
+        }
+      }
+    },
+    "Too many wrong codes. Wait a moment, or allow the phone here.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For mange feil koder. Vent litt, eller godkjenn telefonen her."
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv igjen"
+          }
+        }
+      }
+    },
+    "Updating": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdaterer"
+          }
+        }
+      }
+    },
+    "Uses the graphics chip": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruker grafikkbrikken"
+          }
+        }
+      }
+    },
+    "Version": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versjon"
+          }
+        }
+      }
+    },
+    "Very busy": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svært travel"
+          }
+        }
+      }
+    },
+    "Waiting for a phone…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venter på en telefon …"
+          }
+        }
+      }
+    },
+    "Where downloads are kept": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor nedlastingene lagres"
+          }
+        }
+      }
+    },
+    "Without it, Brasscribe can't write down a full band. You can add it later.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uten den kan ikke Brasscribe skrive ned et fullt band. Du kan legge den til senere."
+          }
+        }
+      }
+    },
+    "Work load": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbeidsmengde"
+          }
+        }
+      }
+    },
+    "Writing down the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriver ned tonene"
+          }
+        }
+      }
+    },
+    "You can close this window. Brasscribe keeps downloading and tells you when it's ready.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart."
+          }
+        }
+      }
+    },
+    "full-band scores need one more step": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "partitur for fullt band trenger ett steg til"
+          }
+        }
+      }
+    },
+    "space is running low": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lite ledig plass"
+          }
+        }
+      }
+    },
+    "this score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dette partituret"
+          }
+        }
+      }
+    },
+    "“%@”": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@»"
+          }
+        }
+      }
+    },
+    "“%@” from %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» fra %@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
