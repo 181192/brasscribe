@@ -11,6 +11,7 @@ environments) or an installed package.
     BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
     BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
     BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
+    BRASSCRIBE_COMPUTER_NAME     name people know this computer by, for "Brasscribe on <name>" (default: host name)
     BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/convert/reports, else <repo>/models/convert/reports)
     BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
 """

@@ -59,7 +59,7 @@ def fake_pipeline(title: str, params: dict) -> Pipeline:
 
 @pytest.fixture
 def settings(tmp_path: Path, monkeypatch) -> Settings:
-    for var in ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS"):
+    for var in ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS", "BRASSCRIBE_COMPUTER_NAME"):
         monkeypatch.delenv(var, raising=False)
     adapters = make_adapters(tmp_path / "adapters")
     s = Settings(data_dir=tmp_path / "data", adapters_dir=adapters, gpu_lock=tmp_path / "gpu.lock")

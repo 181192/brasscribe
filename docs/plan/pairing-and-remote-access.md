@@ -221,7 +221,7 @@ This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and
 Other changes:
 
 - **Wrong codes.** Five wrong codes lock pairing for 30 s, then 60 s, 120 s and so on, up to 15 min. The code on screen never changes.
-- **mDNS.** The TXT record carries `id=<server_id>`.
+- **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `BRASSCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair` and the payload is always `Brasscribe on <computer name>`, word for word what the helper shows. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
 - **Static token.** `BRASSCRIBE_TOKEN` still works, as a static token for scripts.
 - **Device names.** Names are cleaned: no control characters, one line, at most 64 characters.
 
@@ -433,6 +433,7 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 
 ### Desktop helper (tray / menu bar)
 
+- Starts the engine with `BRASSCRIBE_COMPUTER_NAME` set to the user-visible computer name.
 - Shows `GET /v1/pairing` as a QR code (the `uri`) and as the code in large type (`482 913`), with the time left. "More time" calls `POST /v1/pairing {extend: true}`.
 - Lists `GET /v1/devices` (name, platform, last seen), with Remove.
 - Polls `GET /v1/pairing/requests` and shows "Allow <name>? <match code>".
