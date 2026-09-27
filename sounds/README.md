@@ -15,6 +15,11 @@ uv run --project sounds python sounds/render.py SCORE -o OUT --engine fluidsynth
 uv run --project sounds python sounds/parity.py RUN_A RUN_B                        # stem-by-stem engine comparison
 uv run --project sounds python sounds/descriptors.py RUN... --midi SCORE.mid -o report.json
 uv run --project sounds python sounds/checks.py loops | balance RUN...              # loop seams, section loudness
+uv run --project sounds python sounds/phrases.py                                   # test phrases per lineup part
+uv run --project sounds python sounds/soundcheck.py render ENGINE -o RUN           # sfizz | fluid-band | fluid-mobile | fluid-gm
+uv run --project sounds python sounds/checks.py coverage                           # every lineup part -> own real-sample preset (gate)
+uv run --project sounds python sounds/checks.py phrases RUN...                     # clicks, chops, dropouts, clipping, release, balance (gate)
+python3 sounds/partsound.py --check                                                # CI: part -> preset rules and test vectors
 uv run --project sounds python sounds/timbre_probe.py                              # source/EQ candidates vs real references
 uv run --project sounds python sounds/ab-test/room_baseline.py --baseline B.mp3 --realistic-info R.json -o OUT.mp3
 ```
@@ -38,17 +43,21 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 ## How the instruments are built
 
-- **Samples:** mono, 44.1 kHz, 24-bit. Trimmed; with the EQ baked in (so no player needs an EQ); with a crossfade loop in the first ~3 s of the sustain. They are level-normalised per dynamic layer: the loudest 300 ms RMS is −30/−26/−21/−18.5/−16 dBFS for pp/p/mf/f/ff.
+- **Samples:** mono, 44.1 kHz, 24-bit. Trimmed; with the EQ baked in (so no player needs an EQ); with a crossfade loop in the first ~3 s of the sustain. They are level-normalised per dynamic layer (sustain RMS over 80 ms–1.0 s at −30/−26/−21/−18.5/−16 dBFS for pp/p/mf/f/ff), then every target is scaled so velocity 80 over its comfortable range has the same K-weighted level (−24 dB). Presets are equally loud; part balance is `mapping.json` `balance_lu`, applied as channel gain.
 - **Layers:** from the library's own labels. Iowa has pp/mf/ff. VSCO has v1 < v2 < …, and 2 layers are treated as p/f. Velocity splits sit halfway between the nominal velocities pp 30, p 48, mf 80, f 100, ff 116. The MuseScore export plays everything at velocity 80, which is the mf layer, or f for 2-layer sources.
-- **Missing notes in a layer:** a sample is transposed up to 3 semitones. Beyond that, the nearest sample from a neighbouring layer is used at that layer's level (`volume` in SFZ, `initialAttenuation` in SF2).
+- **Missing notes in a layer:** a sample is transposed up to 3 semitones. Beyond that, the nearest sample from a neighbouring layer is used, brought to this layer's level in a copy of the sample (engines disagree on zone attenuation). Keys more than 2 semitones from every primary sample play a second real library (`targets[].extend`), spectrally matched to the primary on the pitches both have.
 - **Velocity curve:** dB-linear, 6 dB from velocity 127 down to 0. SFZ declares it with `amp_velcurve_N`. In SF2, the default velocity modulators are overridden and replaced by one linear velocity→attenuation modulator.
 - **Round robin:** SFZ only (`seq_length`/`seq_position`). SF2 has no round robin and uses the first variant.
-- **Articulation at render time:** a note is staccato only if it is at most 0.3 s long and lasts under 60% of the time to the next onset in its part. Everything else plays the sustain with a 0.2 s release.
+- **Articulation at render time:** a note is staccato only if it is at most 0.3 s long and lasts under 60% of the time to the next onset in its part. Everything else plays the sustain. Releases fall 40 dB in about 250 ms (SFZ `ampeg_release` 0.45 s, SF2 0.60 s, which is defined to −100 dB); staccato about 150 ms.
 - **Staccato samples:** VSCO has real staccato samples, with 2–4 round robins. Iowa has none, so Iowa targets use the sustain sample cut to 0.6 s with a 0.1 s release.
+
+## Parts and lineups
+
+`mapping.json` `lineups` lists every lineup's part names (brass band, minimal brass, brass quartet). `resolve` is how every player turns a score part into a preset: normalized exact name, alias, keyword, instrument id, GM program. A brass part never ends on General MIDI. `partsound.py` is the reference; `partsound-vectors.json` is asserted by the Apple, Android, Windows and Studio tests. Measurements and the before/after coverage are in docs/research/12-band-sound.md.
 
 ## Band SoundFont
 
-`sounds/band.py` builds `data/sounds/band/brasscribe-band.sf2`. It is one SF2 2.04 file for the whole band, 222.7 MB at 24-bit; `--bits 16` gives 148.5 MB. It lives outside `data/sounds/built/`, so per-instrument loaders that glob `built/**/*.sf2` do not pick it up.
+`sounds/band.py` builds `data/sounds/band/brasscribe-band.sf2`. It is one SF2 2.04 file for the whole band, 292.6 MB at 24-bit; `--bits 16` gives 195.1 MB; the phone build (apps/android/scripts/mobile_soundfont.py) is 77.3 MB. It lives outside `data/sounds/built/`, so per-instrument loaders that glob `built/**/*.sf2` do not pick it up.
 
 **Presets.** Each brass part has its own sustain preset at (bank, program) and a staccato preset at (bank + 64, program).
 - The program is the part's General MIDI program from `instruments.py`: 56 cornets and flugel, 57 trombones, 58 basses, euphonium and baritones, 60 horns.
