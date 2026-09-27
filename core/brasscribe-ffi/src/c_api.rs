@@ -88,7 +88,8 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
 /// `options` may be null (defaults) or
 /// `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
-///   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]).
+///   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]); `transpose`
+/// is the total from the recording, as in `arrange_musicxml_with`.
 #[no_mangle]
 pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, options: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     let Some(json) = from_c(composition_json) else { return BC_NULL };

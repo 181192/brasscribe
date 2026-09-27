@@ -1096,7 +1096,9 @@ public struct ArrangeOptions: Equatable, Hashable {
      */
     public var key: String?
     /**
-     * Transpose by this many semitones (instead of `key`).
+     * Transposition from the recording in semitones (instead of `key`): the total, as the
+     * composition's `arrangement.transpose_semitones` records it, so a composition that is
+     * already transposed by that much is not moved again.
      */
     public var transpose: Int32?
 
@@ -1116,7 +1118,9 @@ public struct ArrangeOptions: Equatable, Hashable {
          * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
          */key: String? = nil, 
         /**
-         * Transpose by this many semitones (instead of `key`).
+         * Transposition from the recording in semitones (instead of `key`): the total, as the
+         * composition's `arrangement.transpose_semitones` records it, so a composition that is
+         * already transposed by that much is not moved again.
          */transpose: Int32? = nil) {
         self.lineup = lineup
         self.difficulty = difficulty
@@ -3431,8 +3435,10 @@ public func arrangeMusicxml(compositionJson: String, arranger: String)throws  ->
 }
 /**
  * Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
- * return MusicXML (written pitch). The options are recorded in the composition's
- * `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+ * return MusicXML (written pitch). A take with layers (solo with band) can have any
+ * lineup; a whole-band take gets the minimal band or the quartet. The arrangers read the
+ * options from the composition's `arrangement`, which is set from them for this call
+ * only (the composition itself is not returned).
  */
 public func arrangeMusicxmlWith(compositionJson: String, options: ArrangeOptions)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
@@ -3629,7 +3635,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() != 31318) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() != 19742) {
+    if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() != 34366) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_arrange_song() != 47821) {

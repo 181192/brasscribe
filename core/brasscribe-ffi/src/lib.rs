@@ -87,7 +87,9 @@ pub struct ArrangeOptions {
     /// Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
     #[uniffi(default = None)]
     pub key: Option<String>,
-    /// Transpose by this many semitones (instead of `key`).
+    /// Transposition from the recording in semitones (instead of `key`): the total, as the
+    /// composition's `arrangement.transpose_semitones` records it, so a composition that is
+    /// already transposed by that much is not moved again.
     #[uniffi(default = None)]
     pub transpose: Option<i32>,
 }
@@ -99,8 +101,10 @@ impl Default for ArrangeOptions {
 }
 
 /// Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
-/// return MusicXML (written pitch). The options are recorded in the composition's
-/// `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+/// return MusicXML (written pitch). A take with layers (solo with band) can have any
+/// lineup; a whole-band take gets the minimal band or the quartet. The arrangers read the
+/// options from the composition's `arrangement`, which is set from them for this call
+/// only (the composition itself is not returned).
 #[uniffi::export]
 pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) -> Result<String, CoreError> {
     arrange_with_impl(&composition_json, &options)
@@ -118,15 +122,15 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     if o.key.is_some() && o.transpose.is_some() {
         return Err(invalid("give a key or a transposition, not both"));
     }
+    let before = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).and_then(|v| v.as_i64()).unwrap_or(0) as i32;
     let shift = match (&o.transpose, &o.key) {
-        (Some(t), _) => *t,
+        (Some(t), _) => *t - before,
         (None, Some(k)) => {
             let first = comp.keys.first().ok_or_else(|| invalid("composition has no key"))?;
             brasscribe_core::keys::semitones_to(first, k).map_err(invalid)?
         }
         _ => 0,
     };
-    let before = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).and_then(|v| v.as_i64()).unwrap_or(0);
     if shift != 0 {
         comp = comp.transposed(shift);
     }
@@ -136,7 +140,7 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     let mut a = serde_json::Map::new();
     a.insert("lineup".into(), key.into());
     a.insert("difficulty".into(), difficulty.into());
-    a.insert("transpose_semitones".into(), (before + shift as i64).into());
+    a.insert("transpose_semitones".into(), (before + shift).into());
     comp.arrangement = Some(serde_json::Value::Object(a));
     let arr = if layered {
         let lineup = lineup_by_name(key).map_err(invalid)?;

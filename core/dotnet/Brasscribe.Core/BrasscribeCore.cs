@@ -142,7 +142,8 @@ public static class BrasscribeCore
     /// take) is arranged for the minimal band or the quartet; "band" gives the minimal band there.</param>
     /// <param name="difficulty">"faithful", "standard" or "easier".</param>
     /// <param name="key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]), or null.</param>
-    /// <param name="transpose">Semitones to transpose by (instead of key), or null.</param>
+    /// <param name="transpose">Transposition from the recording in semitones (instead of key), or null: the total the
+    /// composition records as arrangement.transpose_semitones, so an already transposed take is not moved again.</param>
     public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
         string? key = null, int? transpose = null)
     {

@@ -955,7 +955,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() and 0xFFFF) != 31318) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() and 0xFFFF) != 19742) {
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() and 0xFFFF) != 34366) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 47821) {
@@ -2197,7 +2197,9 @@ data class ArrangeOptions (
     var `key`: kotlin.String? = null 
     , 
     /**
-     * Transpose by this many semitones (instead of `key`).
+     * Transposition from the recording in semitones (instead of `key`): the total, as the
+     * composition's `arrangement.transpose_semitones` records it, so a composition that is
+     * already transposed by that much is not moved again.
      */
     var `transpose`: kotlin.Int? = null 
     
@@ -4245,8 +4247,10 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
 
         /**
          * Re-arrange a Composition for a lineup and difficulty (optionally transposed) and
-         * return MusicXML (written pitch). The options are recorded in the composition's
-         * `arrangement`, as the arrangers do, so a re-arrangement keeps them.
+         * return MusicXML (written pitch). A take with layers (solo with band) can have any
+         * lineup; a whole-band take gets the minimal band or the quartet. The arrangers read the
+         * options from the composition's `arrangement`, which is set from them for this call
+         * only (the composition itself is not returned).
          */
     @Throws(CoreException::class) fun `arrangeMusicxmlWith`(`compositionJson`: kotlin.String, `options`: ArrangeOptions): kotlin.String {
             return FfiConverterString.lift(

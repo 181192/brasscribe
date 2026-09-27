@@ -62,6 +62,20 @@ fn transposes() {
 }
 
 #[test]
+fn a_recorded_transposition_is_not_applied_twice() {
+    // A take already transposed down 3 (as arrange_layers_song --transpose -3 writes it): C major became A major.
+    let done = SONG.replace(r#""keys": [{"tick": 0, "fifths": 0}]}"#, r#""keys": [{"tick": 0, "fifths": 3}],
+      "arrangement": {"lineup": "quartet", "difficulty": "faithful", "transpose_semitones": -3}}"#);
+    assert!(done.contains("transpose_semitones"));
+    let again = arrange_musicxml_with(done.clone(), ArrangeOptions { transpose: Some(-3), ..opts("quartet") }).unwrap();
+    let kept = arrange_musicxml_with(done.clone(), opts("quartet")).unwrap();
+    assert_eq!(again, kept);
+    // Back to the recording's key: up 3 from where it is.
+    let back = arrange_musicxml_with(done, ArrangeOptions { transpose: Some(0), ..opts("quartet") }).unwrap();
+    assert!(back.contains("<fifths>2</fifths>"), "concert C is written D on a B-flat cornet");
+}
+
+#[test]
 fn c_abi_takes_the_same_options() {
     let json = CString::new(SONG).unwrap();
     let options = CString::new(r#"{"lineup": "quartet", "difficulty": "easier"}"#).unwrap();
