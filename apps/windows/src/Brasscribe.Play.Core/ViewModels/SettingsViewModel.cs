@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>
-/// Language, keyboard, motion, talking-score and engine settings, persisted through <see cref="ISettingsStore"/>.
+/// Language, appearance, keyboard, motion, talking-score and engine settings, persisted through <see cref="ISettingsStore"/>.
 /// The engine credential is not a setting: it lives in the vault, keyed by the engine's server id
 /// (<see cref="EngineCredentials"/>), and only a 401 asks for pairing again.
 /// </summary>
@@ -40,6 +40,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _clients = clients ?? ((uri, token) => new EngineClient(new HttpClient(), uri) { Token = token });
         _time = time ?? TimeProvider.System;
         Language = store.Get(nameof(Language), "system");
+        Appearance = AppearanceSetting.Parse(store.Get<string?>(AppearanceSetting.Key, null));
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
         StandKeepControls = store.Get(nameof(StandKeepControls), false);
@@ -66,6 +67,19 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
+    /// <summary>Match system, Light or Dark, for this PC only (design/system.md §10).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RootTheme))]
+    public partial Appearance Appearance { get; set; }
+
+    /// <summary>A Windows contrast theme is on (set by the app from AccessibilitySettings): it decides the colours.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RootTheme))]
+    public partial bool HighContrast { get; set; }
+
+    /// <summary>What every window root asks for: the choice, or Default while a contrast theme is on.</summary>
+    public RootTheme RootTheme => AppearanceSetting.Resolve(Appearance, HighContrast);
+
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; }
     [ObservableProperty] public partial bool ReduceMotion { get; set; }
     /// <summary>Music stand: Keep the stand controls visible (off by default).</summary>
@@ -100,6 +114,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnMatchCodeChanged(string? value) => OnPropertyChanged(nameof(MatchCodeSpoken));
 
     partial void OnLanguageChanged(string value) => _store.Set(nameof(Language), value);
+    partial void OnAppearanceChanged(Appearance value) => _store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(value));
     partial void OnSingleKeyShortcutsChanged(bool value) => _store.Set(nameof(SingleKeyShortcuts), value);
     partial void OnReduceMotionChanged(bool value) => _store.Set(nameof(ReduceMotion), value);
     partial void OnStandKeepControlsChanged(bool value) => _store.Set(nameof(StandKeepControls), value);

@@ -250,7 +250,7 @@ public sealed partial class MainWindow : Window
     {
         if (!ViewModel.OpenExportCommand.CanExecute(null)) return;
         ViewModel.OpenExportCommand.Execute(null);
-        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot };
+        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
         await dialog.ShowAsync();
         ExportButton.Focus(FocusState.Programmatic);
     }
@@ -268,7 +268,7 @@ public sealed partial class MainWindow : Window
         _settingsOpen = true;
         try
         {
-            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot };
+            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
             if (pairingLink is not null) dialog.Opened += async (_, _) => await ViewModel.Settings.PairFromLinkAsync(pairingLink);
             await dialog.ShowAsync();
             ViewModel.Settings.CancelAsk();
@@ -279,7 +279,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowShortcutsAsync()
     {
-        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot };
+        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
         await dialog.ShowAsync();
         HelpButton.Focus(FocusState.Programmatic);
     }

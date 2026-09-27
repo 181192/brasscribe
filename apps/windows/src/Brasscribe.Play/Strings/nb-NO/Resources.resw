@@ -1971,4 +1971,19 @@
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom ut</value>
   </data>
+  <data name="AppearanceBox.Header" xml:space="preserve">
+    <value>Utseende</value>
+  </data>
+  <data name="AppearanceSystem.Content" xml:space="preserve">
+    <value>Følg systemet</value>
+  </data>
+  <data name="AppearanceLight.Content" xml:space="preserve">
+    <value>Lyst</value>
+  </data>
+  <data name="AppearanceDark.Content" xml:space="preserve">
+    <value>Mørkt</value>
+  </data>
+  <data name="AppearanceContrastNote.Text" xml:space="preserve">
+    <value>Kontrasttemaet ditt er på, så Windows velger fargene.</value>
+  </data>
 </root>

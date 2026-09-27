@@ -52,6 +52,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = s["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = s["Score_SaveTitle"],
@@ -68,6 +69,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = s.Format("ScoreOptions_DeleteTitle", item.Title),
             Content = s[item.OnComputer ? "ScoreOptions_DeleteComputer" : "ScoreOptions_DeleteThisPc"],
             PrimaryButtonText = s["ScoreOptions_Delete"],

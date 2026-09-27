@@ -30,6 +30,7 @@ public sealed partial class TranscribingPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = strings["CancelDialog_Title"],
             Content = strings["CancelDialog_Content"],
             PrimaryButtonText = strings["CancelDialog_Stop"],

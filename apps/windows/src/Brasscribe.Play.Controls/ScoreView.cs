@@ -660,10 +660,8 @@ public sealed partial class ScoreView : UserControl
         SetFocusRect(FocusRect, CurrentEvents, _lastStaff);
     }
 
-    private Brush Brush(string key) =>
-        Resources.TryGetValue(key, out var local) && local is Brush b ? b
-        : Application.Current.Resources.TryGetValue(key, out var app) && app is Brush a ? a
-        : new SolidColorBrush(Colors.Black);
+    /// <summary>A Bc* brush for this control's own theme (Appearance may differ from the system's).</summary>
+    private Brush Brush(string key) => ThemedResources.Brush(this, key);
 
     private static readonly Windows.UI.ViewManagement.AccessibilitySettings Accessibility = new();
 
