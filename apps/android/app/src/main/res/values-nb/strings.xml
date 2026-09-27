@@ -358,7 +358,7 @@
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>
-    <string name="companion_tech_details">Start serveren på datamaskinen med «brasscribe serve --lan». Adressen vises når den starter, for eksempel http://192.168.1.20:8765.</string>
+    <string name="companion_tech_details">Brasscribe Bandroom viser adressen under Detaljer for den tekniske i bandet. Uten den: «pixi run serve-lan».</string>
     <string name="companion_allow_heavy">La datamaskinen gjøre det tunge arbeidet</string>
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
 

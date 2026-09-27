@@ -360,7 +360,7 @@
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>
-    <string name="companion_tech_details">Start the server on the computer with “brasscribe serve --lan”. The address is shown when it starts, for example http://192.168.1.20:8765.</string>
+    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person. Without it: “pixi run serve-lan”.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
 
