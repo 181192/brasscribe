@@ -53,9 +53,7 @@ import no.brasscribe.play.model.ScoreNote as ModelScoreNote
 class RustCoreBridge private constructor(val version: String) : CoreBridge {
     override val name = "rust $version"
 
-    // The core does not know the engine's review groups yet, so they are taken from the original JSON.
-    override fun decodeComposition(json: String): Composition =
-        CompositionJson.decode(normalizeComposition(json)).let { c -> c.copy(review = runCatching { CompositionJson.decode(json).review }.getOrNull()) }
+    override fun decodeComposition(json: String): Composition = CompositionJson.decode(normalizeComposition(json))
     override fun encodeComposition(composition: Composition): String = CompositionJson.encode(composition)
 
     override fun spell(onsetsBeats: List<Double>, pitches: List<Int>, keyHint: Int?): List<SpelledPitch> =
