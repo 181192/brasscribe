@@ -64,23 +64,46 @@ final class MusicStand {
     /// The width one page is engraved to.
     var columnWidth: CGFloat { max(280, twoUp ? (viewport.width - Space.s4 * 3) / 2 : viewport.width - Space.s2 * 2) }
 
-    /// The staff size follows from the bars per system and the width.
+    /// Staves in a system: 1 for your part, every part otherwise.
+    private(set) var staves = 1
+
+    /// The staff size follows from the bars per system and the width, and at least two systems of
+    /// one part fit a page (one system about 100 pt at zoom 1, and about 70 more per extra staff);
+    /// a system of every part always fits the screen.
     var zoom: CGFloat {
         let perBar = columnWidth / CGFloat(barsPerSystem)
-        // and at least two systems fit a page (a system of one part is about 100 pt at zoom 1)
-        let twoSystems = (viewport.height - Self.pad - Self.topPad) / 2 / 100
-        return max(0.7, min(2.4, perBar / 112, twoSystems)) * (largerText >= 1 ? 1.1 : 1)
+        let usable = viewport.height - Self.pad - Self.topPad
+        let fits = staves == 1 ? usable / 2 / 100 : usable / (100 + 70 * CGFloat(staves - 1))
+        return max(staves == 1 ? 0.7 : 0.2, min(2.4, perBar / 112, fits) * fitFactor) * (largerText >= 1 ? 1.1 : 1)
     }
 
-    func layout(parts: Set<String>?, pitch: PitchMode) -> ScoreRenderer.Layout {
-        ScoreRenderer.Layout(width: columnWidth, zoom: zoom, parts: parts, pitch: pitch, height: max(300, viewport.height),
-                             barsPerSystem: barsPerSystem)
+    /// Set after an engraving whose tallest system did not fit the screen (a system of every part).
+    private var fitFactor: CGFloat = 1
+
+    /// After an engraving: when a system is taller than the music area above the controls, shrink
+    /// the staves to fit and return true (engrave again).
+    func refit(_ model: PracticeModel) -> Bool {
+        guard let tallest = systems(model).map(\.frame.height).max(), tallest > 0 else { return false }
+        let usable = viewport.height - Self.pad - Self.topPad - obscured
+        guard tallest > usable, usable > 100 else { return false }
+        let f = usable / tallest * 0.97
+        guard f < 0.97, zoom * f > (staves == 1 ? 0.7 : 0.2) else { return false }
+        fitFactor *= f
+        return true
+    }
+
+    func layout(parts: Set<String>?, pitch: PitchMode, staves: Int) -> ScoreRenderer.Layout {
+        if max(1, staves) != self.staves { fitFactor = 1 }
+        self.staves = max(1, staves)
+        return ScoreRenderer.Layout(width: columnWidth, zoom: zoom, parts: parts, pitch: pitch, height: max(300, viewport.height),
+                                    barsPerSystem: barsPerSystem)
     }
 
     /// A new music area: returns true when the score must be engraved again.
     func setViewport(_ size: CGSize, form: Form, largerText: Int) -> Bool {
         let before = (columnWidth, barsPerSystem, zoom, twoUp)
         let hadSize = viewport != .zero
+        if size != viewport { fitFactor = 1 }
         viewport = size
         self.form = form
         self.largerText = largerText
@@ -92,14 +115,16 @@ final class MusicStand {
 
     /// Space kept below the last system on a page.
     nonisolated static let pad: CGFloat = 16
-    /// Space kept above the first system: room for the "?" marks the app draws above a staff.
+    /// Space kept above the first system: room for the "?" marks the app draws above a staff, which
+    /// grow with the staff size.
     nonisolated static let topPad: CGFloat = 36
+    var topPad: CGFloat { max(Self.topPad, 34 * zoom) }
 
     /// The page's systems, from the engraving.
     func systems(_ model: PracticeModel) -> [ScoreRenderer.System] { model.pages.first?.systems ?? [] }
 
     func pages(_ model: PracticeModel) -> [StandPage] {
-        Self.paginate(systems(model), height: viewport.height, overlap: !twoUp, bars: barIndex(model))
+        Self.paginate(systems(model), height: viewport.height, overlap: !twoUp, bars: barIndex(model), topPad: topPad)
     }
 
     private func barIndex(_ model: PracticeModel) -> [String: Int] {
@@ -108,7 +133,8 @@ final class MusicStand {
 
     /// Whole systems per page, greedily; with `overlap`, the next page starts with the last
     /// system of this one.
-    nonisolated static func paginate(_ systems: [ScoreRenderer.System], height: CGFloat, overlap: Bool, bars: [String: Int]) -> [StandPage] {
+    nonisolated static func paginate(_ systems: [ScoreRenderer.System], height: CGFloat, overlap: Bool, bars: [String: Int],
+                                      topPad: CGFloat = MusicStand.topPad) -> [StandPage] {
         guard !systems.isEmpty else { return [] }
         var out: [StandPage] = []
         var i = 0
@@ -205,16 +231,19 @@ final class MusicStand {
         let all = pages(model)
         guard all.indices.contains(index) else { return .zero }
         let pg = all[index]
-        let top = sys[pg.systems.lowerBound].frame.minY - Self.topPad
+        var top = sys[pg.systems.lowerBound].frame.minY - topPad
+        if pg.systems.lowerBound > 0 { top = max(top, sys[pg.systems.lowerBound - 1].frame.maxY + 1) }
         var shift: CGFloat = 0
         if obscured > 0, let s = systemIndex(ofBar: model.currentBar, model), pg.systems.contains(s) {
             let limit = top + viewport.height - obscured
             shift = max(0, sys[s].frame.maxY + Self.pad - limit)
-            shift = min(shift, max(0, sys[s].frame.minY - Self.topPad - top))
+            shift = min(shift, max(0, sys[s].frame.minY - topPad - top))
         }
         var bottom = sys[pg.systems.upperBound].frame.maxY + Self.pad
         // nothing of the next system (its bar number) peeks in under the page
-        if sys.indices.contains(pg.systems.upperBound + 1) { bottom = min(bottom, sys[pg.systems.upperBound + 1].frame.minY - Self.topPad) }
+        if sys.indices.contains(pg.systems.upperBound + 1) {
+            bottom = max(sys[pg.systems.upperBound].frame.maxY + 2, min(bottom, sys[pg.systems.upperBound + 1].frame.minY - topPad))
+        }
         bottom += shift
         return CGRect(x: 0, y: top + shift, width: model.pages.first?.svg.size.width ?? 0, height: max(0, bottom - top - shift))
     }

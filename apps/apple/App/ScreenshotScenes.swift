@@ -42,7 +42,7 @@ enum ScreenshotScenes {
             if let p = openScore() { app.path = [.review(p)] }
         case "output":
             if let p = openScore() { app.path = [.output(p)] }
-        case "score", "part", "export", "stand", "stand-hidden", "stand-hint", "stand-locked":
+        case "score", "part", "export", "stand", "stand-hidden", "stand-hint", "stand-locked", "stand-all":
             _ = openScore()   // ScoreScreen reads the scene name for the part view and the export sheet
         case "error":
             app.show(.silence)
@@ -73,6 +73,7 @@ extension ScreenshotScenes {
         switch LaunchOptions.screen {
         case "stand-hidden": stand.layerShown = false
         case "stand-hint": stand.layerShown = false; stand.showHint = true
+        case "stand-all": m.setOnlyMine(false)
         case "stand-locked": stand.rotationLocked = true
         default: break
         }
@@ -87,7 +88,7 @@ extension ScreenshotScenes {
             m.goToBar(9)
         case "part":
             m.goToBar(8)
-        case "stand", "stand-hidden", "stand-hint", "stand-locked":
+        case "stand", "stand-hidden", "stand-hint", "stand-locked", "stand-all":
             m.goToBar(4)
         default:
             break

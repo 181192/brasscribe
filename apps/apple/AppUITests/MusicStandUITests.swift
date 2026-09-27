@@ -55,6 +55,17 @@ final class MusicStandUITests: XCTestCase {
         XCTAssertTrue(element("standLayer").exists, "the controls show on entry while paused")
         XCTAssertTrue(position.contains("1"), position)
         XCTAssertEqual(app.buttons["standLeave"].label, "Leave the music stand")
+        // Only my part off shows every part, on again shows yours
+        let mine = position
+        let only = element("standOnlyMine")
+        XCTAssertTrue(only.exists)
+        only.safeTap(app)
+        let all = NSPredicate(format: "label CONTAINS 'All parts'")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: all, object: element("standPosition"))], timeout: 30), .completed,
+                       "Only my part off: \(position)")
+        only.safeTap(app)
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", mine),
+                                                                      object: element("standPosition"))], timeout: 30), .completed)
         // "Only my part" is on: the part line says it is yours
         XCTAssertTrue(position.contains("(you)") || element("standPosition").label.contains("(you)"), position)
         app.buttons["standLeave"].safeTap(app)
@@ -121,6 +132,33 @@ final class MusicStandUITests: XCTestCase {
         #endif
         XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "Esc (F on iPad) leaves the stand")
         XCTAssertTrue(app.buttons["playPause"].exists, "and only the stand: the score is still open")
+    }
+
+    /// Lock rotation keeps the music the way up it was; leaving gives rotation back to the system.
+    func testRotationLockHoldsAndLeavingReleasesIt() throws {
+        #if os(iOS)
+        guard UIDevice.current.userInterfaceIdiom == .phone else { throw XCTSkip("the lock is on phones only") }
+        XCUIDevice.shared.orientation = .portrait
+        launch(["-stand-ignore-keyboard"])
+        enterStand()
+        let lock = element("standLock")
+        XCTAssertTrue(lock.waitForExistence(timeout: 5))
+        lock.safeTap(app)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        sleep(2)
+        let locked = app.windows.firstMatch.frame
+        XCTAssertGreaterThan(locked.height, locked.width, "locked upright: the stand does not turn")
+        app.buttons["standLeave"].safeTap(app)
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.orientation = .portrait
+        sleep(1)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        sleep(2)
+        let free = app.windows.firstMatch.frame
+        XCTAssertGreaterThan(free.width, free.height, "after leaving, the app turns with the phone again")
+        #else
+        throw XCTSkip("the lock is on phones only")
+        #endif
     }
 
     /// F opens the stand from the score (the Mac's View › Music Stand, a keyboard on iPad) and closes it.
@@ -197,7 +235,8 @@ final class MusicStandUITests: XCTestCase {
                 let image = app.windows.firstMatch.screenshot()
                 let png = image.pngRepresentation
                 #else
-                let png = shot.pngRepresentation
+                // the screen is captured in its portrait buffer: turn a landscape shot the way it was held
+                let png = orientation == .portrait ? shot.pngRepresentation : Self.turned(shot.image)
                 #endif
                 let name = "\(device)\(tag)-\(screen)-\(hold)-\(look).png"
                 try png.write(to: URL(fileURLWithPath: dir).appending(path: name))
@@ -236,4 +275,13 @@ final class MusicStandUITests: XCTestCase {
         throw XCTSkip("the Mac's Settings are not driven by UI tests here")
         #endif
     }
+
+    #if os(iOS)
+    /// The screenshot drawn the way it is shown: the image carries the orientation, its PNG data does not.
+    static func turned(_ image: UIImage) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        return UIGraphicsImageRenderer(size: image.size, format: format).pngData { _ in image.draw(at: .zero) }
+    }
+    #endif
 }

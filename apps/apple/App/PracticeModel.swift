@@ -147,7 +147,7 @@ final class PracticeModel {
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }
         if renderer == nil { renderer = ScoreRenderer(musicXML: PartNames.localized(xml)) }
         guard let r = renderer else { loadError = String(localized: "The notation engine could not start."); return }
-        let layout = stand.map { $0.layout(parts: layoutPart.map { [$0] }, pitch: pitchMode) }
+        let layout = stand.map { $0.layout(parts: layoutPart.map { [$0] }, pitch: pitchMode, staves: layoutPart == nil ? score.parts.count : 1) }
             ?? ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
                                     height: max(600, viewWidth * 1.3))
         engraving = true
@@ -181,7 +181,12 @@ final class PracticeModel {
     var displayedParts: [Part] { layoutPart.flatMap { id in score.parts.filter { $0.id == id } } ?? score.parts }
 
     /// The one part engraved, or nil for all: the stand's own choice while it is open.
-    var layoutPart: String? { stand.map { $0.onlyMine ? myPart ?? shownPart : shownPart } ?? shownPart }
+    var layoutPart: String? {
+        guard let stand else { return shownPart }
+        if stand.onlyMine { return myPart ?? shownPart }
+        // off goes back to the parts shown before, or to all of them when that was your part alone
+        return shownPart == myPart ? nil : shownPart
+    }
 
     // MARK: transport
 

@@ -74,7 +74,7 @@ struct MusicStandView: View {
         .background(Color.Brasscribe.bg.ignoresSafeArea())
         .background { keys }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { screen = $0 }
-        .onChange(of: model.layoutVersion) { _, _ in stand.reset(model) }
+        .onChange(of: model.layoutVersion) { _, _ in if stand.refit(model) { model.relayout() } else { stand.reset(model) } }
         .onChange(of: focus) { _, f in
             // Tab (or any focus move into the band or the layer) shows the layer
             if let f, f != .score { stand.layerShown = true; stand.interaction += 1 }
@@ -236,34 +236,62 @@ struct MusicStandView: View {
         }
     }
 
-    @ViewBuilder private var topBand: some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            Group {
-                if form == .phoneUpright {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(stand.partLine(model)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                        Text(positionText).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                    }
-                } else {
-                    Text(positionText).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+    private var position: some View {
+        Group {
+            if form == .phoneUpright {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(stand.partLine(model)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                    Text(positionText).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                }
+            } else {
+                Text(positionText).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+            }
+        }
+        .monospacedDigit()
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.updatesFrequently)
+        .accessibilityIdentifier("standPosition")
+    }
+
+    @ViewBuilder private var bandControls: some View {
+        if form == .phoneSide, layerVisible {
+            onlyMine.fixedSize()
+            lockToggle.fixedSize()
+        }
+        leaveButton
+    }
+
+    /// The persistent band: the position as plain text and Leave, side by side when they fit;
+    /// with large text the position goes above them, so nothing is squeezed or clipped.
+    @ViewBuilder private var bandRows: some View {
+        if form == .phoneSide {
+            // on its side the height is precious: one row, the position on up to two lines
+            HStack(alignment: .center, spacing: Space.s3) {
+                position.lineLimit(2).minimumScaleFactor(0.8).layoutPriority(1)
+                Spacer(minLength: Space.s2)
+                bandControls
+            }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: Space.s3) {
+                    position.fixedSize()
+                    Spacer(minLength: Space.s2)
+                    bandControls
+                }
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    position
+                    HStack(spacing: Space.s3) { Spacer(minLength: 0); bandControls }
                 }
             }
-            .monospacedDigit()
-            .lineLimit(form == .phoneSide ? 2 : nil)
-            .minimumScaleFactor(form == .phoneSide ? 0.8 : 1)
-            .layoutPriority(1)
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.updatesFrequently)
-            .accessibilityIdentifier("standPosition")
-            Spacer(minLength: Space.s2)
-            if form == .phoneSide, layerVisible {
-                onlyMine.fixedSize()
-                lockToggle.fixedSize()
-            }
-            leaveButton
         }
+    }
+
+    private var topBand: some View {
+        bandRows
         .padding(.horizontal, form == .phoneUpright ? Space.s5 : Space.s6)
         .padding(.vertical, Space.s2)
+        // the stand's chrome grows with the text up to a point, so the music keeps its room
+        .dynamicTypeSize(...(form == .phoneSide ? DynamicTypeSize.xxLarge : .accessibility1))
     }
 
     private var leaveButton: some View {
@@ -319,6 +347,7 @@ struct MusicStandView: View {
         .padding(.horizontal, form == .phoneUpright ? Space.s3 : Space.s6)
         .padding(.bottom, Space.s3)
         .simultaneousGesture(TapGesture().onEnded { touched() })
+        .dynamicTypeSize(...(form == .phoneSide ? DynamicTypeSize.xxLarge : .accessibility1))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Music stand controls"))
         .accessibilityIdentifier("standLayer")
@@ -344,6 +373,8 @@ struct MusicStandView: View {
             pageButton(next: true)
         }
         .foregroundStyle(Color.Brasscribe.text)
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .accessibilityShowsLargeContentViewer()
         .fixedSize()
     }
 
@@ -501,6 +532,7 @@ private struct StandPageView: View {
                     paint.draw(page, in: c, visible: window)
                 }
                 .frame(width: window.width, height: height)
+                .clipped()
             }
         }
         .padding(.vertical, framed ? Space.s2 : 0)

@@ -86,6 +86,28 @@ struct Phrase {
     }
 }
 
+/// Below the threshold the stage is a plain gain, so Mute my part and Only this keep the
+/// balance between the parts, and with no memory it cannot pump when the Stop fade runs.
+@Test func limiterIsLinearBelowTheThresholdAndNeverClips() throws {
+    for x: Float in [0, 0.1, -0.5, 0.79] { #expect(OutputStageKernel.limit(x) == x) }
+    #expect(OutputStageKernel.limit(0.9) < 0.9 && OutputStageKernel.limit(0.9) > 0.8)
+    #expect(OutputStageKernel.limit(50) <= OutputStageKernel.ceiling)
+    #expect(OutputStageKernel.limit(-50) >= -OutputStageKernel.ceiling)
+    // the curve is monotonic, so it never pumps or inverts
+    var last: Float = 0
+    for i in 0...400 { let y = OutputStageKernel.limit(Float(i) / 100); #expect(y >= last); last = y }
+}
+
+// A hot buffer (12 dB over full scale) through the kernel stays under the ceiling.
+@Test func limiterKeepsAHotBufferUnderFullScale() {
+    let k = OutputStageKernel()
+    k.gain = 4
+    var x = (0..<4410).map { Float(sin(Double($0) * 2 * .pi * 440 / 44100)) }
+    x.withUnsafeMutableBufferPointer { k.process($0.baseAddress!, count: $0.count) }
+    #expect(x.map(abs).max()! <= OutputStageKernel.ceiling)
+    #expect(x.map(abs).max()! > OutputStageKernel.threshold)
+}
+
 private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
 
 @Suite(.serialized, .enabled(if: bandPhrase() != nil && bandSoundFont() != nil)) struct OutputStageTests {
@@ -126,18 +148,6 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         print("OUTPUT solo cornet \(dB(loud.peak)) dBFS, \(dB(unity.peak)) dBFS at unity")
         #expect(lift >= 5.5)
         #expect(abs(lift - PlaybackEngine.defaultOutputGainDB) < 0.5, "a solo part stays below the limiter")
-    }
-
-    /// Below the threshold the stage is a plain gain, so Mute my part and Only this keep the
-    /// balance between the parts, and with no memory it cannot pump when the Stop fade runs.
-    @Test func belowThresholdIsLinear() throws {
-        for x: Float in [0, 0.1, -0.5, 0.79] { #expect(OutputStageKernel.limit(x) == x) }
-        #expect(OutputStageKernel.limit(0.9) < 0.9 && OutputStageKernel.limit(0.9) > 0.8)
-        #expect(OutputStageKernel.limit(50) <= OutputStageKernel.ceiling)
-        #expect(OutputStageKernel.limit(-50) >= -OutputStageKernel.ceiling)
-        // the curve is monotonic, so it never pumps or inverts
-        var last: Float = 0
-        for i in 0...400 { let y = OutputStageKernel.limit(Float(i) / 100); #expect(y >= last); last = y }
     }
 
     /// The metronome bypasses the stage: its click is loud enough beside the band and never clips.

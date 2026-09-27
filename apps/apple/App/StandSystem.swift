@@ -1,6 +1,5 @@
 import SwiftUI
 #if os(iOS)
-import GameController
 import UIKit
 #else
 import AppKit
@@ -61,12 +60,13 @@ enum StandSystem {
     }
     #endif
 
-    /// Full Keyboard Access (Mac), or a hardware keyboard (iPad and iPhone, which have no public
-    /// Full Keyboard Access check): the controls stay, so keyboard focus never lands on nothing.
+    /// Full Keyboard Access on the Mac keeps the controls. iOS has no public check for it, and a
+    /// hardware keyboard alone must not keep them: a Bluetooth page turner is a keyboard. There,
+    /// focus in the layer (and Switch Control, which Full Keyboard Access users often have) keeps it.
     static var keyboardNeedsControls: Bool {
         if LaunchOptions.standIgnoreKeyboard { return false }
         #if os(iOS)
-        return GCKeyboard.coalesced != nil
+        return false
         #else
         return NSApp.isFullKeyboardAccessEnabled
         #endif
