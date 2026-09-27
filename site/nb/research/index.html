@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Slik virker Brasscribe · Brasscribe Play</title>
+  <meta name="description" content="Teknikken bak Brasscribe: hvilke modeller som lytter, hvilke regler som skriver notene, datasettene og målingene bak hvert valg, og hva det fortsatt ikke får til.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="alternate" hreflang="en" href="../../research/">
+  <link rel="alternate" hreflang="nb" href="./">
+  <link rel="alternate" hreflang="x-default" href="../../research/">
+  <script src="../../lang.js"></script>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+  <link rel="stylesheet" href="../../assets/brasscribe.css">
+  <link rel="stylesheet" href="../../assets/fonts.css">
+  <link rel="stylesheet" href="../../site.css">
+</head>
+<body>
+<a class="skip" href="#main">Hopp til innholdet</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../">
+      <img class="logo-light" src="../../assets/logo/lockup-play.svg" alt="Brasscribe Play, forsiden" width="180" height="32">
+      <img class="logo-dark" src="../../assets/logo/lockup-play-on-dark.svg" alt="Brasscribe Play, forsiden" width="180" height="32">
+    </a>
+    <nav class="site-nav" aria-label="Hovedmeny">
+      <a href="../">Forside</a>
+      <a href="../guide/">Brukerveiledning</a>
+      <a href="./" aria-current="page">Slik virker det</a>
+      <a href="https://github.com/181192/brasscribe">Kildekode</a>
+      <a class="lang-switch" href="../../research/" hreflang="en" lang="en" data-lang-switch>English</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap guide">
+  <nav class="toc toc-article" aria-labelledby="toc-title">
+    <h2 id="toc-title" class="toc-title">I denne artikkelen</h2>
+    <ol>
+      <li><a href="#sammendrag">Sammendrag</a></li>
+      <li><a href="#innledning">1. Innledning</a></li>
+      <li><a href="#bakgrunn">2. Bakgrunn</a></li>
+      <li><a href="#systemet">3. Systemet</a></li>
+      <li><a href="#modeller">4. Modeller</a></li>
+      <li><a href="#data">5. Data og måling</a></li>
+      <li><a href="#resultater">6. Resultater</a></li>
+      <li><a href="#pa-enheten">7. På enheten og Rust-kjernen</a></li>
+      <li><a href="#lyd">8. Lyd</a></li>
+      <li><a href="#begrensninger">9. Begrensninger</a></li>
+      <li><a href="#lisenser">10. Lisenser og etikk</a></li>
+      <li><a href="#referanser">Referanser</a></li>
+    </ol>
+  </nav>
+
+  <article class="paper">
+    <header>
+      <p class="overline">Slik virker det</p>
+      <h1>Fra et opptak til et partitur for brassband</h1>
+      <p class="lead">Teknikken bak Brasscribe: hvilke modeller som lytter, hvilke regler som skriver ned tonene, og hvordan hvert valg ble målt.</p>
+      <p class="byline">Brasscribe-prosjektet · Skrevet 27. september 2026 · Tallene gjelder commit <code>14730d0</code> · Kildene ligger i <a href="https://github.com/181192/brasscribe">repositoriet</a></p>
+    </header>
+
+    <section id="sammendrag" class="abstract" aria-labelledby="sammendrag-title">
+      <h2 id="sammendrag-title">Sammendrag</h2>
+      <p>Brasscribe lager partitur og stemmer for et brassband av britisk type ut fra et opptak, og det kjører på musikerens egne enheter. Ingen åpen modell kjenner brassbandinstrumentene, og ingen skiller flere spillere på samme instrument fra hverandre. Derfor deler vi opp problemet. Lærte modeller bare lytter: de skiller lag, finner toner og finner taktslag. Faste musikkregler gjør resten: rytme, tonenavn, toneart, harmonikk, stemmeføring for bandet og vanskelighetsgrad. Tre modeller (MuScriptor, Basic Pitch og SwiftF0) sammenligner hver tone, og en logistisk modell gjør enigheten deres om til en kalibrert sannsynlighet for at tonen er riktig. Den sannsynligheten avgjør hvilke toner musikeren blir bedt om å sjekke.</p>
+      <p>På ekte opptak av brasskvartett (ChoraleBricks) finner den beste enkeltmodellen tonene med onset F1 0,75 ved 100 ms, og 0,88 på kammermusikk for brass fra URMP. Toner modellene er enige om, er riktige i 89–99 % av tilfellene. Med et riktig slagrutenett havner 95–99 % av tonene på nøyaktig riktig plass i takten. De symbolske stegene er skrevet én gang i Python og portert til Rust. Den 27. september 2026 ga porten byte-identisk resultat i alle 378 samsvarstester. Lyttemodellene kjører på Apple-, Android- og Windows-enheter etter konvertering, og hver av dem må nå note-F1 ≥ 0,98 mot sitt eget referanserammeverk. Vi viser også hvor det svikter: mellomstemmer med samme klang, unisone toner, slagrutenettet under fermater og pedaltoner under 46,9 Hz.</p>
+    </section>
+
+    <section id="innledning" aria-labelledby="innledning-title">
+      <h2 id="innledning-title"><span class="secno">1</span>Innledning</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>En brassmusiker hører et stykke og vil ha stemmen sin. Å skrive den ned etter gehør tar timer. Brasscribe lager første utkast og sier ærlig fra om hvilke toner det er usikkert på.</p>
+      <p>Automatisk musikktranskripsjon (AMT) går ut på å gjøre lyd om til symbolske toner: hvilken tonehøyde som klinger, når den starter og når den slutter. En musiker trenger mer enn det. Et partitur er <em>lesbart</em> når rytmene ligger på et slagrutenett en musiker kan telle, tonene har navnene en komponist ville brukt (Fiss eller Gess), og fortegnene passer harmonikken. En stemme er <em>spillbar</em> når den holder seg innenfor instrumentets omfang, er skrevet i riktig transposisjon (B♭ eller E♭ for de fleste brassbandinstrumentene) og ikke krysser eller kolliderer med nabostemmene.</p>
+      <p>Et brassband av britisk type har 18 stemmer i et konkurransepartitur: soprankornett, solokornett, repiano, 2. og 3. kornett, flygelhorn, tre althorn, to barytoner, to tenortromboner og en basstrombone, eufonium, E♭- og B♭-bass og slagverk. Norske korps bruker samme besetning. De fleste av instrumentene har samme familieklang, og stemmene dobler hverandre hele tiden.</p>
+      <p>Vi satte tre krav:</p>
+      <ul class="ticks">
+        <li><strong>Lokalt først.</strong> Et soloopptak blir til en stemme på telefonen, uten nett. Et fullt band behandles på musikerens egen datamaskin. Ingenting sendes til en skytjeneste.</li>
+        <li><strong>Ærlig usikkerhet.</strong> Hver tone har en sannsynlighet for å være riktig. Usikre toner får et <span class="q uncertain" aria-hidden="true">?</span> (form og farge), og musikeren sjekker dem i grupper.</li>
+        <li><strong>Målt, ikke antatt.</strong> Hvert steg er valgt ut fra målinger på opptak der vi kjenner de riktige tonene, og en regresjonssperre vokter hvert resultat.</li>
+      </ul>
+      <p>Artikkelen beskriver systemet slik det var 27. september 2026. Arbeidet bak gikk fra 25. til 27. september 2026: litteraturgjennomgang, modelladaptere og målinger den første dagen, Rust-porten og appene den andre, og kalibrert sikkerhet, kvartetten og bandlyden den tredje.</p>
+    </section>
+
+    <section id="bakgrunn" aria-labelledby="bakgrunn-title">
+      <h2 id="bakgrunn-title"><span class="secno">2</span>Bakgrunn og tidligere arbeid</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Det finnes gode åpne modeller for hver lytteoppgave. Ingen av dem er laget for brassband, så vi testet hver av dem på brass før vi stolte på dem.</p>
+
+      <h3>Transkripsjon av flere instrumenter</h3>
+      <p>MT3 behandlet transkripsjon av flere instrumenter som sekvens-til-sekvens: en Transformer leser et spektrogram og skriver MIDI-lignende tegn med instrumentmerker<sup><a href="#ref-1">[1]</a></sup>. YourMT3+ utvidet arkitekturen med en mixture-of-experts-koder og stem-augmentering på tvers av datasett, og var den sterkeste publiserte modellen på Slakh og URMP i 2024<sup><a href="#ref-2">[2]</a></sup>. MuScriptor (ISMIR 2026) er en Transformer med bare dekoder og åpne vekter, trent på rundt 11 000 timer ekte opptak med flere instrumenter og deretter ettertrent med forsterkende læring<sup><a href="#ref-3">[3]</a></sup>. På forfatternes eget testsett med ekte musikk får den omtrent dobbelt så høy F1 for flere instrumenter som YourMT3+ (48,2 mot 21,9). Tegnformatet kan ikke holde to like toner på samme instrument samtidig. Det betyr mye for brassband, der unisone toner er overalt.</p>
+      <p>Basic Pitch er en liten, instrumentuavhengig modell som anslår ansatser, rammeaktivering og en tonehøydekurve<sup><a href="#ref-4">[4]</a></sup>. Onsets and Frames innførte oppsettet med ansats pluss ramme for piano<sup><a href="#ref-7">[7]</a></sup>.</p>
+
+      <h3>Tonehøyde for én stemme</h3>
+      <p>For én enkelt stemme er en tonehøydesporer enklere og mer presis enn en flerstemmig transkribent. CREPE innførte en konvolusjonsbasert tonehøydemodell trent på rå lyd<sup><a href="#ref-6">[6]</a></sup>. SwiftF0 er en svært liten modell (ONNX-filen er på 1,1 MB) som toppet en nylig sammenligning av tonehøydesporere med pitch-F1 0,778 i snitt over ti korpus og åtte opptaksforhold<sup><a href="#ref-5">[5]</a><a href="#ref-27">[27]</a></sup>. Den sammenligningen vedlikeholdes av SwiftF0-forfatteren, og SwiftF0 er trent på treningsdelen av den. Vi tok derfor rangeringen som et hint og målte SwiftF0 på brass selv.</p>
+
+      <h3>Kildeseparasjon</h3>
+      <p>HT-Demucs kombinerer et U-Net for lydbølge og et for spektrogram med en Transformer på tvers av dem<sup><a href="#ref-12">[12]</a></sup>. BS-RoFormer deler spektrogrammet i frekvensbånd og kjører Transformere med roterende posisjonskoding over tid og bånd<sup><a href="#ref-11">[11]</a></sup>. Vi bruker to sjekkpunkter av denne arkitekturen fra miljøet rundt den: BS-RoFormer SW (seks stems: vokal, bass, trommer, gitar, piano og annet) og MVSep Mega-53, som gir 53 stems, blant dem brass, trompet, trombone, valthorn og tuba<sup><a href="#ref-13">[13]</a><a href="#ref-29">[29]</a></sup>. Vi fant ingen åpen separasjonsmodell som kjenner kornett, althorn, baryton eller eufonium, og ingen som skiller flere spillere på samme instrument.</p>
+
+      <h3>Slag, førsteslag og taktart</h3>
+      <p>Klassiske slagsporere tolker nettverkets aktivering med et dynamisk bayesiansk nettverk over tempo og plass i takten<sup><a href="#ref-9">[9]</a><a href="#ref-10">[10]</a></sup>. Beat This! dropper det etterarbeidet og anslår slag og førsteslag direkte med en Transformer<sup><a href="#ref-8">[8]</a></sup>. Ingen åpen modell gir ut taktart, så den må utledes fra avstanden mellom førsteslagene og sjekkes av et menneske.</p>
+
+      <h3>Stavemåte, toneart og notasjon</h3>
+      <p>Et MIDI-nummer sier ikke om tonen er Fiss eller Gess. Meredith sin ps13-algoritme staver tonene ut fra den tonale sammenhengen<sup><a href="#ref-15">[15]</a><a href="#ref-16">[16]</a></sup>, og vi bruker implementasjonen i partitura<sup><a href="#ref-23">[23]</a></sup>. Hovedtonearten kommer fra Krumhansl–Kessler-profilene<sup><a href="#ref-17">[17]</a></sup>. Partiturene skrives som MusicXML 4.0<sup><a href="#ref-22">[22]</a></sup> med music21<sup><a href="#ref-24">[24]</a></sup>.</p>
+
+      <h3>Arrangering</h3>
+      <p>Å skrive en bandstemme fra et opptak er delvis arrangering: opptaket kan være et orkester med solist, og en kvartett kan måtte spille en sats for fullt band. Vi fant ingen åpen arrangør med faste krav til omfang og transposisjon for brassbandinstrumenter. Brasscribe arrangerer derfor med faste regler for stemmeføring, beskrevet i <a href="#systemet">del 3</a>.</p>
+
+      <h3>Hva som manglet</h3>
+      <p>Tre hull formet designet. Ingen modell kjenner brassbandinstrumentene; alle ordlister stopper ved General MIDI-brass. Ingen modell skiller stemmer med samme klang, så tre kornetter i tett harmoni kommer ut som én strøm. Og vi fant ingen publiserte tall for nøyaktighet på ekte brassbandopptak, så testsettet måtte settes sammen først. Språkmodeller for lyd ble utelukket som kilde til toner: publiserte tester viser at de ikke hører tonehøyde pålitelig.</p>
+    </section>
+
+    <section id="systemet" aria-labelledby="systemet-title">
+      <h2 id="systemet-title"><span class="secno">3</span>Systemet</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Modellene lytter, reglene skriver. Etter sammenligningen gir de samme tonene alltid det samme partituret, byte for byte, på alle enheter.</p>
+
+      <figure>
+        <!--FIG1--><svg class="diagram diagram-pipeline" viewBox="0 0 440 876" role="img" aria-labelledby="fig1-title fig1-desc" xmlns="http://www.w3.org/2000/svg"><title id="fig1-title">Brasscribe-kjeden</title><desc id="fig1-desc">Tretten steg fra opptak til partitur. Lærte modeller (messingkant) bare lytter: de skiller lag, finner toner og finner taktslag. Alt etter sammenligningen er faste musikkregler. Stiplede steg er der musikeren bestemmer.</desc><rect class="box plain" x="10" y="8" width="420" height="44" rx="8"/><text class="t" x="22" y="27">Opptak</text><text class="s" x="22" y="44">en fil, mikrofonen eller lyd på datamaskinen</text><rect class="box human" x="10" y="72" width="420" height="44" rx="8"/><text class="t" x="22" y="91">Hva er dette?</text><text class="s" x="22" y="108">solo · brassband · solist med orkester · pop/rock</text><line class="arrow" x1="220" y1="52" x2="220" y2="65"/><path class="head" d="M215 64 L225 64 L220 72 Z"/><rect class="box model" x="10" y="136" width="205" height="60" rx="8"/><text class="t" x="22" y="155">Separasjon</text><text class="s" x="22" y="172">bare fullt band:</text><text class="s" x="22" y="188">BS-RoFormer SW, Mega-53</text><rect class="box model" x="225" y="136" width="205" height="60" rx="8"/><text class="t" x="237" y="155">Taktslag</text><text class="s" x="237" y="172">Beat This!</text><text class="s" x="237" y="188">på hele miksen</text><line class="arrow" x1="112" y1="116" x2="112" y2="129"/><path class="head" d="M107 128 L117 128 L112 136 Z"/><line class="arrow" x1="327" y1="116" x2="327" y2="129"/><path class="head" d="M322 128 L332 128 L327 136 Z"/><rect class="box model" x="10" y="216" width="205" height="60" rx="8"/><text class="t" x="22" y="235">Toner per lag</text><text class="s" x="22" y="252">MuScriptor, Basic Pitch</text><text class="s" x="22" y="268">og SwiftF0</text><rect class="box plain" x="225" y="216" width="205" height="60" rx="8"/><text class="t" x="237" y="235">Metrisk nivå</text><text class="s" x="237" y="252">slaget en musiker</text><text class="s" x="237" y="268">ville telt</text><line class="arrow" x1="112" y1="196" x2="112" y2="209"/><path class="head" d="M107 208 L117 208 L112 216 Z"/><line class="arrow" x1="327" y1="196" x2="327" y2="209"/><path class="head" d="M322 208 L332 208 L327 216 Z"/><rect class="box plain" x="10" y="296" width="205" height="60" rx="8"/><text class="t" x="22" y="315">Enighet og sikkerhet</text><text class="s" x="22" y="332">enighet → kalibrert</text><text class="s" x="22" y="348">p(riktig) per tone</text><rect class="box plain" x="225" y="296" width="205" height="60" rx="8"/><text class="t" x="237" y="315">Taktstreker, fri tid</text><text class="s" x="237" y="332">opprydding i taktslag,</text><text class="s" x="237" y="348">ad lib.-partier</text><line class="arrow" x1="112" y1="276" x2="112" y2="289"/><path class="head" d="M107 288 L117 288 L112 296 Z"/><line class="arrow" x1="327" y1="276" x2="327" y2="289"/><path class="head" d="M322 288 L332 288 L327 296 Z"/><rect class="box plain" x="10" y="376" width="420" height="44" rx="8"/><text class="t" x="22" y="395">Kvantisering</text><text class="s" x="22" y="412">dynamisk programmering på rutenettet, 24 tikk per slag</text><line class="arrow" x1="112" y1="356" x2="112" y2="369"/><path class="head" d="M107 368 L117 368 L112 376 Z"/><line class="arrow" x1="327" y1="356" x2="327" y2="369"/><path class="head" d="M322 368 L332 368 L327 376 Z"/><rect class="box plain" x="10" y="440" width="420" height="44" rx="8"/><text class="t" x="22" y="459">Varigheter</text><text class="s" x="22" y="476">tonens slutt fra tonehøydekurven; staccato</text><line class="arrow" x1="220" y1="420" x2="220" y2="433"/><path class="head" d="M215 432 L225 432 L220 440 Z"/><rect class="box plain" x="10" y="504" width="420" height="44" rx="8"/><text class="t" x="22" y="523">Stavemåte og toneart</text><text class="s" x="22" y="540">ps13 i klingende · Krumhansl–Kessler</text><line class="arrow" x1="220" y1="484" x2="220" y2="497"/><path class="head" d="M215 496 L225 496 L220 504 Z"/><rect class="box plain" x="10" y="568" width="420" height="44" rx="8"/><text class="t" x="22" y="587">Harmonisk reduksjon</text><text class="s" x="22" y="604">tonemengder (pitch classes) per slag</text><line class="arrow" x1="220" y1="548" x2="220" y2="561"/><path class="head" d="M215 560 L225 560 L220 568 Z"/><rect class="box plain" x="10" y="632" width="420" height="44" rx="8"/><text class="t" x="22" y="651">Arrangering</text><text class="s" x="22" y="668">solist med band i lag · lite band · kvartett (SATB)</text><line class="arrow" x1="220" y1="612" x2="220" y2="625"/><path class="head" d="M215 624 L225 624 L220 632 Z"/><rect class="box plain" x="10" y="696" width="420" height="44" rx="8"/><text class="t" x="22" y="715">Vanskelighetsgrad</text><text class="s" x="22" y="732">som spilt · standard · enklere</text><line class="arrow" x1="220" y1="676" x2="220" y2="689"/><path class="head" d="M215 688 L225 688 L220 696 Z"/><rect class="box human" x="10" y="760" width="420" height="44" rx="8"/><text class="t" x="22" y="779">Sjekk tonene merket ?</text><text class="s" x="22" y="796">gruppert gjennomgang, din stemme først</text><line class="arrow" x1="220" y1="740" x2="220" y2="753"/><path class="head" d="M215 752 L225 752 L220 760 Z"/><rect class="box plain" x="10" y="824" width="420" height="44" rx="8"/><text class="t" x="22" y="843">Del eller skriv ut</text><text class="s" x="22" y="860">MusicXML · PDF · MIDI · MP3 · punktskrift · talende partitur</text><line class="arrow" x1="220" y1="804" x2="220" y2="817"/><path class="head" d="M215 816 L225 816 L220 824 Z"/></svg><!--/FIG1-->
+        <ul class="legend" aria-hidden="true">
+          <li><i class="model"></i>Lært modell</li>
+          <li><i></i>Fast regel</li>
+          <li><i class="human"></i>Musikeren bestemmer</li>
+        </ul>
+        <figcaption><b>Figur 1.</b> Kjeden fra opptak til partitur. De to kolonnene i midten går side om side: toner til venstre, slagrutenettet til høyre. De møtes i kvantiseringen.</figcaption>
+      </figure>
+
+      <h3>Opptak og valg av vei</h3>
+      <p>Lyden kommer fra en lyd- eller videofil, mikrofonen eller lyd som spilles på datamaskinen. På macOS tar en prosess-tap i Core Audio opp én app ut fra app-ID-en. En loopback-test tok opp en sinustone på 440 Hz i 10 s som 10,000 s ved 440,0 Hz. DRM-beskyttet avspilling er sperret på alle plattformer, og appen sier fra i stedet for å ta opp stillhet.</p>
+      <p>Så svarer musikeren på «Hva er dette?»: solo, brassband, solist med orkester eller pop/rock. Svaret velger oppsett; appen gjetter aldri i det stille. Det viktigste valget er om lyden skal skilles først:</p>
+      <ul>
+        <li><strong>Bare brass (vei A).</strong> Hele miksen går rett til transkripsjon. I et rent brassopptak finnes det ingenting å skille, og separasjonen legger bare til artefakter.</li>
+        <li><strong>Fullt band (vei B).</strong> BS-RoFormer SW deler pop og rock i seks stems, og hver av dem transkriberes. For en solist med orkester henter Mega-53 ut solisten, bassen og trommene, og orkesteret blir <em>resten</em>: miksen minus de tre. Vi valgte det fordi strykerstemmene fra Mega-53 var nesten stille i orkesteropptaket vi testet med, selv om strykerne var tydelige.</li>
+      </ul>
+
+      <h3>Transkripsjon per lag</h3>
+      <p>Hvert lag transkriberes av de modellene som målte best for det (<a href="#resultater">del 6</a>). På mikser og stems fra første separasjon leder MuScriptor medium, uten instrumentvalg. På en utskilt solostemme er SwiftF0 ryggraden: tonehøydekurven deles i toner med dynamisk programmering, og MuScriptor eller Basic Pitch bekrefter dem. Instrumentnavnene fra modellene regnes bare som hint. MuScriptor kalte trompetsolisten i orkesteropptaket vårt «distorted electric guitar»; PANNs<sup><a href="#ref-14">[14]</a></sup> merket trompet med 0,6–0,7 i de fleste 15-sekunders vinduene.</p>
+
+      <h3>Enighet og kalibrert sikkerhet</h3>
+      <p>Toner fra alle kilder slås sammen når de har samme tonehøyde og ansatsene ligger innenfor 100 ms av hverandre. I første versjon var sikkerheten for en tone</p>
+      <p class="eq">c = 1 − ∏<sub>m</sub> (1 − p<sub>m</sub>)</p>
+      <p>over modellene <var>m</var> som fant den, der p<sub>m</sub> er presisjonen til modellen, anslått med én sang holdt utenfor om gangen. Alle stems fra én modell teller som én stemme, fordi lekkasje mellom stems gjør dem avhengige av hverandre. Forkastede kandidater tas vare på som alternativer.</p>
+      <p>Siden 27. september 2026 er sikkerheten for en solotone en kalibrert sannsynlighet for at den er riktig. En logistisk regresjon, tilpasset med iterativt vektede minste kvadrater og L2-regularisering på 0,01, bruker disse egenskapene:</p>
+      <ul>
+        <li>hvilke modeller som er enige: MuScriptor, Basic Pitch og samspillet mellom dem, med SwiftF0 som ryggrad;</li>
+        <li>logaritmen av tonelengden;</li>
+        <li>hvor godt SwiftF0-kurven støtter tonen de første 0,3 sekundene;</li>
+        <li>om soloen er en utskilt stem.</li>
+      </ul>
+      <p>Modellen ble tilpasset på toner med fasit: 1 175 toner fra utskilte solostemmer og 21 551 toner fra enkeltstemmer i URMP og ChoraleBricks. Dataene ble delt i to etter opptak, og modellen ble sjekket på halvdelen den ikke hadde sett. Et <span class="q uncertain" aria-hidden="true">?</span> kommer når sannsynligheten for feil er minst 0,241, altså under sikkerhet 0,759. Grensen er valgt slik at rundt 9 % av tonene i rene opptak blir merket, og de merkene fanger rundt to tredjedeler av feilene. Under sikkerhet 0,4 får merket en ramme. Vi har ikke regnet ut kalibreringsfeil (ECE) eller tegnet et pålitelighetsdiagram, så vi påstår ikke noe mer om kalibreringen enn dette.</p>
+      <p><strong>Gruppert gjennomgang.</strong> Merkede toner som ligger tett i én stemme, blir én ting å sjekke: høyst én umerket tone mellom dem, ingen pause på et helt slag eller mer, og høyst to takter til sammen. Gruppen får ett <span class="q uncertain" aria-hidden="true">?</span> ved første tone og en stiplet klamme. I arrangementet av orkesteropptaket ble 215 merkede toner i solokornetten til 83 merker å sjekke. Gjennomgangen starter med musikerens egen stemme.</p>
+
+      <h3>Slag, taktart og fri tid</h3>
+      <p>Beat This! kjører på hele miksen. Deretter følger tre regelbaserte steg.</p>
+      <ul>
+        <li><strong>Valg av metrisk nivå.</strong> Beat This! teller ofte halvnoter i langsom musikk. <code>choose_level</code> dobler rutenettet når tempoet er under 90 BPM og median avstand mellom ansatser er høyst 0,3 slag.</li>
+        <li><strong>Opprydding i taktstreker.</strong> Slag som legges til eller faller ut, gjør at taktene forskyver seg. Oppryddingen brukes bare når sporerens egne førsteslag stemmer bedre etterpå, med minst 0,02, eller på spor med ett slag per takt og minst tre endringer.</li>
+        <li><strong>Fri tid.</strong> Et parti regnes som fritt når minst 3 slagintervaller og minst 4 s på rad verken passer med stykkets slag eller med det dobbelte, halve eller delte slaget, og spredningen er minst 0,2 av snittintervallet. Partiet skrives <i>ad lib.</i> med stiplede taktstreker, i et lokalt tempo der median avstand mellom meloditonene blir en halvnote (holdt mellom 40 og 100 BPM), og bare med fjerdedeler og åttendedeler.</li>
+      </ul>
+
+      <h3>Kvantisering</h3>
+      <p>Ansatsene flyttes inn på slagrutenettet, stykkevis lineært mellom slagene. For hvert slag velger kvantiseringen en inndeling <var>g</var> ∈ {1, 2, 4, 3, 6} som gir minst kvadratisk flyttefeil pluss en straff for kompleksitet (henholdsvis 0, 0,01, 0,03, 0,06 og 0,12), med en oppløsning på 24 tikk per slag. Da straffene ble ganget med 20, steg andelen toner på nøyaktig riktig plass i koralene fra 0,89 til 0,99 med riktige slag. Musikk som spilles, ligger sjelden helt på slaget, og en notist foretrekker den enkleste rytmen.</p>
+
+      <h3>Varigheter fra tonehøydekurven</h3>
+      <p>Musikere spiller tonene kortere enn de står. Spilt lengde sier lite om skrevet lengde (0,54 samsvar på URMP), så skrevet lengde må utledes. En tone slutter der SwiftF0-kurven forlater tonehøyden eller nivået faller. En tone holdes til neste ansats hvis den fylte minst halve avstanden og avstanden er høyst 18 tikk. Ellers får den nærmeste lesbare notelengde, og den markeres staccato når den klang kortere enn halve den skrevne lengden.</p>
+
+      <h3>Stavemåte og toneart</h3>
+      <p>ps13 (<code>ps13s1</code> i partitura) staver hele ensemblet på én gang, i klingende tonehøyde, før noe transponeres. Dobbelte b-er som ps13 lager i tette kromatiske løp, skrives om med enkle fortegn. Hovedtonearten er Krumhansl–Kessler-anslaget på de samme tonene. Toneartskifter kommer fra en Viterbi-runde over taktene, der kostnaden for en takt er andelen toner utenfor et sett med faste fortegn, og hvert skifte koster en halv takt. Modus får navn ut fra hvilket trinn Krumhansl–Kessler-grunntonen har i skalaen til fortegnene, så et lydisk parti tvinges ikke over i dur.</p>
+
+      <h3>Harmonisk reduksjon</h3>
+      <p>Tett akkompagnement reduseres til én tonemengde (pitch-class-sett) per slag. Hver tone vektes etter overlapp og sikkerhet. De fire sterkeste beholdes (tre for brasskoret), så lenge hver av dem veier minst 0,35 av den sterkeste. Like naboakkorder slås sammen til én harmonisk enhet.</p>
+
+      <h3>Arrangering</h3>
+      <p>Arrangeringen leser bare den kanoniske Composition-modellen: klingende tonehøyde, tikk, og stemmer merket med rolle, sikkerhet og kilde. Det finnes tre arrangører.</p>
+      <ul>
+        <li><strong>Lite band</strong> (8 stemmer). Melodien går til solokornett, med ett oktavvalg per frase. Bassen går til E♭-bass i dens laveste behagelige oktav, med B♭-bass en oktav under der det fortsatt er lesbart. Mellomstemmene settes grådig per akkord: under melodien, over bassen, uten kryssing og med minst mulig bevegelse.</li>
+        <li><strong>Solist med band i lag</strong> (18 stemmer), for en solist med orkester. Orkesterresten deles etter hvordan den oppfører seg, ikke etter klang. Korte toner som anslås sammen med minst to andre, blir akkordslag for brasskoret (repiano, 2. og 3. kornett og tromboner). Resten blir linjer og flater for flygelhorn, althorn og barytoner. Den øverste bevegelige strykerlinjen blir en motstemme i eufonium.</li>
+        <li><strong>Kvartett</strong>: 1. og 2. kornett, althorn og eufonium. Kvartettsetteren prøver alle par av alt og tenor innenfor de to stemmenes omfang. Faste regler er S &gt; A ≥ T &gt; B, høyst en oktav mellom nabostemmene øverst, og bare akkordtoner. Blant de lovlige parene velger den i denne rekkefølgen det som har færrest utelatte akkordtoner (kvinten kan mangle), færrest parallelle kvinter og oktaver over alle seks stemmepar, minst dobling og minst bevegelse. Det var viktig å sette paralleller foran dobling: i motsatt rekkefølge gikk setteren i oktaver med bassen.</li>
+      </ul>
+
+      <h3>Vanskelighetsgrad og resultat</h3>
+      <p>Det finnes tre vanskelighetsgrader. <em>Som spilt</em> beholder alle toner. <em>Standard</em> slår sammen par av sekstendeler til åttendedeler der tonen som faller bort, ikke er en akkordtone, og legger alle stemmer innenfor leseomfanget. <em>Enklere</em> legger akkompagnementet på et rutenett av åttendedeler, tar fire halvtoner av toppen av hvert omfang og straffer toneartskifter hardere.</p>
+      <p>Resultatet er MusicXML med transponerte stemmer og instrumentlyd-ID-er, pluss PDF, MIDI og MP3 via MuseScore på kommandolinjen (valgfritt, aldri med i pakken), punktskriftnoter som BRF via oversetteren i music21, og et talende partitur på norsk og engelsk.</p>
+    </section>
+
+    <section id="modeller" aria-labelledby="modeller-title">
+      <h2 id="modeller-title"><span class="secno">4</span>Modeller</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Åtte modeller, hver kjørt slik den ble publisert. De små kjører på telefonen; de store trenger musikerens datamaskin.</p>
+      <p>Hver modell kjører som sin egen opprinnelige pakke i et eget miljø, bak en fast filkontrakt: lyd inn, MIDI, JSON og en sidefil ut. På enhetene byttes bare selve nettverket ut med en konvertert versjon; resampling, oppdeling og tonelaging er den opprinnelige koden. Hver konvertering sammenlignes med det opprinnelige rammeverkets eget resultat: note-F1 for transkribenter, F1 for slag og førsteslag ved 50 ms for Beat This!, og for separatorer F1 for SwiftF0 og Basic Pitch på de konverterte stemsene. En modell slås på i appene først når den når F1 ≥ 0,98.</p>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 1. Modeller, lisenser, hvor de kjører og samsvar etter konvertering. Samsvaret er målt på en Mac med M5 Pro 26. september 2026 (<code>convert/README.md</code>).</caption>
+          <thead>
+            <tr><th scope="col">Modell</th><th scope="col">Rolle</th><th scope="col">Lisens (kode / vekter)</th><th scope="col">Kjører</th><th scope="col">Beste godkjente konvertering (samsvar)</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">SwiftF0<sup><a href="#ref-5">[5]</a></sup></th><td>Ryggrad for solostemmen, tonenes slutt</td><td>MIT</td><td>Enhet og datamaskin</td><td>Core ML fp32 på GPU: 1,0000, 9 ms per 30 s. Delt fp32/fp16-versjon med midtdelen på Neural Engine: 0,9986</td></tr>
+            <tr><th scope="row">Basic Pitch<sup><a href="#ref-4">[4]</a></sup></th><td>Annen mening; bass på stems</td><td>Apache-2.0</td><td>Enhet og datamaskin</td><td>Core ML fp32, TFLite, ONNX: 1,0000. Core ML fp16 feiler (0,815–0,822)</td></tr>
+            <tr><th scope="row">Beat This! small0<sup><a href="#ref-8">[8]</a></sup></th><td>Slag og førsteslag</td><td>MIT / MIT</td><td>Enhet og datamaskin</td><td>Core ML fp16 på GPU: 0,9980 slag / 0,9941 førsteslag, 0,05 s per 60 s</td></tr>
+            <tr><th scope="row">MuScriptor medium<sup><a href="#ref-3">[3]</a></sup></th><td>Hovedtranskribent på mikser og stems fra første separasjon</td><td>MIT / CC BY-NC 4.0, med tilgangssperre</td><td>Datamaskin</td><td>ONNX med prefill og dekoding: 24 av 24 biter tegn-identiske. Core ML fp16 feiler på tegnkravet (21 av 24; note-F1 0,9991)</td></tr>
+            <tr><th scope="row">BS-RoFormer SW<sup><a href="#ref-11">[11]</a><a href="#ref-29">[29]</a></sup></th><td>Seks stems for pop og rock</td><td>MIT / ikke oppgitt</td><td>Datamaskin</td><td>Core ML fp16 på GPU: 1,0000 / 0,9990, 6,3 s per 30 s</td></tr>
+            <tr><th scope="row">Mega-53<sup><a href="#ref-13">[13]</a></sup></th><td>Solist, bass og trommer for solist med orkester</td><td>MIT / ikke oppgitt</td><td>Datamaskin</td><td>Core ML fp16 på GPU: 1,0000 / 0,9993, 14,7 s per 30 s</td></tr>
+            <tr><th scope="row">HT-Demucs<sup><a href="#ref-12">[12]</a></sup></th><td>Alternativ separator</td><td>MIT</td><td>Datamaskin</td><td>Core ML fp32: 1,0000 / 1,0000. fp16 på Neural Engine feiler</td></tr>
+            <tr><th scope="row">PANNs<sup><a href="#ref-14">[14]</a></sup></th><td>Instrumentmerker (bare hint)</td><td>MIT for koden; vektene ikke sjekket</td><td>Datamaskin</td><td>Ikke konvertert</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>MuScriptor large og MuScriptor med valgt instrument ble testet og forkastet (<a href="#resultater">del 6</a>). YourMT3+ ble vurdert, men aldri tatt i bruk: MuScriptor medium dekker rollen, og koden til YourMT3 er GPL-3.0, mens lisensen for sjekkpunktene er uklar.</p>
+    </section>
+
+    <section id="data" aria-labelledby="data-title">
+      <h2 id="data-title"><span class="secno">5</span>Datasett og måling</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Det finnes ikke noe offentlig brassbandopptak med fasit. Vi brukte de nærmeste ekte brassopptakene, sjekket hver fasit og sperret hver endring mot dem.</p>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 2. Testsett</caption>
+          <thead>
+            <tr><th scope="col">Sett</th><th scope="col">Innhold</th><th scope="col">Fasit</th><th scope="col">Brukt til</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">ChoraleBricks v1.1.0, brasskvartetter<sup><a href="#ref-18">[18]</a></sup></th><td>10 koraler, hver en monomiks av fire ekte spillere tatt opp hver for seg: trompet (S), flygelhorn (A), baryton (T) og tuba (B). 1 887 toner. De 93 enkeltstående brass-stemsene brukes også alene.</td><td>Ansats og slutt for hver tone, justert mot lyden, klingende tonehøyde, og hver tones plass og stavemåte i notene</td><td>Transkripsjon, rytme, stavemåte, kvartettsats. Det eneste settet som kjører i CI</td></tr>
+            <tr><th scope="row">URMP brass<sup><a href="#ref-19">[19]</a></sup></th><td>8 ekte kammerstykker for brass (4/4, 2/4, 3/4, 6/8, 2/2), 5 129 toner</td><td>Tonemerking per spor. Plass i takten fra DTW-justering mot partiturets MIDI (94–99 % av tonene justert)</td><td>Transkripsjon, rytme, varigheter, dype brassinstrumenter</td></tr>
+            <tr><th scope="row">Slakh med trompetmelodi<sup><a href="#ref-20">[20]</a></sup></th><td>To syntetiske låter, 241 s og 269 s, med trompetmelodi over fullt band</td><td>MIDI per stem (bassen flyttet −12 til klingende tonehøyde)</td><td>Separasjon mot miks (vei A mot B). Ikke brukt for notasjon</td></tr>
+            <tr><th scope="row">Gullstandard</th><td>Et arrangement for 18 stemmer av et kommersielt opptak vi bruker internt til testing («Mikkel»)</td><td>Ingen. Det arrangerte resultatet er fryst og gjenskapes nøyaktig</td><td>Regresjon fra ende til ende og lesbarhet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Hvorfor Slakh ikke er fasit for notasjon.</strong> Slakh er gjengitt fra Lakh-MIDI som er spilt inn levende. Bare 12–25 % av trompetansatsene i ett spor ligger på noe rutenett fra fjerdedel ned til 1/12 slag, så det kan ikke brukes til å måle kvantisering. Begge transkribentene la også alle bassnotene i Slakh 12 halvtoner under MIDI-filen. pYIN på de gjengitte stemsene bekreftet at bassen klinger en oktav under skrevet MIDI (median MIDI 39 i lyden mot 51 i filen), så innlesingen vår flytter basstems en oktav ned.</p>
+      <p><strong>Fasit vi rettet.</strong> Instrumentmerkene i URMP-filene er av og til feil: én trombone ligger som trompet. Sporene kobles derfor på nummer. Feltet <code>pitch_name</code> i ChoraleBricks er naiv MIDI-navngiving; stavemåten måles mot <code>pitch_written_name</code>. Partitur-MIDI-en i URMP lagrer en fjerdedel som 23/24 slag, noe som ga 64-delspauser helt til små hull ble holdt.</p>
+      <p><strong>Mål.</strong> Tonemålene bruker mir_eval<sup><a href="#ref-21">[21]</a></sup>: onset F1 ved 50 ms (standarden), og også ved 100 ms, fordi myke brassansatser kommer sent. På en utskilt trompetstem kom median ansats 55 ms etter MIDI-ens note-on. Alt under en sekstendel (rundt 125 ms i det tempoet) forsvinner uansett i kvantiseringen. Vi måler også F1 for ansats og slutt, andel oktavfeil, treff per stemme, nøyaktig plass i takten, plass innen slaget og riktig skrevet lengde (±1 tikk). For arrangering måler vi om melodi og bass er beholdt, harmonisk troskap, stemmekryssinger, toner utenfor spillbart omfang, treff for alt og tenor mot koralenes egne mellomstemmer, og paralleller per 100 stemmebevegelser.</p>
+      <p><strong>Sperrer.</strong> <code>brasscribe bench</code> kjører alle testsuitene på nytt fra lagrede modellresultater og feiler hvis et mål flytter seg mer enn 0,01 fra <code>eval/baselines.json</code>. Antall, som kryssinger, sperres eksakt. ChoraleBricks-suitene kjører i CI mot merking låst med sha256. URMP, Slakh og orkesteropptaket kjøres bare lokalt, fordi vilkårene for videre deling ikke er sjekket eller lyden er kommersiell.</p>
+      <p><strong>Samsvar.</strong> Den samme sperren gjelder på tvers av språk. Rust-porten må gjenskape Python-referansen byte for byte: <code>composition.json</code> med bit-like flyttall, kanonisk MusicXML, talende partitur på begge språk og menneskeliggjort avspilling.</p>
+    </section>
+
+    <section id="resultater" aria-labelledby="resultater-title">
+      <h2 id="resultater-title"><span class="secno">6</span>Resultater</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Tonene blir stort sett funnet. Å vite hvilke toner vi kan stole på, er styrken. Slagrutenettet er det svakeste leddet.</p>
+      <p>Alle tall er målt på en Apple M5 Pro med 48 GB. Hver tabell oppgir kildefilen i repositoriet og datoen tallet ble registrert. Tall merket <em>engangsmåling</em> kommer fra skript som ikke er lagt inn: de er funn som bør måles på nytt, ikke sperrede grunnlinjer.</p>
+
+      <h3>Transkripsjon</h3>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 3. Transkripsjon på ekte brassmikser, snitt over stykkene. <span class="src">Kilde: <code>docs/research/10-benchmark-results.md</code> og <code>eval/baselines.json</code>, 25. september 2026.</span></caption>
+          <thead>
+            <tr><th scope="col">Modell</th><th scope="col" class="num">Koraler, onset F1, 50 ms</th><th scope="col" class="num">Koraler, 100 ms</th><th scope="col" class="num">Koraler, ansats + slutt</th><th scope="col" class="num">URMP, 100 ms</th><th scope="col" class="num">s per sang</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Basic Pitch</th><td class="num">0,468</td><td class="num">0,60</td><td class="num">0,281</td><td class="num">0,73</td><td class="num">1,9</td></tr>
+            <tr><th scope="row">MuScriptor medium</th><td class="num">0,562</td><td class="num">0,75</td><td class="num">0,477</td><td class="num">0,88</td><td class="num">5,7</td></tr>
+            <tr><th scope="row">MuScriptor large</th><td class="num">0,441</td><td class="num">–</td><td class="num">0,390</td><td class="num">–</td><td class="num">31,3</td></tr>
+            <tr><th scope="row">MuScriptor medium, satt til brass</th><td class="num">0,333</td><td class="num">–</td><td class="num">0,296</td><td class="num">–</td><td class="num">7,0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>MuScriptor medium var den beste enkeltmodellen. Den store modellen var ujevn, ikke bedre: den slo medium på én koral (0,617 mot 0,604) og kollapset på en annen (0,388 mot 0,532). Å kjøre den i float32 i stedet for float16 endret ingenting. Å fortelle MuScriptor at instrumentene er brass kostet 23 F1-poeng, så vi velger aldri instrument. Modellene utfyller hverandre. Ved 50 ms fant MuScriptor 0,84 av sopranen, men bare 0,48 av tenoren og 0,45 av bassen, mens Basic Pitch fant 0,71 av tenoren med lav presisjon.</p>
+      <p><strong>Separasjon.</strong> På Slakh-låtene med trompetmelodi slo separasjon først (vei B) transkripsjon av miksen. SW-separasjon fulgt av MuScriptor nådde onset F1 0,70 ved 100 ms, mot 0,56 for MuScriptor på miksen og 0,47 for Basic Pitch på miksen (25. september 2026, etter rettingen av bassoktaven). Gevinsten i de urettede tallene var 8–12 F1-poeng. På rene brasskoraler trengs ikke separasjon.</p>
+      <p><strong>Solostems.</strong> På solostems skilt ut med Mega-53 (10 koraler og 2 Slakh-låter) fikk SwiftF0 alene onset F1 0,75, MuScriptor 0,50 og Basic Pitch 0,42. MuScriptor fant på toner i stems fra andre separasjonsrunde: 0,00 på tre koraler, og 2 672 «pianotoner» på én trompetstem. På en ren, enkeltstående URMP-trompet fikk SwiftF0 0,994.</p>
+
+      <h3>Enighet forutsier riktige toner</h3>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 4. Presisjon for en solotone etter hvilke modeller som er enige, på Mega-53-solostems. <span class="src">Kilde: <code>10-benchmark-results.md</code>, «Solo line: three-way vote», 25. september 2026.</span></caption>
+          <thead><tr><th scope="col">Modeller som fant tonen</th><th scope="col" class="num">Presisjon</th><th scope="col" class="num">Toner</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Alle tre</th><td class="num">0,98</td><td class="num">193</td></tr>
+            <tr><th scope="row">SwiftF0 + MuScriptor</th><td class="num">0,99</td><td class="num">110</td></tr>
+            <tr><th scope="row">SwiftF0 + Basic Pitch</th><td class="num">0,91</td><td class="num">578</td></tr>
+            <tr><th scope="row">SwiftF0 alene</th><td class="num">0,54</td><td class="num">297</td></tr>
+            <tr><th scope="row">MuScriptor + Basic Pitch, uten SwiftF0</th><td class="num">0,36</td><td class="num">14</td></tr>
+            <tr><th scope="row">MuScriptor alene / Basic Pitch alene</th><td class="num">0,02 / 0,05</td><td class="num">–</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>På mikser var toner som MuScriptor og Basic Pitch var enige om, riktige i 92 % av tilfellene på koralene og 89 % på URMP. Der ga enighet med terskel 0,8 samme F1 som MuScriptor alene (0,88), men høyere presisjon. På Slakh slo ikke enigheten vei B på F1 (0,63 mot 0,70), men med terskel 0,7 fant den 95 % av trompeten og 99,5 % av bassen. Derfor ble enighet et mål på sikkerhet og ikke et filter. Regelen for solostemmer er at SwiftF0 leverer tonene, en annen modell bekrefter dem, og toner uten SwiftF0 forkastes. I orkesteropptaket falt andelen ubekreftede solotoner med den regelen fra 78 % til 31 %.</p>
+
+      <h3>Overlapp og toner mellom halvtonene</h3>
+      <p>En engangsmåling 27. september 2026 (<code>docs/research/11-overlaps-and-in-between-tones.md</code>) sorterte hver fasittone etter hvordan den overlapper med andre stemmer.</p>
+      <ul>
+        <li><strong>Unisone toner er det største tapet.</strong> Treff for unisone toner var 0,48–0,61, mot 0,82–0,92 for toner uten overlapp. Modellene hører den unisone tonen (88–93 % av gangene), men bare én gang. Det som mangler, er hvor mange som spiller, og det er et symbolsk problem.</li>
+        <li><strong>Oktaver koster lite med MuScriptor.</strong> Tubaen i koralene treffes like godt med og uten en oktav over seg (0,72 mot 0,71). Underskuddet kommer fra det dype registeret og intonasjonen, ikke fra maskering.</li>
+        <li><strong>Stemming betyr mye for Basic Pitch.</strong> De 18 stykkene i testsettet ligger mellom −1 og +20 cent fra A440, nesten alle høyt, og det gjør også solisten i orkesteropptaket (+20 cent, rundt A = 445 Hz). På tubatoner i koralene som ligger mer enn 50 cent fra skrevet tone, treffer Basic Pitch 0,03 og MuScriptor 0,52.</li>
+        <li><strong>En feil i et mål.</strong> Andelen oktavfeil talte en riktig funnet makkerstemme som oktavfeil. Teller vi bare anslag som ikke er koblet til noen fasittone, blir andelen på koralene 2,4 % for MuScriptor og 7,0 % for Basic Pitch (mot 2,7 % og 10,8 % i kilden til tabell 3), og på URMP 0,6 % og 2,4 %.</li>
+      </ul>
+
+      <h3>Rytme</h3>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 5. Plass i takten, plass innen slaget og skrevet lengde (andel riktige). <span class="src">Kilde: <code>eval/baselines.json</code>, suitene quant-chorales og quant-urmp, 25. september 2026; opprydding i taktstreker 26. september 2026.</span></caption>
+          <thead><tr><th scope="col">Slag</th><th scope="col" class="num">Plass</th><th scope="col" class="num">Innen slaget</th><th scope="col" class="num">Lengde</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Koraler, riktige slag</th><td class="num">0,99</td><td class="num">0,99</td><td class="num">0,88</td></tr>
+            <tr><th scope="row">Koraler, Beat This!</th><td class="num">0,49</td><td class="num">0,93</td><td class="num">0,77</td></tr>
+            <tr><th scope="row">URMP, riktige slag</th><td class="num">0,95</td><td class="num">0,96</td><td class="num">0,54</td></tr>
+            <tr><th scope="row">URMP, Beat This!, rått</th><td class="num">0,33</td><td class="num">0,69</td><td class="num">0,37</td></tr>
+            <tr><th scope="row">URMP, Beat This! + metrisk nivå</th><td class="num">0,45</td><td class="num">0,83</td><td class="num">0,45</td></tr>
+            <tr><th scope="row">Alle 18 stykker, rått → med opprydding</th><td class="num">0,470 → 0,519</td><td class="num">0,885 → 0,905</td><td class="num">0,627 → 0,654</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Selve kvantiseringen holder: med riktige slag havner 95–99 % av tonene på nøyaktig riktig plass. Det svake leddet er slagrutenettet. I koralene legger Beat This! inn ekstra slag under fermater (1,1–1,2 slag per skrevet fjerdedel), så taktene forskyver seg selv om plassen innen slaget stemmer. På 5 av 8 URMP-stykker valgte den halvnotenivået. Valget av metrisk nivå rettet 4 av de 6 sporene med halvnoter i begge settene, uten falske doblinger. Oppryddingen i taktstreker halverte antall forskyvninger (fra 268 til 139). Tersklene er tilpasset de samme dataene.</p>
+      <p><strong>Fri tid</strong> (26. september 2026). Detektoren slår til på 1 av 18 stykker: en ritardando inn i en fermat på 4,5 s på slutten av <i>Air on the G String</i>. Resultatene på de faste partiene er uendret. I orkesteropptaket gjør den en intro på 30 s i fritt tempo om til 7 takter <i>ad lib.</i> ved ♩≈57, og andelen sekstendeler i solokornettens intro faller fra 30,8 % til 5,6 %. Regelen for lokalt tempo er tilpasset dette ene opptaket.</p>
+      <p><strong>Varigheter</strong> (26. september 2026, den innlagte <code>duration_bench</code>). Riktig skrevet lengde gikk fra 0,631 til 0,654 på URMP og fra 0,911 til 0,929 på koralene med merkede tonesluttpunkter. Med sluttpunkter fra SwiftF0-kurven ble det 0,647 og 0,908. Sluttpunktene fra kurven ligger innenfor 100 ms av merkingen for 91 % (URMP) og 84 % (koraler) av tonene. Staccato slo til 17–22 ganger på URMP, og i 15–16 av dem hadde partituret skrevet en kortere notelengde i stedet for staccatotegn. Det finnes ingen fasit for artikulasjon, og begge tersklene er valgt på de samme dataene de måles på.</p>
+
+      <h3>Notasjon</h3>
+      <ul>
+        <li><strong>Stavemåte</strong> (engangsmåling, 25. september 2026). ps13 i klingende tonehøyde stavet 99,9 % av koraltonene slik partituret gjør (2 feil av 1 887), mot 99,1 % for naiv navngiving med kryss. Dette er målt bare på ChoraleBricks.</li>
+        <li><strong>Melodilinje.</strong> Øverste linje over toner MuScriptor støtter, gir melodi-F1 0,76 i snitt over Slakh, URMP og koraler, mot 0,42 for alle toner fra begge modellene, der falske overtoner ligger over melodien. En Viterbi-velger for melodi slo aldri øverste linje og ble fjernet.</li>
+        <li><strong>Lesbarhet</strong> (27. september 2026, <code>qa/reports/mikkel-golden-readability.json</code>). Et eget sjekkverktøy teller korte notelengder, trioler, overbindingsstubber, hjelpelinjer, andel fortegn, kronglete stavemåter og usikkerhet vist bare med farge, per stemme. I solokornetten i gullstandarden falt andelen trykte fortegn fra 37,5 % til 6,4 %, dobbeltpunkteringer fra 9 til 0, og toner der tvilen bare ble vist med farge, fra 230 til 0. Partituret fikk 201 dynamikktegn, 11 øvingsbokstaver og 8 toneartskifter. Solokornetten har fortsatt 38,4 % sekstendeler, over grensen på 35 %.</li>
+      </ul>
+
+      <h3>Arrangering</h3>
+      <div class="table-scroll" tabindex="0">
+        <table>
+          <caption>Tabell 6. Kvartettsetteren mot koralenes egen alt og tenor. <span class="src">Kilde: <code>10-benchmark-results.md</code>, «Quartet arrangement», og <code>eval/baselines.json</code>, 27. september 2026.</span></caption>
+          <thead><tr><th scope="col">Inndata</th><th scope="col" class="num">Alt, treff (tonenavn)</th><th scope="col" class="num">Tenor, treff (tonenavn)</th><th scope="col" class="num">Paralleller / 100</th><th scope="col" class="num">Melodi / bass beholdt</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Partiturets harmonikk, første regelrekkefølge</th><td class="num">0,70</td><td class="num">0,65</td><td class="num">13,7</td><td class="num">–</td></tr>
+            <tr><th scope="row">Partiturets harmonikk, fryste regler</th><td class="num">0,80</td><td class="num">0,78</td><td class="num">0,94</td><td class="num">1,00 / 1,00</td></tr>
+            <tr><th scope="row">Koralenes egne stemmer (referanse)</th><td class="num">1</td><td class="num">1</td><td class="num">0,79</td><td class="num">–</td></tr>
+            <tr><th scope="row">Fra opptakene: MuScriptor med Basic Pitch</th><td class="num">0,55</td><td class="num">0,41</td><td class="num">5,4</td><td class="num">0,85 / 0,92</td></tr>
+            <tr><th scope="row">Fra opptakene: bare Basic Pitch</th><td class="num">0,17</td><td class="num">0,18</td><td class="num">3,0</td><td class="num">0,68 / 0,58</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Setteren ser bare tonenavnene i hver akkord, men treffer likevel 80 % av Bachs alt og 78 % av tenoren hans, med nesten like få paralleller som Bach selv. Målet i planen om treff for alt ≥ 0,85 er ikke nådd. De fleste bommene er at alt og tenor bytter på de samme to tonene, eller at gjennomgangstoner løses annerledes. Å starte fra ekte opptak koster rundt 0,25 av treffene for alt og 0,37 for tenor. I bandarrangørene beholdes melodi og bass nøyaktig, den harmoniske troskapen er 0,99 (koraler) og 0,98 (URMP), og det er ingen kryssinger eller umulige toner. Det følger av hvordan arrangørene er bygd, så det viser at kravene holder, ikke at musikken er god.</p>
+      <p><strong>Dype brassinstrumenter på et soloopptak</strong> (27. september 2026, <code>docs/plan/my-instrument.md</code>). På de 93 enkeltstående brass-stemsene i ChoraleBricks får SwiftF0 alene F1 0,88–0,97 på alle instrumenter, tuba medregnet, nesten uten oktavfeil. Soloveien pleide å kutte tonene til et fast vindu fra E3 til E6. Med det vinduet var treffet 0,44 for trombone, 0,70 for baryton og 0 for tuba. Med instrumentets eget omfang ble det 0,96, 0,97 og 0,87. De ekte trombonene (0,54 → 0,95) og tubaene (0,12 → 0,91) i URMP bekrefter det. Sporeren var aldri begrensningen; vinduet var det. Basic Pitch bekrefter bare 55 % av tubatonene, så dype instrumenter vil få flere <span class="q uncertain" aria-hidden="true">?</span> til sikkerhetsmodellen lærer registeret.</p>
+      <p><strong>Vanskelighetsgrad</strong> (26. september 2026). I gullstandarden for fullt band faller andelen sekstendeler i solokornetten fra 38,8 % (som spilt) til 16,1 % (standard) og 8,6 % (enklere). Ubehagelige toner faller fra 27 til 0, og den harmoniske troskapen fra 0,834 til 0,79.</p>
+    </section>
+
+    <section id="pa-enheten" aria-labelledby="pa-enheten-title">
+      <h2 id="pa-enheten-title"><span class="secno">7</span>Modeller på enheten og den felles Rust-kjernen</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>En telefon kan skrive ned en solo på egen hånd. Musikkreglene er skrevet to ganger, i Python og i Rust, og en testsuite viser at begge gir identiske partitur.</p>
+      <h3>Konverterte modeller</h3>
+      <p>Appene bruker plattformens egen kjøremotor: Core ML på Apple og ONNX Runtime på Android og Windows. Tabell 1 viser konverteringene som ble godkjent. Tre funn gjelder mer generelt.</p>
+      <ul>
+        <li><strong>fp16 på Apples Neural Engine ødelegger spektrogramdelen.</strong> DFT-en inne i SwiftF0 og normaliseringen i HT-Demucs mister for mye presisjon, og stemthetsanslaget i SwiftF0 bryter sammen (F1 0,37). De samme fp16-modellene består på GPU-en. Når SwiftF0 deles i tre modeller, med fp32 for inngang og utgang på GPU-en og fp16 for midtdelen på Neural Engine, består den med 0,9986.</li>
+        <li><strong>Utdata med terskler er sårbare.</strong> Basic Pitch i fp16 flytter aktiveringer over tersklene på 0,5 og 0,3 (F1 rundt 0,82). fp32-modellen er eksakt og fortsatt liten (0,3 MB).</li>
+        <li><strong>Autoregressive dekodere må være tegn-identiske, ikke bare ha høy note-F1.</strong> MuScriptor på Core ML med fp16-hurtigbuffer for nøkler og verdier har note-F1 0,9991, men 3 av 24 biter sporer av etter tegn 115 eller 264 fordi argmax snur. Vi krever tegn-identitet, så den blir på datamaskinen inntil videre. ONNX-grafene er tegn-identiske, men tregere enn PyTorch på CPU.</li>
+      </ul>
+      <p>Appene har SwiftF0 (1,2 MB), Basic Pitch (0,3 MB) og Beat This! small0 (4,4 MB i fp16), lastet ned ved behov. På en 30 sekunders URMP-trompetstemme ga Apple-veien på enheten det samme som Python-veien: F1 1,0 for SwiftF0 og Basic Pitch, 1,0 for slag og 0,98 for førsteslag (26. september 2026). I iPhone 17-simulatoren ble en solo på 30 s til partitur på 3,4 s, tone for tone lik motoren (77 toner, 33 takter). Soloveien uten nett på Android gir også samme resultat tone for tone. Tid og minne på fysiske telefoner er ikke målt.</p>
+      <h3>Ett sett musikkregler i to språk</h3>
+      <p>Alt etter sammenligningen er deterministisk, så det kan deles. Python-biblioteket er referansen. En Rust-crate porterer det: Composition-modellen, kvantiseringen, fri tid, varigheter, stavemåte og toneart, harmonikk, instrumenter, alle arrangørene med kvartettsetteren, vanskelighetsgrad, sikkerhet og gjennomgangsgrupper, dynamikk, menneskeliggjøring, det talende partituret og en MusicXML-skriver som følger reglene i music21. Craten er bundet til Swift og Kotlin med UniFFI og til C# via et C-grensesnitt. Punktskrift er ikke portert ennå.</p>
+      <p>Samsvarssuiten sammenligner de to implementasjonene på gullstandarden, varianter av valgene, alle testlåtene og testene for arrangering og kvantisering. 26. september 2026 var 102 av 102 tilfeller og 1 442 av 1 442 filer identiske, talende partitur var identiske på 50 av 50 testvektorer på norsk og engelsk, 3 762 av 3 762 kjøringer av menneskeliggjøring var byte-identiske, og 84 av 84 rundturer gjennom MuseScore besto. Etter at kvartetten kom til, 27. september 2026 (commit <code>14730d0</code>), var 378 av 378 tilfeller og 34 av 34 filer i gullstandarden identiske. Å arrangere lagene fra orkesteropptaket tok 7,2 s i Python og 0,28 s i Rust. Python-referansen er bit-eksakt bare på macOS arm64 med NumPy 2.5.3, på grunn av rekkefølgen ved like verdier i argsort og sammenslått multiplikasjon og addisjon i interpolasjonen.</p>
+      <h3>Datamaskinen som tung motor</h3>
+      <p>Kjedene for fullt band trenger separatorene og MuScriptor, som bruker flere gigabyte minne (Mega-53 topper på 21,5 GB i Core ML fp16). De kjører i en Python-motor på musikerens egen datamaskin. Telefonene kobles til den én gang over det lokale nettet. Hver enhet får sin egen langvarige tilgang, som overlever omstart av motoren og ny adresse. For tilgang utenfra hjemmenettet anbefaler vi en privat tunnel til den samme maskinen, ikke en felles offentlig tjeneste, av lisensgrunnene i <a href="#lisenser">del 10</a>.</p>
+    </section>
+
+    <section id="lyd" aria-labelledby="lyd-title">
+      <h2 id="lyd-title"><span class="secno">8</span>Lyd</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Hver stemme spiller nå sitt eget samplede instrument, med balansert nivå, uten klikk eller avkuttede toner. Ingen gratis samplebibliotek har ekte kornett eller eufonium, så de er formet ut fra trompet og trombone.</p>
+      <p>Avspillingen lar musikeren høre partituret opp mot opptaket. Vi fant ikke noe gratis samplebibliotek som kan deles videre og har kornett, flygelhorn, althorn, baryton, eufonium eller brassbandbasser. De er laget ut fra samples fra VSCO 2 CE (CC0) og University of Iowa MIS<sup><a href="#ref-28">[28]</a></sup>: kornett fra trompet med EQ, flygelhorn fra valthorn med trompet i toppen, althorn fra F-horn, baryton og eufonium fra tenortrombone med ulik EQ, og basser fra tuba. Taster mer enn to halvtoner fra en sample spiller et annet bibliotek, spektralt tilpasset med et lineærfase-FIR-filter med 2049 ledd, målt på tonene begge bibliotekene har. Det største nivåspranget mellom nabotaster i E♭-bassen falt fra 8,8 dB til 1,9 dB.</p>
+      <p><strong>Balanse.</strong> Hvert instrument er nivåjustert slik at anslagsstyrke 80 gir samme K-vektede nivå (−24 dB). Balansen mellom stemmene er da bare kanalforsterkning, satt etter brassbandpraksis i forhold til solokornetten: kornettene bakerst, althornene og barytonene 4–6 LU under, bassene rundt 1 LU under. Med appenes forsterkning havner hver stemme innenfor 2 LU av målet i FluidSynth, AVAudioUnitSampler og alphaTab. Før lå noen stemmer 3–6 LU feil.</p>
+      <p><strong>Lyd som kuttet</strong> (27. september 2026, <code>docs/research/12-band-sound.md</code>). Sju målte årsaker til at lyden brøt opp eller ble kuttet, er rettet:</p>
+      <ol>
+        <li>Apples sampler leste samples fra disk, så holdte toner ble stille etter rundt 0,5 s (10 utfall og 31 klikk i én hornstemme). Samples ligger nå i minnet.</li>
+        <li>Utklingingen var for kort: 70–105 ms til −40 dB. Nå er den rundt 250 ms.</li>
+        <li>alphaTab stoppet alle stemmer brått ved siste MIDI-hendelse. Nå legges en stille hendelse inn 1,5 s senere.</li>
+        <li>Stemmer delte lydvei, så én stemmes note-off avsluttet en annens unisone tone. Hver stemme har nå sin egen sampler eller kanal.</li>
+        <li>sfizz-nivået på Android hadde brå kutt, og kanal 16–31 startet med null forsterkning.</li>
+        <li>Løkkepunktene i telefonens SoundFont ble avrundet etter resampling; nå bygges de på nytt.</li>
+        <li>En akkord med hele bandet toppet på 1,227 og klippet. Windows bruker nå hovedvolum 0,5 med en myk begrenser, og bandet topper på 0,49.</li>
+      </ol>
+      <p>Hver gjengitt testfrase består nå sjekkene for klikk, kutt, utfall, hull og klipping i alle fem lydmotorene. Unntaket er et klikk på B♭0 i alphaTab, utenfor det behagelige omfanget. Detektorene ble sjekket ved å plante 4 klikk og to hull på 2–4 ms i rene gjengivelser: alle ble funnet, uten falske treff. Det realistiske nivået ligger nærmere enn MuseScore-grunnlinjen de tilbakeholdte ChoraleBricks-referansene i spektralt tyngdepunkt, på 16 av 16 stemmer. <strong>Den blinde lyttetesten (5 lyttere, 5 utdrag) er forberedt, men ikke gjennomført</strong>, så vi påstår ennå ikke at musikere foretrekker den.</p>
+    </section>
+
+    <section id="begrensninger" aria-labelledby="begrensninger-title">
+      <h2 id="begrensninger-title"><span class="secno">9</span>Begrensninger og videre arbeid</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Øverste stemme og bassen skrives fra det som høres. Mellomstemmene i et band er arrangert, ikke hørt. Fri tid og taktstreker trenger fortsatt et menneske som sjekker.</p>
+      <ul>
+        <li><strong>Stemmer med samme klang.</strong> Ingen modell skiller tre kornetter i tett harmoni. Fra en firstemmig miks kom den øvre mellomstemmen ut med F1 0,83, men den nedre bare med 0,31. I et bandopptak skriver Brasscribe derfor bare melodien og bassen fra det som ble hørt. Alle andre stemmer arrangeres fra bandets harmonikk, og det står på stemmen.</li>
+        <li><strong>Unisone toner.</strong> Tonen høres, men ikke hvor mange som spiller. Neste steg er stemmeseparasjon der én tone kan tilhøre to stemmer, avgjort av stemmeføringen, med nivåhopp, doble ansatser og svevning i overtonene som tilleggssignaler.</li>
+        <li><strong>Stemming.</strong> Ingenting anslår stemmingen ennå. Å stemme om lyden før transkripsjon og å bruke «avstand til grensen mellom halvtoner» som mål på sikkerhet er de billigste grepene vi kjenner.</li>
+        <li><strong>Ornamenter.</strong> I soloen fra orkesteropptaket flytter tonehøyden seg mer enn 50 cent inne i 19 % av tonene: vibrato, glid opp og fall. SwiftF0 deler disse opp i ekstra toner. MusicXML har <code>&lt;scoop&gt;</code>, <code>&lt;falloff&gt;</code> og <code>&lt;doit&gt;</code> for dem, men vi har ingen fasit ennå.</li>
+        <li><strong>Fritt tempo og taktstreker.</strong> Deteksjonen av fri tid slår til på 1 av 18 stykker, og regelen for lokalt tempo er tilpasset ett opptak. Taktene forskyver seg fortsatt under fermater. Taktart og opptakt trenger et bekreftelsessteg i appen.</li>
+        <li><strong>Pedaltoner.</strong> Den dypeste tonen SwiftF0 finner, er 46,875 Hz, en kvarttone over Fiss1. Pedaltoner i tuba og B♭-bass under det kan ikke spores, verken på telefonen eller på datamaskinen.</li>
+        <li><strong>Lag som ikke er testet.</strong> I oppsettet for solist med orkester transkriberes bass-, orkester- og trommelaget av MuScriptor på utskilt lyd eller restlyd. Siden MuScriptor bryter sammen på utskilte solostems, er denne veien ikke sjekket mot fasit. To koraler feilet i det stille da Mega-53 ikke fikk skilt ut solisten.</li>
+        <li><strong>Fare for overtilpasning.</strong> Flere terskler (straffene i kvantiseringen, sperren for taktstrekopprydding, reglene for varighet og staccato) er tilpasset de samme settene de måles på. Vi trenger et tilbakeholdt testsett.</li>
+        <li><strong>Data.</strong> Det finnes fortsatt ikke noe brassbandopptak med fasit. De neste settene i planen er et syntetisk brassband gjengitt fra partitur uten opphavsrett, og noen få ekte bandopptak med håndrettede partitur.</li>
+        <li><strong>Lyd.</strong> Fem av instrumenttypene i bandet er tilnærminger laget av orkestersamples. Å ta opp våre egne, én spiller per instrument og en dag hver, er eneste vei til et ekte eufonium eller althorn.</li>
+      </ul>
+    </section>
+
+    <section id="lisenser" aria-labelledby="lisenser-title">
+      <h2 id="lisenser-title"><span class="secno">10</span>Lisenser, data og etikk</h2>
+      <p class="plain"><span class="plain-label">Kort fortalt</span>Brasscribe er ikke-kommersielt. Noen modellfiler kan ikke deles videre, så hver musiker laster dem ned selv. Opptakene blir på musikerens egne enheter.</p>
+      <ul>
+        <li><strong>Ikke-kommersielt.</strong> Prosjektet er ikke-kommersielt, og det er en forutsetning for å bruke vektene til MuScriptor (CC BY-NC 4.0).</li>
+        <li><strong>Vekter med tilgangssperre, lastet ned av brukeren.</strong> Vektene til MuScriptor er sperret på Hugging Face. Hver musiker godtar lisensen med sin egen konto, og appen på datamaskinen laster ned filen med musikerens nøkkel. BS-RoFormer SW og Mega-53 har ingen oppgitt lisens for vektene. De lastes ned fra de opprinnelige adressene og er merket i modelloversikten. Vi legger ingen av disse filene ut selv. SwiftF0, Basic Pitch, Beat This! og HT-Demucs er MIT eller Apache-2.0 og kan følge med i pakken. Blir prosjektet noen gang kommersielt, må MuScriptor, BS-RoFormer SW og Mega-53 ut. Det som da er igjen med rene lisenser, kan i dag verken skille ut en solist eller transkribere trommer.</li>
+        <li><strong>Datasett.</strong> ChoraleBricks er CC BY 4.0. URMP og Slakh lastes ned ved behov og følger aldri med. CI bruker bare låst ChoraleBricks-merking og våre egne lagrede modellresultater.</li>
+        <li><strong>Ingen demo med opphavsrett.</strong> Opptaket vi testet hele kjeden med, er en kommersiell utgivelse. Det brukes bare internt til måling. Ingen lyd, noter eller bilder av det er publisert her eller følger med appene. Det innebygde eksempelet er en salmetone uten opphavsrett (Old Hundredth).</li>
+        <li><strong>Opptakene tilhører musikeren.</strong> Lenker lastes ikke ned; musikerne tar opp avspillingen eller åpner egne filer. Ingenting går til en skytjeneste. Vi tilbyr ingen felles offentlig motor: den ville delt ikke-kommersielle vekter videre og behandlet opphavsrettslige opptak på vegne av andre.</li>
+        <li><strong>Tilgjengelighet.</strong> Usikkerhet vises med form i tillegg til farge. Alle partitur kan eksporteres som punktskriftnoter (BRF) og som talende partitur, og appene sikter mot WCAG 2.2 AA.</li>
+      </ul>
+    </section>
+
+    <section id="referanser" aria-labelledby="referanser-title">
+      <h2 id="referanser-title">Referanser</h2>
+      <ol class="refs" lang="en">
+        <li id="ref-1">J. Gardner, I. Simon, E. Manilow, C. Hawthorne, J. Engel. MT3: Multi-Task Multitrack Music Transcription. <i>ICLR</i> 2022. <a href="https://arxiv.org/abs/2111.03017">arXiv:2111.03017</a></li>
+        <li id="ref-2">S. Chang, E. Benetos, H. Kirchhoff, S. Dixon. YourMT3+: Multi-Instrument Music Transcription with Enhanced Transformer Architectures and Cross-Dataset Stem Augmentation. <i>IEEE MLSP</i> 2024. <a href="https://doi.org/10.1109/MLSP58920.2024.10734819">doi:10.1109/MLSP58920.2024.10734819</a> · <a href="https://arxiv.org/abs/2407.04822">arXiv:2407.04822</a></li>
+        <li id="ref-3">S. Rouard, M. Krause, A. Roebel, C.-J. Simon-Gabriel, A. Défossez. MuScriptor: An Open Model for Multi-Instrument Music Transcription. <i>ISMIR</i> 2026 (camera ready). <a href="https://arxiv.org/abs/2607.08168">arXiv:2607.08168</a> · <a href="https://github.com/muscriptor/muscriptor">code</a></li>
+        <li id="ref-4">R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, S. Ewert. A Lightweight Instrument-Agnostic Model for Polyphonic Note Transcription and Multipitch Estimation. <i>ICASSP</i> 2022. <a href="https://doi.org/10.1109/ICASSP43922.2022.9746549">doi:10.1109/ICASSP43922.2022.9746549</a> · <a href="https://arxiv.org/abs/2203.09893">arXiv:2203.09893</a></li>
+        <li id="ref-5">L. Nieradzik. SwiftF0: Fast and Accurate Monophonic Pitch Detection. Preprint, 2025. <a href="https://arxiv.org/abs/2508.18440">arXiv:2508.18440</a> · <a href="https://github.com/lars76/swift-f0">code</a></li>
+        <li id="ref-6">J. W. Kim, J. Salamon, P. Li, J. P. Bello. CREPE: A Convolutional Representation for Pitch Estimation. <i>ICASSP</i> 2018. <a href="https://doi.org/10.1109/ICASSP.2018.8461329">doi:10.1109/ICASSP.2018.8461329</a></li>
+        <li id="ref-7">C. Hawthorne, E. Elsen, J. Song et al. Onsets and Frames: Dual-Objective Piano Transcription. <i>ISMIR</i> 2018, 50–57. <a href="https://arxiv.org/abs/1710.11153">arXiv:1710.11153</a></li>
+        <li id="ref-8">F. Foscarin, J. Schlüter, G. Widmer. Beat this! Accurate beat tracking without DBN postprocessing. <i>ISMIR</i> 2024. <a href="https://arxiv.org/abs/2407.21658">arXiv:2407.21658</a> · <a href="https://github.com/CPJKU/beat_this">code</a></li>
+        <li id="ref-9">F. Krebs, S. Böck, G. Widmer. An Efficient State-Space Model for Joint Tempo and Meter Tracking. <i>ISMIR</i> 2015, 72–78. <a href="https://doi.org/10.5281/zenodo.1414966">doi:10.5281/zenodo.1414966</a></li>
+        <li id="ref-10">S. Böck, F. Korzeniowski, J. Schlüter, F. Krebs, G. Widmer. madmom: a new Python Audio and Music Signal Processing Library. <i>ACM Multimedia</i> 2016. <a href="https://doi.org/10.1145/2964284.2973795">doi:10.1145/2964284.2973795</a></li>
+        <li id="ref-11">W.-T. Lu, J.-C. Wang, Q. Kong, Y.-N. Hung. Music Source Separation with Band-Split RoPE Transformer. <i>ICASSP</i> 2024. <a href="https://doi.org/10.1109/ICASSP48485.2024.10446843">doi:10.1109/ICASSP48485.2024.10446843</a> · <a href="https://arxiv.org/abs/2309.02612">arXiv:2309.02612</a></li>
+        <li id="ref-12">S. Rouard, F. Massa, A. Défossez. Hybrid Transformers for Music Source Separation. <i>ICASSP</i> 2023. <a href="https://doi.org/10.1109/ICASSP49357.2023.10096956">doi:10.1109/ICASSP49357.2023.10096956</a> · <a href="https://arxiv.org/abs/2211.08553">arXiv:2211.08553</a></li>
+        <li id="ref-13">ZFTurbo. Music-Source-Separation-Training, release v1.0.21 (MVSep Mega-53 checkpoint). 2026. <a href="https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/tag/v1.0.21">github.com/ZFTurbo/Music-Source-Separation-Training</a></li>
+        <li id="ref-14">Q. Kong, Y. Cao, T. Iqbal, Y. Wang, W. Wang, M. D. Plumbley. PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition. <i>IEEE/ACM TASLP</i> 28:2880–2894, 2020. <a href="https://doi.org/10.1109/TASLP.2020.3030497">doi:10.1109/TASLP.2020.3030497</a></li>
+        <li id="ref-15">D. Meredith. The ps13 pitch spelling algorithm. <i>Journal of New Music Research</i> 35(2):121–159, 2006. <a href="https://doi.org/10.1080/09298210600834961">doi:10.1080/09298210600834961</a></li>
+        <li id="ref-16">D. Meredith. Computing Pitch Names in Tonal Music: A Comparative Analysis of Pitch Spelling Algorithms. DPhil thesis, University of Oxford, 2007. <a href="https://vbn.aau.dk/ws/files/549530987/meredith_dphil_final.pdf">PDF</a></li>
+        <li id="ref-17">C. L. Krumhansl. <i>Cognitive Foundations of Musical Pitch</i>. Oxford University Press, 1990. <a href="https://doi.org/10.1093/acprof:oso/9780195148367.001.0001">doi:10.1093/acprof:oso/9780195148367.001.0001</a></li>
+        <li id="ref-18">S. Balke, A. Berndt, M. Müller. ChoraleBricks: A Modular Multitrack Dataset for Wind Music Research. <i>Transactions of the ISMIR</i> 8(1):39–54, 2025. <a href="https://doi.org/10.5334/tismir.252">doi:10.5334/tismir.252</a> · data v1.1.0: <a href="https://doi.org/10.5281/zenodo.20849469">doi:10.5281/zenodo.20849469</a></li>
+        <li id="ref-19">B. Li, X. Liu, K. Dinesh, Z. Duan, G. Sharma. Creating a Multitrack Classical Music Performance Dataset for Multimodal Music Analysis: Challenges, Insights, and Applications. <i>IEEE Transactions on Multimedia</i> 21:522–535, 2019. <a href="https://doi.org/10.1109/TMM.2018.2856090">doi:10.1109/TMM.2018.2856090</a></li>
+        <li id="ref-20">E. Manilow, G. Wichern, P. Seetharaman, J. Le Roux. Cutting Music Source Separation Some Slakh: A Dataset to Study the Impact of Training Data Quality and Quantity. <i>IEEE WASPAA</i> 2019. <a href="https://doi.org/10.1109/WASPAA.2019.8937170">doi:10.1109/WASPAA.2019.8937170</a></li>
+        <li id="ref-21">C. Raffel, B. McFee, E. J. Humphrey et al. mir_eval: A Transparent Implementation of Common MIR Metrics. <i>ISMIR</i> 2014, 367–372. <a href="https://archives.ismir.net/ismir2014/paper/000320.pdf">PDF</a></li>
+        <li id="ref-22">W3C Music Notation Community Group. MusicXML 4.0. Final Community Group Report, 2021. <a href="https://www.w3.org/2021/06/musicxml40/">w3.org/2021/06/musicxml40</a></li>
+        <li id="ref-23">partitura: a Python package for symbolic music processing (includes ps13s1). <a href="https://github.com/CPJKU/partitura">github.com/CPJKU/partitura</a></li>
+        <li id="ref-24">music21: a toolkit for computer-aided musicology. <a href="https://github.com/cuthbertLab/music21">github.com/cuthbertLab/music21</a></li>
+        <li id="ref-25">Verovio: music notation engraving library (Apple apps). <a href="https://github.com/rism-digital/verovio">github.com/rism-digital/verovio</a></li>
+        <li id="ref-26">alphaTab: music notation and playback (Android, Windows, Studio). <a href="https://github.com/CoderLine/alphaTab">github.com/CoderLine/alphaTab</a></li>
+        <li id="ref-27">L. Nieradzik. pitch-benchmark: pitch-tracker benchmark (maintained by the SwiftF0 author). <a href="https://github.com/lars76/pitch-benchmark">github.com/lars76/pitch-benchmark</a></li>
+        <li id="ref-28">Versilian Studios, VSCO 2 Community Edition (CC0), <a href="https://github.com/sgossner/VSCO-2-CE">github.com/sgossner/VSCO-2-CE</a>; L. Fritts, University of Iowa Musical Instrument Samples, <a href="https://theremin.music.uiowa.edu/MIS.html">theremin.music.uiowa.edu/MIS.html</a></li>
+        <li id="ref-29">python-audio-separator (source of the BS-RoFormer SW checkpoint used here). <a href="https://github.com/nomadkaraoke/python-audio-separator">github.com/nomadkaraoke/python-audio-separator</a></li>
+      </ol>
+      <p class="muted">Prosjektets kilder (på engelsk): <a href="https://github.com/181192/brasscribe/blob/main/docs/research/10-benchmark-results.md">måleresultater</a> · <a href="https://github.com/181192/brasscribe/blob/main/docs/research/11-overlaps-and-in-between-tones.md">overlapp og toner mellom halvtonene</a> · <a href="https://github.com/181192/brasscribe/blob/main/docs/research/12-band-sound.md">bandlyd</a> · <a href="https://github.com/181192/brasscribe/blob/main/convert/README.md">samsvar etter konvertering</a> · <a href="https://github.com/181192/brasscribe/blob/main/eval/baselines.json">regresjonsgrunnlinjer</a></p>
+      <p class="to-top"><a href="#main">Til toppen</a></p>
+    </section>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Brasscribe Play og Brasscribe Studio</span>
+    <span>Noter satt med Verovio (LGPL-3.0). Overskrifter: Instrument Serif (OFL).</span>
+  </div>
+</footer>
+</body>
+</html>

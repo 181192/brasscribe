@@ -312,3 +312,85 @@ tbody th { font-weight: 600; }
   .site-header, .toc, .skip, .actions, .site-footer { display: none; }
   .guide { display: block; }
 }
+
+/* Research article (site/research/, site/nb/research/) */
+.paper { max-width: 70ch; }
+.paper h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); }
+.paper h2 { font-size: clamp(1.75rem, 3.4vw, 2.25rem); }
+.paper h3 { font-family: var(--bc-font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.2; }
+.paper h4 { font-size: var(--bc-type-headline-size); margin: var(--bc-space-6) 0 var(--bc-space-2); }
+.paper .secno { color: var(--bc-brass-text); margin-right: 0.3em; font-style: normal; }
+.paper .byline { color: var(--bc-text-muted); font-size: var(--bc-type-callout-size); }
+.paper .plain {
+  font-size: 1.0625rem; background: var(--bc-brass-tint);
+  border-radius: var(--bc-radius-md); padding: var(--bc-space-4) var(--bc-space-5); margin: 0 0 var(--bc-space-6);
+}
+.paper .plain-label {
+  display: block; font-size: var(--bc-type-caption-size); font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--bc-brass-text); margin-bottom: var(--bc-space-1);
+}
+.paper .abstract { border: 1px solid var(--bc-border-strong); border-radius: var(--bc-radius-md); padding: var(--bc-space-5); margin: var(--bc-space-6) 0; background: var(--bc-surface-raised); }
+.paper .abstract h2 { font-size: var(--bc-type-caption-size); font-family: var(--bc-font-text); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bc-text-muted); margin-bottom: var(--bc-space-2); }
+.paper .abstract p:last-child { margin: 0; }
+.paper figure { margin: var(--bc-space-8) 0; }
+.paper figcaption, .research-teaser figcaption { font-size: var(--bc-type-callout-size); color: var(--bc-text-muted); margin-top: var(--bc-space-3); }
+.paper figcaption b { color: var(--bc-text); }
+.paper sup { line-height: 0; }
+.paper sup a { text-decoration: none; color: var(--bc-brass-text); font-weight: 600; padding: 0 0.1em; }
+.paper .src { display: block; font-size: var(--bc-type-caption-size); color: var(--bc-text-muted); font-weight: 400; }
+.paper td.num, .paper th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.paper ol.refs { padding-left: 2.2em; font-size: var(--bc-type-callout-size); }
+.paper ol.refs li { margin-bottom: var(--bc-space-3); overflow-wrap: anywhere; }
+.paper ol.refs li:target { background: var(--bc-brass-tint); border-radius: var(--bc-radius-sm); }
+.paper .eq { font-family: var(--bc-font-mono); font-size: 0.95em; background: var(--bc-surface); border-radius: var(--bc-radius-sm); padding: var(--bc-space-3) var(--bc-space-4); overflow-x: auto; }
+.toc-article a { min-height: 36px; }
+/* .guide sets padding: … 0 …, which drops the .wrap gutter on narrow screens. */
+main.guide { padding-left: var(--bc-space-6); padding-right: var(--bc-space-6); }
+@media (max-width: 520px) { main.guide { padding-left: var(--bc-space-4); padding-right: var(--bc-space-4); } }
+
+/* Inline diagrams: every colour is a design token, so light, dark and high contrast follow the page. */
+.diagram { display: block; width: 100%; height: auto; margin: 0 auto; }
+.diagram-pipeline { max-width: 560px; }
+.diagram .box { fill: var(--bc-surface-raised); stroke: var(--bc-border-strong); stroke-width: 1.25; }
+.diagram .box.model { fill: var(--bc-brass-tint); stroke: var(--bc-brass); stroke-width: 2; }
+.diagram .box.human { fill: var(--bc-surface); stroke: var(--bc-text); stroke-width: 1.75; stroke-dasharray: 6 4; }
+.diagram .t { fill: var(--bc-text); font-family: var(--bc-font-text); font-size: 15px; font-weight: 600; }
+.diagram .s { fill: var(--bc-text-muted); font-family: var(--bc-font-text); font-size: 12.5px; }
+.diagram .lbl { fill: var(--bc-brass-text); font-family: var(--bc-font-text); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+.diagram .arrow { stroke: var(--bc-text-muted); stroke-width: 1.5; fill: none; }
+.diagram .head { fill: var(--bc-text-muted); }
+.diagram .bar { fill: var(--bc-brass); }
+.diagram .bar.alt { fill: var(--bc-border-strong); }
+.diagram .grid { stroke: var(--bc-border); stroke-width: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--bc-space-2) var(--bc-space-5); list-style: none; padding: 0; margin: var(--bc-space-3) 0 0; font-size: var(--bc-type-callout-size); color: var(--bc-text-muted); }
+.legend li { display: inline-flex; align-items: center; gap: var(--bc-space-2); }
+.legend i { display: inline-block; width: 1.4em; height: 0.9em; border-radius: 3px; background: var(--bc-surface-raised); border: 1.25px solid var(--bc-border-strong); }
+.legend i.model { background: var(--bc-brass-tint); border: 2px solid var(--bc-brass); }
+.legend i.human { background: var(--bc-surface); border: 2px dashed var(--bc-text); }
+
+/* Home page teaser for the research article */
+.research-teaser .teaser-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--bc-space-10); align-items: center; }
+.research-teaser figure { margin: 0; }
+.research-teaser .diagram { max-width: 520px; }
+.research-teaser .teaser-narrow { display: none; max-width: 400px; margin: 0; }
+@media (max-width: 900px) { .research-teaser .teaser-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .research-teaser .teaser-wide { display: none; }
+  .research-teaser .teaser-narrow { display: block; }
+}
+
+@media (forced-colors: active) {
+  .diagram .box, .diagram .box.model, .diagram .box.human { fill: Canvas; stroke: CanvasText; }
+  .diagram .t, .diagram .s, .diagram .lbl, .diagram .head, .diagram .bar { fill: CanvasText; }
+  .diagram .arrow { stroke: CanvasText; }
+}
+
+@media print {
+  body { background: #fff; color: #000; }
+  .paper { max-width: none; }
+  .paper .plain, .paper .abstract { background: none; border: 1px solid #999; }
+  .paper h2, .paper h3 { break-after: avoid; }
+  .paper figure, .paper .table-scroll { break-inside: avoid; }
+  .paper .table-scroll { overflow: visible; }
+  .paper a { text-decoration: none; }
+}
