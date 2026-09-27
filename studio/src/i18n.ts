@@ -984,7 +984,7 @@ const nb: Record<Key, string> = {
   "runs.profileStages": "Trinn",
   "runs.profileTip": "En profil er en ferdig oppskrift: hvilke modeller som lytter til opptaket, og hvilket band notene arrangeres for.",
   "runs.profile.solo": "Ett messinginstrument alene: stemmen, arrangert for et lite band.",
-  "runs.profile.brass-band": "Et opptak av et brassband eller en kvartett: alle stemmer, arrangert for et lite band eller en kvartett.",
+  "runs.profile.brass-band": "Et opptak av et brassband eller en kvartett: alle stemmer, arrangert for lite band eller kvartett.",
   "runs.profile.pop-rock": "Et pop- eller rockeband: hvert instrument skilt ut, så arrangert for et lite band.",
   "runs.profile.orchestra-with-soloist": "En solist med orkester: solostemmen og et fullt brassbandakkompagnement med 18 stemmer.",
   "runs.heavyTerm": "store modeller",
