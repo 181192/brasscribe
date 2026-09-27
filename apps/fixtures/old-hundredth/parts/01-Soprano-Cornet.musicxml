@@ -4,9 +4,8 @@
   <work>
     <work-title>Old Hundredth — Soprano Cornet (Tacet)</work-title>
   </work>
-  <movement-title>Old Hundredth — Soprano Cornet (Tacet)</movement-title>
   <identification>
-    <creator type="composer">arr. brasscribe</creator>
+    <creator type="composer">arr. Brasscribe</creator>
     <encoding>
       <encoding-date>2026-09-27</encoding-date>
       <software>brasscribe-core 0.1.0</software>

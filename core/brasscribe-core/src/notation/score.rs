@@ -1679,8 +1679,8 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
 
     let channels = midi_channels(&parts);
     let mut root = X::new("score-partwise").attr("version", "4.0");
+    // No <movement-title>: it would repeat the work title, and readers show it as a subtitle.
     root.push(X::new("work").child(X::text("work-title", spec.title.clone())));
-    root.push(X::text("movement-title", spec.title.clone()));
     let mut encoding = X::new("encoding");
     if !spec.encoding_date.is_empty() {
         encoding.push(X::text("encoding-date", spec.encoding_date.clone()));
@@ -1689,7 +1689,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     for el in ["beam", "stem", "accidental"] {
         encoding.push(X::new("supports").attr("element", el).attr("type", "yes"));
     }
-    root.push(X::new("identification").child(X::text("creator", "arr. brasscribe").attr("type", "composer")).child(encoding));
+    root.push(X::new("identification").child(X::text("creator", "arr. Brasscribe").attr("type", "composer")).child(encoding));
     root.push(X::new("defaults").child(X::new("scaling").child(X::text("millimeters", "7")).child(X::text("tenths", "40"))));
     let mut pl = X::new("part-list");
     for (i, p) in parts.iter().enumerate() {
