@@ -307,6 +307,9 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
         difficulty: o.difficulty,
         key: o.key,
         transpose: o.transpose,
+        seat: None,
+        reads: None,
+        lead: String::new(),
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {

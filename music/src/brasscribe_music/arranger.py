@@ -402,7 +402,7 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = 
         pcs = sorted({n.pitch % 12 for n in sounding}
                      | {n.pitch % 12 for n in _sounding_at(melody, s)}
                      | {n.pitch % 12 for n in _sounding_at(bass, s)})
-        top = _sounding_at(arr.parts[lead.name], s)
+        top = _sounding_at(arr.parts[lead.name], s) if _tune_on_top(lineup) else []
         bot = _sounding_at(arr.parts[eb.name], s)
         ceiling = top[0].pitch if top else 90
         floor = bot[0].pitch if bot else 30
@@ -443,7 +443,8 @@ def arrange_composition(comp: Composition) -> Arrangement:
 def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
     """The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether
     the layered arranger makes it (its voices carry layers)."""
-    from .instruments import BRASS_BAND, QUARTET, lineup_by_name, lineup_key, seat_lineup, seat_part, with_reading
+    from .instruments import (BRASS_BAND, QUARTET, lead_lineup, lineup_by_name, lineup_key, seat_lineup, seat_part,
+                              with_reading)
 
     opts = comp.arrangement or {}
     seat, reads = opts.get("seat"), opts.get("reads")
@@ -460,6 +461,11 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
             lineup = BRASS_BAND
     if seat:
         lineup = with_reading(lineup, seat_part(lineup_key(lineup), seat).part, reads)
+        if opts.get("lead") == "seat":
+            try:
+                lineup = lead_lineup(lineup, seat)
+            except ValueError:
+                pass  # a lineup the tune cannot move in keeps its own lead
     return lineup, layered
 
 
@@ -501,8 +507,8 @@ def part_sources(comp: Composition) -> dict[str, str]:
             heard |= {lineup.bass, *([lineup.second_bass] if lineup.second_bass else [])}
             if not lineup.satb and lineup.has("Bass Trombone"):
                 heard.add("Bass Trombone")
-        if not lineup.satb and _has_notes(comp, "strings") and lineup.has("Euphonium"):
-            heard.add("Euphonium")
+        if not lineup.satb and _has_notes(comp, "strings") and counter_part(lineup):
+            heard.add(counter_part(lineup))
         if not lineup.satb and _has_notes(comp, "drums") and lineup.has("Percussion"):
             heard.add("Percussion")
     return {p.name: RECORDING if p.name in heard else ARRANGED for p in lineup.parts}
@@ -533,6 +539,8 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
         return "solo"
     if name in (lineup.bass, lineup.second_bass):
         return "bass"
+    if name in BAND_LEADS:  # the band's usual lead, with the tune on the player's part (lead="seat")
+        return "strings"
     if lineup.satb:
         return "strings"
     if name in PAD_PARTS or name == "Euphonium":
@@ -544,6 +552,23 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
     if name == "Percussion":
         return "drums"
     return None
+
+
+BAND_LEADS = ("Solo Cornet",)  # the band lineups' own lead
+
+
+def counter_part(lineup: Lineup) -> str | None:
+    """The part that plays the countermelody: the Euphonium, or with the tune on it, Solo Horn, then 1st Baritone."""
+    if lineup.lead != "Euphonium":
+        return "Euphonium" if lineup.has("Euphonium") else None
+    return next((n for n in ("Solo Horn", "1st Baritone") if lineup.has(n)), None)
+
+
+def _tune_on_top(lineup: Lineup) -> bool:
+    """The tune's part sits on top of the band (a cornet or flugelhorn), so the inner parts go under it."""
+    from .instruments import TOP_INSTRUMENTS
+
+    return lineup.lead_part.instrument.id in TOP_INSTRUMENTS
 
 
 PAD_PARTS = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"]
@@ -719,19 +744,23 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
             arr.warnings.append(f"{lineup.name}: drums left out (no percussion part)")
         arr.parts = _inner_difficulty(arr, difficulty)
         return arr
-    if "Euphonium" in names:
-        euph = lineup.by_name("Euphonium")
-        arr.parts[euph.name] = _place_smooth(counter, euph)
+    cm = counter_part(lineup)
+    if cm is not None:
+        arr.parts[cm] = _place_smooth(counter, lineup.by_name(cm))
 
+    # With the tune on the player's part (lead="seat"), the band's own lead joins the pads, and the
+    # inner parts keep under the tune only while it is on top.
+    ceiling = arr.parts[lead] if _tune_on_top(lineup) else []
+    pads = [p for p in BAND_LEADS if p in names and p != lead] + [p for p in PAD_PARTS if p in names and p not in (lead, cm)]
     pad_slots = harmony_slots(strings + keys, end)
     if figuration:
         pad_slots = _figurate(pad_slots, [n.start for n in strings + keys])
-    _voice_layer(arr, pad_slots, [p for p in PAD_PARTS if p in names], arr.parts[lead], arr.parts[eb.name], 76, 0.8)
+    _voice_layer(arr, pad_slots, pads, ceiling, arr.parts[eb.name], 76, 0.8)
 
     choir_slots = harmony_slots(brass, end, max_pcs=3)
     if figuration:
         choir_slots = _figurate(choir_slots, [n.start for n in brass])
-    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names], arr.parts[lead], arr.parts[eb.name],
+    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names and p != lead], ceiling, arr.parts[eb.name],
                  79, 0.8)
 
     # Bass trombone reinforces the bass line only while the brass choir is playing.
@@ -741,7 +770,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         tutti = [n for n in bass if any(s <= n.start < e for s, e in active)]
         arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
 
-    if soprano and "Soprano Cornet" in names:
+    if soprano and "Soprano Cornet" in names and lead in BAND_LEADS:
         arr.parts["Soprano Cornet"] = _soprano_doubling(arr.parts[lead], lineup.by_name("Soprano Cornet"),
                                                         _climax_spans(comp))
 

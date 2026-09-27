@@ -134,3 +134,37 @@ def test_part_sources_solo_take():
                              {"lineup": "minimal", "difficulty": "faithful", "transpose_semitones": 0}))
     assert src["Solo Cornet"] == YOUR_RECORDING
     assert all(v == ARRANGED for k, v in src.items() if k != "Solo Cornet")
+
+
+def test_lead_lineup():
+    from brasscribe_music.instruments import MINIMAL_BAND, QUARTET, lead_lineup
+
+    assert lead_lineup(BRASS_BAND, "euphonium").lead == "Euphonium"
+    assert lead_lineup(BRASS_BAND, "solo-cornet") is BRASS_BAND
+    assert lead_lineup(MINIMAL_BAND, "1st-baritone").lead == "Euphonium"  # the small band's part for it
+    for lineup, seat in ((QUARTET, "euphonium"), (BRASS_BAND, "1st-baritone"), (BRASS_BAND, "eb-bass"),
+                         (MINIMAL_BAND, "percussion"), (BRASS_BAND, "bass-trombone")):
+        with pytest.raises(ValueError):
+            lead_lineup(lineup, seat)
+
+
+@pytest.mark.skipif(not GOLDEN.exists(), reason="no Mikkel golden output")
+def test_euphonium_solo_with_band():
+    from brasscribe_music.arranger import arrange_composition, layer_of_part
+
+    comp = Composition.from_json(GOLDEN)
+    plain = arrange_composition(comp)
+    comp.arrangement = {"lineup": "band", "difficulty": "faithful", "transpose_semitones": 0, "seat": "euphonium",
+                        "lead": "seat"}
+    arr = arrange_composition(comp)
+    assert arr.lineup.lead == "Euphonium"
+    solo = [n for v in comp.voices if v.layer == "solo" for n in v.notes]
+    assert [n.start for n in arr.parts["Euphonium"]] == [n.start for n in plain.parts["Solo Cornet"]]
+    assert {n.pitch % 12 for n in arr.parts["Euphonium"]} <= {n.pitch % 12 for n in solo}
+    assert arr.parts["Solo Horn"] and arr.parts["Solo Cornet"] and not arr.parts["Soprano Cornet"]
+    assert layer_of_part(arr.lineup, "Euphonium") == "solo" and layer_of_part(arr.lineup, "Solo Cornet") == "strings"
+    src = part_sources(comp)
+    assert src["Euphonium"] == RECORDING and src["Solo Horn"] == RECORDING and src["Solo Cornet"] == ARRANGED
+    # Without lead=seat the seat changes no notes of a band take.
+    comp.arrangement = {"lineup": "band", "difficulty": "faithful", "transpose_semitones": 0, "seat": "euphonium"}
+    assert arrange_composition(comp).parts == plain.parts

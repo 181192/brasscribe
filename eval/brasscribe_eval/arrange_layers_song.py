@@ -29,7 +29,7 @@ from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
 from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, seat_by_id
+from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
@@ -207,6 +207,11 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
     # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
     # solo line is the soloist's, a cornet or trumpet (E3-E6).
     solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
+    if args.lead == "seat" and not solo_take:
+        try:
+            lead_lineup(lineup_by_name(args.lineup), args.seat)
+        except ValueError as e:
+            raise SystemExit(f"--lead seat: {e}") from e
     lo, hi = seat_by_id(args.seat).band_part.instrument.pro if solo_take else SOLO_WINDOW
     votes = {"sw": line(solo_sw, lo, hi, top=True), "mus": line(solo_mus, lo, hi, top=True),
              "bp": line(solo_bp, lo, hi, top=True)}
@@ -297,7 +302,7 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
     if args.seat:
         # The seat's options, like the others; the arrangers read them back (composition_lineup).
         comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
-                                 "lead": "seat" if solo_take else args.lead})
+                                 **({"lead": "seat"} if solo_take or args.lead == "seat" else {})})
     # Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
     bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
     comp.review = [ReviewItem(v.id, g.start, g.end, g.notes, g.very) for v in comp.voices if v.layer != "drums"

@@ -213,7 +213,9 @@ impl Part {
 /// `lead` plays the melody (the solo layer), `bass` the bass line and
 /// `second_bass`, if any, the bass an octave lower where that stays readable.
 /// With `satb` the lineup is a four-part group: the parts between lead and
-/// bass are voiced together as alto and tenor (`arranger::voice_satb`).
+/// bass are voiced together as alto and tenor (`arranger::voice_satb`). With
+/// `as_played` it is one part, the player's own, and the line keeps the octave
+/// it was played in (`arranger::place_as_played`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Lineup {
     pub name: &'static str,
@@ -222,6 +224,8 @@ pub struct Lineup {
     pub bass: &'static str,
     pub second_bass: Option<&'static str>,
     pub satb: bool,
+    /// One part, the player's own (a solo take for their seat): written in the octave played.
+    pub as_played: bool,
 }
 
 impl Lineup {
@@ -282,6 +286,7 @@ pub fn brass_band() -> Lineup {
         bass: "E♭ Bass",
         second_bass: Some("B♭ Bass"),
         satb: false,
+        as_played: false,
     }
 }
 
@@ -303,6 +308,7 @@ pub fn minimal_band() -> Lineup {
         bass: "E♭ Bass",
         second_bass: Some("B♭ Bass"),
         satb: false,
+        as_played: false,
     }
 }
 
@@ -321,6 +327,7 @@ pub fn quartet() -> Lineup {
         bass: "Euphonium",
         second_bass: None,
         satb: true,
+        as_played: false,
     }
 }
 
@@ -503,4 +510,65 @@ pub fn check_reads(seat: Option<&str>, reads: Option<&str>) -> Result<(), String
         return Err(format!("the {} is not offered in {r} clef", s.part));
     }
     Ok(())
+}
+
+/// Who plays the tune: the lineup's lead (Solo Cornet, 1st Cornet), or the player's seat part.
+pub const LEADS: [&str; 2] = ["lineup", "seat"];
+
+/// The instrument as a player reading `reads` sees it: bass clef is written at concert pitch.
+pub fn reading_instrument(inst: &'static Instrument, reads: Option<&str>) -> &'static Instrument {
+    use std::sync::OnceLock;
+    static BASS_CLEF: OnceLock<Vec<&'static Instrument>> = OnceLock::new();
+    if reads != Some("bass") || (inst.clef == Clef::Bass && inst.chromatic == 0) {
+        return inst;
+    }
+    let all = BASS_CLEF.get_or_init(|| {
+        INSTRUMENTS.iter().map(|i| &*Box::leak(Box::new(Instrument { chromatic: 0, diatonic: 0, clef: Clef::Bass, ..(*i).clone() }))).collect()
+    });
+    all.iter().copied().find(|i| i.id == inst.id).unwrap_or(inst)
+}
+
+/// A solo take written for the player: one part, the seat's own (named as in the band, so every
+/// name table resolves), in their clef and key.
+pub fn seat_lineup(seat: &str, reads: Option<&str>) -> Result<Lineup, String> {
+    check_reads(Some(seat), reads)?;
+    let mut part = seat_by_id(seat)?.band_part();
+    part.instrument = reading_instrument(part.instrument, reads);
+    let name = part.name;
+    Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true })
+}
+
+/// `lineup` with `part` written the way the player reads (bass clef: at concert pitch).
+pub fn with_reading(mut lineup: Lineup, part: Option<&str>, reads: Option<&str>) -> Lineup {
+    if let Some(name) = part {
+        for p in lineup.parts.iter_mut().filter(|p| p.name == name) {
+            p.instrument = reading_instrument(p.instrument, reads);
+        }
+    }
+    lineup
+}
+
+/// Instruments whose part sits on top of the band: with the tune on one of them, the inner parts
+/// are voiced under it; with the tune lower down (a euphonium or horn solo), the band keeps its own top.
+pub const TOP_INSTRUMENTS: [&str; 3] = ["bb-cornet", "eb-soprano-cornet", "flugelhorn"];
+
+/// `lineup` with the tune on the seat's part (lead "seat"): "Euphonium solo with band".
+///
+/// For the band lineups only: the quartet keeps the tune on its 1st Cornet. The seat's part must be
+/// able to carry a melody (Role::Melody or Solo) and not be the bass line.
+pub fn lead_lineup(mut lineup: Lineup, seat: &str) -> Result<Lineup, String> {
+    if lineup.satb {
+        return Err("the quartet keeps the tune on its 1st Cornet; lead=seat is for the band lineups".into());
+    }
+    let key = LINEUP_KEYS.iter().copied().find(|k| lineup_by_name(k).is_ok_and(|l| l.name == lineup.name)).unwrap_or("band");
+    let part = seat_part(key, seat)?.part.ok_or_else(|| format!("the {} has no part for the seat {seat}", lineup.name.to_lowercase()))?;
+    if part == lineup.lead {
+        return Ok(lineup);
+    }
+    let roles = lineup.by_name(part).instrument.roles;
+    if part == lineup.bass || Some(part) == lineup.second_bass || !roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo)) {
+        return Err(format!("the {part} does not carry the tune"));
+    }
+    lineup.lead = part;
+    Ok(lineup)
 }

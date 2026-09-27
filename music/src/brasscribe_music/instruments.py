@@ -398,3 +398,27 @@ def with_reading(lineup: Lineup, part: str | None, reads: str | None) -> Lineup:
         return lineup
     parts = [replace(p, instrument=reading_instrument(p.instrument, reads)) if p.name == part else p for p in lineup.parts]
     return replace(lineup, parts=parts)
+
+
+# Instruments whose part sits on top of the band: with the tune on one of them, the inner parts are
+# voiced under it; with the tune lower down (a euphonium or horn solo), the band keeps its own top.
+TOP_INSTRUMENTS = ("bb-cornet", "eb-soprano-cornet", "flugelhorn")
+
+
+def lead_lineup(lineup: Lineup, seat: str) -> Lineup:
+    """`lineup` with the tune on the seat's part (lead="seat"): "Euphonium solo with band".
+
+    For the band lineups only: the quartet keeps the tune on its 1st Cornet. The seat's part must be
+    able to carry a melody (Role.MELODY or SOLO) and not be the bass line.
+    """
+    if lineup.satb:
+        raise ValueError("the quartet keeps the tune on its 1st Cornet; lead=seat is for the band lineups")
+    key = next((k for k, v in LINEUPS.items() if v.name == lineup.name), "band")
+    part = seat_part(key, seat).part
+    if part is None:
+        raise ValueError(f"the {lineup.name.lower()} has no part for the seat {seat}")
+    if part == lineup.lead:
+        return lineup
+    if part in (lineup.bass, lineup.second_bass) or not {Role.MELODY, Role.SOLO} & lineup.by_name(part).instrument.roles:
+        raise ValueError(f"the {part} does not carry the tune")
+    return replace(lineup, lead=part)
