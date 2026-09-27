@@ -11,7 +11,8 @@ brew install xcodegen cmake
 make verovio        # Frameworks/Verovio.xcframework (LGPL-3.0, unmodified, dynamic) + font subset
 scripts/build-core.sh   # core/swift/BrasscribeCore/BrasscribeFFI.xcframework (Rust core, UniFFI)
 make soundfont      # data/soundfonts/MuseScore_General.sf2 (MIT, 206 MB, not committed)
-make project        # BrasscribePlay.xcodeproj from project.yml (not committed)
+pixi run fetch-sounds   # (repo root) the band SoundFonts into data/sounds/band: needs `gh auth login`
+make project        # BrasscribePlay.xcodeproj from project.yml (not committed); stages the band sounds
 make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, then app unit and UI tests on macOS and the iPhone simulator
 make size           # Release build for iOS devices, prints the .app size
@@ -63,13 +64,20 @@ The Playback menu lists the same keys.
   them, so colour is never the only cue. The talking score says "uncertain". Confidence comes from the
   Composition's source voices, and arranged notes inherit it by onset and pitch class. The arranger's
   own flag (the red colour in the MusicXML) is kept too.
+- **Bundled band sounds.** Each app bundle carries the band SoundFont in `Sounds/`, staged per platform
+  by `scripts/stage-band-sounds.sh` (run by `make project`) from `data/sounds/band`: the Mac gets
+  `brasscribe-band-16bit.sf2` (195 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (77 MB, since the
+  sampler keeps the samples in memory). `BandSounds.bandFiles` looks for the same file first on each
+  platform. The iOS Release app is 96 MB with the phone build, against 209 MB with the 16-bit one. Without
+  the files (`pixi run fetch-sounds` was not run) the app builds, plays the basic tier and says the band
+  sounds are missing. Release builds in CI fetch them first and stop if they cannot.
 - **Sound.** With `BRASSCRIBE_SOUNDS` set to the repository root, each part plays its preset from the
   band SoundFont (`data/sounds/band/brasscribe-band-16bit.sf2`: bank MSB 0x79 + LSB = bank, drums
   0x78/0, gain `channel_gain_db`), placed at its audience-seat position from `sounds/seating.json` in an
   AVAudioEnvironmentNode. The room is a convolution of the OpenAIR central-hall IR (vDSP partitioned
   convolution in an AUAudioUnit), calibrated to +4.5 dB wet-to-direct at the audience seat (measured
   4.48 dB on the golden band recording). Without those files the app falls back to MuseScore_General.sf2 (or the system
-  DLS) and the environment node's hall reverb. The app does not bundle any sounds.
+  DLS) and the environment node's hall reverb.
 - **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
   and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
   whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
