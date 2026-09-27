@@ -22,6 +22,17 @@ class RearrangeTest {
     }
 
     @Test
+    fun normalizeKeepsTheReviewGroups() {
+        val core = RustCoreBridge.load()
+        assumeTrue("host core missing", core != null)
+        val comp = File(golden, "composition.json")
+        assumeTrue("golden missing", comp.isFile)
+        val want = no.brasscribe.play.model.CompositionJson.decode(comp.readText()).review
+        assumeTrue("golden has no review groups", !want.isNullOrEmpty())
+        assertEquals(want, core!!.decodeComposition(comp.readText()).review)
+    }
+
+    @Test
     fun goldenCompositionGivesTheGoldenScore() {
         val core = RustCoreBridge.load()
         assumeTrue("host core missing", core != null)
