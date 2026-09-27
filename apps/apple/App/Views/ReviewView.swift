@@ -43,9 +43,17 @@ struct ReviewView: View {
         case .mine:
             return allOpen.filter { $0.partID == myPartID }
                 .sorted { ($0.level == .veryUncertain ? 0 : 1, $0.bar, $0.tick) < ($1.level == .veryUncertain ? 0 : 1, $1.bar, $1.tick) }
-        case .others: return allOpen.filter { $0.partID != myPartID }
-        case .all: return allOpen
+        case .others: return Self.veryUnsureFirst(allOpen.filter { $0.partID != myPartID })
+        case .all: return Self.veryUnsureFirst(allOpen)
         }
+    }
+
+    /// Very unsure notes first, then in score order (part, bar, onset).
+    static func veryUnsureFirst(_ items: [ReviewItem]) -> [ReviewItem] {
+        items.enumerated().sorted { a, b in
+            let ka = a.element.level == .veryUncertain ? 0 : 1, kb = b.element.level == .veryUncertain ? 0 : 1
+            return ka != kb ? ka < kb : a.offset < b.offset
+        }.map(\.element)
     }
 
     private func count(_ f: Filter) -> Int {
@@ -77,14 +85,14 @@ struct ReviewView: View {
             }
         }
         .pageBackground()
-        .navigationTitle(Text("\(piece.title) · Check the notes"))
+        .navigationTitle(Text("Check the notes"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if !allOpen.isEmpty {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Finish later (\(allOpen.count) left)") { confirmLater = true }
+            if !allOpen.isEmpty, wide {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Finish later (\(open.count) left)") { confirmLater = true }
                         .accessibilityIdentifier("openScore")
                 }
             }
@@ -175,25 +183,39 @@ struct ReviewView: View {
     @ViewBuilder private var detail: some View {
         if let it = item, let model {
             let index = (open.firstIndex { $0.id == it.id } ?? 0) + 1
-            VStack(alignment: .leading, spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: wide ? Space.s4 : Space.s3) {
                 triage
-                SectionLabel(String(localized: "\(index) of \(open.count) · \(it.partName)"))
-                DisplayTitle(text: barLabel(it))
-                BarSnippet(xml: xml, partID: it.partID, bar: it.bar, noteTick: it.tick, level: it.level, score: model.score)
-                    .card(padding: Space.s3)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(barLabel(it)).font(wide ? Font.Brasscribe.display(34) : Font.Brasscribe.title2)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Text("\(index) of \(open.count) · \(it.partName)")
+                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                }
+                BarSnippet(xml: xml, partID: it.partID, bar: it.bar, lastBar: it.lastBar ?? it.bar, noteTick: it.tick, level: it.level, score: model.score)
+                    .card(padding: Space.s2)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text("Written \(noteWords(it))")
-                        .font(Font.Brasscribe.title2).foregroundStyle(Color.Brasscribe.text)
+                    Text(it.noteCount > 1 ? String(localized: "\(it.noteCount) notes from written \(noteWords(it))") : String(localized: "Written \(noteWords(it))"))
+                        .font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
                     Text(levelSentence(it))
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                EvidencePanel(note: evidenceFor(it), fifths: fifths(it), part: model.score.parts[it.partIndex])
+                // Listen and Change note come straight after the note, before anything that scrolls
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
                     VStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
                 }
+                if restOfBar(it) > 0 {
+                    Button { keepRestOfBar(it) } label: {
+                        Text(restOfBar(it) == 1 ? String(localized: "Keep the other note in this bar")
+                                                : String(localized: "Keep the other \(restOfBar(it)) notes in this bar"))
+                    }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("keepRestOfBar")
+                }
+                EvidencePanel(note: evidenceFor(it), fifths: fifths(it), part: model.score.parts[it.partIndex])
             }
             .accessibilityElement(children: .contain)
         }
@@ -202,17 +224,28 @@ struct ReviewView: View {
     /// "Check your part first: 12 notes in Solo Cornet, 4 very unsure", and which notes to show.
     private var triage: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            if filter == .mine, let id = myPartID, let part = model?.score.part(id: id), count(.mine) > 0 {
+            if open.count > 50 {
+                // Until the engine marks fewer notes: say so, and point at the ones that matter.
+                let v = open.filter { $0.level == .veryUncertain }.count
+                Text(v > 0 ? String(localized: "Most of these are probably right. Start with the \(v) very unsure ones.")
+                           : String(localized: "Most of these are probably right. Listen to a bar, then keep the rest of it."))
+                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("reviewLead")
+            } else if filter == .mine, let id = myPartID, let part = model?.score.part(id: id), count(.mine) > 0 {
                 let n = count(.mine), v = open.filter { $0.level == .veryUncertain }.count
-                Text("Check your part first").font(Font.Brasscribe.title2).accessibilityAddTraits(.isHeader)
-                Text(v == 0 ? String(localized: "\(n) notes in \(part.displayName).")
-                            : String(localized: "\(n) notes in \(part.displayName), \(v) very unsure, first."))
+                Text(v == 0 ? String(localized: "Your part first: \(n) notes in \(part.displayName).")
+                            : String(localized: "Your part first: \(n) notes in \(part.displayName), \(v) very unsure first."))
                     .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
             }
             Segmented(label: String(localized: "Which notes"), selection: $filter,
-                      options: [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
-                                (Filter.others, String(localized: "Other parts (\(count(.others)))")),
-                                (Filter.all, String(localized: "All parts (\(count(.all)))"))])
+                      options: wide
+                        ? [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                           (Filter.others, String(localized: "Other parts (\(count(.others)))")),
+                           (Filter.all, String(localized: "All parts (\(count(.all)))"))]
+                        : [(Filter.mine, String(localized: "Yours (\(count(.mine)))")),
+                           (Filter.others, String(localized: "Others (\(count(.others)))")),
+                           (Filter.all, String(localized: "All (\(count(.all)))"))])
             .accessibilityIdentifier("reviewFilter")
         }
     }
@@ -234,6 +267,20 @@ struct ReviewView: View {
     }
 
     private var actionBar: some View {
+        VStack(spacing: Space.s1) {
+            if !wide {
+                Button("Finish later (\(open.count) left)") { confirmLater = true }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("openScore")
+            }
+            actionButtons
+        }
+        .padding(.horizontal, wide ? Space.s8 : Space.s5)
+        .padding(.vertical, wide ? Space.s3 : Space.s2)
+        .background(Color.Brasscribe.bg)
+    }
+
+    private var actionButtons: some View {
         HStack(spacing: Space.s3) {
             if wide {
                 Text("Space listens · K keeps").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
@@ -246,9 +293,6 @@ struct ReviewView: View {
                 .keyboardShortcut("k", modifiers: [])
                 .accessibilityIdentifier("keepNext")
         }
-        .padding(.horizontal, wide ? Space.s8 : Space.s5)
-        .padding(.vertical, Space.s3)
-        .background(Color.Brasscribe.bg)
     }
 
     private var allChecked: some View {
@@ -272,6 +316,20 @@ struct ReviewView: View {
     }
 
     private func skip() { if let it = item { advance(from: it) } }
+
+    /// Open notes in the same part and bar as this one (not counting it).
+    private func restOfBar(_ it: ReviewItem) -> Int {
+        allOpen.filter { $0.partID == it.partID && $0.bar == it.bar && $0.id != it.id }.count
+    }
+
+    /// "Keep the rest of this bar": this note and every other open note in the bar.
+    private func keepRestOfBar(_ it: ReviewItem) {
+        for o in allOpen where o.partID == it.partID && o.bar == it.bar { checked.insert(o.id) }
+        piece.saveChecked(checked, remaining: allOpen.count)
+        app.refresh()
+        advance(from: it)
+        AccessibilityNotifier.announce(String(localized: "Kept the notes in \(barLabel(it))."))
+    }
 
     private func advance(from it: ReviewItem) {
         model?.stopAll()
@@ -309,7 +367,7 @@ struct ReviewView: View {
             composition = piece.loadComposition()
             evidence = piece.loadEvidence()
             checked = piece.loadChecked()
-            items = ReviewList.items(score: m.score, uncertainty: m.uncertainty)
+            items = ReviewList.items(score: m.score, composition: m.composition, uncertainty: m.uncertainty)
             if count(.mine) == 0 { filter = .all }
             piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
@@ -342,7 +400,10 @@ struct ReviewView: View {
         return evidence?.note(atScoreTick: n.startTick, concertPitch: p, ticksPerBeat: composition?.ticksPerBeat ?? 24)
     }
 
-    private func barLabel(_ it: ReviewItem) -> String { model?.barLabel(it.bar) ?? "Bar \(it.bar + 1)" }
+    private func barLabel(_ it: ReviewItem) -> String {
+        if let last = it.lastBar, last > it.bar { return String(localized: "Bars \(it.bar + 1)–\(last + 1)") }
+        return model?.barLabel(it.bar) ?? String(localized: "Bar \(it.bar + 1)")
+    }
 
     private func pitchName(_ it: ReviewItem) -> String {
         guard let n = note(it), case .pitched(let p) = n.kind else { return "?" }
@@ -351,7 +412,7 @@ struct ReviewView: View {
 
     private func noteWords(_ it: ReviewItem) -> String {
         guard let n = note(it), let talk = model?.talking else { return pitchName(it) }
-        return "\(pitchName(it)), \(talk.durationName(type: n.type, dots: n.dots, ticks: n.durTicks))"
+        return "\(pitchName(it)), \(ReviewWords.value(type: n.type, dots: n.dots) ?? talk.durationName(type: n.type, dots: n.dots, ticks: n.durTicks))"
     }
 
     private func levelWords(_ it: ReviewItem) -> String {
@@ -420,6 +481,8 @@ struct BarSnippet: View {
     let xml: String
     let partID: String
     let bar: Int
+    /// The last bar of a review group; one bar of context follows a single-bar item.
+    var lastBar: Int
     let noteTick: Int
     let level: UncertaintyLevel
     let score: Score
@@ -434,16 +497,34 @@ struct BarSnippet: View {
                         let doc = page.svg
                         let s = min(1, size.width / max(1, doc.size.width))
                         ctx.scaleBy(x: s, y: s)
-                        let ink = Color.Brasscribe.ink.resolve(in: ctx.environment).cgColor
-                        ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, keepDocumentColors: false) }
-                        if let id = targetNoteID(page), let f = doc.frames[id] {
-                            let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
-                            ctx.stroke(Path(roundedRect: f.insetBy(dx: -4, dy: -4), cornerRadius: 4), with: .color(.Brasscribe.focus), lineWidth: BrasscribeDesign.Score.focusWidth)
-                            // 1.6 staff spaces, above the staff, as in the score
-                            let lines = page.staffLines.values.first
-                            let space = max(3, (lines?.height ?? f.height * 4) / 4)
+                        let env = ctx.environment
+                        let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
+                        let target = targetNoteID(page)
+                        let f = target.flatMap { doc.frames[$0] }
+                        let lines = page.staffLines.values.first ?? f ?? .zero
+                        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                        // selected: a tint column behind the note and a caret under the staff (a box would read as the boxed "?")
+                        var column = CGRect.zero
+                        if let f {
+                            column = CGRect(x: f.minX - 4, y: min(lines.minY, f.minY) - 4, width: f.width + 8,
+                                            height: max(lines.maxY, f.maxY) - min(lines.minY, f.minY) + 8)
+                            ctx.fill(Path(roundedRect: column, cornerRadius: 3), with: .color(.Brasscribe.selectionTint))
+                            ctx.stroke(Path(roundedRect: column, cornerRadius: 3), with: .color(.Brasscribe.selectionEdge),
+                                       lineWidth: BrasscribeDesign.Score.selectionEdgeWidth)
+                        }
+                        var highlight: [String: CGColor] = [:]
+                        if let target { highlight[target] = color.resolve(in: env).cgColor }
+                        ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, highlight: highlight, keepDocumentColors: false) }
+                        if let f {
+                            var caret = Path()
+                            let y = column.maxY + 3
+                            caret.move(to: CGPoint(x: f.midX, y: y)); caret.addLine(to: CGPoint(x: f.midX - 5, y: y + 7))
+                            caret.addLine(to: CGPoint(x: f.midX + 5, y: y + 7)); caret.closeSubpath()
+                            ctx.fill(caret, with: .color(.Brasscribe.text))
+                            // the "?" at 1.6 staff spaces, above the staff, as in the score
+                            let space = max(3, lines.height / 4)
                             let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
-                            let centre = CGPoint(x: f.midX, y: min(lines?.minY ?? f.minY, f.minY) - space * 0.5 - size * 0.6)
+                            let centre = CGPoint(x: f.midX, y: min(lines.minY, f.minY) - space * 0.5 - size * 0.6)
                             ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: centre)
                             if level == .veryUncertain {
                                 ctx.stroke(Path(roundedRect: CGRect(x: centre.x - size * 0.45, y: centre.y - size * 0.62, width: size * 0.9, height: size * 1.24),
@@ -455,13 +536,13 @@ struct BarSnippet: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .task(id: "\(partID)-\(bar)-\(Int(geo.size.width))") {
-                let first = max(1, bar + 1), last = min(score.measures.count, bar + 2)
-                let xml = self.xml, partID = self.partID, width = geo.size.width
+            .task(id: "\(partID)-\(bar)-\(lastBar)-\(noteTick)-\(Int(geo.size.width))") {
+                let first = max(1, bar + 1), last = min(score.measures.count, max(lastBar + 1, bar + 2))
+                let xml = PartNames.localized(self.xml), partID = self.partID, width = geo.size.width
                 page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
             }
         }
-        .frame(height: 170)
+        .frame(height: 108)
     }
 
     /// The Verovio note at the reviewed onset: same order within the first bar as the parsed notes.
@@ -494,6 +575,17 @@ enum ReviewWords {
         }
         let accidental = p.alter == 1 ? "♯" : p.alter == -1 ? "♭" : p.alter == 2 ? "𝄪" : p.alter == -2 ? "𝄫" : ""
         return "\(p.step)\(accidental)"
+    }
+
+    /// Note values as a brass band says them: crotchet, quaver (en-GB); the talking score's
+    /// names elsewhere (nil).
+    static func value(type: String?, dots: Int) -> String? {
+        guard !norwegian, let type else { return nil }
+        let gb = ["breve": String(localized: "breve"), "whole": String(localized: "semibreve"), "half": String(localized: "minim"),
+                  "quarter": String(localized: "crotchet"), "eighth": String(localized: "quaver"), "16th": String(localized: "semiquaver"),
+                  "32nd": String(localized: "demisemiquaver")]
+        guard let base = gb[type] else { return nil }
+        return dots == 0 ? base : dots == 1 ? String(localized: "dotted \(base)") : String(localized: "double-dotted \(base)")
     }
 
     /// "an A", "a B" in English; Norwegian names the note bare.

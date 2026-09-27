@@ -181,6 +181,16 @@
         }
       }
     },
+    "%lld notes from written %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner fra notert %@"
+          }
+        }
+      }
+    },
     "%lld notes in %@, %lld very unsure, first.": {
       "localizations": {
         "nb": {
@@ -277,6 +287,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld halvtoner opp"
+          }
+        }
+      }
+    },
+    "%lld to check": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld å sjekke"
           }
         }
       }
@@ -521,6 +541,16 @@
         }
       }
     },
+    "All (%lld)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle (%lld)"
+          }
+        }
+      }
+    },
     "All notes checked": {
       "localizations": {
         "nb": {
@@ -727,6 +757,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Takt %lld til %lld"
+          }
+        }
+      }
+    },
+    "Bars %lld–%lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takt %lld–%lld"
           }
         }
       }
@@ -1501,6 +1541,16 @@
         }
       }
     },
+    "Full band": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt band"
+          }
+        }
+      }
+    },
     "Full brass band": {
       "localizations": {
         "nb": {
@@ -1547,6 +1597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hør bandet eller opptaket"
+          }
+        }
+      }
+    },
+    "Hear the recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hør opptaket"
           }
         }
       }
@@ -1661,12 +1721,42 @@
         }
       }
     },
+    "Keep the other %lld notes in this bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behold de andre %lld tonene i takten"
+          }
+        }
+      }
+    },
+    "Keep the other note in this bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behold den andre tonen i takten"
+          }
+        }
+      }
+    },
     "Keep, go to next": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Behold, gå til neste"
+          }
+        }
+      }
+    },
+    "Kept the notes in %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beholdt tonene i %@."
           }
         }
       }
@@ -2011,6 +2101,26 @@
         }
       }
     },
+    "Most of these are probably right. Listen to a bar, then keep the rest of it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De fleste av disse er nok riktige. Lytt til en takt, og behold resten av den."
+          }
+        }
+      }
+    },
+    "Most of these are probably right. Start with the %lld very unsure ones.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De fleste av disse er nok riktige. Begynn med de %lld svært usikre."
+          }
+        }
+      }
+    },
     "Move the pitch %@%lld semitones": {
       "localizations": {
         "nb": {
@@ -2037,6 +2147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "MusicXML (partitur og stemmer)"
+          }
+        }
+      }
+    },
+    "MusicXML, MIDI and 2 more": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MusicXML, MIDI og 2 til"
           }
         }
       }
@@ -2541,6 +2661,16 @@
         }
       }
     },
+    "Others (%lld)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andre (%lld)"
+          }
+        }
+      }
+    },
     "PDF": {
       "localizations": {
         "nb": {
@@ -3027,6 +3157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opptak %@"
+          }
+        }
+      }
+    },
+    "Recording, %@ %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptak, %@ %@"
           }
         }
       }
@@ -3611,6 +3751,16 @@
         }
       }
     },
+    "Stop making the score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slutt å lage partituret"
+          }
+        }
+      }
+    },
     "Stop making this score?": {
       "localizations": {
         "nb": {
@@ -4031,6 +4181,16 @@
         }
       }
     },
+    "Today": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I dag"
+          }
+        }
+      }
+    },
     "Transcribe": {
       "localizations": {
         "nb": {
@@ -4371,6 +4531,16 @@
         }
       }
     },
+    "Yesterday": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I går"
+          }
+        }
+      }
+    },
     "You can change this later. Nothing is lost.": {
       "localizations": {
         "nb": {
@@ -4451,6 +4621,26 @@
         }
       }
     },
+    "Your part first: %lld notes in %@, %lld very unsure first.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din først: %lld toner i %@, %lld svært usikre først."
+          }
+        }
+      }
+    },
+    "Your part first: %lld notes in %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din først: %lld toner i %@."
+          }
+        }
+      }
+    },
     "Your part is muted with “Mute my part”, so you can play along. “Only this” plays one part alone.": {
       "localizations": {
         "nb": {
@@ -4487,6 +4677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partiturene dine vises her."
+          }
+        }
+      }
+    },
+    "Yours (%lld)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Din (%lld)"
           }
         }
       }
@@ -4561,6 +4761,56 @@
         }
       }
     },
+    "breve": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "brevis"
+          }
+        }
+      }
+    },
+    "crotchet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fjerdedelsnote"
+          }
+        }
+      }
+    },
+    "demisemiquaver": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trettitodelsnote"
+          }
+        }
+      }
+    },
+    "dotted %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "punktert %@"
+          }
+        }
+      }
+    },
+    "double-dotted %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dobbeltpunktert %@"
+          }
+        }
+      }
+    },
     "from %lld": {
       "localizations": {
         "nb": {
@@ -4577,6 +4827,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "det kan også være %@."
+          }
+        }
+      }
+    },
+    "minim": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "halvnote"
           }
         }
       }
@@ -4617,6 +4877,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "én PDF per musiker"
+          }
+        }
+      }
+    },
+    "quaver": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "åttendedelsnote"
+          }
+        }
+      }
+    },
+    "semibreve": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "helnote"
+          }
+        }
+      }
+    },
+    "semiquaver": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sekstendedelsnote"
           }
         }
       }

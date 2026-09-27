@@ -330,7 +330,7 @@ final class AppModel {
         p.remoteArtifacts = [.musicXML, .composition]
         if let score = try? MusicXMLParser.parse(xml) {
             p.bars = score.measures.count
-            p.toCheck = ReviewList.items(score: score, uncertainty: UncertaintyIndex(composition: comp)).count
+            p.toCheck = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp)).count
         }
         try p.save()
         refresh()

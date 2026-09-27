@@ -29,8 +29,10 @@ public enum UncertaintyLevel: Sendable, Equatable {
 }
 
 public struct UncertaintyIndex: Sendable {
-    public static let threshold = 0.7
-    public static let veryThreshold = 0.4
+    /// The engine's calibration (music/src/brasscribe_music/calibration.json): a note is
+    /// marked when `1 - confidence >= mark_risk` (0.241) and very unsure when `>= very_risk` (0.6).
+    public static let threshold = 1 - 0.241
+    public static let veryThreshold = 1 - 0.6
     /// (composition tick, pitch class) -> lowest confidence at that onset
     let byOnset: [Int: [Int: Double]]
     let ticksPerBeat: Int

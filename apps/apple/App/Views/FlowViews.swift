@@ -294,15 +294,15 @@ struct TranscribeView: View {
                     .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide))
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("cancelTranscription")
+                    .confirmationDialog(String(localized: "Stop making this score?"), isPresented: $confirmCancel, titleVisibility: .visible) {
+                        Button(String(localized: "Stop making the score"), role: .destructive) { job.cancel(); app.goHome() }
+                        Button(String(localized: "Keep going")) {}
+                    } message: { Text("You can start again from the recording.") }
             }
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s3)
             .readingColumn()
         }
-        .confirmationDialog(String(localized: "Stop making this score?"), isPresented: $confirmCancel, titleVisibility: .visible) {
-            Button(String(localized: "Stop"), role: .destructive) { job.cancel(); app.goHome() }
-            Button(String(localized: "Keep going"), role: .cancel) {}
-        } message: { Text("You can start again from the recording.") }
         .onChange(of: job.progress.stage) { _, s in announce(s.plain, fraction: job.progress.fraction, force: true) }
         .onChange(of: job.progress.fraction) { _, f in announce(nil, fraction: f, force: false) }
     }

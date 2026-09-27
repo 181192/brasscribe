@@ -87,7 +87,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         }
         if let score = try? MusicXMLParser.parse(result.musicXML) {
             p.bars = score.measures.count
-            p.toCheck = ReviewList.items(score: score, uncertainty: result.composition.map(UncertaintyIndex.init) ?? .empty).count
+            p.toCheck = ReviewList.items(score: score, composition: result.composition, uncertainty: result.composition.map(UncertaintyIndex.init) ?? .empty).count
         }
         try p.save()
         return p
@@ -118,12 +118,16 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// "Brass band · 64 bars · Today · 3 notes to check"
     var summary: String {
         var bits: [String] = []
-        if let profile { bits.append(profile.shortTitle) }
+        if let output { bits.append(output.lineup == .fullBand ? String(localized: "Full band") : String(localized: "Small band")) }
+        else if let profile { bits.append(profile.shortTitle) }
         if let bars { bits.append(String(localized: "\(bars) bars")) }
-        bits.append(created.formatted(.relative(presentation: .named, unitsStyle: .wide)).capitalizedFirst)
-        if let toCheck, toCheck > 0 { bits.append(toCheck == 1 ? String(localized: "1 note to check") : String(localized: "\(toCheck) notes to check")) }
+        bits.append(ScoreTitles.day(created))
+        if let toCheck, toCheck > 0 { bits.append(String(localized: "\(toCheck) to check")) }
         return bits.joined(separator: " · ")
     }
+
+    /// The title to show: the user's name for it, else what it was made from; never a bare timestamp.
+    var displayTitle: String { ScoreTitles.display(title, made: created) }
 }
 
 extension String {

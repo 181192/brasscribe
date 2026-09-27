@@ -261,7 +261,7 @@ final class PlayUITests: XCTestCase {
         var issues: [String] = []
         var blocking: [String] = []
         try app.performAccessibilityAudit { issue in
-            let line = "AUDIT \(issue.auditType) | \(issue.compactDescription) | \(issue.element?.identifier ?? "") \(issue.element?.label ?? "") type=\(issue.element?.elementType.rawValue ?? 0) frame=\(issue.element?.frame ?? .zero)"
+            let line = "AUDIT \(issue.auditType) | \(issue.compactDescription) | \(issue.element?.identifier ?? "") \(issue.element?.label ?? "") type=\(issue.element?.elementType.rawValue ?? 0) frame=\(issue.element?.frame ?? .zero) \(issue.detailedDescription.prefix(200))"
             issues.append(line)
             print(line)
             // Not ours: the system menu bar, and SwiftUI's unlabeled hosting groups: the

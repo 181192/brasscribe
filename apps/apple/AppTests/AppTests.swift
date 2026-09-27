@@ -84,3 +84,24 @@ func testVideo() -> URL? {
     let minimal = try #require(try bridge.arrange(comp, lineup: .minimalBand, difficulty: .faithful, keyFifths: nil))
     #expect(try bridge.score(fromMusicXML: minimal).parts.count > 0)
 }
+
+
+/// The engine groups neighbouring uncertain notes (Composition.review): Review has one item
+/// per group, the Solo Cornet carries every solo group, and the level follows `very`.
+@Test(.enabled(if: fixtureDir() != nil)) func reviewFollowsTheEnginesGroups() throws {
+    let dir = try #require(fixtureDir())
+    let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+    try #require(!comp.review.isEmpty, "golden Composition has review groups")
+    let score = try MusicXMLParser.parse(url: dir.appending(path: "brass-band.musicxml"))
+    let items = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp))
+    let solo = items.filter { $0.partName == PartNames.display("Solo Cornet") }
+    let soloGroups = comp.review.filter { $0.voice == "solo" }
+    #expect(solo.count == soloGroups.count)
+    #expect(solo.filter { $0.level == .veryUncertain }.count == soloGroups.filter(\.very).count)
+    // groups are short (the engine aims at two bars; one golden group reaches into a third)
+    #expect(solo.allSatisfy { ($0.lastBar ?? $0.bar) >= $0.bar && ($0.lastBar ?? $0.bar) - $0.bar <= 2 })
+    // without groups, every uncertain onset is its own item
+    var plain = comp
+    plain.review = []
+    #expect(ReviewList.items(score: score, composition: plain, uncertainty: UncertaintyIndex(composition: plain)).count > items.count)
+}
