@@ -436,4 +436,13 @@
     <string name="octave_down">Octave down</string>
     <string name="octave_up">Octave up</string>
     <string name="demo_where">The example, no computer needed</string>
+    <string name="review_most_right">Most of these are probably right. Listen to a few, then keep the rest bar by bar.</string>
+    <plurals name="review_keep_bar">
+        <item quantity="one">Keep this bar</item>
+        <item quantity="other">Keep the rest of this bar (%d)</item>
+    </plurals>
+    <plurals name="review_most_right_start_very">
+        <item quantity="one">Most of these are probably right. Start with the %d very unsure one.</item>
+        <item quantity="other">Most of these are probably right. Start with the %d very unsure ones.</item>
+    </plurals>
 </resources>

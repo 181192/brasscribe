@@ -631,6 +631,13 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    /** Keeps several notes at once ("Keep the rest of this bar"). */
+    fun markCheckedAll(voiceId: String, indexes: Collection<Int>, remaining: Int) {
+        checked.update { it + (voiceId to (it[voiceId].orEmpty() + indexes)) }
+        result.value?.let(::saveCurrentScore)
+        say(R.string.checked_left, remaining)
+    }
+
     fun markChecked(voiceId: String, index: Int, remaining: Int) {
         checked.update { it + (voiceId to (it[voiceId].orEmpty() + index)) }
         result.value?.let(::saveCurrentScore)

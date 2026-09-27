@@ -434,4 +434,13 @@
     <string name="octave_down">Oktav ned</string>
     <string name="octave_up">Oktav opp</string>
     <string name="demo_where">Eksempelet, uten datamaskin</string>
+    <string name="review_most_right">De fleste er nok riktige. Lytt til noen, og behold resten takt for takt.</string>
+    <plurals name="review_keep_bar">
+        <item quantity="one">Behold denne takten</item>
+        <item quantity="other">Behold resten av takten (%d)</item>
+    </plurals>
+    <plurals name="review_most_right_start_very">
+        <item quantity="one">De fleste er nok riktige. Begynn med den %d svært usikre.</item>
+        <item quantity="other">De fleste er nok riktige. Begynn med de %d svært usikre.</item>
+    </plurals>
 </resources>

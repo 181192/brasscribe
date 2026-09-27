@@ -19,8 +19,9 @@ object PartNames {
         "Bass" to "Bass", "Strings" to "Strykere", "Brass" to "Messing", "Drums" to "Trommer",
     )
 
+    /** A compound like "Repiano-kornett" may break only after its hyphen (review 3, P2-C). */
     fun display(name: String, lang: Lang = currentLang()): String =
-        if (lang == Lang.NB) NB[name.replace(' ', ' ').trim()] ?: name else name
+        (if (lang == Lang.NB) NB[name.replace(' ', ' ').trim()] ?: name else name).replace("-", "-\u200B")
 
     /** "Mikkel — solo cornet & brass band (draft)" → "Mikkel": the short song title for headers. */
     fun shortTitle(title: String): String {

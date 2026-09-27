@@ -41,6 +41,7 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val fill = Paint()
     private val rect = RectF()
+    private val caret = android.graphics.Path()
 
     init {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -65,6 +66,16 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
         val ss = staffSpacePx
         // Ad-lib tint over the whole system height of each free-time bar.
         if (under) {
+            // The selected note: a selection-tint column behind it, the height of the staff (review 3, P2-A).
+            ring?.let { beat ->
+                val bb = lookup.findBeats(beat)?.let { if (it.length > 0) it[0] else null } ?: return@let
+                val staff = bb.barBounds.visualBounds
+                val notes = bb.notes
+                val h = if (notes != null && notes.length > 0) notes[0].noteHeadBounds else bb.visualBounds
+                val cx = ((h.x + h.w / 2) * f).toFloat()
+                fill.color = if (p.highContrast) p.paper else p.selectionTint
+                canvas.drawRect(cx - 0.9f * ss, (staff.y * f).toFloat() - 1.8f * ss, cx + 0.9f * ss, ((staff.y + staff.h) * f).toFloat() + 0.4f * ss, fill)
+            }
             if (p.highContrast || adLibBars.isEmpty()) return
             fill.color = p.adlibTint
             for (i in adLibBars) {
@@ -110,15 +121,18 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
                 }
             }
         }
+        // The selected note's caret, under the staff (a box would read as the boxed "?").
         ring?.let { beat ->
             val bb = lookup.findBeats(beat)?.let { if (it.length > 0) it[0] else null } ?: return@let
             val notes = bb.notes
-            val b = if (notes != null && notes.length > 0) notes[0].noteHeadBounds else bb.visualBounds
-            stroke.color = p.ink
-            stroke.strokeWidth = 2f * density
-            val pad = 0.35f * ss
-            rect.set((b.x * f).toFloat() - pad, (b.y * f).toFloat() - pad, ((b.x + b.w) * f).toFloat() + pad, ((b.y + b.h) * f).toFloat() + pad)
-            canvas.drawRoundRect(rect, 0.4f * ss, 0.4f * ss, stroke)
+            val h = if (notes != null && notes.length > 0) notes[0].noteHeadBounds else bb.visualBounds
+            val cx = ((h.x + h.w / 2) * f).toFloat()
+            val staff = bb.barBounds.visualBounds
+            val bottom = maxOf(((staff.y + staff.h) * f).toFloat(), ((h.y + h.h) * f).toFloat()) + 0.8f * ss
+            fill.color = p.selectionEdge
+            caret.reset()
+            caret.moveTo(cx, bottom); caret.lineTo(cx - 0.7f * ss, bottom + 0.9f * ss); caret.lineTo(cx + 0.7f * ss, bottom + 0.9f * ss); caret.close()
+            canvas.drawPath(caret, fill)
         }
     }
 

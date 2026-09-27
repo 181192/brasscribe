@@ -17,6 +17,7 @@ import android.content.Context
  */
 class BarSnippet(context: Context) {
     val view: AlphaTabView = AlphaTabView(context, null)
+    private val selection = NotationOverlay.attach(view, under = true)
     private val overlay = NotationOverlay.attach(view, under = false)
     private var score: Score? = null
     private var loadedXml: String? = null
@@ -32,11 +33,12 @@ class BarSnippet(context: Context) {
         }
         view.api.updateSettings()
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        view.api.postRenderFinished.on { overlay.refresh() }
+        view.api.postRenderFinished.on { selection.refresh(); overlay.refresh() }
     }
 
     fun setPalette(p: ScorePalette) {
         overlay.palette = p
+        selection.palette = p
         view.setBackgroundColor(p.paper)
         view.settings.display.resources.apply {
             mainGlyphColor = p.ink.toColor(); secondaryGlyphColor = p.ink.toColor(); scoreInfoColor = p.ink.toColor()
@@ -63,6 +65,7 @@ class BarSnippet(context: Context) {
         val voice = staff.bars[b].voices[0]
         val notes = (0 until voice.beats.length.toInt()).map { voice.beats[it] }.filter { !it.isRest }
         overlay.ring = notes.minByOrNull { kotlin.math.abs(it.playbackStart / 960.0 - offsetQuarters) }
+        selection.ring = overlay.ring
         view.api.renderScore(s, DoubleList(0.0))
     }
 

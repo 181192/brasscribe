@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -61,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -182,7 +185,16 @@ fun ReviewScreen(vm: PlayViewModel) {
         bottom = {
             if (current != null) {
                 PrimaryButton(stringResource(R.string.review_keep_next), { keep(current) }, icon = R.drawable.ic_bc_mark_checked)
-                SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, icon = R.drawable.ic_bc_skip)
+                // While a third of the notes carry a "?" (review 3, P1-A), a whole bar can be kept at once.
+                val restOfBar = todo.filter { it.bar == current.bar }
+                val skipButton = @Composable { m: Modifier -> SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, m, icon = R.drawable.ic_bc_skip) }
+                if (restOfBar.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                    skipButton(Modifier.weight(1f))
+                    OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
+                        vm.markCheckedAll(voiceId, restOfBar.map { it.index }, todo.size - restOfBar.size)
+                        picked = null
+                    }, Modifier.weight(1.4f))
+                } else skipButton(Modifier)
             } else PrimaryButton(stringResource(R.string.review_continue), ::finish)
         },
     ) {
@@ -194,8 +206,13 @@ fun ReviewScreen(vm: PlayViewModel) {
                     val melody = composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
                     if (todo.isNotEmpty() && voiceId == melody) {
                         Text(stringResource(R.string.review_your_part_first), style = MaterialTheme.typography.titleMedium)
-                        Lead(pluralStringResource(R.plurals.review_your_part_count, todo.size, todo.size, partName) +
-                            if (veryCount > 0) " " + pluralStringResource(R.plurals.review_very_first, veryCount, veryCount) else "")
+                        Lead(pluralStringResource(R.plurals.review_your_part_count, todo.size, todo.size, partName) + " " + when {
+                            // Many marks: most are right, so say where to start (review 3, P1-A).
+                            todo.size > MANY_MARKS && veryCount > 0 -> pluralStringResource(R.plurals.review_most_right_start_very, veryCount, veryCount)
+                            todo.size > MANY_MARKS -> stringResource(R.string.review_most_right)
+                            veryCount > 0 -> pluralStringResource(R.plurals.review_very_first, veryCount, veryCount)
+                            else -> ""
+                        })
                     } else Lead(stringResource(R.string.review_lead))
                     Legend()
                     if (voices.size > 1) PartChips(voices, voiceId, composition, checkedMap, vm, lang) { voiceId = it }
@@ -341,6 +358,9 @@ private fun PartChips(
     }
 }
 
+/** Above this many marks the lead says most notes are probably right. */
+private const val MANY_MARKS = 50
+
 /** The items above the bar list in the review LazyColumn (header, note card, still to check, label). */
 private const val HEADER_ITEMS = 4
 
@@ -464,9 +484,11 @@ private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
 private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (Int) -> String, dismiss: () -> Unit, save: (Int) -> Unit) {
     var shift by remember(written) { mutableIntStateOf(0) }
     val c = BrasscribeTheme.colors
-    ModalBottomSheet(onDismissRequest = dismiss, containerColor = c.bg) {
+    // Fully open, and scrollable, so Save is reachable at large text sizes.
+    ModalBottomSheet(onDismissRequest = dismiss, containerColor = c.bg,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
             verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
         ) {
             ScreenTitle(stringResource(R.string.change_note_title))
@@ -562,11 +584,13 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double) {
     val snippet = remember { no.brasscribe.play.score.BarSnippet(context) }
     androidx.compose.runtime.LaunchedEffect(c) {
         snippet.setPalette(no.brasscribe.play.score.ScorePalette(c.surfaceRaised.toArgb(), c.ink.toArgb(), c.staff.toArgb(), c.cursor.toArgb(),
-            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb()))
+            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb(),
+            c.selectionTint.toArgb(), c.selectionEdge.toArgb()))
     }
     androidx.compose.runtime.LaunchedEffect(musicXml, bar, offsetQuarters) { snippet.show(musicXml, bar, offsetQuarters) }
-    androidx.compose.ui.viewinterop.AndroidView(
-        factory = { snippet.view },
-        modifier = Modifier.fillMaxWidth().height(128.dp).clipToBounds().clearAndSetSemantics {},
-    )
+    Box(Modifier.fillMaxWidth().height(128.dp).clipToBounds().clearAndSetSemantics {}) {
+        androidx.compose.ui.viewinterop.AndroidView(factory = { snippet.view }, modifier = Modifier.matchParentSize())
+        // Drags on the staff scroll the page: this layer takes the touches before alphaTab's own scroll views.
+        Box(Modifier.matchParentSize().pointerInput(Unit) {})
+    }
 }
