@@ -91,5 +91,26 @@
     </main>
   </div>
 </div>
+<script>
+  // Current note: a selection-tint column behind it and a caret under the staff (never a box: a box reads as "very unsure").
+  (function mark() {
+    if (!document.body.dataset.ready) return requestAnimationFrame(mark);
+    const svg = document.querySelector('[data-score="miReview"] svg');
+    const head = [...svg.querySelectorAll('text[font-family="Bravura"]')].find((t) => t.classList.contains("vu"));
+    if (!head) return;
+    const b = head.getBBox(), lines = [...svg.querySelectorAll("line.staffline, .staffline")];
+    const ys = lines.map((l) => +l.getAttribute("y1") || l.getBBox().y);
+    const top = Math.min(...ys) - 22, bot = Math.max(...ys) + 10, pad = 7;
+    const ns = "http://www.w3.org/2000/svg";
+    const r = document.createElementNS(ns, "rect");
+    Object.entries({ x: b.x - pad, y: top, width: b.width + 2 * pad, height: bot - top, rx: 3 }).forEach(([k, v]) => r.setAttribute(k, v));
+    r.style.fill = "var(--bc-selection-tint)";
+    svg.insertBefore(r, svg.firstChild);
+    const c = document.createElementNS(ns, "path"), cx = b.x + b.width / 2;
+    c.setAttribute("d", `M${cx - 7} ${bot + 12}L${cx} ${bot + 4}L${cx + 7} ${bot + 12}Z`);
+    c.style.fill = "var(--bc-text)";
+    svg.appendChild(c);
+  })();
+</script>
 </body>
 </html>
