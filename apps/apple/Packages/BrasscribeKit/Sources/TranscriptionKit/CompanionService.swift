@@ -22,7 +22,56 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let version: String
         public let device: String
         public let authRequired: Bool
-        enum CodingKeys: String, CodingKey { case status, version, device; case authRequired = "auth_required" }
+        /// Older engines leave these out.
+        public let serverID: String?
+        public let serverName: String?
+        enum CodingKeys: String, CodingKey {
+            case status, version, device
+            case authRequired = "auth_required", serverID = "server_id", serverName = "server_name"
+        }
+    }
+
+    /// `POST /v1/pair` and an approved `GET /v1/pair/requests/{id}`. Older engines send only `token`.
+    public struct PairResult: Decodable, Sendable, Equatable {
+        public let token: String
+        public let deviceID: String?
+        public let serverID: String?
+        public let serverName: String?
+        enum CodingKeys: String, CodingKey {
+            case token, deviceID = "device_id", serverID = "server_id", serverName = "server_name"
+        }
+        public init(token: String, deviceID: String?, serverID: String?, serverName: String?) {
+            self.token = token; self.deviceID = deviceID; self.serverID = serverID; self.serverName = serverName
+        }
+    }
+
+    /// `GET /v1/devices/me`: the heartbeat, and the check that the stored credential still works.
+    public struct DeviceSelf: Decodable, Sendable, Equatable {
+        public let deviceID: String
+        public let name: String
+        public let serverID: String
+        public let rotateAfterText: String?
+        public var rotateAfter: Date? { EngineDate.parse(rotateAfterText) }
+        enum CodingKeys: String, CodingKey {
+            case deviceID = "device_id", name, serverID = "server_id", rotateAfterText = "rotate_after"
+        }
+    }
+
+    /// `POST /v1/pair/requests`: ask the computer to allow this device, with a match code on both screens.
+    public struct PairingRequest: Decodable, Sendable, Equatable {
+        public let requestID: String
+        public let matchCode: String
+        public let status: String
+        enum CodingKeys: String, CodingKey { case requestID = "request_id", matchCode = "match_code", status }
+    }
+
+    /// One poll of a pairing request.
+    public enum PairingDecision: Equatable, Sendable {
+        case pending
+        case approved(PairResult)
+        case denied
+        /// Unknown or older than two minutes.
+        case expired
     }
 
     public struct Job: Decodable, Sendable {
@@ -92,9 +141,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let error: String?
     }
 
-    func request(_ path: String, method: String = "GET") -> URLRequest {
+    func request(_ path: String, method: String = "GET", timeout: TimeInterval? = nil) -> URLRequest {
         var r = URLRequest(url: baseURL.appending(path: path))
         r.httpMethod = method
+        if let timeout { r.timeoutInterval = timeout }
         if let token { r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         return r
     }
@@ -116,20 +166,71 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         try JSONDecoder().decode([ProfileInfo].self, from: try await send(request("v1/profiles")))
     }
 
-    /// Exchange the code shown by the engine for a token. Stores and returns it.
+    /// Exchange the code shown by the engine for this device's own credential.
     @discardableResult
-    public func pair(code: String, deviceName: String) async throws -> String {
+    public func pair(code: String, deviceName: String, platform: String) async throws -> PairResult {
         var r = request("v1/pair", method: "POST")
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        r.httpBody = try JSONSerialization.data(withJSONObject: ["code": code, "device_name": deviceName])
+        r.httpBody = try JSONSerialization.data(withJSONObject: ["code": code, "device_name": deviceName, "platform": platform])
         do {
-            let d = try await send(r)
-            let t = try JSONDecoder().decode([String: String].self, from: d)["token"] ?? ""
-            token = t
-            return t
+            let result = try JSONDecoder().decode(PairResult.self, from: try await send(r))
+            token = result.token
+            return result
         } catch TranscriptionError.http(403, _) {
             throw TranscriptionError.pairingRejected
+        } catch TranscriptionError.http(429, _) {
+            throw TranscriptionError.pairingRejected
         }
+    }
+
+    /// Ask the computer to allow this device without a code. The computer shows the same match code.
+    public func requestPairing(deviceName: String, platform: String) async throws -> PairingRequest {
+        var r = request("v1/pair/requests", method: "POST")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: ["device_name": deviceName, "platform": platform])
+        return try JSONDecoder().decode(PairingRequest.self, from: try await send(r))
+    }
+
+    /// Poll a pairing request. The token comes once, on the first poll after it is allowed.
+    public func pollPairing(_ requestID: String) async throws -> PairingDecision {
+        struct Poll: Decodable {
+            let status: String
+            let token: String?
+            let device_id: String?
+            let server_id: String?
+            let server_name: String?
+        }
+        let p: Poll
+        do { p = try JSONDecoder().decode(Poll.self, from: try await send(request("v1/pair/requests/\(requestID)"))) }
+        catch TranscriptionError.http(404, _) { return .expired }
+        switch p.status {
+        case "approved":
+            guard let t = p.token else { return .expired }
+            token = t
+            return .approved(PairResult(token: t, deviceID: p.device_id, serverID: p.server_id, serverName: p.server_name))
+        case "denied": return .denied
+        default: return .pending
+        }
+    }
+
+    /// The heartbeat. Throws `.notPaired` on 401, and `.http(404, …)` for a loopback client without a token.
+    public func thisDevice(timeout: TimeInterval = 5) async throws -> DeviceSelf {
+        try JSONDecoder().decode(DeviceSelf.self, from: try await send(request("v1/devices/me", timeout: timeout)))
+    }
+
+    /// A new token for this device. Store it before using it: the old one keeps working until then.
+    public func rotate() async throws -> String {
+        struct Rotated: Decodable { let token: String }
+        return try JSONDecoder().decode(Rotated.self, from: try await send(request("v1/devices/me/rotate", method: "POST"))).token
+    }
+
+    /// Forget this device on the computer.
+    public func unpair() async throws {
+        _ = try await send(request("v1/devices/me", method: "DELETE"))
+    }
+
+    public func health(timeout: TimeInterval) async throws -> Health {
+        try JSONDecoder().decode(Health.self, from: try await send(request("v1/health", timeout: timeout)))
     }
 
     public func job(_ id: String) async throws -> Job {

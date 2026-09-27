@@ -106,11 +106,30 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
 
     override func startLoading() {
         Self.requests.append(request)
+        if request.url?.host() == "down.local" {
+            client?.urlProtocol(self, didFailWithError: URLError(.cannotConnectToHost))
+            return
+        }
         let path = request.url!.path
         let (code, body, type): (Int, Data, String) = {
             switch (request.httpMethod ?? "GET", path) {
+            case ("GET", "/v1/health"):
+                return (200, Data(#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
             case ("POST", "/v1/pair"):
-                return request.bodyStreamData.contains("123456") ? (200, Data(#"{"token":"tok"}"#.utf8), "application/json") : (403, Data(), "application/json")
+                return request.bodyStreamData.contains("123456") ? (200, Data(#"{"token":"tok","device_id":"d1","server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json") : (403, Data(), "application/json")
+            case ("GET", "/v1/devices/me"):
+                switch request.value(forHTTPHeaderField: "Authorization") {
+                case "Bearer tok", "Bearer tok2":
+                    return (200, Data(#"{"device_id":"d1","name":"test","platform":"macos","paired_at":"2026-08-01T10:00:00+00:00","last_seen":"2026-09-27T10:00:00+00:00","server_id":"srv-1","rotate_after":"2026-08-31T10:00:00+00:00","expires_if_idle_after":"2027-01-01T00:00:00+00:00"}"#.utf8), "application/json")
+                case nil: return (404, Data(#"{"detail":"this client is not a paired device (loopback or static token)"}"#.utf8), "application/json")
+                default: return (401, Data(), "application/json")
+                }
+            case ("POST", "/v1/devices/me/rotate"):
+                return (200, Data(#"{"token":"tok2","device_id":"d1"}"#.utf8), "application/json")
+            case ("POST", "/v1/pair/requests"):
+                return (202, Data(#"{"request_id":"r1","name":"test","platform":"ios","match_code":"4821","created_at":"2026-09-27T10:00:00+00:00","status":"pending"}"#.utf8), "application/json")
+            case ("GET", "/v1/pair/requests/r1"):
+                return (200, Data(#"{"status":"approved","token":"tok","device_id":"d1","server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload"):
                 return (200, Data(#"{"id":"j1","profile":"solo","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/events"):
@@ -169,16 +188,46 @@ extension URLRequest {
 
     @Test func pairing() async throws {
         let svc = service()
-        await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test") }
-        let t = try await svc.pair(code: "123456", deviceName: "test")
+        await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test", platform: "macos") }
+        let t = try await svc.pair(code: "123456", deviceName: "test", platform: "macos").token
         #expect(t == "tok")
         #expect(svc.token == "tok")
+    }
+
+    @Test func pairResultCarriesTheEngineIdentity() async throws {
+        StubEngine.requests = []
+        let r = try await service().pair(code: "123456", deviceName: "Kari's iPhone", platform: "ios")
+        #expect(r == .init(token: "tok", deviceID: "d1", serverID: "srv-1", serverName: "Brasscribe on Studio"))
+        let body = try #require(StubEngine.requests.first { $0.url?.path == "/v1/pair" }).bodyStreamData
+        #expect(body.contains(#""platform":"ios""#))
+    }
+
+    @Test func heartbeatRotationAndApproveOnComputer() async throws {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [StubEngine.self]
+        let session = URLSession(configuration: cfg)
+        let base = URL(string: "http://engine.local:8765")!
+        let me = try await CompanionService(baseURL: base, token: "tok", session: session).thisDevice()
+        #expect(me.serverID == "srv-1" && me.deviceID == "d1")
+        #expect(me.rotateAfter == ISO8601DateFormatter().date(from: "2026-08-31T10:00:00Z"))
+        await #expect(throws: TranscriptionError.notPaired) { try await CompanionService(baseURL: base, token: "stale", session: session).thisDevice() }
+        await #expect(throws: TranscriptionError.http(404, #"{"detail":"this client is not a paired device (loopback or static token)"}"#)) {
+            try await CompanionService(baseURL: base, session: session).thisDevice()
+        }
+        #expect(try await CompanionService(baseURL: base, token: "tok", session: session).rotate() == "tok2")
+
+        let svc = CompanionService(baseURL: base, session: session)
+        let req = try await svc.requestPairing(deviceName: "Kari's iPhone", platform: "ios")
+        #expect(req.matchCode == "4821" && req.requestID == "r1")
+        #expect(try await svc.pollPairing("r1") == .approved(.init(token: "tok", deviceID: "d1", serverID: "srv-1", serverName: "Brasscribe on Studio")))
+        #expect(svc.token == "tok")
+        #expect(try await svc.pollPairing("gone") == .expired)
     }
 
     @Test func fullJob() async throws {
         StubEngine.requests = []
         let svc = service()
-        try await svc.pair(code: "123456", deviceName: "test")
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
         let audio = FileManager.default.temporaryDirectory.appending(path: "a.wav")
         try Data(repeating: 1, count: 3000).write(to: audio)
         var stages: [StageKind] = []
@@ -212,5 +261,98 @@ extension URLRequest {
         try await svc.deleteRun(jobID: "j1")
         #expect(StubEngine.requests.contains { $0.httpMethod == "PATCH" && $0.url?.path == "/v1/runs/j1" })
         #expect(StubEngine.requests.contains { $0.httpMethod == "DELETE" && $0.url?.path == "/v1/runs/j1" })
+    }
+
+    // MARK: connection monitor against the stub engine
+
+    static let now = ISO8601DateFormatter().date(from: "2026-09-27T12:00:00Z")!
+
+    @MainActor func monitor(_ records: [EngineRecord], found: URL? = nil) -> (ConnectionMonitor, InMemoryCredentialStore) {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [StubEngine.self]
+        let store = InMemoryCredentialStore(records)
+        let m = ConnectionMonitor(store: store, session: URLSession(configuration: cfg), find: { _ in found }, now: { Self.now })
+        return (m, store)
+    }
+
+    @Test @MainActor func heartbeatConnectsAndRotatesAMonthOldToken() async throws {
+        StubEngine.requests = []
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://engine.local:8765")
+        let (m, store) = monitor([r])
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        // rotate_after (2026-08-31) has passed: the new token is stored
+        #expect(StubEngine.requests.contains { $0.httpMethod == "POST" && $0.url?.path == "/v1/devices/me/rotate" })
+        #expect(try store.record(serverID: "srv-1")?.token == "tok2")
+        #expect(try store.record(serverID: "srv-1")?.lastOK == Self.now)
+        #expect(m.record?.deviceID == "d1")
+    }
+
+    @Test @MainActor func heartbeatFindsTheEngineAtItsNewAddress() async throws {
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://down.local:8765",
+                             rotateAfter: Self.now.addingTimeInterval(86_400))
+        let (m, store) = monitor([r], found: URL(string: "http://engine.local:9000")!)
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        #expect(try store.record(serverID: "srv-1")?.lastAddress == "http://engine.local:9000")
+        #expect(try store.all().count == 1)   // an address change keeps the same credential record
+    }
+
+    @Test @MainActor func heartbeatUnreachableIsReconnectingNotPairAgain() async throws {
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://down.local:8765")
+        let (m, store) = monitor([r])
+        m.resume(); m.suspend()   // start the machine without a running loop
+        #expect(await m.heartbeat() == 2)
+        #expect(m.state == .reconnecting(serverName: "Brasscribe on Studio"))
+        #expect(try store.record(serverID: "srv-1") == r)
+    }
+
+    @Test @MainActor func heartbeatAnotherEngineAtTheOldAddressKeepsTheRecord() async throws {
+        let r = EngineRecord(serverID: "srv-old", serverName: "Brasscribe on Old", token: "tok", lastAddress: "http://engine.local:8765")
+        let (m, store) = monitor([r])
+        m.resume(); m.suspend()
+        #expect(await m.heartbeat() == 2)
+        #expect(m.state == .reconnecting(serverName: "Brasscribe on Old"))
+        #expect(try store.record(serverID: "srv-old") == r)
+    }
+
+    @Test @MainActor func heartbeat401AsksToPairAgain() async throws {
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "revoked", lastAddress: "http://engine.local:8765")
+        let (m, _) = monitor([r])
+        m.resume(); m.suspend()
+        #expect(await m.heartbeat() == nil)
+        #expect(m.state == .needsPairing(serverName: "Brasscribe on Studio"))
+    }
+
+    @Test @MainActor func migratedTokenLearnsItsEngineOnFirstContact() async throws {
+        let provisional = EngineRecord(serverID: "", serverName: "", token: "tok", lastAddress: "http://engine.local:8765",
+                                       rotateAfter: nil)
+        let (m, store) = monitor([provisional])
+        #expect(m.record == provisional)
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        #expect(try store.record(serverID: "") == nil)
+        #expect(try store.record(serverID: "srv-1")?.serverName == "Brasscribe on Studio")
+    }
+
+    @Test @MainActor func pairingFromALinkAndUnpairing() async throws {
+        StubEngine.requests = []
+        let (m, store) = monitor([])
+        let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-1&name=Brasscribe%20on%20Studio&h=down.local:8765,engine.local:8765&code=123456"))
+        #expect(try await m.pair(link: link, deviceName: "Kari's iPhone", platform: "ios") == nil)
+        #expect(try store.record(serverID: "srv-1")?.token == "tok")
+        #expect(m.record?.lastAddress == "http://engine.local:8765")
+        m.suspend()
+        // a link without a code: the address to ask for approval at
+        let noCode = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-1&name=x&h=engine.local:8765"))
+        #expect(try await m.pair(link: noCode, deviceName: "x", platform: "ios")?.absoluteString == "http://engine.local:8765")
+        // a link for another engine is not paired with whatever answers at the address
+        let other = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-9&name=x&h=engine.local:8765&code=123456"))
+        await #expect(throws: TranscriptionError.self) { try await m.pair(link: other, deviceName: "x", platform: "ios") }
+
+        await m.forget()
+        #expect(StubEngine.requests.contains { $0.httpMethod == "DELETE" && $0.url?.path == "/v1/devices/me" })
+        #expect(try store.all().isEmpty)
+        #expect(m.record == nil && m.state == .offline)
     }
 }
