@@ -332,7 +332,12 @@ main.guide { padding-left: var(--bc-space-6); padding-right: var(--bc-space-6); 
 .research-teaser .teaser-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--bc-space-10); align-items: center; }
 .research-teaser figure { margin: 0; }
 .research-teaser .diagram { max-width: 520px; }
+.research-teaser .teaser-narrow { display: none; max-width: 400px; margin: 0; }
 @media (max-width: 900px) { .research-teaser .teaser-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .research-teaser .teaser-wide { display: none; }
+  .research-teaser .teaser-narrow { display: block; }
+}
 
 @media (forced-colors: active) {
   .diagram .box, .diagram .box.model, .diagram .box.human { fill: Canvas; stroke: CanvasText; }
