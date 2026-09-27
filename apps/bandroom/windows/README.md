@@ -21,6 +21,13 @@ dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x6
 $env:BRASSCRIBE_BANDROOM_WORKSPACE = "C:\src\brasscribe"; .\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
 ```
 
+The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the 16-bit
+build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the
+repository root once (needs `gh auth login`). Bandroom passes the folder to the engine as
+`BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`; without it `engine.log` says the band
+sounds are missing and Studio plays General MIDI sounds. The SoundFont adds 195 MB to the install (about 150 MB
+compressed). The engine's MP3 export does not use it: that is MuseScore's own sounds.
+
 On macOS: `tools/check-macos.sh` runs the Core tests and type-checks the app's C# (the XAML compiler only runs
 on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
 

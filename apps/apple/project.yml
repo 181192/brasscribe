@@ -46,8 +46,9 @@ targets:
       - path: Frameworks/VerovioResources
         type: folder
         buildPhase: resources
-      # The band sounds (scripts/stage-band-sounds.sh): PlaybackKit loads Sounds/brasscribe-band*.sf2
-      - path: Sounds
+      # The band sounds (scripts/stage-band-sounds.sh), one SoundFont per platform (iOS the phone build):
+      # PlaybackKit loads Sounds/brasscribe-band*.sf2
+      - path: Sounds/${platform}/Sounds
         type: folder
         buildPhase: resources
         optional: true

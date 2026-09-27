@@ -79,18 +79,22 @@ jobs:
           ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358" scripts/build-core.sh
           scripts/fetch-sfizz.sh
 
-      # The band sounds are built, not in git (sounds/tools/band_sounds.py). A release without them
-      # would play only the basic tier, so the build stops here instead.
-      - name: Fetch and verify the band sounds
+      # The band sounds are not in git: the pinned pack (sounds/band-sounds.json) is fetched from this
+      # repository's release and bundled. A release without them would play only the basic tier, so
+      # the build stops here instead.
+      - name: Band sounds (phone SoundFont)
         if: ${{ inputs.release }}
-        env:
-          BRASSCRIBE_BAND_SOUNDS_URL: ${{ vars.BRASSCRIBE_BAND_SOUNDS_URL }}
-        run: python3 "${{ github.workspace }}/sounds/tools/band_sounds.py" fetch
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-mobile.sf2
 
       - name: Release APK (unsigned)
         if: ${{ inputs.release }}
         run: |
           ./gradlew assembleRelease --stacktrace
+          for apk in app/build/outputs/apk/release/*.apk; do
+            unzip -l "$apk" | grep -q "assets/sounds/brasscribe-band-mobile.sf2" || { echo "$apk has no band SoundFont" >&2; exit 1; }
+          done
           mkdir -p "$RUNNER_TEMP/out"
           cp app/build/outputs/apk/release/*.apk "$RUNNER_TEMP/out/brasscribe-play-android-unsigned.apk"
 

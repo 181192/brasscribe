@@ -1,0 +1,2 @@
+Band sounds adapted from VSCO 2 Community Edition (CC0) and the University of Iowa Musical Instrument Samples;
+drum kit from MuseScore MS Basic (MIT). Sources and licences: sounds/manifest.json.

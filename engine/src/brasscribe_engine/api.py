@@ -26,6 +26,7 @@ import hmac
 import json
 import secrets
 import shutil
+import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -43,6 +44,7 @@ from .jobs import TERMINAL, Job, JobManager
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 STATIC = Path(__file__).resolve().parent / "static"
+BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from BRASSCRIBE_BAND_SOUNDS_DIR
 HEARTBEAT_S = 15.0
 ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 
@@ -850,6 +852,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         """State of the latest conformance run started by this server, with the last lines of its log."""
         return m.ConformanceRun(**conformance_runner.snapshot())
 
+    band = settings.band_sounds_dir
+    if band is not None:
+        # Before "/": the first matching mount wins.
+        if all((band / f).is_file() for f in BAND_SOUND_FILES):
+            app.mount("/assets/band", StaticFiles(directory=band), name="band-sounds")
+        else:
+            print(f"band sounds: {band} has no {' and '.join(BAND_SOUND_FILES)}; Studio plays General MIDI sounds",
+                  file=sys.stderr, flush=True)
     if STATIC.is_dir():
         app.mount("/", StaticFiles(directory=STATIC, html=True), name="studio")
     return app

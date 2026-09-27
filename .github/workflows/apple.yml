@@ -85,15 +85,14 @@ jobs:
           dest=$(scripts/newest-iphone.sh)
           make test IPHONE_DEST="$dest"
 
-      # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
-      # The band sounds are built, not in git (sounds/tools/band_sounds.py). A release without them
-      # would play only the basic tier, so the build stops here instead.
-      - name: Fetch and verify the band sounds
+      # The band sounds are not in git: the pinned pack (sounds/band-sounds.json) is fetched from this
+      # repository's release and bundled (macOS the 16-bit SoundFont, iOS the phone one). A release
+      # without them would play only the basic tier, so the build stops here instead.
+      - name: Band sounds
         if: ${{ inputs.release }}
-        env:
-          BRASSCRIBE_BAND_SOUNDS_URL: ${{ vars.BRASSCRIBE_BAND_SOUNDS_URL }}
-        run: python3 "${{ github.workspace }}/sounds/tools/band_sounds.py" fetch
+        uses: ./.github/actions/band-sounds
 
+      # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
       - name: Release build of the macOS app
         if: ${{ inputs.release }}
         run: |
@@ -102,6 +101,7 @@ jobs:
             -scheme BrasscribePlay-macOS -configuration Release -destination 'generic/platform=macOS' build
           app=$(find build/DerivedData/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
           [ -n "$app" ] || { echo "no .app under build/DerivedData/Build/Products/Release" >&2; exit 1; }
+          [ -s "$app/Contents/Resources/Sounds/brasscribe-band-16bit.sf2" ] || { echo "the app has no band SoundFont" >&2; exit 1; }
           mkdir -p "$RUNNER_TEMP/out"
           ditto -c -k --keepParent "$app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip"
 

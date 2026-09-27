@@ -296,12 +296,13 @@ For the A/B sets, keep `key.json` away from listeners and score with `sounds/ab-
   - alphaTab at loop wrap and seek (it probably stops voices dead there too).
   - Real-time behaviour on a physical Android phone (xrun count, sfizz memory of about 100 MB estimated).
   - Studio in a browser.
-- **Release builds need the band sounds hosted.** The SoundFonts are built files, not in git, and the release workflows build in CI. Before this change, a CI-built app shipped without them and played only the basic tier. Now:
-  - the Apple, Android and Windows release jobs run `sounds/tools/band_sounds.py fetch`;
-  - it downloads the pinned files (`sounds/band-sounds.json`, sha256) from the repository variable `BRASSCRIBE_BAND_SOUNDS_URL`;
-  - the build **fails** when the variable is unset or a hash does not match.
+- **Every build bundles the band sounds; users never download them.** The SoundFonts are built files, not in git, and the repository is private, so they are published as assets of a pre-release in this repository (`sounds-2026.09.27`) and bundled at build time:
+  - `sounds/band-sounds.json` pins the pack: the release tag plus the size and sha256 of each file;
+  - `sounds/tools/band_sounds.py fetch` (`pixi run fetch-sounds` locally, `.github/actions/band-sounds` in CI, cached per pin) downloads them with `gh release download` and checks them against the pin and the release's SHA256SUMS;
+  - the Android, Apple and Windows release jobs and the Bandroom Windows job use it, and **fail** when the files cannot be had or a hash does not match.
 
-  To do: upload `brasscribe-band-16bit.sf2` and `brasscribe-band-mobile.sf2`, e.g. as assets of a `band-sounds-<sha>` GitHub release, and set the variable. Re-run `band_sounds.py pin` whenever the SoundFonts are rebuilt.
+  A new pack: rebuild, `band_sounds.py pin --version sounds-YYYY.MM.DD`, then publish the files and SHA256SUMS under that tag (see the script's docstring).
+- **Who bundles which file.** Android and iOS/iPadOS: `brasscribe-band-mobile.sf2` (77 MB). macOS, Windows Play and both Bandroom apps: `brasscribe-band-16bit.sf2` (195 MB). Bandroom puts it under `band/` with `mapping.json` and passes the folder to the engine as `BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`. The engine's MP3 export does not use it: that is MuseScore's own sounds.
 - **Memory is not measured on devices.**
   - Apple loads each part's preset into its own sampler, in memory (needed against cause 1). The sustain samples of all 17 brass presets add up to about 270 MB at 16-bit, or 535 MB if the sampler keeps float32 and does not share samples between instances. That is fine on a Mac, but has to be measured on an iPhone before release. A quartet or the minimal band loads a fraction of it.
   - Android's alphaTab holds the whole phone SoundFont as floats: about 155 MB, against about 117 MB before. The full 16-bit file ran out of memory at 298 MB of floats.

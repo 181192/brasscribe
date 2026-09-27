@@ -1,0 +1,30 @@
+name: band sounds
+description: >
+  Fetch the pinned band SoundFonts (sounds/band-sounds.json: a release of this repository) into
+  data/sounds/band, verify them against the pin and cache them per pack. Fails when they cannot be
+  had, so no build ships without the band sounds.
+inputs:
+  files:
+    description: Space-separated file names from sounds/band-sounds.json (default all)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    # Keyed on the pin itself: a new pack (version or hashes) is a new cache entry.
+    - uses: actions/cache@v4
+      with:
+        path: data/sounds/band
+        key: band-sounds-${{ runner.os }}-${{ hashFiles('sounds/band-sounds.json') }}-${{ inputs.files }}
+
+    # gh reads GH_TOKEN; the job's token needs contents: read for a release of this private repository.
+    - name: Fetch and verify the band sounds
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        FILES: ${{ inputs.files }}
+      run: |
+        py=python3; command -v python3 >/dev/null 2>&1 && python3 -c "" 2>/dev/null || py=python
+        # shellcheck disable=SC2086
+        "$py" sounds/tools/band_sounds.py fetch $FILES
