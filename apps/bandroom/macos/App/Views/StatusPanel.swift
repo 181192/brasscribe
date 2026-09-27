@@ -1,0 +1,433 @@
+import BandroomKit
+import SwiftUI
+
+/// The popover content (design/server-app.md §7), also shown as the "Brasscribe on this Mac" window.
+/// Top to bottom is the reading and focus order.
+struct StatusPanel: View {
+    @Environment(AppModel.self) private var app
+    @AccessibilityFocusState private var voiceOverOnStatus: Bool
+    @FocusState private var primaryFocused: Bool
+    @State private var techOpen = false
+    @State private var confirm: Confirmation?
+
+    enum Confirmation: Equatable { case stop, restart }
+
+    var body: some View {
+        ZStack {
+            switch app.panelPage {
+            case .status: status
+            case .phones: PhonesView()
+            }
+            if let confirm { confirmation(confirm) }
+        }
+        .animation(nil, value: app.panelPage)
+    }
+
+    private var state: DisplayState { app.displayState }
+
+    private var status: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            lead
+            primaryButton
+            if !app.monitor.requests.isEmpty {
+                ForEach(app.monitor.requests) { AllowCard(request: $0) }
+            }
+            if app.isRunning || app.monitor.status != nil { phonesRow }
+            if app.isRunning { thisComputer }
+            actions
+            techDetails
+        }
+        .padding(14)
+        .onAppear {
+            primaryFocused = true
+            voiceOverOnStatus = true
+        }
+    }
+
+    // MARK: header
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Mark(size: 20).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Brasscribe on \(app.hostName)")
+                    .brFont(.heading)
+                    .foregroundStyle(Color.Brasscribe.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: 6) {
+                    StatusIcon(state: state)
+                    Text(Strings.statusWord(state)).brFont(.body).foregroundStyle(Color.Brasscribe.text)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityFocused($voiceOverOnStatus)
+            }
+            Spacer(minLength: 4)
+            MoreMenu()
+        }
+    }
+
+    // MARK: lead: what is happening now, or why not
+
+    @ViewBuilder private var lead: some View {
+        switch state {
+        case .busy:
+            if let job = app.monitor.job { NowCard(job: job) }
+        case .running:
+            Text("Ready. Phones and tablets can send recordings.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+        case .stopped:
+            Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+        case .updating:
+            Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+        case .starting:
+            EmptyView()
+        case .settingUp(let n):
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Setting up").brFont(.bodyStrong)
+                BrassProgress(fraction: Double(n) / 100)
+            }
+        case .attention(let p):
+            ProblemCard(title: Strings.problemTitle(p), why: Strings.problemWhy(p), symbol: "exclamationmark.triangle.fill",
+                        tint: Color.Brasscribe.warning)
+            if app.isBusy, let job = app.monitor.job { NowCard(job: job) }
+        case .error:
+            ProblemCard(title: String(localized: "Brasscribe stopped unexpectedly"),
+                        why: String(localized: "It tried to start three times. Recordings on your phones are safe."),
+                        symbol: "xmark.circle.fill", tint: Color.Brasscribe.error)
+        }
+    }
+
+    // MARK: the one primary
+
+    @ViewBuilder private var primaryButton: some View {
+        switch state {
+        case .running, .busy:
+            Button { app.openWindow?("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
+                .buttonStyle(.brPrimary).focused($primaryFocused)
+        case .stopped:
+            Button { app.start() } label: { Text("Start Brasscribe") }
+                .buttonStyle(.brPrimary).focused($primaryFocused)
+        case .settingUp:
+            Button { app.openWindow?("setup") } label: { Text("Finish setting up") }
+                .buttonStyle(.brPrimary).focused($primaryFocused)
+        case .error:
+            Button { app.tryAgain() } label: { Text("Try again") }
+                .buttonStyle(.brPrimary).focused($primaryFocused)
+            Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }
+                .buttonStyle(.brPlain)
+        case .attention(let p):
+            Button { fix(p) } label: { Text(Strings.problemFix(p)) }
+                .buttonStyle(.brPrimary).focused($primaryFocused)
+        case .starting, .updating:
+            EmptyView()
+        }
+    }
+
+    private func fix(_ p: Problem) {
+        switch p {
+        case .lowDisk: app.openStorageSettings()
+        case .missingDownload: app.openWindow?("setup")
+        case .noFreePort: app.tryAgain()
+        }
+    }
+
+    // MARK: phones
+
+    private var phonesRow: some View {
+        Button {
+            app.panelPage = .phones
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "iphone").font(.system(size: 17)).frame(width: 24).foregroundStyle(Color.Brasscribe.text)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Phones and tablets").brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
+                    Text(Strings.devicesSummary(connected: app.monitor.status?.onlineDevices ?? 0,
+                                                paired: app.monitor.status?.pairedDevices ?? 0))
+                        .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Color.Brasscribe.textMuted)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .card(padding: 10)
+    }
+
+    // MARK: this computer
+
+    private var thisComputer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionLabel(text: "This computer").padding(.bottom, 4)
+            if let host = app.host {
+                HealthRow(symbol: "cpu", label: "Work load", value: Strings.load(host.workLoad), meter: host.workLoad.rawValue)
+                Divider()
+                HealthRow(symbol: "memorychip", label: "Memory", value: Strings.memory(host.memory), meter: host.memory.rawValue)
+                Divider()
+                HealthRow(symbol: "internaldrive", label: "Free space", value: String(localized: "\(host.diskFreeGB) GB free"), meter: nil)
+                Divider()
+            }
+            HealthRow(symbol: "checkmark.circle", label: "Ready to make scores",
+                      value: app.models.isReady ? String(localized: "Ready") : String(localized: "Missing one download"), meter: nil)
+            Text(app.monitor.health?.device == "cpu" ? String(localized: "Processor only: slower")
+                 : String(localized: "Uses the graphics chip"))
+                .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                .padding(.top, 2)
+        }
+        .card(padding: 12)
+    }
+
+    // MARK: actions
+
+    private var actions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if app.isRunning || state == .starting {
+                HStack(spacing: 8) {
+                    Button { requestRestart() } label: { Label("Restart", systemImage: "arrow.clockwise") }
+                        .buttonStyle(.brOutline)
+                    Button { requestStop() } label: { Label("Stop", systemImage: "power") }
+                        .buttonStyle(.brOutline)
+                }
+            }
+            if app.isRunning {
+                Button { app.openStudio() } label: { Label("Open Studio", systemImage: "arrow.up.forward.square") }
+                    .buttonStyle(.brPlain)
+            }
+        }
+    }
+
+    private func requestStop() {
+        if app.isBusy { confirm = .stop } else { app.stopNow() }
+    }
+
+    private func requestRestart() {
+        if app.isBusy { confirm = .restart } else { app.restartNow() }
+    }
+
+    // MARK: tech person
+
+    private var techDetails: some View {
+        Disclosure(title: "Details for the band's tech person", isExpanded: $techOpen) {
+            VStack(alignment: .leading, spacing: 10) {
+                Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 10, verticalSpacing: 3) {
+                    techRow("Address", app.addresses.joined(separator: ", "))
+                    techRow("Port", app.supervisor.port.map(String.init) ?? "–")
+                    techRow("Version", "\(Bundle.main.shortVersion) (engine \(app.monitor.status?.version ?? "–"))")
+                    techRow("Runs on", Strings.runsOn(app.monitor.health?.device))
+                    techRow("Server", app.monitor.status.map { String($0.serverId.prefix(8)) + "…" } ?? "–")
+                    techRow("Data folder", app.paths.data.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                }
+                .brFont(.mono)
+                .foregroundStyle(Color.Brasscribe.text)
+                .textSelection(.enabled)
+                HStack(spacing: 8) {
+                    Button { app.showLogs() } label: { Text("Show logs") }.buttonStyle(.brOutline)
+                    Button { app.copyDiagnostics() } label: { Text("Copy diagnostics") }.buttonStyle(.brOutline)
+                }
+            }
+        }
+    }
+
+    private func techRow(_ label: LocalizedStringKey, _ value: String) -> some View {
+        GridRow {
+            Text(label).foregroundStyle(Color.Brasscribe.textMuted)
+            Text(value).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: confirmations (system rule 9)
+
+    @ViewBuilder private func confirmation(_ c: Confirmation) -> some View {
+        let title = app.monitor.job?.title ?? String(localized: "this score")
+        ZStack {
+            Color.Brasscribe.scrim.ignoresSafeArea().onTapGesture { confirm = nil }
+            VStack(spacing: 12) {
+                Mark(size: 36)
+                switch c {
+                case .stop:
+                    Text("Stop while “\(title)” is being made?").brFont(.bodyStrong).multilineTextAlignment(.center)
+                    Text("The phone keeps the recording and can send it again.")
+                        .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+                    Button { confirm = nil; app.stopNow() } label: { Text("Stop now") }.buttonStyle(.brPrimary)
+                    Button { confirm = nil } label: { Text("Keep going").frame(maxWidth: .infinity) }
+                        .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
+                        .keyboardShortcut(.cancelAction)
+                case .restart:
+                    Text("Restart when “\(title)” is done?").brFont(.bodyStrong).multilineTextAlignment(.center)
+                    Button { confirm = nil; app.restartWhenDone = true } label: { Text("Restart when done") }.buttonStyle(.brPrimary)
+                    Button { confirm = nil; app.restartNow() } label: { Text("Restart now").frame(maxWidth: .infinity) }
+                        .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
+                    Button { confirm = nil } label: { Text("Cancel") }.buttonStyle(.brPlain).keyboardShortcut(.cancelAction)
+                }
+            }
+            .padding(16)
+            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg).strokeBorder(Color.Brasscribe.border))
+            .padding(24)
+            .accessibilityAddTraits(.isModal)
+        }
+    }
+}
+
+/// Status icon: shape first, status colour on the icon only (§6.1).
+struct StatusIcon: View {
+    let state: DisplayState
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(tint)
+            .accessibilityHidden(true)
+    }
+
+    private var symbol: String {
+        switch state {
+        case .running, .busy: "checkmark.circle"
+        case .attention: "exclamationmark.triangle.fill"
+        case .stopped: "stop.fill"
+        case .starting: "ellipsis"
+        case .updating: "arrow.clockwise"
+        case .error: "xmark.circle.fill"
+        case .settingUp: "arrow.down.circle"
+        }
+    }
+
+    private var tint: Color {
+        switch state {
+        case .running, .busy: Color.Brasscribe.success
+        case .attention: Color.Brasscribe.warning
+        case .error: Color.Brasscribe.error
+        default: Color.Brasscribe.text
+        }
+    }
+}
+
+struct NowCard: View {
+    let job: JobSummary
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionLabel(text: "Now")
+            Text(Strings.step(job.step)).brFont(.heading).foregroundStyle(Color.Brasscribe.text)
+            if let title = job.title {
+                Text("“\(title)”").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+            }
+            BrassProgress(fraction: Double(job.percent) / 100).padding(.vertical, 4)
+            HStack {
+                Group {
+                    if let m = job.minutesLeft {
+                        Text("\(job.percent)% · about \(m) min left")
+                    } else {
+                        Text("\(job.percent)%")
+                    }
+                }
+                .brFont(.callout).foregroundStyle(Color.Brasscribe.text)
+                Spacer()
+                if job.waiting > 0 {
+                    Text("\(job.waiting) more waiting").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                }
+            }
+        }
+        .card(padding: 12)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct ProblemCard: View {
+    let title: String
+    let why: String
+    let symbol: String
+    let tint: Color
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: symbol).foregroundStyle(tint).font(.system(size: 16)).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
+                Text(why).brFont(.callout).foregroundStyle(Color.Brasscribe.text).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .card(padding: 12)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct HealthRow: View {
+    let symbol: String
+    let label: LocalizedStringKey
+    let value: String
+    let meter: Int?
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol).frame(width: 20).foregroundStyle(Color.Brasscribe.textMuted).accessibilityHidden(true)
+            Text(label).brFont(.body).foregroundStyle(Color.Brasscribe.text)
+            Spacer()
+            Text(value).brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
+            if let meter { Meter(level: meter) }
+        }
+        .frame(minHeight: 40)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text(value))
+    }
+}
+
+/// "Allow Kari's iPhone?" with the match number (§3.4 way 1).
+struct AllowCard: View {
+    @Environment(AppModel.self) private var app
+    let request: PairRequestInfo
+    @State private var expired = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Allow \(request.name)?").brFont(.bodyStrong).multilineTextAlignment(.center)
+            if expired {
+                Text("This request has expired. Choose this computer on the phone again.")
+                    .brFont(.callout).multilineTextAlignment(.center)
+            } else {
+                Text("It can send recordings to this computer and get scores back. You can remove it any time.")
+                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+                Text("The phone shows the number:").brFont(.callout)
+                Text(request.matchCode)
+                    .brFont(.matchCode)
+                    .accessibilityLabel(Text(request.matchCode.map(String.init).joined(separator: " ")))
+                Button { decide(true) } label: { Text("Allow") }.buttonStyle(.brPrimary)
+                Button { decide(false) } label: { Text("Don't allow").frame(maxWidth: .infinity) }
+                    .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
+            }
+        }
+        .foregroundStyle(Color.Brasscribe.text)
+        .card(padding: 14)
+    }
+
+    private func decide(_ approve: Bool) {
+        Task {
+            if await !app.decide(request, approve: approve) { expired = true }
+        }
+    }
+}
+
+struct MoreMenu: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Menu {
+            Button("Open Studio") { app.openStudio() }.disabled(!app.isRunning)
+            Button("Settings…") { NSApp.activate(); openSettings() }
+            Toggle("Start when I log in", isOn: Binding(get: { app.loginItemEnabled }, set: { app.setLoginItem($0) }))
+            Button("About Brasscribe Bandroom") {
+                NSApp.activate()
+                NSApp.orderFrontStandardAboutPanel(nil)
+            }
+            Divider()
+            Button("Quit Brasscribe Bandroom") { NSApp.terminate(nil) }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 15, weight: .bold)).frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel(Text("More"))
+        .help(Text("More"))
+    }
+}
