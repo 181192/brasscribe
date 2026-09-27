@@ -89,6 +89,15 @@ def loudest_window_db(x: np.ndarray, sr: int = SR, win: float = 0.3) -> float:
     return db(float(np.sqrt(np.max(c[n:] - c[:-n]) / n)))
 
 
+def k_weight(x: np.ndarray, sr: int = SR) -> np.ndarray:
+    """ITU-R BS.1770 K-weighting (pre-filter shelf + RLB high-pass), as pyloudnorm applies it."""
+    import pyloudnorm
+    y = x
+    for f in pyloudnorm.Meter(sr)._filters.values():
+        y = f.apply_filter(y)
+    return y
+
+
 def midi_from_name(name: str) -> int:
     """'A#1' / 'Bb1' / 'C4' -> MIDI with C4 = 60 (scientific pitch). Library offsets are applied by the caller."""
     m = re.fullmatch(r"([A-G])([#b]?)(-?\d)", name)

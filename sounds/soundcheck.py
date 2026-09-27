@@ -12,13 +12,14 @@ ENGINE is one of
   WAV:DIR         WAVs rendered elsewhere (e.g. by the AVAudioUnitSampler or alphaTab harness), one per part
 
 What is measured, per part, from the note list in phrases.json (never guessed from the audio):
-  clicks     sample-to-sample second-difference spikes more than CLICK_RATIO times the local
-             median, away from note onsets (an onset is allowed its attack transient)
+  clicks     second-difference spikes more than CLICK_RATIO times the largest one in the 60 ms
+             on either side, away from note onsets (an onset is allowed its attack transient)
   chops      note-offs followed by silence where the level falls 40 dB in under CHOP_MS: a hard cut
              instead of a release
   release    median time from note-off to 40 dB below the note's level (the audible tail)
   dropouts   held notes (>= 0.5 s) whose level falls 20 dB below their own median before the
-             note-off: the sample ran out, a loop failed, or the voice was stolen
+             note-off (the sample ran out, a loop failed, or the voice was stolen), and gaps: a
+             1 ms frame of a held note (>= 0.3 s) 40 dB below the 40 ms around it (an underrun)
   clipping   samples at or above 0.999 full scale
   level      integrated loudness of the three sustained mf notes (LUFS), for the balance table
 """
@@ -27,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -44,8 +46,9 @@ from dsp import SR  # noqa: E402
 DATA = ROOT / "data" / "sounds"
 PHRASES = DATA / "phrases"
 SFIZZ = DATA / "tools" / "bin" / "sfizz_render"
-BAND_SF2 = DATA / "band" / "brasscribe-band.sf2"
-MOBILE_SF2 = DATA / "band" / "brasscribe-band-mobile.sf2"
+BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", DATA / "built"))  # a staging build: its band/ sits next to it
+BAND_SF2 = BUILT.parent / "band" / "brasscribe-band.sf2"
+MOBILE_SF2 = BUILT.parent / "band" / "brasscribe-band-mobile.sf2"
 MSBASIC = DATA / "raw" / "msbasic" / "MS Basic.sf3"
 
 CLICK_RATIO = 3.0
@@ -53,6 +56,7 @@ CLICK_FLOOR = 2e-4  # ignore second-difference spikes below this absolute size (
 ONSET_GUARD_S = 0.03
 CHOP_MS = 12.0
 DROPOUT_DB = 20.0
+GAP_DB = 40.0
 MIN_RELEASE_MS = 60.0
 
 # Balance target, LU relative to Solo Cornet, for one player of each part at mf (the mapping's
@@ -83,7 +87,7 @@ def render(engine: str, out: Path) -> None:
         wav = out / f"{slug(name)}.wav"
         if engine == "sfizz":
             target = mapping["parts"][name]["players"][0]["target"]
-            sfz = DATA / "built" / target / f"{target}-sus.sfz"
+            sfz = BUILT / target / f"{target}-sus.sfz"
             with tempfile.TemporaryDirectory() as tmp:
                 # sfizz ignores program changes: strip nothing, it plays channel 0 notes on the SFZ
                 subprocess.run([str(SFIZZ), "--sfz", str(sfz), "--midi", str(midi), "--wav", str(Path(tmp) / "x.wav"),
@@ -138,12 +142,12 @@ def env_db(x: np.ndarray, hop: int) -> np.ndarray:
 
 def clicks(x: np.ndarray, onsets: list[float]) -> list[float]:
     """Isolated discontinuities: a second-difference spike CLICK_RATIO times larger than any in
-    the 30 ms on either side (2 ms excluded). Brass waveforms are pulse trains whose every period
+    the 60 ms on either side (2 ms excluded). Brass waveforms are pulse trains whose every period
     has a similar spike, so they never stand out against their own neighbourhood; a loop seam, a
     hard cut or a buffer glitch does."""
     from scipy.ndimage import maximum_filter1d
     d2 = np.abs(np.diff(x, n=2))
-    w, g = int(0.03 * SR), int(0.002 * SR)
+    w, g = int(0.06 * SR), int(0.002 * SR)  # 60 ms: longer than the period of the lowest pedal note (A0)
     m = maximum_filter1d(d2, size=w, origin=0)
     # max over [i-g-w, i-g) and (i+g, i+g+w]: shift a centred max filter of width w
     before = np.roll(m, g + w // 2)
@@ -162,6 +166,25 @@ def clicks(x: np.ndarray, onsets: list[float]) -> list[float]:
         if out and t - out[-1] < 0.02:
             continue
         out.append(t)
+    return out
+
+
+def gaps(x: np.ndarray, notes: list) -> list[dict]:
+    """Short silences inside held notes (an underrun, a stolen voice, a failed loop): a 1 ms RMS
+    frame more than GAP_DB below the median of the 40 ms around it."""
+    from scipy.ndimage import median_filter
+    hop = int(0.001 * SR)
+    e = env_db(x, hop)
+    ref = median_filter(e, size=41, mode="nearest")
+    out = []
+    for s, en, p, _ in notes:
+        if en - s < 0.3:
+            continue
+        a, b = int((s + 0.1) * SR / hop), int((en - 0.02) * SR / hop)
+        seg, r = e[a:b], ref[a:b]
+        hit = np.nonzero((seg < r - GAP_DB) & (r > -70))[0]
+        if len(hit):
+            out.append({"t": round((a + int(hit[0])) * hop / SR, 3), "pitch": p, "depth_db": round(float((r - seg)[hit].max()), 1)})
     return out
 
 
@@ -201,6 +224,7 @@ def analyse_part(wav: Path, part: dict) -> dict:
             releases.append(rel_ms)
             if rel_ms < CHOP_MS or rel_ms < MIN_RELEASE_MS and en - s >= 0.3:
                 chops.append({"t": round(en, 3), "pitch": p, "release_ms": round(rel_ms, 1)})
+    drops += gaps(x, notes)
     cl = clicks(x, onsets)
     meter = pyloudnorm.Meter(SR)
     sus = [n for n in notes if n[1] - n[0] >= 5.9 and n[3] == 80][:3]

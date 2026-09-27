@@ -51,7 +51,7 @@ class Bank:
             return self._inst_index[key]
         table = json.loads((BUILT / tid / "regions.json").read_text())
         a = table["articulations"][art]
-        ins = sf2.Instrument(name=f"{tid}-{art}", release_s=a["release_s"], vel_span_db=VEL_SPAN_DB)
+        ins = sf2.Instrument(name=f"{tid}-{art}", release_s=a["sf2_release_s"], vel_span_db=VEL_SPAN_DB)
         for r in a["regions"]:
             file = r["variants"][0]
             skey = f"{tid}/{file}"
@@ -123,7 +123,7 @@ def main() -> None:
     mapping = json.loads((HERE / "mapping.json").read_text())
     brass = {name: p for name, p in mapping["parts"].items()
              if p["players"][0]["target"] != "msbasic-drums" and "preset_of" not in p}
-    loudest = max(p.get("gain_db", 0.0) for p in brass.values())
+    loudest = max(p["balance_lu"] for p in mapping["parts"].values())
     bank = Bank()
     table = []
     for name, part in brass.items():
@@ -132,8 +132,12 @@ def main() -> None:
         # Balance is NOT baked into the SoundFont: AVAudioUnitSampler applies almost none of a
         # preset-level attenuation and FluidSynth applies 0.4 of it, so the apps set it as channel
         # volume instead (parts[].band_soundfont.channel_gain_db, written back to mapping.json).
-        channel_gain = round(part.get("gain_db", 0.0) - loudest - (3.0 if len(targets) > 1 else 0.0), 1)
+        channel_gain = round(part["balance_lu"] - loudest - (3.0 if len(targets) > 1 else 0.0), 1)
         bs["channel_gain_db"] = channel_gain
+        # a player that sounds one target for this part (the phone SoundFont, the SFZ tier) has no
+        # second layer to compensate for
+        bs["layered"] = len(targets) > 1
+        bs["single_voice_gain_db"] = round(part["balance_lu"] - loudest, 1)
         for art, b in (("sus", bs["bank"]), ("stac", bs["staccato_bank"])):
             zones = []
             for li, tid in enumerate(targets):
@@ -146,9 +150,15 @@ def main() -> None:
         table.append((name, bs["program"], bs["bank"], bs["staccato_bank"], "+".join(targets), channel_gain))
     for part in mapping["parts"].values():  # one-player parts that play a section principal's preset
         if "preset_of" in part:
-            part["band_soundfont"] = dict(mapping["parts"][part["preset_of"]]["band_soundfont"])
+            src = mapping["parts"][part["preset_of"]]
+            layered = len(layers(src["players"])) > 1
+            part["band_soundfont"] = {**src["band_soundfont"],
+                                      "channel_gain_db": round(part["balance_lu"] - loudest - (3.0 if layered else 0.0), 1),
+                                      "single_voice_gain_db": round(part["balance_lu"] - loudest, 1)}
     drum = mapping["parts"]["Percussion"]["band_soundfont"]
-    drum["channel_gain_db"] = round(mapping["parts"]["Percussion"].get("gain_db", 0.0) - loudest, 1)
+    drum["channel_gain_db"] = round(mapping["parts"]["Percussion"]["balance_lu"] - loudest, 1)
+    drum["single_voice_gain_db"] = drum["channel_gain_db"]
+    drum["layered"] = False
     bank.drum_kit(MSBASIC, drum["program"])
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     sf2.write_raw(args.out, "brasscribe band", bank.samples, bank.instruments, bank.presets, bits=args.bits,
