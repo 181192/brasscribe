@@ -3,8 +3,10 @@ name: ci
 # Fast checks on every push and pull request, all on Linux (the cheapest runner).
 # macOS, Windows and Android builds run only for releases (release.yml) or by hand
 # (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml).
+# Branch pushes only: a release tag doesn't start this workflow; release.yml calls it instead.
 on:
   push:
+    branches: ["**"]
     paths-ignore: &ignore
       - "site/**"
       - "**/*.md"
@@ -13,6 +15,7 @@ on:
       - ".github/workflows/pages.yml"
   pull_request:
     paths-ignore: *ignore
+  workflow_call:
   workflow_dispatch:
 
 permissions:

@@ -1,8 +1,9 @@
 name: release
 
-# On a semver tag (v1.2.3, v1.2.3-beta.1): each platform workflow builds its distributables
+# On a semver tag (v1.2.3, v1.2.3-beta.1): the fast checks from ci.yml run first (a tag push
+# doesn't start ci.yml on its own), then each platform workflow builds its distributables
 # (artifacts named dist-*, each holding ready-to-ship files) and they are attached to a GitHub
-# release. Tests are not re-run: tag a commit on main, where the checks already passed. A store
+# release. Nothing is built if the checks fail. A store
 # upload (Play, App Store, Microsoft Store) goes in as its own job that `needs:` the matching build
 # and downloads its dist-* artifact.
 on:
@@ -13,22 +14,29 @@ permissions:
   contents: read
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   core:
+    needs: checks
     uses: ./.github/workflows/core.yml
     with:
       release: true
 
   android:
+    needs: checks
     uses: ./.github/workflows/android.yml
     with:
       release: true
 
   apple:
+    needs: checks
     uses: ./.github/workflows/apple.yml
     with:
       release: true
 
   windows:
+    needs: checks
     uses: ./.github/workflows/windows.yml
     with:
       release: true
