@@ -67,6 +67,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Devices */
+        get: operations["listDevices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/devices/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get This Device
+         * @description Check the stored credential, and the paired device's heartbeat (every 20 s while the app is open;
+         *     it keeps the device `online`). 401 means pair again; anything else means the credential is still good.
+         *
+         *     A client on the engine's own computer is trusted without pairing (GET /v1/health says
+         *     `auth_required: false`) and gets 404 here; it uses GET /v1/health as its heartbeat instead and is
+         *     not counted as an online device.
+         */
+        get: operations["getThisDevice"];
+        put?: never;
+        post?: never;
+        /** Unpair This Device */
+        delete: operations["unpairThisDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/devices/me/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate Device Token */
+        post: operations["rotateDeviceToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/devices/{device_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Device */
+        delete: operations["revokeDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/health": {
         parameters: {
             query?: never;
@@ -511,6 +588,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/pair/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Pairing
+         * @description Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
+         *     poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+         */
+        post: operations["requestPairing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pair/requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll Pairing Request */
+        get: operations["pollPairingRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pairing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pairing */
+        get: operations["getPairing"];
+        put?: never;
+        /**
+         * Open Pairing
+         * @description Show a new code (default: 10 minutes, single use), or extend the one on screen.
+         */
+        post: operations["openPairing"];
+        /** Close Pairing */
+        delete: operations["closePairing"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pairing/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Pairing Requests */
+        get: operations["listPairingRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pairing/requests/{request_id}/{decision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Pairing Request */
+        post: operations["decidePairingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/parity": {
         parameters: {
             query?: never;
@@ -661,6 +832,26 @@ export interface paths {
          * @description Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).
          */
         get: operations["listSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Status
+         * @description For the desktop helper: who is connected, whether pairing is open, what the engine is doing.
+         */
+        get: operations["getStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -964,6 +1155,101 @@ export interface components {
             /** Source Url */
             source_url?: string | null;
         };
+        /** DeviceInfo */
+        DeviceInfo: {
+            /** Device Id */
+            device_id: string;
+            /**
+             * Last Seen
+             * @description ISO 8601, UTC; updated on every request the device makes
+             */
+            last_seen: string;
+            /** Name */
+            name: string;
+            /**
+             * Online
+             * @description seen in the last 60 seconds (Play apps send GET /v1/devices/me every 20 s while open)
+             */
+            online: boolean;
+            /**
+             * Paired At
+             * @description ISO 8601, UTC
+             */
+            paired_at: string;
+            /** Platform */
+            platform: string;
+            /** Rotated At */
+            rotated_at?: string | null;
+        };
+        /** DeviceSelf */
+        DeviceSelf: {
+            /** Device Id */
+            device_id: string;
+            /**
+             * Expires If Idle After
+             * @description ISO 8601; the credential is forgotten if unused until then
+             */
+            expires_if_idle_after: string;
+            /**
+             * Last Seen
+             * @description ISO 8601, UTC; updated on every request the device makes
+             */
+            last_seen: string;
+            /** Name */
+            name: string;
+            /**
+             * Online
+             * @description seen in the last 60 seconds (Play apps send GET /v1/devices/me every 20 s while open)
+             */
+            online: boolean;
+            /**
+             * Paired At
+             * @description ISO 8601, UTC
+             */
+            paired_at: string;
+            /** Platform */
+            platform: string;
+            /**
+             * Rotate After
+             * @description ISO 8601; rotate the token (POST /v1/devices/me/rotate) after this time
+             */
+            rotate_after: string;
+            /** Rotated At */
+            rotated_at?: string | null;
+            /** Server Id */
+            server_id: string;
+        };
+        /**
+         * EngineStatus
+         * @description What the desktop helper shows about the running engine; polled every few seconds.
+         */
+        EngineStatus: {
+            /** Jobs Queued */
+            jobs_queued: number;
+            /** Jobs Running */
+            jobs_running: number;
+            /**
+             * Online Devices
+             * @description paired devices seen in the last 60 seconds
+             */
+            online_devices: number;
+            /** Paired Devices */
+            paired_devices: number;
+            /**
+             * Pairing Open
+             * @description whether a pairing code is accepted right now
+             */
+            pairing_open: boolean;
+            /** Server Id */
+            server_id: string;
+            /**
+             * Server Name
+             * @description 'Brasscribe on <computer name>'
+             */
+            server_name: string;
+            /** Version */
+            version: string;
+        };
         /**
          * Evidence
          * @description What each transcriber heard at the notes Brasscribe is unsure about (confidence below 0.7).
@@ -1004,6 +1290,16 @@ export interface components {
              * @description accelerator torch adapters use on this host: cuda, mps or cpu
              */
             device: string;
+            /**
+             * Server Id
+             * @description stable id of this engine: kept across restarts and address or port changes, new only after `brasscribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
+             */
+            server_id: string;
+            /**
+             * Server Name
+             * @description display name, e.g. 'Brasscribe on studio-mac'
+             */
+            server_name: string;
             /**
              * Status
              * @default ok
@@ -1246,19 +1542,142 @@ export interface components {
         PairRequest: {
             /**
              * Code
-             * @description pairing code shown by the engine (brasscribe serve --host 0.0.0.0)
+             * @description pairing code shown by the engine (brasscribe serve --lan)
              */
             code: string;
             /** Device Name */
             device_name?: string | null;
+            /**
+             * Platform
+             * @description ios, macos, android or windows; shown in the device list
+             */
+            platform?: string | null;
         };
-        /** PairResponse */
-        PairResponse: {
+        /** PairRequestCreate */
+        PairRequestCreate: {
+            /** Device Name */
+            device_name?: string | null;
+            /** Platform */
+            platform?: string | null;
+        };
+        /** PairRequestInfo */
+        PairRequestInfo: {
+            /** Created At */
+            created_at: string;
+            /**
+             * Match Code
+             * @description four digits shown on both screens so the owner can tell which device asks
+             */
+            match_code: string;
+            /** Name */
+            name: string;
+            /** Platform */
+            platform: string;
+            /** Request Id */
+            request_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "denied";
+        };
+        /** PairRequestResult */
+        PairRequestResult: {
+            /** Device Id */
+            device_id?: string | null;
+            /** Server Id */
+            server_id?: string | null;
+            /** Server Name */
+            server_name?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "denied";
             /**
              * Token
-             * @description send as 'Authorization: Bearer <token>' on every request
+             * @description set once, on the first poll after approval
+             */
+            token?: string | null;
+        };
+        /**
+         * PairResponse
+         * @description Every value is a string: older Apple clients decode this object as [String: String].
+         */
+        PairResponse: {
+            /**
+             * Device Id
+             * @description this device's id in the engine's device list
+             */
+            device_id: string;
+            /**
+             * Server Id
+             * @description the engine's stable id (as in /v1/health); store it with the token
+             */
+            server_id: string;
+            /** Server Name */
+            server_name: string;
+            /**
+             * Token
+             * @description this device's own credential: send as 'Authorization: Bearer <token>'. It stays valid across engine restarts until revoked; keep it in the platform keystore
              */
             token: string;
+        };
+        /** PairingOpen */
+        PairingOpen: {
+            /**
+             * Extend
+             * @description keep the current code and push its expiry out by ttl_s
+             * @default false
+             */
+            extend: boolean;
+            /**
+             * Single Use
+             * @default true
+             */
+            single_use: boolean;
+            /**
+             * Ttl S
+             * @description seconds the code stays valid; null keeps it open until closed
+             * @default 600
+             */
+            ttl_s: number | null;
+        };
+        /**
+         * PairingState
+         * @description What the computer shows to pair a phone: the code, and the payload a QR code encodes.
+         */
+        PairingState: {
+            /** Code */
+            code?: string | null;
+            /**
+             * Expires At
+             * @description ISO 8601; null while open with no expiry
+             */
+            expires_at?: string | null;
+            /**
+             * Fingerprint
+             * @description SHA-256 of the TLS key (SPKI), base64url; null while the engine serves plain HTTP
+             */
+            fingerprint?: string | null;
+            /**
+             * Hosts
+             * @description ip:port addresses the engine is reachable on
+             */
+            hosts: string[];
+            /** Open */
+            open: boolean;
+            /** Server Id */
+            server_id: string;
+            /** Server Name */
+            server_name: string;
+            /** Single Use */
+            single_use: boolean;
+            /**
+             * Uri
+             * @description pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]
+             */
+            uri: string;
         };
         /** PartComparison */
         PartComparison: {
@@ -1306,6 +1725,16 @@ export interface components {
              * @description stages or kinds to run even on a cache hit, or 'all'
              */
             cold?: string[];
+        };
+        /** RotateResponse */
+        RotateResponse: {
+            /** Device Id */
+            device_id: string;
+            /**
+             * Token
+             * @description the new token; store it before using it. The token used for this request keeps working until this one is first used (at most 30 days), so retrying after a lost response is safe
+             */
+            token: string;
         };
         /** Roundtrip */
         Roundtrip: {
@@ -1694,6 +2123,167 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceInfo"][];
+                };
+            };
+        };
+    };
+    getThisDevice: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceSelf"];
+                };
+            };
+            /** @description the credential is unknown or revoked: pair again */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description connected, but not as a paired device (a trusted client on the engine's own computer, or the static token); not a revocation */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpairThisDevice: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotateDeviceToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revokeDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such device */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -2611,7 +3201,9 @@ export interface operations {
     pairDevice: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2630,8 +3222,225 @@ export interface operations {
                     "application/json": components["schemas"]["PairResponse"];
                 };
             };
-            /** @description wrong pairing code */
+            /** @description wrong pairing code, or pairing is closed */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description too many wrong codes; retry after Retry-After seconds */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    requestPairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairRequestInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description too many requests are waiting */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    pollPairingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairRequestResult"];
+                };
+            };
+            /** @description unknown or expired request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getPairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingState"];
+                };
+            };
+        };
+    };
+    openPairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PairingOpen"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    closePairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingState"];
+                };
+            };
+        };
+    };
+    listPairingRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairRequestInfo"][];
+                };
+            };
+        };
+    };
+    decidePairingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+                decision: "approve" | "deny";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairRequestInfo"];
+                };
+            };
+            /** @description unknown, expired or already decided */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2962,6 +3771,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngineStatus"];
                 };
             };
         };

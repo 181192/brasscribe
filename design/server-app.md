@@ -648,7 +648,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` Â
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
 - **Wrong codes:** after 5, code entry is locked for 30 s, doubling up to 15 min. The engine answers 429 with `Retry-After`. It never swaps the code silently.
-- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
+- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at, online) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
 - **Approve on the computer:** the phone sends `POST /v1/pair/requests` and gets `{request_id, name, platform, match_code (4 digits), created_at, status}`.
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.
   - A request expires after 2 minutes, and at most three wait at once (429 beyond that).

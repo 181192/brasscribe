@@ -117,6 +117,14 @@ class JobManager:
                     live[j.id] = j
         return sorted(live.values(), key=lambda j: j.created, reverse=True)
 
+    def counts(self) -> tuple[int, int]:
+        """(running, queued) among the jobs this engine process runs; a cancelled queued job is not counted."""
+        with self.lock:
+            live = list(self.jobs.values())
+        running = sum(j.status == "running" for j in live)
+        queued = sum(j.status == "queued" and not j.cancel.is_set() for j in live)
+        return running, queued
+
     def cancel(self, job_id: str) -> Job | None:
         job = self.get(job_id)
         if job and job.status not in TERMINAL:

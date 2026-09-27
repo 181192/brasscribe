@@ -57,9 +57,21 @@ def fake_pipeline(title: str, params: dict) -> Pipeline:
     return Pipeline("test", "test", st, outs, params)
 
 
+ENGINE_ENV = ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS", "BRASSCRIBE_COMPUTER_NAME",
+              "BRASSCRIBE_SERVER_NAME", "BRASSCRIBE_TRUST_LOCAL", "BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE")
+
+
+@pytest.fixture(autouse=True)
+def _host_name_only(monkeypatch):
+    """Names come from the environment or the host name in tests, never from this machine's settings."""
+    from brasscribe_engine import discovery
+
+    monkeypatch.setattr(discovery, "os_computer_name", lambda: None)
+
+
 @pytest.fixture
 def settings(tmp_path: Path, monkeypatch) -> Settings:
-    for var in ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS", "BRASSCRIBE_COMPUTER_NAME"):
+    for var in ENGINE_ENV:
         monkeypatch.delenv(var, raising=False)
     adapters = make_adapters(tmp_path / "adapters")
     s = Settings(data_dir=tmp_path / "data", adapters_dir=adapters, gpu_lock=tmp_path / "gpu.lock")

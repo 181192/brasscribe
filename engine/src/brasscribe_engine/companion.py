@@ -9,8 +9,10 @@ State lives in the companion state directory (BRASSCRIBE_STATE, default <data>/c
 A device pairs once. Its token stays valid until the device is revoked, the server is reset, or the
 device has not been seen for `idle_days`. A device may rotate its token; the token it rotated with
 keeps working until the new one is first used (at most `grace_s`, 30 days), so a lost response, or a
-retry with the old token, cannot lock the device out. Files are rewritten atomically and re-read when
-they change on disk, so `brasscribe devices revoke` takes effect in a running engine.
+retry with the old token, cannot lock the device out. Files are rewritten atomically under a cross-process
+lock and re-read when they change on disk, so `brasscribe devices revoke` takes effect in a running engine
+and is never undone by the engine's own writes. `last_seen` (presence) is tracked in memory on every request
+and flushed at most once a minute.
 
 The server id is a routing identifier (it lets a client match a rediscovered engine to its stored
 credential), not proof of identity: over plain HTTP anyone can claim it. Proof comes from a pinned
@@ -27,10 +29,11 @@ import secrets
 import threading
 import time
 import unicodedata
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterator, TypeVar
 from urllib.parse import quote, urlencode
 
 PAIRING_PAYLOAD_VERSION = 1
@@ -41,10 +44,12 @@ MAX_PENDING = 3
 LOCK_AFTER = 5  # wrong codes before pairing locks
 LOCK_BASE_S = 30.0
 LOCK_MAX_S = 900.0
-SEEN_WRITE_S = 300.0  # last_seen is written to disk at most this often per device
+SEEN_FLUSH_S = 60.0  # last_seen is kept in memory and written to disk at most this often
+ONLINE_S = 60.0  # a device seen this recently is online (apps send a heartbeat every 20 s)
 NAME_MAX = 64
 
 Clock = Callable[[], float]
+T = TypeVar("T")
 
 
 def iso(t: float | None) -> str:
@@ -117,7 +122,47 @@ class Device:
                 "rotated_at": iso(self.rotated_at) if self.rotated_at else None}
 
 
+@contextmanager
+def file_lock(path: Path) -> Iterator[None]:
+    """Exclusive lock shared with other processes (the engine and `brasscribe devices`)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            while True:
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_LOCK, 1)  # retries for about 10 s, then raises
+                    break
+                except OSError:
+                    continue
+            try:
+                yield
+            finally:
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
 class DeviceRegistry:
+    """Paired devices, shared by the running engine and `brasscribe devices` in another process.
+
+    Every change takes a cross-process file lock, re-reads the file, applies the change and writes it back,
+    so a CLI revoke is never overwritten by the engine's own write. `last_seen` is updated in memory on every
+    authenticated request (that is what `online` is computed from) and flushed to disk at most every
+    `SEEN_FLUSH_S`; unflushed values never bring back a device the file no longer has.
+    """
+
     def __init__(self, path: Path, *, idle_days: float = 180.0, grace_s: float = 30 * 86400.0, clock: Clock = time.time):
         self.path = path
         self.idle_s = idle_days * 86400.0
@@ -125,21 +170,23 @@ class DeviceRegistry:
         self.clock = clock
         self.lock = threading.Lock()
         self._devices: dict[str, Device] = {}
-        self._stamp: tuple[int, int] | None = None
-        self._saved_seen: dict[str, float] = {}
+        self._stamp: tuple[int, int, int] | None = None
+        self._seen: dict[str, float] = {}  # last_seen newer than the file, per device id
+        self._flushed_at = clock()
         with self.lock:
             self._reload()
 
-    # -- persistence
+    # -- persistence (call with self.lock held)
 
-    def _disk_stamp(self) -> tuple[int, int] | None:
+    def _disk_stamp(self) -> tuple[int, int, int] | None:
         try:
             st = self.path.stat()
-            return st.st_mtime_ns, st.st_size
+            return st.st_ino, st.st_mtime_ns, st.st_size  # an atomic replace always changes the inode
         except OSError:
             return None
 
-    def _reload(self) -> None:
+    def _read(self) -> None:
+        """Load the file if another process changed it, laying unflushed last_seen values over it."""
         stamp = self._disk_stamp()
         if stamp is not None and stamp == self._stamp:
             return
@@ -151,23 +198,48 @@ class DeviceRegistry:
                     devices[dev.device_id] = dev
             except (OSError, ValueError, TypeError):
                 devices = {}
-        self._devices = devices
-        self._saved_seen = {k: d.last_seen for k, d in devices.items()}
-        self._stamp = stamp
-        if self._prune():
-            self._save()
+        self._seen = {k: t for k, t in self._seen.items() if k in devices}  # revoked elsewhere: gone
+        for k, t in self._seen.items():
+            devices[k].last_seen = max(devices[k].last_seen, t)
+        self._devices, self._stamp = devices, stamp
 
-    def _save(self) -> None:
-        write_private(self.path, {"devices": [asdict(d) for d in self._devices.values()]})
-        self._stamp = self._disk_stamp()
-        self._saved_seen = {k: d.last_seen for k, d in self._devices.items()}
+    def _reload(self) -> None:
+        self._read()
+        if self._stale():
+            self._write(self._prune)
 
-    def _prune(self) -> bool:
+    def _write(self, change: Callable[[], T]) -> T:
+        """Read-modify-write under the cross-process lock; also flushes every unflushed last_seen."""
+        with file_lock(self.path.with_name(self.path.name + ".lock")):
+            self._read()
+            result = change()
+            write_private(self.path, {"devices": [asdict(d) for d in self._devices.values()]})
+            self._stamp = self._disk_stamp()
+            self._seen = {}
+            self._flushed_at = self.clock()
+            return result
+
+    def _stale(self) -> list[str]:
         now = self.clock()
-        stale = [k for k, d in self._devices.items() if now - d.last_seen > self.idle_s]
-        for k in stale:
+        return [k for k, d in self._devices.items() if now - d.last_seen > self.idle_s]
+
+    def _prune(self) -> None:
+        for k in self._stale():
             del self._devices[k]
-        return bool(stale)
+
+    def flush(self) -> None:
+        """Write last_seen values not yet on disk (periodically on use, and when the engine stops)."""
+        with self.lock:
+            if self._seen:
+                self._write(lambda: None)
+
+    # -- presence
+
+    def is_online(self, device: Device) -> bool:
+        return self.clock() - device.last_seen <= ONLINE_S
+
+    def public(self, device: Device) -> dict:
+        return {**device.public(), "online": self.is_online(device)}
 
     # -- operations
 
@@ -175,19 +247,20 @@ class DeviceRegistry:
         """New credential. With `replace`, the device keeps its id and entry and only its token changes."""
         token = secrets.token_urlsafe(32)
         now = self.clock()
-        with self.lock:
-            self._reload()
+
+        def change() -> Device:
             old = self._devices.get(replace) if replace else None
             if old:
                 old.token_hash, old.prev_hash, old.prev_until = token_hash(token), None, None
                 old.name, old.last_seen, old.rotated_at = clean_name(name, old.name), now, now
-                dev = old
-            else:
-                dev = Device(secrets.token_hex(8), clean_name(name), clean_name(platform, "unknown")[:24], now, now,
-                             token_hash(token))
-                self._devices[dev.device_id] = dev
-            self._save()
-        return dev, token
+                return old
+            dev = Device(secrets.token_hex(8), clean_name(name), clean_name(platform, "unknown")[:24], now, now,
+                         token_hash(token))
+            self._devices[dev.device_id] = dev
+            return dev
+
+        with self.lock:
+            return self._write(change), token
 
     def authenticate(self, token: str) -> Device | None:
         h = token_hash(token)
@@ -198,53 +271,57 @@ class DeviceRegistry:
                 current = hmac.compare_digest(h, dev.token_hash)
                 previous = (dev.prev_hash is not None and dev.prev_until is not None and now < dev.prev_until
                             and hmac.compare_digest(h, dev.prev_hash))
-                if not (current or previous):
-                    continue
-                if now - dev.last_seen > self.idle_s:
-                    del self._devices[dev.device_id]
-                    self._save()
-                    return None
-                dirty = False
-                if current and dev.prev_hash:  # the new token arrived: the old one is done
-                    dev.prev_hash = dev.prev_until = None
-                    dirty = True
-                dev.last_seen = now
-                if dirty or now - self._saved_seen.get(dev.device_id, 0.0) >= SEEN_WRITE_S:
-                    self._save()
-                return dev
-        return None
+                if current or previous:
+                    break
+            else:
+                return None
+            device_id = dev.device_id
+            if now - dev.last_seen > self.idle_s:
+                self._write(lambda: self._devices.pop(device_id, None))
+                return None
+            dev.last_seen = self._seen[device_id] = now
+            if current and dev.prev_hash:  # the new token arrived: the old one is done
+
+                def retire() -> None:
+                    d = self._devices.get(device_id)
+                    if d:
+                        d.prev_hash = d.prev_until = None
+
+                self._write(retire)
+            elif now - self._flushed_at >= SEEN_FLUSH_S:
+                self._write(lambda: None)
+            return self._devices.get(device_id)  # None when revoked by another process meanwhile
 
     def rotate(self, device_id: str, presented: str | None = None) -> str | None:
         """New token for the device. The token the device rotated with (`presented`, else the current one)
         stays valid until the new one is used, so a retry after a lost response still works."""
         token = secrets.token_urlsafe(32)
         now = self.clock()
-        with self.lock:
-            self._reload()
+
+        def change() -> bool:
             dev = self._devices.get(device_id)
             if not dev:
-                return None
+                return False
             dev.prev_hash = token_hash(presented) if presented else dev.token_hash
             dev.prev_until = now + self.grace_s
             dev.token_hash, dev.rotated_at, dev.last_seen = token_hash(token), now, now
-            self._save()
-        return token
+            return True
+
+        with self.lock:
+            return token if self._write(change) else None
 
     def revoke(self, device_id: str) -> bool:
         with self.lock:
-            self._reload()
-            if self._devices.pop(device_id, None) is None:
-                return False
-            self._save()
-            return True
+            return self._write(lambda: self._devices.pop(device_id, None)) is not None
 
     def revoke_all(self) -> int:
-        with self.lock:
-            self._reload()
+        def change() -> int:
             n = len(self._devices)
             self._devices = {}
-            self._save()
             return n
+
+        with self.lock:
+            return self._write(change)
 
     def get(self, device_id: str) -> Device | None:
         with self.lock:

@@ -1,11 +1,18 @@
 """HTTP service: Studio (browser, same machine) and companion mode for the native Play apps.
 
-Clients on the loopback interface are trusted. Any other client pairs once:
-`POST /v1/pair` with the code the engine shows returns that device's own
-bearer token, and every other request carries `Authorization: Bearer <token>`.
-The token survives engine restarts and address changes; the owner lists and
-revokes devices on the computer (loopback-only `/v1/devices`). See
-companion.py and docs/plan/pairing-and-remote-access.md.
+Clients on the loopback interface are trusted (BRASSCRIBE_TRUST_LOCAL, on by
+default). Any other client pairs once: `POST /v1/pair` with the code the engine
+shows returns that device's own bearer token, and every other request carries
+`Authorization: Bearer <token>`. The token survives engine restarts and address
+changes; every authenticated request marks the device as seen, which is what
+`online` in `/v1/devices` reports.
+
+The owner manages devices on the computer (`/v1/status`, `/v1/devices`,
+`/v1/pairing*`). Those endpoints trust loopback only while no admin token is
+configured; with BRASSCRIBE_ADMIN_TOKEN (or _FILE) set they require
+`Authorization: Bearer <admin token>`, because a proxy on the same machine makes
+remote traffic look local. See companion.py, config.py and
+docs/plan/pairing-and-remote-access.md.
 
 Progress is streamed as Server-Sent Events with monotonic ids; reconnect with
 `Last-Event-ID` (or `?after=`) to resume. A comment line is sent every 15 s
@@ -20,6 +27,7 @@ import json
 import secrets
 import shutil
 from pathlib import Path
+from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
@@ -56,9 +64,17 @@ def media_type(name: str) -> str:
     return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
 
 
-def create_app(settings: Settings | None = None, *, trust_loopback: bool = True, workers: int = 1) -> FastAPI:
+def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
+    """`trust_loopback` overrides settings.trust_local (BRASSCRIBE_TRUST_LOCAL)."""
     settings = (settings or Settings()).ensure()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+        app.state.devices.flush()  # presence kept in memory reaches devices.json
+
     app = FastAPI(
+        lifespan=lifespan,
         title="brasscribe engine",
         version=__version__,
         description="Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed "
@@ -67,7 +83,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
     )
     app.state.settings = settings
     app.state.jobs = JobManager(settings, workers=workers)
-    app.state.trust_loopback = trust_loopback
+    app.state.trust_loopback = settings.trust_local if trust_loopback is None else trust_loopback
+    app.state.admin_token = settings.admin_credential()
     from .discovery import service_name
 
     app.state.identity = ServerIdentity.load(settings.state_dir)
@@ -86,9 +103,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
     def bearer(authorization: str | None) -> str | None:
         return authorization[7:].strip() if authorization and authorization.lower().startswith("bearer ") else None
 
+    def is_admin(request: Request) -> bool:
+        admin, token = app.state.admin_token, bearer(request.headers.get("authorization"))
+        return bool(admin and token and hmac.compare_digest(token.encode(), admin.encode()))
+
     def auth(request: Request, authorization: str | None = Header(None)) -> None:
         request.state.device = None
-        if is_trusted(request):
+        if is_trusted(request) or is_admin(request):
             return
         token = bearer(authorization)
         if token and settings.token and hmac.compare_digest(token.encode(), settings.token.encode()):
@@ -99,7 +120,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
         request.state.device = device
 
     def owner(request: Request) -> None:
-        """Device management happens on the computer running the engine."""
+        """Device management happens on the computer running the engine: the admin token when one is
+        configured, else a loopback client while local trust is on. Device tokens never qualify."""
+        if is_admin(request):
+            return
+        if app.state.admin_token:
+            raise HTTPException(403, "needs the engine's admin token")
         if not is_trusted(request):
             raise HTTPException(403, "only on the computer running the engine")
 
@@ -202,11 +228,19 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
 
     # ------------------------------------------------------------ this device
 
-    @app.get("/v1/devices/me", response_model=m.DeviceSelf, operation_id="getThisDevice", tags=["devices"])
+    @app.get("/v1/devices/me", response_model=m.DeviceSelf, operation_id="getThisDevice", tags=["devices"],
+             responses={401: {"description": "the credential is unknown or revoked: pair again"},
+                        404: {"description": "connected, but not as a paired device (a trusted client on the "
+                                           "engine's own computer, or the static token); not a revocation"}})
     def get_this_device(device=Depends(this_device)) -> m.DeviceSelf:
-        """Check the stored credential: 401 means pair again, anything else means it is still good."""
+        """Check the stored credential, and the paired device's heartbeat (every 20 s while the app is open;
+        it keeps the device `online`). 401 means pair again; anything else means the credential is still good.
+
+        A client on the engine's own computer is trusted without pairing (GET /v1/health says
+        `auth_required: false`) and gets 404 here; it uses GET /v1/health as its heartbeat instead and is
+        not counted as an online device."""
         rotate_from = device.rotated_at or device.paired_at
-        return m.DeviceSelf(**device.public(), server_id=app.state.identity.server_id,
+        return m.DeviceSelf(**app.state.devices.public(device), server_id=app.state.identity.server_id,
                             rotate_after=iso(rotate_from + ROTATE_AFTER_S),
                             expires_if_idle_after=iso(device.last_seen + app.state.devices.idle_s))
 
@@ -229,7 +263,18 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool = True,
     @app.get("/v1/devices", response_model=list[m.DeviceInfo], operation_id="listDevices", tags=["devices"],
              dependencies=[Depends(owner)])
     def list_devices() -> list[m.DeviceInfo]:
-        return [m.DeviceInfo(**d.public()) for d in app.state.devices.list()]
+        return [m.DeviceInfo(**app.state.devices.public(d)) for d in app.state.devices.list()]
+
+    @app.get("/v1/status", response_model=m.EngineStatus, operation_id="getStatus", tags=["devices"],
+             dependencies=[Depends(owner)])
+    def get_status() -> m.EngineStatus:
+        """For the desktop helper: who is connected, whether pairing is open, what the engine is doing."""
+        devices = app.state.devices.list()
+        running, queued = jobs.counts()
+        return m.EngineStatus(server_id=app.state.identity.server_id, server_name=app.state.server_name,
+                              version=__version__, online_devices=sum(map(app.state.devices.is_online, devices)),
+                              paired_devices=len(devices), pairing_open=app.state.pairing.is_open,
+                              jobs_running=running, jobs_queued=queued)
 
     @app.delete("/v1/devices/{device_id}", status_code=204, operation_id="revokeDevice", tags=["devices"],
                 dependencies=[Depends(owner)], response_class=Response,
