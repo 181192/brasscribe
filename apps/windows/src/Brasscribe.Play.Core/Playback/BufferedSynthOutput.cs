@@ -16,6 +16,11 @@ public sealed class BufferedSynthOutput : ISynthOutput
     private int _read, _count;
     private int _lowWater;
     private bool _playing;
+    private float[] _fade = [];
+    private int _fadeAt;
+
+    /// <summary>How long a pause or stop takes to fade out: short enough to feel immediate, long enough not to click.</summary>
+    public const double StopFadeMs = 80;
 
     public BufferedSynthOutput(int sampleRate = 44100) => SampleRate = sampleRate;
 
@@ -48,11 +53,31 @@ public sealed class BufferedSynthOutput : ISynthOutput
 
     public void Play()
     {
+        lock (_gate) _fade = [];
         _playing = true;
         RequestIfLow();
     }
 
-    public void Pause() => _playing = false;
+    /// <summary>
+    /// Stops pulling from the synth, but plays the next <see cref="StopFadeMs"/> of what is already
+    /// rendered with a fade to silence, so stopping never cuts the band off with a click.
+    /// </summary>
+    public void Pause()
+    {
+        if (!_playing) return;
+        lock (_gate)
+        {
+            int n = Math.Min(_count, 2 * (int)(SampleRate * StopFadeMs / 1000)) & ~1;
+            _fade = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                double g = 1 - (double)(i / 2) / Math.Max(1, n / 2);
+                _fade[i] = (float)(_ring[(_read + i) % _ring.Length] * g * g);
+            }
+            _fadeAt = 0;
+        }
+        _playing = false;
+    }
 
     public void Destroy() => _playing = false;
 
@@ -65,11 +90,23 @@ public sealed class BufferedSynthOutput : ISynthOutput
             int write = (_read + _count) % _ring.Length;
             for (int i = 0; i < n; i++)
             {
-                _ring[write] = (float)f[i];
+                _ring[write] = Limit((float)f[i]);
                 if (++write == _ring.Length) write = 0;
             }
             _count += n;
         }
+    }
+
+    /// <summary>Knee above which peaks are softly compressed so a loud tutti never clips the device.</summary>
+    public const float LimiterKnee = 0.8f;
+
+    /// <summary>Transparent below the knee; above it, a tanh curve that approaches but never reaches full scale.</summary>
+    public static float Limit(float x)
+    {
+        float a = Math.Abs(x);
+        if (a <= LimiterKnee) return x;
+        float room = 1 - LimiterKnee;
+        return MathF.CopySign(LimiterKnee + room * MathF.Tanh((a - LimiterKnee) / room), x);
     }
 
     public void ResetSamples()
@@ -87,6 +124,12 @@ public sealed class BufferedSynthOutput : ISynthOutput
         if (!_playing)
         {
             destination.Clear();
+            lock (_gate)
+            {
+                int n = Math.Min(destination.Length, _fade.Length - _fadeAt);
+                if (n > 0) _fade.AsSpan(_fadeAt, n).CopyTo(destination);
+                _fadeAt += Math.Max(0, n);
+            }
             return destination.Length;
         }
         RequestIfLow(destination.Length);

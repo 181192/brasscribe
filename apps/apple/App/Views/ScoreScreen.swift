@@ -112,7 +112,10 @@ struct PracticeView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            PlayerBar(model: model, wide: wide)
+            VStack(spacing: 0) {
+                if let missing = model.bandSoundsMissing { BandSoundsMissingLine(details: missing.details) }
+                PlayerBar(model: model, wide: wide)
+            }
         }
         .inspector(isPresented: Binding(get: { wide && showInspector }, set: { showInspector = $0 })) {
             PartsPanel(model: model)
@@ -342,6 +345,31 @@ struct ZoomButtons: View {
 /// The player: Play first, previous/next bar, the position with the beat counter beside
 /// it, the tempo, band or recording, then the practice controls. The practice controls wrap
 /// onto more rows and never clip.
+/// Shown above the player when the band sounds are not installed: what to do next, and where
+/// they were looked for under the tech-person details.
+struct BandSoundsMissingLine: View {
+    let details: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Label("The band sounds are missing. Reinstall Brasscribe Play to hear the band.",
+                  systemImage: BrasscribeIcon.info.systemName)
+                .font(Font.Brasscribe.callout)
+                .foregroundStyle(Color.Brasscribe.text)
+            if !details.isEmpty {
+                DisclosureGroup {
+                    Text(details).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
+                } label: { Text("Details for the band's tech person").font(Font.Brasscribe.callout) }
+                .tint(Color.Brasscribe.text)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Space.s4)
+        .padding(.vertical, Space.s2)
+        .background(Color.Brasscribe.surface)
+    }
+}
+
 struct PlayerBar: View {
     @Bindable var model: PracticeModel
     let wide: Bool

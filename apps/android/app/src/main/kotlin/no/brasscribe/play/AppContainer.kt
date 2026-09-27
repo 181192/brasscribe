@@ -189,13 +189,12 @@ class AppContainer(private val context: Context) {
     }
 
     /**
-     * brasscribe-band.sf2 (sounds/band.py; 16-bit 149 MB or 24-bit 223 MB) copied to the app's external
-     * files under sounds/. Not bundled: it is a separate download like the other sound packs.
+     * A band SoundFont sideloaded to the app's external files under sounds/ (overrides the bundled one).
+     * Without it the score player loads the phone SoundFont bundled in the APK (score/BandSoundFontFile).
      */
-    fun bandSoundFont(): java.io.File? = context.getExternalFilesDir(null)?.resolve("sounds")?.also { it.mkdirs() }?.let { d ->
-        listOf("brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2").map { d.resolve(it) }.firstOrNull { it.isFile }
-            .also { android.util.Log.i("BrasscribePlay", "band SoundFont in $d: ${it?.name ?: "none"}") }
-    }
+    fun bandSoundFont(): java.io.File? = context.getExternalFilesDir(null)?.resolve("sounds")?.also { it.mkdirs() }
+        .let { no.brasscribe.play.score.BandSoundFontFile.sideloaded(context) }
+        .also { android.util.Log.i("BrasscribePlay", "sideloaded band SoundFont: ${it?.name ?: "none"}") }
 
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"
 

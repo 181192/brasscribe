@@ -16,6 +16,9 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 {
     public const double MinSpeed = 0.25, MaxSpeed = 1.5;
 
+    /// <summary>Synth master gain (−6 dB); the output's soft limiter catches what is left.</summary>
+    public const double MasterVolume = 0.5;
+
     private readonly AlphaSynth _synth;
     private readonly Settings _settings = new();
     private Score? _score;
@@ -35,6 +38,9 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         // audio thread takes when it asks the synth for samples.
         _synth.MetronomeVolume = 0;
         _synth.CountInVolume = 0;
+        // Headroom for the full band: at unity the band SoundFont's tutti peaks above full scale in
+        // alphaSynth (measured +1.8 dBFS on a mf chord with the cornets on top).
+        _synth.MasterVolume = MasterVolume;
         _synth.PositionChanged.On((PositionChangedEventArgs e) =>
         {
             Position = new PlaybackPosition(BarAt(e.CurrentTick), e.CurrentTick, e.CurrentTime / 1000.0, e.EndTime / 1000.0);
@@ -114,6 +120,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             ? MidiHumanizer.Apply(_midi, Tracks.Select(t => new MidiHumanizer.Track(t.Index, t.Name, t.IsPercussion,
                 ChannelsOf(t.Index).Select(c => (int)c).ToList())).ToList(), humanize, PerformanceJson)
             : 0;
+        AddReleaseTail(_midi);
         _muted.Clear();
         _solo.Clear();
         lock (Gate) _synth.LoadMidiFile(_midi);
@@ -129,6 +136,15 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     }
 
     public bool HasSoundFont => _soundFontLoaded;
+
+    /// <summary>
+    /// Where the band sounds were expected when they are missing (null when they loaded). The UI
+    /// shows <see cref="SoundsMissingKey"/> with this path under details.
+    /// </summary>
+    public string? SoundsMissingFrom { get; set; }
+
+    /// <summary>Resource key of the one-line message for missing band sounds; its details key adds "_Details" ({0} = path).</summary>
+    public const string SoundsMissingKey = "Player_SoundsMissing";
 
     /// <summary>
     /// Humanizes the playback timing and velocity of each part when a score loads (the Rust core's
@@ -148,8 +164,11 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     /// <summary>Optional MIDI program per part name (0-based), applied when a score loads.</summary>
     public Func<string, int?>? ProgramMap { get; set; }
 
-    /// <summary>Optional preset and balance per part name (the band SoundFont); wins over <see cref="ProgramMap"/>.</summary>
-    public Func<string, TrackSound?>? SoundMap { get; set; }
+    /// <summary>
+    /// Optional preset and balance per part (the band SoundFont), from the part name and its
+    /// 0-based MusicXML program; wins over <see cref="ProgramMap"/>.
+    /// </summary>
+    public Func<string, int?, TrackSound?>? SoundMap { get; set; }
 
     /// <summary>MIDI channel of each track as the synth plays it.</summary>
     public IReadOnlyList<int> TrackChannels => _score?.Tracks.Select(t => (int)t.PlaybackInfo.PrimaryChannel).ToList() ?? [];
@@ -170,7 +189,8 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         {
             string name = t.Name.Replace('\u00A0', ' ');
             // ProgramMap numbers are private to the loaded SoundFonts (not GM), so they stay out of files.
-            return SoundMap?.Invoke(name) ?? (!forMidiFile && ProgramMap?.Invoke(name) is int p ? new TrackSound(p, 0) : null);
+            return SoundMap?.Invoke(name, (int)t.PlaybackInfo.Program)
+                ?? (!forMidiFile && ProgramMap?.Invoke(name) is int p ? new TrackSound(p, 0) : null);
         }).ToList();
         var parts = score.Tracks.Select((t, i) => new ChannelPlan.Part(i, t.Staves.Any(st => st.IsPercussion),
             sounds[i]?.Program ?? (int)t.PlaybackInfo.Program, sounds[i]?.GainDb ?? 0)).ToList();
@@ -323,10 +343,59 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         Prepare(score, forMidiFile: true);
         var smf = new MidiFile { Format = MidiFileFormat.MultiTrack };
         new MidiFileGenerator(score, new Settings(), new AlphaSynthMidiFileHandler(smf, true)).Generate();
+        KeepSharedUnisons(smf);
         var bin = smf.ToBinary();
         var bytes = new byte[(int)bin.Length];
         for (int i = 0; i < bytes.Length; i++) bytes[i] = (byte)bin[i];
         return bytes;
+    }
+
+    /// <summary>Seconds of silence after the last note, long enough for every release tail to sound.</summary>
+    public const double ReleaseTailSeconds = 1.5;
+
+    /// <summary>
+    /// alphaSynth stops every voice dead when it reaches the last MIDI event, so the final note of
+    /// a piece (and of every phrase played alone) lost its release. A no-op controller event after
+    /// the last note moves the end of the song past the tail.
+    /// </summary>
+    public static void AddReleaseTail(MidiFile midi)
+    {
+        if (midi.Events.Count == 0) return;
+        double last = midi.Events.Max(e => e.Tick);
+        double usPerBeat = midi.Events.OfType<TempoChangeEvent>().Where(e => e.Tick <= last).OrderBy(e => e.Tick)
+            .LastOrDefault()?.MicroSecondsPerQuarterNote ?? 500000;
+        double tail = Math.Round(ReleaseTailSeconds * 1e6 / usPerBeat * midi.Division);
+        midi.AddEvent(new ControlChangeEvent(0, last + tail, 0, ControllerType.ExpressionControllerFine, 0));
+    }
+
+    /// <summary>
+    /// Parts that share a channel in the file can hold the same pitch at once (unisons are
+    /// everywhere in band scores). A receiver ends the sounding note at the first note-off, which
+    /// would cut the other part's note short, so a note-off is dropped while another note-on of
+    /// that key on that channel is still open.
+    /// </summary>
+    /// <remarks>For a multi-track file only (the events live in its tracks).</remarks>
+    internal static int KeepSharedUnisons(MidiFile smf)
+    {
+        var notes = new List<(MidiTrack Track, NoteEvent Event, int Order)>();
+        int order = 0;
+        foreach (var track in smf.Tracks)
+            foreach (var e in track.Events)
+                if (e is NoteOnEvent or NoteOffEvent) notes.Add((track, (NoteEvent)e, order++));
+        var open = new Dictionary<(double, double), int>();
+        var drop = new HashSet<MidiEvent>(ReferenceEqualityComparer.Instance);
+        foreach (var (_, e, _) in notes.OrderBy(n => n.Event.Tick).ThenBy(n => n.Event is NoteOnEvent ? 1 : 0).ThenBy(n => n.Order))
+        {
+            var key = (e.Channel, e.NoteKey);
+            open.TryGetValue(key, out int count);
+            if (e is NoteOnEvent) open[key] = count + 1;
+            else if (count > 1) { open[key] = count - 1; drop.Add(e); }
+            else open[key] = 0;
+        }
+        foreach (var track in smf.Tracks)
+            for (int i = track.Events.Count - 1; i >= 0; i--)
+                if (drop.Contains(track.Events[i])) track.Events.RemoveAt(i);
+        return drop.Count;
     }
 
     public (int Beat, int Beats) BeatAt(PlaybackPosition position)

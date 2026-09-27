@@ -46,6 +46,11 @@ targets:
       - path: Frameworks/VerovioResources
         type: folder
         buildPhase: resources
+      # The band sounds (scripts/stage-band-sounds.sh): PlaybackKit loads Sounds/brasscribe-band*.sf2
+      - path: Sounds
+        type: folder
+        buildPhase: resources
+        optional: true
       # The design system, linked from design/dist (regenerate there, never copy here).
       # App/Icon.xcassets is generated from design/dist/icons/apple by scripts/check-prereqs.sh.
       - path: ../../design/dist/apple/BrasscribeDesign.swift

@@ -6,7 +6,7 @@ import ScoreKit
 ///
 /// Graph:
 /// ```
-/// sequencer tracks ─▶ one AVAudioUnitSampler per section ─▶ AVAudioEnvironmentNode (seat + hall) ─┐
+/// sequencer tracks ─▶ one AVAudioUnitSampler per part ────▶ AVAudioEnvironmentNode (seat + hall) ─┐
 /// metronome track  ─▶ metronome sampler ─────────────────────────────────────────────────────────├▶ main mixer
 /// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch (speed without pitch change) ────┘
 /// ```
@@ -40,9 +40,10 @@ public final class PlaybackEngine {
     let environment = AVAudioEnvironmentNode()
     var samplers: [String: AVAudioUnitSampler] = [:]
 
-    func samplerKey(_ part: Part) -> String {
-        soundBank.perPart[part.name] != nil ? "part:\(part.id)" : "section:\(part.section.rawValue)"
-    }
+    /// One sampler per part, always: two parts on one sampler share its MIDI channels, so one
+    /// part's note-off would end the other's note on the same pitch (unisons are everywhere in
+    /// band scores), and the first part's preset would play the other part too.
+    func samplerKey(_ part: Part) -> String { "part:\(part.id)" }
 
     /// The sampler playing a part.
     public func sampler(for part: Part) -> AVAudioUnitSampler? { samplers[samplerKey(part)] }
@@ -109,15 +110,15 @@ public final class PlaybackEngine {
 
         let mono = AVAudioFormat(standardFormatWithSampleRate: out.outputFormat(forBus: 0).sampleRate > 0
                                  ? out.outputFormat(forBus: 0).sampleRate : 44100, channels: 1)
-        // One sampler per section with General MIDI sounds; one per part when the part has
-        // its own brass-band instrument (realistic tier), placed at its seat.
+        // One sampler per part, placed at its seat: the part's band preset (PartSoundResolver),
+        // or the basic tier when the band sounds are missing or the part is not brass.
         for part in score.parts {
             let key = samplerKey(part)
             if samplers[key] != nil { continue }
             let s = AVAudioUnitSampler()
             engine.attach(s)
             engine.connect(s, to: environment, format: mono)
-            let own = soundBank.perPart[part.name]
+            let own = soundBank.partSound(for: part)
             let seat = part.section.defaultSeat
             let az = (own?.azimuth ?? seat.azimuth) * .pi / 180
             let dist = own?.distance ?? seat.distance
@@ -129,7 +130,7 @@ public final class PlaybackEngine {
         }
         engine.attach(metronome)
         engine.connect(metronome, to: out, format: nil)
-        soundBank.load(into: metronome, section: .percussion, program: nil)
+        loadMetronome()
 
         engine.attach(player)
         engine.attach(timePitch)
@@ -228,6 +229,7 @@ public final class PlaybackEngine {
 
     public func play() throws {
         guard state == .stopped else { return }
+        cancelFade()
         if !engine.isRunning { try engine.start() }
         let start = stoppedBeat
         if countInBars > 0 && source == .score {
@@ -244,6 +246,7 @@ public final class PlaybackEngine {
         sequencer.stop()
         player.stop()
         allNotesOff()
+        if state != .stopped { fadeOutThenRestore() }  // play() cancels it, so seeking keeps the release
         stoppedBeat = p
         state = .stopped
     }
@@ -320,6 +323,51 @@ public final class PlaybackEngine {
         }
         countInTimer = t
         t.resume()
+    }
+
+    private func loadMetronome() {
+        if let kit = soundBank.band?.soundFont {
+            SoundBank.loadIntoMemory(metronome)
+            if (try? metronome.loadSoundBankInstrument(at: kit, program: 0, bankMSB: UInt8(kAUSampler_DefaultPercussionBankMSB),
+                                                       bankLSB: 0)) != nil { return }
+        }
+        soundBank.load(into: metronome, section: .percussion, program: nil)
+    }
+
+    /// Stop fade: CC 123 (all notes off) releases every voice through the preset's release
+    /// envelope, never a hard cut (CC 120 cuts within 10 ms and clicks). Live playback also ramps
+    /// the samplers down over `stopFadeSeconds`, so a long release does not ring on after the user
+    /// asked for silence; seeking and ordinary note-offs keep the natural release.
+    public static let stopFadeSeconds = 0.08
+    private var fadeTimer: DispatchSourceTimer?
+
+    private func fadeOutThenRestore() {
+        fadeTimer?.cancel()
+        guard !engine.isInManualRenderingMode else { return }
+        let steps = 8
+        var i = 0
+        let all = Array(samplers.values)
+        let t = DispatchSource.makeTimerSource(queue: .main)
+        t.schedule(deadline: .now(), repeating: Self.stopFadeSeconds / Double(steps))
+        t.setEventHandler { [weak self] in
+            i += 1
+            let v = Float(max(0, 1 - Double(i) / Double(steps)))
+            for s in all { s.volume = v }
+            if i >= steps + 2 {  // two more ticks at zero, then back to full for the next play
+                for s in all { s.volume = 1 }
+                self?.fadeTimer?.cancel()
+                self?.fadeTimer = nil
+            }
+        }
+        fadeTimer = t
+        t.resume()
+    }
+
+    private func cancelFade() {
+        guard fadeTimer != nil else { return }
+        fadeTimer?.cancel()
+        fadeTimer = nil
+        for s in samplers.values { s.volume = 1 }
     }
 
     private func allNotesOff() {
@@ -408,11 +456,12 @@ public final class PlaybackEngine {
         convolution?.kernel.enabled = roomOn
     }
 
-    /// Place a section (azimuth in degrees, negative = left of the conductor; distance in m).
+    /// Place a section's parts (azimuth in degrees, negative = left of the conductor; distance in m).
     public func place(_ section: Section, azimuth: Double, distance: Double) {
-        guard let s = samplers["section:\(section.rawValue)"] else { return }
         let az = azimuth * .pi / 180
-        s.position = AVAudio3DPoint(x: Float(distance * sin(az)), y: 0, z: Float(-distance * cos(az)))
+        for part in score.parts where part.section == section {
+            sampler(for: part)?.position = AVAudio3DPoint(x: Float(distance * sin(az)), y: 0, z: Float(-distance * cos(az)))
+        }
     }
 
     // MARK: offline rendering

@@ -61,23 +61,59 @@ public class BandSoundFontTests(ITestOutputHelper log)
         Assert.Empty(levels.Where(l => l.HasNotes && l.Rms < 1e-4).Select(l => l.Track));
     }
 
+    /// <summary>The first 3 s from bar 20 of one track played solo, as interleaved stereo samples.</summary>
+    private static float[] SoloAudio(byte[] sf2, byte[] score, string trackPrefix)
+    {
+        var output = new BufferedSynthOutput();
+        using var player = new AlphaTabScorePlayer(output);
+        player.LoadSoundFont(sf2);
+        player.LoadScore(score);
+        Assert.True(player.IsReady, player.LoadError?.Message);
+        var track = player.Tracks.Single(t => t.Name.StartsWith(trackPrefix, StringComparison.Ordinal));
+        foreach (var t in player.Tracks) player.SetSolo(t.Index, t.Index == track.Index);
+        player.SeekToBar(19);
+        player.Play();
+        var all = new List<float>();
+        var buffer = new float[2 * 1024];
+        for (int i = 0; i < 44100 * 3 / 1024; i++)
+        {
+            output.Read(buffer);
+            all.AddRange(buffer);
+        }
+        player.Pause();
+        return [.. all];
+    }
+
+    private static double RelativeDifference(float[] a, float[] b)
+    {
+        double d = 0, r = 0;
+        for (int i = 0; i < Math.Min(a.Length, b.Length); i++)
+        {
+            d += (a[i] - b[i]) * (a[i] - b[i]);
+            r += a[i] * a[i];
+        }
+        return Math.Sqrt(d / Math.Max(r, 1e-20));
+    }
+
     [Fact]
     public void Midi_bank_selects_the_part_preset_within_a_program()
     {
+        // Without a part map (BandSoundFont.ApplyTo), the player plays the score's own
+        // <midi-program>/<midi-bank>. The presets are level-matched (sounds/build.py), so the level
+        // no longer tells bank 5 (flugel) from bank 0 (cornets); the waveform does.
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         if (sf2 is null || golden is null) return;
         var xml = File.ReadAllText(golden);
         if (!xml.Contains("<midi-bank>", StringComparison.Ordinal)) return; // score written before banks
         var bytes = File.ReadAllBytes(sf2);
-        var withBanks = SoloLevels(bytes, System.Text.Encoding.UTF8.GetBytes(xml));
-        var noBanks = SoloLevels(bytes, System.Text.Encoding.UTF8.GetBytes(
-            System.Text.RegularExpressions.Regex.Replace(xml, @"\s*<midi-bank>\d+</midi-bank>", "")));
-        // Flugelhorn is program 56 bank 5 (flugel samples); without the bank it gets bank 0 (cornets).
-        var a = noBanks.Single(l => l.Track.StartsWith("Flugel", StringComparison.Ordinal)).Rms;
-        var b = withBanks.Single(l => l.Track.StartsWith("Flugel", StringComparison.Ordinal)).Rms;
-        log.WriteLine($"Flugelhorn rms without bank {a:0.00000}, with bank {b:0.00000}");
-        Assert.True(Math.Abs(20 * Math.Log10(b / a)) > 0.5, "midi-bank did not change the Flugelhorn preset");
+        var utf8 = System.Text.Encoding.UTF8;
+        var withBanks = SoloAudio(bytes, utf8.GetBytes(xml), "Flugel");
+        var noBanks = SoloAudio(bytes, utf8.GetBytes(
+            System.Text.RegularExpressions.Regex.Replace(xml, @"\s*<midi-bank>\d+</midi-bank>", "")), "Flugel");
+        double d = RelativeDifference(withBanks, noBanks);
+        log.WriteLine($"Flugelhorn with vs without midi-bank: relative difference {d:0.000}");
+        Assert.True(d > 0.3, "midi-bank did not change the Flugelhorn preset");
     }
 
     /// <summary>A percussion part written with score-instrument + midi-unpitched per drum (GM numbers, 1-based).</summary>

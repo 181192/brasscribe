@@ -18,6 +18,10 @@ void noteAt(int channel, int note, int velocity, double delaySeconds);
 // Output position (seconds of audio rendered).
 double positionSeconds();
 void allOff();
+// Drops queued events and releases every held note (the SFZ release plays out).
+void releaseAll();
+// Stop: drops queued events, fades the output to silence over [seconds], then cuts every voice.
+void fadeOut(double seconds);
 void setGain(int channel, float gain);
 // Renders frames offline into interleaved stereo (used by tests and for exporting audio).
 int renderOffline(float* interleaved, int frames);

@@ -30,15 +30,20 @@ public sealed class BrassSoundSet
     ];
 
     private readonly Dictionary<string, int> _programs = new(StringComparer.OrdinalIgnoreCase);
+    private PartSoundResolver? _resolver;
     private readonly List<byte[]> _fonts = [];
 
     public IReadOnlyDictionary<string, int> Programs => _programs;
     public IReadOnlyList<byte[]> Fonts => _fonts;
 
-    /// <summary>Reads every &lt;dir&gt;/*/*.sf2 (or *.sf2) and moves instrument i to programs 2i and 2i+1.</summary>
-    public static BrassSoundSet Load(string dir)
+    /// <summary>
+    /// Reads every &lt;dir&gt;/*/*.sf2 (or *.sf2) and moves instrument i to programs 2i and 2i+1.
+    /// With mapping.json, parts are routed by the shared resolver (the part's first player's target);
+    /// without it, by <see cref="PartMap"/>.
+    /// </summary>
+    public static BrassSoundSet Load(string dir, string? mappingJson = null)
     {
-        var set = new BrassSoundSet();
+        var set = new BrassSoundSet { _resolver = mappingJson is not null && File.Exists(mappingJson) ? PartSoundResolver.Load(mappingJson) : null };
         var files = Directory.EnumerateFiles(dir, "*.sf2", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToList();
         foreach (var file in files)
         {
@@ -53,6 +58,8 @@ public sealed class BrassSoundSet
     /// <summary>The program a part plays on, or null when no instrument matches (it keeps its GM program).</summary>
     public int? ProgramFor(string partName)
     {
+        if (_resolver?.Resolve(partName)?.Target is { } target && _programs.TryGetValue(target, out int resolved))
+            return resolved;
         foreach (var (contains, instrument) in PartMap)
             if (partName.Contains(contains, StringComparison.OrdinalIgnoreCase) && _programs.TryGetValue(instrument, out int p))
                 return p;

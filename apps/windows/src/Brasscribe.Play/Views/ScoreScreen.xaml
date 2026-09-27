@@ -14,6 +14,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Toolbar: parts ▾, As written / Concert pitch, zoom, View ▾. -->
@@ -225,7 +226,21 @@
         </Grid>
 
         <!-- The player: transport · position · practice. Play is the only ink control. -->
-        <Grid Grid.Row="3" Background="{ThemeResource BcBgBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0"
+        <!-- The band sounds are not installed: say so above the player, the path under details. -->
+        <StackPanel Grid.Row="3" Padding="24,8" Spacing="4" Background="{ThemeResource BcBgBrush}"
+                    BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0"
+                    Visibility="{x:Bind ViewModel.BandSoundsMissing, Mode=OneWay}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <TextBlock Text="{x:Bind ViewModel.BandSoundsMissingText, Mode=OneWay}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      Header="{x:Bind ViewModel.TechDetailsHeading, Mode=OneWay}">
+                <TextBlock Text="{x:Bind ViewModel.BandSoundsMissingDetails, Mode=OneWay}" Style="{StaticResource MutedStyle}"
+                           IsTextSelectionEnabled="True" FontFamily="Cascadia Mono, Consolas" />
+            </Expander>
+        </StackPanel>
+        <Grid Grid.Row="4" Background="{ThemeResource BcBgBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0"
               Padding="24,12" ColumnSpacing="24" AutomationProperties.LandmarkType="Custom" x:Uid="PlayerBar">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />

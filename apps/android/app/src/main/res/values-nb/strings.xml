@@ -278,7 +278,7 @@
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistisk</string>
     <string name="sound_realistic_unavailable">Ikke med i denne versjonen av appen.</string>
-    <string name="sound_realistic_test_tone">Ingen instrumentlyder er installert ennå: du hører en enkel tone.</string>
+    <string name="sound_realistic_test_tone">Ingen realistiske instrumenter er installert ennå: du hører bandlydene.</string>
     <plurals name="sound_pack_parts">
         <item quantity="one">%d stemme spiller et ekte instrument.</item>
         <item quantity="other">%d stemmer spiller ekte instrumenter.</item>
@@ -501,4 +501,5 @@
     <string name="conn_detail_server_id">Server-id: %1$s</string>
     <string name="conn_detail_last_seen">Svarte sist: %1$s</string>
     <string name="conn_detail_last_error">Siste feil: %1$s</string>
+    <string name="band_sounds_missing">Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</string>
 </resources>

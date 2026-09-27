@@ -55,12 +55,18 @@ class HumanizedPlayer(private val core: CoreBridge) {
             // One sfizz instrument per part plays the part's first desk (player 0 in mapping.json).
             val player = 0
             val played = core.humanize(notes.sortedWith(compareBy({ it.tick }, { it.pitch })), name, player, compositionJson) ?: return@mapNotNull null
-            Part(channels[i], played.sortedBy { it.startS })
+            Part(channels[i], trimSamePitch(played).sortedBy { it.startS })
         }
         return parts.sumOf { it.notes.size }
     }
 
     fun secondsAt(tick: Double): Double = tickSeconds(tick)
+
+    /** Humanized notes whose note-off would end the next note of the same pitch are trimmed (see [SamePitchTrim]). */
+    private fun trimSamePitch(played: List<PlayedNote>): List<PlayedNote> {
+        val trimmed = SamePitchTrim.trim(played.map { TimedNote(it.startS, it.endS, it.pitch) })
+        return played.indices.mapNotNull { i -> trimmed[i]?.let { played[i].copy(endS = it.end) } }
+    }
 
     /** alphaTab reported [scoreSeconds] now; a jump backwards (seek, loop) re-arms the schedule. */
     fun position(scoreSeconds: Double, playbackSpeed: Double) {
@@ -75,7 +81,7 @@ class HumanizedPlayer(private val core: CoreBridge) {
         if (!playing) anchorScoreS else anchorScoreS + (System.nanoTime() - anchorNanos) / 1e9 * speed
 
     private fun rewind(from: Double) {
-        RealisticSynth.allOff()
+        RealisticSynth.releaseAll()
         sentUntil = from
         parts.forEachIndexed { i, p -> next[i] = p.notes.indexOfFirst { it.startS >= from }.let { if (it < 0) p.notes.size else it } }
     }
@@ -98,7 +104,8 @@ class HumanizedPlayer(private val core: CoreBridge) {
         playing = false
         task?.cancel(false)
         task = null
-        RealisticSynth.allOff()
+        // The user asked for silence: a short fade, no click and no release ringing on.
+        RealisticSynth.fadeOut()
     }
 
     /** Sends every note starting in the next [LOOKAHEAD_S] of score time, with its delay in real time. */
@@ -112,7 +119,7 @@ class HumanizedPlayer(private val core: CoreBridge) {
                 val n = p.notes[k]
                 if (n.startS >= sentUntil - 1e-9 && audible(p.channel)) {
                     val on = ((n.startS - now) / speed).coerceAtLeast(0.0)
-                    val off = ((n.endS - now) / speed).coerceAtLeast(on + 0.01)
+                    val off = ((n.endS - now) / speed).coerceAtLeast(on + MIN_NOTE_S)
                     RealisticSynth.noteAt(p.channel, n.pitch, n.velocity.coerceIn(1, 127), on)
                     RealisticSynth.noteAt(p.channel, n.pitch, 0, off)
                     sent++
@@ -131,6 +138,7 @@ class HumanizedPlayer(private val core: CoreBridge) {
 
     companion object {
         const val LOOKAHEAD_S = 0.25
+        const val MIN_NOTE_S = 0.01
 
         /** Score ticks (960 per quarter) to seconds, following the master bars' tempo changes. */
         fun tempoMap(score: Score): (Double) -> Double {

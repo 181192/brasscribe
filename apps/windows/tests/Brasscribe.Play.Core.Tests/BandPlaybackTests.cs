@@ -50,7 +50,7 @@ public class BandPlaybackTests(ITestOutputHelper log)
         var band = BandSoundFont.Load(Mapping);
         foreach (var name in new[] { "Soprano Cornet", "Solo Cornet", "Flugelhorn", "Solo Horn", "1st Baritone", "Bass Trombone", "Euphonium", "E♭ Bass", "B♭ Bass" })
             Assert.NotNull(band.For(name));
-        Assert.Equal(new TrackSound(56, 5, -3.0), band.For("Flugelhorn"));
+        Assert.Equal((56, 5), (band.For("Flugelhorn")!.Program, band.For("Flugelhorn")!.Bank));
         Assert.True(band.For("Percussion")!.Percussion);
     }
 
@@ -63,7 +63,8 @@ public class BandPlaybackTests(ITestOutputHelper log)
 
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
-        BandSoundFont.Load(Mapping, sf2).ApplyTo(player);
+        var band = BandSoundFont.Load(Mapping, sf2);
+        band.ApplyTo(player);
         player.LoadScore(File.ReadAllBytes(golden));
         Assert.True(player.IsReady, player.LoadError?.Message);
 
@@ -71,7 +72,7 @@ public class BandPlaybackTests(ITestOutputHelper log)
         var perc = player.Tracks.Single(t => t.IsPercussion).Index;
         Assert.Equal(ChannelPlan.Drums, channels[perc]);
         Assert.Equal(channels.Count, channels.Distinct().Count());
-        Assert.Equal(Math.Pow(10, -9.5 / 20), player.TrackGains[perc], 6);
+        Assert.Equal(Math.Pow(10, band.For("Percussion")!.GainDb / 20), player.TrackGains[perc], 6);
 
         var levels = new List<string>();
         var silent = new List<string>();

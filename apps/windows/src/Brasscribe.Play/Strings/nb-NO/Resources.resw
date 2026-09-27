@@ -1767,4 +1767,10 @@
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom ut</value>
   </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Ventet i {0}</value>
+  </data>
 </root>

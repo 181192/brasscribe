@@ -4231,6 +4231,16 @@
         }
       }
     },
+    "The band sounds are missing. Reinstall Brasscribe Play to hear the band." : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."
+          }
+        }
+      }
+    },
     "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.": {
       "localizations": {
         "nb": {

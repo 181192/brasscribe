@@ -1767,4 +1767,10 @@
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom out</value>
   </data>
+  <data name="Player_SoundsMissing" xml:space="preserve">
+    <value>The band sounds are missing. Reinstall Brasscribe Play to hear the band.</value>
+  </data>
+  <data name="Player_SoundsMissing_Details" xml:space="preserve">
+    <value>Expected at {0}</value>
+  </data>
 </root>

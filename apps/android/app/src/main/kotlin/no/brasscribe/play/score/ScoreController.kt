@@ -55,6 +55,12 @@ data class ScoreUiState(
     val humanized: Boolean = false,
     /** The band SoundFont replaced alphaTab's built-in one. */
     val bandSoundFont: Boolean = false,
+    /**
+     * No band sounds on this install: the basic tier (alphaTab's General MIDI set) plays. The UI shows
+     * R.string.band_sounds_missing, with [bandSoundsExpected] (where the sounds were looked for) as detail.
+     */
+    val basicTier: Boolean = false,
+    val bandSoundsExpected: String = "",
     /** MIDI channel of each part as the synth plays it (index 9 = channel 10, drums). */
     val channels: List<Int> = emptyList(),
 )
@@ -71,7 +77,10 @@ class ScoreController(
     private val core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge,
     /** Band SoundFont part map (sounds/mapping.json); null keeps alphaTab's General MIDI programs. */
     private val soundMap: BandSoundMap? = null,
-    /** brasscribe-band.sf2 when installed; alphaTab keeps its built-in SoundFont otherwise. */
+    /**
+     * A sideloaded band SoundFont; without one the phone SoundFont bundled in the APK is used
+     * ([BandSoundFontFile]), and only without both does alphaTab keep its General MIDI SoundFont.
+     */
     private val bandSoundFont: java.io.File? = null,
     /** The Composition the score came from, for humanization. */
     private val compositionJson: String? = null,
@@ -80,6 +89,9 @@ class ScoreController(
     private var channels = IntArray(0)
     private var percussion: List<Boolean> = emptyList()
     private var gains = DoubleArray(0)
+    private var sounds: List<TrackSound?> = emptyList()
+    /** Parts sfizz plays in the realistic tier; every other part stays on alphaTab's band SoundFont. */
+    private var sfizzParts: Set<Int> = emptySet()
     private val humanized = HumanizedPlayer(core)
     private var humanizedReady = false
     private val _state = MutableStateFlow(ScoreUiState())
@@ -105,7 +117,7 @@ class ScoreController(
             _state.value = _state.value.copy(playing = playing)
             if (_state.value.realistic && humanizedReady) {
                 if (playing) humanized.start(::channelAudible) else humanized.stop()
-            } else if (!playing) RealisticSynth.allOff()
+            } else if (!playing) RealisticSynth.fadeOut()
         }
         view.api.playerPositionChanged.on { e ->
             if (_state.value.realistic && humanizedReady) humanized.position(humanized.secondsAt(e.currentTick), view.api.playbackSpeed)
@@ -128,8 +140,8 @@ class ScoreController(
             if (!_state.value.realistic || humanizedReady) return@on
             for (ev in e.events) {
                 when (ev) {
-                    is NoteOnEvent -> if (ev.channel.toInt() != ChannelPlan.DRUMS && channelAudible(ev.channel.toInt())) RealisticSynth.noteOn(ev.channel.toInt(), ev.noteKey.toInt(), ev.noteVelocity.toInt())
-                    is NoteOffEvent -> RealisticSynth.noteOff(ev.channel.toInt(), ev.noteKey.toInt())
+                    is NoteOnEvent -> if (sfizzChannel(ev.channel.toInt()) && channelAudible(ev.channel.toInt())) RealisticSynth.noteOn(ev.channel.toInt(), ev.noteKey.toInt(), ev.noteVelocity.toInt())
+                    is NoteOffEvent -> if (sfizzChannel(ev.channel.toInt())) RealisticSynth.noteOff(ev.channel.toInt(), ev.noteKey.toInt())
                 }
             }
         }
@@ -169,13 +181,28 @@ class ScoreController(
         percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
         channels = ChannelPlan.forPlayback(percussion)
         gains = DoubleArray(names.size) { 1.0 }
+        // Banks only exist in the band SoundFont; alphaTab's General MIDI one has bank 0 alone, and a
+        // pitched channel on a missing bank is silent, so the basic tier keeps bank 0.
+        val band = bandSoundFont?.isFile == true || BandSoundFontFile.available(view.context)
+        _state.value = _state.value.copy(basicTier = !band, bandSoundsExpected = if (band) "" else
+            "assets/${BandSoundFontFile.ASSET}; ${view.context.getExternalFilesDir(null)?.resolve("sounds")}")
+        sounds = names.indices.map { i ->
+            val t = s.tracks[i]
+            soundMap?.resolve(names[i], null, t.playbackInfo.program.toInt().takeIf { it in 0..127 })
+                ?.let { if (percussion[i] && !it.percussion) it.copy(percussion = true) else it }
+        }
         for (i in names.indices) {
             val t = s.tracks[i]
             t.playbackInfo.primaryChannel = channels[i].toDouble()
             t.playbackInfo.secondaryChannel = channels[i].toDouble()
-            val sound = soundMap?.forPart(names[i]) ?: continue
+            val sound = sounds[i]
+            if (sound == null) {
+                android.util.Log.w("BrasscribePlay", "part '${names[i]}' is not a brass-band instrument; it keeps its MusicXML program")
+                continue
+            }
+            if (sound.step != "exact") android.util.Log.i("BrasscribePlay", "part '${names[i]}' plays the ${sound.part} preset (${sound.step})")
             t.playbackInfo.program = if (sound.percussion) 0.0 else sound.program.toDouble()
-            t.playbackInfo.bank = if (sound.percussion) 0.0 else sound.bank.toDouble()
+            t.playbackInfo.bank = if (sound.percussion || !band) 0.0 else sound.bank.toDouble()
             gains[i] = sound.gain
             for (staff in t.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) {
                 val keep = ArrayList<alphaTab.model.Automation>()
@@ -188,13 +215,15 @@ class ScoreController(
 
     private var soundFontRequested = false
 
-    /** Replaces alphaTab's built-in SoundFont with the band SoundFont (read off the UI thread). */
+    /** Replaces alphaTab's built-in SoundFont with the band SoundFont (found and read off the UI thread). */
     private fun loadBandSoundFont() {
-        val sf = bandSoundFont?.takeIf { it.isFile } ?: return
         if (soundFontRequested) return
         soundFontRequested = true
+        val context = view.context
         Thread({
             val t0 = System.nanoTime()
+            val sf = BandSoundFontFile.resolve(context, bandSoundFont?.takeIf { it.isFile } ?: BandSoundFontFile.sideloaded(context))
+                ?: return@Thread
             val bytes = runCatching { sf.readBytes() }.getOrElse {
                 android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it); return@Thread
             }
@@ -217,11 +246,11 @@ class ScoreController(
         }, "band-soundfont").start()
     }
 
-    /** Applies each part's balance (and mutes alphaTab's pitched parts while sfizz plays them). */
+    /** Applies each part's balance (and mutes alphaTab's copy of the parts sfizz plays). */
     private fun applyVolumes() {
         val s = score ?: return
         for (i in 0 until s.tracks.length.toInt()) {
-            val silent = _state.value.realistic && !percussion.getOrElse(i) { false }
+            val silent = _state.value.realistic && i in sfizzParts
             view.api.changeTrackVolume(alphaTab.collections.List(s.tracks[i]), if (silent) 0.0 else gains.getOrElse(i) { 1.0 })
         }
     }
@@ -259,9 +288,37 @@ class ScoreController(
             else if (!_state.value.realistic) { notesPerChannel.clear(); view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn) }
         }
         if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
-        view.api.playPause()
+        if (_state.value.playing) fadeThen { view.api.playPause() } else view.api.playPause()
     }
-    fun stop() { view.api.stop(); RealisticSynth.allOff() }
+    fun stop() { RealisticSynth.fadeOut(); fadeThen { view.api.stop() } }
+
+    /**
+     * Stop and pause: the band fades out over [STOP_FADE_MS] before the player stops, so a note
+     * is not cut with a click and a long release does not ring on after the user asked for
+     * silence. Seeking keeps the natural release (it does not come through here).
+     */
+    private var fading: android.animation.ValueAnimator? = null
+    private fun fadeThen(action: () -> Unit) {
+        fading?.cancel()
+        val volume = view.api.masterVolume
+        fading = android.animation.ValueAnimator.ofFloat(1f, 0f).apply {
+            duration = STOP_FADE_MS
+            addUpdateListener { view.api.masterVolume = volume * (it.animatedValue as Float) }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                private var done = false
+                private fun finish() {
+                    if (done) return
+                    done = true
+                    action()
+                    view.api.masterVolume = volume
+                    fading = null
+                }
+                override fun onAnimationEnd(animation: android.animation.Animator) = finish()
+                override fun onAnimationCancel(animation: android.animation.Animator) = finish()
+            })
+            start()
+        }
+    }
 
     fun setSpeed(percent: Int) {
         val p = percent.coerceIn(25, 150)
@@ -278,6 +335,8 @@ class ScoreController(
         view.api.changeTrackSolo(tracks(listOf(index)), solo)
         _state.value = _state.value.copy(soloed = if (solo) _state.value.soloed + index else _state.value.soloed - index)
     }
+
+    private fun sfizzChannel(channel: Int): Boolean = channels.indexOf(channel).let { it >= 0 && it in sfizzParts }
 
     private fun channelAudible(channel: Int): Boolean {
         val s = score ?: return true
@@ -449,17 +508,22 @@ class ScoreController(
         if (on && !RealisticSynth.start()) return false
         if (on) {
             val pack = SoundPack(view.context)
-            var installed = 0
+            val playing = HashSet<Int>()
             for (i in 0 until s.tracks.length.toInt()) {
                 if (percussion.getOrElse(i) { false }) continue
                 val ch = channels[i]
-                RealisticSynth.setGain(ch, gains.getOrElse(i) { 1.0 }.toFloat())
-                if (RealisticSynth.regions(ch) > 0) { installed++; continue }
-                val sfz = pack.sfzFor(s.tracks[i].name.replace('\u00A0', ' '))
-                if (sfz != null && RealisticSynth.load(ch, sfz)) installed++ else RealisticSynth.loadTestTone(ch)
+                // One SFZ per part sounds one target: single_voice_gain_db, not the layered preset's gain.
+                RealisticSynth.setGain(ch, (sounds.getOrNull(i)?.singleVoiceGain ?: gains.getOrElse(i) { 1.0 }).toFloat())
+                if (RealisticSynth.regions(ch) > 0) { playing += i; continue }
+                // A part without an installed SFZ stays on the band SoundFont (never a test tone).
+                val sfz = sounds.getOrNull(i)?.let { pack.sfzFor(it) }
+                if (sfz != null && RealisticSynth.load(ch, sfz)) playing += i
             }
+            sfizzParts = playing
+            val installed = playing.size
             val t0 = System.nanoTime()
-            val count = runCatching { humanized.prepare(s, channels, percussion, compositionJson) }
+            val skip = percussion.indices.map { it !in playing }
+            val count = runCatching { humanized.prepare(s, channels, skip, compositionJson) }
                 .onFailure { android.util.Log.w("BrasscribePlay", "humanization unavailable", it) }.getOrDefault(0)
             humanizedReady = count > 0
             android.util.Log.i("BrasscribePlay", "realistic tier: %d parts with installed instruments, %d humanized notes in %d ms, channels %s"
@@ -471,6 +535,7 @@ class ScoreController(
             humanized.stop()
             view.api.midiEventsPlayedFilter = alphaTab.collections.List()
             RealisticSynth.allOff(); RealisticSynth.stop()
+            sfizzParts = emptySet()
             _state.value = _state.value.copy(realistic = false, humanized = false)
         }
         applyVolumes()
@@ -517,3 +582,5 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
     (this and 0xFF).toDouble(),
     ((this ushr 24) and 0xFF).toDouble(),
 )
+
+private const val STOP_FADE_MS = 80L

@@ -231,6 +231,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     if (performance) PerformanceBar(controller, st, Modifier.align(Alignment.BottomCenter), onBar = ::moveBar) { performance = false }
                 }
             }
+            if (!performance && st.basicTier) BandSoundsMissing(st.bandSoundsExpected)
             if (!performance) PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
         }
     }

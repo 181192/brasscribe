@@ -265,6 +265,23 @@ fun InfoNote(text: String, modifier: Modifier = Modifier, @DrawableRes icon: Int
     }
 }
 
+/**
+ * One line above the player when the band sounds are not installed: what to do next, and where
+ * they were looked for under the tech-person details.
+ */
+@Composable
+fun BandSoundsMissing(expected: String, modifier: Modifier = Modifier) {
+    var details by remember { mutableStateOf(false) }
+    val c = BrasscribeTheme.colors
+    Column(modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s2)) {
+        InfoNote(stringResource(R.string.band_sounds_missing), boxed = false)
+        if (expected.isNotBlank()) {
+            PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })
+            if (details) Text(expected, style = MaterialTheme.typography.bodySmall, color = c.textMuted)
+        }
+    }
+}
+
 /** The brand mark (a flat sign that flares like a bell), in brass. For brand moments only. */
 @Composable
 fun BrandMark(size: Dp = 56.dp, modifier: Modifier = Modifier) {
