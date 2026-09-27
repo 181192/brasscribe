@@ -209,3 +209,31 @@ The top P2s from the first Studio review are fixed too:
 | P1-B | Apple iPhone | Listen and Change note… are below the fold on Review. |
 | P1-C | Apple (and the same class in Studio S-P2-1) | "Your scores" titles are duplicated or timestamps, and the rows are cramped. |
 | S-P1-1 | Studio | The Parity failure table has blank Variant and Meets threshold cells. |
+
+---
+
+# Final pass: P1 status
+
+**Sources**
+- **Screenshots:** Apple `iphone-*` / `ipad-*` (including `-nb-` and `home-full`); Android `05`, `05b-change-note`, `06b-keep-rest-of-bar` and `02c-home-your-scores`; Studio `review-3/`.
+- **Studio parity, live:** I ran main on port 8831 (since stopped) and opened every disclosure. All 342 table rows have a non-empty variant cell.
+
+| P1 | Status | Evidence |
+|---|---|---|
+| **P1-A** Uncertainty rate | **Closed** | Mikkel's Solo Cornet now has **83 places** (grouped: "2 notes from written D, minim"), 63 of them very unsure, against 694 notes. The review opens with "Most of these are probably right. Start with the 63 very unsure ones." Android has **Keep the rest of this bar** (`06b`), and the Change note sheet offers Down/Up a semitone and Octave down/up plus Save (`05b`). |
+| **P1-B** iPhone Review buttons | **Closed** | The staff card fits its content. **Listen to this bar** and **Change note…** sit above the fold, under the note name, in both en and nb. **Finish later (83 left)** moved to the bottom bar, and the title is "Check the notes" / "Sjekk tonene". |
+| **P1-C** Home titles and rows | **Closed** | Apple and Android list real titles (Mikkel, Deep Harmony, Abide with Me, "Recording, 25 Sep 00:51"). Rows are about 60 pt/dp or more, with a subtitle "Full band · 132 bars · Today · 83 to check". This is also fine in nb dark ("Lite korps", "å sjekke"). |
+| **S-P1-1** Parity table | **Closed** | The variant is named on every row, for example "Core ML batch 1 fp16 (GPU) · coreml-b1-fp16-CPU_AND_GPU", and failing rows show "✕ below…". `tests/parity.test.ts` now asserts a non-empty variant. The page summary changed to "All 7 models are ready: each has at least one converted format that meets the threshold", with each model collapsed ("ready on 12 of 16 formats"). This also fixes the page-height issue (S-P2-2). |
+
+**New P1s:** none.
+
+**Also closed along the way**
+- The selected note is now a tint column plus a caret under the staff, not a box (Android P2-A, Apple P2-I).
+- Note values are en-GB on Apple ("G, crotchet").
+- Bench rows use plain labels with an ⓘ (S-P3-3).
+
+**Small leftovers (P2/P3)**
+1. **P2, the counts disagree between screens.** Apple Home says "114 to check" (all parts), but Review opens on "Yours (83)". Android shows "Accompaniment (0)", while Apple shows "Others (31)" for the same score. Use one definition everywhere: Home shows the player's part ("83 to check"), and every platform uses the same "other parts" rule.
+2. **P2, the lead line contradicts itself.** "Most of these are probably right" sits right above "63 very unsure" out of 83. When very-unsure places are more than half, say "Start with the 63 very unsure places. The other 20 are probably right."
+3. **P3, Android review snippet:** the "rendered by alphaTab" credit sits under the staff and crowds the dynamic. Move the credit to About.
+4. **P3, "(draft)" is back in the Android Home title:** "Mikkel — solo cornet & brass band (draft)". Drop it in Play (second review P2-11).
