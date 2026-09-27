@@ -143,7 +143,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
             new MachineInfo(computer, _cuda ? "Health_Speed_Nvidia" : "Health_Speed_Cpu", runsOn, Machine.LanAddresses()))
         {
             SetupComplete = _bootstrap.IsComplete(_cuda),
-            ModelsReady = () => _bootstrap.IsComplete(_cuda),
+            ModelsReady = () => _controller?.SetupComplete ?? false,
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));

@@ -79,6 +79,19 @@ public sealed class Bootstrapper
 
     public string LockHash => Hash(Path.Combine(_bundledWorkspace, "pixi.lock"));
 
+    /// <summary>The lockfile plus every bundled file's path and size: a new app version with other sources copies again.</summary>
+    public string BundleHash
+    {
+        get
+        {
+            if (!Directory.Exists(_bundledWorkspace)) return "";
+            var sb = new System.Text.StringBuilder(LockHash);
+            foreach (var f in Directory.EnumerateFiles(_bundledWorkspace, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+                sb.Append('\n').Append(Path.GetRelativePath(_bundledWorkspace, f).Replace('\\', '/')).Append(' ').Append(new FileInfo(f).Length);
+            return Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sb.ToString())));
+        }
+    }
+
     private static string Hash(string file) =>
         File.Exists(file) ? Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(file))) : "";
 
@@ -98,7 +111,7 @@ public sealed class Bootstrapper
     {
         string hash = LockHash;
         var steps = new List<string>();
-        if (!MarkerMatches("workspace", hash)) steps.Add("workspace");
+        if (!MarkerMatches("workspace", BundleHash)) steps.Add("workspace");
         steps.AddRange(EnvironmentPlan.Environments(cuda).Where(e => !MarkerMatches("env-" + e, hash)));
         return steps;
     }
@@ -106,7 +119,7 @@ public sealed class Bootstrapper
     public bool IsComplete(bool cuda) => Pending(cuda).Count == 0;
 
     /// <summary>The engine environment is installed, so the engine can start while adapters still download.</summary>
-    public bool EngineReady => MarkerMatches("env-default", LockHash) && MarkerMatches("workspace", LockHash);
+    public bool EngineReady => MarkerMatches("env-default", LockHash) && MarkerMatches("workspace", BundleHash);
 
     public ProcessSpec InstallSpec(string environment) => new(
         _pixiExe,
@@ -126,7 +139,7 @@ public sealed class Bootstrapper
             if (item == "workspace")
             {
                 CopyWorkspace();
-                WriteMarker("workspace", hash);
+                WriteMarker("workspace", BundleHash);
             }
             else
             {

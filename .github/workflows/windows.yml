@@ -216,7 +216,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
-          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/src/brasscribe_engine/api.py", "workspace/ml/adapters/run_adapter.py")) {
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/brasscribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py")) {
             if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
           }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT

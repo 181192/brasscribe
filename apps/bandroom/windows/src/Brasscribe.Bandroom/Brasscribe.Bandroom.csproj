@@ -68,10 +68,14 @@
       <_WsMusic Include="$(RepoRoot)music\src\**\*" Exclude="$(_NoCache)" />
       <_WsEv Include="$(RepoRoot)eval\brasscribe_eval\**\*" Exclude="$(_NoCache)" />
       <_WsAdapters Include="$(RepoRoot)ml\adapters\**\*" Exclude="$(_NoCache)" />
-      <_WsMeta Include="$(RepoRoot)engine\pyproject.toml;$(RepoRoot)engine\openapi.json;$(RepoRoot)music\pyproject.toml;$(RepoRoot)music\README.md;$(RepoRoot)eval\pyproject.toml;$(RepoRoot)eval\README.md" />
+      <_WsEngineMeta Include="$(RepoRoot)engine\pyproject.toml;$(RepoRoot)engine\openapi.json" />
+      <_WsMusicMeta Include="$(RepoRoot)music\pyproject.toml;$(RepoRoot)music\README.md" />
+      <_WsEvMeta Include="$(RepoRoot)eval\pyproject.toml;$(RepoRoot)eval\README.md" />
     </ItemGroup>
     <Copy SourceFiles="@(_WsRoot)" DestinationFolder="$(_Ws)" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_WsMeta)" DestinationFiles="@(_WsMeta->'$(_Ws)$([MSBuild]::MakeRelative($(RepoRoot), %(FullPath)))')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEngineMeta)" DestinationFolder="$(_Ws)engine" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsMusicMeta)" DestinationFolder="$(_Ws)music" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEvMeta)" DestinationFolder="$(_Ws)eval" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEngine)" DestinationFiles="@(_WsEngine->'$(_Ws)engine\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsMusic)" DestinationFiles="@(_WsMusic->'$(_Ws)music\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\brasscribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />

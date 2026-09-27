@@ -114,6 +114,20 @@ public sealed class BootstrapTests : IDisposable
     }
 
     [Fact]
+    public async Task A_new_app_version_with_other_sources_copies_the_workspace_again_but_keeps_the_environments()
+    {
+        var paths = new BandroomPaths(Path.Combine(_dir, "data"));
+        var bundle = Bundle();
+        var boot = new Bootstrapper(paths, bundle, "pixi", new FakeLauncher { ExitImmediately = _ => 0 }, new EngineLog(null));
+        await boot.RunAsync(false, null, CancellationToken.None);
+        Directory.CreateDirectory(Path.Combine(bundle, "music"));
+        File.WriteAllText(Path.Combine(bundle, "music", "pyproject.toml"), "[project]\nname = \"brasscribe-music\"\n");
+        Assert.Equal(["workspace"], boot.Pending(false));
+        await boot.RunAsync(false, null, CancellationToken.None);
+        Assert.True(File.Exists(Path.Combine(paths.Workspace, "music", "pyproject.toml")));
+    }
+
+    [Fact]
     public async Task Cancelling_kills_the_install()
     {
         var paths = new BandroomPaths(Path.Combine(_dir, "data"));
