@@ -35,6 +35,7 @@ class Job:
     allow_heavy: bool = True
     cold: set[str] = field(default_factory=set)
     previous_run_id: str | None = None
+    device_name: str | None = None
     status: str = "queued"
     created: float = field(default_factory=time.time)
     started: float | None = None
@@ -78,10 +79,11 @@ class JobManager:
 
     def submit(self, audio: Path, profile: str, *, audio_id: str | None = None, title: str | None = None,
                params: dict | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
-               previous_run_id: str | None = None) -> Job:
+               previous_run_id: str | None = None, device_name: str | None = None) -> Job:
         pipeline = profiles.build(profile, audio, title, params)
         job = Job(runner.new_run_id(profile), profile, pipeline.stage("arrange").params.get("title"), audio_id,
-                  Path(audio), dict(params or {}), allow_heavy, set(cold or ()), previous_run_id)
+                  Path(audio), dict(params or {}), allow_heavy, set(cold or ()), previous_run_id,
+                  device_name)
         for s in pipeline.stages:
             job.stages[s.name] = {"name": s.name, "kind": s.kind, "status": "pending"}
         with self.lock:
@@ -116,6 +118,14 @@ class JobManager:
                 if j:
                     live[j.id] = j
         return sorted(live.values(), key=lambda j: j.created, reverse=True)
+
+    def counts(self) -> tuple[int, int]:
+        """(running, queued) among the jobs this engine process runs; a cancelled queued job is not counted."""
+        with self.lock:
+            live = list(self.jobs.values())
+        running = sum(j.status == "running" for j in live)
+        queued = sum(j.status == "queued" and not j.cancel.is_set() for j in live)
+        return running, queued
 
     def cancel(self, job_id: str) -> Job | None:
         job = self.get(job_id)

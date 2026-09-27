@@ -56,6 +56,29 @@ public interface IEngineClient
 
     Task DeleteRunAsync(string jobId, CancellationToken ct = default) =>
         throw new NotSupportedException("This engine client cannot delete runs.");
+
+    /// <summary>Pairs with a code and returns the whole answer (token, device id, server id and name).</summary>
+    Task<PairResponse> PairDeviceAsync(string code, string? deviceName, string? platform, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot pair.");
+
+    /// <summary>This device as the engine knows it; 401 once the engine has forgotten it, 404 on loopback.</summary>
+    Task<DeviceSelf> GetThisDeviceAsync(CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot check the device.");
+
+    /// <summary>A new token for this device. The caller stores it before using it.</summary>
+    Task<RotateResponse> RotateTokenAsync(CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot rotate the token.");
+
+    /// <summary>Forgets this device on the engine.</summary>
+    Task UnpairAsync(CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot unpair.");
+
+    /// <summary>Asks the owner to allow this device on the computer; 429 when too many are waiting.</summary>
+    Task<PairRequestInfo> RequestPairingAsync(string? deviceName, string? platform, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot ask the computer.");
+
+    Task<PairRequestResult> PollPairingRequestAsync(string requestId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot ask the computer.");
 }
 
 /// <summary>
@@ -96,6 +119,35 @@ public sealed class EngineClient : IEngineClient
             throw new EngineException("The pairing code was not accepted.", e.Status, e);
         }
     }
+
+    public async Task<PairResponse> PairDeviceAsync(string code, string? deviceName, string? platform, CancellationToken ct = default)
+    {
+        var content = JsonContent.Create(new PairRequest(code, deviceName, platform), DeviceJsonContext.Default.PairRequest);
+        try
+        {
+            return await SendJsonAsync(HttpMethod.Post, "v1/pair", content, DeviceJsonContext.Default.PairResponse, ct).ConfigureAwait(false);
+        }
+        catch (EngineException e) when (e.Status == HttpStatusCode.Forbidden)
+        {
+            throw new EngineException("The pairing code was not accepted.", e.Status, e);
+        }
+    }
+
+    public Task<DeviceSelf> GetThisDeviceAsync(CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Get, "v1/devices/me", null, DeviceJsonContext.Default.DeviceSelf, ct);
+
+    public Task<RotateResponse> RotateTokenAsync(CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Post, "v1/devices/me/rotate", null, DeviceJsonContext.Default.RotateResponse, ct);
+
+    public Task UnpairAsync(CancellationToken ct = default) => SendNoContentAsync(HttpMethod.Delete, "v1/devices/me", ct);
+
+    public Task<PairRequestInfo> RequestPairingAsync(string? deviceName, string? platform, CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Post, "v1/pair/requests",
+            JsonContent.Create(new PairRequestCreate(deviceName, platform), DeviceJsonContext.Default.PairRequestCreate),
+            DeviceJsonContext.Default.PairRequestInfo, ct);
+
+    public Task<PairRequestResult> PollPairingRequestAsync(string requestId, CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Get, $"v1/pair/requests/{Uri.EscapeDataString(requestId)}", null, DeviceJsonContext.Default.PairRequestResult, ct);
 
     public async Task<IReadOnlyList<ProfileInfo>> ListProfilesAsync(CancellationToken ct = default) =>
         await SendJsonAsync(HttpMethod.Get, "v1/profiles", null, EngineJsonContext.Default.ListProfileInfo, ct).ConfigureAwait(false);
@@ -160,9 +212,12 @@ public sealed class EngineClient : IEngineClient
         SendJsonAsync(HttpMethod.Patch, $"v1/runs/{Uri.EscapeDataString(jobId)}",
             JsonContent.Create(new RunUpdate(title), EngineJsonContext.Default.RunUpdate), EngineJsonContext.Default.Job, ct);
 
-    public async Task DeleteRunAsync(string jobId, CancellationToken ct = default)
+    public Task DeleteRunAsync(string jobId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"v1/runs/{Uri.EscapeDataString(jobId)}", ct);
+
+    private async Task SendNoContentAsync(HttpMethod method, string path, CancellationToken ct)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Delete, new Uri(BaseAddress, $"v1/runs/{Uri.EscapeDataString(jobId)}"));
+        using var req = new HttpRequestMessage(method, new Uri(BaseAddress, path));
         Authorize(req);
         HttpResponseMessage resp;
         try

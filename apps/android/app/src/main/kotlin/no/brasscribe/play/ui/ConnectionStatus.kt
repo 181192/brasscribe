@@ -38,7 +38,8 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
 fun connectionIcon(state: ConnectionState): Int = when (state) {
     is ConnectionState.Connected -> R.drawable.ic_bc_computer
     is ConnectionState.Reconnecting -> R.drawable.ic_bc_network
-    is ConnectionState.Offline -> R.drawable.ic_bc_network
+    // A different shape from "looking for": the state never rests on the words alone.
+    is ConnectionState.Offline -> R.drawable.ic_bc_attention
     is ConnectionState.NeedsPairing -> R.drawable.ic_bc_pair_phone
 }
 

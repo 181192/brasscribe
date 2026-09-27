@@ -120,6 +120,11 @@ fun StatusLine(status: Status?, modifier: Modifier = Modifier) {
         if (visible == status) visible = null
     }
     val s = visible ?: return
+    if (s.quiet) {
+        // Heard, not seen: a polite live region with nothing drawn.
+        androidx.compose.foundation.layout.Box(modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = s.text })
+        return
+    }
     val c = BrasscribeTheme.colors
     Surface(
         modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = c.text, contentColor = c.bg,

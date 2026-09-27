@@ -258,7 +258,8 @@ class PlayFlowA11yTest {
         runCatching { rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() } }.onFailure {
             throw AssertionError("after Space: " + button.fetchSemanticsNode().config.toString(), it)
         }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Stopped", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        // Announced without a bar over the card.
+        rule.waitUntil(5_000) { rule.onAllNodes(hasContentDescription("Stopped"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         button.requestFocus()
         button.performKeyInput { pressKey(Key.Enter) }
         rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }

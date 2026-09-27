@@ -44,6 +44,8 @@ data class DeviceSelf(
     val platform: String,
     @SerialName("paired_at") val pairedAt: String,
     @SerialName("last_seen") val lastSeen: String,
+    /** Seen in the last 60 s. */
+    val online: Boolean,
     @SerialName("server_id") val serverId: String,
     @SerialName("rotate_after") val rotateAfter: String,
     @SerialName("expires_if_idle_after") val expiresIfIdleAfter: String,
@@ -168,6 +170,8 @@ data class Job(
     val outputs: List<String> = emptyList(),
     /** The job this one re-runs, if any. */
     @SerialName("previous_run_id") val previousRunId: String? = null,
+    /** The paired device that started the job; null when started on the engine's own computer. */
+    @SerialName("device_name") val deviceName: String? = null,
 )
 
 @Serializable

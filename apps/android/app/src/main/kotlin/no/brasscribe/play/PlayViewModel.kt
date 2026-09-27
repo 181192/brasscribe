@@ -139,7 +139,12 @@ data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Diffi
 }
 
 /** A status line for sighted users that screen readers also hear (polite live region). */
-data class Status(val text: String, val serial: Long = System.nanoTime())
+data class Status(
+    val text: String,
+    val serial: Long = System.nanoTime(),
+    /** Only for screen readers: the screen already shows it (the Listen button reads Stop), so no bar covers the card. */
+    val quiet: Boolean = false,
+)
 
 class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val container = (app as PlayApplication).container
@@ -171,9 +176,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     /** "Listen to this bar": [clipPlaying] is the bar playing now; the button shows Stop while it is. */
     val listening = BarListening(viewModelScope, clips) { e ->
         when (e) {
-            is BarListening.Event.Started -> say(if (e.withRecording) R.string.playing_bar_original else R.string.playing_bar_score, e.bar)
-            is BarListening.Event.Stopped -> say(R.string.listen_stopped)
-            is BarListening.Event.Ended -> say(R.string.listen_ended, e.bar)
+            is BarListening.Event.Started -> sayQuietly(if (e.withRecording) R.string.playing_bar_original else R.string.playing_bar_score, e.bar)
+            is BarListening.Event.Stopped -> sayQuietly(R.string.listen_stopped)
+            is BarListening.Event.Ended -> sayQuietly(R.string.listen_ended, e.bar)
             BarListening.Event.Unavailable -> say(R.string.listen_unavailable)
         }
     }
@@ -201,9 +206,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private var renderedScoreAudio: PcmAudio? = null
 
     init {
-        // Leaving a place stops "Listen to this bar", whichever way the user left.
+        // Leaving a place stops "Listen to this bar" (and asking the computer), whichever way the user left.
         viewModelScope.launch {
-            backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { listening.stop(announce = false) }
+            backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { top ->
+                listening.stop(announce = false)
+                if (top != Screen.COMPANION) cancelAsk()
+            }
         }
     }
 
@@ -231,6 +239,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun say(@StringRes id: Int, vararg args: Any) { status.value = Status(res.getString(id, *args)) }
+    private fun sayQuietly(@StringRes id: Int, vararg args: Any) { status.value = Status(res.getString(id, *args), quiet = true) }
     private fun sayText(text: String) { status.value = Status(text) }
 
     // ---- Import ---------------------------------------------------------------------------------------
@@ -848,8 +857,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             429 -> res.getString(R.string.pair_code_locked)
             else -> res.getString(R.string.companion_failed_plain)
         }
+        // Shown on the connection screen already: heard, not shown twice.
         companionState.value = text
-        sayText(text)
+        status.value = Status(text, quiet = true)
     }
 
     /** What went wrong last time, for the tech details. */
@@ -870,7 +880,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 val info = client.requestPairing(container.deviceName)
                 matchCode.value = info.matchCode
                 companionState.value = null
-                say(R.string.pair_ask_waiting_spoken, info.matchCode.toList().joinToString(" "))
+                sayQuietly(R.string.pair_ask_waiting_spoken, info.matchCode.toList().joinToString(" "))
                 val until = System.currentTimeMillis() + ASK_TIMEOUT_MS
                 while (System.currentTimeMillis() < until) {
                     delay(ASK_POLL_MS)
@@ -891,7 +901,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                             matchCode.value = null
                             askAgain.value = url
                             companionState.value = res.getString(R.string.pair_ask_denied)
-                            say(R.string.pair_ask_denied)
+                            sayQuietly(R.string.pair_ask_denied)
                             return@launch
                         }
                     }
@@ -899,7 +909,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 matchCode.value = null
                 askAgain.value = url
                 companionState.value = res.getString(R.string.pair_ask_expired)
-                say(R.string.pair_ask_expired)
+                sayQuietly(R.string.pair_ask_expired)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 matchCode.value = null
                 throw e

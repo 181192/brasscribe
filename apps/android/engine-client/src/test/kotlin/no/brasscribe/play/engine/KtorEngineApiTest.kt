@@ -61,7 +61,7 @@ class KtorEngineApiTest {
             seen += "${req.method.value} ${req.url.encodedPath}"
             when (req.url.encodedPath) {
                 "/v1/devices/me" -> respond("""{"device_id":"d1","name":"Pixel","platform":"android","paired_at":"2026-09-01T10:00:00+00:00",
-                    "last_seen":"2026-09-27T10:00:00+00:00","server_id":"s1","rotate_after":"2026-10-01T10:00:00+00:00",
+                    "last_seen":"2026-09-27T10:00:00+00:00","online":true,"server_id":"s1","rotate_after":"2026-10-01T10:00:00+00:00",
                     "expires_if_idle_after":"2026-12-26T10:00:00+00:00","rotated_at":null}""", HttpStatusCode.OK, json)
                 "/v1/devices/me/rotate" -> respond("""{"token":"t2","device_id":"d1"}""", HttpStatusCode.OK, json)
                 "/v1/pair/requests" -> respond("""{"request_id":"q1","name":"Pixel","platform":"android","match_code":"4821",

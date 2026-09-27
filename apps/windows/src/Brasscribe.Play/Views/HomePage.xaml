@@ -17,7 +17,25 @@
                 <Run x:Uid="HomeHeadingBrass" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic"
                      Foreground="{ThemeResource BcBrassTextBrush}" />
             </TextBlock>
-            <TextBlock x:Uid="HomeIntro" Style="{StaticResource LeadStyle}" Margin="0,-4,0,12" />
+            <TextBlock x:Uid="HomeIntro" Style="{StaticResource LeadStyle}" Margin="0,-4,0,4" />
+
+            <!-- Brasscribe on your computer: icon and words (never colour alone); Connect or Pair again when needed.
+                 State changes are announced by the view model, not on every heartbeat. -->
+            <Grid ColumnSpacing="10" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="{x:Bind vm:Screens.ConnectionGlyph(Main.Settings.Connection.State), Mode=OneWay}" FontSize="16"
+                          Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock x:Name="ConnectionText" Grid.Column="1" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Text="{x:Bind Main.Settings.Connection.StatusText, Mode=OneWay}" />
+                <Button x:Name="ConnectionActionButton" x:Uid="ConnectionActionButton" Grid.Column="2" Style="{StaticResource ActionButtonStyle}"
+                        MinHeight="44" VerticalAlignment="Center" Click="OnConnectionAction"
+                        Content="{x:Bind Main.Settings.Connection.ActionText, Mode=OneWay}"
+                        Visibility="{x:Bind Main.Settings.Connection.HasAction, Mode=OneWay}" />
+            </Grid>
 
             <!-- The one primary: open a recording (or drop it here). -->
             <Border Style="{StaticResource CardStyle}" BorderBrush="{ThemeResource BcBorderStrongBrush}" Padding="24">

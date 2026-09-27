@@ -637,7 +637,10 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | notify.ready | Brasscribe is ready. Phones and tablets can make full-band scores now. | Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå. |
 
 ## 11. What this design assumes from the engine
-The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. That file lands with the engine's device-pairing work and is not on this branch yet. What this design relies on (all owner endpoints are loopback only):
+The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. What this design relies on:
+
+- **Owner endpoints** (`/v1/status`, `/v1/devices`, `/v1/pairing*`): the shell generates a random token at first run, starts the engine with `BRASSCRIBE_ADMIN_TOKEN=<token>` (or `BRASSCRIBE_ADMIN_TOKEN_FILE`, mode 0600) and sends `Authorization: Bearer <token>` on every owner call. While an admin token is set, loopback alone gets 403 there, so a proxy on the same computer cannot manage devices. Loopback trust for Studio stays on (`BRASSCRIBE_TRUST_LOCAL=1`, the default). See plan §4.10.
+- **Status:** `GET /v1/status` returns `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running` and `jobs_queued`. Bandroom polls it every 5 s while the popover or flyout is open, and every 30 s otherwise. A device is online when it was seen in the last 60 s. Paired phones send a heartbeat every 20 s while the app is open.
 
 - **The pairing window:** `POST /v1/pairing {ttl_s, single_use, extend}` returns the state: `open`, `code`, `expires_at`, `server_id`, `server_name`, `hosts`, `fingerprint` and `uri`.
   - `ttl_s: null` means no expiry. Bandroom uses that while the Pair window is open.
@@ -648,13 +651,13 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
 - **Wrong codes:** after 5, code entry is locked for 30 s, doubling up to 15 min. The engine answers 429 with `Retry-After`. It never swaps the code silently.
-- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
+- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at, online) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
 - **Approve on the computer:** the phone sends `POST /v1/pair/requests` and gets `{request_id, name, platform, match_code (4 digits), created_at, status}`.
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.
   - A request expires after 2 minutes, and at most three wait at once (429 beyond that).
-- **Health:** today `/v1/health` gives the version and device. Work load, memory and free space come from the **native shell** (host APIs), not the engine, so the engine needs no new endpoint for them. Job progress uses the existing `/v1/jobs` and SSE.
-- **The computer's name:** the shell sets `BRASSCRIBE_COMPUTER_NAME` (§5.2).
-  - `server_name` in `/v1/health`, `/v1/pair`, the pairing state and the QR `name` is always exactly "Brasscribe on <name>". The popover header uses that string as it is.
+- **Health:** `/v1/health` gives the version, device, `server_id` and `server_name`. Work load, memory and free space come from the **native shell** (host APIs), not the engine, so the engine needs no new endpoint for them. Job progress uses the existing `/v1/jobs` and SSE.
+- **The computer's name:** the shell sets `BRASSCRIBE_COMPUTER_NAME` (§5.2). Without it, the engine uses the macOS ComputerName, else the host name. `BRASSCRIBE_SERVER_NAME` replaces the whole display name.
+  - `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the pairing state, the QR `name` and the mDNS instance name is always exactly "Brasscribe on <name>". The popover header uses that string as it is.
   - The engine cleans the name: control characters and "." become spaces, whitespace collapses, and the name is cut to fit one DNS label (about 49 bytes). If nothing is left, it falls back to the short host name.
   - The mDNS TXT record carries `host=<name>` and `id=<server id>`. Phones build "Brasscribe på <host>" from `host`. They never show the mDNS instance name, because a name collision can add " (2)" to it.
   - The SRV target stays the DNS-safe host name (`Kallis-MacBook-Pro.local.`).

@@ -63,10 +63,8 @@ fun CompanionScreen(vm: PlayViewModel) {
     val found by discovery.engines.collectAsState()
     DisposableEffect(discovery) {
         discovery.start()
-        onDispose {
-            discovery.stop()
-            vm.cancelAsk()
-        }
+        // Asking the computer survives rotation; the view model ends it when the user leaves this place.
+        onDispose { discovery.stop() }
     }
 
     fun scan() {

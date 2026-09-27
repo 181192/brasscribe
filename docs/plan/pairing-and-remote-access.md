@@ -202,11 +202,11 @@ Client rules:
 | Owner, full reset | `brasscribe devices reset` | All devices forgotten, new server id; every app sees a new engine |
 | Nobody | 180 days unused | Entry dropped |
 
-The CLI edits the state files directly. A running engine re-reads `devices.json` when the file changes on disk, so a revoke takes effect at once.
+The CLI edits the state files directly. A running engine re-reads `devices.json` when the file changes on disk, so a revoke takes effect at once. Every write, from the engine or the CLI, holds a lock on `devices.json.lock` and re-reads the file before it writes. The engine's own presence flush therefore never brings back a device the CLI has just revoked.
 
 ### 4.8 What the engine does now
 
-This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and `cli.py`, and tested in `engine/tests/test_companion.py`.
+This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and `cli.py`, and tested in `engine/tests/test_companion.py` and `test_presence.py`. "Owner" below means the computer running the engine (§4.10).
 
 | Endpoint | Who | Purpose |
 |---|---|---|
@@ -214,14 +214,16 @@ This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and
 | `POST /v1/pair` | anyone with the code | unchanged shape; response adds `device_id`, `server_id`, `server_name` (all strings: Apple decodes it as `[String: String]`). A request that carries a valid bearer re-issues that device's token instead of adding a duplicate. 429 + `Retry-After` while locked |
 | `POST /v1/pair/requests`, `GET /v1/pair/requests/{id}` | anyone | approve-on-the-computer |
 | `GET /v1/devices/me`, `POST /v1/devices/me/rotate`, `DELETE /v1/devices/me` | paired device | check, rotate (the token used keeps working until the new one is used), unpair |
-| `GET /v1/devices`, `DELETE /v1/devices/{id}` | loopback only | list, revoke |
-| `GET/POST/DELETE /v1/pairing` | loopback only | show, open or extend, close the pairing window; returns the §4.2 payload |
-| `GET /v1/pairing/requests`, `POST /v1/pairing/requests/{id}/approve\|deny` | loopback only | approve-on-the-computer |
+| `GET /v1/status` | owner | for the desktop helper: `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running`, `jobs_queued` |
+| `GET /v1/devices`, `DELETE /v1/devices/{id}` | owner | list (each with `online`), revoke |
+| `GET/POST/DELETE /v1/pairing` | owner | show, open or extend, close the pairing window; returns the §4.2 payload |
+| `GET /v1/pairing/requests`, `POST /v1/pairing/requests/{id}/approve\|deny` | owner | approve-on-the-computer |
 
 Other changes:
 
 - **Wrong codes.** Five wrong codes lock pairing for 30 s, then 60 s, 120 s and so on, up to 15 min. The code on screen never changes.
-- **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `BRASSCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair` and the payload is always `Brasscribe on <computer name>`, word for word what the helper shows. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
+- **Presence.** Every authenticated request updates the device's `last_seen` in memory. It is written to disk at most once a minute, and when the engine stops. A device is `online` when it was seen in the last 60 s. The Play apps call `GET /v1/devices/me` every 20 s while they are open and paired, so `online` means "the app is open and connected".
+- **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `BRASSCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the operating system's name for the computer (`scutil --get ComputerName` on macOS), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the payload and the mDNS instance name is always `Brasscribe on <computer name>`, word for word what the helper shows. `BRASSCRIBE_SERVER_NAME` replaces the whole name. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
 - **Static token.** `BRASSCRIBE_TOKEN` still works, as a static token for scripts.
 - **Device names.** Names are cleaned: no control characters, one line, at most 64 characters.
 
@@ -241,6 +243,20 @@ Other changes:
 
 ---
 
+### 4.10 Local trust and the admin token
+
+By default the engine trusts loopback. A client on the same computer (Studio, the desktop helper) needs no token, and only loopback may manage devices. That is safe only while nothing on the computer forwards outside traffic to the engine. `tailscale serve`, `cloudflared`, a reverse proxy or an SSH tunnel all make remote requests look local (§5.1). Two settings close that gap:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `BRASSCRIBE_TRUST_LOCAL=0` (or `serve --no-trust-local`) | `1` | Loopback clients need a token like everyone else: a device token, `BRASSCRIBE_TOKEN` or the admin token. |
+| `BRASSCRIBE_ADMIN_TOKEN=<token>`, or `BRASSCRIBE_ADMIN_TOKEN_FILE=<path>` | unset | The owner credential. While it is set, the owner endpoints (`/v1/status`, `/v1/devices`, `/v1/pairing*`) require `Authorization: Bearer <admin token>`, and loopback alone gets 403. The admin token also works on every other endpoint. |
+
+- **Admin token file.** It is created with a random token when missing. On POSIX the engine refuses to start when the file is readable by group or others.
+- **Who never gets owner rights.** Device tokens and the static `BRASSCRIBE_TOKEN` never grant owner rights.
+- **What Bandroom does.** The desktop helper generates a 256-bit token at first run. It passes the token as `BRASSCRIBE_ADMIN_TOKEN` when it starts the engine, and sends it on every owner call. Local trust stays on at home, so Studio in the browser keeps working without a token.
+- **Remote mode.** Anyone who puts the engine behind a proxy on the same machine sets `BRASSCRIBE_TRUST_LOCAL=0` and an admin token.
+
 ## 5. The same engine, reachable from outside
 
 ### 5.1 Three modes, one API
@@ -253,7 +269,7 @@ Other changes:
 | Who is a user | the owner | the owner | OIDC accounts, per-user tenancy |
 | Device credential | §4 per-device token | §4 per-device token | OAuth access and refresh tokens from the device authorization grant, DPoP-bound |
 | Loopback trust | on (Studio) | **off** | **off** |
-| Owner endpoints | loopback | loopback on the machine itself | an admin role in the token |
+| Owner endpoints | loopback, or the admin token (§4.10) | the admin token (§4.10) | an admin role in the token |
 
 The engine gets a `--mode home|remote|hosted` switch, which picks an **auth provider**:
 

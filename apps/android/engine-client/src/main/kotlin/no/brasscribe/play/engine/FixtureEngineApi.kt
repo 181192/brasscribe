@@ -37,7 +37,7 @@ class FixtureEngineApi(
     override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false, serverId = SERVER_ID, serverName = SERVER_NAME)
     override suspend fun pair(code: String, deviceName: String?, platform: String?) = PairResponse("fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
     override suspend fun thisDevice() = DeviceSelf("fixture-device", "Phone", "android", "2026-01-01T00:00:00+00:00",
-        "2026-01-01T00:00:00+00:00", SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00")
+        "2026-01-01T00:00:00+00:00", true, SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00")
     override suspend fun rotateToken() = RotateResponse("fixture-token", "fixture-device")
     override suspend fun unpairThisDevice() = Unit
     override suspend fun requestPairing(deviceName: String?, platform: String?) =
