@@ -86,12 +86,6 @@ struct HomeView: View {
                 WayInRow(icon: BrasscribeIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
                          subtitle: String(localized: "Play your part in the room")) { app.showRecorder = true }
                     .accessibilityIdentifier("record")
-                if app.fixtureDirectory != nil {
-                    Divider().overlay(Color.Brasscribe.border)
-                    WayInRow(icon: BrasscribeIcon.score.systemName, title: String(localized: "Try the demo"),
-                             subtitle: String(localized: "“Mikkel”, cornet solo with band")) { app.startDemo() }
-                        .accessibilityIdentifier("demo")
-                }
             }
             .card(padding: 0)
         }
@@ -121,11 +115,6 @@ struct HomeView: View {
                           subtitle: String(localized: "Sound from another app on this Mac")) { app.showCapture = true }
                     .accessibilityIdentifier("capture")
                 #endif
-                if app.fixtureDirectory != nil {
-                    WayInCard(icon: BrasscribeIcon.score.systemName, title: String(localized: "Try the demo"),
-                              subtitle: String(localized: "“Mikkel”, cornet solo with band")) { app.startDemo() }
-                        .accessibilityIdentifier("demo")
-                }
             }
         }
     }

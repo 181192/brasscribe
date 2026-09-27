@@ -15,11 +15,16 @@ make project        # BrasscribePlay.xcodeproj from project.yml (not committed)
 make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, then app unit and UI tests on macOS and the iPhone simulator
 make size           # Release build for iOS devices, prints the .app size
-scripts/run-demo-mac.sh                                           # open the golden Mikkel score on the Mac
-scripts/run-demo-sim.sh "iPhone 17" docs/screenshots/x.png        # same on a simulator, with a screenshot
+scripts/run-fixture-mac.sh                                        # open the Old Hundredth fixture score on the Mac
+scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot
+scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/screenshots, from the same fixture
 ```
 
-Tests locate the golden output through the `data/` link or `BRASSCRIBE_FIXTURES`.
+UI tests, the app unit tests and the screenshots open `apps/fixtures/old-hundredth` (a public-domain
+hymn arranged by the core, with review marks; regenerate with `apps/fixtures/make-old-hundredth.py`),
+passed as `BRASSCRIBE_FIXTURES`. No build of the app carries a sample score or recording. The package
+tests also check the parser and playback against the engine's golden output in the local `data/` folder
+and skip themselves when it is missing.
 
 ## Layout
 
@@ -30,7 +35,7 @@ Tests locate the golden output through the `data/` link or `BRASSCRIBE_FIXTURES`
 | `Packages/BrasscribeKit` | `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing) |
 | `Packages/NotationKit` | Verovio wrapper: engraving, part filtering, concert pitch, timemap |
 | `../../capture` | `AudioCapture` package (Core Audio process tap), used by the macOS app and the CLI |
-| `scripts/` | Verovio, core and sound-font builds, string catalog, demo launchers |
+| `scripts/` | Verovio, core and sound-font builds, string catalog, fixture launchers, screenshots |
 | `docs/notation-spike.md` | Native vs WKWebView measurements and the decision |
 
 ## Keyboard (macOS, and iPad with a keyboard)
@@ -63,7 +68,7 @@ The Playback menu lists the same keys.
   0x78/0, gain `channel_gain_db`), placed at its audience-seat position from `sounds/seating.json` in an
   AVAudioEnvironmentNode. The room is a convolution of the OpenAIR central-hall IR (vDSP partitioned
   convolution in an AUAudioUnit), calibrated to +4.5 dB wet-to-direct at the audience seat (measured
-  4.48 dB on Mikkel). Without those files the app falls back to MuseScore_General.sf2 (or the system
+  4.48 dB on the golden band recording). Without those files the app falls back to MuseScore_General.sf2 (or the system
   DLS) and the environment node's hall reverb. The app does not bundle any sounds.
 - **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
   and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
@@ -76,7 +81,7 @@ The Playback menu lists the same keys.
 - **Capture on macOS.** This uses the Core Audio process tap. The release build is sandboxed. Whether
   the process tap works under App Sandbox is an open question. Debug builds run unsandboxed.
 - **Exports.** MusicXML, MIDI, audio (offline render to AAC) and the talking score (text) are made on
-  the device. PDF and BRF come from the engine or the demo folder.
+  the device. PDF and BRF come from the engine.
 - **On-device arranging.** The Rust core (`RustCoreBridge`) arranges a Composition for full or small
   band without a computer. It is used by Review → "Arrange again on this device" and by importing a
   `composition.json`.

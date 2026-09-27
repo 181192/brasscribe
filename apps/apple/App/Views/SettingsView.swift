@@ -41,14 +41,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle(isOn: Binding(get: { UserDefaults.standard.bool(forKey: "useDemoService") },
-                                         set: { UserDefaults.standard.set($0, forKey: "useDemoService") })) {
-                        Text("Use the demo instead of a computer")
-                    }
-                    .disabled(app.fixtureDirectory == nil)
-                }
-
-                Section {
                     HStack(spacing: Space.s3) {
                         Lockup()
                         Spacer()

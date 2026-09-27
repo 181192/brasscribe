@@ -1,13 +1,24 @@
 import XCTest
 
-/// The golden Mikkel output, located from this source file (the simulator and the
-/// macOS runner can both read host paths).
+/// The Old Hundredth fixture (apps/fixtures/old-hundredth), located from this source file (the
+/// simulator and the macOS runner can both read host paths).
 func fixtureDir() -> String? {
     if let env = ProcessInfo.processInfo.environment["BRASSCRIBE_FIXTURES"] { return env }
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<6 {
-        let c = dir.appending(path: "data/golden/mikkel-arranged-band")
+        let c = dir.appending(path: "apps/fixtures/old-hundredth")
         if FileManager.default.fileExists(atPath: c.appending(path: "brass-band.musicxml").path) { return c.path }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
+}
+
+/// The repository's local data/ folder (not in git).
+func dataDir() -> URL? {
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<8 {
+        let c = dir.appending(path: "data")
+        if FileManager.default.fileExists(atPath: c.path) { return c }
         dir = dir.deletingLastPathComponent()
     }
     return nil
@@ -50,9 +61,9 @@ final class PlayUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        guard let dir = fixtureDir() else { throw XCTSkip("golden Mikkel fixture not found") }
+        guard let dir = fixtureDir() else { throw XCTSkip("apps/fixtures/old-hundredth not found") }
         app = XCUIApplication()
-        app.launchArguments = ["-reset", "-open-demo-score", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
+        app.launchArguments = ["-reset", "-open-fixture-score", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
         // no computer: scores on a Brasscribe running on this Mac must not leak into the tests
         app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"
@@ -65,9 +76,9 @@ final class PlayUITests: XCTestCase {
         launchApp()
     }
 
-    /// Loads the Mikkel score, checks the notation exposes bars to VoiceOver, and plays
+    /// Loads the fixture score, checks the notation exposes bars to VoiceOver, and plays
     /// until the transport has moved past bar 1.
-    func testLoadMikkelAndPlayABar() throws {
+    func testLoadFixtureScoreAndPlayABar() throws {
         let play = app.buttons["playPause"]
         XCTAssertTrue(play.waitForExistence(timeout: 30))
         // bar 1 of the solo cornet (index 1 in the full score, 0 when a phone shows only that part)
@@ -91,14 +102,11 @@ final class PlayUITests: XCTestCase {
         add(shot)
     }
 
-    /// Home → "What is this?" → progress → Review → score, with the demo transcription service.
-    func testDemoFlowThroughReview() throws {
+    /// "What is this?" → progress → Review → score, with the fixture transcription service.
+    func testFixtureFlowThroughReview() throws {
         app.terminate()
-        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
+        app.launchArguments = ["-reset", "-fixture-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "source"]
         launchApp()
-        let demo = app.descendants(matching: .any)["demo"].firstMatch
-        XCTAssertTrue(demo.waitForExistence(timeout: 20))
-        demo.tap()
         let transcribe = app.descendants(matching: .any)["transcribe"].firstMatch
         XCTAssertTrue(transcribe.waitForExistence(timeout: 10))
         XCTAssertFalse(transcribe.isEnabled, "the app never guesses the profile")
@@ -118,7 +126,7 @@ final class PlayUITests: XCTestCase {
     /// "Listen to this bar" becomes "Stop" in the same place and size, and Stop ends it.
     func testListenInReviewCanBeStopped() throws {
         app.terminate()
-        app.launchArguments = ["-reset", "-demo-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "review"]
+        app.launchArguments = ["-reset", "-fixture-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "review"]
         launchApp()
         let listen = app.buttons["listenBar"].firstMatch
         XCTAssertTrue(listen.waitForExistence(timeout: 60))
@@ -181,8 +189,7 @@ final class PlayUITests: XCTestCase {
 
     /// A recorded solo becomes a readable part with no computer: on-device models and the core.
     func testOfflineSoloToReadablePart() throws {
-        let clip = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "runs/apple/entertainer-tpt1-30s.wav")
+        guard let clip = dataDir()?.appending(path: "runs/apple/entertainer-tpt1-30s.wav") else { throw XCTSkip("needs data/") }
         let models = "/Users/k/private/brasscribe/models/converted"
         guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: models) else {
             throw XCTSkip("needs the URMP clip and models/converted")
@@ -210,9 +217,11 @@ final class PlayUITests: XCTestCase {
 
     /// The synced video uses the system player, which offers picture in picture.
     func testVideoOffersPictureInPicture() throws {
-        let video = URL(fileURLWithPath: fixtureDir()!).deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "runs/apple/mikkel-20s.mp4")
-        guard FileManager.default.fileExists(atPath: video.path) else { throw XCTSkip("needs data/runs/apple/mikkel-20s.mp4") }
+        // a test pattern with a tone: ffmpeg -f lavfi -i testsrc2=size=640x360:rate=25 -f lavfi -i sine=frequency=392
+        //   -t 20 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest data/runs/apple/test-pattern-20s.mp4
+        guard let video = dataDir()?.appending(path: "runs/apple/test-pattern-20s.mp4"), FileManager.default.fileExists(atPath: video.path) else {
+            throw XCTSkip("needs data/runs/apple/test-pattern-20s.mp4")
+        }
         app.terminate()
         app.launchEnvironment["BRASSCRIBE_VIDEO"] = video.path
         launchApp()

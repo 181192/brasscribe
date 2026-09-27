@@ -12,7 +12,7 @@ Research and prototype pipeline are in place. Start at [docs/research/00-summary
 | [studio](studio/README.md) | TypeScript | `npm ci && npm run build` | served by the engine at `/` | 8765 |
 | [core](core/README.md) | Rust | `cargo build --release` | `brasscribe-core <cmd>` (CLI) | — |
 | [capture](capture/README.md) | Swift (macOS) | `make` | `bin/brasscribe-capture --out f.wav` | — |
-| [apps/apple](apps/apple/README.md) | Swift (macOS, iOS, iPadOS) | `make build` | `scripts/run-demo-mac.sh` | — |
+| [apps/apple](apps/apple/README.md) | Swift (macOS, iOS, iPadOS) | `make build` | `scripts/run-fixture-mac.sh` | — |
 | [apps/android](apps/android/README.md) | Kotlin | `./gradlew assembleDebug` | `adb install` | — |
 | [apps/windows](apps/windows/README.md) | C# (WinUI 3) | `dotnet build` | `BrasscribePlay.exe` | — |
 
@@ -99,7 +99,7 @@ Conformance proves the port produces the same Composition, MusicXML, humanizatio
 
 ```sh
 # macOS, iOS, iPadOS
-cd apps/apple && make verovio soundfont project build test && scripts/run-demo-mac.sh
+cd apps/apple && make verovio soundfont project build test && scripts/run-fixture-mac.sh
 
 # Android
 cd apps/android && ./gradlew assembleDebug testDebugUnitTest lint

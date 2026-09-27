@@ -82,7 +82,8 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try result.musicXML.write(to: p.scoreURL)
         if let c = result.composition { try JSONEncoder().encode(c).write(to: p.compositionURL) }
         if let e = result.evidence { p.saveEvidence(e) }
-        if let original {
+        // a source that is gone (or never existed, as in the screenshot scenes) leaves no original
+        if let original, fm.fileExists(atPath: original.path) {
             let name = "original." + (original.pathExtension.isEmpty ? "wav" : original.pathExtension)
             try? fm.removeItem(at: p.folder.appending(path: name))
             try fm.copyItem(at: original, to: p.folder.appending(path: name))

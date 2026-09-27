@@ -8,7 +8,6 @@ enum Problem: Hashable, Identifiable {
     case silence
     case cantOpenFile(String)
     case notAScore(String)
-    case demoMissing
     case arrangeFailed(String)
 
     enum Action: Hashable { case importFile, recordMic, home }
@@ -21,7 +20,6 @@ enum Problem: Hashable, Identifiable {
         case .silence: return String(localized: "Nothing was heard")
         case .cantOpenFile: return String(localized: "This file can't be opened")
         case .notAScore: return String(localized: "This isn't a score Brasscribe can read")
-        case .demoMissing: return String(localized: "The demo isn't on this device")
         case .arrangeFailed: return String(localized: "The score couldn't be arranged")
         }
     }
@@ -46,8 +44,6 @@ enum Problem: Hashable, Identifiable {
             return [String(localized: "Try an MP3, WAV, M4A or MP4 file.")]
         case .notAScore:
             return [String(localized: "Brasscribe opens MusicXML scores and its own score files.")]
-        case .demoMissing:
-            return [String(localized: "The demo recording wasn't included with this copy of Brasscribe.")]
         case .arrangeFailed:
             return [String(localized: "Brasscribe couldn't make brass-band parts from this score.")]
         }
@@ -72,7 +68,7 @@ enum Problem: Hashable, Identifiable {
         switch self {
         case .copyProtected, .silence: return [.importFile, .recordMic]
         case .cantOpenFile, .notAScore: return [.importFile, .recordMic]
-        case .demoMissing, .arrangeFailed: return [.importFile, .home]
+        case .arrangeFailed: return [.importFile, .home]
         }
     }
 }

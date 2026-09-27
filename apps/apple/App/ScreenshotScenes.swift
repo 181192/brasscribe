@@ -24,16 +24,16 @@ enum ScreenshotScenes {
                 if let toCheck { p.toCheck = toCheck }
                 try? p.save()
             }
-            var mikkel = first
-            mikkel.output = OutputChoice()
-            try? mikkel.save()
+            var fixture = first
+            fixture.output = OutputChoice()
+            try? fixture.save()
             app.refresh()
             app.path = []
         case "source":
-            app.startDemo()
+            // a file name only: the scenes never read the recording
+            app.ask(PendingSource(audioURL: app.originalForFixture ?? sceneRecording, title: "Band practice", name: "Band practice.m4a"))
         case "transcribing", "transcribing-cancel":
-            guard let original = app.originalForFixture ?? app.fixtureDirectory?.appending(path: "brass-band.mp3") else { return }
-            let src = PendingSource(audioURL: original, title: "Mikkel", name: original.lastPathComponent)
+            let src = PendingSource(audioURL: app.originalForFixture ?? sceneRecording, title: fixtureTitle(app), name: nil)
             let job = TranscriptionJob(source: src, profile: .orchestraWithSoloist, output: OutputChoice(), service: FrozenService())
             app.jobs[job.id] = job
             job.start { _ in }
@@ -53,6 +53,16 @@ enum ScreenshotScenes {
 }
 
 extension ScreenshotScenes {
+    /// Where a scene's recording would be; nothing is there.
+    static var sceneRecording: URL { FileManager.default.temporaryDirectory.appending(path: "Band practice.m4a") }
+
+    /// The fixture score's title ("Old Hundredth").
+    @MainActor static func fixtureTitle(_ app: AppModel) -> String {
+        guard let dir = app.fixtureDirectory, let data = try? Data(contentsOf: dir.appending(path: "composition.json")),
+              let comp = try? Composition.decode(data) else { return "Old Hundredth" }
+        return comp.title
+    }
+
     /// The score screens show the states reviewers asked to see: a chip turned on, a
     /// repeat on, and the ad lib tint with the cursor elsewhere.
     @MainActor static func stage(_ m: PracticeModel) {

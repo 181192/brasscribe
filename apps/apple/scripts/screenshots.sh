@@ -13,7 +13,7 @@ mkdir -p "$OUT"
 TARGET="$1"; shift
 SCREENS=("$@")
 [ ${#SCREENS[@]} -eq 0 ] && SCREENS=(home home-full source transcribing transcribing-cancel review review-listening finish-later output score part export first-run error)
-FIXTURES="$ROOT/data/golden/mikkel-arranged-band"
+FIXTURES="$ROOT/apps/fixtures/old-hundredth"
 SF="$ROOT/data/soundfonts/MuseScore_General.sf2"
 WAIT="${WAIT:-12}"
 LANGARGS=(); TAG=""

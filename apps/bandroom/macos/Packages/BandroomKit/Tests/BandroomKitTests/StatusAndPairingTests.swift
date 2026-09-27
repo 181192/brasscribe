@@ -66,14 +66,14 @@ import Testing
         engine.statusValue.jobsRunning = 1
         engine.statusValue.jobsQueued = 1
         engine.jobsValue = [
-            Job(id: "j1", profile: "solo", title: "Mikkel", status: "running", created: 0, started: clock.now.timeIntervalSince1970 - 300,
+            Job(id: "j1", profile: "solo", title: "Old Hundredth", status: "running", created: 0, started: clock.now.timeIntervalSince1970 - 300,
                 progress: 0.62, stages: [StageState(name: "beats", kind: "beats", status: "ran"),
                                          StageState(name: "contour.solo", kind: "transcribe", status: "running")],
                 deviceName: "Kari's iPhone"),
             Job(id: "j2", profile: "solo", title: "Next", status: "queued", created: 1, progress: 0, stages: []),
         ]
         await m.refresh()
-        #expect(m.job == JobSummary(jobId: "j1", title: "Mikkel", deviceName: "Kari's iPhone", step: .transcribing, percent: 62, minutesLeft: 4, waiting: 1))
+        #expect(m.job == JobSummary(jobId: "j1", title: "Old Hundredth", deviceName: "Kari's iPhone", step: .transcribing, percent: 62, minutesLeft: 4, waiting: 1))
         #expect(running == [0, 1])
     }
 

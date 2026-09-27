@@ -14,7 +14,6 @@ struct BrasscribePlayApp: App {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-reset") {
             try? FileManager.default.removeItem(at: Piece.libraryURL)
-            UserDefaults.standard.removeObject(forKey: "useDemoService")
         }
         if args.contains("-skip-first-run") { UserDefaults.standard.set(true, forKey: "firstRunDone") }
     }
@@ -174,12 +173,12 @@ struct RootView: View {
             // after the split view's navigation stack is in place, or the first path is dropped
             try? await Task.sleep(for: .milliseconds(100))
             if !UserDefaults.standard.bool(forKey: "firstRunDone") || LaunchOptions.screen == "first-run" { app.showFirstRun = true }
-            if LaunchOptions.args.contains("-open-demo-score") { openDemoScore() }
+            if LaunchOptions.args.contains("-open-fixture-score") { openFixtureScore() }
             // UI tests: start from a recording as if it had just been imported
             if let a = ProcessInfo.processInfo.environment["BRASSCRIBE_OPEN_AUDIO"], FileManager.default.fileExists(atPath: a) {
                 app.acceptRecording(URL(fileURLWithPath: a), title: URL(fileURLWithPath: a).deletingPathExtension().lastPathComponent)
             }
-            if let s = LaunchOptions.screen { ScreenshotScenes.open(s, app: app, openScore: openDemoScore) }
+            if let s = LaunchOptions.screen { ScreenshotScenes.open(s, app: app, openScore: openFixtureScore) }
         }
     }
 
@@ -202,19 +201,19 @@ struct RootView: View {
 
     /// UI tests and screenshots: import the fixture straight into a piece and open it.
     @discardableResult
-    private func openDemoScore() -> Piece? {
-        guard let dir = app.fixtureDirectory else { FileHandle.standardError.write(Data("open-demo-score: no fixture directory\n".utf8)); return nil }
+    private func openFixtureScore() -> Piece? {
+        guard let dir = app.fixtureDirectory else { FileHandle.standardError.write(Data("open-fixture-score: no fixture directory\n".utf8)); return nil }
         do {
             let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
             let comp = (try? Data(contentsOf: dir.appending(path: "composition.json"))).flatMap { try? Composition.decode($0) }
             let result = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: FixtureService(directory: dir).available)
-            let p = try Piece.create(title: "Mikkel", profile: .orchestraWithSoloist, result: result, original: app.originalForFixture,
+            let p = try Piece.create(title: comp?.title ?? dir.lastPathComponent, profile: .brassBand, result: result, original: app.originalForFixture,
                                      video: app.videoForFixture, fixtureDirectory: dir)
             app.refresh()
             app.path = [.score(p)]
             return p
         } catch {
-            FileHandle.standardError.write(Data("open-demo-score: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("open-fixture-score: \(error)\n".utf8))
             return nil
         }
     }

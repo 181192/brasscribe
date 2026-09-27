@@ -7,7 +7,7 @@
 #   make test        package tests + app unit/UI tests on macOS and an iOS simulator
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
-FIXTURES ?= $(ROOT)/data/golden/mikkel-arranged-band
+FIXTURES ?= $(ROOT)/apps/fixtures/old-hundredth
 # IPHONE=<name> picks a simulator by name; by default the newest "iPhone NN Pro" on the newest
 # iOS runtime (scripts/newest-iphone.sh), selected by id.
 IPHONE ?=
@@ -47,4 +47,4 @@ test: project package-test
 
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
-	du -sh "$(DERIVED)/Build/Products/Release-iphoneos/Brasscribe Play.app"
+	du -sh "$(DERIVED)/Build/Products/Release-iphoneos/BrasscribePlay.app"
