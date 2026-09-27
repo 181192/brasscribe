@@ -139,7 +139,7 @@ public static class Problems
         new(ProblemKind.NoFreePort, s["Port_Title"], s["Port_Why"], s["Action_Restart"], "Ports 8765–8775 in use.");
 
     public static Problem LowDisk(IStrings s, long freeBytes, string dataDir) =>
-        new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.Gigabytes(freeBytes)), s["Disk_Fix"],
+        new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.GigabytesText(freeBytes, s.Culture)), s["Disk_Fix"],
             $"{dataDir}: {freeBytes / 1_000_000} MB free");
 
     public static Problem MissingDownload(IStrings s) =>

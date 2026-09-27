@@ -196,7 +196,9 @@ public sealed class FlyoutViewModelTests
         Assert.Equal("Needs attention", vm.StatusWord);
         await vm.PrimaryCommand.ExecuteAsync(null);
         vm.Apply(Snap(problems: [Problems.LowDisk(Strings.En, 2_100_000_000, "C:\\data")]));
-        Assert.Equal("2 GB free. Brasscribe needs 3 GB to make a score.", vm.StatusSub);
+        Assert.Equal("2.1 GB free. Brasscribe needs 3 GB to make a score.", vm.StatusSub);
+        Assert.Equal("Space is running low", vm.ProblemTitle);
+        Assert.Equal("2.1 GB free", Strings.En.Format("Health_Disk_Value", HealthWords.GigabytesText(2_150_000_000, Strings.En.Culture)));
         await vm.PrimaryCommand.ExecuteAsync(null);
         vm.Apply(Snap());
         await vm.PrimaryCommand.ExecuteAsync(null);
@@ -211,6 +213,7 @@ public sealed class FlyoutViewModelTests
         Assert.Equal("Sist brukt 26. september", DeviceText.Subtitle(d, now, Strings.Nb));
         Assert.Equal("Last used 26 September", DeviceText.Subtitle(d, now, Strings.En));
         Assert.Equal("Ingen tilkoblet nå · 3 sammenkoblet", DeviceText.Summary(0, 3, Strings.Nb));
+        Assert.Equal("2,1 GB ledig. Brasscribe trenger 3 GB for å lage et partitur.", Problems.LowDisk(Strings.Nb, 2_150_000_000, "C:\\d").Why);
         var vm = Make(Strings.Nb);
         vm.Apply(Snap());
         Assert.Equal("Kjører", vm.StatusWord);

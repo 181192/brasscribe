@@ -71,6 +71,8 @@ public sealed partial class FlyoutViewModel : ObservableObject
     [ObservableProperty] public partial string Header { get; set; } = "";
     [ObservableProperty] public partial string StatusWord { get; set; } = "";
     [ObservableProperty] public partial string StatusSub { get; set; } = "";
+    /// <summary>Needs attention: the problem's title, above its one-sentence why.</summary>
+    [ObservableProperty] public partial string ProblemTitle { get; set; } = "";
     [ObservableProperty] public partial string Tooltip { get; set; } = "";
     [ObservableProperty] public partial string PrimaryLabel { get; set; } = "";
     [ObservableProperty] public partial bool HasPrimary { get; set; }
@@ -138,6 +140,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
         PieEighths = info.PieEighths;
         Header = snap.Header;
         StatusWord = info.StatusWord;
+        ProblemTitle = info.Problem?.Title ?? (info.State == DisplayState.Error ? _s["Error_Title"] : "");
         Tooltip = info.Tooltip;
         PrimaryLabel = info.PrimaryLabel;
         HasPrimary = info.Primary != PrimaryAction.None;
@@ -183,7 +186,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
             LoadWord = _s[HealthWords.LoadKey(h.Load)];
             MemoryLevel = (int)h.Memory;
             MemoryWord = _s[HealthWords.MemoryKey(h.Memory)];
-            DiskText = _s.Format("Health_Disk_Value", HealthWords.Gigabytes(h.FreeBytes));
+            DiskText = _s.Format("Health_Disk_Value", HealthWords.GigabytesText(h.FreeBytes, _s.Culture));
             IsReady = h.ModelsReady;
             ReadyWord = h.ModelsReady ? _s["Health_Ready_Yes"] : _s["Health_Ready_Missing"];
         }

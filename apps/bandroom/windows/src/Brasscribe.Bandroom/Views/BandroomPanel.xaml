@@ -45,8 +45,11 @@
                 </Button>
             </Grid>
 
-            <TextBlock x:Name="StatusSubText" Text="{x:Bind Vm.StatusSub, Mode=OneWay}" Style="{StaticResource MutedStyle}"
-                       Visibility="{x:Bind HasText(Vm.StatusSub), Mode=OneWay}" />
+            <StackPanel Spacing="2" Visibility="{x:Bind HasText(Vm.StatusSub), Mode=OneWay}">
+                <TextBlock Text="{x:Bind Vm.ProblemTitle, Mode=OneWay}" Style="{StaticResource StrongStyle}"
+                           Visibility="{x:Bind HasText(Vm.ProblemTitle), Mode=OneWay}" />
+                <TextBlock x:Name="StatusSubText" Text="{x:Bind Vm.StatusSub, Mode=OneWay}" Style="{StaticResource MutedStyle}" />
+            </StackPanel>
 
             <!-- Now: only while a score is being made. -->
             <Border x:Name="NowCard" Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.IsBusy, Mode=OneWay}">
@@ -206,14 +209,14 @@
                 <TextBlock x:Name="DevicesHeading" Grid.Column="1" Text="{x:Bind Vm.DevicesHeading}" Style="{StaticResource PanelHeadingStyle}"
                            VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1" />
             </Grid>
+            <Border Style="{StaticResource CardStyle}" Padding="0" Visibility="{x:Bind Vm.HasDevices, Mode=OneWay}">
             <ItemsRepeater x:Name="DeviceList" ItemsSource="{x:Bind Vm.Devices}">
                 <ItemsRepeater.Layout>
                     <StackLayout Spacing="0" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:DeviceRow">
-                        <Grid MinHeight="56" Padding="10,6" ColumnSpacing="12" Background="{ThemeResource BcSurfaceRaisedBrush}"
-                              BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="1,1,1,0">
+                        <Grid MinHeight="56" Padding="10,6" ColumnSpacing="12" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -233,6 +236,7 @@
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
+            </Border>
             <TextBlock Text="{x:Bind Vm.EmptyDevicesText}" Style="{StaticResource BodyStyle}" Visibility="{x:Bind Vm.HasNoDevices, Mode=OneWay}" />
             <Button Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch" Command="{x:Bind Vm.PairCommand}"
                     AutomationProperties.Name="{x:Bind Vm.PairLabel}">

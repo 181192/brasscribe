@@ -56,19 +56,20 @@ internal sealed class FlyoutWindow : Window
         Content = root;
         Title = panel.Vm.Header;
         SystemBackdrop = new MicaBackdrop();
-        var p = OverlappedPresenter.Create();
-        p.IsResizable = false;
-        p.IsMaximizable = false;
-        p.IsMinimizable = false;
-        p.IsAlwaysOnTop = true;
-        p.SetBorderAndTitleBar(true, false);
-        AppWindow.SetPresenter(p);
+        if (AppWindow.Presenter is OverlappedPresenter p)
+        {
+            p.IsResizable = false;
+            p.IsMaximizable = false;
+            p.IsMinimizable = false;
+            p.IsAlwaysOnTop = true;
+            p.SetBorderAndTitleBar(true, false);
+        }
         AppWindow.IsShownInSwitchers = false;
         Activated += (_, e) =>
         {
             if (e.WindowActivationState == WindowActivationState.Deactivated && !Pinned && IsOpen) HideFlyout();
         };
-        panel.SizeChangedByContent += () => { if (IsOpen) Place(); };
+        panel.SizeChangedByContent += () => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => { if (IsOpen) Place(); });
         panel.Vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(panel.Vm.Header)) Title = panel.Vm.Header; };
     }
 
@@ -125,13 +126,20 @@ internal sealed class FlyoutWindow : Window
         var work = WindowSizing.WorkArea(at.X, at.Y);
         int margin = (int)Math.Round(12 * scale);
         int maxHeight = (int)((work.Bottom - work.Top) * 0.8);
-        int height = Math.Min(maxHeight, (int)Math.Ceiling((contentHeight + 2) * scale));
+        int height = Math.Min(maxHeight, (int)Math.Ceiling((contentHeight + 4) * scale));
         if (height < 100) height = maxHeight;
         int x = work.Right - width - margin;
         // Above the taskbar at the bottom; below it when the taskbar is at the top.
         bool taskbarTop = anchor is { } r && r.Top <= work.Top;
         int y = taskbarTop ? work.Top + margin : work.Bottom - height - margin;
         AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+        // The frame takes a few pixels of the height: grow by that, so the last buttons aren't cut off.
+        int frame = AppWindow.Size.Height - AppWindow.ClientSize.Height;
+        if (frame > 0 && height < maxHeight)
+        {
+            int grown = Math.Min(maxHeight, height + frame);
+            AppWindow.MoveAndResize(new RectInt32(x, taskbarTop ? y : y - (grown - height), width, grown));
+        }
     }
 }
 

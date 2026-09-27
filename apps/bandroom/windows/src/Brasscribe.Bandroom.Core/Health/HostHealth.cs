@@ -28,6 +28,12 @@ public static class HealthWords
     /// <summary>Whole gigabytes (decimal, as phones show them).</summary>
     public static long Gigabytes(long bytes) => bytes / 1_000_000_000;
 
+    /// <summary>"212" or, under 10 GB, one decimal: "2.1" (nb "2,1").</summary>
+    public static string GigabytesText(long bytes, System.Globalization.CultureInfo culture) =>
+        bytes < 10_000_000_000
+            ? (Math.Floor(bytes / 100_000_000.0) / 10).ToString("0.#", culture)
+            : Gigabytes(bytes).ToString(culture);
+
     public const long WarnFreeBytes = 10_000_000_000;
     public const long MinFreeBytes = 3_000_000_000;
 }
