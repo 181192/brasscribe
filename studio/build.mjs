@@ -38,8 +38,8 @@ if (bandSf2) {
   mkdirSync(join(assets, "band"), { recursive: true });
   cpSync(bandSf2, join(assets, "band", "brasscribe-band.sf2"));
   cpSync(join(here, "..", "sounds", "mapping.json"), join(assets, "band", "mapping.json"));
-  // The phone-sized build keeps one layer of the layered cornet presets: their balance differs.
-  writeFileSync(join(assets, "band", "band.json"), JSON.stringify({ singleVoice: bandSf2.includes("-mobile") }) + "\n");
+  // every band SoundFont build keeps both layers of the cornet presets (apps/android/scripts/mobile_soundfont.py)
+  writeFileSync(join(assets, "band", "band.json"), JSON.stringify({ singleVoice: false }) + "\n");
   writeFileSync(
     join(assets, "band", "NOTICE.txt"),
     "Band sounds adapted from VSCO 2 Community Edition (CC0) and the University of Iowa Musical Instrument Samples;\n" +

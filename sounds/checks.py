@@ -178,7 +178,7 @@ def phrases(runs: list[str]) -> int:
                 problems.append(f"{run} {name}: velocity response not monotonic {dyn}")
             if r["level_lufs"] is not None:
                 bs = mapping["parts"][name]["band_soundfont"]
-                gain = bs["single_voice_gain_db"] if "mobile" in run else bs["channel_gain_db"]
+                gain = bs["channel_gain_db"]  # every SF2 build, the phone one too, keeps both cornet layers
                 lv[name] = r["level_lufs"] + gain - mapping["parts"][name]["balance_lu"]
         if band_run and lv:
             ref = float(np.median(list(lv.values())))
