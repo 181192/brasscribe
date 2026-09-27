@@ -8,6 +8,8 @@ struct BrasscribePlayApp: App {
     @State private var app = AppModel()
     #if os(macOS)
     @NSApplicationDelegateAdaptor(MacLaunch.self) private var launch
+    #else
+    @UIApplicationDelegateAdaptor(OrientationLock.self) private var orientation
     #endif
 
     init() {
@@ -57,6 +59,18 @@ enum LaunchOptions {
         guard let i = args.firstIndex(of: "-screen"), i + 1 < args.count else { return nil }
         return args[i + 1]
     }
+
+    /// `-stand-bars N`: a fixed number of bars per system on the music stand (UI tests use 1 to get pages).
+    static var standBars: Int? {
+        guard let i = args.firstIndex(of: "-stand-bars"), i + 1 < args.count else { return nil }
+        return Int(args[i + 1])
+    }
+
+    /// `-stand-assistive`: behave as if a screen reader were running (the stand controls stay).
+    static var standAssistive: Bool { args.contains("-stand-assistive") }
+
+    /// `-stand-ignore-keyboard`: a simulator's hardware keyboard does not keep the stand controls (the auto-hide test).
+    static var standIgnoreKeyboard: Bool { args.contains("-stand-ignore-keyboard") }
 
     /// `-connection connected|reconnecting|offline|needs-pairing`: show that connection state without
     /// talking to a computer (screenshots and UI tests).
@@ -155,6 +169,14 @@ struct RootView: View {
                 // on iPad the library steps aside while a score is open; the sidebar button brings it back
                 .onChange(of: app.path.isEmpty) { _, home in columns = home ? .all : .detailOnly }
                 #endif
+                // the music stand has the whole window
+                .onChange(of: app.standOpen) { _, open in
+                    #if os(iOS)
+                    columns = open || !app.path.isEmpty ? .detailOnly : .all
+                    #else
+                    columns = open ? .detailOnly : .all
+                    #endif
+                }
             } else {
                 flow
             }
@@ -251,6 +273,7 @@ struct LibrarySidebar: View {
                     HStack(spacing: Space.s1) {
                         row(title: entry.title, icon: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName,
                             selected: entry.piece?.id == openPiece && openPiece != nil) { app.open(entry) }
+                            .scoreRowFocus(entry.id)
                         if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                         ScoreOptionsMenu(entry: entry)
                     }
@@ -301,8 +324,9 @@ struct PlaybackCommands: Commands {
         CommandMenu(Text("Playback")) {
             Group {
                 Button("Play or pause") { model?.togglePlay() }.keyboardShortcut(key(.space))
-                Button("Previous bar") { model?.previousBar() }.keyboardShortcut(key(.leftArrow))
-                Button("Next bar") { model?.nextBar() }.keyboardShortcut(key(.rightArrow))
+                // in the music stand the arrows turn pages (menu shortcuts fire before the view's keys)
+                Button("Previous bar") { model?.previousBarOrPage() }.keyboardShortcut(key(.leftArrow))
+                Button("Next bar") { model?.nextBarOrPage() }.keyboardShortcut(key(.rightArrow))
                 Divider()
                 Button("Loop this bar") { model?.toggleLoopCurrentBar() }.keyboardShortcut(key("l"))
                 Button("Slower") { model?.changeSpeed(by: -5) }.keyboardShortcut(key(","))
@@ -314,6 +338,13 @@ struct PlaybackCommands: Commands {
                 Button("Band or recording") { model?.hearOriginal.toggle() }.keyboardShortcut(key("o"))
             }
             .disabled(model == nil)
+        }
+        // View › Music Stand (F). The green button and ⌃⌘F stay the window's own full screen.
+        CommandGroup(before: .toolbar) {
+            Button("Music Stand") { model?.toggleStand() }
+                .keyboardShortcut(key("f"))
+                .disabled(model == nil)
+            Divider()
         }
     }
 }
@@ -343,9 +374,20 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
                 NSApp.sendAction(#selector(NSResponder.newWindowForTab(_:)), to: nil, from: nil)
             }
         }
-        // Tests and screenshots (-reset): keep the window whole on the main screen, so no
-        // control lands between two displays.
-        if ProcessInfo.processInfo.arguments.contains("-reset") {
+        // UI tests (-ui-test-window): a fixed frame inside the main screen's visible area, clear of
+        // the Dock and the menu bar, so a click never lands outside the app.
+        if ProcessInfo.processInfo.arguments.contains("-ui-test-window") {
+            placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
+                guard let w = n.object as? NSWindow, let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+                if w.styleMask.contains(.fullScreen) { w.toggleFullScreen(nil) }
+                let v = screen.visibleFrame.insetBy(dx: 20, dy: 20)
+                let size = CGSize(width: min(1200, v.width), height: min(820, v.height))
+                let frame = CGRect(x: v.midX - size.width / 2, y: v.midY - size.height / 2, width: size.width, height: size.height)
+                if w.frame != frame { w.setFrame(frame, display: true) }
+            }
+        } else if ProcessInfo.processInfo.arguments.contains("-reset") {
+            // Tests and screenshots (-reset): keep the window whole on the main screen, so no
+            // control lands between two displays.
             placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
                 guard let w = n.object as? NSWindow, let screen = NSScreen.screens.first else { return }
                 let v = screen.visibleFrame

@@ -151,6 +151,7 @@ struct HomeView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("piece-\(entry.title)")
+                            .scoreRowFocus(entry.id)
                             ScoreOptionsMenu(entry: entry)
                         }
                         .padding(.leading, Space.s4)

@@ -1,0 +1,200 @@
+import XCTest
+
+/// The music stand (design/music-stand.md): in and out, the controls that stay for assistive
+/// technology and the keyboard, and the page keys Bluetooth page turners send.
+final class MusicStandUITests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        guard let dir = fixtureDir() else { throw XCTSkip("apps/fixtures/old-hundredth not found") }
+        app = XCUIApplication()
+        app.launchArguments = ["-reset", "-open-fixture-score", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
+        app.launchEnvironment["BRASSCRIBE_FIXTURES"] = dir
+        app.launchEnvironment["BRASSCRIBE_COMPANION"] = "http://127.0.0.1:1"
+    }
+
+    override func tearDown() {
+        #if os(iOS)
+        XCUIDevice.shared.orientation = .portrait
+        #endif
+        super.tearDown()
+    }
+
+    private func launch(_ extra: [String] = []) {
+        app.launchArguments += extra
+        app.launchForUITest()
+    }
+
+    private func element(_ id: String) -> XCUIElement { app.descendants(matching: .any)[id].firstMatch }
+
+    /// Open the stand with the toolbar button, once the score is engraved.
+    private func enterStand() {
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'")).firstMatch
+            .waitForExistence(timeout: 60), "the score is engraved")
+        let button = app.buttons["musicStand"].firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 10))
+        button.safeTap(app)
+        XCTAssertTrue(app.buttons["standLeave"].waitForExistence(timeout: 10), "the stand is open")
+        XCTAssertTrue(element("standScore").waitForExistence(timeout: 30))
+    }
+
+    private var position: String { element("standPosition").label }
+
+    private func waitFor(_ e: XCUIElement, exists: Bool, timeout: TimeInterval) -> Bool {
+        XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == %@", NSNumber(value: exists)), object: e)],
+                       timeout: timeout) == .completed
+    }
+
+    func testEnterAndLeaveTheStand() throws {
+        launch()
+        enterStand()
+        // the score's own chrome is gone; the persistent band and the layer (paused) are there
+        XCTAssertFalse(app.descendants(matching: .any)["partPicker"].exists)
+        XCTAssertFalse(app.buttons["playPause"].exists)
+        XCTAssertTrue(element("standLayer").exists, "the controls show on entry while paused")
+        XCTAssertTrue(position.contains("1"), position)
+        XCTAssertEqual(app.buttons["standLeave"].label, "Leave the music stand")
+        // "Only my part" is on: the part line says it is yours
+        XCTAssertTrue(position.contains("(you)") || element("standPosition").label.contains("(you)"), position)
+        app.buttons["standLeave"].safeTap(app)
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "back on the score")
+        XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["standLeave"].exists)
+    }
+
+    /// While the music plays the controls hide after 4 s, and a tap on the music brings them back.
+    func testControlsHideWhilePlaying() throws {
+        launch(["-stand-ignore-keyboard"])
+        enterStand()
+        app.buttons["standPlay"].safeTap(app)
+        XCTAssertTrue(waitFor(element("standLayer"), exists: false, timeout: 10), "the layer hides while playing")
+        XCTAssertTrue(app.buttons["standLeave"].exists, "Leave always stays")
+        element("standScore").safeTap(app)
+        XCTAssertTrue(element("standLayer").waitForExistence(timeout: 5), "a tap shows the controls")
+    }
+
+    /// With a screen reader or switch running the controls never hide, not by the timer and not by a tap.
+    func testControlsStayWithAssistiveTechnology() throws {
+        launch(["-stand-assistive", "-stand-ignore-keyboard"])
+        enterStand()
+        app.buttons["standPlay"].safeTap(app)
+        XCTAssertFalse(waitFor(element("standLayer"), exists: false, timeout: 7), "the layer stays with assistive technology")
+        element("standScore").safeTap(app)
+        XCTAssertTrue(element("standLayer").exists)
+        app.buttons["standPlay"].safeTap(app)
+    }
+
+    /// Page turners send arrows or Page Up / Page Down; Home and End go to the first and last page;
+    /// Esc leaves. (The iOS simulator's key injection delivers the arrows but not Page Up, Page Down,
+    /// Home or End, so those are checked on the Mac.)
+    func testPageKeys() throws {
+        #if os(iOS)
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("hardware-keyboard tests run on iPad and Mac") }
+        let (next, previous) = (XCUIKeyboardKey.downArrow, XCUIKeyboardKey.upArrow)
+        #else
+        let (next, previous) = (XCUIKeyboardKey.pageDown, XCUIKeyboardKey.pageUp)
+        #endif
+        launch(["-stand-bars", "1"])
+        enterStand()
+        let first = position
+        XCTAssertTrue(first.contains("1"), first)
+        app.safeTypeKey(next.rawValue, modifierFlags: [])
+        let second = position
+        XCTAssertNotEqual(second, first, "the next-page key turns the page")
+        app.safeTypeKey(previous.rawValue, modifierFlags: [])
+        XCTAssertEqual(position, first, "the previous-page key turns back")
+        app.safeTypeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
+        XCTAssertEqual(position, second, "→ turns the page, not the bar")
+        app.safeTypeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        XCTAssertEqual(position, first, "← turns back")
+        #if os(macOS)
+        app.safeTypeKey(XCUIKeyboardKey.end.rawValue, modifierFlags: [])
+        XCTAssertNotEqual(position, first, "End goes to the last page")
+        app.safeTypeKey(XCUIKeyboardKey.home.rawValue, modifierFlags: [])
+        XCTAssertEqual(position, first, "Home goes to the first page")
+        #endif
+        app.safeTypeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "Esc leaves the stand")
+        XCTAssertTrue(app.buttons["playPause"].exists, "and only the stand: the score is still open")
+    }
+
+    /// F opens the stand from the score (the Mac's View › Music Stand, a keyboard on iPad) and closes it.
+    func testFTogglesTheStand() throws {
+        #if os(iOS)
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("hardware-keyboard tests run on iPad and Mac") }
+        #endif
+        launch()
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'")).firstMatch
+            .waitForExistence(timeout: 60))
+        app.safeTypeKey("f", modifierFlags: [])
+        XCTAssertTrue(app.buttons["standLeave"].waitForExistence(timeout: 10), "F opens the stand")
+        app.safeTypeKey("f", modifierFlags: [])
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "F leaves it")
+    }
+
+    /// "Open on the music stand" in a score's menu opens the score and the stand in one step;
+    /// leaving goes back to the library.
+    func testOpenOnTheMusicStandFromTheLibrary() throws {
+        launch()
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 60))
+        #if os(iOS)
+        // back to the library (on iPad the sidebar steps aside while a score is open)
+        app.navigationBars.buttons.element(boundBy: 0).safeTap(app)
+        #endif
+        let options = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'options-'")).firstMatch
+        XCTAssertTrue(options.waitForExistence(timeout: 10))
+        options.safeTap(app)
+        let item = app.buttons["Open on the music stand"].firstMatch
+        let menuItem = app.menuItems["Open on the music stand"].firstMatch
+        if item.waitForExistence(timeout: 3) { item.safeTap(app) } else { XCTAssertTrue(menuItem.waitForExistence(timeout: 3)); menuItem.safeTap(app) }
+        XCTAssertTrue(app.buttons["standLeave"].waitForExistence(timeout: 30), "the stand opens")
+        app.buttons["standLeave"].safeTap(app)
+        XCTAssertTrue(options.waitForExistence(timeout: 10), "back in the library")
+    }
+
+    // MARK: screenshots (STAND_SHOTS=<dir>, NB=1 for Norwegian)
+
+    func testScreenshots() throws {
+        guard let dir = ProcessInfo.processInfo.environment["STAND_SHOTS"] else { throw XCTSkip("set STAND_SHOTS to take the stand screenshots") }
+        let nb = ProcessInfo.processInfo.environment["NB"] == "1"
+        let lang = nb ? ["-AppleLanguages", "(nb)", "-AppleLocale", "nb_NO"] : ["-AppleLanguages", "(en)", "-AppleLocale", "en_GB"]
+        let tag = nb ? "-nb" : ""
+        #if os(iOS)
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
+        let states: [(String, UIDeviceOrientation)] = device == "iphone"
+            ? [("stand", .portrait), ("stand-hidden", .portrait), ("stand", .landscapeLeft), ("stand-locked", .landscapeLeft)]
+            : [("stand", .landscapeLeft), ("stand-hidden", .landscapeLeft), ("stand", .portrait)]
+        #else
+        let device = "macos"
+        let states: [(String, Int)] = [("stand", 0), ("stand-hidden", 0)]
+        #endif
+        for (screen, orientation) in states {
+            #if os(iOS)
+            XCUIDevice.shared.orientation = orientation
+            let hold = orientation == .portrait ? "portrait" : "landscape"
+            #else
+            _ = orientation
+            let hold = "window"
+            #endif
+            for look in ["light", "dark"] {
+                app.terminate()
+                app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-connection", "connected",
+                                       "-screen", screen, "-appearance", look] + lang
+                launch()
+                XCTAssertTrue(element("standScore").waitForExistence(timeout: 60))
+                sleep(6)
+                let shot = XCUIScreen.main.screenshot()
+                #if os(macOS)
+                let image = app.windows.firstMatch.screenshot()
+                let png = image.pngRepresentation
+                #else
+                let png = shot.pngRepresentation
+                #endif
+                let name = "\(device)\(tag)-\(screen)-\(hold)-\(look).png"
+                try png.write(to: URL(fileURLWithPath: dir).appending(path: name))
+            }
+        }
+    }
+}

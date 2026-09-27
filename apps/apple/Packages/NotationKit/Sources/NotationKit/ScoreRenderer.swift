@@ -20,9 +20,14 @@ public final class ScoreRenderer: @unchecked Sendable {
         public var pitch: PitchMode
         /// Page height in points at the chosen zoom (content is split into pages this tall).
         public var height: CGFloat
+        /// A fixed number of bars on every system (the music stand). The score is then engraved
+        /// as one long page, and the stand pages through its systems itself.
+        public var barsPerSystem: Int?
 
-        public init(width: CGFloat = 820, zoom: CGFloat = 1, parts: Set<String>? = nil, pitch: PitchMode = .written, height: CGFloat = 1160) {
+        public init(width: CGFloat = 820, zoom: CGFloat = 1, parts: Set<String>? = nil, pitch: PitchMode = .written, height: CGFloat = 1160,
+                    barsPerSystem: Int? = nil) {
             self.width = width; self.zoom = zoom; self.parts = parts; self.pitch = pitch; self.height = height
+            self.barsPerSystem = barsPerSystem
         }
     }
 
@@ -37,6 +42,15 @@ public final class ScoreRenderer: @unchecked Sendable {
         public let notesByStaff: [String: [String]]
         /// The five staff lines per staff id (the staff's own frame also covers its notes).
         public let staffLines: [String: CGRect]
+        /// Systems top to bottom: the system's frame (everything drawn in it) and its measure ids.
+        public var systems: [System] = []
+    }
+
+    public struct System: Sendable, Equatable {
+        public let frame: CGRect
+        public let measureIDs: [String]
+
+        public init(frame: CGRect, measureIDs: [String]) { self.frame = frame; self.measureIDs = measureIDs }
     }
 
     public let musicXML: String
@@ -103,14 +117,24 @@ public final class ScoreRenderer: @unchecked Sendable {
         // Verovio page units are tenths of a mm at scale 100; the SVG comes out at
         // pageWidth × scale / 100 px, so ask for a width that lands on the view width.
         let pageWidth = Int(l.width * 100 / CGFloat(scale))
+        let fixed = l.barsPerSystem.map { max(1, $0) }
         toolkit.setOptions([
-            "pageWidth": max(500, pageWidth), "pageHeight": max(1000, Int(l.height * 100 / CGFloat(scale))), "adjustPageHeight": true,
+            "pageWidth": max(500, pageWidth), "pageHeight": fixed != nil ? 60000 : max(1000, Int(l.height * 100 / CGFloat(scale))),
+            "adjustPageHeight": true,
             "scale": scale, "pageMarginLeft": 50, "pageMarginRight": 50, "pageMarginTop": 50, "pageMarginBottom": 50,
-            "breaks": "auto", "font": "Leipzig", "svgHtml5": false, "svgBoundingBoxes": false,
+            "breaks": fixed != nil ? "encoded" : "auto", "font": "Leipzig", "svgHtml5": false, "svgBoundingBoxes": false,
             "transposeToSoundingPitch": l.pitch == .concert, "header": "none", "footer": "none",
             "condense": l.parts?.count == 1 ? "none" : "auto", "justifyVertically": false,
         ])
-        let xml = l.parts.map { MusicXMLFilter.keepingParts($0, in: musicXML) } ?? musicXML
+        var xml = l.parts.map { MusicXMLFilter.keepingParts($0, in: musicXML) } ?? musicXML
+        if let fixed {
+            xml = Self.breakingSystems(every: fixed, in: xml)
+            // one part on the stand: its name is in the stand's own band, so the staff starts at the margin
+            if l.parts?.count == 1 {
+                xml = xml.replacingOccurrences(of: #"<part-(name|abbreviation)\b[^>]*>[^<]*</part-(name|abbreviation)>"#,
+                                               with: "<part-$1></part-$1>", options: .regularExpression)
+            }
+        }
         guard toolkit.loadData(xml) else { return false }
         pageCount = toolkit.pageCount
         timemap = toolkit.timemap()
@@ -120,6 +144,25 @@ public final class ScoreRenderer: @unchecked Sendable {
         uncertainLevels = [:]
         lastLoadSeconds = Date().timeIntervalSince(t0)
         return true
+    }
+
+    /// The MusicXML with a system break before every `n`th bar of every part, and no other
+    /// system or page breaks.
+    public static func breakingSystems(every n: Int, in xml: String) -> String {
+        var s = xml.replacingOccurrences(of: #"\snew-(system|page)="yes""#, with: "", options: .regularExpression)
+        guard n > 0, let re = try? NSRegularExpression(pattern: #"<part\b[^>]*>|<measure\b[^>/]*>"#) else { return s }
+        var out = "", last = s.startIndex, bar = 0
+        for m in re.matches(in: s, range: NSRange(s.startIndex..., in: s)) {
+            guard let r = Range(m.range, in: s) else { continue }
+            out += s[last..<r.upperBound]
+            last = r.upperBound
+            if s[r].hasPrefix("<part") { bar = 0; continue }
+            if bar > 0, bar % n == 0 { out += #"<print new-system="yes"/>"# }
+            bar += 1
+        }
+        out += s[last...]
+        s = out
+        return s
     }
 
     public func page(_ n: Int) -> Page? {
@@ -149,9 +192,18 @@ public final class ScoreRenderer: @unchecked Sendable {
             }
             if let measure, let staff, seenStaff.insert(staff).inserted { staves[measure, default: []].append(staff) }
         }
-        let p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes, staffLines: lines)
+        var p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes, staffLines: lines)
+        p.systems = Self.systems(in: doc, measureIDs: p.measureIDs)
         pages[n] = p
         return p
+    }
+
+    /// Systems top to bottom, each with the measures whose frame sits inside it.
+    static func systems(in doc: SVGDocument, measureIDs: [String]) -> [System] {
+        let frames = doc.ids(ofClass: "system").compactMap { doc.frames[$0] }.sorted { $0.minY < $1.minY }
+        return frames.map { f in
+            System(frame: f, measureIDs: measureIDs.filter { id in doc.frames[id].map { f.contains(CGPoint(x: $0.midX, y: $0.midY)) } ?? false })
+        }
     }
 
     public func renderAllPages() -> [Page] { (1...max(1, pageCount)).compactMap(page) }

@@ -36,7 +36,8 @@ struct NotationView: View {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
                     model.viewWidth = geo.size.width - 16
-                    if hsize == .compact, model.shownPart == nil, LaunchOptions.screen != "score" {
+                    if hsize == .compact, model.shownPart == nil, !model.openedOnMyPart, LaunchOptions.screen != "score" {
+                        model.openedOnMyPart = true
                         model.shownPart = model.myPart
                     } else {
                         model.relayout()
@@ -125,88 +126,10 @@ private struct PageView: View {
     var body: some View {
         let doc = page.svg
         let barIndex: [String: Int] = Dictionary(uniqueKeysWithValues: (model.renderer?.measureIDs ?? []).enumerated().map { ($1, $0) })
-        let levels = model.renderer?.uncertainLevels ?? [:]
-        let sounding = model.soundingNotes
-        let current = model.currentBar
-        let loop: ClosedRange<Int>? = model.looping ? min(model.loopFrom, model.loopTo)...max(model.loopFrom, model.loopTo) : nil
-        let adLib = model.freeTimeBars
-        let highContrast = contrast == .increased
-        let loopLabel = loop.map { l in
-            l.count == 1 ? String(localized: "Repeat \(l.lowerBound + 1)") : String(localized: "Repeat \(l.lowerBound + 1)–\(l.upperBound + 1)")
-        }
+        let paint = ScorePaint(model: model, highContrast: contrast == .increased)
         ZStack(alignment: .topLeading) {
             Canvas(opaque: false, rendersAsynchronously: false) { ctx, _ in
-                var bars: [(bar: Int, rect: CGRect)] = []
-                for mid in page.measureIDs {
-                    guard let bar = barIndex[mid], let r = Self.band(mid, doc: doc, page: page) else { continue }
-                    bars.append((bar, r))
-                    let inLoop = loop?.contains(bar) == true
-                    let inAdLib = adLib.contains { $0.contains(bar) }
-                    if highContrast {
-                        if !inLoop, bar == current || inAdLib {
-                            ctx.stroke(Path(r), with: .color(.Brasscribe.staff),
-                                       style: StrokeStyle(lineWidth: 1, dash: bar == current ? [] : [4, 3]))
-                        }
-                    } else if inLoop {
-                        ctx.fill(Path(r), with: .color(.Brasscribe.loopTint))
-                    } else if bar == current {
-                        ctx.fill(Path(r), with: .color(.Brasscribe.cursorTint))
-                    } else if inAdLib {
-                        ctx.fill(Path(r), with: .color(.Brasscribe.adlibTint))
-                    }
-                }
-
-                let env = ctx.environment
-                let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
-                let uncertain = Color.Brasscribe.uncertain.resolve(in: env).cgColor
-                let very = Color.Brasscribe.veryUncertain.resolve(in: env).cgColor
-                var highlight: [String: CGColor] = [:]
-                for (id, level) in levels { highlight[id] = level == .veryUncertain ? very : uncertain }
-                ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, highlight: highlight, keepDocumentColors: false) }
-
-                if let l = loop {
-                    let arm: CGFloat = 6
-                    for (bar, r) in bars where bar == l.lowerBound || bar == l.upperBound {
-                        var p = Path()
-                        if bar == l.lowerBound {
-                            p.move(to: CGPoint(x: r.minX + arm, y: r.minY)); p.addLine(to: CGPoint(x: r.minX, y: r.minY))
-                            p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.addLine(to: CGPoint(x: r.minX + arm, y: r.maxY))
-                            if let loopLabel {
-                                ctx.draw(Text(loopLabel).font(.caption.weight(.semibold)).foregroundStyle(Color.Brasscribe.loopEdge),
-                                         at: CGPoint(x: r.minX + 2, y: r.minY - 16), anchor: .bottomLeading)
-                            }
-                        }
-                        if bar == l.upperBound {
-                            p.move(to: CGPoint(x: r.maxX - arm, y: r.minY)); p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-                            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY)); p.addLine(to: CGPoint(x: r.maxX - arm, y: r.maxY))
-                        }
-                        ctx.stroke(p, with: .color(.Brasscribe.loopEdge), lineWidth: BrasscribeDesign.Score.loopEdgeWidth)
-                    }
-                }
-
-                for (staffID, notes) in page.notesByStaff {
-                    guard let lines = page.staffLines[staffID] ?? doc.frames[staffID] else { continue }
-                    let space = max(3, lines.height / 4)
-                    let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
-                    for id in notes {
-                        guard let level = levels[id], let f = doc.frames[id] else { continue }
-                        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
-                        let bottom = min(lines.minY, f.minY) - space * 0.5
-                        let center = CGPoint(x: f.midX, y: bottom - size * 0.6)
-                        ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)
-                        if level == .veryUncertain {
-                            let box = CGRect(x: center.x - size * 0.45, y: center.y - size * 0.62, width: size * 0.9, height: size * 1.24)
-                            ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
-                        }
-                    }
-                }
-
-                if let (_, r) = bars.first(where: { $0.bar == current }) {
-                    let xs = sounding.compactMap { doc.frames[$0]?.midX }.filter { $0 >= r.minX && $0 <= r.maxX }
-                    let x = xs.min() ?? r.minX + 6
-                    let w = BrasscribeDesign.Score.cursorWidth
-                    ctx.fill(Path(CGRect(x: x - w / 2, y: r.minY - 4, width: w, height: r.height + 8)), with: .color(.Brasscribe.cursor))
-                }
+                paint.draw(page, in: ctx)
             }
             .frame(width: doc.size.width, height: doc.size.height)
             .accessibilityHidden(true)
@@ -229,13 +152,115 @@ private struct PageView: View {
 
     /// The band behind one bar: the bar's width, from the top staff line of the system to
     /// the bottom one.
-    static func band(_ measureID: String, doc: SVGDocument, page: ScoreRenderer.Page) -> CGRect? {
+    nonisolated static func band(_ measureID: String, doc: SVGDocument, page: ScoreRenderer.Page) -> CGRect? {
         guard let mf = doc.frames[measureID] else { return nil }
         let staves = (page.staves[measureID] ?? []).compactMap { page.staffLines[$0] }
         guard let top = staves.map(\.minY).min(), let bottom = staves.map(\.maxY).max() else { return nil }
         let minX = max(mf.minX, staves.map(\.minX).min() ?? mf.minX)
         let maxX = min(mf.maxX, staves.map(\.maxX).max() ?? mf.maxX)
         return CGRect(x: minX, y: top, width: max(0, maxX - minX), height: bottom - top)
+    }
+}
+
+/// Everything drawn on a page, in order (see PageView), for the score view and the music stand.
+/// `visible` limits the notation to the part of the page on screen.
+struct ScorePaint {
+    let barIndex: [String: Int]
+    let levels: [String: UncertaintyLevel]
+    let sounding: Set<String>
+    let current: Int
+    let loop: ClosedRange<Int>?
+    let adLib: [ClosedRange<Int>]
+    let highContrast: Bool
+    let loopLabel: String?
+
+    @MainActor init(model: PracticeModel, highContrast: Bool) {
+        barIndex = Dictionary(uniqueKeysWithValues: (model.renderer?.measureIDs ?? []).enumerated().map { ($1, $0) })
+        levels = model.renderer?.uncertainLevels ?? [:]
+        sounding = model.soundingNotes
+        current = model.currentBar
+        let loop: ClosedRange<Int>? = model.looping ? min(model.loopFrom, model.loopTo)...max(model.loopFrom, model.loopTo) : nil
+        self.loop = loop
+        adLib = model.freeTimeBars
+        self.highContrast = highContrast
+        loopLabel = loop.map { l in
+            l.count == 1 ? String(localized: "Repeat \(l.lowerBound + 1)") : String(localized: "Repeat \(l.lowerBound + 1)–\(l.upperBound + 1)")
+        }
+    }
+
+    func draw(_ page: ScoreRenderer.Page, in ctx: GraphicsContext, visible: CGRect? = nil) {
+        let doc = page.svg
+        var bars: [(bar: Int, rect: CGRect)] = []
+        for mid in page.measureIDs {
+            guard let bar = barIndex[mid], let r = PageView.band(mid, doc: doc, page: page) else { continue }
+            bars.append((bar, r))
+            let inLoop = loop?.contains(bar) == true
+            let inAdLib = adLib.contains { $0.contains(bar) }
+            if highContrast {
+                if !inLoop, bar == current || inAdLib {
+                    ctx.stroke(Path(r), with: .color(.Brasscribe.staff),
+                               style: StrokeStyle(lineWidth: 1, dash: bar == current ? [] : [4, 3]))
+                }
+            } else if inLoop {
+                ctx.fill(Path(r), with: .color(.Brasscribe.loopTint))
+            } else if bar == current {
+                ctx.fill(Path(r), with: .color(.Brasscribe.cursorTint))
+            } else if inAdLib {
+                ctx.fill(Path(r), with: .color(.Brasscribe.adlibTint))
+            }
+        }
+
+        let env = ctx.environment
+        let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
+        let uncertain = Color.Brasscribe.uncertain.resolve(in: env).cgColor
+        let very = Color.Brasscribe.veryUncertain.resolve(in: env).cgColor
+        var highlight: [String: CGColor] = [:]
+        for (id, level) in levels { highlight[id] = level == .veryUncertain ? very : uncertain }
+        ctx.withCGContext { cg in doc.draw(in: cg, ink: ink, highlight: highlight, keepDocumentColors: false, visible: visible) }
+
+        if let l = loop {
+            let arm: CGFloat = 6
+            for (bar, r) in bars where bar == l.lowerBound || bar == l.upperBound {
+                var p = Path()
+                if bar == l.lowerBound {
+                    p.move(to: CGPoint(x: r.minX + arm, y: r.minY)); p.addLine(to: CGPoint(x: r.minX, y: r.minY))
+                    p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.addLine(to: CGPoint(x: r.minX + arm, y: r.maxY))
+                    if let loopLabel {
+                        ctx.draw(Text(loopLabel).font(.caption.weight(.semibold)).foregroundStyle(Color.Brasscribe.loopEdge),
+                                 at: CGPoint(x: r.minX + 2, y: r.minY - 16), anchor: .bottomLeading)
+                    }
+                }
+                if bar == l.upperBound {
+                    p.move(to: CGPoint(x: r.maxX - arm, y: r.minY)); p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+                    p.addLine(to: CGPoint(x: r.maxX, y: r.maxY)); p.addLine(to: CGPoint(x: r.maxX - arm, y: r.maxY))
+                }
+                ctx.stroke(p, with: .color(.Brasscribe.loopEdge), lineWidth: BrasscribeDesign.Score.loopEdgeWidth)
+            }
+        }
+
+        for (staffID, notes) in page.notesByStaff {
+            guard let lines = page.staffLines[staffID] ?? doc.frames[staffID] else { continue }
+            let space = max(3, lines.height / 4)
+            let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
+            for id in notes {
+                guard let level = levels[id], let f = doc.frames[id] else { continue }
+                let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                let bottom = min(lines.minY, f.minY) - space * 0.5
+                let center = CGPoint(x: f.midX, y: bottom - size * 0.6)
+                ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)
+                if level == .veryUncertain {
+                    let box = CGRect(x: center.x - size * 0.45, y: center.y - size * 0.62, width: size * 0.9, height: size * 1.24)
+                    ctx.stroke(Path(roundedRect: box, cornerRadius: 1.5), with: .color(color), lineWidth: max(1.5, size / 11))
+                }
+            }
+        }
+
+        if let (_, r) = bars.first(where: { $0.bar == current }) {
+            let xs = sounding.compactMap { doc.frames[$0]?.midX }.filter { $0 >= r.minX && $0 <= r.maxX }
+            let x = xs.min() ?? r.minX + 6
+            let w = BrasscribeDesign.Score.cursorWidth
+            ctx.fill(Path(CGRect(x: x - w / 2, y: r.minY - 4, width: w, height: r.height + 8)), with: .color(.Brasscribe.cursor))
+        }
     }
 }
 

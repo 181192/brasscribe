@@ -36,6 +36,12 @@ final class PracticeModel {
     var pitchMode: PitchMode = .written { didSet { if pitchMode != oldValue { relayout() } } }
     var zoom: CGFloat = 1 { didSet { if zoom != oldValue { relayout() } } }
     var viewWidth: CGFloat = 820
+    /// The music stand while it is open (PracticeModel+Stand.swift).
+    var stand: MusicStand?
+    /// The phone opens the score on your part once; coming back from the stand keeps the parts shown.
+    var openedOnMyPart = false
+    /// After leaving the stand, focus goes back to the Music stand button.
+    var focusStandButton = false
 
     // Transport state mirrored for the UI
     private(set) var position: Double = 0
@@ -52,6 +58,8 @@ final class PracticeModel {
     var loopFrom: Int = 0
     var loopTo: Int = 0
     private(set) var looping = false
+    /// A repeat range has been used (the stand's Repeat asks for bars until then).
+    private(set) var loopWasSet = false
     /// Part the musician plays themselves (muted in play-along).
     var myPart: String? {
         didSet {
@@ -139,8 +147,9 @@ final class PracticeModel {
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }
         if renderer == nil { renderer = ScoreRenderer(musicXML: PartNames.localized(xml)) }
         guard let r = renderer else { loadError = String(localized: "The notation engine could not start."); return }
-        let layout = ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
-                                          height: max(600, viewWidth * 1.3))
+        let layout = stand.map { $0.layout(parts: layoutPart.map { [$0] }, pitch: pitchMode) }
+            ?? ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
+                                    height: max(600, viewWidth * 1.3))
         engraving = true
         layoutGeneration += 1
         let gen = layoutGeneration
@@ -169,7 +178,10 @@ final class PracticeModel {
     }
 
     /// Displayed parts, in order.
-    var displayedParts: [Part] { shownPart.flatMap { id in score.parts.filter { $0.id == id } } ?? score.parts }
+    var displayedParts: [Part] { layoutPart.flatMap { id in score.parts.filter { $0.id == id } } ?? score.parts }
+
+    /// The one part engraved, or nil for all: the stand's own choice while it is open.
+    var layoutPart: String? { stand.map { $0.onlyMine ? myPart ?? shownPart : shownPart } ?? shownPart }
 
     // MARK: transport
 
@@ -196,6 +208,7 @@ final class PracticeModel {
     func setLoop(_ on: Bool) {
         guard let engine else { return }
         if on {
+            loopWasSet = true
             let lo = min(loopFrom, loopTo), hi = max(loopFrom, loopTo)
             engine.setLoop(lo...hi)
         } else {
@@ -286,6 +299,7 @@ final class PracticeModel {
 
     private func tick() {
         guard let engine else { return }
+        defer { stand?.follow(self) }
         position = engine.position
         isPlaying = engine.state != .stopped
         if case .countingIn(let b) = engine.state { countInBeat = b } else { countInBeat = nil }

@@ -63,3 +63,35 @@ func goldenDir() -> URL? {
     #expect(page.staffLines.count == 2, "one staff per bar of the one part")
     #expect(page.svg.size.width <= 660)
 }
+
+private func oldHundredth() -> String? {
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<8 {
+        let f = dir.appending(path: "apps/fixtures/old-hundredth/brass-band.musicxml")
+        if let s = try? String(contentsOf: f, encoding: .utf8) { return s }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
+}
+
+/// The music stand engraves a fixed number of bars on every system, as one long page that it
+/// pages through itself.
+@Test(.enabled(if: oldHundredth() != nil)) func standLayoutHasFixedBarsPerSystem() throws {
+    let xml = try #require(oldHundredth())
+    let r = try #require(ScoreRenderer(musicXML: xml))
+    for bars in [3, 4] {
+        for parts: Set<String>? in [["P2"], nil] {
+            #expect(r.apply(.init(width: 390, zoom: 0.8, parts: parts, height: 700, barsPerSystem: bars)))
+            #expect(r.pageCount == 1)
+            let page = try #require(r.page(1))
+            let counts = page.systems.map(\.measureIDs.count)
+            print("STAND \(bars) bars, parts \(parts ?? []): \(page.systems.count) systems \(counts), page \(page.svg.size)")
+            #expect(counts.dropLast().allSatisfy { $0 == bars })
+            #expect(counts.reduce(0, +) == r.measureIDs.count)
+            #expect(page.systems.count >= 2)
+            #expect(zip(page.systems, page.systems.dropFirst()).allSatisfy { $0.frame.maxY <= $1.frame.minY + 1 })
+        }
+    }
+    #expect(ScoreRenderer.breakingSystems(every: 2, in: #"<part id="P1"><measure number="1"></measure><measure number="2"><print new-page="yes"/></measure><measure number="3"></measure></part>"#)
+        == #"<part id="P1"><measure number="1"></measure><measure number="2"><print/></measure><measure number="3"><print new-system="yes"/></measure></part>"#)
+}

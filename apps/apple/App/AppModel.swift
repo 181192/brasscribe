@@ -43,6 +43,14 @@ final class AppModel {
     var showCapture = false
     var importing = false
 
+    // The music stand
+    /// "Open on the music stand": the score row the stand was asked for, until the score opens it.
+    var openOnStand: String?
+    /// The library row focus goes back to after a stand opened from the library.
+    var focusScoreRow: String?
+    /// A stand is open: the sidebar steps aside.
+    var standOpen = false
+
     // Companion settings
     /// The address typed under "Details for the band's tech person", used to pair by code. Once paired,
     /// the engine's record (in the Keychain) holds its last address.

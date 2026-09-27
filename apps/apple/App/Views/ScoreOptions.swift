@@ -30,6 +30,9 @@ struct ScoreOptionItems: View {
     let entry: ScoreEntry
 
     var body: some View {
+        Button { app.openOnStand = entry.id; app.open(entry) } label: {
+            Label("Open on the music stand", systemImage: "arrow.up.left.and.arrow.down.right")
+        }
         Button { app.renameTarget = entry } label: { Label("Edit title", systemImage: "pencil") }
         Button { app.open(entry, review: true) } label: { Label("Check the notes", systemImage: BrasscribeIcon.nextUncertain.systemName) }
         Divider()
@@ -71,4 +74,32 @@ struct ScoreOptionDialogs: ViewModifier {
 
 extension View {
     func scoreOptionDialogs() -> some View { modifier(ScoreOptionDialogs()) }
+
+    /// Focus lands on this score row after leaving a music stand opened from it.
+    func scoreRowFocus(_ id: String) -> some View { modifier(ScoreRowFocus(id: id)) }
+}
+
+struct ScoreRowFocus: ViewModifier {
+    @Environment(AppModel.self) private var app
+    let id: String
+    @AccessibilityFocusState private var a11y: Bool
+    @FocusState private var keys: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .accessibilityFocused($a11y)
+            .focused($keys)
+            .onAppear(perform: take)
+            .onChange(of: app.focusScoreRow) { _, _ in take() }
+    }
+
+    private func take() {
+        guard app.focusScoreRow == id else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            guard app.focusScoreRow == id else { return }
+            app.focusScoreRow = nil
+            a11y = true
+            keys = true
+        }
+    }
 }
