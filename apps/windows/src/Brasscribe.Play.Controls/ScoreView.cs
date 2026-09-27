@@ -56,6 +56,7 @@ public sealed partial class ScoreView : UserControl
         _overlay = new Canvas { IsHitTestVisible = false };
         _cursorOver = new Canvas { IsHitTestVisible = false };
         _marks = new Canvas { IsHitTestVisible = false };
+        _selectUnder = new Canvas { IsHitTestVisible = false };
         _surface = new Grid { Children = { _underlay, _cursorUnder, _selectUnder, _pages, _overlay, _cursorOver, _marks } };
         _scroller = new ScrollViewer
         {
@@ -66,8 +67,6 @@ public sealed partial class ScoreView : UserControl
             IsTabStop = false,
         };
         Content = _scroller;
-
-        _selectUnder = new Canvas { IsHitTestVisible = false };
 
         _scroller.ViewChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
         _scroller.SizeChanged += (_, _) => ViewportChanged?.Invoke(this, Viewport);
