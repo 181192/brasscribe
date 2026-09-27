@@ -141,7 +141,8 @@ internal sealed class StartupRegistration
             {
                 var task = PackagedTask();
                 if (task is null) return;
-                if (value) task.RequestEnableAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+                // Windows may ask the user: never wait for that on the UI thread.
+                if (value) _ = task.RequestEnableAsync();
                 else task.Disable();
                 return;
             }

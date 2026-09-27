@@ -40,7 +40,7 @@
       </uap:VisualElements>
       <Extensions>
         <!-- Start at sign-in, on by default after the first run; the argument tells the app not to open its window. -->
-        <uap5:Extension Category="windows.startupTask">
+        <uap5:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="Windows.FullTrustApplication">
           <uap5:StartupTask TaskId="BrasscribeBandroom" Enabled="true" DisplayName="Brasscribe Bandroom" />
         </uap5:Extension>
       </Extensions>

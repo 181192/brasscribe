@@ -185,7 +185,7 @@ jobs:
     name: bandroom (test, build and scan)
     if: ${{ !inputs.release }}
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     defaults:
       run:
         shell: pwsh
@@ -245,6 +245,47 @@ jobs:
           if ($acl.AreAccessRulesProtected -ne $true -or @($acl.Access).Count -ne 1) { throw "the admin credential is readable by more than this user" }
           Stop-Process -Id $p.Id -Force
           if (Test-Path $crash) { Get-Content $crash; throw "Bandroom logged an unhandled exception" }
+          if (-not (Select-String -Path (Join-Path $data "logs/engine.log") -Pattern "notification-area icon added" -Quiet)) { throw "the notification-area icon was not added" }
+
+      # The engine for real: the first run installs the engine environment from pixi.lock (no torch, about
+      # 0.5 GB), Bandroom starts it in its job object, and the owner endpoints answer with the admin bearer.
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.81.0
+          run-install: false
+
+      - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
+        timeout-minutes: 30
+        run: |
+          $data = Join-Path $env:LOCALAPPDATA "Brasscribe"
+          $log = Join-Path $data "logs/engine.log"
+          $p = Start-Process -FilePath "${{ steps.exe.outputs.path }}" -ArgumentList "--background" -PassThru
+          $deadline = (Get-Date).AddMinutes(25)
+          while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
+            if (Select-String -Path $log -Pattern "the engine is running on port" -Quiet) { break }
+            Start-Sleep -Seconds 10
+          }
+          Get-Content $log -Tail 40
+          if ($p.HasExited) { throw "Bandroom exited with code $($p.ExitCode)" }
+          if (-not (Select-String -Path $log -Pattern "the engine is running on port" -Quiet)) { throw "the engine did not reach Running" }
+          $engine = Get-Content (Join-Path $data "engine.json") -Raw | ConvertFrom-Json
+          $engine | ConvertTo-Json
+          $token = (Get-Content (Join-Path $data "bandroom/admin-token") -Raw).Trim()
+          if ((Get-Content (Join-Path $data "engine.json") -Raw) -match [regex]::Escape($token)) { throw "engine.json holds the admin credential" }
+          $base = "http://127.0.0.1:$($engine.port)"
+          $auth = @{ Authorization = "Bearer $token" }
+          Invoke-RestMethod "$base/v1/health" | ConvertTo-Json
+          Invoke-RestMethod "$base/v1/devices" -Headers $auth | ConvertTo-Json
+          $pair = Invoke-RestMethod -Method Post "$base/v1/pairing" -Headers $auth -ContentType "application/json" -Body '{"ttl_s":null,"single_use":true,"extend":false}'
+          $pair | ConvertTo-Json
+          if (-not $pair.open -or $pair.expires_at) { throw "the pairing window did not open without expiry" }
+          Invoke-RestMethod -Method Delete "$base/v1/pairing" -Headers $auth | Out-Null
+          $engineProcs = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match "brasscribe serve" })
+          $engineProcs | Format-Table ProcessId, Name, CommandLine -AutoSize
+          Stop-Process -Id $p.Id -Force
+          Start-Sleep -Seconds 5
+          $left = @($engineProcs | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
+          if ($left.Count -gt 0) { $left | Format-Table ProcessId, Name; throw "the engine outlived Bandroom" }
 
       - name: Accessibility scan (Axe.Windows)
         run: >

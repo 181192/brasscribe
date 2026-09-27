@@ -90,6 +90,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         {
             _tray = new TrayIcon();
             _tray.Activated += () => _ui.TryEnqueue(ToggleFlyout);
+            _tray.KeyActivated += () => _ui.TryEnqueue(OpenFlyout);
             _tray.ContextMenuRequested += (x, y) => _ui.TryEnqueue(() => ShowTrayMenu(x, y));
         }
         catch (Exception e) when (e is System.Runtime.InteropServices.COMException or DllNotFoundException or EntryPointNotFoundException)
@@ -207,10 +208,17 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException) { _log?.Write(e.Message); }
     }
 
+    private bool _trayLogged;
+
     private void ApplySnapshot(BandroomSnapshot snap)
     {
         _vm.Apply(snap);
         _tray?.Update(_vm.Badge, _vm.PieEighths, _vm.Tooltip);
+        if (!_trayLogged && _tray is not null)
+        {
+            _trayLogged = true;
+            _log?.Write(_tray.IsShown ? "bandroom: notification-area icon added" : "bandroom: notification-area icon failed: " + _tray.LastError);
+        }
         KeepAwake.Set(_vm.IsBusy);
     }
 
@@ -265,6 +273,14 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         // A click on the icon first takes focus from the flyout, which hides it: don't reopen at once.
         if ((DateTime.UtcNow - _flyout.HiddenAt).TotalMilliseconds < 300) return;
         // Past 150 % text size the flyout can't hold the content: open the window instead (§9, 1.4.4).
+        if (new Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.5) { OpenWindow(); return; }
+        _flyout.ShowFlyout();
+    }
+
+    /// <summary>Enter on the icon: open (or bring back) the flyout, never close it.</summary>
+    private void OpenFlyout()
+    {
+        if (_flyout is null || _flyout.IsOpen) { _flyout?.Activate(); return; }
         if (new Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.5) { OpenWindow(); return; }
         _flyout.ShowFlyout();
     }

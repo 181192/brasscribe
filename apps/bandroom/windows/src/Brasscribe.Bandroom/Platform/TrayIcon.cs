@@ -5,7 +5,8 @@ using Microsoft.Win32;
 namespace Brasscribe.Bandroom.Platform;
 
 /// <summary>
-/// The notification-area icon (WinUI has no tray API): Shell_NotifyIcon on a message-only window, version 4,
+/// The notification-area icon (WinUI has no tray API): Shell_NotifyIcon on a hidden top-level tool window
+/// (not message-only: that would miss the TaskbarCreated broadcast and can't own the menu's focus), version 4,
 /// so the keyboard works (Win+B, arrows, Enter opens the flyout, Shift+F10 or the Menu key opens the menu).
 /// Identified by uID, not a GUID (a GUID is tied to the exe path). Re-added when Explorer restarts.
 /// </summary>
@@ -32,12 +33,14 @@ internal sealed class TrayIcon : IDisposable
             lpszClassName = "BrasscribeBandroomTray",
         };
         Native.RegisterClassEx(ref wc);
-        _hwnd = Native.CreateWindowEx(0, wc.lpszClassName, "Brasscribe Bandroom", 0, 0, 0, 0, 0, Native.HWND_MESSAGE, IntPtr.Zero, wc.hInstance, IntPtr.Zero);
+        _hwnd = Native.CreateWindowEx(Native.WS_EX_TOOLWINDOW, wc.lpszClassName, "Brasscribe Bandroom", 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, wc.hInstance, IntPtr.Zero);
         _taskbarCreated = Native.RegisterWindowMessage("TaskbarCreated");
     }
 
-    /// <summary>Click, Enter or Space on the icon.</summary>
+    /// <summary>A click on the icon (opens or closes the flyout).</summary>
     public event Action? Activated;
+    /// <summary>Enter or Space on the icon: only opens (Windows may send it twice; Esc closes).</summary>
+    public event Action? KeyActivated;
     /// <summary>Right-click, Shift+F10 or the Menu key: screen coordinates of where to show the menu.</summary>
     public event Action<int, int>? ContextMenuRequested;
 
@@ -115,8 +118,10 @@ internal sealed class TrayIcon : IDisposable
             switch (ev)
             {
                 case Native.NIN_SELECT:
-                case Native.NIN_KEYSELECT:
                     Activated?.Invoke();
+                    break;
+                case Native.NIN_KEYSELECT:
+                    KeyActivated?.Invoke();
                     break;
                 case Native.WM_CONTEXTMENU:
                     ContextMenuRequested?.Invoke(x, y);

@@ -13,6 +13,7 @@ internal static partial class Native
     public const int WM_RBUTTONUP = 0x0205;
     public const int WM_NULL = 0x0000;
     public static readonly IntPtr HWND_MESSAGE = new(-3);
+    public const int WS_EX_TOOLWINDOW = 0x00000080;
 
     public delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
@@ -84,7 +85,7 @@ internal static partial class Native
         public IntPtr hBalloonIcon;
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool Shell_NotifyIcon(int message, ref NOTIFYICONDATA data);
 
     [StructLayout(LayoutKind.Sequential)]
