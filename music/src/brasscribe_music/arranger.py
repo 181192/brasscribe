@@ -158,6 +158,29 @@ def _place_phrase(phrase: list[Note], part: Part, warnings: list[str], shift_ext
     return None
 
 
+def place_as_played(notes: list[Note], part: Part, warnings: list[str]) -> list[Note]:
+    """The player's own line written for their part, in the octave they played it.
+
+    A note keeps its octave while it is inside the instrument's professional range. A note outside
+    it (almost always a tracker octave error) moves by octaves into the comfortable range, else the
+    professional range, and each move is a warning. This writes down the player's notes; _place_line
+    arranges a heard line onto a part, which is another thing.
+    """
+    inst = part.instrument
+    lo, hi = inst.pro
+    placed = []
+    for n in sorted(notes, key=lambda n: n.start):
+        p = n.pitch
+        if not lo <= p <= hi:
+            p = inst.fit_octave(p)
+            if not lo <= p <= hi:
+                warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
+                continue
+            warnings.append(f"{part.name}: moved {n.pitch} to {p} at tick {n.start} (outside the range)")
+        placed.append(_moved(n, p))
+    return _hold_small_gaps(placed)
+
+
 def _hold_small_gaps(notes: list[Note]) -> list[Note]:
     notes.sort(key=lambda n: n.start)
     for a, b in zip(notes, notes[1:]):
@@ -420,16 +443,24 @@ def arrange_composition(comp: Composition) -> Arrangement:
 def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
     """The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether
     the layered arranger makes it (its voices carry layers)."""
-    from .instruments import BRASS_BAND, QUARTET, lineup_by_name
+    from .instruments import BRASS_BAND, QUARTET, lineup_by_name, lineup_key, seat_lineup, seat_part, with_reading
 
     opts = comp.arrangement or {}
-    if not any(v.layer for v in comp.voices):
-        return (QUARTET if opts.get("lineup") == "quartet" else MINIMAL_BAND), False
-    try:
-        return lineup_by_name(opts.get("lineup")), True
-    except ValueError:
-        # Anything but a known lineup arranges for the band, as before lineups carried their roles.
-        return BRASS_BAND, True
+    seat, reads = opts.get("seat"), opts.get("reads")
+    layered = any(v.layer for v in comp.voices)
+    if not layered:
+        lineup = QUARTET if opts.get("lineup") == "quartet" else MINIMAL_BAND
+    elif seat and is_solo_take(comp):
+        return seat_lineup(seat, reads), True
+    else:
+        try:
+            lineup = lineup_by_name(opts.get("lineup"))
+        except ValueError:
+            # Anything but a known lineup arranges for the band, as before lineups carried their roles.
+            lineup = BRASS_BAND
+    if seat:
+        lineup = with_reading(lineup, seat_part(lineup_key(lineup), seat).part, reads)
+    return lineup, layered
 
 
 # Where a part's notes come from (part_sources). The UI words never say "transcribed".
@@ -646,6 +677,11 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
 
     lead = lineup.lead
     solo = _layer(comp, "solo")
+    if lineup.as_played:
+        # A solo take for the player's seat: their own line in their octave, and nothing else.
+        arr.parts[lead] = place_as_played(solo, lineup.lead_part, arr.warnings)
+        arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
+        return arr
     arr.parts[lead] = _place_line(solo, lineup.lead_part, arr.warnings)
 
     bass = _layer(comp, "bass")

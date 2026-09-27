@@ -390,7 +390,12 @@ def _solo_instruments(data: Path, mode: str) -> dict[str, float]:
 
     if not FIXTURES.is_dir():
         raise SkipSuite(f"missing fixtures: {FIXTURES}")
-    return metrics(seats=False)
+    m = metrics(seats=True)
+    # The seat's gates (docs/plan/my-instrument.md §6.3): recall on low brass, and a solo take written as played.
+    recall = {"baritone": 0.93, "trombone": 0.93, "tuba": 0.85}
+    m["seat_gates"] = float(all(m[f"{k}.seat_recall"] >= v for k, v in recall.items())
+                            and all(v <= 0.01 for k, v in m.items() if k.endswith(".seat_moved")))
+    return m
 
 
 def _seat_voices(data: Path, mode: str) -> dict[str, float]:

@@ -16,7 +16,7 @@ about transposition or range should ever be left to a model.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 
 
@@ -133,7 +133,9 @@ class Lineup:
     `lead` plays the melody (the solo layer), `bass` the bass line and
     `second_bass`, if any, the bass an octave lower where that stays readable.
     With `satb` the lineup is a four-part group: the parts between lead and
-    bass are voiced together as alto and tenor (arranger.voice_satb).
+    bass are voiced together as alto and tenor (arranger.voice_satb). With
+    `as_played` it is one part, the player's own, and the line keeps the
+    octave it was played in (arranger.place_as_played).
     """
 
     name: str
@@ -142,6 +144,7 @@ class Lineup:
     bass: str = "E♭ Bass"
     second_bass: str | None = "B♭ Bass"
     satb: bool = False
+    as_played: bool = False  # the player's own part (a solo take for their seat): written in the octave played
 
     def by_name(self, name: str) -> Part:
         return next(p for p in self.parts if p.name == name)
@@ -212,6 +215,8 @@ QUARTET = Lineup("Brass quartet", [
 
 LINEUPS: dict[str, Lineup] = {"band": BRASS_BAND, "minimal": MINIMAL_BAND, "quartet": QUARTET}
 LINEUP_ALIASES = {"full": "band"}
+# Who plays the tune: the lineup's lead (Solo Cornet, 1st Cornet), or the player's seat part.
+LEADS = ("lineup", "seat")
 
 
 def lineup_by_name(name: str | None) -> Lineup:
@@ -366,3 +371,30 @@ def check_reads(seat: str | None, reads: str | None) -> None:
         raise ValueError("reads needs a seat")
     if reads not in seat_by_id(seat).reads:
         raise ValueError(f"the {seat_by_id(seat).part} is not offered in {reads} clef")
+
+
+def reading_instrument(inst: Instrument, reads: str | None) -> Instrument:
+    """The instrument as a player reading `reads` sees it: bass clef is written at concert pitch."""
+    if reads == "bass" and (inst.clef != "bass" or inst.chromatic):
+        return replace(inst, chromatic=0, diatonic=0, clef="bass")
+    return inst
+
+
+def seat_lineup(seat: str, reads: str | None = None) -> Lineup:
+    """A solo take written for the player: one part, the seat's own (named as in the band, so every
+    name table resolves), in their clef and key."""
+    check_reads(seat, reads)
+    band = seat_by_id(seat).band_part
+    part = replace(band, instrument=reading_instrument(band.instrument, reads))
+    return Lineup(part.name, [part], lead=part.name, bass=part.name, second_bass=None, as_played=True)
+
+
+def with_reading(lineup: Lineup, part: str | None, reads: str | None) -> Lineup:
+    """`lineup` with `part` written the way the player reads (bass clef: at concert pitch)."""
+    if part is None or reads is None or not lineup.has(part):
+        return lineup
+    inst = lineup.by_name(part).instrument
+    if reading_instrument(inst, reads) is inst:
+        return lineup
+    parts = [replace(p, instrument=reading_instrument(p.instrument, reads)) if p.name == part else p for p in lineup.parts]
+    return replace(lineup, parts=parts)

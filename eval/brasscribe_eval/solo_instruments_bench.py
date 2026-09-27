@@ -1,8 +1,9 @@
 """What the solo path writes for each brass instrument (ChoraleBricks single-instrument stems).
 
 Frozen inputs, no models run: eval/fixtures/choralebricks-solo/<song>/<stem>.{sw,bp}.mid (SwiftF0 and
-Basic Pitch on the stem), <stem>.beats (Beat This! small0 on the stem) and <stem>.notes.csv (the
-ChoraleBricks note annotation, sounding pitch). Every stem goes through the real solo path,
+Basic Pitch on the stem), <stem>.contour.npz (the SwiftF0 frame contour: note ends and confidence),
+<stem>.beats (Beat This! small0 on the stem) and <stem>.notes.csv (the ChoraleBricks note annotation,
+sounding pitch). Every stem goes through the real solo path,
 arrange_layers_song with only a solo layer (Basic Pitch also stands in for MuScriptor, as on the
 phone), once as today (no seat) and, with `seats=True`, once for the player's seat.
 
@@ -95,6 +96,8 @@ def solo_take(song: Path, stem: str, seat: str | None, work: Path):
     shutil.copy(song / f"{stem}.sw.mid", layers / "solo-sw.mid")
     shutil.copy(song / f"{stem}.bp.mid", layers / "solo-bp.mid")
     shutil.copy(song / f"{stem}.bp.mid", layers / "solo-mus.mid")  # Basic Pitch stands in for MuScriptor
+    if (song / f"{stem}.contour.npz").exists():
+        shutil.copy(song / f"{stem}.contour.npz", layers / "solo-sw.contour.npz")
     argv = ["--layers", str(layers), "--beats", str(song / f"{stem}.beats"), "--out", str(work / "out"),
             "--title", stem, "--no-render", "--lineup", "minimal", *(["--seat", seat] if seat else [])]
     with contextlib.redirect_stdout(io.StringIO()):

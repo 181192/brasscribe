@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 import soundfile as sf
-from brasscribe_music.arranger import Arrangement, arrange_layers
+from brasscribe_music.arranger import Arrangement, arrange_layers, composition_lineup
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
@@ -29,7 +29,7 @@ from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
 from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import lineup_by_name
+from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, seat_by_id
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
@@ -70,6 +70,7 @@ def split_orchestra(notes: list[Note]) -> tuple[list[Note], list[Note]]:
     return hits, [n for n in notes if id(n) not in hit_ids]
 
 
+SOLO_WINDOW = (52, 88)  # the solo line without a seat: a cornet or trumpet soloist, E3-E6
 PART_HOLD_WITHIN = TICKS_PER_BEAT // 2  # detached notes are written as (staccato) 8ths in band parts, not 16ths and rests
 
 
@@ -102,11 +103,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                     help="band (= full): the 18-part contest band; minimal: the 8-part minimal band; "
                          "quartet: 1st and 2nd Cornet, Tenor Horn and Euphonium")
     ap.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
+    ap.add_argument("--seat", choices=SEAT_IDS,
+                    help="the player's seat: a solo take is written for it (one part, its range, as played)")
+    ap.add_argument("--reads", choices=CLEF_READINGS, help="the clef the seat's part is written in (bass: at concert pitch)")
+    ap.add_argument("--lead", choices=LEADS, default="lineup",
+                    help="who plays the tune: the lineup's lead, or the seat's part (a solo take always the seat)")
     tr = ap.add_mutually_exclusive_group()
     tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
     tr.add_argument("--transpose", type=int, help="transpose the whole arrangement by N semitones")
     ap.add_argument("--free-tempo", type=float, help="notate free-time passages at this BPM instead of estimating one")
-    return ap.parse_args(argv)
+    args = ap.parse_args(argv)
+    if args.lead == "seat" and not args.seat:
+        ap.error("--lead seat needs --seat")
+    try:
+        check_reads(args.seat, args.reads)
+    except ValueError as e:
+        ap.error(str(e))
+    return args
 
 
 def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
@@ -191,8 +204,12 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
     # calibrated probability that it is right (confidence.py: agreement class, length, contour
     # support, separated or not), fitted by confidence_bench on notes with ground truth.
     solo_sw = pitched(L / "solo-sw.mid")
-    votes = {"sw": line(solo_sw, 52, 88, top=True), "mus": line(solo_mus, 52, 88, top=True),
-             "bp": line(solo_bp, 52, 88, top=True)}
+    # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
+    # solo line is the soloist's, a cornet or trumpet (E3-E6).
+    solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
+    lo, hi = seat_by_id(args.seat).band_part.instrument.pro if solo_take else SOLO_WINDOW
+    votes = {"sw": line(solo_sw, lo, hi, top=True), "mus": line(solo_mus, lo, hi, top=True),
+             "bp": line(solo_bp, lo, hi, top=True)}
     # Basic Pitch standing in for MuScriptor (the solo path) is one vote for the confidence, not two;
     # the clustering (and so every note's timing) is unchanged.
     mus_is_bp = sorted((n["onset"], n["pitch"]) for n in solo_mus) == sorted((n["onset"], n["pitch"]) for n in solo_bp)
@@ -209,7 +226,7 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
         src = set(c.sources) - ({"mus"} if mus_is_bp else set())
         x = confidence_features(src, off - on, contour_support(solo_contour, on, c.pitch), separated)
         cand.append({"pitch": c.pitch, "onset": on, "offset": off, "confidence": round(p_correct(x, model), 3)})
-    solo_line = line(cand, 52, 88, top=True)
+    solo_line = line(cand, lo, hi, top=True)
     if args.solo_contour:
         # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
         ends = contour_offsets(solo_contour, [(n["onset"], n["pitch"]) for n in solo_line],
@@ -275,8 +292,12 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
         comp = comp.transposed(shift)
         print(f"transposed {shift:+d} semitones; first key now {comp.keys[0].fifths} fifths {comp.keys[0].mode}")
     lineup = "band" if args.lineup in ("band", "full") else args.lineup
-    if lineup != "band" or args.difficulty != "faithful" or shift:
+    if lineup != "band" or args.difficulty != "faithful" or shift or args.seat:
         comp.arrangement = {"lineup": lineup, "difficulty": args.difficulty, "transpose_semitones": shift}
+    if args.seat:
+        # The seat's options, like the others; the arrangers read them back (composition_lineup).
+        comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
+                                 "lead": "seat" if solo_take else args.lead})
     # Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
     bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
     comp.review = [ReviewItem(v.id, g.start, g.end, g.notes, g.very) for v in comp.voices if v.layer != "drums"
@@ -285,7 +306,7 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
     marked = sum(n.confidence < 1 - model.mark_risk for n in solo)
     print(f"solo notes marked uncertain: {marked} of {len(solo)} ({marked / max(1, len(solo)):.0%}), "
           f"{sum(1 for r in comp.review if r.voice == 'solo')} review groups")
-    arr = arrange_layers(comp, lineup_by_name(lineup), difficulty=args.difficulty)
+    arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=args.difficulty)
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
