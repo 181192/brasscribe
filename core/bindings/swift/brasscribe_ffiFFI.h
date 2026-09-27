@@ -391,9 +391,25 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_layers_song_defaults(RustCallStatus *_N
 RustBuffer uniffi_brasscribe_ffi_fn_func_normalize_composition(RustBuffer json, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_SOURCES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_SOURCES
+RustBuffer uniffi_brasscribe_ffi_fn_func_part_sources(RustBuffer composition_json, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_QUANTIZE_NOTES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_QUANTIZE_NOTES
 RustBuffer uniffi_brasscribe_ffi_fn_func_quantize_notes(RustBuffer notes, RustBuffer beat_times, int8_t monophonic, int8_t auto_level, int64_t fill_gap_ticks, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SEAT_PART
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SEAT_PART
+RustBuffer uniffi_brasscribe_ffi_fn_func_seat_part(RustBuffer lineup, RustBuffer seat, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SEATS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SEATS
+RustBuffer uniffi_brasscribe_ffi_fn_func_seats(RustCallStatus *_Nonnull out_status
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_SPELL_PITCHES
@@ -748,9 +764,27 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_normalize_composition(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_PART_SOURCES
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_PART_SOURCES
+uint16_t uniffi_brasscribe_ffi_checksum_func_part_sources(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_QUANTIZE_NOTES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_QUANTIZE_NOTES
 uint16_t uniffi_brasscribe_ffi_checksum_func_quantize_notes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SEAT_PART
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SEAT_PART
+uint16_t uniffi_brasscribe_ffi_checksum_func_seat_part(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SEATS
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SEATS
+uint16_t uniffi_brasscribe_ffi_checksum_func_seats(void
     
 );
 #endif

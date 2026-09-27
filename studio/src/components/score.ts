@@ -353,9 +353,21 @@ export class ScoreElement extends HTMLElement {
     });
   }
 
+  /** Where each part comes from (engine part-sources), shown with the part's name; set before or after load. */
+  set sources(v: Record<string, string> | null) {
+    this.partSources = v;
+    Array.from(this.partSelect?.options ?? []).forEach((o) => {
+      if (/^\d+$/.test(o.value)) o.textContent = this.partLabel(Number(o.value));
+    });
+  }
+
+  private partSources: Record<string, string> | null = null;
+
   private partLabel(i: number): string {
     const name = this.api?.score?.tracks[i]?.name || `${i + 1}`;
-    return lang() === "nb" ? partNameNb(name) ?? name : name;
+    const shown = lang() === "nb" ? partNameNb(name) ?? name : name;
+    const src = this.partSources?.[name];
+    return src ? `${shown} · ${t(`score.source.${src}`)}` : shown;
   }
 
   private onScore(score: AT.model.Score): void {

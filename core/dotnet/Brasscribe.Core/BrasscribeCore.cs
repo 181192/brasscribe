@@ -30,9 +30,31 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// <param name="Difficulty">"faithful", "standard" or "easier".</param>
 /// <param name="Key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).</param>
 /// <param name="Transpose">Semitones to transpose the whole arrangement by (instead of Key).</param>
+/// <param name="Seat">The player's seat (an id of <see cref="BrasscribeCore.Seats"/>): a solo take is written for it, one
+/// part in the octave played; a band take's notes do not change. Null: no seat.</param>
+/// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
+/// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
 public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
     bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
-    string? Key = null, int? Transpose = null);
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null);
+
+/// <summary>The player's part in a lineup for their seat.</summary>
+/// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
+/// <param name="Exact">The seat's own part.</param>
+/// <param name="SameKey">The part is in the seat's key, so it reads without transposing.</param>
+public sealed record SeatPart(string? Part, bool Exact, bool SameKey);
+
+/// <summary>Where one part comes from: "your-recording", "recording" or "arranged".</summary>
+public readonly record struct PartSource(string Part, string Source);
+
+/// <summary>One seat of the contest band, for the "What do you play?" picker.</summary>
+/// <param name="Id">The seat option value.</param>
+/// <param name="Name">The part's English name ("2nd Cornet").</param>
+/// <param name="NbName">The part's Norwegian name from the core's one table («2. kornett»).</param>
+/// <param name="Instrument">Instrument id.</param>
+/// <param name="Clef">The part's own clef: "treble", "bass" or "percussion".</param>
+/// <param name="Reads">Clefs the player may read it in, the part's own first; empty for percussion.</param>
+public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads);
 
 /// <summary>Everything the band arrangement writes.</summary>
 public sealed record BandOutput(string CompositionJson, string MusicXml, IReadOnlyList<(string FileName, string MusicXml)> Parts,
@@ -144,10 +166,13 @@ public static class BrasscribeCore
     /// <param name="key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]), or null.</param>
     /// <param name="transpose">Transposition from the recording in semitones (instead of key), or null: the total the
     /// composition records as arrangement.transpose_semitones, so an already transposed take is not moved again.</param>
+    /// <param name="seat">The player's seat, or null (see <see cref="LayersSongOptions"/>).</param>
+    /// <param name="reads">"treble", "bass" or null.</param>
+    /// <param name="lead">"lineup" (null) or "seat".</param>
     public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
-        string? key = null, int? transpose = null)
+        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null)
     {
-        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose });
+        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead });
         return Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_with(compositionJson, options, out o, out e));
     }
 
@@ -199,6 +224,9 @@ public static class BrasscribeCore
             difficulty = o.Difficulty,
             key = o.Key,
             transpose = o.Transpose,
+            seat = o.Seat,
+            reads = o.Reads,
+            lead = o.Lead,
         });
         byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
         byte[]?[] wavs = [stems?.Solo, stems?.Bass, stems?.Drums, stems?.Orchestra];
@@ -280,6 +308,38 @@ public static class BrasscribeCore
     internal static int NativeTalkingExport(IntPtr h, string format, string settings, out IntPtr o, out IntPtr e) => Native.bc_talking_score_export(h, format, settings, out o, out e);
 
     /// <summary>Spell MIDI pitches from their context (ps13); onsets in beats.</summary>
+    /// <summary>Which part of a lineup ("band", "minimal", "quartet") is the player's, for their seat.</summary>
+    public static SeatPart SeatPart(string lineup, string seat)
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_seat_part(lineup, seat, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        var part = r.GetProperty("part");
+        return new SeatPart(part.ValueKind == JsonValueKind.Null ? null : part.GetString(), r.GetProperty("exact").GetBoolean(),
+            r.GetProperty("same_key").GetBoolean());
+    }
+
+    /// <summary>Where each part of a Composition's arrangement comes from, in score order.</summary>
+    public static IReadOnlyList<PartSource> PartSources(string compositionJson)
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_part_sources(compositionJson, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray()
+            .Select(x => new PartSource(x.GetProperty("part").GetString()!, x.GetProperty("source").GetString()!)).ToList();
+    }
+
+    /// <summary>The 18 seats of the contest band, in score order.</summary>
+    public static IReadOnlyList<SeatInfo> Seats()
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_seats(out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray()
+            .Select(x => new SeatInfo(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!,
+                x.GetProperty("nb_name").GetString()!, x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
+                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList()))
+            .ToList();
+    }
+
     public static IReadOnlyList<SpelledPitch> SpellPitches(IReadOnlyList<double> onsetsBeats, IReadOnlyList<int> pitches)
     {
         var request = JsonSerializer.Serialize(new { onsets = onsetsBeats, pitches });
@@ -368,6 +428,16 @@ public static class BrasscribeCore
         [DllImport(Lib)]
         public static extern int bc_talking_score_export(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? settingsJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib)]
+        public static extern int bc_seat_part([MarshalAs(UnmanagedType.LPUTF8Str)] string lineup,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string seat, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib)]
+        public static extern int bc_part_sources([MarshalAs(UnmanagedType.LPUTF8Str)] string compositionJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib)]
+        public static extern int bc_seats(out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
         public static extern int bc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);

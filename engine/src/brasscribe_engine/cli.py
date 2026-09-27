@@ -17,6 +17,8 @@ import json
 import sys
 from pathlib import Path
 
+from brasscribe_music.instruments import SEAT_IDS
+
 from . import config, profiles, runner
 
 
@@ -41,7 +43,8 @@ def cmd_run(args) -> int:
     m = runner.run(s, args.audio, args.profile, title=args.title, out=args.out, reuse=args.reuse,
                    allow_heavy=not args.no_heavy, cold=_cold(args.cold), params={"audio": not args.no_audio, "lineup": args.lineup,
                                                                      "difficulty": args.difficulty, "key": args.key,
-                                                                     "transpose": args.transpose,
+                                                                     "transpose": args.transpose, "seat": args.seat,
+                                                                     "reads": args.reads, "lead": args.lead,
                                                                      **({"muscriptor": False} if args.no_muscriptor else {})},
                    emit=_print_event)
     run_dir = s.runs_dir / m["run_id"]
@@ -233,6 +236,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
     r.add_argument("--key", help="target concert key: tonic (Bb, F#, Am) or FIFTHS[:MODE]")
     r.add_argument("--transpose", type=int, help="semitones (instead of --key)")
+    r.add_argument("--seat", choices=SEAT_IDS, help="the player's seat: a solo take is written for it")
+    r.add_argument("--reads", choices=["treble", "bass"], help="the clef of the seat's part (bass: at concert pitch)")
+    r.add_argument("--lead", choices=["lineup", "seat"], default="lineup", help="who plays the tune (band lineups)")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 

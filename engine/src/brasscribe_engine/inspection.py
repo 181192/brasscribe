@@ -94,20 +94,21 @@ def inside(root: Path, path: Path) -> bool:
 # ------------------------------------------------------------- validation
 
 _DROPPED = re.compile(r"^(?P<part>.+?): dropped (?P<pitch>\d+) at tick (?P<tick>-?\d+)")
+_MOVED = re.compile(r"^(?P<part>.+?): moved (?P<pitch>\d+) to \d+ at tick (?P<tick>-?\d+)")
 _FITTED = re.compile(r"^(?P<part>.+?): phrase at tick (?P<tick>-?\d+) (?:needed per-note octave fitting|split at its leaps to fit the range)")
 
 
 def validation(composition: Path) -> list[dict]:
     """Arranger warnings for a run's Composition, located by bar and beat."""
-    from brasscribe_music.arranger import arrange, arrange_layers
+    from brasscribe_music.arranger import arrange_composition
     from brasscribe_music.score_model import Composition
 
     comp = Composition.from_json(composition)
-    arr = arrange_layers(comp) if any(v.layer for v in comp.voices) else arrange(comp)
+    arr = arrange_composition(comp)
     beats = comp.meters[0].beats if comp.meters else 4
     out = []
     for w in arr.warnings:
-        m = _DROPPED.match(w) or _FITTED.match(w)
+        m = _DROPPED.match(w) or _FITTED.match(w) or _MOVED.match(w)
         tick = int(m["tick"]) if m else None
         bar = beat = None
         if tick is not None:

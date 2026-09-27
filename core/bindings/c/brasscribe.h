@@ -41,7 +41,8 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 // Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
 // `options` may be null (defaults) or
 // `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
-//   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]); `transpose`
+//   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ...}` (the keys of
+//   [`bc_arrange_layers_song`]); `transpose`
 // is the total from the recording, as in `arrange_musicxml_with`.
 int32_t bc_arrange_with(const char *composition_json, const char *options, char **out, char **err);
 
@@ -55,7 +56,8 @@ int32_t bc_arrange_with(const char *composition_json, const char *options, char 
 //   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
 //   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 //   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
-//   "transpose": null}`: the SwiftF0 contour of the solo stem (where
+//   "transpose": null, "seat": "euphonium" | null, "reads": "treble" | "bass" | null,
+//   "lead": "lineup" | "seat" | null}`: the SwiftF0 contour of the solo stem (where
 // sustained notes end), free-time detection on/off, a fixed BPM for free-time
 // passages, the energy gate, beat cleanup, key changes, the lineup, the
 // difficulty and a transposition (to a concert key or by semitones). Without stems the
@@ -74,6 +76,24 @@ int32_t bc_arrange_layers_song(const uint8_t *const *midi,
 // `{"onsets": [beats...], "pitches": [midi...]}`; writes
 // `[{"step": "F", "alter": 1, "octave": 4}, ...]`.
 int32_t bc_spell_json(const char *request, char **out, char **err);
+
+// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool}`
+// to `*out` for `lineup` ("band", "minimal", "quartet") and `seat` (an id of [`bc_seats`]).
+int32_t bc_seat_part(const char *lineup,
+                     const char *seat,
+                     char **out,
+                     char **err);
+
+// Where each part of a Composition's arrangement comes from, in score order: writes
+// `[{"part": "Solo Cornet", "source": "your-recording" | "recording" | "arranged"}, ...]` to `*out`.
+int32_t bc_part_sources(const char *composition_json,
+                        char **out,
+                        char **err);
+
+// The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
+// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"]}, ...]` to `*out`.
+int32_t bc_seats(char **out,
+                 char **err);
 
 // Like [`bc_arrange_layers_song`], plus the stems' audio: `wav` and `wav_len`
 // hold four WAV files (solo, bass, drums, orchestra; a null pointer = not

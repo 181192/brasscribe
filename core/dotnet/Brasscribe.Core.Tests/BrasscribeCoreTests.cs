@@ -36,6 +36,35 @@ public class BrasscribeCoreTests
     }
 
     [Fact]
+    public void SeatsAndTheirParts()
+    {
+        var seats = BrasscribeCore.Seats();
+        Assert.Equal(18, seats.Count);
+        var euph = seats.Single(s => s.Id == "euphonium");
+        Assert.Equal("Euphonium", euph.Name);
+        Assert.Equal("Eufonium", euph.NbName);
+        Assert.Equal(new[] { "treble", "bass" }, euph.Reads);
+        Assert.Equal("Solo althorn", seats.Single(s => s.Id == "solo-horn").NbName);
+        // Three spot checks of the seat -> part table.
+        Assert.Equal(new SeatPart("Euphonium", false, true), BrasscribeCore.SeatPart("minimal", "1st-baritone"));
+        Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));
+        Assert.Equal(new SeatPart(null, false, false), BrasscribeCore.SeatPart("quartet", "percussion"));
+        Assert.Throws<BrasscribeException>(() => BrasscribeCore.SeatPart("band", "tuba"));
+    }
+
+    [Fact]
+    public void PartSourcesAndBassClefReading()
+    {
+        var sources = BrasscribeCore.PartSources(Composition);
+        Assert.Equal(new PartSource("Solo Cornet", "recording"), sources[0]);
+        Assert.Contains(new PartSource("Flugelhorn", "arranged"), sources);
+        var xml = BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "minimal", seat: "euphonium", reads: "bass");
+        Assert.Contains("<part-name>Euphonium</part-name>", xml);
+        Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, seat: "solo-cornet", reads: "bass"));
+        Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet", seat: "euphonium", lead: "seat"));
+    }
+
+    [Fact]
     public void NormalizesComposition()
     {
         var json = BrasscribeCore.NormalizeComposition(Composition);

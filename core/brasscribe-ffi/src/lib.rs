@@ -92,11 +92,23 @@ pub struct ArrangeOptions {
     /// already transposed by that much is not moved again.
     #[uniffi(default = None)]
     pub transpose: Option<i32>,
+    /// The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+    /// part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+    #[uniffi(default = None)]
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+    /// transposition); None: the brass-band part's own.
+    #[uniffi(default = None)]
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+    /// lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+    #[uniffi(default = None)]
+    pub lead: Option<String>,
 }
 
 impl Default for ArrangeOptions {
     fn default() -> Self {
-        ArrangeOptions { lineup: "band".into(), difficulty: "faithful".into(), key: None, transpose: None }
+        ArrangeOptions { lineup: "band".into(), difficulty: "faithful".into(), key: None, transpose: None, seat: None, reads: None, lead: None }
     }
 }
 
@@ -111,7 +123,7 @@ pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) 
 }
 
 pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> Result<String, CoreError> {
-    use brasscribe_core::instruments::{lineup_by_name, lineup_key, minimal_band, quartet};
+    use brasscribe_core::instruments::{check_reads, lead_lineup, lineup_by_name, lineup_key, seat_by_id, LEADS};
 
     let mut comp = Composition::from_json_str(composition_json).map_err(invalid)?;
     let key = lineup_key(&o.lineup).map_err(invalid)?;
@@ -122,6 +134,18 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     if o.key.is_some() && o.transpose.is_some() {
         return Err(invalid("give a key or a transposition, not both"));
     }
+    let lead = o.lead.as_deref().filter(|l| !l.is_empty()).unwrap_or("lineup");
+    if !LEADS.contains(&lead) {
+        return Err(invalid(format!("lead must be one of {LEADS:?}")));
+    }
+    match &o.seat {
+        Some(s) => {
+            seat_by_id(s).map_err(invalid)?;
+        }
+        None if lead == "seat" => return Err(invalid("lead seat needs a seat")),
+        None => {}
+    }
+    check_reads(o.seat.as_deref(), o.reads.as_deref()).map_err(invalid)?;
     let before = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).and_then(|v| v.as_i64()).unwrap_or(0) as i32;
     let shift = match (&o.transpose, &o.key) {
         (Some(t), _) => *t - before,
@@ -141,12 +165,26 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     a.insert("lineup".into(), key.into());
     a.insert("difficulty".into(), difficulty.into());
     a.insert("transpose_semitones".into(), (before + shift).into());
+    let solo_take = brasscribe_core::arranger::is_solo_take(&comp);
+    if let Some(s) = &o.seat {
+        a.insert("seat".into(), s.as_str().into());
+        if let Some(r) = &o.reads {
+            a.insert("reads".into(), r.as_str().into());
+        }
+        if lead == "seat" || solo_take {
+            a.insert("lead".into(), "seat".into());
+        }
+        if lead == "seat" && !solo_take {
+            lead_lineup(lineup_by_name(key).map_err(invalid)?, s).map_err(invalid)?;
+        }
+    }
     comp.arrangement = Some(serde_json::Value::Object(a));
+    // The lineup as the composition now records it (seat, reading and lead included).
+    let lineup = brasscribe_core::arranger::composition_lineup(&comp).0;
     let arr = if layered {
-        let lineup = lineup_by_name(key).map_err(invalid)?;
         brasscribe_core::arranger::arrange_layers_opts(&comp, lineup, &brasscribe_core::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })
     } else {
-        brasscribe_core::arranger::arrange_opts(&comp, if key == "quartet" { quartet() } else { minimal_band() }, difficulty)
+        brasscribe_core::arranger::arrange_opts(&comp, lineup, difficulty)
     }
     .map_err(failed)?;
     Ok(write_score(&band_score(&arr, &comp)))
@@ -242,6 +280,18 @@ pub struct LayersSongOptions {
     pub key: Option<String>,
     /// Transpose the whole arrangement by this many semitones (instead of `key`).
     pub transpose: Option<i32>,
+    /// The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+    /// part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+    #[uniffi(default = None)]
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+    /// transposition); None: the brass-band part's own.
+    #[uniffi(default = None)]
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+    /// lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+    #[uniffi(default = None)]
+    pub lead: Option<String>,
 }
 
 impl Default for LayersSongOptions {
@@ -257,6 +307,9 @@ impl Default for LayersSongOptions {
             difficulty: "faithful".into(),
             key: None,
             transpose: None,
+            seat: None,
+            reads: None,
+            lead: None,
         }
     }
 }
@@ -307,9 +360,9 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
         difficulty: o.difficulty,
         key: o.key,
         transpose: o.transpose,
-        seat: None,
-        reads: None,
-        lead: String::new(),
+        seat: o.seat,
+        reads: o.reads,
+        lead: o.lead.unwrap_or_default(),
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {
@@ -479,6 +532,76 @@ pub fn instruments() -> Vec<InstrumentInfo> {
             comfortable_high: i.comfortable.1,
             gm_program: i.gm_program,
             sound: i.sound.into(),
+        })
+        .collect()
+}
+
+/// The player's part in a lineup for their seat.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct SeatPart {
+    /// The lineup's part name for the seat; None: the lineup has none (percussion outside the band).
+    pub part: Option<String>,
+    /// The seat's own part.
+    pub exact: bool,
+    /// The part is in the seat's key (transposition), so it reads without transposing.
+    pub same_key: bool,
+}
+
+/// Which part of `lineup` ("band", "minimal" or "quartet") is the player's, for `seat`. One table in
+/// the core for every app.
+#[uniffi::export]
+pub fn seat_part(lineup: String, seat: String) -> Result<SeatPart, CoreError> {
+    let sp = brasscribe_core::instruments::seat_part(&lineup, &seat).map_err(invalid)?;
+    Ok(SeatPart { part: sp.part.map(String::from), exact: sp.exact, same_key: sp.same_key })
+}
+
+/// Where one part comes from: "your-recording" (a solo take's own line), "recording" (a line heard
+/// in the recording) or "arranged" (voiced from the band's harmony).
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct PartSource {
+    pub part: String,
+    pub source: String,
+}
+
+/// Where each part of a Composition's arrangement comes from, in score order.
+#[uniffi::export]
+pub fn part_sources(composition_json: String) -> Result<Vec<PartSource>, CoreError> {
+    let comp = Composition::from_json_str(&composition_json).map_err(invalid)?;
+    Ok(brasscribe_core::arranger::part_sources(&comp).into_iter().map(|(part, s)| PartSource { part, source: s.into() }).collect())
+}
+
+/// One seat of the contest band, for the "What do you play?" picker.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct SeatInfo {
+    /// Stable id (the `seat` option).
+    pub id: String,
+    /// The part's English name ("2nd Cornet"), as the band score prints it.
+    pub name: String,
+    /// The part's Norwegian name («2. kornett», «Solo althorn»): the core's one table.
+    pub nb_name: String,
+    /// Instrument id (`instruments()`).
+    pub instrument: String,
+    /// The part's own clef: "treble", "bass" or "percussion".
+    pub clef: String,
+    /// Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
+    pub reads: Vec<String>,
+}
+
+/// The 18 seats of the contest band, in score order.
+#[uniffi::export]
+pub fn seats() -> Vec<SeatInfo> {
+    brasscribe_core::instruments::SEATS
+        .iter()
+        .map(|s| {
+            let inst = s.band_part().instrument;
+            SeatInfo {
+                id: s.id.into(),
+                name: s.part.into(),
+                nb_name: brasscribe_core::talking_score::nb_part_name(s.part).into(),
+                instrument: inst.id.into(),
+                clef: inst.clef.as_str().into(),
+                reads: s.reads.iter().map(|r| r.to_string()).collect(),
+            }
         })
         .collect()
 }

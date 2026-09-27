@@ -108,6 +108,7 @@ export type PartDiff = S["PartComparison"];
 export type Comparison = S["Comparison"];
 export type RoundTrip = S["Roundtrip"];
 export type ValidationIssue = S["ValidationIssue"];
+export type PartSources = S["PartSources"];
 export type SuiteRun = S["SuiteHistoryEntry"];
 export type BenchRun = S["BenchRun"];
 export type AdapterInfo = S["AdapterInfo"];

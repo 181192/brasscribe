@@ -1101,6 +1101,21 @@ public struct ArrangeOptions: Equatable, Hashable {
      * already transposed by that much is not moved again.
      */
     public var transpose: Int32?
+    /**
+     * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+     * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+     */
+    public var seat: String?
+    /**
+     * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+     * transposition); None: the brass-band part's own.
+     */
+    public var reads: String?
+    /**
+     * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+     * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+     */
+    public var lead: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1121,11 +1136,26 @@ public struct ArrangeOptions: Equatable, Hashable {
          * Transposition from the recording in semitones (instead of `key`): the total, as the
          * composition's `arrangement.transpose_semitones` records it, so a composition that is
          * already transposed by that much is not moved again.
-         */transpose: Int32? = nil) {
+         */transpose: Int32? = nil, 
+        /**
+         * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+         * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+         */seat: String? = nil, 
+        /**
+         * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+         * transposition); None: the brass-band part's own.
+         */reads: String? = nil, 
+        /**
+         * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+         * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+         */lead: String? = nil) {
         self.lineup = lineup
         self.difficulty = difficulty
         self.key = key
         self.transpose = transpose
+        self.seat = seat
+        self.reads = reads
+        self.lead = lead
     }
 
     
@@ -1147,7 +1177,10 @@ public struct FfiConverterTypeArrangeOptions: FfiConverterRustBuffer {
                 lineup: FfiConverterString.read(from: &buf), 
                 difficulty: FfiConverterString.read(from: &buf), 
                 key: FfiConverterOptionString.read(from: &buf), 
-                transpose: FfiConverterOptionInt32.read(from: &buf)
+                transpose: FfiConverterOptionInt32.read(from: &buf), 
+                seat: FfiConverterOptionString.read(from: &buf), 
+                reads: FfiConverterOptionString.read(from: &buf), 
+                lead: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1156,6 +1189,9 @@ public struct FfiConverterTypeArrangeOptions: FfiConverterRustBuffer {
         FfiConverterString.write(value.difficulty, into: &buf)
         FfiConverterOptionString.write(value.key, into: &buf)
         FfiConverterOptionInt32.write(value.transpose, into: &buf)
+        FfiConverterOptionString.write(value.seat, into: &buf)
+        FfiConverterOptionString.write(value.reads, into: &buf)
+        FfiConverterOptionString.write(value.lead, into: &buf)
     }
 }
 
@@ -1796,6 +1832,21 @@ public struct LayersSongOptions: Equatable, Hashable {
      * Transpose the whole arrangement by this many semitones (instead of `key`).
      */
     public var transpose: Int32?
+    /**
+     * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+     * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+     */
+    public var seat: String?
+    /**
+     * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+     * transposition); None: the brass-band part's own.
+     */
+    public var reads: String?
+    /**
+     * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+     * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+     */
+    public var lead: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1830,7 +1881,19 @@ public struct LayersSongOptions: Equatable, Hashable {
          */key: String?, 
         /**
          * Transpose the whole arrangement by this many semitones (instead of `key`).
-         */transpose: Int32?) {
+         */transpose: Int32?, 
+        /**
+         * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+         * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+         */seat: String? = nil, 
+        /**
+         * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+         * transposition); None: the brass-band part's own.
+         */reads: String? = nil, 
+        /**
+         * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+         * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+         */lead: String? = nil) {
         self.soloContour = soloContour
         self.freeTime = freeTime
         self.freeTempo = freeTempo
@@ -1841,6 +1904,9 @@ public struct LayersSongOptions: Equatable, Hashable {
         self.difficulty = difficulty
         self.key = key
         self.transpose = transpose
+        self.seat = seat
+        self.reads = reads
+        self.lead = lead
     }
 
     
@@ -1868,7 +1934,10 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
                 lineup: FfiConverterString.read(from: &buf), 
                 difficulty: FfiConverterString.read(from: &buf), 
                 key: FfiConverterOptionString.read(from: &buf), 
-                transpose: FfiConverterOptionInt32.read(from: &buf)
+                transpose: FfiConverterOptionInt32.read(from: &buf), 
+                seat: FfiConverterOptionString.read(from: &buf), 
+                reads: FfiConverterOptionString.read(from: &buf), 
+                lead: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1883,6 +1952,9 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
         FfiConverterString.write(value.difficulty, into: &buf)
         FfiConverterOptionString.write(value.key, into: &buf)
         FfiConverterOptionInt32.write(value.transpose, into: &buf)
+        FfiConverterOptionString.write(value.seat, into: &buf)
+        FfiConverterOptionString.write(value.reads, into: &buf)
+        FfiConverterOptionString.write(value.lead, into: &buf)
     }
 }
 
@@ -1956,6 +2028,64 @@ public func FfiConverterTypePartScore_lift(_ buf: RustBuffer) throws -> PartScor
 #endif
 public func FfiConverterTypePartScore_lower(_ value: PartScore) -> RustBuffer {
     return FfiConverterTypePartScore.lower(value)
+}
+
+
+/**
+ * Where one part comes from: "your-recording" (a solo take's own line), "recording" (a line heard
+ * in the recording) or "arranged" (voiced from the band's harmony).
+ */
+public struct PartSource: Equatable, Hashable {
+    public var part: String
+    public var source: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(part: String, source: String) {
+        self.part = part
+        self.source = source
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension PartSource: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePartSource: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PartSource {
+        return
+            try PartSource(
+                part: FfiConverterString.read(from: &buf), 
+                source: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PartSource, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.part, into: &buf)
+        FfiConverterString.write(value.source, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePartSource_lift(_ buf: RustBuffer) throws -> PartSource {
+    return try FfiConverterTypePartSource.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePartSource_lower(_ value: PartSource) -> RustBuffer {
+    return FfiConverterTypePartSource.lower(value)
 }
 
 
@@ -2171,6 +2301,194 @@ public func FfiConverterTypeScoreNote_lift(_ buf: RustBuffer) throws -> ScoreNot
 #endif
 public func FfiConverterTypeScoreNote_lower(_ value: ScoreNote) -> RustBuffer {
     return FfiConverterTypeScoreNote.lower(value)
+}
+
+
+/**
+ * One seat of the contest band, for the "What do you play?" picker.
+ */
+public struct SeatInfo: Equatable, Hashable {
+    /**
+     * Stable id (the `seat` option).
+     */
+    public var id: String
+    /**
+     * The part's English name ("2nd Cornet"), as the band score prints it.
+     */
+    public var name: String
+    /**
+     * The part's Norwegian name («2. kornett», «Solo althorn»): the core's one table.
+     */
+    public var nbName: String
+    /**
+     * Instrument id (`instruments()`).
+     */
+    public var instrument: String
+    /**
+     * The part's own clef: "treble", "bass" or "percussion".
+     */
+    public var clef: String
+    /**
+     * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
+     */
+    public var reads: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Stable id (the `seat` option).
+         */id: String, 
+        /**
+         * The part's English name ("2nd Cornet"), as the band score prints it.
+         */name: String, 
+        /**
+         * The part's Norwegian name («2. kornett», «Solo althorn»): the core's one table.
+         */nbName: String, 
+        /**
+         * Instrument id (`instruments()`).
+         */instrument: String, 
+        /**
+         * The part's own clef: "treble", "bass" or "percussion".
+         */clef: String, 
+        /**
+         * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
+         */reads: [String]) {
+        self.id = id
+        self.name = name
+        self.nbName = nbName
+        self.instrument = instrument
+        self.clef = clef
+        self.reads = reads
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension SeatInfo: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSeatInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SeatInfo {
+        return
+            try SeatInfo(
+                id: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                nbName: FfiConverterString.read(from: &buf), 
+                instrument: FfiConverterString.read(from: &buf), 
+                clef: FfiConverterString.read(from: &buf), 
+                reads: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SeatInfo, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.nbName, into: &buf)
+        FfiConverterString.write(value.instrument, into: &buf)
+        FfiConverterString.write(value.clef, into: &buf)
+        FfiConverterSequenceString.write(value.reads, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSeatInfo_lift(_ buf: RustBuffer) throws -> SeatInfo {
+    return try FfiConverterTypeSeatInfo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSeatInfo_lower(_ value: SeatInfo) -> RustBuffer {
+    return FfiConverterTypeSeatInfo.lower(value)
+}
+
+
+/**
+ * The player's part in a lineup for their seat.
+ */
+public struct SeatPart: Equatable, Hashable {
+    /**
+     * The lineup's part name for the seat; None: the lineup has none (percussion outside the band).
+     */
+    public var part: String?
+    /**
+     * The seat's own part.
+     */
+    public var exact: Bool
+    /**
+     * The part is in the seat's key (transposition), so it reads without transposing.
+     */
+    public var sameKey: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The lineup's part name for the seat; None: the lineup has none (percussion outside the band).
+         */part: String?, 
+        /**
+         * The seat's own part.
+         */exact: Bool, 
+        /**
+         * The part is in the seat's key (transposition), so it reads without transposing.
+         */sameKey: Bool) {
+        self.part = part
+        self.exact = exact
+        self.sameKey = sameKey
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension SeatPart: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSeatPart: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SeatPart {
+        return
+            try SeatPart(
+                part: FfiConverterOptionString.read(from: &buf), 
+                exact: FfiConverterBool.read(from: &buf), 
+                sameKey: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SeatPart, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.part, into: &buf)
+        FfiConverterBool.write(value.exact, into: &buf)
+        FfiConverterBool.write(value.sameKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSeatPart_lift(_ buf: RustBuffer) throws -> SeatPart {
+    return try FfiConverterTypeSeatPart.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSeatPart_lower(_ value: SeatPart) -> RustBuffer {
+    return FfiConverterTypeSeatPart.lower(value)
 }
 
 
@@ -3263,6 +3581,31 @@ fileprivate struct FfiConverterSequenceTypePartScore: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypePartSource: FfiConverterRustBuffer {
+    typealias SwiftType = [PartSource]
+
+    public static func write(_ value: [PartSource], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePartSource.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PartSource] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PartSource]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePartSource.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer {
     typealias SwiftType = [PerformedNote]
 
@@ -3330,6 +3673,31 @@ fileprivate struct FfiConverterSequenceTypeScoreNote: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeScoreNote.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeSeatInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [SeatInfo]
+
+    public static func write(_ value: [SeatInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeSeatInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SeatInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [SeatInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeSeatInfo.read(from: &buf))
         }
         return seq
     }
@@ -3531,6 +3899,17 @@ public func normalizeComposition(json: String)throws  -> String  {
 })
 }
 /**
+ * Where each part of a Composition's arrangement comes from, in score order.
+ */
+public func partSources(compositionJson: String)throws  -> [PartSource]  {
+    return try  FfiConverterSequenceTypePartSource.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_part_sources(
+        FfiConverterString.lower(compositionJson),uniffiCallStatus
+    )
+})
+}
+/**
  * Quantize performed notes onto a beat grid; optionally keep one voice and
  * hold notes across gaps up to `fill_gap_ticks` (0 = no gap filling).
  */
@@ -3543,6 +3922,29 @@ public func quantizeNotes(notes: [PerformedNote], beatTimes: [Double], monophoni
         FfiConverterBool.lower(monophonic),
         FfiConverterBool.lower(autoLevel),
         FfiConverterInt64.lower(fillGapTicks),uniffiCallStatus
+    )
+})
+}
+/**
+ * Which part of `lineup` ("band", "minimal" or "quartet") is the player's, for `seat`. One table in
+ * the core for every app.
+ */
+public func seatPart(lineup: String, seat: String)throws  -> SeatPart  {
+    return try  FfiConverterTypeSeatPart_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_seat_part(
+        FfiConverterString.lower(lineup),
+        FfiConverterString.lower(seat),uniffiCallStatus
+    )
+})
+}
+/**
+ * The 18 seats of the contest band, in score order.
+ */
+public func seats() -> [SeatInfo]  {
+    return try!  FfiConverterSequenceTypeSeatInfo.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_seats(uniffiCallStatus
     )
 })
 }
@@ -3659,7 +4061,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_normalize_composition() != 7581) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_brasscribe_ffi_checksum_func_part_sources() != 8498) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_brasscribe_ffi_checksum_func_quantize_notes() != 61455) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_seat_part() != 14392) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_seats() != 39596) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 24205) {
