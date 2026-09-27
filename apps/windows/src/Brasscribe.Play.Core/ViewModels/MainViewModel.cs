@@ -426,7 +426,7 @@ public sealed partial class MainViewModel : ObservableObject
         LibraryItems.Clear();
         var rows = new List<(DateTimeOffset When, LibraryItem Item)>();
         if (Library is not null)
-            rows.AddRange(Library.Entries.Select(e => (e.Updated, new LibraryItem(e.Id, e.Title, LibrarySubtitle(e)))));
+            rows.AddRange(Library.Entries.Select(e => (e.Updated, new LibraryItem(e.Id, ScoreTitles.Display(e.Title, e.Updated, _s), LibrarySubtitle(e)))));
         // The computer's finished runs not already here; re-runs of one recording collapse to the latest.
         var downloaded = Library?.Entries.Select(e => e.JobId).OfType<string>().ToHashSet() ?? [];
         var seenAudio = new HashSet<string>();
@@ -436,14 +436,29 @@ public sealed partial class MainViewModel : ObservableObject
             if (j.AudioId is { } audio && !seenAudio.Add(audio)) continue;
             if (downloaded.Contains(j.Id)) continue;
             var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(j.Created * 1000)).ToLocalTime();
-            rows.Add((when, new LibraryItem("job:" + j.Id, j.Title ?? j.Id, _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
+            rows.Add((when, new LibraryItem("job:" + j.Id, ScoreTitles.Display(j.Title, when, _s), _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
         }
+        MarkDuplicateTimes(rows);
         foreach (var (_, item) in rows.OrderByDescending(r => r.When).Take(20)) LibraryItems.Add(item);
         HasLibrary = LibraryItems.Count > 0;
     }
 
     private string WhenText(DateTimeOffset when) => when.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
+        : when.Date == DateTimeOffset.Now.Date.AddDays(-1) ? _s["Library_Yesterday"]
         : when.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
+
+    /// <summary>Same titles get the time as well ("Today 19:02"), so the recordings can be told apart.</summary>
+    private void MarkDuplicateTimes(List<(DateTimeOffset When, LibraryItem Item)> rows)
+    {
+        var dupes = ScoreTitles.Duplicates(rows.Select(r => r.Item.Title));
+        for (int i = 0; i < rows.Count; i++)
+            if (dupes.Contains(rows[i].Item.Title))
+                rows[i] = (rows[i].When, rows[i].Item with
+                {
+                    Subtitle = rows[i].Item.Subtitle.Replace(WhenText(rows[i].When),
+                        WhenText(rows[i].When) + " " + rows[i].When.ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)),
+                });
+    }
 
     private string LibrarySubtitle(LibraryEntry e)
     {

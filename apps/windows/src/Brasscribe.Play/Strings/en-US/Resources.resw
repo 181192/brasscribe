@@ -594,6 +594,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>One part</value>
   </data>
+  <data name="Library_RecordingTitle" xml:space="preserve">
+    <value>Recording, {0}</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Small band</value>
   </data>
@@ -601,13 +604,16 @@
     <value>{0} · {1} bars · {2}</value>
   </data>
   <data name="Library_ToCheck" xml:space="preserve">
-    <value>{0} notes to check</value>
+    <value>{0} to check</value>
   </data>
   <data name="Library_ToCheckOne" xml:space="preserve">
-    <value>{0} note to check</value>
+    <value>{0} to check</value>
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>Today</value>
+  </data>
+  <data name="Library_Yesterday" xml:space="preserve">
+    <value>Yesterday</value>
   </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Which band?</value>
@@ -963,6 +969,9 @@
   <data name="ReviewHowSure.Text" xml:space="preserve">
     <value>How sure Brasscribe is</value>
   </data>
+  <data name="ReviewKeepBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The other marked notes in this bar are right; their “?” go</value>
+  </data>
   <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>The note is right; its “?” goes (K)</value>
   </data>
@@ -1011,6 +1020,9 @@
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Bar {0}</value>
   </data>
+  <data name="Review_BarsHeading" xml:space="preserve">
+    <value>Bars {0}–{1}</value>
+  </data>
   <data name="Review_Changed" xml:space="preserve">
     <value>Changed to {0}</value>
   </data>
@@ -1029,14 +1041,29 @@
   <data name="Review_FinishLater" xml:space="preserve">
     <value>Finish later ({0} left)</value>
   </data>
+  <data name="Review_GroupLine" xml:space="preserve">
+    <value>{0} notes together, from: {1}</value>
+  </data>
   <data name="Review_HeardNothing" xml:space="preserve">
     <value>No note</value>
   </data>
   <data name="Review_HeardSame" xml:space="preserve">
     <value>Same, {0}</value>
   </data>
+  <data name="Review_KeepBar" xml:space="preserve">
+    <value>Keep the rest of this bar ({0})</value>
+  </data>
   <data name="Review_Kept" xml:space="preserve">
     <value>Kept bar {0}. {1} left</value>
+  </data>
+  <data name="Review_KeptBar" xml:space="preserve">
+    <value>Kept {0} notes in bar {1}. {2} left</value>
+  </data>
+  <data name="Review_LeadMany" xml:space="preserve">
+    <value>Most of these are probably right. Start with the {0} very unsure ones.</value>
+  </data>
+  <data name="Review_LeadManyOne" xml:space="preserve">
+    <value>Most of these are probably right. Start with the {0} very unsure one.</value>
   </data>
   <data name="Review_LevelAlternative" xml:space="preserve">
     <value>{0}: it could also be {1}.</value>

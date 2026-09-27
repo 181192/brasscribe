@@ -155,7 +155,7 @@ public sealed partial class StartViewModel : ObservableObject
             Fail(_s["Start_Error_TooShort"]);
             return;
         }
-        SourceReady?.Invoke(this, new SourceAudio(result.Path, _s["Start_RecordingName"], result.Duration, null, false));
+        SourceReady?.Invoke(this, new SourceAudio(result.Path, ScoreTitles.Recording(DateTimeOffset.Now, _s), result.Duration, null, false));
     }
 
     private bool CanStart() => !IsRecording;

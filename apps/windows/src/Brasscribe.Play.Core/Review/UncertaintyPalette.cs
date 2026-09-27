@@ -50,6 +50,14 @@ public sealed record UncertaintyPalette(
     Rgb Uncertain, Rgb VeryUncertain, Rgb Cursor, Rgb Focus, Rgb AdLibTint, Rgb LoopTint, Rgb LoopEdge, Rgb Error,
     Rgb CursorTint, Rgb TextMuted)
 {
+    /// <summary>The selected note's column (<c>selection-tint</c>).</summary>
+    public Rgb SelectionTint { get; init; } = Theme switch
+    {
+        ThemeKind.Dark => Rgb.Parse("#2C2A26"),
+        ThemeKind.HighContrast => Rgb.Parse("#000000"),
+        _ => Rgb.Parse("#E8E5DE"),
+    };
+
     public static readonly UncertaintyPalette Light = new(ThemeKind.Light,
         Rgb.Parse("#FBFAF7"), Rgb.Parse("#F3F1EC"), Rgb.Parse("#1B1A17"), Rgb.Parse("#121110"), Rgb.Parse("#57534B"), Rgb.Parse("#0063A6"), Rgb.Parse("#B04A00"), Rgb.Parse("#6B3FA0"), Rgb.Parse("#1B1A17"), Rgb.Parse("#EFECE5"), Rgb.Parse("#FFF3D6"), Rgb.Parse("#8A5A00"), Rgb.Parse("#B3261E"), Rgb.Parse("#DED5E6"), Rgb.Parse("#5E5A52"));
 

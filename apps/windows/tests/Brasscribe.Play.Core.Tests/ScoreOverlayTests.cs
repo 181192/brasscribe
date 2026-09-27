@@ -146,6 +146,7 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         string xml = File.ReadAllText(xmlPath);
         var composition = CompositionJson.Parse(File.ReadAllText(compPath));
         var doc = MusicXmlTalkingScoreBuilder.Build(xml, composition);
+        ReviewGroups.Attach(doc, composition);
 
         foreach (var palette in new[] { UncertaintyPalette.Light, UncertaintyPalette.Dark })
         {
@@ -173,17 +174,24 @@ public class ScoreOverlayTests(ITestOutputHelper log)
             var part = partService.Render(score, [solo], 1000);
             var pb = part.Bounds!;
             var partOverlay = ScoreOverlay.Build(new(ScoreGeometry.UncertainHeads(score, pb, doc, [solo]), [], null,
-                ScoreGeometry.AdlibRegions(pb, doc), null, ScoreGeometry.BarBox(pb, 3, solo), false));
+                ScoreGeometry.AdlibRegions(pb, doc), null, ScoreGeometry.BarBox(pb, 3, solo), false)
+                { Groups = ScoreGeometry.GroupBrackets(score, pb, doc, [solo]) });
             Write(dir, $"part-{theme}.png", ScorePreview.Compose(part, partOverlay, palette,
                 viewport: ScorePreview.BarsViewport(part, 0, 8, above: 60) is { } pv ? pv with { X = 0, W = part.TotalWidth } : null));
             ScoreRenderService.Release(part);
 
             // Review snippet: two bars of the solo part around the first uncertain note.
-            int bar = doc.Parts[solo].Bars.FindIndex(b => b.Events.Any(e => e.IsUncertain));
+            int bar = doc.Parts[solo].Bars.FindIndex(b => b.Events.Any(e => e.IsUncertain && e.ReviewNotes > 1));
+            if (bar < 0) bar = doc.Parts[solo].Bars.FindIndex(b => b.Events.Any(e => e.IsUncertain));
+            var lead = doc.Parts[solo].Bars[bar].Events.First(e => e.IsUncertain);
             var snippet = new ScoreRenderService("skia", 1.3, pageLayout: false).WithTheme(palette).WithoutHeader().Render(score, [solo], 100000);
             var sb = snippet.Bounds!;
             Write(dir, $"review-{theme}.png", ScorePreview.Compose(snippet,
-                ScoreOverlay.Build(new(ScoreGeometry.UncertainHeads(score, sb, doc, [solo]), [], null, [], null, null, false)), palette, pad: 16,
+                ScoreOverlay.Build(new(ScoreGeometry.UncertainHeads(score, sb, doc, [solo]), [], null, [], null, null, false)
+                {
+                    Groups = ScoreGeometry.GroupBrackets(score, sb, doc, [solo]),
+                    Selection = ScoreGeometry.FocusBox(score, sb, solo, bar, lead.Tick) is { } note && ScoreGeometry.BarBox(sb, bar, solo) is { } staff ? (note, staff) : null,
+                }), palette, pad: 16,
                 viewport: ScorePreview.BarsViewport(snippet, bar, bar + 1)));
             ScoreRenderService.Release(snippet);
         }

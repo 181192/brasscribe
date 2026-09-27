@@ -594,6 +594,9 @@
   <data name="Library_OnePart" xml:space="preserve">
     <value>Én stemme</value>
   </data>
+  <data name="Library_RecordingTitle" xml:space="preserve">
+    <value>Opptak, {0}</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Lite band</value>
   </data>
@@ -601,13 +604,16 @@
     <value>{0} · {1} takter · {2}</value>
   </data>
   <data name="Library_ToCheck" xml:space="preserve">
-    <value>{0} toner å sjekke</value>
+    <value>{0} å sjekke</value>
   </data>
   <data name="Library_ToCheckOne" xml:space="preserve">
-    <value>{0} tone å sjekke</value>
+    <value>{0} å sjekke</value>
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>I dag</value>
+  </data>
+  <data name="Library_Yesterday" xml:space="preserve">
+    <value>I går</value>
   </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hvilket band?</value>
@@ -963,6 +969,9 @@
   <data name="ReviewHowSure.Text" xml:space="preserve">
     <value>Hvor sikker Brasscribe er</value>
   </data>
+  <data name="ReviewKeepBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>De andre merkede tonene i takten er riktige; «?» fjernes</value>
+  </data>
   <data name="ReviewKeepButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Tonen er riktig; «?» fjernes (K)</value>
   </data>
@@ -1011,6 +1020,9 @@
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Takt {0}</value>
   </data>
+  <data name="Review_BarsHeading" xml:space="preserve">
+    <value>Takt {0}–{1}</value>
+  </data>
   <data name="Review_Changed" xml:space="preserve">
     <value>Endret til {0}</value>
   </data>
@@ -1029,14 +1041,29 @@
   <data name="Review_FinishLater" xml:space="preserve">
     <value>Fortsett senere ({0} igjen)</value>
   </data>
+  <data name="Review_GroupLine" xml:space="preserve">
+    <value>{0} toner sammen, fra: {1}</value>
+  </data>
   <data name="Review_HeardNothing" xml:space="preserve">
     <value>Ingen tone</value>
   </data>
   <data name="Review_HeardSame" xml:space="preserve">
     <value>Samme, {0}</value>
   </data>
+  <data name="Review_KeepBar" xml:space="preserve">
+    <value>Behold resten av takten ({0})</value>
+  </data>
   <data name="Review_Kept" xml:space="preserve">
     <value>Beholdt takt {0}. {1} igjen</value>
+  </data>
+  <data name="Review_KeptBar" xml:space="preserve">
+    <value>Beholdt {0} toner i takt {1}. {2} igjen</value>
+  </data>
+  <data name="Review_LeadMany" xml:space="preserve">
+    <value>De fleste av disse er nok riktige. Begynn med de {0} svært usikre.</value>
+  </data>
+  <data name="Review_LeadManyOne" xml:space="preserve">
+    <value>De fleste av disse er nok riktige. Begynn med den {0} svært usikre.</value>
   </data>
   <data name="Review_LevelAlternative" xml:space="preserve">
     <value>{0}: det kan også være {1}.</value>

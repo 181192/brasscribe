@@ -39,7 +39,12 @@ public sealed partial class ReviewItem : ObservableObject
     public bool IsMine { get; }
     /// <summary>In an accompaniment layer (drums, orchestra, strings): checked last.</summary>
     public bool IsAccompaniment { get; }
-    public bool IsVeryUncertain => Event.Confidence is < Note.VeryUncertainBelow;
+    public bool IsVeryUncertain => Event.IsVeryUncertain;
+    /// <summary>A review group of several notes (Composition.review): one item stands for all of them.</summary>
+    public bool IsGroup => Event.ReviewGroup >= 0 && Event.ReviewNotes > 1;
+    public int NoteCount => Event.ReviewGroup >= 0 ? Math.Max(1, Event.ReviewNotes) : 1;
+    /// <summary>The bar index of the item's last note (the group's range on the staff).</summary>
+    public int EndBarIndex => Event.ReviewGroup >= 0 && Event.ReviewEndBar >= BarIndex ? Event.ReviewEndBar : BarIndex;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOpen))]
@@ -87,6 +92,17 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
 
     /// <summary>Every uncertain note of the score.</summary>
     public IReadOnlyList<ReviewItem> AllItems => _all;
+
+    /// <summary>With many marks: "Most of these are probably right. Start with the 12 very unsure ones."</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLead))]
+    public partial string LeadText { get; set; } = "";
+
+    public bool HasLead => LeadText.Length > 0;
+
+    /// <summary>"Keep the rest of this bar (3)": the other open notes in the current note's bar and part.</summary>
+    [ObservableProperty] public partial string KeepBarText { get; set; } = "";
+    [ObservableProperty] public partial bool CanKeepBar { get; set; }
 
     /// <summary>"Check your part first: 12 notes in Solo Cornet, 4 very unsure".</summary>
     [ObservableProperty] public partial string TriageText { get; set; } = "";
@@ -171,15 +187,26 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
 
     partial void OnScopeChanged(ReviewScope value) => Apply();
 
-    /// <summary>Order: your part (very unsure first, then by bar), the other brass parts by part and bar, accompaniment last.</summary>
+    /// <summary>More marks than this and the review leads with "Most of these are probably right" (usability review 3, P1-A).</summary>
+    public const int ManyMarks = 50;
+
+    /// <summary>
+    /// Order: your part, the other brass parts, accompaniment last; in each part the very unsure
+    /// notes first, then the rest by bar.
+    /// </summary>
     private void Apply()
     {
         var inScope = Scope == ReviewScope.MyPart && HasMyPart ? _all.Where(i => i.IsMine) : _all;
         var ordered = inScope
             .OrderBy(i => i.IsMine ? 0 : i.IsAccompaniment ? 2 : 1)
-            .ThenBy(i => i.IsMine && !i.IsVeryUncertain ? 1 : 0)
-            .ThenBy(i => i.Part).ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
+            .ThenBy(i => i.Part)
+            .ThenBy(i => i.IsVeryUncertain ? 0 : 1)
+            .ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
             .ToList();
+        int veryUnsure = ordered.Count(i => i.IsVeryUncertain);
+        LeadText = ordered.Count > ManyMarks && veryUnsure > 0
+            ? s.Format(veryUnsure == 1 ? "Review_LeadManyOne" : "Review_LeadMany", veryUnsure)
+            : "";
         Items = ordered;
         Groups.Clear();
         string accompaniment = s["Review_Accompaniment"].ToUpperInvariant();
@@ -210,11 +237,32 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
     private void Keep()
     {
         if (Current is not { } item) return;
-        score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
-        score.KeepCurrent();
-        score.KeepInComposition(item.Event);
-        item.IsKept = true;
+        KeepItem(item);
         announcer.Announce(s.Format("Review_Kept", item.BarNumber, Left));
+        MoveNext(item);
+    }
+
+    /// <summary>Keeps one item: a whole review group, or one note when the score has no groups.</summary>
+    private void KeepItem(ReviewItem item)
+    {
+        score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
+        if (item.Event.ReviewGroup >= 0) score.KeepGroup(item.Part, item.Event);
+        else
+        {
+            score.KeepCurrent();
+            score.KeepInComposition(item.Event);
+        }
+        item.IsKept = true;
+    }
+
+    /// <summary>Keeps every open note in the current note's bar (the note itself included) and goes on.</summary>
+    [RelayCommand]
+    private void KeepRestOfBar()
+    {
+        if (Current is not { } item) return;
+        var bar = _all.Where(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex).ToList();
+        foreach (var i in bar) KeepItem(i);
+        announcer.Announce(s.Format("Review_KeptBar", bar.Count, item.BarNumber, Left));
         MoveNext(item);
     }
 
@@ -358,10 +406,15 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
             HasEvidence = false;
             return;
         }
+        int inBar = _all.Count(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex);
+        CanKeepBar = inBar > 1;
+        KeepBarText = s.Format("Review_KeepBar", inBar);
         int index = Items.ToList().IndexOf(item) + 1;
         Overline = s.Format("Review_Overline", index, Items.Count, item.PartName).ToUpperInvariant();
-        Heading = s.Format("Review_BarHeading", item.BarNumber);
+        int endBar = score.Document?.Parts[item.Part].Bars[item.EndBarIndex].Number ?? item.BarNumber;
+        Heading = endBar > item.BarNumber ? s.Format("Review_BarsHeading", item.BarNumber, endBar) : s.Format("Review_BarHeading", item.BarNumber);
         NoteLine = s.Format(score.ConcertPitch ? "Review_NoteConcert" : "Review_NoteWritten", item.Label);
+        if (item.IsGroup) NoteLine = s.Format("Review_GroupLine", item.NoteCount, NoteLine);
         var evidence = EvidenceFor(item);
         HasEvidence = evidence is not null;
         if (evidence is not null)

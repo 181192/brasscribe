@@ -244,7 +244,7 @@ public class AppFlowTests
         Assert.Equal("Finish later (1 left)", main.Review.FinishLaterText);
         Assert.True(main.HasLibrary);
         Assert.Equal("Test tune", main.LibraryItems[0].Title);
-        Assert.Contains("1 note to check", main.LibraryItems[0].Subtitle);
+        Assert.Contains("Today · 1 to check", main.LibraryItems[0].Subtitle);
 
         // Keeping the last note goes on to "How should the score be?"; unchanged, it just shows the score.
         main.Review.KeepCommand.Execute(null);

@@ -302,7 +302,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         _loopBoxes = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last) : [];
         string? label = player.Loop is { } loop ? App.Strings.Format("Score_LoopLabel", loop.First + 1, loop.Last + 1) : null;
         Notation.SetOverlay(ScoreOverlay.Build(new(heads, _loopBoxes, label, ScoreGeometry.AdlibRegions(bounds, ViewModel.Document!),
-            null, null, ScoreView.IsHighContrast())));
+            null, null, ScoreView.IsHighContrast()) { Groups = ScoreGeometry.GroupBrackets(player.Score, bounds, ViewModel.Document!, _tracks) }));
         UpdateFocus();
     }
 
@@ -322,7 +322,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             var b = ScoreGeometry.FocusBox(player.Score, bounds, nav.PartIndex, nav.BarIndex, ev.Tick);
             items.Add(new ScoreEventItem(Brief(nav, ev), b is { } r ? ToRect(r) : default, ReferenceEquals(ev, nav.Event)));
         }
-        Notation.SetFocusRect(box is { } f ? ToRect(f) : null, items);
+        var staff = ScoreGeometry.BarBox(bounds, nav.BarIndex, nav.PartIndex);
+        Notation.SetFocusRect(box is { } f ? ToRect(f) : null, items, staff is { } st ? ToRect(st) : null);
     }
 
     private static string Brief(Brasscribe.Play.Core.TalkingScore.ScoreNavigator nav, Brasscribe.Play.Core.TalkingScore.TsEvent ev)

@@ -116,6 +116,7 @@ name("ReviewList", "Notes to check", "Toner å sjekke")
 name("ReviewSnippet", "The bars around the note", "Taktene rundt tonen")
 name("ReviewListenButton", "Listen to this bar", "Lytt til denne takten"); help_("ReviewListenButton", "Plays the bar from the recording, looped (Space)", "Spiller takten fra opptaket i løkke (Mellomrom)")
 prop("ReviewListenLabel", "Text", "Listen to this bar", "Lytt til denne takten")
+help_("ReviewKeepBarButton", "The other marked notes in this bar are right; their “?” go", "De andre merkede tonene i takten er riktige; «?» fjernes")
 name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
 name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the whole score follows", "Velg hva tonen skal være; hele partituret følger med")
 prop("ReviewChangeNoteLabel", "Text", "Change note…", "Endre tonen …")
@@ -269,8 +270,10 @@ code = {
     "Library_FullBand": ("Full band", "Fullt band"),
     "Library_Today": ("Today", "I dag"),
     "Library_Subtitle": ("{0} · {1} bars · {2}", "{0} · {1} takter · {2}"),
-    "Library_ToCheckOne": ("{0} note to check", "{0} tone å sjekke"),
-    "Library_ToCheck": ("{0} notes to check", "{0} toner å sjekke"),
+    "Library_ToCheckOne": ("{0} to check", "{0} å sjekke"),
+    "Library_ToCheck": ("{0} to check", "{0} å sjekke"),
+    "Library_Yesterday": ("Yesterday", "I går"),
+    "Library_RecordingTitle": ("Recording, {0}", "Opptak, {0}"),
     "Start_Imported": ("Opened {0}, {1}", "Åpnet {0}, {1}"),
     "Start_RecordingName": ("Recording", "Opptak"),
     "Start_RecordingStarted": ("Recording started", "Opptaket har startet"),
@@ -339,6 +342,10 @@ code = {
     "CancelDialog_Keep": ("Keep going", "Fortsett"),
     "Review_CountOne": ("{0} note to check", "{0} tone å sjekke"),
     "Review_Count": ("{0} notes to check", "{0} toner å sjekke"),
+    "Review_LeadMany": ("Most of these are probably right. Start with the {0} very unsure ones.", "De fleste av disse er nok riktige. Begynn med de {0} svært usikre."),
+    "Review_LeadManyOne": ("Most of these are probably right. Start with the {0} very unsure one.", "De fleste av disse er nok riktige. Begynn med den {0} svært usikre."),
+    "Review_KeepBar": ("Keep the rest of this bar ({0})", "Behold resten av takten ({0})"),
+    "Review_KeptBar": ("Kept {0} notes in bar {1}. {2} left", "Beholdt {0} toner i takt {1}. {2} igjen"),
     "Review_Triage": ("Check your part first: {0} notes in {1}, {2} very unsure", "Sjekk stemmen din først: {0} toner i {1}, {2} svært usikre"),
     "Review_ScopeMine": ("Your part ({0})", "Stemmen din ({0})"),
     "Review_ScopeAll": ("All parts ({0})", "Alle stemmer ({0})"),
@@ -349,6 +356,8 @@ code = {
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),
     "Review_Overline": ("{0} of {1} · {2}", "{0} av {1} · {2}"),
+    "Review_BarsHeading": ("Bars {0}–{1}", "Takt {0}–{1}"),
+    "Review_GroupLine": ("{0} notes together, from: {1}", "{0} toner sammen, fra: {1}"),
     "Review_BarHeading": ("Bar {0}", "Takt {0}"),
     "Review_NoteWritten": ("Written {0}", "Notert {0}"),
     "Review_NoteConcert": ("Concert {0}", "Klingende {0}"),

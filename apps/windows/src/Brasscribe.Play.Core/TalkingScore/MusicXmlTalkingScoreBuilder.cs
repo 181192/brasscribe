@@ -131,6 +131,7 @@ public static class MusicXmlTalkingScoreBuilder
                             var ev = ReadNote(el, start, dur, divisions, time, part, ref tupletCount);
                             if (ev is null) continue;
                             ev.MusicXmlNoteIndex = noteIndex;
+                            ev.PrintedMark = el.Attribute("color") is not null || el.Element("notehead")?.Attribute("color") is not null;
                             if (pendingDynamic is not null && ev.Kind != EventKind.Rest && ev.Kind != EventKind.BarRest)
                             {
                                 ev.Dynamic = pendingDynamic;

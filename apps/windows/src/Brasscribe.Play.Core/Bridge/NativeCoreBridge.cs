@@ -97,6 +97,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
                     mine[e].MusicXmlNoteIndex = theirs[e].MusicXmlNoteIndex;
                     mine[e].CompositionVoiceId = theirs[e].CompositionVoiceId;
                     mine[e].CompositionNoteStart = theirs[e].CompositionNoteStart;
+                    mine[e].PrintedMark = theirs[e].PrintedMark;
                 }
             }
         return doc;

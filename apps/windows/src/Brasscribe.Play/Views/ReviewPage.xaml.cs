@@ -91,8 +91,13 @@ public sealed partial class ReviewPage : Page, IScreenPage
         bool contrast = ScoreView.IsHighContrast();
         try
         {
-            var png = await ScoreRendering.Renderer.SnippetAsync(player.Score, item.Part, item.BarIndex + 1, 2, 1.3, palette,
-                output => ScoreOverlay.Build(new(ScoreGeometry.UncertainHeads(player.Score, output.Bounds!, doc, [item.Part]), [], null, [], null, null, contrast)),
+            var png = await ScoreRendering.Renderer.SnippetAsync(player.Score, item.Part, item.BarIndex + 1, Math.Clamp(item.EndBarIndex - item.BarIndex + 1, 2, 4), 1.3, palette,
+                output => ScoreOverlay.Build(new(ScoreGeometry.UncertainHeads(player.Score, output.Bounds!, doc, [item.Part]), [], null, [], null, null, contrast)
+                    {
+                        Groups = ScoreGeometry.GroupBrackets(player.Score, output.Bounds!, doc, [item.Part]),
+                        Selection = ScoreGeometry.FocusBox(player.Score, output.Bounds!, item.Part, item.BarIndex, item.Event.Tick) is { } note
+                                    && ScoreGeometry.BarBox(output.Bounds!, item.BarIndex, item.Part) is { } bar ? (note, bar) : null,
+                    }),
                 s => ScoreStyler.ApplyUncertainty(s, doc, palette));
             if (!ReferenceEquals(item, ViewModel.Current)) return;
             var bitmap = new BitmapImage();
