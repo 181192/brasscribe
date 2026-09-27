@@ -841,3 +841,82 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
     Ok(arr)
 }
+
+// ---------------------------------------------------------------------------
+// Where each part comes from.
+// ---------------------------------------------------------------------------
+
+/// A solo take: the part carries the player's own line.
+pub const YOUR_RECORDING: &str = "your-recording";
+/// The part follows a line heard in a band recording.
+pub const RECORDING: &str = "recording";
+/// Voiced from the harmony, or doubling the tune.
+pub const ARRANGED: &str = "arranged";
+
+fn arrangement_opt(comp: &Composition, key: &str) -> Option<String> {
+    comp.arrangement.as_ref().and_then(|a| a.get(key)).and_then(|v| v.as_str()).map(String::from)
+}
+
+/// The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether the
+/// layered arranger makes it (its voices carry layers).
+pub fn composition_lineup(comp: &Composition) -> (Lineup, bool) {
+    let lineup = arrangement_opt(comp, "lineup");
+    if !comp.voices.iter().any(|v| v.layer.is_some()) {
+        let l = if lineup.as_deref() == Some("quartet") { crate::instruments::quartet() } else { minimal_band() };
+        return (l, false);
+    }
+    // Anything but a known lineup arranges for the band, as before lineups carried their roles.
+    (crate::instruments::lineup_by_name(lineup.as_deref().unwrap_or("band")).unwrap_or_else(|_| brass_band()), true)
+}
+
+fn has_notes(comp: &Composition, layers: &[&str]) -> bool {
+    comp.voices.iter().any(|v| !v.notes.is_empty() && v.layer.as_deref().is_some_and(|l| layers.contains(&l)))
+}
+
+/// A layered Composition with notes in its solo layer only: one player recorded alone.
+pub fn is_solo_take(comp: &Composition) -> bool {
+    comp.voices.iter().any(|v| v.layer.is_some())
+        && has_notes(comp, &["solo"])
+        && !comp.voices.iter().any(|v| !v.notes.is_empty() && v.layer.as_deref() != Some("solo"))
+}
+
+/// Where each part of the Composition's arrangement comes from, in score order.
+///
+/// Derived, not stored: from the lineup's roles, the arranger that made it (layered or not) and
+/// which layers have notes. `your-recording`: a solo take's line; `recording`: a line heard in the
+/// recording (the tune, the bass line and its doublings, the countermelody from the strings' top
+/// line, the drums); `arranged`: everything voiced from the harmony, and the Soprano Cornet's
+/// doubling of the tune.
+pub fn part_sources(comp: &Composition) -> Vec<(String, &'static str)> {
+    let (lineup, layered) = composition_lineup(comp);
+    let mut heard: Vec<&str> = Vec::new();
+    let basses = |heard: &mut Vec<&'static str>| {
+        heard.push(lineup.bass);
+        if let Some(b) = lineup.second_bass {
+            heard.push(b);
+        }
+    };
+    if !layered {
+        heard.push(lineup.lead);
+        basses(&mut heard);
+    } else if is_solo_take(comp) {
+        return lineup.parts.iter().map(|p| (p.name.to_string(), if p.name == lineup.lead { YOUR_RECORDING } else { ARRANGED })).collect();
+    } else {
+        if has_notes(comp, &["solo"]) {
+            heard.push(lineup.lead);
+        }
+        if has_notes(comp, &["bass"]) {
+            basses(&mut heard);
+            if !lineup.satb && lineup.has("Bass Trombone") {
+                heard.push("Bass Trombone");
+            }
+        }
+        if !lineup.satb && has_notes(comp, &["strings"]) && lineup.has("Euphonium") {
+            heard.push("Euphonium");
+        }
+        if !lineup.satb && has_notes(comp, &["drums"]) && lineup.has("Percussion") {
+            heard.push("Percussion");
+        }
+    }
+    lineup.parts.iter().map(|p| (p.name.to_string(), if heard.contains(&p.name) { RECORDING } else { ARRANGED })).collect()
+}

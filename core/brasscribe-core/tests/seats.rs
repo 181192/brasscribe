@@ -1,0 +1,72 @@
+//! Seats: the seat -> part table as the plan writes it, walked for every seat and lineup.
+
+use brasscribe_core::instruments::{brass_band, check_reads, lineup_by_name, part_banks, seat_part, SEATS};
+use brasscribe_core::talking_score::nb_part_name;
+
+/// (seat, full band, small band, quartet); None = no part.
+const TABLE: [(&str, Option<&str>, Option<&str>, Option<&str>); 18] = [
+    ("soprano-cornet", Some("Soprano Cornet"), Some("Solo Cornet"), Some("1st Cornet")),
+    ("solo-cornet", Some("Solo Cornet"), Some("Solo Cornet"), Some("1st Cornet")),
+    ("repiano-cornet", Some("Repiano Cornet"), Some("2nd Cornet"), Some("2nd Cornet")),
+    ("2nd-cornet", Some("2nd Cornet"), Some("2nd Cornet"), Some("2nd Cornet")),
+    ("3rd-cornet", Some("3rd Cornet"), Some("2nd Cornet"), Some("2nd Cornet")),
+    ("flugelhorn", Some("Flugelhorn"), Some("Flugelhorn"), Some("2nd Cornet")),
+    ("solo-horn", Some("Solo Horn"), Some("Solo Horn"), Some("Tenor Horn")),
+    ("1st-horn", Some("1st Horn"), Some("Solo Horn"), Some("Tenor Horn")),
+    ("2nd-horn", Some("2nd Horn"), Some("Solo Horn"), Some("Tenor Horn")),
+    ("1st-baritone", Some("1st Baritone"), Some("Euphonium"), Some("Euphonium")),
+    ("2nd-baritone", Some("2nd Baritone"), Some("Euphonium"), Some("Euphonium")),
+    ("1st-trombone", Some("1st Trombone"), Some("1st Trombone"), Some("Euphonium")),
+    ("2nd-trombone", Some("2nd Trombone"), Some("1st Trombone"), Some("Euphonium")),
+    ("bass-trombone", Some("Bass Trombone"), Some("E♭ Bass"), Some("Euphonium")),
+    ("euphonium", Some("Euphonium"), Some("Euphonium"), Some("Euphonium")),
+    ("eb-bass", Some("E♭ Bass"), Some("E♭ Bass"), Some("Euphonium")),
+    ("bb-bass", Some("B♭ Bass"), Some("B♭ Bass"), Some("Euphonium")),
+    ("percussion", Some("Percussion"), None, None),
+];
+
+const OTHER_KEY: [(&str, &str); 5] =
+    [("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("bass-trombone", "minimal"), ("bass-trombone", "quartet"), ("eb-bass", "quartet")];
+
+#[test]
+fn seats_are_the_contest_band() {
+    let names: Vec<&str> = SEATS.iter().map(|s| s.part).collect();
+    let band: Vec<&str> = brass_band().parts.iter().map(|p| p.name).collect();
+    assert_eq!(names, band);
+}
+
+#[test]
+fn seat_part_table() {
+    let banks = part_banks();
+    for (seat, band, minimal, quartet) in TABLE {
+        let own = SEATS.iter().find(|s| s.id == seat).unwrap().part;
+        for (lineup, want) in [("band", band), ("minimal", minimal), ("quartet", quartet)] {
+            let sp = seat_part(lineup, seat).unwrap();
+            assert_eq!(sp.part, want, "{seat} in {lineup}");
+            match want {
+                None => assert!(!sp.exact && !sp.same_key),
+                Some(name) => {
+                    assert!(lineup_by_name(lineup).unwrap().has(name));
+                    assert_eq!(sp.exact, name == own, "{seat} in {lineup}");
+                    assert_eq!(sp.same_key, !OTHER_KEY.contains(&(seat, lineup)), "{seat} in {lineup}");
+                    // Every resolved part has a Norwegian name and (but percussion) a SoundFont bank.
+                    assert_ne!(nb_part_name(name), name, "{name}");
+                    assert!(name == "Percussion" || banks.iter().any(|(n, _)| *n == name), "{name}");
+                }
+            }
+        }
+        assert_eq!(seat_part("full", seat), seat_part("band", seat));
+        assert_eq!(seat_part("", seat), seat_part("band", seat));
+    }
+    assert!(seat_part("band", "tuba").is_err());
+    assert!(seat_part("orchestra", "euphonium").is_err());
+}
+
+#[test]
+fn clef_readings() {
+    assert!(check_reads(Some("euphonium"), Some("bass")).is_ok());
+    assert!(check_reads(None, None).is_ok());
+    assert!(check_reads(Some("solo-cornet"), Some("bass")).is_err());
+    assert!(check_reads(Some("bass-trombone"), Some("treble")).is_err());
+    assert!(check_reads(None, Some("bass")).is_err());
+}

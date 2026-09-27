@@ -241,3 +241,32 @@ fn voice_satb_matches_reference() {
         }
     }
 }
+
+#[test]
+fn seats_match_reference() {
+    use brasscribe_core::instruments::{check_reads, seat_part};
+    for c in load("seats") {
+        let seat = c["seat"].as_str().unwrap();
+        if let Some(reads) = c["reads"].as_str() {
+            assert_eq!(check_reads(Some(seat), Some(reads)).is_ok(), c["ok"].as_bool().unwrap(), "{seat} reads {reads}");
+            continue;
+        }
+        let sp = seat_part(c["lineup"].as_str().unwrap(), seat).unwrap();
+        assert_eq!(sp.part, c["part"].as_str(), "{c}");
+        assert_eq!(sp.exact, c["exact"].as_bool().unwrap(), "{c}");
+        assert_eq!(sp.same_key, c["same_key"].as_bool().unwrap(), "{c}");
+    }
+}
+
+#[test]
+fn part_sources_match_reference() {
+    use brasscribe_core::arranger::part_sources;
+    use brasscribe_core::model::Composition;
+    for (i, c) in load("part_sources").iter().enumerate() {
+        let comp: Composition = serde_json::from_value(c["composition"].clone()).unwrap();
+        let want: Vec<(String, String)> =
+            c["sources"].as_array().unwrap().iter().map(|p| (p[0].as_str().unwrap().into(), p[1].as_str().unwrap().into())).collect();
+        let got: Vec<(String, String)> = part_sources(&comp).into_iter().map(|(p, s)| (p, s.to_string())).collect();
+        assert_eq!(got, want, "case {i}");
+    }
+}

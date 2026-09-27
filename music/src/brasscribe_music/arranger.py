@@ -410,19 +410,71 @@ def arrange_composition(comp: Composition) -> Arrangement:
     Voices with layers: the layered arranger with the recorded lineup (default the band) and
     difficulty. Otherwise the minimal-band arranger, or the quartet when that is recorded.
     """
+    difficulty = (comp.arrangement or {}).get("difficulty") or "faithful"
+    lineup, layered = composition_lineup(comp)
+    if not layered:
+        return arrange(comp, lineup, difficulty) if lineup is not MINIMAL_BAND else arrange(comp)
+    return arrange_layers(comp, lineup, difficulty=difficulty)
+
+
+def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
+    """The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether
+    the layered arranger makes it (its voices carry layers)."""
     from .instruments import BRASS_BAND, QUARTET, lineup_by_name
 
     opts = comp.arrangement or {}
-    difficulty = opts.get("difficulty") or "faithful"
     if not any(v.layer for v in comp.voices):
-        if opts.get("lineup") == "quartet":
-            return arrange(comp, QUARTET, difficulty)
-        return arrange(comp)
+        return (QUARTET if opts.get("lineup") == "quartet" else MINIMAL_BAND), False
     try:
-        lineup = lineup_by_name(opts.get("lineup"))
+        return lineup_by_name(opts.get("lineup")), True
     except ValueError:
-        lineup = BRASS_BAND
-    return arrange_layers(comp, lineup, difficulty=difficulty)
+        # Anything but a known lineup arranges for the band, as before lineups carried their roles.
+        return BRASS_BAND, True
+
+
+# Where a part's notes come from (part_sources). The UI words never say "transcribed".
+YOUR_RECORDING = "your-recording"  # a solo take: the part carries the player's own line
+RECORDING = "recording"  # the part follows a line heard in a band recording
+ARRANGED = "arranged"  # voiced from the harmony, or doubling the tune
+
+
+def _has_notes(comp: Composition, *layers: str) -> bool:
+    return any(v.notes for v in comp.voices if v.layer in layers)
+
+
+def is_solo_take(comp: Composition) -> bool:
+    """A layered Composition with notes in its solo layer only: one player recorded alone."""
+    return any(v.layer for v in comp.voices) and _has_notes(comp, "solo") and \
+        not any(v.notes for v in comp.voices if v.layer != "solo")
+
+
+def part_sources(comp: Composition) -> dict[str, str]:
+    """Where each part of the Composition's arrangement comes from, in score order.
+
+    Derived, not stored: from the lineup's roles, the arranger that made it (layered or not)
+    and which layers have notes. `your-recording`: a solo take's line; `recording`: a line
+    heard in the recording (the tune, the bass line and its doublings, the countermelody from
+    the strings' top line, the drums); `arranged`: everything voiced from the harmony, and the
+    Soprano Cornet's doubling of the tune.
+    """
+    lineup, layered = composition_lineup(comp)
+    heard: set[str] = set()
+    if not layered:
+        heard |= {lineup.lead, lineup.bass, *([lineup.second_bass] if lineup.second_bass else [])}
+    elif is_solo_take(comp):
+        return {p.name: YOUR_RECORDING if p.name == lineup.lead else ARRANGED for p in lineup.parts}
+    else:
+        if _has_notes(comp, "solo"):
+            heard.add(lineup.lead)
+        if _has_notes(comp, "bass"):
+            heard |= {lineup.bass, *([lineup.second_bass] if lineup.second_bass else [])}
+            if not lineup.satb and lineup.has("Bass Trombone"):
+                heard.add("Bass Trombone")
+        if not lineup.satb and _has_notes(comp, "strings") and lineup.has("Euphonium"):
+            heard.add("Euphonium")
+        if not lineup.satb and _has_notes(comp, "drums") and lineup.has("Percussion"):
+            heard.add("Percussion")
+    return {p.name: RECORDING if p.name in heard else ARRANGED for p in lineup.parts}
 
 
 # ---------------------------------------------------------------------------

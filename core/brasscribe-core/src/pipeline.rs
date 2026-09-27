@@ -498,15 +498,14 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
 /// `arrangement`), else the minimal arranger.
 pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
     let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
-    if !comp.voices.iter().any(|v| v.layer.is_some()) {
-        if opt("lineup").as_deref() == Some("quartet") {
+    let (lineup, layered) = crate::arranger::composition_lineup(comp);
+    if !layered {
+        if lineup.satb {
             let difficulty = opt("difficulty").filter(|d| !d.is_empty()).unwrap_or_else(|| "faithful".into());
-            return crate::arranger::arrange_opts(comp, crate::instruments::quartet(), &difficulty);
+            return crate::arranger::arrange_opts(comp, lineup, &difficulty);
         }
         return Ok(arrange(comp));
     }
-    // Anything but a known lineup arranges for the band, as before lineups carried their roles.
-    let lineup = crate::instruments::lineup_by_name(opt("lineup").as_deref().unwrap_or("band")).unwrap_or_else(|_| crate::instruments::brass_band());
     let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
     crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
 }
