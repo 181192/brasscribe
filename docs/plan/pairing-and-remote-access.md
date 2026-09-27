@@ -52,7 +52,7 @@ Causes 1, 3 and 4 are the everyday ones. Cause 1 alone logs out every phone each
 
 ---
 
-## 4. Design A: pair once
+## 4. Pair once
 
 ### 4.1 Identities and credentials
 
@@ -67,7 +67,7 @@ Causes 1, 3 and 4 are the everyday ones. Cause 1 alone logs out every phone each
 
 **Why one long-lived bearer, and not access plus refresh tokens.** On a LAN the engine is its own authorization server, and the token never leaves the two devices. A refresh token adds a second secret to store and a second failure mode, and gains nothing without an external issuer. Rotation (§4.6) limits how long a leaked token lives. In hosted mode (§5) real OAuth access and refresh tokens replace this. The API surface stays the same.
 
-**Why no device public key yet.** Binding the token to a device key (DPoP, RFC 9449) is the right step once TLS is in place. Without TLS, a stolen token is the smaller problem, because the whole channel is open. It is planned as step E3.
+**Why no device public key yet.** Binding the token to a device key (DPoP, RFC 9449) is the right step once TLS is in place. Without TLS, a stolen token is the smaller problem, because the whole channel is open. It is planned as a later step (device-bound tokens, §7).
 
 ### 4.2 The pairing payload (the QR code)
 
@@ -191,7 +191,7 @@ Client rules:
 
 - `GET /v1/devices/me` returns `rotate_after`, which is 30 days after pairing or the last rotation.
 - After that time, on a successful connection, the client calls `POST /v1/devices/me/rotate`. It writes the new token to the keystore **before** using it.
-- The previous token keeps working until the new one is first used, or for 10 minutes. A response lost in transit therefore never locks the device out.
+- The token the device rotated with keeps working until the new one is first used, for up to 30 days. If the response is lost, the device still holds a working token and simply rotates again later. A retry with the old token keeps that old token valid, so no sequence of lost responses locks the device out.
 
 ### 4.7 Revoke and reset
 
@@ -213,7 +213,7 @@ This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and
 | `GET /v1/health` | anyone | adds `server_id`, `server_name` |
 | `POST /v1/pair` | anyone with the code | unchanged shape; response adds `device_id`, `server_id`, `server_name` (all strings: Apple decodes it as `[String: String]`). A request that carries a valid bearer re-issues that device's token instead of adding a duplicate. 429 + `Retry-After` while locked |
 | `POST /v1/pair/requests`, `GET /v1/pair/requests/{id}` | anyone | approve-on-the-computer |
-| `GET /v1/devices/me`, `POST /v1/devices/me/rotate`, `DELETE /v1/devices/me` | paired device | check, rotate, unpair |
+| `GET /v1/devices/me`, `POST /v1/devices/me/rotate`, `DELETE /v1/devices/me` | paired device | check, rotate (the token used keeps working until the new one is used), unpair |
 | `GET /v1/devices`, `DELETE /v1/devices/{id}` | loopback only | list, revoke |
 | `GET/POST/DELETE /v1/pairing` | loopback only | show, open or extend, close the pairing window; returns the §4.2 payload |
 | `GET /v1/pairing/requests`, `POST /v1/pairing/requests/{id}/approve\|deny` | loopback only | approve-on-the-computer |
@@ -227,7 +227,7 @@ Other changes:
 
 **Not done yet: TLS (§4.9).** Until it is, the server id can be spoofed by anyone on the LAN, and a token crosses the network in the clear. Both were already true of the old shared token.
 
-### 4.9 TLS on the LAN (next engine step)
+### 4.9 TLS on the LAN (next engine change)
 
 - **Key and certificate.** On first start, generate an ECDSA P-256 key and a self-signed certificate (CN = server name, SAN = `brasscribe.local`, valid 20 years; clients ignore the validity dates and hostname and check the pin). Store them under `<state>/tls/`. `brasscribe devices reset` regenerates them.
 - **Fingerprint.** `fp` = base64url(SHA-256(SubjectPublicKeyInfo)). Because the pin is on the public key, a new certificate with the same key keeps working.
@@ -241,7 +241,7 @@ Other changes:
 
 ---
 
-## 5. Design B: the same engine, reachable from outside
+## 5. The same engine, reachable from outside
 
 ### 5.1 Three modes, one API
 
@@ -273,7 +273,7 @@ Every route already depends on `auth`. That dependency turns into `principal = D
 This is the cheapest path and needs no new auth.
 
 - **Tailscale (or Headscale, or plain WireGuard).**
-  - Install it on the computer and the phones. Run `brasscribe serve --mode remote --host <tailnet IP>`, which binds the engine to the tailnet address and not to all interfaces.
+  - Install it on the computer and the phones. Run `brasscribe serve --host <tailnet IP>`, which binds the engine to the tailnet address and not to all interfaces. This works safely today: requests arrive from the tailnet address, not from loopback, so they must carry a device token. Only a proxy on the same machine needs the mode switch.
   - The phone reaches it at its MagicDNS name. The pairing payload `h` lists that address as well as the LAN addresses, so one QR code works in both places.
   - Tailnet ACLs limit which devices can reach port 8765.
   - **Don't** put the engine behind `tailscale serve` or `funnel` while loopback trust is on.
@@ -302,7 +302,7 @@ So hosted mode means: **the owner deploys the same container to their own cloud 
 - **Passkeys** at the identity provider meet 3.3.8 with no memorised secret.
 - Access tokens last 10 minutes. Refresh tokens rotate and are revoked when reused. The engine validates the JWT against the provider's JWKS (issuer, audience, expiry) and reads `sub`, which is the tenant, and a `role`, which is the owner or admin.
 
-**Tokens bound to the device.** Use **DPoP (RFC 9449)**. Each app makes a non-exportable key (Secure Enclave, StrongBox or TEE, Windows CNG or TPM) and signs a proof for each request. A stolen access token is then useless on its own. mTLS would also work, but client certificates are awkward on phones and break behind many load balancers, so DPoP is the better fit. The same device key can later bind the LAN token (step E3).
+**Tokens bound to the device.** Use **DPoP (RFC 9449)**. Each app makes a non-exportable key (Secure Enclave, StrongBox or TEE, Windows CNG or TPM) and signs a proof for each request. A stolen access token is then useless on its own. mTLS would also work, but client certificates are awkward on phones and break behind many load balancers, so DPoP is the better fit. The same device key can later bind the LAN token too.
 
 **Rate limits and size limits.** Set these at the load balancer or proxy, and again in the engine:
 
@@ -350,7 +350,7 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 
 | Threat | Where | Today (`f20ba42`) | With this design |
 |---|---|---|---|
-| **E: a local proxy makes remote traffic look like loopback** | remote and hosted | Everything trusted, including (after this change) device management | Loopback trust off outside home mode (§5.1). Owner actions need the admin role or a local socket. **Top risk: build E1 before recommending any tunnel.** |
+| **E: a local proxy makes remote traffic look like loopback** | remote and hosted | Everything trusted, including (after this change) device management | Loopback trust off outside home mode (§5.1). Owner actions need the admin role or a local socket. **Top risk: build the mode switch before recommending any proxy or tunnel on the same machine.** |
 | S: a fake engine on the LAN collects tokens | home | Possible: plain HTTP, no identity | Pinned `fp` from the QR code or TOFU (§4.9). Until then, `server_id` only routes and doesn't authenticate |
 | S: guessing the pairing code | home | ~10⁶ tries, unlimited rate, code quietly replaced (§2 cause 2) | Lockout with backoff; windows opened on the computer are single use and last 10 min |
 | D: locking out pairing on purpose | home | n/a | A LAN attacker can keep pairing locked (5 wrong codes every lock period). Accepted: it's a LAN nuisance, and approve-on-the-computer is still available. Pending requests are capped at 3 |
@@ -370,12 +370,13 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 
 1. **Engine (done in this change).** Old clients keep working:
    - Their stored token is now per device and survives restarts, so cause 1 is gone for them with no app update.
-   - Windows and Apple, whose stored token was invalidated by a restart before this change, need to pair **once more** after the engine update. From then on they stay paired.
+   - Apple devices whose stored token went stale in a restart before this change need to pair **once more** after the engine update. From then on they stay paired.
+   - Current Windows builds ignore a typed code while a stale token is stored (`SettingsViewModel.cs:95`). Until the Windows fix ships, pick the engine again from the discovered list with a different address, or delete `EngineToken` from `%LOCALAPPDATA%\Brasscribe\Play\settings.json`, then pair.
    - Existing Android builds call `pair` on every Connect tap, and each call adds a device entry. Unused entries age out after 180 days, and the owner can remove them. The fixed Android client only pairs after a 401.
-2. **Clients, step 1 (§7).** Keystore storage, keyed by `server_id`, with a one-time move from the old store. Rediscovery by id. Pair only on 401. Rotation.
+2. **Clients (§7).** Keystore storage, keyed by `server_id`, with a one-time move from the old store. Rediscovery by id. Pair only on 401. Rotation.
 3. **Desktop helper.** Uses `/v1/pairing`, `/v1/devices` and `/v1/pairing/requests` over loopback.
-4. **TLS (E2).** The engine serves TLS on the LAN, plus an HTTP listener for one release behind `--allow-http-lan`. Clients from step 2 read `fp` and pin it. Older clients are asked to update.
-5. **Remote mode (E1), then hosted mode (E4 onward)**, only when someone needs them.
+4. **LAN TLS.** The engine serves TLS on the LAN, plus an HTTP listener for one release behind `--allow-http-lan`. Updated clients read `fp` and pin it. Older clients are asked to update.
+5. **The mode switch, then hosted mode**, only when someone needs them.
 
 ---
 
@@ -383,15 +384,15 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 
 ### Engine
 
-| Step | Work | Status |
+| Change | Work | Status |
 |---|---|---|
-| E0 | Stable server id; per-device hashed credentials; rotation with grace; `/v1/devices*`, `/v1/pairing*`, `/v1/pair/requests*`; lockout instead of silent code replacement; mDNS `id`; `brasscribe devices`; tests | **done** |
-| E1 | `--mode home\|remote\|hosted`; loopback trust off outside home; owner endpoints via a local Unix socket or an admin role; `h` in the payload includes the tailnet address | next |
-| E2 | Persistent TLS key and self-signed certificate under `<state>/tls`; `fp` in `/v1/pairing` and the QR code; TLS on the LAN listener; `--allow-http-lan` for one release; add `cryptography` to the engine environment | next |
-| E3 | Optional device public key at pairing (`jwk` in `PairRequest`); DPoP proofs checked on LAN requests too | later |
-| E4 | `AuthProvider` with an OIDC/JWT + DPoP provider; tenant column on uploads, jobs and runs; tenant-scoped `audio_id`; filtered listings | hosted only |
-| E5 | Upload caps and `ffprobe` check; per-user quotas; sandboxed GPU worker image; retention job; log allowlist | hosted only |
-| E6 | Container image and deploy recipe (API on CPU, serverless GPU worker), `HF_TOKEN` from the secret manager | hosted only |
+| Pair once | Stable server id; per-device hashed credentials; rotation with grace; `/v1/devices*`, `/v1/pairing*`, `/v1/pair/requests*`; lockout instead of silent code replacement; mDNS `id`; `brasscribe devices`; tests | **done** |
+| Mode switch | `--mode home\|remote\|hosted`; loopback trust off outside home; owner endpoints via a local Unix socket or an admin role; `h` in the payload includes the tailnet address | next |
+| LAN TLS | Persistent TLS key and self-signed certificate under `<state>/tls`; `fp` in `/v1/pairing` and the QR code; TLS on the LAN listener; `--allow-http-lan` for one release; add `cryptography` to the engine environment | next |
+| Device-bound tokens | Optional device public key at pairing (`jwk` in `PairRequest`); DPoP proofs checked on LAN requests too | later |
+| Hosted auth and tenancy | `AuthProvider` with an OIDC/JWT + DPoP provider; tenant column on uploads, jobs and runs; tenant-scoped `audio_id`; filtered listings | hosted only |
+| Hosted hardening | Upload caps and `ffprobe` check; per-user quotas; sandboxed GPU worker image; retention job; log allowlist | hosted only |
+| Hosted deploy | Container image and deploy recipe (API on CPU, serverless GPU worker), `HF_TOKEN` from the secret manager | hosted only |
 
 ### Rust core
 
@@ -399,22 +400,22 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 
 ### Apple (SwiftUI, `apps/apple`)
 
-- A1. Move `companionToken` from `UserDefaults` (`AppModel.swift:50-51`) to the Keychain: `kSecClassGenericPassword`, service `no.brasscribe.engine`, account = `server_id`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Move the old value once, then delete it.
-- A2. Store the record from §4.5, keyed by `server_id`. The saved "companion URL" becomes `last_address`.
-- A3. `EngineBrowser` reads the TXT `id` and matches it. On launch: try `/v1/devices/me` at `last_address`, then mDNS by id (§4.5).
-- A4. Pair only on 401. Send `platform` (`ios` or `macos`). Scan QR codes (`brasscribe://pair`) with VisionKit `DataScannerViewController`, and register the URL scheme.
-- A5. Approve-on-the-computer path in Settings → Your computer, showing the match code.
-- A6. Rotation when `rotate_after` has passed. Unpair button (`DELETE /v1/devices/me`).
-- A7. When E2 lands: SPKI pinning in the `URLSession` delegate.
+- Move `companionToken` from `UserDefaults` (`AppModel.swift:50-51`) to the Keychain: `kSecClassGenericPassword`, service `no.brasscribe.engine`, account = `server_id`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Move the old value once, then delete it.
+- Store the record from §4.5, keyed by `server_id`. The saved "companion URL" becomes `last_address`.
+- `EngineBrowser` reads the TXT `id` and matches it. On launch: try `/v1/devices/me` at `last_address`, then mDNS by id (§4.5).
+- Pair only on 401. Send `platform` (`ios` or `macos`). Scan QR codes (`brasscribe://pair`) with VisionKit `DataScannerViewController`, and register the URL scheme.
+- Approve-on-the-computer path in Settings → Your computer, showing the match code.
+- Rotation when `rotate_after` has passed. Unpair button (`DELETE /v1/devices/me`).
+- Once the engine serves TLS: SPKI pinning in the `URLSession` delegate.
 - `CompanionService.pair` decodes `[String: String]` (`CompanionService.swift:127`). Replace it with a `Decodable` struct. The engine keeps `PairResponse` all strings until every client has updated.
 
 ### Android (Kotlin, `apps/android`)
 
-- D1. Move `token` out of `SharedPreferences` (`AppContainer.kt:29-31`). Encrypt it with an AES-GCM key held in the Android Keystore (StrongBox when available), and keep the ciphertext in DataStore. `EncryptedSharedPreferences` is deprecated. Exclude it from backup (`android:dataExtractionRules`).
-- D2. Store the record keyed by `server_id`. `EngineDiscovery` reads the TXT `id` (`NsdServiceInfo.attributes["id"]`).
-- D3. `PlayViewModel.connect` (`PlayViewModel.kt:696-698`): call `/v1/devices/me` with the stored token first, and pair only on 401. Send `platform = "android"`.
-- D4. QR scanning (CameraX + ML Kit barcode, or the system code scanner) and a `brasscribe://pair` intent filter. Approve-on-the-computer path.
-- D5. Rotation and Unpair. When E2 lands: an OkHttp `CertificatePinner` does not fit self-signed certificates, so use a custom `X509TrustManager` that checks the SPKI hash.
+- Move `token` out of `SharedPreferences` (`AppContainer.kt:29-31`). Encrypt it with an AES-GCM key held in the Android Keystore (StrongBox when available), and keep the ciphertext in DataStore. `EncryptedSharedPreferences` is deprecated. Exclude it from backup (`android:dataExtractionRules`).
+- Store the record keyed by `server_id`. `EngineDiscovery` reads the TXT `id` (`NsdServiceInfo.attributes["id"]`).
+- `PlayViewModel.connect` (`PlayViewModel.kt:696-698`): call `/v1/devices/me` with the stored token first, and pair only on 401. Send `platform = "android"`.
+- QR scanning (CameraX + ML Kit barcode, or the system code scanner) and a `brasscribe://pair` intent filter. Approve-on-the-computer path.
+- Rotation and Unpair. Once the engine serves TLS: an OkHttp `CertificatePinner` does not fit self-signed certificates, so use a custom `X509TrustManager` that checks the SPKI hash.
 - Contract: after `./gradlew :engine-client:syncOpenApi`, `EngineContractTest` fails until:
   - the new operationIds are in `EngineApi.OPERATIONS` or `NOT_USED`: `getThisDevice`, `rotateDeviceToken`, `unpairThisDevice`, `requestPairing` and `pollPairingRequest` go in OPERATIONS once implemented; `listDevices`, `revokeDevice`, `getPairing`, `openPairing`, `closePairing`, `listPairingRequests` and `decidePairingRequest` go in NOT_USED, since they are loopback-only
   - `Health` gets `serverId` and `serverName`
@@ -423,11 +424,11 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 
 ### Windows (WinUI / C#, `apps/windows`)
 
-- W1. Move `EngineToken` out of `settings.json` (`WindowsServices.cs:127-137`) into `Windows.Security.Credentials.PasswordVault`, resource `Brasscribe engine`, user name = `server_id`. The app runs unpackaged. If PasswordVault isn't available there, use DPAPI (`ProtectedData`, CurrentUser) for the stored blob.
-- W2. `UseEngine` (`SettingsViewModel.cs:81`): keep the token when the `server_id` matches, whatever the address.
-- W3. `ConnectAsync` (`SettingsViewModel.cs:95`): check with `/v1/devices/me`. On 401, clear the token and ask for a code. Today a stale token is reported as "Connected".
-- W4. `EngineDiscovery` reads the TXT `id`. Rediscovery on launch. Send `platform = "windows"`. Approve-on-the-computer path. Rotation. Unpair.
-- W5. When E2 lands: `ServerCertificateCustomValidationCallback` pins SPKI.
+- Move `EngineToken` out of `settings.json` (`WindowsServices.cs:127-137`) into `Windows.Security.Credentials.PasswordVault`, resource `Brasscribe engine`, user name = `server_id`. The app runs unpackaged. If PasswordVault isn't available there, use DPAPI (`ProtectedData`, CurrentUser) for the stored blob.
+- `UseEngine` (`SettingsViewModel.cs:81`): keep the token when the `server_id` matches, whatever the address.
+- `ConnectAsync` (`SettingsViewModel.cs:95`): check with `/v1/devices/me`. On 401, clear the token and ask for a code. Today a stale token is reported as "Connected".
+- `EngineDiscovery` reads the TXT `id`. Rediscovery on launch. Send `platform = "windows"`. Approve-on-the-computer path. Rotation. Unpair.
+- Once the engine serves TLS: `ServerCertificateCustomValidationCallback` pins SPKI.
 - Contract: after refreshing `tests/.../Fixtures/openapi.json`, `OpenApiContractTests` fails until `Health`, `PairRequest` and `PairResponse` get the new properties.
 
 ### Desktop helper (tray / menu bar)
