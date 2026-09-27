@@ -369,19 +369,19 @@ The chorale bass (tuba, mean MIDI 38, lowest 28) is below the Euphonium's readin
 | Source | melody kept | bass kept | alto recall (pc) | tenor recall (pc) | parallels / 100 | spacing faults | impossible | uncomfortable |
 |---|---|---|---|---|---|---|---|---|
 | MuScriptor medium, Basic Pitch support | 0.85 | 0.92 | 0.55 | 0.41 | 5.4 | 0.1 | 0 | 0 |
-| Basic Pitch only | 0.68 | 0.58 | 0.17 | 0.18 | 3.0 | 2.2 | 0.6 | 1.1 |
+| Basic Pitch only | 0.68 | 0.58 | 0.17 | 0.18 | 3.0 | 2.5 | 0 | 1.3 |
 
-Transcription costs about 0.25 of alto recall and 0.37 of tenor recall on top of the arrangement. The Basic Pitch rows have impossible notes on the 1st Cornet: spurious high notes the lead placement fits per note up to its placement limit (MIDI 84, above the cornet's playable 82). The band's Solo Cornet does the same.
+Transcription costs about 0.25 of alto recall and 0.37 of tenor recall on top of the arrangement. The cornet's placement limit is its playable top (MIDI 82), so no lead note is impossible. Before, the limit was 84 and the Basic Pitch row had 0.6 impossible notes per piece on the 1st Cornet; lowering the passages that reached 83–84 costs 0.3 spacing faults and 0.2 uncomfortable notes per piece.
 
 **Mikkel (layered, `difficulty_bench --mikkel`):**
 
 | Mikkel, quartet | Solo / other 16ths | Uncomfortable | Harmony fidelity | Melody kept | Contour | Figuration recall |
 |---|---|---|---|---|---|---|
-| faithful | 38.8 / 2.1% | 35 | 0.714 | 1.0 | 1.0 | 0.41 |
-| standard | 15.4 / 0.5% | 0 | 0.709 | 0.79 | 0.77 | 0.94 |
-| easier | 8.6 / 0% | 0 | 0.708 | 0.74 | 0.71 | 0.95 |
+| faithful | 38.8 / 2.2% | 29 | 0.689 | 1.0 | 1.0 | 0.39 |
+| standard | 15.4 / 0.5% | 0 | 0.691 | 0.79 | 0.78 | 0.93 |
+| easier | 8.6 / 0% | 0 | 0.699 | 0.74 | 0.73 | 0.94 |
 
-Faithful keeps every transcribed note, so it keeps the solo's 27 uncomfortable and 12 impossible notes (the band's Solo Cornet has the same) and 8 low Euphonium notes. No crossings in any mode; spacing faults only in the 61–86 slots that fell back to the band voicer (warned); parallels 2.2–3.0 per 100 changes.
+Faithful keeps every transcribed note, so it keeps the solo's uncomfortable notes; none is impossible, since the passages that reached above the cornet's playable 82 are written an octave lower (the band's Solo Cornet the same) and 8 low Euphonium notes. No crossings in any mode; spacing faults only in the 61–86 slots that fell back to the band voicer (warned); parallels 2.2–3.0 per 100 changes.
 
 ## Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)
 

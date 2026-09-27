@@ -458,16 +458,16 @@
           "higher_is_better": false
         },
         "bp.melody_kept": 0.681,
-        "bp.alto_recall_pc": 0.167,
-        "bp.tenor_recall_pc": 0.175,
+        "bp.alto_recall_pc": 0.166,
+        "bp.tenor_recall_pc": 0.184,
         "bp.bass_kept": 0.584,
         "bp.parallels_per_100": {
-          "value": 2.98,
+          "value": 3.031,
           "tolerance": 0.1,
           "higher_is_better": false
         },
         "bp.spacing_faults": {
-          "value": 2.2,
+          "value": 2.5,
           "tolerance": 0.1,
           "higher_is_better": false
         },
@@ -477,12 +477,12 @@
           "higher_is_better": false
         },
         "bp.impossible": {
-          "value": 0.6,
+          "value": 0.0,
           "tolerance": 0.1,
           "higher_is_better": false
         },
         "bp.uncomfortable": {
-          "value": 1.1,
+          "value": 1.3,
           "tolerance": 0.1,
           "higher_is_better": false
         }
