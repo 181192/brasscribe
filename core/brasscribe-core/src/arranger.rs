@@ -141,6 +141,11 @@ fn nearest_octave(pitch: i32, ranges: &[(i32, i32)], prev: Option<i32>) -> Optio
     None
 }
 
+/// Index after the phrase's largest leap (ties go to the later leap).
+fn leap_cut(phrase: &[Note]) -> usize {
+    (0..phrase.len() - 1).map(|i| ((phrase[i + 1].pitch - phrase[i].pitch).abs(), i + 1)).max().unwrap().1
+}
+
 /// Split a phrase that spans more than `width` semitones at its largest leap,
 /// recursively, so each piece can take its own octave.
 fn split_wide(phrase: Vec<Note>, width: i32) -> Vec<Vec<Note>> {
@@ -149,8 +154,7 @@ fn split_wide(phrase: Vec<Note>, width: i32) -> Vec<Vec<Note>> {
     if phrase.len() < 4 || hi - lo <= width {
         return vec![phrase];
     }
-    // largest leap; ties go to the later one
-    let cut = (0..phrase.len() - 1).map(|i| ((phrase[i + 1].pitch - phrase[i].pitch).abs(), i + 1)).max().unwrap().1;
+    let cut = leap_cut(&phrase);
     let rest = phrase[cut..].to_vec();
     let mut out = split_wide(phrase[..cut].to_vec(), width);
     out.extend(split_wide(rest, width));
@@ -170,30 +174,54 @@ fn place_line_with(notes: &[Note], part: &Part, warnings: &mut Vec<String>, shif
         all = all.into_iter().flat_map(|ph| split_wide(ph, hi - lo)).collect();
     }
     for phrase in all {
-        let prev = placed.last().map(|n| n.pitch);
-        let ps: Vec<i32> = phrase.iter().map(|n| n.pitch + shift_extra).collect();
-        match best_shift(&ps, lo, hi, inst.placement_limit(), prefer_low, prev, bass_overflow_up) {
-            None => {
-                // No single octave fits the whole phrase: per note, the octave nearest the previous note.
-                for n in &phrase {
-                    let last = placed.last().map(|n| n.pitch);
-                    match nearest_octave(n.pitch + shift_extra, &[inst.preferred(), inst.placement_limit()], last) {
-                        None => {
-                            warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start));
-                        }
-                        Some(p) => placed.push(renote(n, p)),
-                    }
-                }
-                warnings.push(format!("{}: phrase at tick {} needed per-note octave fitting", part.name, phrase[0].start));
-            }
-            Some(k) => {
-                for n in &phrase {
-                    placed.push(renote(n, n.pitch + shift_extra + 12 * k));
-                }
-            }
-        }
+        place_phrase(&phrase, part, warnings, shift_extra, prefer_low, bass_overflow_up, &mut placed, false, None);
     }
     hold_small_gaps(placed)
+}
+
+/// Place one phrase at the best single octave; returns the octave shift used (None: per note).
+///
+/// A tune phrase no octave fits, but no wider than the placement limit, is split at its largest
+/// leap and each piece placed on its own, keeping the previous piece's shift (`keep`) wherever it
+/// fits: the line changes octave only where it jumps, so its contour is kept. Bass lines
+/// (`prefer_low`), wider tune phrases and tune pieces under four notes are fitted note by note at
+/// the octave nearest the previous note: their wide leaps are mostly tracker octave errors or
+/// jumps between voices, which this folds back together.
+#[allow(clippy::too_many_arguments)]
+fn place_phrase(phrase: &[Note], part: &Part, warnings: &mut Vec<String>, shift_extra: i32, prefer_low: bool,
+                bass_overflow_up: bool, placed: &mut Vec<Note>, split: bool, keep: Option<i32>) -> Option<i32> {
+    let inst = part.instrument;
+    let (lo, hi) = inst.preferred();
+    let limit = inst.placement_limit();
+    let ps: Vec<i32> = phrase.iter().map(|n| n.pitch + shift_extra).collect();
+    let k = match keep {
+        Some(k) if ps.iter().all(|&p| limit.0 <= p + 12 * k && p + 12 * k <= limit.1) => Some(k),
+        _ => best_shift(&ps, lo, hi, limit, prefer_low, placed.last().map(|n| n.pitch), bass_overflow_up),
+    };
+    if let Some(k) = k {
+        for (n, p) in phrase.iter().zip(&ps) {
+            placed.push(renote(n, p + 12 * k));
+        }
+        return Some(k);
+    }
+    let span = ps.iter().max().unwrap_or(&0) - ps.iter().min().unwrap_or(&0);
+    if !prefer_low && phrase.len() >= 4 && (split || span <= limit.1 - limit.0) {
+        if !split {
+            warnings.push(format!("{}: phrase at tick {} split at its leaps to fit the range", part.name, phrase[0].start));
+        }
+        let cut = leap_cut(phrase);
+        let k = place_phrase(&phrase[..cut], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, true, keep);
+        return place_phrase(&phrase[cut..], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, true, k);
+    }
+    for (n, &p0) in phrase.iter().zip(&ps) {
+        let last = placed.last().map(|n| n.pitch);
+        match nearest_octave(p0, &[inst.preferred(), limit], last) {
+            None => warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start)),
+            Some(p) => placed.push(renote(n, p)),
+        }
+    }
+    warnings.push(format!("{}: phrase at tick {} needed per-note octave fitting", part.name, phrase[0].start));
+    None
 }
 
 /// Inside the instrument's preferred (reading) range.

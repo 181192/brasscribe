@@ -94,7 +94,7 @@ def inside(root: Path, path: Path) -> bool:
 # ------------------------------------------------------------- validation
 
 _DROPPED = re.compile(r"^(?P<part>.+?): dropped (?P<pitch>\d+) at tick (?P<tick>-?\d+)")
-_FITTED = re.compile(r"^(?P<part>.+?): phrase at tick (?P<tick>-?\d+) needed per-note octave fitting")
+_FITTED = re.compile(r"^(?P<part>.+?): phrase at tick (?P<tick>-?\d+) (?:needed per-note octave fitting|split at its leaps to fit the range)")
 
 
 def validation(composition: Path) -> list[dict]:

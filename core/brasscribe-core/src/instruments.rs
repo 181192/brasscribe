@@ -130,7 +130,7 @@ pub static SOPRANO_CORNET: Instrument = Instrument {
 pub static CORNET: Instrument = Instrument {
     id: "bb-cornet", name: "Cornet in B♭", short: "Cnt.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
     pro: (52, 82), comfortable: (52, 79), roles: &[Melody, Countermelody, UpperHarmony, InnerHarmony, RhythmicSupport, Solo],
-    gm_program: 56, musescore_id: "bb-cornet", section: "cornets", sound: "brass.cornet",    reading: Some((55, 79)), reading_limit: Some((52, 84)),
+    gm_program: 56, musescore_id: "bb-cornet", section: "cornets", sound: "brass.cornet",    reading: Some((55, 79)), reading_limit: Some((52, 82)),
 };
 pub static FLUGELHORN: Instrument = Instrument {
     id: "flugelhorn", name: "Flugelhorn in B♭", short: "Flug.", chromatic: -2, diatonic: -1, clef: Clef::Treble,

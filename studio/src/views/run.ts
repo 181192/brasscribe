@@ -260,7 +260,7 @@ type Issue = ValidationIssue & { source: string; upper?: string };
 /** Engine messages speak in ticks; say bar and beat instead. */
 export function plainMessage(w: ValidationIssue): string {
   const where = w.bar ? t("warn.where", { bar: w.bar, beat: w.beat ? Math.round(w.beat * 100) / 100 : 1 }) : "";
-  if (/phrase at tick \d+ needed per-note octave fitting/.test(w.message) && w.part) return t("warn.octaveFit", { part: w.part, where });
+  if (/phrase at tick \d+ (needed per-note octave fitting|split at its leaps to fit the range)/.test(w.message) && w.part) return t("warn.octaveFit", { part: w.part, where });
   return where ? w.message.replace(/\bat tick \d+/, where) : w.message.replace(/\s*at tick \d+/, "");
 }
 

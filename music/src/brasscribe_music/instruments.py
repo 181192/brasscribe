@@ -89,7 +89,7 @@ _INSTRUMENTS = [
     Instrument("eb-soprano-cornet", "Soprano Cornet in E♭", "Sop. Cnt.", 3, 2, "treble", (57, 87), (57, 84),
                frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano", reading=(63, 84)),
     Instrument("bb-cornet", "Cornet in B♭", "Cnt.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 84)),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 82)),
     Instrument("flugelhorn", "Flugelhorn in B♭", "Flug.", -2, -1, "treble", (52, 82), (52, 79),
                frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn", reading=(55, 77)),
     Instrument("eb-tenor-horn", "Tenor Horn in E♭", "Hn.", -9, -5, "treble", (45, 75), (45, 72),

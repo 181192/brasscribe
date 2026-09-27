@@ -92,41 +92,70 @@ def _nearest_octave(pitch: int, ranges: list[tuple[int, int]], prev: int | None)
     return None
 
 
+def _leap_cut(phrase: list[Note]) -> int:
+    """Index after the phrase's largest leap (ties go to the later leap)."""
+    return max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))[1]
+
+
 def _split_wide(phrase: list[Note], width: int) -> list[list[Note]]:
     """Split a phrase that spans more than `width` semitones at its largest leap, recursively,
     so each piece can take its own octave (the line changes octave where it jumps anyway)."""
     ps = [n.pitch for n in phrase]
     if len(phrase) < 4 or max(ps) - min(ps) <= width:
         return [phrase]
-    _, cut = max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))
+    cut = _leap_cut(phrase)
     return _split_wide(phrase[:cut], width) + _split_wide(phrase[cut:], width)
 
 
 def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False,
                 bass_overflow_up: bool = False) -> list[Note]:
     inst = part.instrument
-    placed = []
+    placed: list[Note] = []
     phrases = _phrases(notes)
     if bass_overflow_up:
         width = inst.preferred[1] - inst.preferred[0]
         phrases = [q for ph in phrases for q in _split_wide(ph, width)]
     for phrase in phrases:
-        prev = placed[-1].pitch if placed else None
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev,
-                        bass_overflow_up=bass_overflow_up)
-        if k is None:
-            # No single octave fits the whole phrase: per note, the octave nearest the previous note.
-            for n in phrase:
-                p = _nearest_octave(n.pitch + shift_extra, [inst.preferred, inst.placement_limit], placed[-1].pitch if placed else None)
-                if p is None:
-                    warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
-                    continue
-                placed.append(_moved(n, p))
-            warnings.append(f"{part.name}: phrase at tick {phrase[0].start} needed per-note octave fitting")
-            continue
-        for n in phrase:
-            placed.append(_moved(n, n.pitch + shift_extra + 12 * k))
+        _place_phrase(phrase, part, warnings, shift_extra, prefer_low, bass_overflow_up, placed)
     return _hold_small_gaps(placed)
+
+
+def _place_phrase(phrase: list[Note], part: Part, warnings: list[str], shift_extra: int, prefer_low: bool,
+                  bass_overflow_up: bool, placed: list[Note], split: bool = False, keep: int | None = None) -> int | None:
+    """Place one phrase at the best single octave; returns the octave shift used (None: per note).
+
+    A tune phrase no octave fits, but no wider than the placement limit, is split at its largest
+    leap and each piece placed on its own, keeping the previous piece's shift (`keep`) wherever it
+    fits: the line changes octave only where it jumps, so its contour is kept. Bass lines
+    (`prefer_low`), wider tune phrases and tune pieces under four notes are fitted note by note at
+    the octave nearest the previous note: their wide leaps are mostly tracker octave errors or
+    jumps between voices, which this folds back together.
+    """
+    inst = part.instrument
+    lo, hi = inst.placement_limit
+    pitches = [n.pitch + shift_extra for n in phrase]
+    if keep is not None and all(lo <= p + 12 * keep <= hi for p in pitches):
+        k = keep
+    else:
+        prev = placed[-1].pitch if placed else None
+        k = _best_shift(pitches, *inst.preferred, inst.placement_limit, prefer_low, prev, bass_overflow_up=bass_overflow_up)
+    if k is not None:
+        placed.extend(_moved(n, p + 12 * k) for n, p in zip(phrase, pitches))
+        return k
+    if not prefer_low and len(phrase) >= 4 and (split or max(pitches) - min(pitches) <= hi - lo):
+        if not split:
+            warnings.append(f"{part.name}: phrase at tick {phrase[0].start} split at its leaps to fit the range")
+        cut = _leap_cut(phrase)
+        k = _place_phrase(phrase[:cut], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, True, keep)
+        return _place_phrase(phrase[cut:], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, True, k)
+    for n, p0 in zip(phrase, pitches):
+        p = _nearest_octave(p0, [inst.preferred, inst.placement_limit], placed[-1].pitch if placed else None)
+        if p is None:
+            warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
+            continue
+        placed.append(_moved(n, p))
+    warnings.append(f"{part.name}: phrase at tick {phrase[0].start} needed per-note octave fitting")
+    return None
 
 
 def _hold_small_gaps(notes: list[Note]) -> list[Note]:
