@@ -106,6 +106,7 @@ struct ReviewView: View {
         }
         .sheet(item: $changing) { target in
             ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { reload(keeping: target) }
+                .appAppearance()
         }
         .task { load() }
         // choosing another note stops the bar that is playing

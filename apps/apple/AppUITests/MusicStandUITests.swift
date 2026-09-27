@@ -86,8 +86,8 @@ final class MusicStandUITests: XCTestCase {
     }
 
     /// Page turners send arrows or Page Up / Page Down; Home and End go to the first and last page;
-    /// Esc leaves. (The iOS simulator's key injection delivers the arrows but not Page Up, Page Down,
-    /// Home or End, so those are checked on the Mac.)
+    /// Esc leaves. (The iOS simulator's key injection delivers the arrows and letters but not Page Up,
+    /// Page Down, Home, End or Esc, so those are checked on the Mac.)
     func testPageKeys() throws {
         #if os(iOS)
         guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("hardware-keyboard tests run on iPad and Mac") }
@@ -114,8 +114,12 @@ final class MusicStandUITests: XCTestCase {
         app.safeTypeKey(XCUIKeyboardKey.home.rawValue, modifierFlags: [])
         XCTAssertEqual(position, first, "Home goes to the first page")
         #endif
+        #if os(macOS)
         app.safeTypeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
-        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "Esc leaves the stand")
+        #else
+        app.safeTypeKey("f", modifierFlags: [])  // the simulator's key injection does not deliver Esc either
+        #endif
+        XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "Esc (F on iPad) leaves the stand")
         XCTAssertTrue(app.buttons["playPause"].exists, "and only the stand: the score is still open")
     }
 
@@ -163,14 +167,17 @@ final class MusicStandUITests: XCTestCase {
         let tag = nb ? "-nb" : ""
         #if os(iOS)
         let device = UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
-        let states: [(String, UIDeviceOrientation)] = device == "iphone"
-            ? [("stand", .portrait), ("stand-hidden", .portrait), ("stand", .landscapeLeft), ("stand-locked", .landscapeLeft)]
-            : [("stand", .landscapeLeft), ("stand-hidden", .landscapeLeft), ("stand", .portrait)]
+        // (scene, orientation, extra arguments): the fixture is 12 bars, so the iPad spread uses 2 bars a system to fill two pages
+        let states: [(String, UIDeviceOrientation, [String])] = device == "iphone"
+            ? [("stand", .portrait, []), ("stand-hidden", .portrait, []), ("stand-hint", .portrait, []),
+               ("stand", .landscapeLeft, []), ("stand-locked", .landscapeLeft, [])]
+            : [("stand", .landscapeLeft, []), ("stand-hidden", .landscapeLeft, []), ("stand", .portrait, []),
+               ("stand-spread", .landscapeLeft, ["-stand-bars", "2"])]
         #else
         let device = "macos"
-        let states: [(String, Int)] = [("stand", 0), ("stand-hidden", 0)]
+        let states: [(String, Int, [String])] = [("stand", 0, []), ("stand-hidden", 0, [])]
         #endif
-        for (screen, orientation) in states {
+        for (screen, orientation, extra) in states {
             #if os(iOS)
             XCUIDevice.shared.orientation = orientation
             let hold = orientation == .portrait ? "portrait" : "landscape"
@@ -181,7 +188,7 @@ final class MusicStandUITests: XCTestCase {
             for look in ["light", "dark"] {
                 app.terminate()
                 app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-connection", "connected",
-                                       "-screen", screen, "-appearance", look] + lang
+                                       "-screen", screen == "stand-spread" ? "stand" : screen, "-appearance", look] + lang + extra
                 launch()
                 XCTAssertTrue(element("standScore").waitForExistence(timeout: 60))
                 sleep(6)
@@ -196,5 +203,37 @@ final class MusicStandUITests: XCTestCase {
                 try png.write(to: URL(fileURLWithPath: dir).appending(path: name))
             }
         }
+    }
+
+    /// Settings → Appearance changes the whole app at once: Dark, then Light, then back to Match system.
+    /// With STAND_SHOTS set, it also saves Settings in both.
+    func testAppearanceSetting() throws {
+        #if os(iOS)
+        let nb = ProcessInfo.processInfo.environment["NB"] == "1"
+        app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-connection", "connected",
+                               "-screen", "settings"] + (nb ? ["-AppleLanguages", "(nb)", "-AppleLocale", "nb_NO"] : ["-AppleLanguages", "(en)"])
+        launch()
+        let picker = element("settingAppearance")
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 20))
+        for _ in 0..<6 where !(picker.exists && picker.isHittable) { app.swipeUp() }
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        let names = nb ? ["Mørkt", "Lyst", "Følg systemet"] : ["Dark", "Light", "Match system"]
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
+        for (name, look) in zip(names, ["dark", "light", "system"]) {
+            // an inline picker's options are rows; the row's text is enough to tap
+            let option = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", name)).firstMatch
+            // the form is a lazy list: scroll until the row is on screen
+            for _ in 0..<5 where !(option.exists && option.isHittable) { app.swipeUp() }
+            XCTAssertTrue(option.exists, name)
+            option.safeTap(app)
+            sleep(1)
+            if let dir = ProcessInfo.processInfo.environment["STAND_SHOTS"], look != "system" {
+                let png = XCUIScreen.main.screenshot().pngRepresentation
+                try png.write(to: URL(fileURLWithPath: dir).appending(path: "\(device)\(nb ? "-nb" : "")-settings-appearance-\(look).png"))
+            }
+        }
+        #else
+        throw XCTSkip("the Mac's Settings are not driven by UI tests here")
+        #endif
     }
 }

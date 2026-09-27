@@ -21,7 +21,6 @@ struct MusicStandView: View {
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
     @FocusState private var focus: StandFocus?
     @AccessibilityFocusState private var scoreFocused: Bool
-    @State private var showHint = false
     @State private var editRepeat = false
     @State private var screen: CGRect = .zero
 
@@ -67,7 +66,7 @@ struct MusicStandView: View {
                     .transition(.opacity)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height + Space.s3 } action: { stand.obscured = $0 }
                     .onDisappear { stand.obscured = 0 }
-            } else if showHint {
+            } else if stand.showHint {
                 hint
             }
         }
@@ -86,12 +85,14 @@ struct MusicStandView: View {
             guard !Task.isCancelled, autoHides else { return }
             hideLayer()
         }
-        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model) }
+        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
         // the stand itself takes keyboard focus (like the score screen), so the page keys reach it
         .focusable()
         .focusEffectDisabled()
         .focused($focus, equals: .score)
         // page turners send arrows or Page Up / Page Down (§7); after .focused, so the focused stand gets them
+        // Esc leaves the stand, and only the stand (the score stays open)
+        .onKeyPress(.escape) { leave(); return .handled }
         .onKeyPress(keys: [.rightArrow, .downArrow, .pageDown, .leftArrow, .upArrow, .pageUp, .home, .end]) { press in
             if press.modifiers.contains(.option) {
                 if press.key == .downArrow { model.nextBar(); return .handled }
@@ -159,7 +160,7 @@ struct MusicStandView: View {
     }
 
     private func toggleLayer() {
-        if showHint { showHint = false }
+        if stand.showHint { stand.showHint = false }
         if layerVisible { if canHide { hideLayer() } } else { stand.layerShown = true; stand.interaction += 1 }
     }
 
@@ -168,7 +169,7 @@ struct MusicStandView: View {
         guard canHide else { return }
         if focusInLayer { focus = .score }
         stand.layerShown = false
-        if !hintSeen { hintSeen = true; showHint = true }
+        if !hintSeen { hintSeen = true; stand.showHint = true }
     }
 
     private func touched() { stand.interaction += 1 }
@@ -190,10 +191,11 @@ struct MusicStandView: View {
             HStack(alignment: .top, spacing: Space.s4) {
                 ForEach(shown, id: \.self) { p in
                     StandPageView(model: model, window: stand.window(page: p, model), framed: stand.twoUp, maxHeight: size.height)
+                        .frame(maxWidth: stand.twoUp ? (size.width - Space.s4 * 3) / 2 : .infinity)
                 }
             }
             .padding(.horizontal, stand.twoUp ? Space.s4 : 0)
-            .frame(width: size.width, height: size.height, alignment: .top)
+            .frame(width: size.width, height: size.height, alignment: stand.twoUp ? .topLeading : .top)
             .id(stand.pageIndex)
             .transition(.opacity)
         }
@@ -247,7 +249,9 @@ struct MusicStandView: View {
                 }
             }
             .monospacedDigit()
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(form == .phoneSide ? 2 : nil)
+            .minimumScaleFactor(form == .phoneSide ? 0.8 : 1)
+            .layoutPriority(1)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.updatesFrequently)
             .accessibilityIdentifier("standPosition")

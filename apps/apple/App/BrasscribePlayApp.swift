@@ -25,7 +25,7 @@ struct BrasscribePlayApp: App {
             RootView()
                 .environment(app)
                 .tint(Color.Brasscribe.primary)
-                .preferredColorScheme(LaunchOptions.colorScheme)
+                .appAppearance()
                 .onOpenURL { url in
                     if url.scheme?.lowercased() == "brasscribe" {
                         if let link = PairingLink(url: url) { app.openPairingLink(link) }
@@ -42,6 +42,45 @@ struct BrasscribePlayApp: App {
         #endif
 
     }
+}
+
+/// Settings → Appearance: match the system (the default), or always light or dark. Stored per
+/// device. Increase Contrast still applies on top of either.
+enum AppearanceSetting: String, CaseIterable, Identifiable {
+    case system, light, dark
+    static let key = "appearance"
+    var id: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .system: String(localized: "Match system")
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
+        }
+    }
+
+    /// The scheme to apply: a test's `-appearance` wins, then the setting.
+    static func scheme(stored: String) -> ColorScheme? {
+        LaunchOptions.colorScheme ?? (AppearanceSetting(rawValue: stored) ?? .system).colorScheme
+    }
+}
+
+/// Applies the Appearance setting to a window or a sheet; it changes at once when the setting does.
+struct AppAppearance: ViewModifier {
+    @AppStorage(AppearanceSetting.key) private var stored = AppearanceSetting.system.rawValue
+    func body(content: Content) -> some View { content.preferredColorScheme(AppearanceSetting.scheme(stored: stored)) }
+}
+
+extension View {
+    func appAppearance() -> some View { modifier(AppAppearance()) }
 }
 
 /// Launch arguments for tests and screenshots.
@@ -181,16 +220,21 @@ struct RootView: View {
                 flow
             }
         }
+        #if os(iOS)
+        // the music stand hides the status bar and the home indicator for the whole scene (a split view on iPad)
+        .statusBarHidden(app.standOpen)
+        .persistentSystemOverlays(app.standOpen ? .hidden : .automatic)
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
         .modifier(ConnectionLifecycle())
         .scoreOptionDialogs()
-        .sheet(isPresented: $app.showRecorder) { MicRecordView() }
-        .sheet(isPresented: $app.showSettings) { SettingsView() }
+        .sheet(isPresented: $app.showRecorder) { MicRecordView().appAppearance() }
+        .sheet(isPresented: $app.showSettings) { SettingsView().appAppearance() }
         #if os(macOS)
-        .sheet(isPresented: $app.showCapture) { CaptureView() }
+        .sheet(isPresented: $app.showCapture) { CaptureView().appAppearance() }
         #endif
-        .sheet(isPresented: $app.showFirstRun) { FirstRunView() }
+        .sheet(isPresented: $app.showFirstRun) { FirstRunView().appAppearance() }
         .task {
             // after the split view's navigation stack is in place, or the first path is dropped
             try? await Task.sleep(for: .milliseconds(100))

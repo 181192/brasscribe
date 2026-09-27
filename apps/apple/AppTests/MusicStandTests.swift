@@ -30,10 +30,10 @@ import TranscriptionKit
         ScoreRenderer.System(frame: CGRect(x: 0, y: CGFloat(i) * 120, width: 390, height: 100), measureIDs: ["m\(i)"])
     }
     let bars = Dictionary(uniqueKeysWithValues: (0..<10).map { ("m\($0)", $0) })
-    let single = MusicStand.paginate(systems, height: 380, overlap: true, bars: bars)
+    let single = MusicStand.paginate(systems, height: 400, overlap: true, bars: bars)
     #expect(single.map(\.systems) == [0...2, 2...4, 4...6, 6...8, 8...9])
     #expect(single[1].bars == 2...4)
-    let spread = MusicStand.paginate(systems, height: 380, overlap: false, bars: bars)
+    let spread = MusicStand.paginate(systems, height: 400, overlap: false, bars: bars)
     #expect(spread.map(\.systems) == [0...2, 3...5, 6...8, 9...9])
     // a system taller than the screen still gets a page of its own, and paging moves on
     #expect(MusicStand.paginate(systems, height: 50, overlap: true, bars: bars).count == 10)

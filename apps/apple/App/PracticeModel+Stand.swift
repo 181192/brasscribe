@@ -38,6 +38,8 @@ final class MusicStand {
     private(set) var pageIndex = 0
     var layerShown: Bool
     var rotationLocked = false
+    /// "Tap the music to show the controls.", shown once, the first time the layer hides.
+    var showHint = false
     /// Bumped by every touch or key in the stand; the auto-hide timer starts again from it.
     var interaction = 0
     private var lastBar = -1
@@ -65,7 +67,9 @@ final class MusicStand {
     /// The staff size follows from the bars per system and the width.
     var zoom: CGFloat {
         let perBar = columnWidth / CGFloat(barsPerSystem)
-        return min(2.4, max(0.7, perBar / 112)) * (largerText >= 1 ? 1.1 : 1)
+        // and at least two systems fit a page (a system of one part is about 100 pt at zoom 1)
+        let twoSystems = (viewport.height - Self.pad - Self.topPad) / 2 / 100
+        return max(0.7, min(2.4, perBar / 112, twoSystems)) * (largerText >= 1 ? 1.1 : 1)
     }
 
     func layout(parts: Set<String>?, pitch: PitchMode) -> ScoreRenderer.Layout {
@@ -86,8 +90,10 @@ final class MusicStand {
 
     // MARK: pages
 
-    /// Space kept above the first system and below the last one on a page.
-    nonisolated static let pad: CGFloat = 12
+    /// Space kept below the last system on a page.
+    nonisolated static let pad: CGFloat = 16
+    /// Space kept above the first system: room for the "?" marks the app draws above a staff.
+    nonisolated static let topPad: CGFloat = 36
 
     /// The page's systems, from the engraving.
     func systems(_ model: PracticeModel) -> [ScoreRenderer.System] { model.pages.first?.systems ?? [] }
@@ -108,7 +114,7 @@ final class MusicStand {
         var i = 0
         while i < systems.count {
             var j = i
-            while j + 1 < systems.count, systems[j + 1].frame.maxY - systems[i].frame.minY + 2 * pad <= height { j += 1 }
+            while j + 1 < systems.count, systems[j + 1].frame.maxY - systems[i].frame.minY + pad + topPad <= height { j += 1 }
             let barsOn = systems[i...j].flatMap(\.measureIDs).compactMap { bars[$0] }
             out.append(StandPage(systems: i...j, bars: (barsOn.min() ?? 0)...(barsOn.max() ?? 0)))
             if j == systems.count - 1 { break }
@@ -199,14 +205,17 @@ final class MusicStand {
         let all = pages(model)
         guard all.indices.contains(index) else { return .zero }
         let pg = all[index]
-        let top = sys[pg.systems.lowerBound].frame.minY - Self.pad
+        let top = sys[pg.systems.lowerBound].frame.minY - Self.topPad
         var shift: CGFloat = 0
         if obscured > 0, let s = systemIndex(ofBar: model.currentBar, model), pg.systems.contains(s) {
             let limit = top + viewport.height - obscured
             shift = max(0, sys[s].frame.maxY + Self.pad - limit)
-            shift = min(shift, max(0, sys[s].frame.minY - Self.pad - top))
+            shift = min(shift, max(0, sys[s].frame.minY - Self.topPad - top))
         }
-        let bottom = sys[pg.systems.upperBound].frame.maxY + Self.pad + shift
+        var bottom = sys[pg.systems.upperBound].frame.maxY + Self.pad
+        // nothing of the next system (its bar number) peeks in under the page
+        if sys.indices.contains(pg.systems.upperBound + 1) { bottom = min(bottom, sys[pg.systems.upperBound + 1].frame.minY - Self.topPad) }
+        bottom += shift
         return CGRect(x: 0, y: top + shift, width: model.pages.first?.svg.size.width ?? 0, height: max(0, bottom - top - shift))
     }
 

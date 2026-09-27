@@ -631,6 +631,16 @@
         }
       }
     },
+    "Appearance": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utseende"
+          }
+        }
+      }
+    },
     "Arrange again on this device": {
       "localizations": {
         "nb": {
@@ -1331,6 +1341,16 @@
         }
       }
     },
+    "Dark": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mørkt"
+          }
+        }
+      }
+    },
     "Delete": {
       "localizations": {
         "nb": {
@@ -1851,6 +1871,16 @@
         }
       }
     },
+    "Increase contrast is on, so Brasscribe uses its high-contrast colours.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene."
+          }
+        }
+      }
+    },
     "Input level": {
       "localizations": {
         "nb": {
@@ -2071,6 +2101,16 @@
         }
       }
     },
+    "Light": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyst"
+          }
+        }
+      }
+    },
     "Lineup": {
       "localizations": {
         "nb": {
@@ -2287,6 +2327,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lager lyden"
+          }
+        }
+      }
+    },
+    "Match system": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følg systemet"
           }
         }
       }
@@ -5216,7 +5266,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skriver ned notene"
+            "value": "Skriver ned tonene"
           }
         }
       }

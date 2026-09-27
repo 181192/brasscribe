@@ -164,9 +164,10 @@ struct PracticeView: View {
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showParts = false } } }
             }
             .presentationDetents([.medium, .large])
+            .appAppearance()
         }
-        .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
-        .sheet(isPresented: $showExport) { ExportView(model: model) }
+        .sheet(isPresented: $showTalking) { TalkingScoreView(model: model).appAppearance() }
+        .sheet(isPresented: $showExport) { ExportView(model: model).appAppearance() }
         .alert(String(localized: "The sound can't play"), isPresented: Binding(get: { model.loadError != nil }, set: { _ in })) {
             Button("OK") {}
         } message: { Text("The score is still here to read. Try closing and opening it again.") }
@@ -611,7 +612,7 @@ struct PlayerBar: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("loopToggle")
         .accessibilityValue(model.looping ? Text("Bars \(min(model.loopFrom, model.loopTo) + 1) to \(max(model.loopFrom, model.loopTo) + 1)") : Text("Off"))
-        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model) }
+        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
 
         Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
         Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")

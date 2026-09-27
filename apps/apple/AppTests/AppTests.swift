@@ -2,6 +2,7 @@ import Testing
 import AVFoundation
 import Foundation
 import ScoreKit
+import SwiftUI
 import TranscriptionKit
 @testable import BrasscribePlay
 
@@ -183,4 +184,16 @@ func testVideo() -> URL? {
     let after = ReviewList.items(score: again, composition: edited, uncertainty: UncertaintyIndex(composition: edited))
     #expect(!after.contains { $0.id == first.id })
     #expect(after.count == items.count - 1)
+}
+
+/// Settings → Appearance: Match system (the default and anything unknown) leaves the scheme to the
+/// system; Light and Dark force it.
+@Test @MainActor func appearanceSettingMapsToAColorScheme() {
+    guard LaunchOptions.colorScheme == nil else { return }  // a test run with -appearance overrides the setting
+    #expect(AppearanceSetting.scheme(stored: "system") == nil)
+    #expect(AppearanceSetting.scheme(stored: "light") == .light)
+    #expect(AppearanceSetting.scheme(stored: "dark") == .dark)
+    #expect(AppearanceSetting.scheme(stored: "something else") == nil)
+    #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark"])
+    #expect(AppearanceSetting.allCases.map(\.title).allSatisfy { !$0.isEmpty })
 }

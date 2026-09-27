@@ -167,7 +167,7 @@ NB = {
     "Vocals or lead with bass, drums and keys.": "Sang eller melodi med bass, trommer og tangenter.",
     "What is this?": "Hva er dette?",
     "Working": "Jobber",
-    "Writing down the notes": "Skriver ned notene",
+    "Writing down the notes": "Skriver ned tonene",
     "Written": "Notert",
     "Your computer": "Datamaskinen din",
     "Your scores appear here.": "Partiturene dine vises her.",
@@ -508,6 +508,12 @@ NB = {
     "bars %lld to %lld": "takt %lld til %lld",
     "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": "Klikk på Brasscribe-merket i menylinjen (Mac) eller i hjørnet av oppgavelinjen (Windows) på datamaskinen, og velg Koble til en telefon.",
     "Without Brasscribe Bandroom, start the engine with “brasscribe serve --lan”.": "Uten Brasscribe Bandroom starter du motoren med «brasscribe serve --lan».",
+    # Settings → Display → Appearance
+    "Appearance": "Utseende",
+    "Match system": "Følg systemet",
+    "Light": "Lyst",
+    "Dark": "Mørkt",
+    "Increase contrast is on, so Brasscribe uses its high-contrast colours.": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene.",
     # the music stand (design/music-stand.md §9)
     "%@ · %@ · bar %lld · %@": "%1$@ · %2$@ · takt %3$lld · %4$@",
     "%@ · bar %lld · %@": "%1$@ · takt %2$lld · %3$@",

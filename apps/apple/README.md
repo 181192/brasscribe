@@ -54,7 +54,15 @@ and skip themselves when it is missing.
 | ⌘+ / ⌘- | Zoom |
 | ⇧⌘P / ⇧⌘T / ⇧⌘E | Parts and sound / talking score / export |
 
+| F | Music stand (again to leave); View › Music Stand on the Mac. ⌃⌘F stays the window's own full screen |
+
 The Playback menu lists the same keys.
+
+In the music stand (`App/Views/MusicStandView.swift`, design/music-stand.md): → ↓ Page Down turn to the
+next page and ← ↑ Page Up to the previous one (what Bluetooth page turners send), Home and End go to the first
+and last page, Option-↓ ↑ move by bar, Space plays and pauses, and Esc or F leaves. Stand screenshots:
+`docs/screenshots/*stand*`, taken by `MusicStandUITests.testScreenshots` (set `TEST_RUNNER_STAND_SHOTS` to
+the folder and `TEST_RUNNER_NB=1` for Norwegian).
 
 ## Notes
 

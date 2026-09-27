@@ -11,6 +11,8 @@ struct SettingsView: View {
     @State private var busy = false
     @State private var modelTick = 0
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
+    @AppStorage(AppearanceSetting.key) private var appearance = AppearanceSetting.system.rawValue
+    @Environment(\.colorSchemeContrast) private var contrast
     @AppStorage(StandSettings.followKey) private var standTurnPages = true
     @AppStorage(StandSettings.keepControlsKey) private var standKeepControls = false
 
@@ -37,6 +39,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppearanceSetting.allCases) { a in Text(a.title).tag(a.rawValue) }
+                    } label: { Text("Appearance") }
+                    .pickerStyle(.inline)
+                    .accessibilityIdentifier("settingAppearance")
+                    if contrast == .increased {
+                        // Increase Contrast wins: the choice stays, with the high-contrast colours in either mode
+                        Text("Increase contrast is on, so Brasscribe uses its high-contrast colours.")
+                            .font(Font.Brasscribe.callout)
+                            .foregroundStyle(Color.Brasscribe.textMuted)
+                    }
                     Toggle(isOn: $standTurnPages) { Text("Turn the pages while playing") }
                         .accessibilityIdentifier("settingStandTurnPages")
                     Toggle(isOn: $standKeepControls) { Text("Keep the stand controls visible") }
@@ -79,7 +92,10 @@ struct SettingsView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             #endif
         }
+        #if os(macOS)
+        // the Mac sheet's size; on a phone the sheet is the screen's width
         .frame(minWidth: 480, minHeight: 520)
+        #endif
     }
 
     var modelStatus: String {
