@@ -6,9 +6,10 @@ import ScoreKit
 ///
 /// Graph:
 /// ```
-/// sequencer tracks ─▶ one AVAudioUnitSampler per part ────▶ AVAudioEnvironmentNode (seat + hall) ─┐
-/// metronome track  ─▶ metronome sampler ─────────────────────────────────────────────────────────├▶ main mixer
-/// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch (speed without pitch change) ────┘
+/// sequencer tracks ─▶ one AVAudioUnitSampler per part ─▶ AVAudioEnvironmentNode (seat + hall) ─▶ band bus
+/// band bus ─▶ output stage (make-up gain + soft limiter) ────────────────────────────────────┐
+/// metronome track  ─▶ metronome sampler ─────────────────────────────────────────────────────├▶ main mixer
+/// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch (speed without pitch change) ─┘
 /// ```
 /// Positions are in quarter-note beats from the start of bar 1, shared by score and
 /// original; the Composition's tempo map converts to seconds in the recording.
@@ -73,6 +74,18 @@ public final class PlaybackEngine {
     public private(set) var convolution: ConvolutionReverbAU?
     public var usesRoomIR: Bool { convolution != nil }
 
+    /// Make-up gain on the band, before the soft limiter. The presets are level-matched to
+    /// −24 LUFS and the parts sit metres away in the environment node, so the full-band test
+    /// phrase (sounds/phrases.py) peaks near −27 dBFS at unity; this brings it to about −1 dBFS
+    /// and a solo cornet to about −11. The metronome (about −10 dBFS) and the original
+    /// recording have their own level and bypass the stage.
+    public static let defaultOutputGainDB = 26.0
+    public var outputGainDB: Double = PlaybackEngine.defaultOutputGainDB {
+        didSet { outputStage?.kernel.gain = Float(pow(10, outputGainDB / 20)) }
+    }
+    let bandBus = AVAudioMixerNode()
+    public private(set) var outputStage: OutputStageAU?
+
     public init(score: Score, tempoMap: TempoMap? = nil, originalURL: URL? = nil,
                 soundBank: SoundBank = .locate(), roomIR: URL? = RoomIR.locate(), offlineFormat: AVAudioFormat? = nil) throws {
         self.score = score
@@ -81,10 +94,20 @@ public final class PlaybackEngine {
         if let f = offlineFormat {
             try engine.enableManualRenderingMode(.offline, format: f, maximumFrameCount: 4096)
         }
-        let out = engine.mainMixerNode
+        let main = engine.mainMixerNode
         engine.attach(environment)
-        let stereo = AVAudioFormat(standardFormatWithSampleRate: out.outputFormat(forBus: 0).sampleRate > 0
-                                   ? out.outputFormat(forBus: 0).sampleRate : 44100, channels: 2)!
+        let stereo = AVAudioFormat(standardFormatWithSampleRate: main.outputFormat(forBus: 0).sampleRate > 0
+                                   ? main.outputFormat(forBus: 0).sampleRate : 44100, channels: 2)!
+        // the band's own bus, through the output stage into the main mixer
+        engine.attach(bandBus)
+        _ = OutputStageAU.registered
+        let stage = AVAudioUnitEffect(audioComponentDescription: OutputStageAU.componentDescription)
+        engine.attach(stage)
+        engine.connect(bandBus, to: stage, format: stereo)
+        engine.connect(stage, to: main, format: stereo)
+        outputStage = stage.auAudioUnit as? OutputStageAU
+        outputStage?.kernel.gain = Float(pow(10, outputGainDB / 20))
+        let out = bandBus
         if let irURL = roomIR, let (ch, sr) = try? RoomIR.load(irURL) {
             // Direct sound from the environment node, reverberant field from the room IR.
             _ = ConvolutionReverbAU.registered
@@ -129,7 +152,7 @@ public final class PlaybackEngine {
             if soundBank.load(into: s, part: part) { loadedInstruments += 1 }
         }
         engine.attach(metronome)
-        engine.connect(metronome, to: out, format: nil)
+        engine.connect(metronome, to: main, format: nil)
         loadMetronome()
 
         engine.attach(player)
@@ -138,10 +161,10 @@ public final class PlaybackEngine {
             let f = try AVAudioFile(forReading: originalURL)
             originalFile = f
             engine.connect(player, to: timePitch, format: f.processingFormat)
-            engine.connect(timePitch, to: out, format: f.processingFormat)
+            engine.connect(timePitch, to: main, format: f.processingFormat)
         } else {
             engine.connect(player, to: timePitch, format: nil)
-            engine.connect(timePitch, to: out, format: nil)
+            engine.connect(timePitch, to: main, format: nil)
         }
 
         sequencer = AVAudioSequencer(audioEngine: engine)

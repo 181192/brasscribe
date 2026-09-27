@@ -78,6 +78,12 @@ The Playback menu lists the same keys.
   convolution in an AUAudioUnit), calibrated to +4.5 dB wet-to-direct at the audience seat (measured
   4.48 dB on the golden band recording). Without those files the app falls back to MuseScore_General.sf2 (or the system
   DLS) and the environment node's hall reverb.
+- **Output level.** The presets are level-matched to −24 LUFS, so the band goes through an output stage
+  (`OutputStageAU`): +26 dB of make-up gain, then a memoryless tanh soft limiter above 0.8 with a 0.98
+  ceiling, the same shape as the Windows player. The full-band test phrase peaks at about −1 dBFS and a
+  solo cornet at about −11. The limiter has no attack or release, so it never pumps at the Stop fade,
+  and below the threshold Mute and Only this keep the balance. The metronome and the original recording
+  bypass it.
 - **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
   and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
   whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
