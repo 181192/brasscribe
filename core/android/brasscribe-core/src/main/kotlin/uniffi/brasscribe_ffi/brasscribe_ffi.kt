@@ -2960,6 +2960,11 @@ data class SoloContour (
     var `pitchHz`: List<kotlin.Double>
     , 
     var `loudnessDb`: List<kotlin.Double>
+    , 
+    /**
+     * SwiftF0 voicing confidence per frame (for the notes' calibrated confidence).
+     */
+    var `confidence`: List<kotlin.Double>? = null 
     
 ){
     
@@ -2979,19 +2984,22 @@ public object FfiConverterTypeSoloContour: FfiConverterRustBuffer<SoloContour> {
             FfiConverterSequenceDouble.read(buf),
             FfiConverterSequenceDouble.read(buf),
             FfiConverterSequenceDouble.read(buf),
+            FfiConverterOptionalSequenceDouble.read(buf),
         )
     }
 
     override fun allocationSize(value: SoloContour) = (
             FfiConverterSequenceDouble.allocationSize(value.`times`) +
             FfiConverterSequenceDouble.allocationSize(value.`pitchHz`) +
-            FfiConverterSequenceDouble.allocationSize(value.`loudnessDb`)
+            FfiConverterSequenceDouble.allocationSize(value.`loudnessDb`) +
+            FfiConverterOptionalSequenceDouble.allocationSize(value.`confidence`)
     )
 
     override fun write(value: SoloContour, buf: ByteBuffer) {
             FfiConverterSequenceDouble.write(value.`times`, buf)
             FfiConverterSequenceDouble.write(value.`pitchHz`, buf)
             FfiConverterSequenceDouble.write(value.`loudnessDb`, buf)
+            FfiConverterOptionalSequenceDouble.write(value.`confidence`, buf)
     }
 }
 
@@ -3701,6 +3709,38 @@ public object FfiConverterOptionalSequenceUInt: FfiConverterRustBuffer<List<kotl
         } else {
             buf.put(1)
             FfiConverterSequenceUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceDouble: FfiConverterRustBuffer<List<kotlin.Double>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.Double>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceDouble.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.Double>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceDouble.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<kotlin.Double>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceDouble.write(value, buf)
         }
     }
 }

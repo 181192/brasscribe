@@ -181,6 +181,7 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
             times: floats(&c["times"]),
             pitch_hz: floats(&c["pitch_hz"]),
             loudness_db: floats(&c["loudness_db"]),
+            confidence: c.get("confidence").filter(|v| v.is_array()).map(floats),
         }),
         free_time: flag("free_time"),
         free_tempo: opts.get("free_tempo").and_then(|v| v.as_f64()),
