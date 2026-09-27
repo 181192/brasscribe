@@ -22,6 +22,7 @@ Some inputs come from outside git and are used only when present:
 | `third_party/onnxruntime/onnxruntime-android-reduced.aar` | `scripts/ort/build-reduced-ort.sh <work dir>` (builds both ABIs, then merges them into the AAR) | Reduced-operator ONNX Runtime 1.30.0 (only the kernels of the three models, `scripts/ort/ops.config`). Without it the full Maven build is used |
 | `data/golden/mikkel-arranged-band/` | the golden output | JVM tests only (never packaged). Tests that need it skip themselves when it is missing |
 | `third_party/sfizz` | `scripts/fetch-sfizz.sh` (sfizz 1.2.3) | The realistic playback tier. Without it the native library builds a stub and the tier is shown as unavailable. You can also pass `-Pbrasscribe.sfizzDir=<checkout>` |
+| `data/sounds/band/brasscribe-band-mobile.sf2` | `pixi run fetch-sounds` at the repository root (the pack pinned in `sounds/band-sounds.json`; needs `gh auth login`) | Bundled in every build as `assets/sounds/` (77 MB): the band plays its own instruments with no download. Without it the app says the band sounds are missing. Release builds in CI fetch it first and stop if they cannot |
 
 ## Modules
 

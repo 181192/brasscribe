@@ -152,21 +152,23 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      # Self-contained (.NET and Windows App SDK) so it runs without installing either runtime.
-      # The band sounds are built, not in git (sounds/tools/band_sounds.py). A release without them
-      # would play only the basic tier, so the build stops here instead.
-      - name: Fetch and verify the band sounds
+      # The band sounds are not in git: the pinned pack (sounds/band-sounds.json) is fetched from this
+      # repository's release and bundled. A release without them would play only the basic tier, so
+      # the build stops here instead.
+      - name: Band sounds (16-bit SoundFont)
         if: ${{ inputs.release }}
-        env:
-          BRASSCRIBE_BAND_SOUNDS_URL: ${{ vars.BRASSCRIBE_BAND_SOUNDS_URL }}
-        run: python "${{ github.workspace }}/sounds/tools/band_sounds.py" fetch
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-16bit.sf2
 
+      # Self-contained (.NET and Windows App SDK) so it runs without installing either runtime.
       - name: Release build (self-contained, x64)
         if: ${{ inputs.release }}
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
           dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
+          if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-play-windows-x64.zip"
 
@@ -207,6 +209,12 @@ jobs:
           dotnet test tests/Brasscribe.Bandroom.Core.Tests -c $env:CONFIGURATION
           --logger "trx;LogFileName=bandroom-core.trx" --results-directory "$env:RUNNER_TEMP/bandroom-results"
 
+      # Studio, served by the engine, plays the band SoundFont Bandroom bundles (band\ next to the exe).
+      - name: Band sounds (16-bit SoundFont)
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-16bit.sf2
+
       - name: Build Bandroom (WinUI 3, unpackaged, x64)
         run: dotnet build src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
 
@@ -215,7 +223,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
-          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/brasscribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py")) {
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/brasscribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "band/mapping.json", "band/NOTICE.txt")) {
             if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
           }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
@@ -274,6 +282,9 @@ jobs:
           $base = "http://127.0.0.1:$($engine.port)"
           $auth = @{ Authorization = "Bearer $token" }
           Invoke-RestMethod "$base/v1/health" | ConvertTo-Json
+          # The bundled band sounds reach Studio through BRASSCRIBE_BAND_SOUNDS_DIR.
+          $sf2 = Invoke-WebRequest -Method Head "$base/assets/band/brasscribe-band.sf2"
+          if ($sf2.StatusCode -ne 200) { throw "the engine does not serve the band SoundFont" }
           Invoke-RestMethod "$base/v1/devices" -Headers $auth | ConvertTo-Json
           $pair = Invoke-RestMethod -Method Post "$base/v1/pairing" -Headers $auth -ContentType "application/json" -Body '{"ttl_s":null,"single_use":true,"extend":false}'
           $pair | ConvertTo-Json
