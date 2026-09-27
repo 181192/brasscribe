@@ -24,7 +24,7 @@ class KtorEngineApiTest {
         val engine = MockEngine { req ->
             seen += req.headers[HttpHeaders.Authorization]
             when (req.url.encodedPath) {
-                "/v1/pair" -> respond("""{"token":"t0k"}""", HttpStatusCode.OK, json)
+                "/v1/pair" -> respond("""{"token":"t0k","device_id":"d1","server_id":"s1","server_name":"Brasscribe on studio"}""", HttpStatusCode.OK, json)
                 "/v1/jobs/r1" -> respond(job, HttpStatusCode.OK, json)
                 else -> respond("", HttpStatusCode.NotFound)
             }

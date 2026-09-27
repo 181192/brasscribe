@@ -34,8 +34,8 @@ class FixtureEngineApi(
     private val cancelled = ConcurrentHashMap.newKeySet<String>()
     private val counter = AtomicInteger()
 
-    override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false)
-    override suspend fun pair(code: String, deviceName: String?) = PairResponse("fixture-token")
+    override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false, serverId = "fixture", serverName = "Brasscribe on fixture")
+    override suspend fun pair(code: String, deviceName: String?) = PairResponse("fixture-token", deviceId = "fixture", serverId = "fixture", serverName = "Brasscribe on fixture")
 
     override suspend fun profiles(): List<ProfileInfo> = Profile.entries.map {
         ProfileInfo(it.id, it.id, "Golden Mikkel output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))

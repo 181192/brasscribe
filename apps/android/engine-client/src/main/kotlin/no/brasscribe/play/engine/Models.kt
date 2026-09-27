@@ -14,14 +14,25 @@ data class Health(
     val version: String,
     val device: String,
     @SerialName("auth_required") val authRequired: Boolean,
+    @SerialName("server_id") val serverId: String,
+    @SerialName("server_name") val serverName: String,
     val status: String = "ok",
 )
 
 @Serializable
-data class PairRequest(val code: String, @SerialName("device_name") val deviceName: String? = null)
+data class PairRequest(
+    val code: String,
+    @SerialName("device_name") val deviceName: String? = null,
+    val platform: String? = null,
+)
 
 @Serializable
-data class PairResponse(val token: String)
+data class PairResponse(
+    val token: String,
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("server_id") val serverId: String,
+    @SerialName("server_name") val serverName: String,
+)
 
 @Serializable
 data class ProfileInfo(

@@ -64,6 +64,12 @@ interface EngineApi {
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob",
+            "getConformanceRun", "runConformance",
+            // Device management and status belong to the desktop helper on the engine's computer.
+            "getStatus", "listDevices", "revokeDevice", "getPairing", "openPairing", "closePairing",
+            "listPairingRequests", "decidePairingRequest",
+            // Not called by this client yet: pair once / approve on the computer / heartbeat.
+            "getThisDevice", "rotateDeviceToken", "unpairThisDevice", "requestPairing", "pollPairingRequest",
         )
     }
 }
