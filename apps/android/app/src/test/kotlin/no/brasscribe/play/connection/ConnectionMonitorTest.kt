@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -117,6 +118,23 @@ class ConnectionMonitorTest {
         assertEquals(ConnectionState.Offline(paired = true), m.state.value)
         m.retry()
         assertEquals(ConnectionState.Reconnecting(name), m.state.value)
+    }
+
+    @Test
+    fun comingBackAfterGivingUpTriesQuietly() = runTest {
+        var up = false
+        val host = FakeHost(Target("s1", name, "http://a")) { if (up) Check.Ok() else Check.Unreachable }
+        val m = monitor(host)
+        m.start(); advanceTimeBy(200_000)
+        m.stop()
+        val seen = mutableListOf<ConnectionState>()
+        backgroundScope.launch { m.state.collect { seen += it } }
+        runCurrent()
+        m.start(); advanceTimeBy(60_000)
+        assertEquals("no flip to looking for", listOf<ConnectionState>(ConnectionState.Offline(paired = true)), seen)
+        up = true
+        m.stop(); m.start(); runCurrent()
+        assertEquals(ConnectionState.Connected(name), m.state.value)
     }
 
     @Test

@@ -43,7 +43,15 @@ class ClipPlayer : ClipOutput {
     }
 
     override fun stop() {
-        track?.run { runCatching { stop() }; release() }
+        track?.run {
+            // Stopping mid-waveform clicks: fade out over about 15 ms first.
+            if (playState == AudioTrack.PLAYSTATE_PLAYING) for (step in 4 downTo 0) {
+                runCatching { setVolume(step / 5f) }
+                Thread.sleep(3)
+            }
+            runCatching { stop() }
+            release()
+        }
         track = null
     }
 

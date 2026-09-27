@@ -73,7 +73,10 @@ class ConnectionMonitor(
         if (job?.isActive == true) return
         // Once given up or told to pair again, only the user (or a network change) starts it again.
         if (_state.value is ConnectionState.NeedsPairing) return
-        job = scope.launch { run() }
+        // Back in front after giving up: one quiet try, so the row does not flip to "looking for" on every
+        // return (or rotation). "Connect" and a network change search properly.
+        val quiet = _state.value == ConnectionState.Offline(paired = true)
+        job = scope.launch { run(quiet) }
     }
 
     @Synchronized
@@ -106,7 +109,7 @@ class ConnectionMonitor(
         }
     }
 
-    private suspend fun run() {
+    private suspend fun run(quiet: Boolean = false) {
         var failingSince: Long? = null
         var failures = 0
         var backoff = FIRST_BACKOFF_MS
@@ -147,6 +150,7 @@ class ConnectionMonitor(
                     return
                 }
                 Check.Unreachable -> {
+                    if (quiet) return
                     val since = failingSince ?: now().also { failingSince = it }
                     if (now() - since >= giveUpMs) {
                         _state.value = ConnectionState.Offline(paired = true)
