@@ -378,6 +378,7 @@
     <string name="stand_position">Bar %1$d · page %2$d of %3$d</string>
     <string name="stand_position_line">%1$s · bar %2$d · page %3$d of %4$d</string>
     <string name="stand_position_tablet">%1$s · %2$s · bar %3$d · page %4$d of %5$d</string>
+    <string name="stand_position_tablet_spread">%1$s · %2$s · bar %3$d · pages %4$d–%5$d of %6$d</string>
     <string name="stand_prev_page">Previous page</string>
     <string name="stand_next_page">Next page</string>
     <string name="stand_slower">Slower</string>

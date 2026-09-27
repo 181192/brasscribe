@@ -376,6 +376,7 @@
     <string name="stand_position">Takt %1$d · side %2$d av %3$d</string>
     <string name="stand_position_line">%1$s · takt %2$d · side %3$d av %4$d</string>
     <string name="stand_position_tablet">%1$s · %2$s · takt %3$d · side %4$d av %5$d</string>
+    <string name="stand_position_tablet_spread">%1$s · %2$s · takt %3$d · side %4$d–%5$d av %6$d</string>
     <string name="stand_prev_page">Forrige side</string>
     <string name="stand_next_page">Neste side</string>
     <string name="stand_slower">Saktere</string>

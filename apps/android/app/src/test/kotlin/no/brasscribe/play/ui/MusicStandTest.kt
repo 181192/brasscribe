@@ -82,6 +82,42 @@ class MusicStandTest {
     }
 
     @Test
+    fun aSpreadShowsTwoPagesAndTurnsTheRightPageToTheLeft() {
+        // Five systems a page, no overlap: 12 systems make 3 pages (5, 5, 2).
+        val p = StandPages(systems(12, bars = 4), viewport = 520f, spread = true)
+        assertEquals(listOf(0 to 4, 5 to 9, 10 to 11), p.pages.map { it.first to it.last })
+        // The last view is the last two pages.
+        assertEquals(1, p.lastLeft)
+        assertEquals(1, p.clamp(2))
+        assertEquals(1..40, p.bars(0))
+        assertEquals(21..48, p.bars(1))
+        // A bar on the right-hand page is in view; playback turns when the cursor reaches it.
+        assertEquals(0, p.pageShowing(0, 30))
+        assertEquals(0, p.followPlayback(0, 20))
+        assertEquals(1, p.followPlayback(0, 21))
+        assertEquals(1, p.followPlayback(1, 48))
+        // The page of a bar is a left-hand page.
+        assertEquals(1, p.pageOf(45))
+        // The right page is drawn from anywhere: its window starts at its own top system.
+        assertEquals(500f, p.windowTop(1, null, scrollable = false))
+    }
+
+    @Test
+    fun pagesAfterTheFirstNeverShowTheTitle() {
+        // The first system starts below a title block; later pages start at their top system.
+        val sys = listOf(StandSystem(300f, 400f, 1, 3)) + (1 until 10).map { i -> StandSystem(300f + i * 100, 400f + i * 100, i * 3 + 1, i * 3 + 3) }
+        val p = StandPages(sys, viewport = 600f, content = 1300f)
+        // Page 1 keeps the title (the window starts at 0); page 2 starts at its system.
+        assertEquals(0f, p.windowTop(0, null))
+        assertEquals(0f..600f, p.visible(0, 0f))
+        // The last page cannot scroll past the engraving: paper covers what is above its first system.
+        val last = p.count - 1
+        val top = p.windowTop(last, null)
+        assertTrue(p.visible(last, top).start >= p.systems[p.pages[last].first].top - top)
+        assertTrue(p.visible(last, top).start > 0f)
+    }
+
+    @Test
     fun keysTurnPagesAsPageTurnersSendThem() {
         val r = MusicStandRules
         for (k in listOf(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_PAGE_DOWN)) assertEquals(StandCommand.NEXT_PAGE, r.command(k))

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -301,9 +302,9 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
     // The pages follow every new layout (a turn, Only my part, zoom): the place is kept as a bar.
     val renders by controller.renders.collectAsState()
-    LaunchedEffect(ms.open, renders, ms.viewport) {
+    LaunchedEffect(ms.open, renders, ms.viewport, shape.spread) {
         ms.pages = if (ms.open && ms.viewport > 0f) controller.standSystems().let { sys ->
-            StandPages(sys, ms.viewport, maxOf(controller.standContentHeight(), sys.lastOrNull()?.bottom ?: 0f)) }.takeIf { it.count > 0 } else null
+            StandPages(sys, ms.viewport, maxOf(controller.standContentHeight(), sys.lastOrNull()?.bottom ?: 0f), spread = shape.spread) }.takeIf { it.count > 0 } else null
     }
     // Playback turns the pages (Settings can turn that off); a bar moved by hand brings its page.
     LaunchedEffect(ms.open, st.bar, ms.pages) {
@@ -407,7 +408,10 @@ fun ScoreScreen(vm: PlayViewModel) {
                     AndroidView(
                         factory = { controller.view },
                         // On the stand the surface over it is the score for TalkBack (with page actions).
-                        modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
+                        modifier = if (performance) Modifier.fillMaxHeight()
+                            // A spread lays the engraving out at one page's width; the right page mirrors it.
+                            .then(if (shape.spread) Modifier.fillMaxWidth(0.5f).padding(end = StandGutter / 2) else Modifier.fillMaxWidth())
+                            .clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText

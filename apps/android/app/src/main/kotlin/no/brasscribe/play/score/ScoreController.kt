@@ -130,6 +130,7 @@ class ScoreController(
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
         view.api.postRenderFinished.on {
             applyVolumes(); overlays().forEach { it.refresh() }
+            hideCredit()
             // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
             view.post { _renders.value++ }
         }
@@ -191,6 +192,24 @@ class ScoreController(
                 bars[0].index.toInt() + 1, bars[bars.length.toInt() - 1].index.toInt() + 1)
         }
     }
+
+    /**
+     * alphaTab signs every engraving with "rendered by alphaTab" under the last system. The score is the
+     * music alone (alphaTab is credited in About, as with BarSnippet), so the surface is cut off there.
+     */
+    private fun hideCredit() {
+        val surface = view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface) ?: return
+        val systems = view.api.boundsLookup?.staffSystems
+        if (systems == null || systems.length.toInt() == 0) { surface.clipBounds = null; return }
+        // The system's real bounds take in the credit line; its visual bounds end with the music.
+        val b = systems[systems.length.toInt() - 1].visualBounds
+        val d = view.resources.displayMetrics.density
+        val bottom = ((b.y + b.h + CREDIT_GAP) * d).toInt()
+        surface.clipBounds = android.graphics.Rect(0, 0, maxOf(surface.width, 1) * 4, bottom)
+    }
+
+    /** The right-hand page of the stand's spread: a second window onto this engraving. */
+    val mirror: StandMirror by lazy { StandMirror(view.context, view) }
 
     /** Height of the engraving in view pixels. */
     fun standContentHeight(): Float = view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface)?.height?.toFloat() ?: 0f
@@ -635,3 +654,5 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
 )
 
 private const val STOP_FADE_MS = 80L
+/** Room under the last system's music (dynamics, low stems) before the credit line starts. */
+private const val CREDIT_GAP = 8.0
