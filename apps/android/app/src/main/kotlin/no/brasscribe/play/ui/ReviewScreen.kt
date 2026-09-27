@@ -637,7 +637,8 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
     }
     var height by remember { mutableStateOf(128f) }
     androidx.compose.runtime.DisposableEffect(snippet) {
-        snippet.onStaffBottom = { bottom -> snippet.view.post { height = bottom + 6f } }
+        // alphaTab's credit line overlaps the system's bottom edge by ~1.5 dp; the dynamics end ~5 dp above it.
+        snippet.onStaffBottom = { bottom -> snippet.view.post { height = bottom - 3f } }
         onDispose { snippet.onStaffBottom = {} }
     }
     androidx.compose.runtime.LaunchedEffect(musicXml, bar, offsetQuarters, barCount) { snippet.show(musicXml, bar, offsetQuarters, barCount) }
