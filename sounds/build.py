@@ -40,7 +40,7 @@ MAPPING = HERE / "mapping.json"
 # Nominal dynamic of each layer, by number of layers available (softest first).
 LAYER_DYNAMICS = {1: ["mf"], 2: ["p", "f"], 3: ["pp", "mf", "ff"], 4: ["p", "mf", "f", "ff"]}
 DYN_VELOCITY = {"pp": 30, "p": 48, "mf": 80, "f": 100, "ff": 116}
-# Loudest 300 ms window RMS of each baked sample, dBFS.
+# Level of each baked sample, dBFS: sustain RMS over 80 ms-1.0 s (body_db), staccato loudest 80 ms.
 DYN_LEVEL_DB = {"pp": -30.0, "p": -26.0, "mf": -21.0, "f": -18.5, "ff": -16.0}
 VEL_SPAN_DB = 6.0  # extra dB-linear velocity scaling inside the layers (same in SFZ and SF2)
 MAX_STRETCH = 3  # semitones a sample may be transposed before a neighbouring layer's sample is borrowed
@@ -51,7 +51,7 @@ EXTEND_BEYOND = 2  # an extension source fills keys more than this many semitone
 # the tail falls 40 dB in about 250 ms (sustain) and 150 ms (staccato), measured by soundcheck.py.
 RELEASE_S = {"sus": 0.45, "stac": 0.28}
 SF2_RELEASE_S = {"sus": 0.60, "stac": 0.38}
-# Every target's mf layer is scaled so its K-weighted loudest-300 ms level in the comfortable range
+# Every target's mf layer is scaled so its K-weighted body level (body_db) in the comfortable range
 # is this, so all presets play equally loud at the same velocity and part balance is only the
 # channel gain (mapping.json parts[].balance_lu). Peaks are kept under -1 dBFS by lowering it.
 TARGET_K_DB = -24.0
@@ -141,6 +141,17 @@ def _loop_window(x: np.ndarray, rise: float, drop: float) -> tuple[int, int] | N
     if (b_frame - a_frame) * hop < int(0.35 * SR):
         return None
     return a_frame, b_frame
+
+
+def body_db(y: np.ndarray) -> float:
+    """Level of a sustain sample as a short or medium note hears it: RMS over 80 ms-1.0 s.
+
+    The loudest-300 ms window used before let slow-speaking samples (VSCO trombone A#0, D#1)
+    reach their level only after 0.5 s, so short notes on them came out 4-5 dB quiet."""
+    a, b = int(0.08 * SR), min(len(y), int(1.0 * SR))
+    if b - a < int(0.1 * SR):
+        return loudest_window_db(y)
+    return float(10 * np.log10(np.mean(y[a:b] ** 2) + 1e-20))
 
 
 def pick_notes(notes: list[dict], library: str, instrument: str, art: str) -> tuple[list[dict], bool]:
@@ -293,13 +304,13 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
         dyns = LAYER_DYNAMICS[len(layers)]
         vels = velocity_ranges(dyns)
         lidx = [layer_of(n, raw_layers, len(dyns)) for n in chosen]
-        scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - loudest_window_db(y, win=0.3 if art == "sus" else 0.08)) / 20)
+        scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - (body_db(y) if art == "sus" else loudest_window_db(y, win=0.08))) / 20)
                   for i, y in enumerate(audio_of)]
         if target_gain_db is None:  # set once per target, from the sustain's middle layer
             # every primary sample in the comfortable range, referred to the middle layer's nominal level
             # (some sources have no middle-layer notes there, e.g. Iowa horn mf stops at B2)
             mid = DYN_LEVEL_DB[dyns[len(dyns) // 2]]
-            ks = [loudest_window_db(k_weight(y)) - (DYN_LEVEL_DB[dyns[lidx[i]]] - mid) for i, y in enumerate(scaled)
+            ks = [body_db(k_weight(y)) - (DYN_LEVEL_DB[dyns[lidx[i]]] - mid) for i, y in enumerate(scaled)
                   if clo <= chosen[i]["midi"] <= chi and chosen[i]["_src"] == "primary"]
             target_gain_db = TARGET_K_DB - float(np.mean(ks))
         samples = []
@@ -385,7 +396,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 f = r["variants"][0]
                 if f not in kcache:
                     y, _ = sf.read(str(out / "samples" / f), dtype="float64")
-                    kcache[f] = loudest_window_db(k_weight(y))
+                    kcache[f] = body_db(k_weight(y))
                 lv += [kcache[f] + r["volume_db"]] * sum(1 for k in range(r["lokey"], r["hikey"] + 1) if clo <= k <= chi)
             corr = TARGET_K_DB - float(np.mean(lv))
             target_gain_db += corr
