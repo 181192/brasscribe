@@ -14,7 +14,8 @@ make soundfont      # data/soundfonts/MuseScore_General.sf2 (MIT, 206 MB, not co
 pixi run fetch-sounds   # (repo root) the band SoundFonts into data/sounds/band: needs `gh auth login`
 make project        # BrasscribePlay.xcodeproj from project.yml (not committed); stages the band sounds
 make build          # macOS, iPhone simulator, iPad simulator
-make test           # package tests, then app unit and UI tests on macOS and the iPhone simulator
+make test           # package tests, macOS app unit tests, then app unit and UI tests on the iPhone simulator
+make test-mac-ui    # macOS UI tests: they take over the mouse and keyboard, so only on an idle Mac or in CI
 make size           # Release build for iOS devices, prints the .app size
 scripts/run-fixture-mac.sh                                        # open the Old Hundredth fixture score on the Mac
 scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot

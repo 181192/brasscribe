@@ -40,23 +40,17 @@ final class PlayUITests: XCTestCase {
     /// Launch and make sure there is a window. On macOS a relaunched app is not always
     /// activated, and SwiftUI then opens no window; File > New Window (Cmd-N) opens one.
     func launchApp() {
-        app.launch()
-        #if os(macOS)
-        if !app.windows.firstMatch.waitForExistence(timeout: 5) {
-            app.activate()
-            if !app.windows.firstMatch.waitForExistence(timeout: 3) { app.typeKey("n", modifierFlags: .command) }
-        }
-        #endif
+        app.launchForUITest()
     }
 
     /// Review → confirm "Finish later" when notes are left → "How should the score be?" → Show the score.
     func leaveReview(_ open: XCUIElement) {
-        open.tap()
+        open.safeTap(app)
         let finish = app.buttons.matching(NSPredicate(format: "label == 'Finish later'")).firstMatch
-        if finish.waitForExistence(timeout: 3) { finish.tap() }
+        if finish.waitForExistence(timeout: 3) { finish.safeTap(app) }
         let show = app.descendants(matching: .any)["showScore"].firstMatch
         XCTAssertTrue(show.waitForExistence(timeout: 10), "How should the score be? follows the review")
-        show.tap()
+        show.safeTap(app)
     }
 
     override func setUpWithError() throws {
@@ -92,10 +86,10 @@ final class PlayUITests: XCTestCase {
         let position = app.descendants(matching: .any)["position"]
         XCTAssertTrue(position.exists)
         XCTAssertEqual(position.value as? String, "1")
-        play.tap()
+        play.safeTap(app)
         let moved = NSPredicate { _, _ in (Int(position.value as? String ?? "1") ?? 1) >= 2 }
         wait(for: [XCTNSPredicateExpectation(predicate: moved, object: nil)], timeout: 15)
-        play.tap()
+        play.safeTap(app)
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "score-after-playing"
         shot.lifetime = .keepAlways
@@ -110,9 +104,9 @@ final class PlayUITests: XCTestCase {
         let transcribe = app.descendants(matching: .any)["transcribe"].firstMatch
         XCTAssertTrue(transcribe.waitForExistence(timeout: 10))
         XCTAssertFalse(transcribe.isEnabled, "the app never guesses the profile")
-        app.descendants(matching: .any)["profile-orchestra-with-soloist"].firstMatch.tap()
+        app.descendants(matching: .any)["profile-orchestra-with-soloist"].firstMatch.safeTap(app)
         XCTAssertTrue(transcribe.isEnabled)
-        transcribe.tap()
+        transcribe.safeTap(app)
         let open = app.descendants(matching: .any)["openScore"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 60), "review should follow the transcription")
         let shot = XCTAttachment(screenshot: app.screenshot())
@@ -145,7 +139,7 @@ final class PlayUITests: XCTestCase {
             XCTAssertLessThanOrEqual(button.frame.maxY, top + 0.5, "\(button.identifier) ends above the Show the score band")
         }
         XCTAssertTrue(show.isHittable)
-        higher.tap()
+        higher.safeTap(app)
         XCTAssertTrue(show.isHittable)
     }
 
@@ -158,10 +152,10 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(listen.waitForExistence(timeout: 60))
         XCTAssertEqual(listen.label, "Listen to this bar")
         let frame = listen.frame
-        listen.tap()
+        listen.safeTap(app)
         XCTAssertTrue(NSPredicate(format: "label == 'Stop'").evaluate(with: listen) || app.buttons["Stop"].waitForExistence(timeout: 3))
         XCTAssertEqual(listen.frame, frame, "no layout jump")
-        listen.tap()
+        listen.safeTap(app)
         let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == 'Listen to this bar'"), object: listen)
         wait(for: [back], timeout: 5)
     }
@@ -193,12 +187,12 @@ final class PlayUITests: XCTestCase {
         // wait until the score is engraved, so no keystroke lands while the view rebuilds
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-0-'")).firstMatch
             .waitForExistence(timeout: 60))
-        app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
-        app.typeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
+        app.safeTypeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
+        app.safeTypeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
         XCTAssertEqual(position.value as? String, "3")
-        app.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        app.safeTypeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
         XCTAssertEqual(position.value as? String, "2")
-        app.typeKey(".", modifierFlags: [])
+        app.safeTypeKey(".", modifierFlags: [])
         // iOS reports the slider's accessibility value text, macOS its number
         let raised = NSPredicate { _, _ in
             if let s = speed.value as? String { return s.contains("105") }
@@ -207,9 +201,9 @@ final class PlayUITests: XCTestCase {
         }
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: raised, object: nil)], timeout: 3), .completed,
                        "\(String(describing: speed.value))")
-        app.typeKey(" ", modifierFlags: [])
+        app.safeTypeKey(" ", modifierFlags: [])
         XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 5))
-        app.typeKey(" ", modifierFlags: [])
+        app.safeTypeKey(" ", modifierFlags: [])
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 5))
     }
 
@@ -228,8 +222,8 @@ final class PlayUITests: XCTestCase {
         launchApp()
         let solo = app.descendants(matching: .any)["profile-solo"].firstMatch
         XCTAssertTrue(solo.waitForExistence(timeout: 20))
-        solo.tap()
-        app.descendants(matching: .any)["transcribe"].firstMatch.tap()
+        solo.safeTap(app)
+        app.descendants(matching: .any)["transcribe"].firstMatch.safeTap(app)
         let open = app.descendants(matching: .any)["openScore"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 120), "on-device transcription should reach Review")
         leaveReview(open)
@@ -261,7 +255,7 @@ final class PlayUITests: XCTestCase {
         }
         #endif
         XCTAssertEqual(r, .completed)
-        pip.tap()
+        pip.safeTap(app)
         let started = app.buttons["Stop picture in picture"].waitForExistence(timeout: 10)
         print("PIP available \(pip.isEnabled), started \(started)")
         XCTAssertTrue(started)
@@ -274,10 +268,10 @@ final class PlayUITests: XCTestCase {
     func testNextBarAndLoopWithoutDragging() throws {
         let next = app.buttons["nextBar"]
         XCTAssertTrue(next.waitForExistence(timeout: 30))
-        next.tap(); next.tap()
+        next.safeTap(app); next.safeTap(app)
         let position = app.descendants(matching: .any)["position"]
         XCTAssertEqual(position.value as? String, "3")
-        app.buttons["previousBar"].tap()
+        app.buttons["previousBar"].safeTap(app)
         XCTAssertEqual(position.value as? String, "2")
     }
 
@@ -297,11 +291,11 @@ final class PlayUITests: XCTestCase {
 
         let picker = app.descendants(matching: .any)["partPicker"].firstMatch
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
-        picker.tap()
+        picker.safeTap(app)
         #if os(macOS)
-        app.menuItems["Solo Cornet"].tap()
+        app.menuItems["Solo Cornet"].safeTap(app)
         #else
-        app.descendants(matching: .any)["Solo Cornet"].firstMatch.tap()
+        app.descendants(matching: .any)["Solo Cornet"].firstMatch.safeTap(app)
         #endif
 
         let solo = app.descendants(matching: .any)
@@ -309,11 +303,11 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(solo.waitForExistence(timeout: 30), "the solo cornet alone should still engrave")
         XCTAssertEqual(app.state, .runningForeground)
 
-        picker.tap()
+        picker.safeTap(app)
     #if os(macOS)
-    app.menuItems["All parts"].tap()
+    app.menuItems["All parts"].safeTap(app)
     #else
-        app.descendants(matching: .any)["All parts"].firstMatch.tap()
+        app.descendants(matching: .any)["All parts"].firstMatch.safeTap(app)
     #endif
         XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 30))
         XCTAssertEqual(app.state, .runningForeground)
