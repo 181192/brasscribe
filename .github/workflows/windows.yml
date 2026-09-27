@@ -280,8 +280,14 @@ jobs:
           $pair | ConvertTo-Json
           if (-not $pair.open -or $pair.expires_at) { throw "the pairing window did not open without expiry" }
           Invoke-RestMethod -Method Delete "$base/v1/pairing" -Headers $auth | Out-Null
-          $engineProcs = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match "brasscribe serve" })
-          $engineProcs | Format-Table ProcessId, Name, CommandLine -AutoSize
+          # The engine's whole tree: pixi and everything under it (python, the serve entry point).
+          $all = @(Get-CimInstance Win32_Process)
+          $engineProcs = @($all | Where-Object { $_.ProcessId -eq $engine.pid })
+          for ($i = 0; $i -lt $engineProcs.Count; $i++) {
+            $engineProcs += @($all | Where-Object { $_.ParentProcessId -eq $engineProcs[$i].ProcessId -and $_.ProcessId -notin $engineProcs.ProcessId })
+          }
+          $engineProcs | Format-Table ProcessId, ParentProcessId, Name -AutoSize
+          if ($engineProcs.Count -lt 2) { throw "expected pixi and its python child, found $($engineProcs.Count) processes" }
           Stop-Process -Id $p.Id -Force
           Start-Sleep -Seconds 5
           $left = @($engineProcs | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
