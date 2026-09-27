@@ -81,9 +81,33 @@ public sealed record NoteChoice(string Label, int Shift);
 /// notes first, the count follows the chosen scope, and accompaniment layers come last. A kept note
 /// is written to the Composition, so it stays kept when the score is arranged again.
 /// </summary>
-public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer announcer, IStrings s) : ObservableObject
+public sealed partial class ReviewViewModel : ObservableObject
 {
+    private readonly ScoreViewModel score;
+    private readonly IAnnouncer announcer;
+    private readonly IStrings s;
     private List<ReviewItem> _all = [];
+
+    public ReviewViewModel(ScoreViewModel score, IAnnouncer announcer, IStrings s)
+    {
+        this.score = score;
+        this.announcer = announcer;
+        this.s = s;
+        score.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ScoreViewModel.IsListeningToBar))
+            {
+                OnPropertyChanged(nameof(IsListening));
+                OnPropertyChanged(nameof(ListenLabel));
+            }
+        };
+    }
+
+    /// <summary>The bar is playing: the Listen button says "Stop" (same place, same size).</summary>
+    public bool IsListening => score.IsListeningToBar;
+
+    /// <summary>"Listen to this bar", or "Stop" while it plays (also the button's accessible name).</summary>
+    public string ListenLabel => s[IsListening ? "Review_Stop" : "Review_Listen"];
 
     public ObservableCollection<ReviewGroup> Groups { get; } = [];
 
@@ -225,6 +249,7 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
 
     public void Select(ReviewItem? item)
     {
+        score.StopListening(announce: false);
         if (Current is { } old) old.IsCurrent = false;
         Current = item;
         UpdateTexts();
@@ -274,9 +299,15 @@ public sealed partial class ReviewViewModel(ScoreViewModel score, IAnnouncer ann
         MoveNext(item);
     }
 
+    /// <summary>"Listen to this bar", or "Stop" while it plays.</summary>
     [RelayCommand]
     private void Listen()
     {
+        if (score.IsListeningToBar)
+        {
+            score.StopListening();
+            return;
+        }
         if (Current is not { } item) return;
         score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
         score.ListenToBarCommand.Execute(null);

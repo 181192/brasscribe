@@ -58,8 +58,16 @@ public partial class App : Application
 
     internal JsonSettingsStore Settings { get; }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    /// <summary>Other launches with a pairing link are sent to the running app under this key.</summary>
+    private const string InstanceKey = "BrasscribePlay";
+
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        bool preview = Option("--show") is not null;
+        // A brasscribe://pair link while the app already runs: hand it to that window and quit.
+        string? pairingLink = PairingLinkFromLaunch();
+        if (!preview && await RedirectToRunningAppAsync(pairingLink)) return;
+
         var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         var ui = new DispatcherQueueDispatcher(queue);
         var announcer = new UiaAnnouncer(() => _window?.AnnouncerHost, queue);
@@ -76,14 +84,17 @@ public partial class App : Application
             // No output device: the app still works for reading and exports.
         }
 
-        var original = new MediaPlayerOriginal();
+        var original = new MediaPlayerOriginal(queue);
         var playerVm = new PlayerViewModel(player, announcer, Strings, ui);
         var score = new ScoreViewModel(core, playerVm, announcer, Strings, original)
         {
             Language = Microsoft.Windows.Globalization.ApplicationLanguages.Languages.FirstOrDefault()?.StartsWith("nb", StringComparison.OrdinalIgnoreCase) == true
                        || System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "nb" or "no" or "nn" ? "nb" : "en",
         };
-        var settingsVm = new SettingsViewModel(Settings, announcer, Strings);
+        // Heartbeats and pairing share one client with short timeouts; the credential is in the Credential Locker.
+        var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
+        var settingsVm = new SettingsViewModel(Settings, announcer, Strings, vault: CredentialLockerVault.Create(),
+            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token });
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that
         // drops packets must fail within seconds rather than hang on connect.
@@ -115,7 +126,17 @@ public partial class App : Application
             player.Dispose();
             original.Dispose();
         };
+        _window.HeartbeatEnabled = !preview;
         _window.Activate();
+
+        if (!preview)
+        {
+            settingsVm.Connection.Start();
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += (_, _) => queue.TryEnqueue(settingsVm.Connection.Kick);
+            RegisterPairingLinks(queue);
+            if (pairingLink is not null)
+                _window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () => await _window.OpenSettingsAsync(pairingLink));
+        }
 
         // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
         if (Option("--show") is { } scene)
@@ -130,8 +151,86 @@ public partial class App : Application
         }
 
         // "Open with" and the command line: open the file directly.
+        if (pairingLink is not null) return;
         var cli = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(File.Exists);
         if (cli is not null) _ = main.Start.OpenPathAsync(cli);
+    }
+
+    /// <summary>A brasscribe://pair link this launch was started with (protocol activation, or on the command line).</summary>
+    private static string? PairingLinkFromLaunch()
+    {
+        try
+        {
+            var activated = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+            if (LinkFrom(activated) is { } link) return link;
+        }
+        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException) { }
+        return Environment.GetCommandLineArgs().Skip(1).Select(LinkIn).FirstOrDefault(l => l is not null);
+    }
+
+    private static string? LinkFrom(Microsoft.Windows.AppLifecycle.AppActivationArguments activated) => activated.Data switch
+    {
+        Windows.ApplicationModel.Activation.IProtocolActivatedEventArgs p => p.Uri.OriginalString,
+        Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs l => LinkIn(l.Arguments),
+        _ => null,
+    };
+
+    private static string? LinkIn(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return null;
+        int at = text.IndexOf(Core.Engine.PairingLink.Scheme + ":", StringComparison.OrdinalIgnoreCase);
+        return at < 0 ? null : text[at..].Trim().Trim('"').Split(' ')[0].Trim('"');
+    }
+
+    /// <summary>
+    /// With a pairing link and another Brasscribe Play already running, the link goes to that window and
+    /// this process ends. Plain launches are not redirected (each may open a file of its own).
+    /// </summary>
+    private static async Task<bool> RedirectToRunningAppAsync(string? pairingLink)
+    {
+        try
+        {
+            var keyed = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey(InstanceKey);
+            if (keyed.IsCurrent || pairingLink is null) return false;
+            await keyed.RedirectActivationToAsync(Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs());
+            Environment.Exit(0);
+            return true;
+        }
+        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>brasscribe:// opens this app (per user, no installer needed), and links sent from another launch arrive here.</summary>
+    private void RegisterPairingLinks(Microsoft.UI.Dispatching.DispatcherQueue queue)
+    {
+        try
+        {
+            Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().Activated += (_, activated) =>
+            {
+                if (LinkFrom(activated) is not { } link) return;
+                queue.TryEnqueue(async () =>
+                {
+                    if (_window is null) return;
+                    _window.Activate();
+                    await _window.OpenSettingsAsync(link);
+                });
+            };
+        }
+        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException) { }
+
+        string? exe = Environment.ProcessPath;
+        if (exe is null) return;
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                Microsoft.Windows.AppLifecycle.ActivationRegistrationManager.RegisterForProtocolActivation(
+                    Core.Engine.PairingLink.Scheme, "", Strings["AppWindowTitle"], exe);
+            }
+            catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException or UnauthorizedAccessException) { }
+        });
     }
 
     /// <summary>

@@ -285,6 +285,8 @@ public class AppFlowTests
     [Theory]
     [InlineData("first-run", Screen.FirstRun)]
     [InlineData("home", Screen.Start)]
+    [InlineData("home-offline", Screen.Start)]
+    [InlineData("review-listening", Screen.Review)]
     [InlineData("what-is-this", Screen.SourceKind)]
     [InlineData("transcribing", Screen.Transcribing)]
     [InlineData("error", Screen.Error)]
@@ -299,6 +301,14 @@ public class AppFlowTests
         Assert.True(PreviewScenes.Show(main, scene, TestPaths.Fixture("two-parts.musicxml")));
         Assert.Equal(expected, main.Screen);
         if (scene == "part") Assert.True(main.Score.IsPartView);
+        if (scene == "review-listening")
+        {
+            Assert.True(main.Review.IsListening);
+            Assert.Equal("Stop", main.Review.ListenLabel);
+        }
+        if (scene == "review") Assert.Equal("Listen to this bar", main.Review.ListenLabel);
+        if (scene == "home") Assert.Equal("Connected to Brasscribe on Studio PC", main.Settings.Connection.StatusText);
+        if (scene == "home-offline") Assert.Equal("Connect", main.Settings.Connection.ActionText);
         if (scene == "transcribing")
         {
             Assert.Equal("Writing down the notes", main.Transcription.StepHeading);

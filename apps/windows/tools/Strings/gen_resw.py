@@ -114,8 +114,9 @@ prop("LegendVeryUncertain", "Text", "Very uncertain", "Svært usikker")
 name("ReviewLegend", "“?” means uncertain. A boxed “?” means very uncertain.", "«?» betyr usikker. «?» i en boks betyr svært usikker.")
 name("ReviewList", "Notes to check", "Toner å sjekke")
 name("ReviewSnippet", "The bars around the note", "Taktene rundt tonen")
-name("ReviewListenButton", "Listen to this bar", "Lytt til denne takten"); help_("ReviewListenButton", "Plays the bar from the recording, looped (Space)", "Spiller takten fra opptaket i løkke (Mellomrom)")
+help_("ReviewListenButton", "Plays the bar once, from the recording when there is one. Press again to stop (Space)", "Spiller takten én gang, fra opptaket når det finnes. Trykk igjen for å stoppe (Mellomrom)")
 prop("ReviewListenLabel", "Text", "Listen to this bar", "Lytt til denne takten")
+prop("ReviewStopLabel", "Text", "Stop", "Stopp")
 help_("ReviewKeepBarButton", "The other marked notes in this bar are right; their “?” go", "De andre merkede tonene i takten er riktige; «?» fjernes")
 name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
 name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the whole score follows", "Velg hva tonen skal være; hele partituret følger med")
@@ -152,6 +153,7 @@ text_button("ShowScoreButton", "Show the score", "Vis partituret", "Arranges aga
 
 # ---- score ----
 name("ScoreToolbar", "Score tools", "Verktøy for partituret")
+add(f"ScoreToolbar.{AUTO}.LocalizedLandmarkType", "toolbar", "verktøylinje")
 name("PartPicker", "Parts", "Stemmer"); help_("PartPicker", "All parts, or one part as a page (P)", "Alle stemmer, eller én stemme som side (P)")
 name("PitchChoice", "Pitch", "Tonehøyde")
 tip("WrittenChoice", "Written is what you read on your part.", "Notert er det du leser i stemmen din.")
@@ -168,7 +170,7 @@ prop("ChooseOutputItem", "Text", "How should the score be?…", "Hvordan skal pa
 text_button("CheckThemButton", "Check them", "Sjekk dem", "Go through the notes marked ? one at a time", "Gå gjennom tonene merket ? én om gangen")
 prop("PartPageNote", "Text", "Written down by Brasscribe. Check the notes marked ? before the rehearsal.",
      "Skrevet ned av Brasscribe. Sjekk tonene merket ? før øvelsen.")
-name("ScoreNotation", "Score", "Partitur")
+name("ScoreNotation", "Notes", "Noter")
 help_("ScoreNotation", "Arrows move by note, Ctrl+arrows by beat and bar, Ctrl+Shift+arrows by part. U finds notes marked ?. Tab leaves the score.",
       "Piltastene flytter én tone, Ctrl+piltaster ett slag eller én takt, Ctrl+Shift+piltaster én stemme. U finner toner merket ?. Tab går ut av partituret.")
 prop("ListenToBarItem", "Text", "Listen to this bar", "Lytt til denne takten")
@@ -189,6 +191,7 @@ prop("AdLibNotice", "Text", "Some bars have no steady beat (ad lib.). Their rhyt
      "Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.")
 name("VideoView", "Original video", "Originalvideo")
 name("PlayerBar", "Player", "Avspiller")
+add(f"PlayerBar.{AUTO}.LocalizedLandmarkType", "player", "avspiller")
 icon_button("PreviousBarButton", "Previous bar", "Forrige takt", "Go to the bar before", "Gå til takten før")
 icon_button("PlayPauseButton", "Play or pause", "Spill av eller pause", "Space in the score, Ctrl+Shift+Space anywhere", "Mellomrom i partituret, Ctrl+Shift+Mellomrom hvor som helst")
 icon_button("NextBarButton", "Next bar", "Neste takt", "Go to the bar after", "Gå til takten etter")
@@ -238,9 +241,17 @@ prop("VerbosityBrief", "Content", "Brief", "Kort")
 prop("VerbosityStandard", "Content", "Standard", "Standard")
 prop("VerbosityFull", "Content", "Everything", "Alt")
 prop("SettingsEngineHeading", "Text", "Brasscribe on your computer", "Brasscribe på datamaskinen")
-prop("EngineAddressBox", "Header", "Details for the band's tech person: address", "Detaljer for den tekniske i bandet: adresse")
+prop("EngineAddressBox", "Header", "Address", "Adresse")
+prop("EngineDetails", "Header", "Details for the band's tech person", "Detaljer for den tekniske i bandet")
+name("EngineDetails", "Details for the band's tech person", "Detaljer for den tekniske i bandet")
+help_("ConnectionActionButton", "Opens Settings to connect this PC to Brasscribe on your computer", "Åpner Innstillinger for å koble denne PC-en til Brasscribe på datamaskinen")
+help_("SettingsConnectionAction", "Connect this PC to Brasscribe on your computer", "Koble denne PC-en til Brasscribe på datamaskinen")
+text_button("AskComputerButton", "Ask on the computer instead", "Spør på datamaskinen i stedet", "No code to type: choose Allow on the computer", "Ingen kode å skrive: velg Godkjenn på datamaskinen")
+text_button("CancelAskButton", "Stop waiting", "Slutt å vente", "Stop waiting for the computer to allow this PC", "Slutt å vente på at datamaskinen godkjenner denne PC-en")
+prop("MatchCodeLabel", "Text", "The computer shows the same number", "Datamaskinen viser det samme tallet")
+text_button("UnpairButton", "Forget this computer", "Glem denne datamaskinen", "The computer forgets this PC, and this PC forgets the computer", "Datamaskinen glemmer denne PC-en, og denne PC-en glemmer datamaskinen")
 prop("EngineAddressBox", "PlaceholderText", "http://127.0.0.1:8765", "http://127.0.0.1:8765")
-prop("PairingCodeBox", "Header", "Pairing code", "Paringskode")
+prop("PairingCodeBox", "Header", "Code", "Kode")
 prop("PairingCodeBox", "PlaceholderText", "The six digits your computer shows", "De seks sifrene datamaskinen viser")
 text_button("ConnectButton", "Connect", "Koble til", "Open Brasscribe on your computer and choose Pair a device, then type the code here", "Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her")
 prop("SettingsAboutHeading", "Text", "About", "Om")
@@ -394,6 +405,35 @@ code = {
     "Score_UncertainLeft": ("{0} notes marked ? (boxed ? = very unsure)", "{0} toner merket ? (? i boks = svært usikker)"),
     "Score_ListeningOriginal": ("Playing bar {0} from the recording", "Spiller takt {0} fra opptaket"),
     "Score_ListeningScore": ("Playing bar {0}", "Spiller takt {0}"),
+    "Score_ListenStopped": ("Stopped", "Stoppet"),
+    "Score_ListenEnded": ("End of bar {0}", "Slutt på takt {0}"),
+    "Review_Listen": ("Listen to this bar", "Lytt til denne takten"),
+    "Review_Stop": ("Stop", "Stopp"),
+    "Connection_Connected": ("Connected to Brasscribe on {0}", "Koblet til Brasscribe på {0}"),
+    "Connection_Reconnecting": ("Looking for Brasscribe on {0} …", "Leter etter Brasscribe på {0} …"),
+    "Connection_Offline": ("Not connected. You can still make scores on this PC.", "Ikke tilkoblet. Du kan fortsatt lage partitur på denne PC-en."),
+    "Connection_NeedsPairing": ("The computer no longer recognises this PC.", "Datamaskinen kjenner ikke igjen denne PC-en lenger."),
+    "Connection_Connect": ("Connect", "Koble til"),
+    "Connection_PairAgain": ("Pair this PC again", "Koble til PC-en på nytt"),
+    "Connection_YourComputer": ("your computer", "datamaskinen"),
+    "Connection_DetailsAddress": ("Address: {0}", "Adresse: {0}"),
+    "Connection_DetailsServerId": ("Server id: {0}", "Server-ID: {0}"),
+    "Connection_DetailsLastSeen": ("Last answered: {0}", "Svarte sist: {0}"),
+    "Settings_Engine_ChosenPaired": ("Using Brasscribe on {0}. This PC is already paired with it.", "Bruker Brasscribe på {0}. Denne PC-en er allerede koblet til den."),
+    "Settings_Engine_Forgotten": ("The computer no longer recognises this PC. Type the six digits it shows, or ask on the computer instead.", "Datamaskinen kjenner ikke igjen denne PC-en lenger. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet."),
+    "Settings_Engine_CodeWrong": ("That code didn't work. Check the six digits on the computer and try again.", "Den koden virket ikke. Sjekk de seks sifrene på datamaskinen, og prøv igjen."),
+    "Settings_Engine_Locked": ("Too many wrong codes. Wait a moment, or ask on the computer instead.", "For mange feil koder. Vent litt, eller spør på datamaskinen i stedet."),
+    "Settings_Engine_Unreachable": ("Couldn't reach your computer. Check that Brasscribe is running there and that both are on the same network.", "Fikk ikke kontakt med datamaskinen. Sjekk at Brasscribe kjører der, og at begge er på samme nettverk."),
+    "Settings_Engine_Failed": ("Something went wrong talking to your computer. Try again.", "Noe gikk galt i kontakten med datamaskinen. Prøv igjen."),
+    "Settings_Engine_AskWaiting": ("On the computer, choose Allow when it shows this number: {0}", "Velg Godkjenn på datamaskinen når den viser dette tallet: {0}"),
+    "Settings_Engine_AskDenied": ("The computer didn't allow this PC. You can ask again.", "Datamaskinen godkjente ikke denne PC-en. Du kan spørre på nytt."),
+    "Settings_Engine_AskExpired": ("The computer didn't answer in time. You can ask again.", "Datamaskinen svarte ikke i tide. Du kan spørre på nytt."),
+    "Settings_Engine_AskBusy": ("Other devices are waiting on the computer. Try again in a couple of minutes.", "Andre enheter venter på datamaskinen. Prøv igjen om et par minutter."),
+    "Settings_Engine_Unpaired": ("This PC is no longer paired with Brasscribe on {0}.", "Denne PC-en er ikke lenger koblet til Brasscribe på {0}."),
+    "Settings_Link_Invalid": ("That link isn't a Brasscribe pairing link.", "Den lenken er ikke en tilkoblingslenke fra Brasscribe."),
+    "Settings_Link_Newer": ("That link is from a newer Brasscribe. Update this app, then try again.", "Lenken er fra en nyere Brasscribe. Oppdater appen, og prøv igjen."),
+    "Settings_Link_Looking": ("Looking for Brasscribe on {0} …", "Leter etter Brasscribe på {0} …"),
+    "Settings_Link_NotFound": ("Couldn't find Brasscribe on {0}. Check that this PC is on the same network as the computer.", "Fant ikke Brasscribe på {0}. Sjekk at denne PC-en er på samme nettverk som datamaskinen."),
     "Score_Zoom": ("Zoom {0} percent", "Zoom {0} prosent"),
     "Score_NoOriginal": ("There's no recording to hear: this score was opened without one.", "Det finnes ikke noe opptak å høre: partituret ble åpnet uten."),
     "Score_SwitchedToOriginal": ("Playing the recording from bar {0}", "Spiller opptaket fra takt {0}"),
@@ -469,8 +509,8 @@ code = {
     "Output_NeedsCore": ("Arranging on this PC needs Brasscribe's arranger, which isn't installed.", "Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert."),
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Output_Failed": ("Couldn't arrange it: {0}", "Kunne ikke arrangere: {0}"),
-    "Settings_Engine_NeedsCode": ("Your computer asks for a pairing code. Type the six digits it shows.", "Datamaskinen ber om en paringskode. Skriv inn de seks sifrene den viser."),
-    "Settings_Engine_Connected": ("Connected to Brasscribe {0} on your computer ({1})", "Koblet til Brasscribe {0} på datamaskinen ({1})"),
+    "Settings_Engine_NeedsCode": ("Your computer asks for a code. Type the six digits it shows, or ask on the computer instead.", "Datamaskinen ber om en kode. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet."),
+    "Settings_Engine_Connected": ("Connected to Brasscribe on {0}.", "Koblet til Brasscribe på {0}."),
     "Settings_CoreVersion": ("Arranger on this PC: {0}", "Arrangør på denne PC-en: {0}"),
     "Settings_CoreManaged": ("built in (the full arranger isn't installed)", "innebygd (den fulle arrangøren er ikke installert)"),
     "Shortcuts_Global": ("Everywhere", "Overalt"),
@@ -538,10 +578,10 @@ add('Score_CancelTitle', 'Cancel', 'Avbryt')
 add('Score_EditTitle', 'Edit score title', 'Endre partiturnavn')
 add('Score_RenameFailed', "Couldn't rename {0}", 'Kunne ikke endre navn på {0}')
 add('Score_SaveTitle', 'Save', 'Lagre')
-add('Settings_Engine_Chosen', 'Using {0}. Type the six-digit code it shows, then choose Connect.', 'Bruker {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.')
+add('Settings_Engine_Chosen', 'Using Brasscribe on {0}. Type the six-digit code it shows, then choose Connect.', 'Bruker Brasscribe på {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.')
 add('Settings_Engine_FoundMany', 'Found {0} computers running Brasscribe. Choose one.', 'Fant {0} datamaskiner som kjører Brasscribe. Velg én.')
-add('Settings_Engine_FoundOne', 'Found {0}. Choose it to use it.', 'Fant {0}. Velg den for å bruke den.')
-add('Settings_Engine_NoneFound', 'No computer running Brasscribe was found on this network. Check that it was started with “brasscribe serve --lan”, or type its address.', 'Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at den ble startet med «brasscribe serve --lan», eller skriv inn adressen.')
+add('Settings_Engine_FoundOne', 'Found Brasscribe on {0}. Choose it to use it.', 'Fant Brasscribe på {0}. Velg den for å bruke den.')
+add('Settings_Engine_NoneFound', 'No computer running Brasscribe was found on this network. Check that Brasscribe on the computer says Running, and that both are on the same Wi-Fi.', 'Fant ingen datamaskin som kjører Brasscribe på dette nettverket. Sjekk at Brasscribe på datamaskinen sier at den kjører, og at begge er på samme wifi.')
 add('Settings_Engine_Searching', 'Looking for Brasscribe on your network…', 'Ser etter Brasscribe på nettverket …')
 
 HEADER = """<?xml version="1.0" encoding="utf-8"?>
