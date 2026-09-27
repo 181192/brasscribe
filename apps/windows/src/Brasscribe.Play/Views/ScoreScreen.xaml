@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Brasscribe.Play.Controls"
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    xmlns:views="using:Brasscribe.Play.Views"
     NavigationCacheMode="Required">
 
     <Grid>
@@ -99,14 +100,14 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="Heading" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1"
-                       IsTabStop="True" Text="{x:Bind ViewModel.Title, Mode=OneWay}" Visibility="{x:Bind vm:Screens.Not(ViewModel.IsPartView), Mode=OneWay}" />
+                       IsTabStop="True" Text="{x:Bind ViewModel.Title, Mode=OneWay}" Visibility="{x:Bind views:Shown.Not(ViewModel.IsPartView), Mode=OneWay}" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
-                        Visibility="{x:Bind vm:Screens.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}">
+                        Visibility="{x:Bind views:Shown.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}">
                 <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" VerticalAlignment="Center" />
                 <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.UncertainText, Mode=OneWay}" VerticalAlignment="Center" />
             </StackPanel>
             <HyperlinkButton x:Name="CheckThemButton" x:Uid="CheckThemButton" Grid.Column="2" Click="OnCheckThem" Padding="6,4"
-                             Visibility="{x:Bind vm:Screens.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}" />
+                             Visibility="{x:Bind views:Shown.HasNotes(ViewModel.UncertainLeft), Mode=OneWay}" />
         </Grid>
 
         <!-- The notation (full width), or the part view's page; the parts panel on the right. -->
@@ -129,7 +130,7 @@
                         <TextBlock x:Uid="PartPageNote" Style="{StaticResource MutedStyle}" HorizontalAlignment="Center" />
                     </StackPanel>
                     <controls:ScoreView x:Name="Notation" x:Uid="ScoreNotation" Grid.Row="1" Background="Transparent"
-                                        Visibility="{x:Bind vm:Screens.Not(ViewModel.ShowTalkingScore), Mode=OneWay}">
+                                        Visibility="{x:Bind views:Shown.Not(ViewModel.ShowTalkingScore), Mode=OneWay}">
                         <controls:ScoreView.ContextFlyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem x:Uid="ListenToBarItem" Click="OnListenToBar" KeyboardAcceleratorTextOverride="P" />
@@ -169,7 +170,7 @@
                     </Grid.RowDefinitions>
                     <!-- The original video, synced to whichever source plays; muted while the band plays. -->
                     <MediaPlayerElement x:Name="VideoView" x:Uid="VideoView" Height="170" AreTransportControlsEnabled="False" Stretch="Uniform"
-                                        Visibility="{x:Bind vm:Screens.Both(ViewModel.HasVideo, ViewModel.ShowVideo), Mode=OneWay}" />
+                                        Visibility="{x:Bind views:Shown.Both(ViewModel.HasVideo, ViewModel.ShowVideo), Mode=OneWay}" />
                     <TextBlock Grid.Row="1" x:Uid="MixerHeading" Style="{StaticResource OverlineStyle}" Margin="4,8,0,4"
                                AutomationProperties.HeadingLevel="Level2" />
                     <ListView x:Name="Mixer" x:Uid="Mixer" Grid.Row="2" ItemsSource="{x:Bind ViewModel.Player.Parts}" SelectionMode="None"

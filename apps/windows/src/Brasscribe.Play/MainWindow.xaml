@@ -3,7 +3,8 @@
     x:Class="Brasscribe.Play.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels">
+    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    xmlns:views="using:Brasscribe.Play.Views">
 
     <Grid x:Name="Root" Background="{ThemeResource BcBgBrush}" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>
@@ -51,7 +52,7 @@
                 <TextBlock x:Name="PageSubtitle" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
             </StackPanel>
             <Button x:Name="ExportButton" x:Uid="ExportButton" Grid.Column="3" Style="{StaticResource ActionButtonStyle}"
-                    Click="OnExportClick" AccessKey="E" Visibility="{x:Bind vm:Screens.IsScore(ViewModel.Screen), Mode=OneWay}">
+                    Click="OnExportClick" AccessKey="E" Visibility="{x:Bind views:Shown.IsScore(ViewModel.Screen), Mode=OneWay}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="{StaticResource BcIconExport}" FontSize="16" />
                     <TextBlock x:Uid="ExportButtonLabel" Style="{StaticResource LabelStyle}" />

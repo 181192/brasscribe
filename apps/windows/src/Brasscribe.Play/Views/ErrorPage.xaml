@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    xmlns:views="using:Brasscribe.Play.Views"
     NavigationCacheMode="Required">
 
     <!-- An error with a way forward: what happened, why, what to do, and the way out (primary last, bottom right). -->
@@ -42,7 +43,7 @@
             <!-- Commands, addresses and codes only here, collapsed. -->
             <Expander x:Name="Details" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,16,0,0"
                       Header="{x:Bind ViewModel.DetailsHeading, Mode=OneWay}"
-                      Visibility="{x:Bind vm:Screens.HasText(ViewModel.Details), Mode=OneWay}">
+                      Visibility="{x:Bind views:Shown.HasText(ViewModel.Details), Mode=OneWay}">
                 <TextBlock Text="{x:Bind ViewModel.Details, Mode=OneWay}" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True"
                            FontFamily="Cascadia Mono, Consolas" />
             </Expander>
