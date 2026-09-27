@@ -124,3 +124,88 @@ Everything else from the P1 list has landed on Android. The only thing left to c
 1. **P1-B, iPhone Review:** Listen and Change note… are hidden below the fold under an oversized staff card. Shrink the card and bring both buttons into view.
 2. **P1-C, Home "Your scores":** titles are duplicated as timestamps and the rows have too little padding. Use meaningful titles, rows ≥ 60 pt with a subtitle, and add a populated screenshot.
 3. **P1-A, cross-platform:** the uncertainty rate (31 % of solo notes marked). This belongs to the engine and music-core.
+
+---
+
+# Studio rework
+
+- **Scope:** the rework merged to main (`5856d9c`), checked against `design/reviews/studio-review.md`.
+- **Screenshots:** the before/after pairs in `studio/docs/screenshots/rework/`, the theme set, and `zoom/` (320 px, 200 %, and the menu open).
+- **Live check:** I ran the merged Studio on port 8823 (stopped afterwards) and repeated the same Playwright + axe measurement as in the first Studio review.
+- **Two changes I accept:**
+  - **Stop stays in the toolbar.** Next to a Play/Pause toggle it's a reasonable "back to bar 1" action.
+  - **Info tips instead of a glossary page.** Every page and most column headers now have an ⓘ tip, and that covers the need.
+
+## S1. Measured, before → after
+
+| | Before | After |
+|---|---|---|
+| Text < 14 px (share of characters) | 76–99 % per view | **0 %** on every view |
+| Main text size | 13 px (tables, meta 12 px) | 14–16 px. The body token is 16 px (`--bc-type-studio-body-size: 1rem`), tables and meta are 14–15 px. |
+| axe WCAG 2.2 AA | 0 violations | **0 violations** (all 11 views) |
+| Reflow at 320 px | Passed, but the header took about 300 px | **Passes**. The header collapses to a **Menu** button, and page content starts at about 90 px. |
+| 200 % text | Passed | **Passes**. The menu works at 200 %. |
+| Run page height | 3042 px, 120 controls, score at about 900 px | **1829 px**. The score is the first thing under the tabs. |
+| Controls under 24 px | Run titles 16 px, "All runs" 19 px | Only inline footer links (exempt) and the run-list title links (18 px tall inside a ≥ 44 px row that is clickable as a whole). |
+
+## S2. studio-review.md P1s
+
+| P1 | Verdict | Evidence |
+|---|---|---|
+| 1 Type scale | **Landed** | See above. Controls are 36–44 px. |
+| 2 Start a run | **Landed** | Only the chosen source's field shows. The profile has one plain sentence, with **Stages** and **More options** as disclosures. "Use the large models if nothing is cached (slower, needs the GPU)" is off by default. **Start run** is the one primary. |
+| 3 Runs list | **Partly** | Landed: status chips All 41 / Failed 7 / Running 0, and the id on a muted second line. **Still open:** the five brass-band runs are all titled "Recording, 15 Aug 2026, 15:53". That's the *recording's* date, while the Created column says 26 Sep, so the titles still look identical and the date looks wrong. See **S-P2-1**. |
+| 4 Run page order | **Landed** | Header: status, then "12 of 12 stages · 10 from the cache · 16.5 s", with Run details collapsed. Then the score, then **Checks** as summary lines ("20 crossings: Bass Trombone above 2nd Trombone, bars 47–126", with a **Bar 47** jump button) and "Show all warnings (21)" collapsed. Then **Stages** as a closed disclosure. |
+| 5 Run header | **Landed** | **Download ▾ · Compare… · Re-run · More ▾**. Delete is in More. |
+| 6 Nav | **Landed** | Runs · Score viewer · Compare · **Quality ▾**, and a "Use this to…" line under every h1. |
+
+The top P2s from the first Studio review are fixed too:
+- the stage graph in a disclosure
+- Bench showing the last result in each row, with one primary (**Run all CPU suites**)
+- Conformance's "Every case is identical" plus "Show all cases (356)"
+- Registry with repo-relative paths in a disclosure and "not stated" chips with ⓘ
+- the Viewer drop zone
+- Compare laid out in a card
+
+## S3. New findings
+
+### P1
+
+| # | Where | Problem | Fix |
+|---|---|---|---|
+| **S-P1-1** | Conversion parity, the "Variants below the threshold" table (checked live and in `parity-after.png`) | The **Variant** and **Meets threshold** cells are empty on every row. The page exists to say *which* converted model variant fails, and it now shows only the Set and the numbers. This matters because 5 of 7 models now fail (basic-pitch 36/48, beat-this 9/36, bs-roformer-sw 4/8, htdemucs 13/16, swift-f0 25/40), so this is the table people will act on. | Fill the Variant cell from the row data (the failure filter appears to drop the variant, or its rowspan). Show "✕ below 0.98" in Meets threshold. Add a unit test that every rendered failing row has a non-empty variant. |
+
+### P2
+
+| # | Where | Problem | Fix |
+|---|---|---|---|
+| S-P2-1 | The Runs list | Re-runs of one input share a title that carries the *input's* date ("Recording, 15 Aug 2026, 15:53"), which contradicts the Created column. | Title from the file name ("20260815_155324.wav" → "Recording 15 Aug"), and add the run time as the subtitle ("run 26 Sep 19:02 · brass-band"). Or group re-runs of the same input under one row with a count. |
+| S-P2-2 | Parity page | It is 7470 px tall because every failing model section is open by default and shows 12+ failure rows plus a latency table. | Open only the first failing model. Show the other failing models as summary lines, with the worst F1 inline ("beat-this · 9 of 36 pass · worst F1 0.71"). |
+| S-P2-3 | Runs page | 3586 px tall. All 41 runs are listed on one page. | Paginate or virtualise at 20 rows, or open on the "Failed" chip when any run failed in the last day. |
+| S-P2-4 | Benchmarks | 4153 px tall. Each suite row is about 80 px because of its "Needs" disclosure. | Put "Needs" in the ⓘ tip or in a hover row. Keep rows ≤ 56 px. |
+| S-P2-5 | Run page, 320 px | The action row wraps into two lines of large buttons ("Download ▾ / Compare… / Re-run / More ▾"), which pushes the tabs down. | Below 600 px, show **Re-run** plus **More ▾** (Download and Compare go inside it). |
+
+### P3
+
+| # | Problem | Fix |
+|---|---|---|
+| S-P3-1 | The Stages summary on the run page says "34.8 s", while the header says "16.5 s" for the same run (in the live run). | Use one measure (wall time or stage time) and name it ("16.5 s of work, 34.8 s total"). |
+| S-P3-2 | Bench at 320 px clips the "Last result" column ("✓ pa…"). | Stack the status under the suite name below 600 px. |
+| S-P3-3 | The mono suite ids (`chorales-transcription`) are still the row titles. | Use a plain label ("ChoraleBricks transcription"), with the id underneath in muted mono. |
+
+**Note for P1-A (uncertainty rate):** the newest live Mikkel run (`20260927-020724…`) shows "83 notes marked ?" on the score, down from 215 / 336 in the app screenshots. If that comes from recalibrating the engine, P1-A may already be fixed. Re-shoot the Android and Apple Review screens against the new run to confirm.
+
+## S4. Remaining P1s (Studio)
+
+1. **S-P1-1:** the Conversion parity failure table has blank Variant and Meets threshold cells, so nobody can see which variant fails.
+
+---
+
+# Remaining P1s, all platforms (after the third pass)
+
+| # | Platform | P1 |
+|---|---|---|
+| P1-A | Engine and music-core (shows on every platform) | Too many notes marked "?". Probably improving: the new run has 83. Confirm with new Review screenshots. |
+| P1-B | Apple iPhone | Listen and Change note… are below the fold on Review. |
+| P1-C | Apple (and the same class in Studio S-P2-1) | "Your scores" titles are duplicated or timestamps, and the rows are cramped. |
+| S-P1-1 | Studio | The Parity failure table has blank Variant and Meets threshold cells. |
