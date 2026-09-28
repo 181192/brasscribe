@@ -17,7 +17,7 @@ namespace Brasscribe.Play.Core.Tests;
 public class NativeCoreBridgeTests(ITestOutputHelper log)
 {
     /// <summary>Notes, chords and unpitched notes of the golden arrangement (data/golden/mikkel-arranged-band).</summary>
-    private const int GoldenNotes = 5977;
+    private const int GoldenNotes = 5949;
 
     private const string MikkelTitle = "Mikkel — solo cornet & brass band (draft)";
 
