@@ -114,6 +114,14 @@
                     <StackPanel Spacing="4">
                         <TextBlock Style="{StaticResource BcTitle2TextBlockStyle}" Foreground="{ThemeResource BcTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
                         <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" TextWrapping="Wrap" />
+                        <!-- After Save: what the note was changed to, and Undo. The note stays open until Keep. -->
+                        <StackPanel x:Name="ChangedPanel" Orientation="Horizontal" Spacing="12" Margin="0,4,0,0"
+                                    Visibility="{x:Bind ViewModel.IsChanged, Mode=OneWay}">
+                            <TextBlock x:Name="ChangedLine" Style="{StaticResource HeadlineStyle}" VerticalAlignment="Center" IsTabStop="True"
+                                       Text="{x:Bind ViewModel.ChangedText, Mode=OneWay}" TextWrapping="Wrap" />
+                            <Button x:Name="UndoChangeButton" x:Uid="ReviewUndoChangeButton" Style="{StaticResource PlainButtonStyle}"
+                                    Command="{x:Bind ViewModel.UndoChangeCommand}" Click="OnUndoChange" />
+                        </StackPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Top">
                         <!-- "Listen to this bar" becomes "Stop" while the bar plays. Both labels share one cell, the hidden

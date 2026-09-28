@@ -190,7 +190,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.All(b, n => Assert.InRange(n.NoteVelocity, 1, 127));
     }
 
-    /// <summary>"Change note…" on the golden: the change goes into the Composition and the whole score is arranged again.</summary>
+    /// <summary>"Change note…" on the golden: the change goes into the Composition, the whole score is arranged again, and the review stays on the note until Keep.</summary>
     [SkippableFact]
     public void A_changed_note_is_arranged_again_with_its_new_pitch()
     {
@@ -218,14 +218,46 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         var ev = item.Event;
         var note = composition.Voices.First(v => v.Id == ev.CompositionVoiceId).Notes.First(n => n.Start == ev.CompositionNoteStart);
         int oldPitch = note.Pitch;
+        double confidence = note.Confidence;
+        string key(ViewModels.ReviewItem i) => $"{i.Event.CompositionVoiceId}@{i.Event.CompositionNoteStart}";
+        TsEvent? Moved() => score.Document!.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
+            .FirstOrDefault(e => e.CompositionVoiceId == ev.CompositionVoiceId && e.CompositionNoteStart == ev.CompositionNoteStart);
+
+        // Save stays on the note: the score is arranged again with the new pitch, the note is still open.
         Assert.True(review.ChangeNote(1));
         Assert.Equal(1, arranged);
         Assert.Equal(oldPitch + 1, note.Pitch);
+        Assert.Equal(confidence, note.Confidence);
+        Assert.Equal(key(item), key(review.Current!));
+        Assert.False(review.Current!.IsKept);
+        Assert.True(review.IsChanged);
+        Assert.Matches(@"^Changed to \S+\d \(was \S+\d\)$", review.ChangedText);
+        Assert.Equal(before, review.AllItems.Count);
+        // Listen plays the score, which now has the new note.
+        Assert.Equal((oldPitch + 1) % 12, Announcer.Midi(Moved()!.Concert!) % 12);
+        Assert.True(Moved()!.IsUncertain);
+
+        // Change again: still the same note, "was" stays what Brasscribe wrote.
+        string was = review.ChangedText[(review.ChangedText.IndexOf("(was ") + 5)..^1];
+        Assert.True(review.ChangeNote(1));
+        Assert.Equal(oldPitch + 2, note.Pitch);
+        Assert.EndsWith($"(was {was})", review.ChangedText);
+
+        // Undo: back to the transcription, still on the note, still open.
+        review.UndoChangeCommand.Execute(null);
+        Assert.Equal(oldPitch, note.Pitch);
+        Assert.False(review.IsChanged);
+        Assert.Equal("", review.ChangedText);
+        Assert.Equal(key(item), key(review.Current!));
+
+        // Change and Keep: the note is checked and the review goes on to the next one.
+        Assert.True(review.ChangeNote(1));
+        review.KeepCommand.Execute(null);
         Assert.Equal(1.0, note.Confidence);
+        Assert.NotEqual(key(item), key(review.Current!));
         review.Load();
         Assert.True(review.AllItems.Count < before);
-        var moved = score.Document!.Parts.SelectMany(p => p.Bars).SelectMany(b => b.Events)
-            .FirstOrDefault(e => e.CompositionVoiceId == ev.CompositionVoiceId && e.CompositionNoteStart == ev.CompositionNoteStart);
+        var moved = Moved();
         Assert.NotNull(moved);
         Assert.Equal((oldPitch + 1) % 12, Announcer.Midi(moved.Concert!) % 12);
         Assert.False(moved.IsUncertain);

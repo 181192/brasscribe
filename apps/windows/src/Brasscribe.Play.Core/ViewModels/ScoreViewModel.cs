@@ -435,7 +435,15 @@ public sealed partial class ScoreViewModel : ObservableObject
     /// is loaded and timed, else from the score. It goes back to "Listen" when the bar ends.
     /// </summary>
     [RelayCommand]
-    private void ListenToBar()
+    private void ListenToBar() => ListenToBar(original: true);
+
+    /// <summary>
+    /// "Listen to this bar" from the score even when the recording is loaded: a note changed in Review
+    /// is heard as it now is. Stops the bar when one is playing.
+    /// </summary>
+    public void ListenToScoreBar() => ListenToBar(original: false);
+
+    private void ListenToBar(bool original)
     {
         if (IsListeningToBar)
         {
@@ -444,7 +452,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         }
         if (_nav is null) return;
         int bar = _nav.Bar.Number;
-        if (Original is { HasMedia: true } && BarSeconds(_nav.PartIndex, _nav.BarIndex) is { } span)
+        if (original && Original is { HasMedia: true } && BarSeconds(_nav.PartIndex, _nav.BarIndex) is { } span)
         {
             Original.IsMuted = false; // the video follower may have left it muted
             Original.PlayRange(TimeSpan.FromSeconds(span.Start), TimeSpan.FromSeconds(span.End), loop: false);

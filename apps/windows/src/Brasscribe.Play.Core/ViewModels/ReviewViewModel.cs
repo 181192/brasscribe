@@ -252,6 +252,7 @@ public sealed partial class ReviewViewModel : ObservableObject
         score.StopListening(announce: false);
         if (Current is { } old) old.IsCurrent = false;
         Current = item;
+        NotifyChange();
         UpdateTexts();
         if (item is null) return;
         item.IsCurrent = true;
@@ -299,7 +300,10 @@ public sealed partial class ReviewViewModel : ObservableObject
         MoveNext(item);
     }
 
-    /// <summary>"Listen to this bar", or "Stop" while it plays.</summary>
+    /// <summary>
+    /// "Listen to this bar", or "Stop" while it plays. A note changed here plays from the score, so the
+    /// player hears the new note; otherwise the recording plays when it is loaded.
+    /// </summary>
     [RelayCommand]
     private void Listen()
     {
@@ -310,28 +314,77 @@ public sealed partial class ReviewViewModel : ObservableObject
         }
         if (Current is not { } item) return;
         score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
-        score.ListenToBarCommand.Execute(null);
+        if (IsChanged) score.ListenToScoreBar();
+        else score.ListenToBarCommand.Execute(null);
     }
 
+    /// <summary>A note changed in this review: what it was, and how far it has moved since.</summary>
+    private sealed record NoteChange(string Was, int Shift);
+
+    /// <summary>Changed notes by <see cref="ChangeKey"/>, for "Changed to D5 (was C5)" and Undo.</summary>
+    private readonly Dictionary<string, NoteChange> _changes = [];
+
+    /// <summary>The same note across reloads: its Composition note, else its place in the MusicXML.</summary>
+    private static string ChangeKey(ReviewItem item) =>
+        item.Event.CompositionVoiceId is { } voice && item.Event.CompositionNoteStart is { } start
+            ? $"{voice}@{start}"
+            : $"{item.Part}#{item.Event.MusicXmlNoteIndex}";
+
+    /// <summary>The current note was changed in this review (it stays open until Keep).</summary>
+    public bool IsChanged => Current is { } item && _changes.ContainsKey(ChangeKey(item));
+
+    /// <summary>"Changed to D5 (was C5)" on the card while the current note is changed.</summary>
+    public string ChangedText => Current is { } item && _changes.TryGetValue(ChangeKey(item), out var c)
+        ? s.Format("Review_ChangedFrom", PitchNameAt(item, 0, octave: true), c.Was) : "";
+
     /// <summary>
-    /// "Change note…": moves the note by <paramref name="shift"/> semitones (0 keeps it as written), saves the
-    /// score and keeps the note, so its "?" goes. The same on every platform.
+    /// "Change note…" → Save: moves the note by <paramref name="shift"/> semitones, saves the score and
+    /// stays on the note, so the player can listen, change it again or undo. The note keeps its "?"
+    /// until Keep. Returns false for no change or when the note could not be changed.
     /// </summary>
     public bool ChangeNote(int shift)
     {
-        if (Current is not { } selected) return false;
-        if (shift != 0)
-        {
-            if (!score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, shift)) return false;
-            int sourceNoteIndex = selected.Event.MusicXmlNoteIndex;
-            var kept = _all.Where(i => i.IsKept).Select(i => (i.Part, i.Event.MusicXmlNoteIndex)).ToHashSet();
-            Load(Scope);
-            foreach (var i in _all) i.IsKept = kept.Contains((i.Part, i.Event.MusicXmlNoteIndex));
-            Select(Items.FirstOrDefault(x => x.Part == selected.Part && x.Event.MusicXmlNoteIndex == sourceNoteIndex));
-            announcer.Announce(s.Format("Review_Changed", PitchNameAt(Current!, 0)));
-        }
-        Keep();
+        if (shift == 0 || Current is not { } selected) return false;
+        string key = ChangeKey(selected);
+        var before = _changes.GetValueOrDefault(key);
+        string was = before?.Was ?? PitchNameAt(selected, 0, octave: true);
+        if (!Move(selected, shift)) return false;
+        int total = (before?.Shift ?? 0) + shift;
+        if (total == 0) _changes.Remove(key);
+        else _changes[key] = new NoteChange(was, total);
+        NotifyChange();
+        announcer.Announce(total == 0 ? s.Format("Review_ChangeUndone", was) : ChangedText);
         return true;
+    }
+
+    /// <summary>"Undo change": the note goes back to what Brasscribe wrote, and stays open.</summary>
+    [RelayCommand]
+    private void UndoChange()
+    {
+        if (Current is not { } selected || !_changes.TryGetValue(ChangeKey(selected), out var change)) return;
+        if (!Move(selected, -change.Shift)) return;
+        _changes.Remove(ChangeKey(selected));
+        NotifyChange();
+        announcer.Announce(s.Format("Review_ChangeUndone", change.Was));
+    }
+
+    /// <summary>Writes the note moved by <paramref name="shift"/>, reloads the review and selects the same note again.</summary>
+    private bool Move(ReviewItem selected, int shift)
+    {
+        score.StopListening(announce: false);
+        if (!score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, shift)) return false;
+        string key = ChangeKey(selected);
+        var kept = _all.Where(i => i.IsKept).Select(ChangeKey).ToHashSet();
+        Load(Scope);
+        foreach (var i in _all) i.IsKept = kept.Contains(ChangeKey(i));
+        Select(Items.FirstOrDefault(x => ChangeKey(x) == key) ?? _all.FirstOrDefault(x => ChangeKey(x) == key));
+        return true;
+    }
+
+    private void NotifyChange()
+    {
+        OnPropertyChanged(nameof(IsChanged));
+        OnPropertyChanged(nameof(ChangedText));
     }
 
     /// <summary>The current note moved by <paramref name="shift"/> semitones, named as the review shows it.</summary>
@@ -356,18 +409,18 @@ public sealed partial class ReviewViewModel : ObservableObject
     }
 
     /// <summary>"G", "B♭" (Norwegian "G", "B"): the note as shown (written or concert) moved by <paramref name="shift"/>.</summary>
-    private string PitchNameAt(ReviewItem item, int shift)
+    private string PitchNameAt(ReviewItem item, int shift, bool octave = false)
     {
         bool concert = score.ConcertPitch;
         var ev = item.Event;
         var shown = concert ? ev.Concert ?? ev.Written : ev.Written ?? ev.Concert;
         if (shown is null || score.Document is not { } doc) return "";
-        if (shift == 0) return Announcer.PitchLabel(shown, Nb);
+        if (shift == 0) return Announcer.PitchLabel(shown, Nb) + (octave ? shown.Octave.ToString() : "");
         var part = doc.Parts[item.Part];
         int fifths = part.Bars[item.BarIndex].KeyFifths;
         if (concert) fifths = Announcer.ConcertKey(fifths, part.Transpose);
         var spelled = MusicXmlNoteEditor.Spell(Announcer.Midi(shown) + shift, fifths);
-        return Announcer.PitchLabel(spelled, Nb);
+        return Announcer.PitchLabel(spelled, Nb) + (octave ? spelled.Octave.ToString() : "");
     }
 
     private bool Nb => s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase);

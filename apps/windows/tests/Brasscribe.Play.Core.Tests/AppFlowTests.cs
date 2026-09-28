@@ -189,8 +189,14 @@ public class AppFlowTests
         Assert.Equal(["SwiftF0: B♭", "Basic Pitch: C"], review.ChangeChoices().Select(c => c.Label));
         Assert.Equal("C", review.ChangeLabel(2));
 
-        // Change note… to what Basic Pitch heard: the score, the Composition and the evidence follow, and the note is kept.
+        // Change note… to what Basic Pitch heard: the score, the Composition and the evidence follow; the review
+        // stays on the note until Keep.
+        Assert.False(review.ChangeNote(0));
         Assert.True(review.ChangeNote(2));
+        Assert.Equal(Screen.Review, main.Screen);
+        Assert.Equal("Changed to C5 (was B♭4)", review.ChangedText);
+        Assert.False(review.Current!.IsKept);
+        review.KeepCommand.Execute(null);
         Assert.Equal(Screen.Score, main.Screen);
         var entry = Assert.Single(library.Entries);
         Assert.Contains("<step>C</step><octave>5</octave>", File.ReadAllText(entry.MusicXmlPath).Replace(" ", ""));

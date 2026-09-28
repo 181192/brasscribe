@@ -1089,6 +1089,12 @@
   <data name="ReviewStopLabel.Text" xml:space="preserve">
     <value>Stopp</value>
   </data>
+  <data name="ReviewUndoChangeButton.Content" xml:space="preserve">
+    <value>Angre endringen</value>
+  </data>
+  <data name="ReviewUndoChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Sett tonen tilbake slik Brasscribe skrev den</value>
+  </data>
   <data name="Review_Accompaniment" xml:space="preserve">
     <value>Akkompagnement</value>
   </data>
@@ -1101,8 +1107,11 @@
   <data name="Review_BarsHeading" xml:space="preserve">
     <value>Takt {0}–{1}</value>
   </data>
-  <data name="Review_Changed" xml:space="preserve">
-    <value>Endret til {0}</value>
+  <data name="Review_ChangeUndone" xml:space="preserve">
+    <value>Tilbake til {0}, slik Brasscribe skrev den</value>
+  </data>
+  <data name="Review_ChangedFrom" xml:space="preserve">
+    <value>Endret til {0} (var {1})</value>
   </data>
   <data name="Review_Count" xml:space="preserve">
     <value>{0} toner å sjekke</value>
