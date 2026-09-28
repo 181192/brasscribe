@@ -1,0 +1,129 @@
+"""Playback loudness: the output stage every Play app shares, and its test vectors.
+
+    uv run --project sounds python sounds/playback_levels.py --vectors   # rewrite output-stage-vectors.json
+    python3 sounds/playback_levels.py --check                            # CI: stdlib only
+
+sounds/playback-levels.json holds the limiter curve, the band's loudness target and each app's
+make-up gain, the original recording's target and the metronome's click level.
+sounds/output-stage-vectors.json holds what the Apple, Android and Windows tests assert against:
+limiter input -> output pairs, recording loudness -> gain pairs, and loudness cases (signals
+described by parameters, the expected integrated LUFS from pyloudnorm) for each app's meter.
+
+--check recomputes the limiter and gain vectors with the standard library and fails when the
+vectors file is out of date with playback-levels.json.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+LEVELS = HERE / "playback-levels.json"
+VECTORS = HERE / "output-stage-vectors.json"
+
+LIMITER_INPUTS = [0.0, 0.1, -0.25, 0.5, 0.79, 0.8, -0.8, 0.81, 0.85, -0.9, 0.95, 1.0, -1.0, 1.2, 1.5, -2.0, 4.0, 50.0]
+RECORDING_LUFS = [-40.0, -30.0, -28.0, -22.0, -16.0, -14.9, -10.0, -4.6, 5.0, None]
+
+# Loudness cases: sum of sines per channel, `segments` of (seconds, amplitude scale).
+LOUDNESS_CASES = [
+    {"name": "1 kHz stereo -20 dBFS 48 kHz", "rate": 48000, "channels": 2, "tones": [[1000.0, 0.1]], "segments": [[5.0, 1.0]]},
+    {"name": "1 kHz stereo -20 dBFS 44.1 kHz", "rate": 44100, "channels": 2, "tones": [[1000.0, 0.1]], "segments": [[5.0, 1.0]]},
+    {"name": "1 kHz mono -20 dBFS 22.05 kHz", "rate": 22050, "channels": 1, "tones": [[1000.0, 0.1]], "segments": [[5.0, 1.0]]},
+    {"name": "100 Hz + 3 kHz stereo 44.1 kHz", "rate": 44100, "channels": 2, "tones": [[100.0, 0.3], [3000.0, 0.05]], "segments": [[4.0, 1.0]]},
+    {"name": "loud then 40 dB down (relative gate)", "rate": 44100, "channels": 2, "tones": [[440.0, 0.5]],
+     "segments": [[4.0, 1.0], [4.0, 0.01]]},
+    {"name": "silence", "rate": 44100, "channels": 2, "tones": [[1000.0, 0.0]], "segments": [[2.0, 1.0]]},
+]
+
+
+def load_levels() -> dict:
+    return json.loads(LEVELS.read_text())
+
+
+def limit(x: float, threshold: float, ceiling: float) -> float:
+    a = abs(x)
+    if a <= threshold:
+        return x
+    knee = ceiling - threshold
+    y = threshold + knee * math.tanh((a - threshold) / knee)
+    return -y if x < 0 else y
+
+
+def recording_gain_db(measured: float | None, rec: dict) -> float:
+    if measured is None or not math.isfinite(measured):
+        return 0.0
+    return max(-rec["max_cut_db"], min(rec["max_boost_db"], rec["target_lufs"] - measured))
+
+
+def stdlib_vectors(levels: dict) -> dict:
+    lim = levels["limiter"]
+    return {
+        "limiter": [{"in": x, "out": round(limit(x, lim["threshold"], lim["ceiling"]), 9)} for x in LIMITER_INPUTS],
+        "recording_gain": [{"lufs": v, "gain_db": round(recording_gain_db(v, levels["recording"]), 6)} for v in RECORDING_LUFS],
+    }
+
+
+def render_case(case: dict):
+    import numpy as np
+    parts = []
+    t0 = 0
+    for secs, scale in case["segments"]:
+        n = int(round(secs * case["rate"]))
+        t = (np.arange(n) + t0) / case["rate"]
+        x = sum(a * np.sin(2 * np.pi * f * t) for f, a in case["tones"]) * scale
+        parts.append(x)
+        t0 += n
+    x = np.concatenate(parts).astype(np.float32).astype(np.float64)
+    return np.stack([x] * case["channels"], axis=1)
+
+
+def loudness_vectors() -> list[dict]:
+    import pyloudnorm
+    out = []
+    for case in LOUDNESS_CASES:
+        y = render_case(case)
+        v = pyloudnorm.Meter(case["rate"]).integrated_loudness(y if case["channels"] > 1 else y[:, 0])
+        out.append({**case, "lufs": round(float(v), 3) if math.isfinite(v) else None})
+    return out
+
+
+def check() -> list[str]:
+    errors = []
+    levels = load_levels()
+    lim = levels["limiter"]
+    if not 0 < lim["threshold"] < lim["ceiling"] < 1:
+        errors.append("limiter: need 0 < threshold < ceiling < 1")
+    if not VECTORS.exists():
+        return errors + ["sounds/output-stage-vectors.json is missing: run sounds/playback_levels.py --vectors"]
+    vec = json.loads(VECTORS.read_text())
+    want = stdlib_vectors(levels)
+    if vec.get("limiter") != want["limiter"] or vec.get("recording_gain") != want["recording_gain"] \
+            or vec.get("levels") != levels or [c["name"] for c in vec.get("loudness", [])] != [c["name"] for c in LOUDNESS_CASES]:
+        errors.append("sounds/output-stage-vectors.json is out of date: run sounds/playback_levels.py --vectors")
+    return errors
+
+
+def main() -> None:
+    if sys.argv[1:] == ["--check"]:
+        errors = check()
+        for e in errors:
+            print(e)
+        sys.exit(1 if errors else 0)
+    if sys.argv[1:] == ["--vectors"]:
+        levels = load_levels()
+        doc = {"about": "Generated by sounds/playback_levels.py --vectors from sounds/playback-levels.json. limiter: in -> out "
+                        "(tolerance 1e-6); recording_gain: measured integrated LUFS (null: silent) -> gain dB; loudness: "
+                        "sum of sines per channel (tones [Hz, amplitude]) over segments [seconds, amplitude scale], expected "
+                        "integrated LUFS from pyloudnorm (tolerance 0.1 LU; null: -inf).",
+               "levels": levels, **stdlib_vectors(levels), "loudness": loudness_vectors()}
+        VECTORS.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
+        print(f"wrote {VECTORS}")
+        return
+    print(__doc__)
+
+
+if __name__ == "__main__":
+    main()
