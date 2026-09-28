@@ -575,13 +575,13 @@
     <string name="inst_soprano_sub">E♭ cornet</string>
     <string name="inst_soprano_sub_spoken">E flat cornet</string>
     <string name="inst_flugelhorn">Flugelhorn</string>
-    <string name="inst_tenor_horn">Tenor horn</string>
+    <string name="inst_tenor_horn">Tenor Horn</string>
     <string name="inst_tenor_horn_sub">in E♭</string>
     <string name="inst_tenor_horn_sub_spoken">in E flat</string>
     <string name="inst_baritone">Baritone</string>
     <string name="inst_euphonium">Euphonium</string>
     <string name="inst_trombone">Trombone</string>
-    <string name="inst_bass_trombone">Bass trombone</string>
+    <string name="inst_bass_trombone">Bass Trombone</string>
     <string name="inst_eb_bass">E♭ Bass</string>
     <string name="inst_eb_bass_spoken">E flat Bass</string>
     <string name="inst_bb_bass">B♭ Bass</string>
