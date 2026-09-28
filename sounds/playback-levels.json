@@ -6,15 +6,68 @@
     "ceiling": 0.98
   },
   "band": {
-    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. A whole arrangement at this setting (the Mikkel golden score) measures about arrangement_lufs on Apple, which plays every note at velocity 80; alphaSynth plays the score's dynamics, so a loud score measures louder there (-11.8 LUFS for the golden score on Windows).",
+    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. Every app plays the score's dynamics (see dynamics), so a whole arrangement lands at the same level everywhere: arrangement_lufs is the Mikkel golden score, -11.8 LUFS on Windows (alphaSynth) and within 1 LU of it on Apple.",
     "phrase_lufs": -12.0,
     "tolerance_lu": 1.0,
-    "arrangement_lufs": -16.0,
+    "arrangement_lufs": -11.8,
     "gain_db": {
       "apple": 26.0,
       "android_alphatab": 4.0,
       "android_sfizz": 4.0,
       "windows": 4.0
+    }
+  },
+  "dynamics": {
+    "about": "Score dynamics to MIDI velocity, alphaTab 1.8.4's rules (MusicXmlImporter, MidiFileGenerator._getNoteVelocity, MidiUtils.dynamicToVelocity), which Android and Windows get from alphaTab itself and Apple (ScoreKit Dynamics) copies. A <dynamics> mark, in a direction or in a note's notations, holds from where it is read until the next one, in document order; a part starts at default. velocity is each mark's velocity by MusicXML element name. The forced marks (sf, sfz, fz, sfp) play as ff and hold like any mark, as alphaTab plays them. accent_steps: an <accent/> adds one step (step velocity), a <strong-accent/> (marcato) two; the result is clamped to 1..127. <sound dynamics> is ignored.",
+    "default": "f",
+    "step": 16,
+    "velocity": {
+      "pppppp": 3,
+      "ppppp": 5,
+      "pppp": 10,
+      "ppp": 15,
+      "pp": 31,
+      "p": 47,
+      "mp": 63,
+      "mf": 79,
+      "f": 95,
+      "ff": 111,
+      "fff": 127,
+      "ffff": 127,
+      "fffff": 127,
+      "ffffff": 127,
+      "sf": 111,
+      "sfz": 111,
+      "fz": 111,
+      "sfp": 111,
+      "sfpp": 111,
+      "sfzp": 111,
+      "fp": 95,
+      "rf": 95,
+      "rfz": 95,
+      "sffz": 95,
+      "pf": 87,
+      "n": 1
+    },
+    "accent_steps": {
+      "accent": 1,
+      "strong-accent": 2
+    },
+    "wedge": "Apple only: a hairpin (<wedge>) moves the velocity linearly in time from the mark in effect where it starts to the first mark at or up to a bar after where it stops; with no such mark, one step up or down, held until the next mark. alphaTab 1.8.4 draws hairpins but does not play them, so on Android and Windows the level jumps at the next mark instead.",
+    "sampler_velocity": {
+      "about": "Per-synth velocity correction: [score velocity, velocity sent to the synth] knots, linear between them. alphaSynth plays amplitude proportional to velocity and is the reference (no correction). AVAudioUnitSampler ignores the SoundFont's velocity modulator and follows a much steeper curve, so the table's pp played 7 dB softer and ff 3.4 dB louder than on alphaSynth. Measured with the full-band test phrase at one velocity through both engines, 12 dB under the calibrated gain so nothing reaches the limiter, with the same SoundFont (brasscribe-band-16bit.sf2): pitched parts are matched level for level; percussion, which Apple seats further back (about 8 dB under alphaSynth at every velocity), is matched in shape, anchored at velocity 90. alphatab_lufs is the reference: the pitched parts of that phrase through alphaSynth at each velocity. With the correction every table velocity from ppp to fff lands within 1 dB of it except p (-2.5 dB, where the sampler's velocity layers leave a 5 dB gap between 55 and 56).",
+      "apple_pitched": [[1, 8], [3, 15], [5, 19], [10, 27], [15, 33], [31, 47], [47, 55], [63, 65], [79, 77], [87, 81], [95, 89], [111, 99], [127, 101]],
+      "apple_percussion": [[1, 1], [3, 15], [5, 21], [10, 30], [15, 36], [31, 52], [47, 64], [63, 75], [79, 83], [87, 88], [95, 92], [111, 100], [127, 107]],
+      "alphatab_lufs": {
+        "15": -46.63,
+        "31": -40.33,
+        "47": -36.71,
+        "63": -28.36,
+        "79": -24.72,
+        "95": -22.25,
+        "111": -17.04,
+        "127": -15.87
+      }
     }
   },
   "recording": {

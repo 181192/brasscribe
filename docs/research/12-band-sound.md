@@ -290,6 +290,7 @@ For the A/B sets, keep `key.json` away from listeners and score with `sounds/ab-
   - AVAudioUnitSampler ignores the SoundFont's velocity modulator and spans 36–44 dB from velocity 30 to 127, against about 16–24 dB in FluidSynth. So pp plays about 14 dB too soft. Rewriting its curve crashes on engine shutdown.
   - alphaTab uses amplitude ∝ velocity, so pp plays about 6 dB too soft.
   - Next step: a SoundFont-side fix, i.e. per-layer levels chosen against each engine's curve, or velocity remapping in the players before note-on.
+  - Apple now remaps velocity before note-on so it plays at alphaSynth's levels (§11, score dynamics). Soft playing is then as soft on Apple as on Android and Windows; all three remain softer than FluidSynth.
 - **Bass Trombone A0–B♭0** (outside the comfortable range): stretched 12 semitones, 7.6 dB level step.
 - **alphaTab B♭ Bass B♭0:** one click about 25 ms after the note-off. B♭0 is outside the comfortable range.
 - **Not measured:**
@@ -348,8 +349,20 @@ The plan is in `sounds/recording-plan.md`:
 **The target** lives in `sounds/playback-levels.json`. `sounds/playback_levels.py --vectors` writes `sounds/output-stage-vectors.json` from it, and `--check` (stdlib, in CI) fails when the two drift apart.
 - **Band stage.** Make-up gain, then a memoryless soft limiter: `y = x` up to 0.8 (−1.9 dBFS), `sign(x)·(0.8 + 0.18·tanh((|x| − 0.8)/0.18))` above it, approaching a ceiling of 0.98 (−0.18 dBFS). It has no attack or release, so it cannot pump, and below 0.8 every part keeps its level, so mute and solo keep the balance.
 - **Band calibration.** The full-band test phrase (`phrases.json` "band") lands at **−12 LUFS integrated (±1 LU)**, peaking at or under the ceiling. Each band path has its own measured make-up gain: Apple +26 dB (environment node, parts metres away), alphaSynth on Android and Windows +4 dB at unity master volume, sfizz +4 dB (its parts are balanced to the SoundFont's).
-- **Recording.** The original recording is measured once, as a whole (EBU R128 integrated), when it loads, and plays at **−16 LUFS**. That is what a whole arrangement from the band measures on Apple (the Mikkel golden score: −15.95 LUFS). Gain = clamp(−16 − measured, −30, +12) dB, and the limiter follows the gain, so a boost cannot clip. A mono file is measured as dual mono (+3 dB), because it plays from both speakers. It is never normalised per bar, so a soft bar stays softer than a loud one.
+- **Recording.** The original recording is measured once, as a whole (EBU R128 integrated), when it loads, and plays at **−16 LUFS**. That is what a whole arrangement from the band measured on Apple at one velocity (the Mikkel golden score: −15.95 LUFS). With the score's dynamics, a loud score sits above it (see the score dynamics bullet). Gain = clamp(−16 − measured, −30, +12) dB, and the limiter follows the gain, so a boost cannot clip. A mono file is measured as dual mono (+3 dB), because it plays from both speakers. It is never normalised per bar, so a soft bar stays softer than a loud one.
 - **Metronome.** The click peaks at **−10 dBFS (±1.5 dB)** after the output, about 9 dB under the full band's peak and below the limiter's threshold.
+- **Score dynamics.** Every app plays the score's dynamics by alphaTab 1.8.4's rules (`dynamics` in `playback-levels.json`). Android and Windows get them from alphaTab itself; Apple copies them in ScoreKit (`Dynamics`, `MusicXMLParser`):
+  - A `<dynamics>` mark holds from where it is read until the next one, in document order. A part starts at f.
+  - Velocities are alphaTab's `MidiUtils.dynamicToVelocity`: ppp 15, then 16 per step, so pp 31, p 47, mp 63, mf 79, f 95, ff 111, fff 127.
+  - sf, sfz, fz and sfp play as ff and hold like any other mark, as alphaTab plays them. `<sound dynamics>` is ignored.
+  - An accent adds 16, and a strong accent (marcato) adds 32.
+  - Hairpins are the one difference. Apple moves the velocity linearly across a `<wedge>` to the mark at its end, or one step when there is no mark. alphaTab 1.8.4 draws hairpins but plays them flat, so on Android and Windows the level jumps at the next mark.
+  - One more small difference: alphaTab carries the previous part's last mark into a part that has no mark before its first note. Apple starts every part at f.
+  - On the golden score, every note that both engines play at the same tick gets the same velocity (5,844 of 5,844). The only differences are tie splits.
+- **Sampler velocity curve.** AVAudioUnitSampler ignores the SoundFont's velocity modulator and follows a much steeper curve than alphaSynth, which plays amplitude ∝ velocity. So Apple remaps each velocity before note-on (`dynamics.sampler_velocity.apple_*`; `PlaybackLevels.samplerVelocity`, applied only to the engine's sequence, never to MIDI export).
+  - The knots were measured on the full-band phrase at one velocity through both engines, 12 dB under each gain so nothing reaches the limiter, with the same SoundFont.
+  - Pitched parts are matched level for level.
+  - Percussion is matched in shape, anchored at velocity 90. Apple seats the kit at 6 m, where it sits about 8 dB under alphaSynth's at every velocity, which is a balance question, not a velocity one.
 - **Loudness meter.** Each app has its own BS.1770 meter, with K-weighting, 400 ms blocks at 75 % overlap, and the −70 LUFS absolute and −10 LU relative gates. The meters use pyloudnorm's filters and are held to the pyloudnorm vectors within 0.1 LU.
 
 **Per app**
@@ -360,25 +373,35 @@ The plan is in `sounds/recording-plan.md`:
 | Stop fade | Sampler volumes, before the stage | alphaTab master volume, before the stage; sfizz fades after its limiter | On the output, after the stage |
 | Recording | Its own `OutputStageAU` after the time-pitch unit. Measured off the main thread when loaded; the gain is applied at the next start, never mid-play. The mixer spreads mono equal-power, so +3 dB is made up. Stop fades it over 80 ms. | `LevelMatch` measures the recording and the engine's rendered score once each, and plays every "Listen to this bar" slice with that gain and the limiter | `RecordingLevel` measures the decoded WAV off the UI thread and sets `MediaPlayer.Volume`. Stop fades it over 80 ms. |
 | Metronome | Bypasses the stage, at its own level | Through the stage, volume 1 | Through the stage, volume 1 |
-| Tests | `LoudnessTests`, `OutputStageTests` (`swift test --no-parallel`) | `OutputStageTest`, `LevelMatchTest` (JVM); `PlaybackLevelTest` (emulator: phrase through alphaTab and the stage, metronome, C++ curve against Kotlin); `OutputStageInstallTest` (emulator: the app's own player is staged after opening a score, playing and stopping) | `PlaybackLevelTests` (`tools/check-macos.sh`) |
+| Tests | `LoudnessTests`, `OutputStageTests`, `DynamicsLevelTests`, ScoreKit `DynamicsTests` (`swift test --no-parallel`) | `OutputStageTest`, `LevelMatchTest` (JVM); `PlaybackLevelTest` (emulator: phrase through alphaTab and the stage, metronome, C++ curve against Kotlin); `OutputStageInstallTest` (emulator: the app's own player is staged after opening a score, playing and stopping) | `PlaybackLevelTests` (`tools/check-macos.sh`) |
 
 **Measured, before → after.** Peak dBFS / integrated LUFS.
 
 | | Apple | Android (alphaTab, emulator) | Windows (alphaSynth, macOS) |
 |---|---|---|---|
 | Full-band phrase | −1.1 / −11.7 → unchanged | −4.35 / −16.2 (no limiter) → −0.65 / −12.2 | −10.2 / −22.2 → −0.57 / −12.2 |
-| Golden arrangement (Mikkel) | −2.8 / −15.95 → unchanged | not rendered | −6.7 / −21.9 → −0.18 / −11.8 |
+| Golden arrangement (Mikkel) | −2.8 / −15.95 → unchanged; with dynamics −0.18 / −12.17 | not rendered | −6.7 / −21.9 → −0.18 / −11.8 |
 | Metronome click | −9.8 (phone SF2 −10.7) → unchanged | −15.1 → −11.1 | −19.4 → −9.4 |
 | Recording (`captured.wav`, stereo, −14.9 LUFS) | −14.9 (file level) → −16.0, peak −4.4 | file level → −16 | file level → −16 (turned down) |
 | Engine's rendered score (Listen to this bar) | — | about −4.6 LUFS → −16 | — |
 
 Apple test variants of the recording: −8 dB gives −28.2 LUFS in the file and −16.3 played, +8 dB gives −12.3 and −16.0, mono −6 dB gives −26.2 and −16.1, mono +6 dB gives −14.3 and −16.0. A −20 dB copy stops at the +12 dB cap. Before this change, a mono recording played 3 dB under its measured level, because of the equal-power spread. The meter reads the 4.5-minute `captured.wav` in 1.7 s in a debug build.
 
+**Apple dynamics, before → after.** Integrated LUFS of the phrase's pitched parts, 12 dB under each app's band gain, so nothing reaches the limiter (`DynamicsLevelTests`). Before, every mark played at velocity 80.
+
+| Mark (velocity) | alphaSynth | Apple before (80) | Apple at the table velocity, no remap | Apple remapped |
+|---|---|---|---|---|
+| pp (31) | −40.33 | −24.06 | −47.59 (−7.3) | −40.36 (−0.0) |
+| p (47) | −36.71 | −24.06 | −40.36 (−3.7) | −37.63 (−0.9) |
+| mp (63) | −28.36 | −24.06 | −30.33 (−2.0) | −28.43 (−0.1) |
+| mf (79) | −24.72 | −24.06 | −24.27 (+0.5) | −24.72 (0.0) |
+| f (95) | −22.25 | −24.06 | −20.43 (+1.8) | −22.20 (+0.1) |
+| ff (111) | −17.04 | −24.06 | −13.62 (+3.4) | −16.20 (+0.8) |
+
+p is the worst fit. The sampler's velocity layers jump 5 dB between 55 and 56, so no velocity gets closer. The golden arrangement on Apple measures −15.96 LUFS before, −9.27 with the table velocities and no remap, and −12.17 remapped, against Windows' −11.84. The full-band phrase test sends velocities 80 and 90 straight to the samplers, so it still measures −11.70. With the remap the sequence applies, it measures −12.24, against Windows' −12.21.
+
 **Gaps**
-- **Score dynamics differ by engine, so a whole arrangement does not match across apps.**
-  - Apple's MIDI writer plays every note at velocity 80. alphaSynth plays the score's dynamics, and the golden score is mostly f and ff.
-  - So with the same phrase calibration, the golden arrangement measures −16 LUFS on Apple but −11.8 on Windows, where its peaks sit on the limiter's ceiling.
-  - For that score, the recording target sits about 4 LU under the band on Android and Windows. Fixing it means Apple playing dynamics, or velocity remapping (§9).
+- **The recording sits under a loud score.** Every app now plays the golden arrangement at about −12 LUFS (Apple −12.17, Windows −11.84), with its peaks on the limiter's ceiling. The recording target stays at −16 LUFS, so for a loud score the recording plays about 4 LU under the band on every app. Raising `recording.target_lufs` would close that gap, but it changes the recording level on all three apps.
 - **Windows cannot boost.** `MediaPlayer.Volume` stops at 1, so a recording quieter than −16 LUFS keeps its own level; only a louder one is turned down. Boosting would need the recording on its own audio path, not the media player.
 - **Android's two streams add up unchecked.** With sfizz on, alphaTab (kit and metronome) and sfizz are limited separately and summed by the system mixer, so neither limiter bounds the sum. The sfizz gain is set by design and was not measured: there is no SFZ pack here, and `sfizz_player.cpp` was only syntax-checked against the sfizz and Oboe headers, not built or run.
 - **Android mono playback** is assumed to reach both speakers at full level (dual mono). This was not measured on a device.

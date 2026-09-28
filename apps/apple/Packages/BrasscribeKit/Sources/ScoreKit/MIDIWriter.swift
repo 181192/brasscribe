@@ -1,6 +1,7 @@
 import Foundation
 
-/// One note event ready for playback or export: concert pitch, tie chains merged.
+/// One note event ready for playback or export: concert pitch, tie chains merged, velocity from the
+/// score's dynamics (`Dynamics`).
 public struct PlaybackNote: Sendable, Equatable {
     public var pitch: Int
     public var startTick: Int
@@ -20,8 +21,7 @@ public extension Part {
                 if !n.tieStart { open[p] = nil }
                 continue
             }
-            out.append(PlaybackNote(pitch: p, startTick: n.startTick, durTicks: n.durTicks,
-                                    velocity: isPercussion ? 90 : 80))
+            out.append(PlaybackNote(pitch: p, startTick: n.startTick, durTicks: n.durTicks, velocity: n.velocity))
             if n.tieStart { open[p] = out.count - 1 } else { open[p] = nil }
         }
         return out
@@ -39,9 +39,14 @@ public enum MIDIWriter {
         public var includeMetronome: Bool
         /// Ticks of silence (in `Score.ticksPerQuarter` units) before bar 1.
         public var leadInTicks: Int
-        public init(parts: Set<String>? = nil, transposeSemitones: Int = 0, includeMetronome: Bool = false, leadInTicks: Int = 0) {
+        /// Maps each note's velocity for a particular synth (velocity, percussion part); nil writes the
+        /// score's velocities, as a MIDI file should.
+        public var velocityMap: (@Sendable (Int, Bool) -> Int)?
+        public init(parts: Set<String>? = nil, transposeSemitones: Int = 0, includeMetronome: Bool = false, leadInTicks: Int = 0,
+                    velocityMap: (@Sendable (Int, Bool) -> Int)? = nil) {
             self.parts = parts; self.transposeSemitones = transposeSemitones
             self.includeMetronome = includeMetronome; self.leadInTicks = leadInTicks
+            self.velocityMap = velocityMap
         }
     }
 
@@ -101,7 +106,8 @@ public enum MIDIWriter {
                 let pitch = p.isPercussion ? n.pitch : n.pitch + options.transposeSemitones
                 guard (0...127).contains(pitch) else { continue }
                 let s = n.startTick + options.leadInTicks
-                events.append((s, [0x90 | ch, UInt8(pitch), UInt8(n.velocity)]))
+                let v = max(1, min(127, options.velocityMap?(n.velocity, p.isPercussion) ?? n.velocity))
+                events.append((s, [0x90 | ch, UInt8(pitch), UInt8(v)]))
                 events.append((s + n.durTicks, [0x80 | ch, UInt8(pitch), 0]))
             }
             // note-offs before note-ons at the same tick so repeated notes retrigger

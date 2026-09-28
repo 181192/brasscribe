@@ -110,6 +110,8 @@ public struct Part: Sendable, Equatable, Identifiable {
     public var notes: [ScoreNote]
     /// Dynamic marks (`p`, `mf`, …) by tick.
     public var dynamics: [Int: String] = [:]
+    /// Hairpins (`<wedge>`), in score order.
+    public var wedges: [Wedge] = []
     /// Written key signature per measure (follows key changes).
     public var measureFifths: [Int] = []
     /// The arranger coloured some of its notes as uncertain.
@@ -156,6 +158,12 @@ public struct ScoreNote: Sendable, Equatable {
     public var tieStop: Bool
     /// Concert MIDI pitch for pitched notes; GM drum key for percussion; nil for rests.
     public var midiPitch: Int?
+    /// The dynamic mark the note is played under (`Dynamics`).
+    public var dynamic: String = Dynamics.defaultMark
+    /// Accent steps: 1 for an accent, 2 for a strong accent (marcato).
+    public var accent: Int = 0
+    /// MIDI velocity from the dynamics, hairpins and accents (`Dynamics`).
+    public var velocity: Int = Dynamics.velocity(mark: Dynamics.defaultMark)
 
     public var isRest: Bool { if case .rest = kind { return true } else { return false } }
     public var endTick: Int { startTick + durTicks }
