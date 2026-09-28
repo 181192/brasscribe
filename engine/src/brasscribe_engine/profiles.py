@@ -55,7 +55,8 @@ QUARTET_NEEDS_GROUP = "a quartet needs a recording of the whole group: a solo ta
 
 class OptionError(ValueError):
     """A job option the engine refuses, with a stable `code` the apps map to their own words (the
-    message is English, for logs and Studio). A 422 carries both: {"detail": message, "code": code}."""
+    message is English, for logs and Studio). A 422 carries both: {"code": code, "detail": message},
+    the code first, so a client that reads only the start of the body still has it."""
 
     def __init__(self, message: str, code: str):
         super().__init__(message)
