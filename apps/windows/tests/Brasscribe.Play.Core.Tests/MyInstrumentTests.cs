@@ -211,7 +211,7 @@ public class MyInstrumentTests
         var q = YourPart.Resolve(new FakeCore(), bass, Lineup.Quartet, Quartet, null);
         Assert.Equal(3, q.Index);
         Assert.Equal(SeatNotice.OtherKey, q.Notice);
-        Assert.Equal("The quartet has no E♭ Bass. Your part here is Euphonium, written for B♭.", YourPart.Notice(s, catalog, bass, q, Quartet, n => n));
+        Assert.Equal("This quartet has no E♭ Bass. Your part here is Euphonium, written for B♭.", YourPart.Notice(s, catalog, bass, q, Quartet, n => n));
 
         // Read in bass clef, the key does not matter: every part is at concert pitch.
         Assert.Equal(SeatNotice.SameKey, YourPart.Resolve(new FakeCore(), bass with { Reads = "bass" }, Lineup.Quartet, Quartet, null).Notice);
@@ -264,7 +264,7 @@ public class MyInstrumentTests
         var r = YourPart.Resolve(new FakeCore(), choice, Lineup.Quartet, Quartet, null);
         Assert.Equal(-1, r.Index);
         Assert.Equal(SeatNotice.NoPart, r.Notice);
-        Assert.Equal("The quartet has no Percussion part. Brasscribe opens every part.", YourPart.Notice(s, new SeatCatalog(new FakeCore(), s), choice, r, Quartet, n => n));
+        Assert.Equal("This quartet has no Percussion part. Brasscribe opens every part.", YourPart.Notice(s, new SeatCatalog(new FakeCore(), s), choice, r, Quartet, n => n));
     }
 
     [Fact]
@@ -284,7 +284,8 @@ public class MyInstrumentTests
         Assert.Equal(-1, picker.InstrumentIndex);
         Assert.False(picker.CanContinue);
         Assert.Equal("Choose your instrument, or “I conduct or listen”.", picker.ContinueHint);
-        Assert.Equal(["Cornet", "Flugelhorn", "Solo Horn", "Baritone", "Euphonium", "E♭ Bass", "Percussion"], picker.Tiles.Select(t => t.Label));
+        Assert.Equal(["Cornet", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "E♭ Bass", "Percussion"], picker.Tiles.Select(t => t.Label));
+        Assert.Equal("Tenor Horn, in E flat", picker.Tiles[2].SpokenLabel);
         Assert.Equal("E flat Bass", picker.Tiles[5].SpokenLabel);
 
         picker.InstrumentIndex = 0; // Cornet: which part? with nothing chosen
@@ -446,6 +447,9 @@ public class MyInstrumentTests
         Assert.Equal("As recorded · E major on your part", output.KeyDetail);
         output.SetScoreContext(composition, -2);
         Assert.Equal("As recorded · E major for B♭ instruments", output.KeyDetail);
+        output.Reads = "bass";
+        output.SetScoreContext(composition, 0, yours: true);
+        Assert.Equal("As recorded · D major, as it sounds", output.KeyDetail);
     }
 
     // ---- the score follows your part ----
@@ -566,6 +570,19 @@ public class MyInstrumentTests
     }
 
     [Fact]
+    public void Your_part_in_bass_clef_is_as_written_in_bass_clef()
+    {
+        var (main, _, _) = Build(setup: s => s.Set("Seat", "euphonium"));
+        var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")).Replace("<part-name>Solo Cornet</part-name>", "<part-name>Euphonium</part-name>");
+        main.Output.ShowingMade(new ArrangementOptions(Seat: "euphonium", Reads: "bass"));
+        main.Score.Load(xml, null);
+        main.Score.SelectedPartIndex = 2; // percussion, in C: another part
+        Assert.Equal("As written", main.Score.WrittenLabel);
+        main.Score.MakeMine(2);
+        Assert.Equal("As written (bass clef)", main.Score.WrittenLabel);
+    }
+
+    [Fact]
     public void Settings_keep_the_seat_and_reading()
     {
         var store = new InMemorySettings();
@@ -596,7 +613,10 @@ public class MyInstrumentTests
 
         // The picker's instruments, from the core: the four with parts get the app's word, the rest their seat's name.
         var catalog = new SeatCatalog(core, Strings());
-        Assert.Equal(["Soprano Cornet", "Cornet", "Flugelhorn", "Tenor Horn", "Baritone", "Trombone", "Bass Trombone", "Euphonium", "E♭ Bass", "B♭ Bass", "Percussion"],
+        Assert.Equal(["Cornet", "Soprano", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "Trombone", "Bass Trombone", "E♭ Bass", "B♭ Bass", "Percussion"],
             catalog.Tiles.Select(t => t.Label));
+        Assert.Equal("E♭ cornet", catalog.Tiles[1].Detail);
+        Assert.Equal(["Sopran", "Althorn", "Basstrombone"],
+            new SeatCatalog(core, Strings("nb-NO")).Tiles.Where(t => t.Key is "eb-soprano-cornet" or "eb-tenor-horn" or "bass-trombone").Select(t => t.Label));
     }
 }

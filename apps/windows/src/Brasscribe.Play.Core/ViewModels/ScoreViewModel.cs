@@ -288,6 +288,8 @@ public sealed partial class ScoreViewModel : ObservableObject
         {
             if (Document is null || SelectedPartIndex < 0 || SelectedPartIndex >= Document.Parts.Count) return _s["Score_AsWritten"];
             int pc = ((Document.Parts[SelectedPartIndex].Transpose.Chromatic % 12) + 12) % 12;
+            // The player's own part, read in bass clef: written at concert pitch.
+            if (pc == 0 && SelectedPartIndex == MyPartIndex && MyPartReadsBass?.Invoke() == true) return _s["Score_AsWrittenBassClef"];
             string? key = pc switch { 10 => "B♭", 3 => "E♭", 5 => "F", 9 => "A", 2 => "D", 7 => "G", _ => null };
             return key is null ? _s["Score_AsWritten"] : _s.Format("Score_AsWrittenFor", key);
         }
@@ -323,6 +325,9 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     /// <summary>The words for a lineup that lacks the player's seat; null when there is nothing to say.</summary>
     public Func<IReadOnlyList<Seats.ScorePart>, Seats.YourPartResult, string?>? YourPartNoticeText { get; set; }
+
+    /// <summary>The score was written with the player's part in bass clef (<c>reads</c> "bass").</summary>
+    public Func<bool>? MyPartReadsBass { get; set; }
 
     /// <summary>"Make this my part" saves the part (by name) with the score.</summary>
     public Action<string>? PersistMyPart { get; set; }

@@ -708,10 +708,22 @@ text_button("SeatConductButton", "I conduct or listen", "Jeg dirigerer eller lyt
 text_button("SeatSkipButton", "Not now", "Ikke nå", "Go to Home without choosing. You can choose in Settings.", "Gå til startsiden uten å velge. Du kan velge i Innstillinger.")
 add("Seat_ContinueHint", "Choose your instrument, or “I conduct or listen”.", "Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».")
 add("Seat_ContinueHintPart", "Choose which part you play.", "Velg hvilken stemme du spiller.")
-add("Seat_Group_Cornet", "Cornet", "Kornett")
-add("Seat_Group_TenorHorn", "Tenor Horn", "Althorn")
-add("Seat_Group_Baritone", "Baritone", "Baryton")
-add("Seat_Group_Trombone", "Trombone", "Trombone")
+# The tiles' instrument words and their second line (the mockup's, the same on every platform); "-": no second line.
+for key, en, nb, den, dnb in [
+    ("Cornet", "Cornet", "Kornett", "-", "-"),
+    ("Soprano", "Soprano", "Sopran", "E♭ cornet", "Ess-kornett"),
+    ("Flugelhorn", "Flugelhorn", "Flygelhorn", "-", "-"),
+    ("TenorHorn", "Tenor Horn", "Althorn", "in E♭", "i Ess"),
+    ("Baritone", "Baritone", "Baryton", "-", "-"),
+    ("Euphonium", "Euphonium", "Eufonium", "-", "-"),
+    ("Trombone", "Trombone", "Trombone", "-", "-"),
+    ("BassTrombone", "Bass Trombone", "Basstrombone", "-", "-"),
+    ("EbBass", "E♭ Bass", "Ess-bass", "-", "-"),
+    ("BbBass", "B♭ Bass", "B-bass", "-", "-"),
+    ("Percussion", "Percussion", "Slagverk", "-", "-"),
+]:
+    add(f"Seat_Tile_{key}", en, nb)
+    add(f"Seat_TileDetail_{key}", den, dnb)
 add("Seat_ReadsTrebleBb", "Treble clef in B♭", "G-nøkkel i B")
 add("Seat_ReadsTrebleEb", "Treble clef in E♭", "G-nøkkel i Ess")
 add("Seat_ReadsBass", "Bass clef, as it sounds", "F-nøkkel, klingende")
@@ -729,17 +741,17 @@ add("Seat_Notice_SameKey_Small", "This small band has no {0}. Your part here is 
     "Det lille bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.")
 add("Seat_Notice_SameKey_Quartet", "This quartet has no {0}. Your part here is {1}, the closest: the same key and clef.",
     "Kvartetten har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.")
-add("Seat_Notice_OtherKey_Full", "The full band has no {0}. Your part here is {1}, written for {2}.",
+add("Seat_Notice_OtherKey_Full", "This full band has no {0}. Your part here is {1}, written for {2}.",
     "Det fulle bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
-add("Seat_Notice_OtherKey_Small", "The small band has no {0}. Your part here is {1}, written for {2}.",
+add("Seat_Notice_OtherKey_Small", "This small band has no {0}. Your part here is {1}, written for {2}.",
     "Det lille bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
-add("Seat_Notice_OtherKey_Quartet", "The quartet has no {0}. Your part here is {1}, written for {2}.",
+add("Seat_Notice_OtherKey_Quartet", "This quartet has no {0}. Your part here is {1}, written for {2}.",
     "Kvartetten har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
-add("Seat_Notice_NoPart_Full", "The full band has no {0} part. Brasscribe opens every part.",
+add("Seat_Notice_NoPart_Full", "This full band has no {0} part. Brasscribe opens every part.",
     "Det fulle bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
-add("Seat_Notice_NoPart_Small", "The small band has no {0} part. Brasscribe opens every part.",
+add("Seat_Notice_NoPart_Small", "This small band has no {0} part. Brasscribe opens every part.",
     "Det lille bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
-add("Seat_Notice_NoPart_Quartet", "The quartet has no {0} part. Brasscribe opens every part.",
+add("Seat_Notice_NoPart_Quartet", "This quartet has no {0} part. Brasscribe opens every part.",
     "Kvartetten har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
 prop("SettingsYouHeading", "Text", "Your instrument", "Instrumentet ditt")
 prop("SeatRowLabel", "Text", "What you play", "Hva du spiller")
@@ -775,7 +787,9 @@ name("TuneChoices", "Who plays the tune?", "Hvem spiller melodien?")
 add("Output_TuneLineup", "{0} (as usual)", "{0} (som vanlig)")
 add("Output_TuneSeat", "You: {0}", "Deg: {0}")
 add("Output_YourPart", "your part: {0}", "stemmen din: {0}")
-add("Output_YourPartNone", "no part of yours: every part opens", "ingen stemme for deg: alle stemmene åpnes")
+add("Output_YourPartNone", "You conduct or listen: every part opens.", "Du dirigerer eller lytter: alle stemmene åpnes.")
+add("Output_KeyAsItSounds", "{0}, as it sounds", "{0}, klingende")
+add("Score_AsWrittenBassClef", "As written (bass clef)", "Som skrevet (F-nøkkel)")
 add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
 add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
     "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")

@@ -31,7 +31,7 @@ public sealed partial class SeatPickerView : UserControl
         ViewModel = viewModel;
         _filling = true;
         InstrumentChoices.Items.Clear();
-        foreach (var tile in viewModel.Tiles) InstrumentChoices.Items.Add(Choice(tile.Label, tile.SpokenLabel, 56));
+        foreach (var tile in viewModel.Tiles) InstrumentChoices.Items.Add(Choice(tile.Label, tile.SpokenLabel, 56, tile.Detail));
         InstrumentChoices.SelectedIndex = viewModel.InstrumentIndex;
         _filling = false;
         FillFollowUps();
@@ -46,13 +46,23 @@ public sealed partial class SeatPickerView : UserControl
         (target as Control)?.Focus(FocusState.Programmatic);
     }
 
-    private RadioButton Choice(string text, string spoken, double minHeight)
+    private RadioButton Choice(string text, string spoken, double minHeight, string detail = "")
     {
-        var button = new RadioButton { Content = text, MinHeight = minHeight, MinWidth = 160, Margin = new Thickness(0, 0, 8, 8) };
+        object content = text;
+        if (detail.Length > 0)
+        {
+            var lines = new StackPanel { Spacing = 2 };
+            lines.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
+            var sub = new TextBlock { Text = detail, TextWrapping = TextWrapping.Wrap };
+            if (Application.Current.Resources.TryGetValue("MutedStyle", out var muted)) sub.Style = (Style)muted;
+            lines.Children.Add(sub);
+            content = lines;
+        }
+        var button = new RadioButton { Content = content, MinHeight = minHeight, MinWidth = 160, Margin = new Thickness(0, 0, 8, 8) };
         if (Resources.TryGetValue("ChoiceCardStyle", out var style) || Application.Current.Resources.TryGetValue("ChoiceCardStyle", out style))
             button.Style = (Style)style;
         // The accessible name contains the visible words (2.5.3); ♭ is read as "flat".
-        if (spoken != text) AutomationProperties.SetName(button, spoken);
+        if (spoken != text || detail.Length > 0) AutomationProperties.SetName(button, spoken);
         return button;
     }
 

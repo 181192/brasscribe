@@ -846,6 +846,9 @@
   <data name="Output_Failed" xml:space="preserve">
     <value>Kunne ikke arrangere: {0}</value>
   </data>
+  <data name="Output_KeyAsItSounds" xml:space="preserve">
+    <value>{0}, klingende</value>
+  </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>Som i opptaket · klingende</value>
   </data>
@@ -892,7 +895,7 @@
     <value>stemmen din: {0}</value>
   </data>
   <data name="Output_YourPartNone" xml:space="preserve">
-    <value>ingen stemme for deg: alle stemmene åpnes</value>
+    <value>Du dirigerer eller lytter: alle stemmene åpnes.</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Kode</value>
@@ -1308,6 +1311,9 @@
   <data name="Score_AsWritten" xml:space="preserve">
     <value>Notert</value>
   </data>
+  <data name="Score_AsWrittenBassClef" xml:space="preserve">
+    <value>Som skrevet (F-nøkkel)</value>
+  </data>
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>Notert for {0}</value>
   </data>
@@ -1470,18 +1476,6 @@
   <data name="Seat_ContinueHintPart" xml:space="preserve">
     <value>Velg hvilken stemme du spiller.</value>
   </data>
-  <data name="Seat_Group_Baritone" xml:space="preserve">
-    <value>Baryton</value>
-  </data>
-  <data name="Seat_Group_Cornet" xml:space="preserve">
-    <value>Kornett</value>
-  </data>
-  <data name="Seat_Group_TenorHorn" xml:space="preserve">
-    <value>Althorn</value>
-  </data>
-  <data name="Seat_Group_Trombone" xml:space="preserve">
-    <value>Trombone</value>
-  </data>
   <data name="Seat_KeyConcert" xml:space="preserve">
     <value>klingende</value>
   </data>
@@ -1535,6 +1529,72 @@
   </data>
   <data name="Seat_ReadsTrebleEb_Value" xml:space="preserve">
     <value>G-nøkkel i Ess</value>
+  </data>
+  <data name="Seat_TileDetail_Baritone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BassTrombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Cornet" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_EbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Euphonium" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Flugelhorn" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Percussion" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Soprano" xml:space="preserve">
+    <value>Ess-kornett</value>
+  </data>
+  <data name="Seat_TileDetail_TenorHorn" xml:space="preserve">
+    <value>i Ess</value>
+  </data>
+  <data name="Seat_TileDetail_Trombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_Tile_Baritone" xml:space="preserve">
+    <value>Baryton</value>
+  </data>
+  <data name="Seat_Tile_BassTrombone" xml:space="preserve">
+    <value>Basstrombone</value>
+  </data>
+  <data name="Seat_Tile_BbBass" xml:space="preserve">
+    <value>B-bass</value>
+  </data>
+  <data name="Seat_Tile_Cornet" xml:space="preserve">
+    <value>Kornett</value>
+  </data>
+  <data name="Seat_Tile_EbBass" xml:space="preserve">
+    <value>Ess-bass</value>
+  </data>
+  <data name="Seat_Tile_Euphonium" xml:space="preserve">
+    <value>Eufonium</value>
+  </data>
+  <data name="Seat_Tile_Flugelhorn" xml:space="preserve">
+    <value>Flygelhorn</value>
+  </data>
+  <data name="Seat_Tile_Percussion" xml:space="preserve">
+    <value>Slagverk</value>
+  </data>
+  <data name="Seat_Tile_Soprano" xml:space="preserve">
+    <value>Sopran</value>
+  </data>
+  <data name="Seat_Tile_TenorHorn" xml:space="preserve">
+    <value>Althorn</value>
+  </data>
+  <data name="Seat_Tile_Trombone" xml:space="preserve">
+    <value>Trombone</value>
   </data>
   <data name="Seat_Value" xml:space="preserve">
     <value>{0} · {1}</value>

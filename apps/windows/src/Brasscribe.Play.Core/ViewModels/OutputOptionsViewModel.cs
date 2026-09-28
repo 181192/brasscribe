@@ -61,7 +61,9 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     public partial string? Seat { get; set; }
 
     /// <summary>The clef the seat's part is read in (treble, bass), or null for the band's own.</summary>
-    [ObservableProperty] public partial string? Reads { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyDetail))]
+    public partial string? Reads { get; set; }
 
     /// <summary>"Who plays the tune?": the player's part (lead "seat") instead of the lineup's lead.</summary>
     [ObservableProperty] public partial bool TuneOnMyPart { get; set; }
@@ -235,6 +237,12 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         {
             var parts = new List<string>();
             if (KeyIndex == 0) parts.Add(s["Key_AsRecorded"]);
+            // Read in bass clef, the player's part is at concert pitch: "D major, as it sounds".
+            if (ConcertKey is { } sounding && InstrumentIsYours && Reads == "bass")
+            {
+                parts.Add(s.Format("Output_KeyAsItSounds", Scores.KeyNames.Name(sounding.PitchClass, sounding.Minor, Nb)));
+                return string.Join(" · ", parts);
+            }
             if (ConcertKey is { } k && InstrumentChromatic is { } c && Scores.KeyNames.InstrumentKey(c, Nb) is { } instrument)
                 parts.Add(InstrumentIsYours
                     ? s.Format("Output_KeyOnYourPart", Scores.KeyNames.Name(Scores.KeyNames.WrittenOf(k.PitchClass, c), k.Minor, Nb))

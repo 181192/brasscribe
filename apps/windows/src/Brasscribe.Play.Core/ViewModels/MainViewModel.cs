@@ -54,6 +54,7 @@ public sealed partial class MainViewModel : ObservableObject
         Seats = new SeatCatalog(core, strings);
         // "Your part": the part chosen for this score, else the seat's part in the lineup shown (the core's table).
         Score.PartLabel = PartLabel;
+        Score.MyPartReadsBass = () => Output.Applied.Reads == "bass";
         Score.YourPartResolver = parts => YourPart.Resolve(core, Settings.SeatChoice, ShownLineup, parts, _myPartOverride);
         Score.YourPartNoticeText = (parts, result) => YourPart.Notice(_s, Seats, Settings.SeatChoice, result, parts, PartLabel);
         Score.PersistMyPart = name =>

@@ -846,6 +846,9 @@
   <data name="Output_Failed" xml:space="preserve">
     <value>Couldn't arrange it: {0}</value>
   </data>
+  <data name="Output_KeyAsItSounds" xml:space="preserve">
+    <value>{0}, as it sounds</value>
+  </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>As recorded · concert pitch</value>
   </data>
@@ -892,7 +895,7 @@
     <value>your part: {0}</value>
   </data>
   <data name="Output_YourPartNone" xml:space="preserve">
-    <value>no part of yours: every part opens</value>
+    <value>You conduct or listen: every part opens.</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Code</value>
@@ -1308,6 +1311,9 @@
   <data name="Score_AsWritten" xml:space="preserve">
     <value>As written</value>
   </data>
+  <data name="Score_AsWrittenBassClef" xml:space="preserve">
+    <value>As written (bass clef)</value>
+  </data>
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>As written for {0}</value>
   </data>
@@ -1470,18 +1476,6 @@
   <data name="Seat_ContinueHintPart" xml:space="preserve">
     <value>Choose which part you play.</value>
   </data>
-  <data name="Seat_Group_Baritone" xml:space="preserve">
-    <value>Baritone</value>
-  </data>
-  <data name="Seat_Group_Cornet" xml:space="preserve">
-    <value>Cornet</value>
-  </data>
-  <data name="Seat_Group_TenorHorn" xml:space="preserve">
-    <value>Tenor Horn</value>
-  </data>
-  <data name="Seat_Group_Trombone" xml:space="preserve">
-    <value>Trombone</value>
-  </data>
   <data name="Seat_KeyConcert" xml:space="preserve">
     <value>concert pitch</value>
   </data>
@@ -1492,22 +1486,22 @@
     <value>Not set</value>
   </data>
   <data name="Seat_Notice_NoPart_Full" xml:space="preserve">
-    <value>The full band has no {0} part. Brasscribe opens every part.</value>
+    <value>This full band has no {0} part. Brasscribe opens every part.</value>
   </data>
   <data name="Seat_Notice_NoPart_Quartet" xml:space="preserve">
-    <value>The quartet has no {0} part. Brasscribe opens every part.</value>
+    <value>This quartet has no {0} part. Brasscribe opens every part.</value>
   </data>
   <data name="Seat_Notice_NoPart_Small" xml:space="preserve">
-    <value>The small band has no {0} part. Brasscribe opens every part.</value>
+    <value>This small band has no {0} part. Brasscribe opens every part.</value>
   </data>
   <data name="Seat_Notice_OtherKey_Full" xml:space="preserve">
-    <value>The full band has no {0}. Your part here is {1}, written for {2}.</value>
+    <value>This full band has no {0}. Your part here is {1}, written for {2}.</value>
   </data>
   <data name="Seat_Notice_OtherKey_Quartet" xml:space="preserve">
-    <value>The quartet has no {0}. Your part here is {1}, written for {2}.</value>
+    <value>This quartet has no {0}. Your part here is {1}, written for {2}.</value>
   </data>
   <data name="Seat_Notice_OtherKey_Small" xml:space="preserve">
-    <value>The small band has no {0}. Your part here is {1}, written for {2}.</value>
+    <value>This small band has no {0}. Your part here is {1}, written for {2}.</value>
   </data>
   <data name="Seat_Notice_SameKey_Full" xml:space="preserve">
     <value>This full band has no {0}. Your part here is {1}, the closest: the same key and clef.</value>
@@ -1535,6 +1529,72 @@
   </data>
   <data name="Seat_ReadsTrebleEb_Value" xml:space="preserve">
     <value>treble clef in E♭</value>
+  </data>
+  <data name="Seat_TileDetail_Baritone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BassTrombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Cornet" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_EbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Euphonium" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Flugelhorn" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Percussion" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Soprano" xml:space="preserve">
+    <value>E♭ cornet</value>
+  </data>
+  <data name="Seat_TileDetail_TenorHorn" xml:space="preserve">
+    <value>in E♭</value>
+  </data>
+  <data name="Seat_TileDetail_Trombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_Tile_Baritone" xml:space="preserve">
+    <value>Baritone</value>
+  </data>
+  <data name="Seat_Tile_BassTrombone" xml:space="preserve">
+    <value>Bass Trombone</value>
+  </data>
+  <data name="Seat_Tile_BbBass" xml:space="preserve">
+    <value>B♭ Bass</value>
+  </data>
+  <data name="Seat_Tile_Cornet" xml:space="preserve">
+    <value>Cornet</value>
+  </data>
+  <data name="Seat_Tile_EbBass" xml:space="preserve">
+    <value>E♭ Bass</value>
+  </data>
+  <data name="Seat_Tile_Euphonium" xml:space="preserve">
+    <value>Euphonium</value>
+  </data>
+  <data name="Seat_Tile_Flugelhorn" xml:space="preserve">
+    <value>Flugelhorn</value>
+  </data>
+  <data name="Seat_Tile_Percussion" xml:space="preserve">
+    <value>Percussion</value>
+  </data>
+  <data name="Seat_Tile_Soprano" xml:space="preserve">
+    <value>Soprano</value>
+  </data>
+  <data name="Seat_Tile_TenorHorn" xml:space="preserve">
+    <value>Tenor Horn</value>
+  </data>
+  <data name="Seat_Tile_Trombone" xml:space="preserve">
+    <value>Trombone</value>
   </data>
   <data name="Seat_Value" xml:space="preserve">
     <value>{0} · {1}</value>

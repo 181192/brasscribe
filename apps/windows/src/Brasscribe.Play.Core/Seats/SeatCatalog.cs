@@ -27,15 +27,17 @@ public sealed record SeatChoice(string? Seat, string? Reads)
 /// <param name="Label">The tile's words: an app name for the four instruments with parts, else the seat's own core name.</param>
 /// <param name="SpokenLabel">The same words for screen readers, with ♭ read as "flat".</param>
 /// <param name="Seats">The seats of the instrument, in score order.</param>
-public sealed record InstrumentTile(string Key, string Label, string SpokenLabel, IReadOnlyList<SeatInfo> Seats)
+/// <param name="Detail">The tile's second line (the key: "E♭ cornet", "in E♭"); empty when none.</param>
+public sealed record InstrumentTile(string Key, string Label, string SpokenLabel, IReadOnlyList<SeatInfo> Seats, string Detail = "")
 {
     public bool HasParts => Seats.Count > 1;
     public SeatInfo Only => Seats[0];
 }
 
 /// <summary>
-/// The seats as the picker shows them, from the core's <c>seats()</c> (the one table of names, Norwegian included).
-/// The app adds only the four instrument words for the tiles with a part choice; every other name is the core's.
+/// The seats as the picker shows them, from the core's <c>seats()</c> (the one table of part names, Norwegian included).
+/// The tiles carry short instrument words (the mockup's, the same on every platform); the parts, Settings and
+/// "(you)" use the core's seat names.
 /// </summary>
 public sealed class SeatCatalog
 {
@@ -48,9 +50,12 @@ public sealed class SeatCatalog
         Tiles = All.GroupBy(x => x.Instrument).Select(g =>
         {
             var seats = g.ToList();
-            string label = seats.Count > 1 && GroupKey(g.Key) is { } key ? strings[key] : Name(seats[0]);
-            return new InstrumentTile(g.Key, label, Spoken(label), seats);
-        }).ToList();
+            string? key = TileKey(g.Key);
+            string label = key is not null ? strings["Seat_Tile_" + key] : Name(seats[0]);
+            string detail = key is not null && strings["Seat_TileDetail_" + key] is var d && d != "-" ? d : "";
+            string spoken = detail.Length > 0 ? Spoken(label) + ", " + Spoken(detail) : Spoken(label);
+            return new InstrumentTile(g.Key, label, spoken, seats, detail);
+        }).OrderBy(t => TileOrder.IndexOf(t.Key) is var i and >= 0 ? i : int.MaxValue).ToList();
     }
 
     /// <summary>Every seat, in score order; empty when the core can't say (then nobody is asked).</summary>
@@ -91,15 +96,26 @@ public sealed class SeatCatalog
     private static string ReadsKey(SeatInfo seat, string reads) =>
         reads == "bass" ? "Seat_ReadsBass" : seat.Instrument.StartsWith("eb-", StringComparison.Ordinal) ? "Seat_ReadsTrebleEb" : "Seat_ReadsTrebleBb";
 
-    /// <summary>The app's word for an instrument with several parts; the rest are named by their one seat.</summary>
-    private static string? GroupKey(string instrument) => instrument switch
+    /// <summary>The tile's words by the core's instrument id; an instrument the app doesn't know is named by its first seat.</summary>
+    private static string? TileKey(string instrument) => instrument switch
     {
-        "bb-cornet" => "Seat_Group_Cornet",
-        "eb-tenor-horn" => "Seat_Group_TenorHorn",
-        "baritone" => "Seat_Group_Baritone",
-        "tenor-trombone" => "Seat_Group_Trombone",
+        "bb-cornet" => "Cornet",
+        "eb-soprano-cornet" => "Soprano",
+        "flugelhorn" => "Flugelhorn",
+        "eb-tenor-horn" => "TenorHorn",
+        "baritone" => "Baritone",
+        "euphonium" => "Euphonium",
+        "tenor-trombone" => "Trombone",
+        "bass-trombone" => "BassTrombone",
+        "eb-bass" => "EbBass",
+        "bb-bass" => "BbBass",
+        "drum-kit" => "Percussion",
         _ => null,
     };
+
+    /// <summary>The tiles' order, as in the mockup: the cornets first, the basses and percussion last.</summary>
+    private static readonly List<string> TileOrder =
+        ["bb-cornet", "eb-soprano-cornet", "flugelhorn", "eb-tenor-horn", "baritone", "euphonium", "tenor-trombone", "bass-trombone", "eb-bass", "bb-bass", "drum-kit"];
 
     /// <summary>
     /// Instruments whose part can carry the tune (the core's Melody and Solo roles). A stopgap until the core's
