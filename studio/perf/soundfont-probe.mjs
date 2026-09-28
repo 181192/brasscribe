@@ -4,7 +4,10 @@
 //   cd studio && STUDIO_URL=http://127.0.0.1:8765/ RUNS=<run-id>,<run-id> node perf/soundfont-probe.mjs
 //
 // RUNS: two finished runs with a score. Each probe starts from an empty browser profile. Opens run 1,
-// run 2 and run 1 again by changing the hash (as the Runs view does), then Compare with both runs.
+// run 2 and run 1 again by changing the hash (as the Runs view does), then Compare with both runs,
+// then moves the player to Compare's second score (as its Play button does). Last, it reloads the
+// page and opens run 1 once more: a SoundFont Studio kept (IndexedDB) shows as a 304 with no body.
+// "synths" and "soundFontLoads" count what the page's shared synthesizer did (lib/sharedsynth.ts).
 import { execSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -44,7 +47,18 @@ function browserRssMB() {
   return Math.round(rows.filter((r) => tree.has(r.pid)).reduce((s, r) => s + r.rss, 0) / 1024);
 }
 
-const ready = (sel) => page.waitForFunction((s) => [...document.querySelectorAll(s)].every((x) => x.ready === true) && document.querySelectorAll(s).length > 0, sel, { timeout: 240_000 });
+/** Every score has a ready player (before the shared synth), or the score that has the synth is ready. */
+const ready = (sel) => page.waitForFunction((s) => {
+  const all = [...document.querySelectorAll(s)];
+  if (!all.length) return false;
+  const shared = customElements.get("bs-score")?.synth;
+  return shared ? all.some((x) => x.ownsPlayer && x.ready === true) : all.every((x) => x.ready === true);
+}, sel, { timeout: 240_000 });
+
+const synthStats = () => page.evaluate(() => {
+  const s = customElements.get("bs-score")?.synth;
+  return s ? { synths: s.synthsCreated, soundFontLoads: s.soundFontLoads } : {};
+});
 
 async function step(label, go, sel) {
   const before = sf.length;
@@ -56,7 +70,7 @@ async function step(label, go, sel) {
   const readyMs = Date.now() - t0;
   await page.waitForTimeout(1500);
   const got = sf.slice(before).map((r) => `${r.status}${r.fromDiskCache ? " disk-cache" : ""} ${Math.round(r.bytes / 1e6)} MB`);
-  console.log(JSON.stringify({ step: label, renderMs, playerReadyMs: readyMs, soundFont: got, browserRssMB: browserRssMB() }));
+  console.log(JSON.stringify({ step: label, renderMs, playerReadyMs: readyMs, soundFont: got, ...(await synthStats()), browserRssMB: browserRssMB() }));
 }
 
 try {
@@ -67,6 +81,14 @@ try {
   await step(`score ${runs[1]}`, () => page.evaluate((h) => (location.hash = h), `#/runs/${runs[1]}/score`), "#main bs-score");
   await step(`score ${runs[0]} again`, () => page.evaluate((h) => (location.hash = h), `#/runs/${runs[0]}/score`), "#main bs-score");
   await step("compare", () => page.evaluate((h) => (location.hash = h), `#/compare?a=${runs[0]}&b=${runs[1]}`), "#main bs-score");
+  await step("compare, player to the second score", () => page.evaluate(() => {
+    const b = document.querySelectorAll("#main bs-score")[1];
+    if (b.claimPlayer) b.claimPlayer();
+  }), "#main bs-score");
+  await step(`reload, score ${runs[0]}`, async () => {
+    await page.goto(`${base}#/runs/${runs[0]}/score`);
+    await page.reload();
+  }, "#main bs-score");
 } finally {
   await ctx.close();
   rmSync(profile, { recursive: true, force: true });
