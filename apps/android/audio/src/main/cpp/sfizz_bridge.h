@@ -23,6 +23,8 @@ void releaseAll();
 // Stop: drops queued events, fades the output to silence over [seconds], then cuts every voice.
 void fadeOut(double seconds);
 void setGain(int channel, float gain);
+// Make-up gain on the mix before the shared soft limiter (output_stage.h).
+void setOutputGain(float gain);
 // Renders frames offline into interleaved stereo (used by tests and for exporting audio).
 int renderOffline(float* interleaved, int frames);
 int activeVoices();

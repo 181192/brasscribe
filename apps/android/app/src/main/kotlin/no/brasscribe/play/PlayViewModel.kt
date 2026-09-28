@@ -230,6 +230,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private var job: Job? = null
     private var engineJobId: String? = null
     private var renderedScoreAudio: PcmAudio? = null
+    /** Level-matching of "Listen to this bar": the recording and the engine's rendered score, each measured whole. */
+    private val recordingLevel = no.brasscribe.play.playback.LevelMatch()
+    private val renderedLevel = no.brasscribe.play.playback.LevelMatch()
 
     init {
         // Leaving a place stops "Listen to this bar" (and asking the computer), whichever way the user left.
@@ -814,7 +817,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val map = TickMap(composition)
             val original = source.value?.audio?.let { a ->
                 val span = map.barSeconds(bar)
-                a.slice(span.start, span.endInclusive)
+                // at the band's loudness: the whole recording measured once (off the main thread)
+                withContext(Dispatchers.Default) { recordingLevel.slice(a, span.start, span.endInclusive) }
             }
             val score = scoreBarAudio(r, map, bar)
             BarListening.Clips(listOfNotNull(original, score), withRecording = original != null)
@@ -835,7 +839,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val secondsPerTick = 60.0 / comp.bpm / comp.ticksPerBeat
         val from = maxOf(0, map.barStart(bar)) * secondsPerTick
         val to = map.barEnd(bar) * secondsPerTick
-        return rendered.slice(from, to)
+        // the engine's render is mastered hot: it plays at the same loudness as the recording
+        return withContext(Dispatchers.Default) { renderedLevel.slice(rendered, from, to) }
     }
 
     fun stopListening(announce: Boolean = true) = listening.stop(announce)

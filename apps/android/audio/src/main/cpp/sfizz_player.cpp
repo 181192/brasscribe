@@ -17,6 +17,7 @@
 #include <mutex>
 #include <vector>
 
+#include "output_stage.h"
 #include "sfizz_bridge.h"
 
 #define LOG_TAG "brasscribe-sfizz"
@@ -159,6 +160,12 @@ public:
         if (ch >= 0 && ch < kChannels) gains_[ch] = gain;
     }
 
+    // The mix's make-up gain before the shared soft limiter (output_stage.h).
+    void setOutputGain(float gain) {
+        std::lock_guard<std::mutex> g(mutex_);
+        outputGain_ = gain;
+    }
+
     int activeVoices() {
         std::lock_guard<std::mutex> g(mutex_);
         int n = 0;
@@ -206,6 +213,8 @@ public:
                     out[(done + i) * 2 + 1] += right_[i] * g;
                 }
             }
+            // the output stage, before the stop fade: the fade then runs on what is heard
+            for (int i = 0; i < n * 2; ++i) out[done * 2 + i] = output_stage::limit(out[done * 2 + i] * outputGain_);
             if (fadeLeft_ > 0) {
                 for (int i = 0; i < n; ++i) {
                     const float k = fadeLeft_ > 0 ? static_cast<float>(fadeLeft_) / fadeTotal_ : 0.f;
@@ -246,6 +255,7 @@ private:
     std::array<sfizz_synth_t*, kChannels> synths_{};
     std::array<bool, kChannels> loaded_{};
     std::array<float, kChannels> gains_ = [] { std::array<float, kChannels> g{}; g.fill(1.f); return g; }();
+    float outputGain_ = 1.f;
     std::array<std::array<unsigned char, 128>, kChannels> held_{};
     int fadeTotal_ = 1;
     int fadeLeft_ = 0;
@@ -278,6 +288,7 @@ void allOff() { player().allOff(); }
 void releaseAll() { player().releaseAll(); }
 void fadeOut(double seconds) { player().fadeOut(seconds); }
 void setGain(int channel, float gain) { player().setGain(channel, gain); }
+void setOutputGain(float gain) { player().setOutputGain(gain); }
 int renderOffline(float* interleaved, int frames) { return player().renderOffline(interleaved, frames); }
 int activeVoices() { return player().activeVoices(); }
 }  // namespace sfizz_bridge

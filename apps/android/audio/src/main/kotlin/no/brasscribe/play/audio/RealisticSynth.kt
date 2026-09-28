@@ -12,7 +12,10 @@ import java.io.File
 object RealisticSynth {
     val available: Boolean by lazy { runCatching { NativeAudio.sfizzAvailable() }.getOrDefault(false) }
 
-    fun start(sampleRate: Int = 48000): Boolean = available && NativeAudio.sfizzStart(sampleRate)
+    /** Opens the output at the shared output stage's gain (the limiter follows it, in C++). */
+    fun start(sampleRate: Int = 48000): Boolean = available && NativeAudio.sfizzStart(sampleRate).also {
+        if (it) NativeAudio.sfizzSetOutputGain(PlaybackLevels.factor(PlaybackLevels.SFIZZ_GAIN_DB))
+    }
     fun stop() { if (available) NativeAudio.sfizzStop() }
 
     /** Loads an .sfz file; its samples are resolved relative to it. */
@@ -41,6 +44,8 @@ object RealisticSynth {
 
     const val STOP_FADE_S = 0.08
     fun setGain(channel: Int, gain: Float) { if (available) NativeAudio.sfizzSetGain(channel, gain) }
+    /** The C++ limiter curve (cpp/output_stage.h), built with or without sfizz; for tests. */
+    fun limit(x: Float): Float = NativeAudio.outputStageLimit(x)
     fun activeVoices(): Int = if (available) NativeAudio.sfizzActiveVoices() else 0
 
     /** Renders [frames] of interleaved stereo without the audio device (tests, audio export). */

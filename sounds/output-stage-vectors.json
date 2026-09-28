@@ -14,8 +14,8 @@
    "arrangement_lufs": -16.0,
    "gain_db": {
     "apple": 26.0,
-    "android_alphatab": 0.0,
-    "android_sfizz": 0.0,
+    "android_alphatab": 4.0,
+    "android_sfizz": 4.0,
     "windows": 4.0
    }
   },
@@ -26,9 +26,14 @@
    "max_cut_db": 30.0
   },
   "metronome": {
-   "about": "The click's peak after the output, whatever path it takes: about 9 dB under the full band's peak, below the limiter's threshold.",
+   "about": "The click's peak after the output, whatever path it takes: about 9 dB under the full band's peak, below the limiter's threshold. gain_db is each path's click volume, measured: Apple's click bypasses the band stage, Android's and Windows' go through it.",
    "click_peak_dbfs": -10.0,
-   "tolerance_db": 1.5
+   "tolerance_db": 1.5,
+   "gain_db": {
+    "apple": 0.0,
+    "android_alphatab": 0.0,
+    "windows": 0.0
+   }
   }
  },
  "limiter": [

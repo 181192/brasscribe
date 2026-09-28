@@ -115,6 +115,9 @@ class ScoreController(
             core.includeNoteBounds = true
         }
         view.api.updateSettings()
+        // The shared output stage (gain + soft limiter) in front of alphaTab's output, on every new player.
+        StagedSynthOutput.install(view.api)
+        view.api.playerReady.on { StagedSynthOutput.install(view.api) }
         view.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         view.api.playerStateChanged.on { e ->
             val playing = e.state == PlayerState.Playing
@@ -367,6 +370,7 @@ class ScoreController(
 
     fun togglePlay() {
         applyVolumes()
+        StagedSynthOutput.install(view.api)
         if (no.brasscribe.play.BuildConfig.DEBUG) {
             if (_state.value.playing) android.util.Log.i("BrasscribePlay", "note-ons per channel: $notesPerChannel")
             else if (!_state.value.realistic) { notesPerChannel.clear(); view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn) }
@@ -471,12 +475,12 @@ class ScoreController(
     }
 
     fun setCountIn(on: Boolean) {
-        view.api.countInVolume = if (on) 1.0 else 0.0
+        view.api.countInVolume = if (on) METRONOME_VOLUME else 0.0
         _state.value = _state.value.copy(countIn = on)
     }
 
     fun setMetronome(on: Boolean) {
-        view.api.metronomeVolume = if (on) 1.0 else 0.0
+        view.api.metronomeVolume = if (on) METRONOME_VOLUME else 0.0
         _state.value = _state.value.copy(metronome = on)
     }
 
@@ -668,3 +672,6 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
 )
 
 private const val STOP_FADE_MS = 80L
+
+/** alphaTab's metronome and count-in volume: the click lands at the shared level through the output stage. */
+private val METRONOME_VOLUME = no.brasscribe.play.audio.PlaybackLevels.factor(no.brasscribe.play.audio.PlaybackLevels.METRONOME_GAIN_DB).toDouble()
