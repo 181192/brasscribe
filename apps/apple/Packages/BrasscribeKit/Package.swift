@@ -17,13 +17,17 @@ let package = Package(
     targets: [
         .target(name: "ScoreKit"),
         .target(name: "TranscriptionKit", dependencies: ["ScoreKit"]),
-        .target(name: "PlaybackKit", dependencies: ["ScoreKit"], swiftSettings: [.swiftLanguageMode(.v5)]),
+        // Objective-C: turns AVFAudio's exceptions into errors Swift can handle
+        .target(name: "AudioUnitCatch"),
+        .target(name: "PlaybackKit", dependencies: ["ScoreKit", "AudioUnitCatch"], swiftSettings: [.swiftLanguageMode(.v5)]),
         .target(name: "SVGRender"),
         .target(name: "OnDeviceKit"),
         .testTarget(name: "OnDeviceKitTests", dependencies: ["OnDeviceKit"]),
         .testTarget(name: "ScoreKitTests", dependencies: ["ScoreKit"], resources: [.process("Resources")]),
         .testTarget(name: "TranscriptionKitTests", dependencies: ["TranscriptionKit"]),
-        .testTarget(name: "PlaybackKitTests", dependencies: ["PlaybackKit"]),
+        .executableTarget(name: "PlaybackEngineProbe", dependencies: ["PlaybackKit", "ScoreKit"],
+                          swiftSettings: [.swiftLanguageMode(.v5)]),
+        .testTarget(name: "PlaybackKitTests", dependencies: ["PlaybackKit", "PlaybackEngineProbe"]),
         .testTarget(name: "SVGRenderTests", dependencies: ["SVGRender"], resources: [.process("Resources")]),
     ]
 )

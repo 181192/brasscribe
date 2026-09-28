@@ -241,7 +241,7 @@ struct PracticeView: View {
         }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model).appAppearance() }
         .sheet(isPresented: $showExport) { ExportView(model: model).appAppearance() }
-        .alert(String(localized: "The sound can't play"), isPresented: Binding(get: { model.loadError != nil }, set: { _ in })) {
+        .alert(String(localized: "The sound can't play"), isPresented: Binding(get: { model.loadError != nil }, set: { if !$0 { model.dismissLoadError() } })) {
             Button("OK") {}
         } message: { Text("The score is still here to read. Try closing and opening it again.") }
     }

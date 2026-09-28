@@ -12,9 +12,11 @@ import Foundation
 /// energy, so `wetGainDB` is the wet-to-direct ratio at the listener. The sound reference
 /// uses +4.5 dB at the audience seat.
 public final class ConvolutionReverbAU: AUAudioUnit {
+    /// Sandbox-safe: the Mac app runs in the App Sandbox, where a registered unit without the flag
+    /// cannot be instantiated (AudioComponentInstanceNew fails with -3000).
     public static let componentDescription = AudioComponentDescription(
         componentType: kAudioUnitType_Effect, componentSubType: fourCC("bcrv"), componentManufacturer: fourCC("Brsc"),
-        componentFlags: 0, componentFlagsMask: 0)
+        componentFlags: AudioComponentFlags.sandboxSafe.rawValue, componentFlagsMask: 0)
 
     static let registered: Void = {
         AUAudioUnit.registerSubclass(ConvolutionReverbAU.self, as: componentDescription, name: "Brasscribe: Convolution Reverb", version: 1)

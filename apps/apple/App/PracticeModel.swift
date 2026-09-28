@@ -216,6 +216,9 @@ final class PracticeModel {
         try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
     }
 
+    /// The "sound can't play" alert was closed: the score stays open to read, without sound.
+    func dismissLoadError() { loadError = nil }
+
     private func adopt(_ made: Result<PlaybackEngine, Error>) {
         switch made {
         case .success(let e): engine = e
