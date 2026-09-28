@@ -33,6 +33,18 @@ def test_seat_options_validated():
         profiles.job_options("orchestra-with-soloist", {"seat": "eb-bass", "lead": "seat"})
 
 
+def test_band_takes_are_made_and_checked_as_the_small_band():
+    # A brass-band or pop recording is arranged for the small band, whatever lineup the app sent.
+    for profile in profiles.BAND_TAKE_PROFILES:
+        assert profiles.made_lineup(profile, "full") == profiles.made_lineup(profile, None) == "minimal"
+        assert profiles.made_lineup(profile, "quartet") == "quartet"
+        # 1st Baritone -> Euphonium in the small band: its tune is allowed, though the full band refuses it.
+        assert profiles.job_options(profile, {"seat": "1st-baritone", "lead": "seat", "lineup": "full"})["lead"] == "seat"
+    assert profiles.made_lineup("orchestra-with-soloist", None) == "full"
+    with pytest.raises(ValueError, match="tune"):
+        profiles.job_options("orchestra-with-soloist", {"seat": "1st-baritone", "lead": "seat", "lineup": "full"})
+
+
 def test_percussion_solo_take_is_refused():
     # The pitch trackers' notes from a drummer's take are no drum part: refused before any transcription.
     with pytest.raises(ValueError, match="percussion"):

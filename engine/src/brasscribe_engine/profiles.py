@@ -37,6 +37,18 @@ ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None,
                         "seat": None, "reads": None, "lead": "lineup"}
 LINEUPS = ("full", "minimal", "quartet")
 DIFFICULTIES = ("faithful", "standard", "easier")
+# Profiles whose recording is arranged without layers (arrange_song): the small band or the quartet only.
+# "full" (the apps' default) is made as the small band there, so it is checked as the small band too.
+BAND_TAKE_PROFILES = ("brass-band", "pop-rock")
+
+
+def made_lineup(profile: str, lineup: str | None) -> str:
+    """The lineup a job of `profile` asking for `lineup` is actually arranged for."""
+    if profile in BAND_TAKE_PROFILES:
+        return "quartet" if lineup == "quartet" else "minimal"
+    return lineup or ("minimal" if profile == "solo" else "full")
+
+
 # A solo take has one line and nothing for the other three quartet parts to play.
 QUARTET_NEEDS_GROUP = "a quartet needs a recording of the whole group: a solo take has no harmony for the other parts"
 
@@ -87,8 +99,7 @@ def job_options(profile: str, params: dict) -> dict:
     if profile == "solo" and opts.get("seat") and not seat_by_id(opts["seat"]).reads:
         raise ValueError(PERCUSSION_SOLO)
     if profile != "solo" and opts.get("lead") == "seat":
-        lineup = params.get("lineup") or ("minimal" if profile in ("brass-band", "pop-rock") else "full")
-        lead_lineup(lineup_by_name(lineup), opts["seat"])
+        lead_lineup(lineup_by_name(made_lineup(profile, params.get("lineup"))), opts["seat"])
     return opts
 
 
