@@ -51,11 +51,24 @@ def run(project: str, cmd: list[str], quiet_stderr: bool = True) -> None:
                    stderr=subprocess.DEVNULL if quiet_stderr else None)
 
 
+SNDFILE_SUFFIXES = {".wav", ".flac", ".aif", ".aiff", ".ogg"}
+
+
+def readable(src: Path, tmp: str) -> Path:
+    """src itself if libsndfile reads it, else a WAV decoded by ffmpeg at the source rate and channels."""
+    if src.suffix.lower() in SNDFILE_SUFFIXES:
+        return src
+    audio = Path(tmp) / f"{src.stem}.wav"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-vn", str(audio)], check=True)
+    return audio
+
+
 def basic_pitch(src: Path, dst: Path) -> None:
     # macOS keeps Basic Pitch's own choice (CoreML). Elsewhere it would pick the TFLite model,
     # which the environment's TFLite runtime cannot load, so ask for ONNX explicitly.
     serial = os.environ.get("BASIC_PITCH_SERIALIZATION") or (None if sys.platform == "darwin" else "onnx")
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as dec:
+        src = readable(src, dec)
         run("basic-pitch", ["basic-pitch", tmp, str(src), *(["--model-serialization", serial] if serial else [])])
         mids = list(Path(tmp).glob("*.mid"))
         if not mids:
@@ -85,8 +98,10 @@ def muscriptor(src: Path, dst: Path) -> None:
 
 
 def separator(src: Path, dst: Path) -> None:
-    run("separator", ["audio-separator", str(src), "-m", os.environ.get("SEPARATOR_MODEL", "BS-Roformer-SW.ckpt"),
-                      "--output_dir", str(dst), "--output_format", "WAV", "--model_file_dir", str(MODELS / "separator")])
+    with tempfile.TemporaryDirectory() as tmp:
+        run("separator", ["audio-separator", str(readable(src, tmp)), "-m",
+                          os.environ.get("SEPARATOR_MODEL", "BS-Roformer-SW.ckpt"), "--output_dir", str(dst),
+                          "--output_format", "WAV", "--model_file_dir", str(MODELS / "separator")])
 
 
 def mega53_setup() -> None:
@@ -121,11 +136,15 @@ def mega53(src: Path, dst: Path) -> None:
 
 
 def swift_f0(src: Path, dst: Path) -> None:
-    run("swift-f0", ["python", str(HERE / "swift-f0" / "transcribe.py"), str(src), str(dst)], quiet_stderr=False)
+    with tempfile.TemporaryDirectory() as tmp:
+        run("swift-f0", ["python", str(HERE / "swift-f0" / "transcribe.py"), str(readable(src, tmp)), str(dst)],
+            quiet_stderr=False)
 
 
 def swift_f0_contour(src: Path, dst: Path) -> None:
-    run("swift-f0", ["python", str(HERE / "swift-f0" / "contour.py"), str(src), str(dst)], quiet_stderr=False)
+    with tempfile.TemporaryDirectory() as tmp:
+        run("swift-f0", ["python", str(HERE / "swift-f0" / "contour.py"), str(readable(src, tmp)), str(dst)],
+            quiet_stderr=False)
 
 
 ADAPTERS = {"basic-pitch": basic_pitch, "beat-this": beat_this, "mega53": mega53, "muscriptor": muscriptor,
