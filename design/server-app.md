@@ -90,13 +90,17 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
    - Fallback: **Paste an access key instead** reveals a labelled field. It allows paste (WCAG 3.3.8) and has a **Paste** button.
    - **Skip for now** (plain) says what is lost: "Without it, Brasscribe can't write down a full band. You can add it later."
    - The key is stored in the macOS Keychain or the Windows Credential Manager, never in a file.
-3. **Download.** One brass progress bar (the one working brand moment, system §5), "3.1 of 9.8 GB · about 12 min left", and a short list of what is coming, in plain words:
-   - "Listening tools"
-   - "Band writer (MuScriptor)"
-   - "Instrument separator"
-   - "Beat finder"
+3. **Download.** One brass progress bar (the one working brand moment, system §5), "3.1 of 9.8 GB · about 12 min left", and a short list of what is coming, in plain words, each with its size and a word (Waiting, Downloading, Done, Stopped):
+   - "Listening tools" (the environments `pixi install` builds, beat finder included)
+   - "Soloist separator" (BS-RoFormer SW, 0.7 GB)
+   - "Instrument separator" (Mega-53, 1.4 GB)
+   - "Band writer (MuScriptor)" (1.2 GB)
 
-   "You can close this window. Brasscribe keeps downloading and tells you when it's ready." **Pause** is secondary. There is no primary, because nothing needs deciding.
+   "You can close this window. Brasscribe keeps downloading and tells you when it's ready." **Pause** / **Resume** is secondary. There is no primary, because nothing needs deciding.
+   - **Where the files come from** (apps-plan §7). The separators have no stated licence, so the user's own app fetches them from the original release URLs (GitHub releases of python-audio-separator and Music-Source-Separation-Training) into `<data>/models/separator` and `<data>/models/mega53`, the folder the engine gets as `BRASSCRIBE_MODELS`. A caption says so: "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them." MuScriptor comes from Hugging Face with the user's key, into the Hugging Face cache (`HF_HUB_CACHE`, else `HF_HOME/hub`, else `~/.cache/huggingface/hub`) in `huggingface_hub`'s own layout, pinned to one revision, because the adapter always asks the hub for `MuScriptor/muscriptor-medium`.
+   - **Checks:** free space per disk before any byte (the downloads plus 1 GB), then each file's size and the SHA-256 upstream publishes (GitHub's release asset digest, Hugging Face's `X-Linked-Etag`). A stopped or paused file continues where it was with an HTTP Range request.
+   - **Errors, each with its own fix:** no key → "The band writer needs your Hugging Face access key" [Add an access key]; 401 → "Hugging Face didn't accept the access key" [Paste a new key]; 403 → "Accept the licence on Hugging Face, then try again" [Open the MuScriptor page]; not enough space [Free up space…]; a damaged file (deleted, fetched afresh on Try again); the network ("It continues where it stopped"). **Continue without it** carries on; the popover then says what is missing.
+   - **Finish setting up** later opens this step with **only the missing downloads** (or the licence step first, when the band writer is missing and there is no key).
 4. **Ready.**
    - "Brasscribe is ready. It runs quietly in the menu bar: look for the Brasscribe mark." On Windows: "…in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons)", with **Keep it visible**, which opens `ms-settings:taskbar`.
    - The switch **Start when I log in** is on, visible and labelled.
@@ -115,9 +119,11 @@ Voice rule 4 says model names belong in Studio. The licence step is the **one ex
   - After three failures in five minutes, it shows **Error**.
 - **Sleep:** while a score is being made, the app holds a "don't idle-sleep" assertion: `IOPMAssertion` on macOS, `SetThreadExecutionState` on Windows. It never blocks lid-close or a sleep the user asks for.
 - **Menu bar or taskbar icon:** the mark, plus a small shape badge per state (§6.1).
-- **When the icon is hidden:** open the app again from Launchpad, Spotlight or the Start menu. That opens the same content in a normal window, **Brasscribe on this Mac** / **Brasscribe på denne Macen**. This matters:
+- **When the icon is hidden:** open the app again from Finder, Launchpad, Spotlight, the Dock or the Start menu. That opens the same content in a normal window, **Brasscribe on this Mac** / **Brasscribe på denne Macen** (the setup window while the first run isn't finished). This matters:
   - macOS hides menu-bar icons behind the notch or in its menu-bar settings.
   - Windows hides tray icons under ^ by default.
+- **macOS: noticing it.** A few seconds after launch Bandroom looks at its status item's window: none, not visible (occlusion), mostly off every screen, or under the notch counts as hidden. Then it opens the window once with a notice: "The Brasscribe mark may be hidden behind the camera notch. Open Brasscribe from Launchpad any time, or make room in System Settings › Menu Bar." [Open Menu Bar settings] (`x-apple.systempreferences:com.apple.ControlCenter-Settings.extension`: Menu Bar on macOS 26, Control Centre on 14–15) [Show in the Dock] [Got it]. **Got it** hides it for good.
+- **Settings › Show in the Dock** (off by default) makes Bandroom a regular app with a Dock icon, as a fallback.
 
 ### 3.4 Connect a phone (pair once)
 The model: each phone pairs **once** and gets its own long-lived credential, which can be removed from the computer. The engine-side contract is in `docs/plan/pairing-and-remote-access.md`, which lands with the engine's device-pairing work. The facts this design relies on are listed in §11. Mockup: `mockups/png/server-pair-*`.
@@ -260,7 +266,7 @@ WantedBy=default.target
 | `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
 | `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu.lock`) | default (temp folder) |
 | `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
-| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook" | the device name from Settings › System › About |
+| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("DDPW3GWFDK") | the device name from Settings › System › About; the same setting for "DESKTOP-4F2K9QZ" |
 
 - **Environments** go in `<data>/envs`, as a pixi workspace copied from the app, with `PIXI_CACHE_DIR=<data>/cache/pixi`.
 - **Engine command:** `pixi run -e <env> brasscribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
@@ -324,7 +330,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 | Windows firewall blocked | Phones can't find this computer | Windows Firewall is blocking Brasscribe on this network. | **Allow on private networks** (runs an elevated helper; Windows asks for permission) | – | "Inbound TCP 8765 blocked for python.exe (profile: Private)." |
 | Network is Public (Windows) | Phones can't find this computer | This network is set to Public, so Windows hides this PC. If it's your home or band-room Wi-Fi, set it to Private. | **Open network settings** (`ms-settings:network-status`) | – | "Active profile: Public." |
 | Low disk | Space is running low | 2.1 GB free. Brasscribe needs 3 GB to make a score. | **Free up space…** (the system storage settings) | Delete old results (1.4 GB) | data folder path and size per folder |
-| Missing download or licence | Full-band scores need one more step | The band writer isn't downloaded yet. | **Finish setting up** | – | "MuScriptor/muscriptor-medium missing; HF token absent." |
+| Missing download or licence | Full-band scores need one more step | Names what is missing: "The soloist separator isn't downloaded yet.", "The soloist separator and the band writer aren't downloaded yet." (the band writer, the soloist separator, the instrument separator) | **Finish setting up** (only the missing downloads) | – | the missing files, the models folder and the Hugging Face cache path, the last download error |
 | Access key refused | Hugging Face didn't accept the access key | The key may have been deleted or expired. | **Sign in again** | Paste a new key | "HTTP 401 from huggingface.co for MuScriptor/muscriptor-medium." |
 | No free port | Brasscribe can't start | Another program on this computer is in the way. | **Restart** | – | "Ports 8765–8775 in use (8765: pid 4121 node)." |
 
@@ -370,7 +376,7 @@ Mockups: `mockups/png/server-mac-popover-*` and `mockups/png/server-win-flyout-*
    | Work load (CPU and GPU, the higher of the two, 30 s average) | Calm · Busy · Very busy | < 40 % · 40–85 % · > 85 % |
    | Memory | Plenty free · Getting full · Almost full | > 25 % free · 10–25 % · < 10 % |
    | Free space | "212 GB free" | numbers are fine here: people know GB from their phones |
-   | Ready to make scores | Ready · "Missing one download" | all profile models present |
+   | Ready to make scores | Ready · "Missing one download" · "Missing 2 downloads" | the three downloads present (names and sizes; checksums once, after downloading) |
    | Speed (one caption under the group) | "Uses the graphics chip" / "Processor only: slower" | MPS or CUDA versus CPU |
 
 6. **Update row** (only when an update is waiting): "Version 1.3 is ready. It installs when nothing is being made." [Update now]. This is a secondary button, not a second primary.
@@ -468,7 +474,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | health.disk | Free space | Ledig plass |
 | health.disk.value | {n} GB free | {n} GB ledig |
 | health.ready | Ready to make scores | Klar til å lage partitur |
-| health.ready.values | Ready · Missing one download | Klar · Mangler én nedlasting |
+| health.ready.values | Ready · Missing one download · Missing {n} downloads | Klar · Mangler én nedlasting · Mangler {n} nedlastinger |
 | health.speed.gpu | Uses the graphics chip | Bruker grafikkbrikken |
 | health.speed.nvidia | Uses the graphics card (NVIDIA) | Bruker grafikkortet (NVIDIA) |
 | health.speed.cpu | Processor only: slower | Bare prosessoren: tregere |
@@ -488,6 +494,14 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | tray.open | Open | Åpne |
 | settings.title | Settings | Innstillinger |
 | settings.login | Start when I log in | Start når jeg logger på |
+| settings.dock.mac | Show in the Dock | Vis i Dock |
+| settings.dock.mac.note | For when the Brasscribe mark is hidden in the menu bar, for example behind the camera notch. | Til når Brasscribe-merket er skjult i menylinjen, for eksempel bak kamerahakket. |
+| settings.name | Name shown to phones (only when the computer's name looks machine-made: capitals, digits and hyphens, 8+ characters, a digit; or once set) | Navnet telefonene ser |
+| settings.name.note | Phones list this Mac as “Brasscribe on {name}”. | Telefonene viser denne Macen som «Brasscribe på {name}». |
+| settings.name.use | Use this name | Bruk dette navnet |
+| hidden.notice.mac | The Brasscribe mark may be hidden behind the camera notch. Open Brasscribe from Launchpad any time, or make room in System Settings › Menu Bar. | Brasscribe-merket kan være skjult bak kamerahakket. Du kan alltid åpne Brasscribe fra Launchpad, eller gi plass i Systeminnstillinger › Menylinje. |
+| hidden.settings.mac | Open Menu Bar settings | Åpne innstillingene for menylinjen |
+| hidden.ok | Got it | OK |
 | settings.data | Where downloads are kept | Hvor nedlastingene lagres |
 | settings.data.change | Change… | Endre … |
 | settings.hf | Hugging Face access | Tilgang til Hugging Face |
@@ -588,7 +602,16 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.2.not-accepted | Signed in, but the licence isn't accepted yet. Choose **Agree** on the MuScriptor page, then try again. | Du er logget inn, men lisensen er ikke godtatt ennå. Velg **Agree** på MuScriptor-siden og prøv igjen. |
 | setup.3.title | Downloading what Brasscribe needs | Laster ned det Brasscribe trenger |
 | setup.3.progress | {a} of {b} GB · about {m} min left | {a} av {b} GB · omtrent {m} min igjen |
-| setup.3.items | Listening tools · Band writer (MuScriptor) · Instrument separator · Beat finder | Lytteverktøy · Bandskriver (MuScriptor) · Instrumentskiller · Taktfinner |
+| setup.3.items | Listening tools · Soloist separator · Instrument separator · Band writer (MuScriptor) | Lytteverktøy · Solistskiller · Instrumentskiller · Bandskriver (MuScriptor) |
+| setup.3.item-state | Waiting · Downloading · Done · Stopped | Venter · Laster ned · Ferdig · Stoppet |
+| setup.3.paused | Paused · {a} of {b} GB | På pause · {a} av {b} GB |
+| setup.3.licence-note | The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them. | Skillerne har ingen oppgitt lisens, så Brasscribe deler dem ikke videre. Macen laster dem ned der de som laget dem, publiserer dem. |
+| setup.3.no-key | The band writer needs your Hugging Face access key · Add the key, then try again. The separators download without it. · [Add an access key] | Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face · Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den. · [Legg til en tilgangsnøkkel] |
+| setup.3.licence | Accept the licence on Hugging Face, then try again · Signed in, but the licence isn't accepted yet. Choose **Agree** on the MuScriptor page. · [Open the MuScriptor page] | Godta lisensen på Hugging Face, og prøv igjen · Du er logget inn, men lisensen er ikke godtatt ennå. Velg **Agree** på MuScriptor-siden. · [Åpne MuScriptor-siden] |
+| setup.3.space | Not enough space · The downloads need about {n} GB; {m} GB is free. | Ikke nok plass · Nedlastingene trenger omtrent {n} GB, og {m} GB er ledig. |
+| setup.3.damaged | A download arrived damaged · Brasscribe deleted it. Try again to fetch it afresh. | En nedlasting kom fram skadet · Brasscribe har slettet den. Prøv igjen for å hente den på nytt. |
+| setup.3.network | The download stopped · Check the internet connection, then try again. It continues where it stopped. | Nedlastingen stoppet · Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet. |
+| setup.3.without | Continue without it | Fortsett uten |
 | setup.3.leave | You can close this window. Brasscribe keeps downloading and tells you when it's ready. | Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart. |
 | setup.3.pause | Pause | Pause |
 | setup.3.resume | Resume | Fortsett |
@@ -624,7 +647,7 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | disk.clear | Delete old results ({n} GB) | Slett gamle resultater ({n} GB) |
 | disk.clear.note | Scores on your phones stay. | Partitur på telefonene blir liggende. |
 | download.title | Full-band scores need one more step | Partitur for fullt band trenger ett steg til |
-| download.why | The band writer isn't downloaded yet. | Bandskriveren er ikke lastet ned ennå. |
+| download.why | The band writer isn't downloaded yet. · The soloist separator isn't downloaded yet. · The instrument separator isn't downloaded yet. · {list} aren't downloaded yet. (the soloist separator, the instrument separator, the band writer) · Brasscribe's own tools aren't installed yet. | Bandskriveren er ikke lastet ned ennå. · Solistskilleren er ikke lastet ned ennå. · Instrumentskilleren er ikke lastet ned ennå. · {list} er ikke lastet ned ennå. (solistskilleren, instrumentskilleren, bandskriveren) · Brasscribes egne verktøy er ikke installert ennå. |
 | key.title | Hugging Face didn't accept the access key | Hugging Face godtok ikke tilgangsnøkkelen |
 | key.why | The key may have been deleted or have expired. | Nøkkelen kan være slettet eller utløpt. |
 | key.fix | Sign in again | Logg inn på nytt |
