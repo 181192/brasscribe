@@ -266,7 +266,7 @@ struct SetupView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "3.1 of 9.8 GB · about 12 min left", "Paused · 3.1 of 9.8 GB".
+    /// "3.1 of 9.8 GB · about 12 min left", "Paused · 3.1 of 9.8 GB", "Checking the download · 40%".
     private func progressLine(fraction: Double) -> String {
         let d = app.downloader
         guard d.bytesTotal > 0, d.phase != .idle else {
@@ -274,6 +274,7 @@ struct SetupView: View {
         }
         let amount = String(localized: "\(Strings.gigabytes(d.bytesDone)) of \(Strings.gigabytes(d.bytesTotal)) GB")
         if d.phase == .paused { return String(localized: "Paused · \(amount)") }
+        if let v = d.verifying { return String(localized: "Checking the download · \(Int(v * 100))%") }
         if let m = d.minutesLeft { return String(localized: "\(amount) · about \(m) min left") }
         return amount
     }
