@@ -22,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -119,6 +120,23 @@ fun SettingsScreen(vm: PlayViewModel) {
     }
     PlayScaffold(title = null, onBack = vm::back, backLabel = stringResource(R.string.home), status = status) {
         ScreenTitle(stringResource(R.string.settings))
+        // Your instrument (my-instrument §3.2): first, above everything else. The picker is the first run's.
+        if (vm.container.seats.isNotEmpty()) {
+            val seatRow = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            val focusRow by vm.focusSeatRow.collectAsState()
+            androidx.compose.runtime.LaunchedEffect(focusRow) {
+                if (focusRow) { kotlinx.coroutines.delay(100); runCatching { seatRow.requestFocus() }; vm.focusSeatRow.value = false }
+            }
+            SectionLabel(stringResource(R.string.settings_you))
+            val value = seatValue(vm.container.seat, vm.container.seats)
+            RowGroup {
+                ListRow(stringResource(R.string.settings_seat), { vm.openSeatPicker(no.brasscribe.play.SeatPickerMode.SETTINGS) },
+                    Modifier.focusRequester(seatRow).semantics { testTag = "setting-seat" },
+                    subtitle = value, icon = R.drawable.ic_bc_parts)
+            }
+            Text(stringResource(R.string.settings_seat_caption), style = MaterialTheme.typography.bodyMedium,
+                color = no.brasscribe.design.BrasscribeTheme.colors.textMuted, modifier = Modifier.padding(horizontal = BrasscribeSpace.s4))
+        }
         RowGroup {
             ListRow(
                 stringResource(R.string.companion_title), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, icon = R.drawable.ic_bc_computer,

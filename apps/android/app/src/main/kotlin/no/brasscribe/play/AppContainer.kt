@@ -94,6 +94,20 @@ class AppContainer(private val context: Context) {
         appearance = value
     }
 
+    private val seatStore = SeatStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))
+
+    /**
+     * Settings › Your instrument: what this player plays. Per phone, like Appearance. Changing it never
+     * re-arranges a score: it is the default "your part" of new scores and of scores with none picked.
+     */
+    var seat: SeatChoice by androidx.compose.runtime.mutableStateOf(seatStore.load())
+        private set
+
+    fun updateSeat(value: SeatChoice) {
+        seatStore.save(value)
+        seat = value
+    }
+
     /** The first-run screen (three points and Get started) has been seen. */
     /** Scores open with the realistic sound (SFZ instruments) instead of the standard one. */
     var realisticByDefault: Boolean
@@ -130,7 +144,10 @@ class AppContainer(private val context: Context) {
     }
 
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
-    val core: CoreBridge = RustCoreBridge.load() ?: KotlinCoreBridge
+    val core: CoreBridge = (RustCoreBridge.load() ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
+
+    /** The contest band's seats, from the core; empty without it (then "What do you play?" is not asked). */
+    val seats: List<no.brasscribe.play.model.Seat> by lazy { runCatching { core.seats() }.getOrDefault(emptyList()) }
 
     /**
      * Instrumented tests only: a finished score served in place of a paired computer

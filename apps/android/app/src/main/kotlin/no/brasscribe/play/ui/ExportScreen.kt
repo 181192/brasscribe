@@ -73,13 +73,13 @@ fun ExportScreen(vm: PlayViewModel) {
     var pendingSave by remember { mutableStateOf<List<ExportFile>>(emptyList()) }
     // What: the player's own part first (the part on screen), every part, or the conductor's score.
     val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
-    val shown = scoreMidi?.shown
     // The labels follow the recorded lineup: a quartet has no conductor, so its third choice is the score.
     val lineup = r.lineup ?: Lineup.ofParts(partNames)
-    val myPart = shown?.singleOrNull() ?: defaultPart(partNames, lineup)
+    // Your part: this score's pick, else the seat's part. With none of your own, Every part is the default.
+    val myPart = remember(partNames, r) { vm.yourPart(partNames, r).index }
     val manyParts = partNames.size > 1
-    var what by rememberSaveable { mutableStateOf(if (manyParts) ExportScope.MY_PART else ExportScope.CONDUCTOR) }
-    val myName = PartNames.display(partNames.getOrElse(myPart) { "" })
+    var what by rememberSaveable { mutableStateOf(if (!manyParts) ExportScope.CONDUCTOR else if (myPart != null) ExportScope.MY_PART else ExportScope.EVERY_PART) }
+    val myName = myPart?.let { PartNames.display(partNames.getOrElse(it) { "" }) }
     val fileCount = formats.sumOf { f ->
         if (f == ExportFormat.AUDIO || f == ExportFormat.MIDI || !exporter.perPart(r, f) || what != ExportScope.EVERY_PART) 1 else partNames.size
     }
@@ -98,7 +98,7 @@ fun ExportScreen(vm: PlayViewModel) {
             val comp = r.composition
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val files = withContext(Dispatchers.Default) {
-                exporter.buildAll(r, formats, what, myPart, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang())
+                exporter.buildAll(r, formats, what, myPart ?: 0, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang())
             }
             vm.say(R.string.exported, files.joinToString { it.file.nameWithoutExtension })
             then(files)
@@ -132,11 +132,11 @@ fun ExportScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(R.string.export_title))
         if (manyParts) {
             SectionLabel(stringResource(R.string.export_what))
-            ChoiceGroup(3) {
-                ChoiceCard(stringResource(R.string.export_scope_my_part, myName), null, what == ExportScope.MY_PART, true, 0) { what = ExportScope.MY_PART }
+            ChoiceGroup(if (myName != null) 3 else 2) {
+                if (myName != null) ChoiceCard(stringResource(R.string.export_scope_my_part, myName), null, what == ExportScope.MY_PART, true, 0) { what = ExportScope.MY_PART }
                 ChoiceCard(stringResource(R.string.export_scope_every_part), stringResource(R.string.export_scope_every_part_tip),
-                    what == ExportScope.EVERY_PART, true, 1) { what = ExportScope.EVERY_PART }
-                ChoiceCard(stringResource(if (lineup == Lineup.QUARTET) R.string.export_scope_score_quartet else R.string.export_scope_conductor), null, what == ExportScope.CONDUCTOR, true, 2) { what = ExportScope.CONDUCTOR }
+                    what == ExportScope.EVERY_PART, true, if (myName != null) 1 else 0) { what = ExportScope.EVERY_PART }
+                ChoiceCard(stringResource(if (lineup == Lineup.QUARTET) R.string.export_scope_score_quartet else R.string.export_scope_conductor), null, what == ExportScope.CONDUCTOR, true, if (myName != null) 2 else 1) { what = ExportScope.CONDUCTOR }
             }
         }
         SectionLabel(stringResource(R.string.export_formats))

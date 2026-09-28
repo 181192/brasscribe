@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import java.util.zip.ZipInputStream
 
-enum class Screen { FIRST_RUN, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
+enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
 enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE }
@@ -140,13 +140,32 @@ enum class Difficulty(@StringRes val label: Int) {
     }
 }
 
-data class OutputOptions(val lineup: Lineup = Lineup.FULL, val difficulty: Difficulty = Difficulty.FAITHFUL, val keyShift: Int = 0) {
+/**
+ * The Output screen's answers. [seat] and [reads] are who played a solo take (or whose part a band take
+ * names), pre-filled from Settings; [lead] "seat" puts the tune on the seat's part (Who plays the tune?).
+ */
+data class OutputOptions(
+    val lineup: Lineup = Lineup.FULL, val difficulty: Difficulty = Difficulty.FAITHFUL, val keyShift: Int = 0,
+    val seat: String? = null, val reads: String? = null, val lead: String? = null,
+) {
     fun toCore() = ArrangeOptions(
         lineup = lineup.core,
         difficulty = difficulty.id,
         transpose = keyShift.takeIf { it != 0 },
+        seat = seat,
+        reads = reads.takeIf { seat != null },
+        lead = lead.takeIf { seat != null && it == "seat" },
     )
+
+    /** With the seat and clef of [choice]: none for "Not now" or "I conduct or listen". */
+    fun withSeat(choice: SeatChoice, seats: List<no.brasscribe.play.model.Seat>): OutputOptions {
+        val seat = choice.seatId?.let { id -> seats.firstOrNull { it.id == id } }
+        return copy(seat = seat?.id, reads = seat?.let { s -> choice.readsOrNull?.takeIf { it != s.reads.firstOrNull() } }, lead = null)
+    }
 }
+
+/** Where "What do you play?" was opened from: the first run, Settings, or "Who played this?" on a solo take. */
+enum class SeatPickerMode { FIRST_RUN, SETTINGS, WHO_PLAYED }
 
 /** A take with no harmony to arrange (a solo, or anything transcribed on the phone): no quartet for it. */
 val TranscriptionResult.isSoloTake: Boolean get() = profile == Profile.SOLO
@@ -156,6 +175,9 @@ val TranscriptionResult.lineup: Lineup? get() = Lineup.recorded(composition)
 
 /** The engine refused a quartet for this take (it has no harmony): the app says why in its own words. */
 class QuartetNeedsGroupException : Exception("quartet needs a recording of the whole group")
+
+/** The engine refused the tune on the seat's part (its lineup or seat cannot carry it). */
+class LeadSeatRefusedException : Exception("the seat cannot carry the tune here")
 
 /** A status line for sighted users that screen readers also hear (polite live region). */
 data class Status(
@@ -252,16 +274,20 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 r ?: return@collect
                 val recorded = r.lineup
                 val difficulty = Difficulty.of(r.arrangementText("difficulty"))
+                // Who it was written for, as recorded ("Who played this?" shows the score's own answer).
+                val seat = r.composition?.arrangementString("seat")
                 val synced = output.value.let { o ->
                     o.copy(
                         lineup = recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup,
                         difficulty = if (recorded != null && difficulty != null) difficulty else o.difficulty,
+                        seat = if (recorded != null) seat else o.seat,
+                        reads = if (recorded != null) r.composition?.arrangementString("reads") else o.reads,
+                        lead = if (recorded != null) r.composition?.arrangementString("lead")?.takeIf { !r.isSoloTake } else o.lead,
                     )
                 }
-                if (synced != output.value) {
-                    output.value = synced
-                    lastApplied = synced
-                }
+                // The score on screen is what these options make: Show the score re-arranges only after a change.
+                output.value = synced
+                lastApplied = synced
             }
         }
     }
@@ -277,10 +303,73 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     fun home() { backStack.value = listOf(Screen.HOME) }
 
+    /** Get started: "What do you play?" next, the first run's one question (skipped without the core's seats). */
     fun finishFirstRun() {
+        if (container.seats.isEmpty()) { endFirstRun(); return }
+        seatPicker = SeatPickerMode.FIRST_RUN
+        backStack.value = listOf(Screen.WHAT_DO_YOU_PLAY)
+    }
+
+    private fun endFirstRun() {
         container.firstRunDone = true
+        focusHomeTitle.value = true
         backStack.value = listOf(Screen.HOME)
     }
+
+    // ---- What do you play? ----------------------------------------------------------------------------
+
+    /** Where the picker was opened from; it decides what Continue changes. */
+    var seatPicker: SeatPickerMode = SeatPickerMode.FIRST_RUN
+        private set
+
+    /** After the first run, focus goes to the Home title; after Settings' picker, back to its row. */
+    val focusHomeTitle = MutableStateFlow(false)
+    val focusSeatRow = MutableStateFlow(false)
+
+    fun openSeatPicker(mode: SeatPickerMode) {
+        seatPicker = mode
+        navigate(Screen.WHAT_DO_YOU_PLAY)
+    }
+
+    /** The seat as the picker starts: this solo take's player for "Who played this?", else the setting. */
+    fun seatPickerStart(): SeatChoice = when (seatPicker) {
+        SeatPickerMode.WHO_PLAYED -> output.value.seat?.let { id ->
+            SeatChoice.Player(id, output.value.reads ?: container.seats.firstOrNull { it.id == id }?.reads?.firstOrNull())
+        } ?: container.seat
+        else -> container.seat
+    }
+
+    /**
+     * Continue (or "I conduct or listen"): the only moment the answer is applied (WCAG 3.2.2). Settings
+     * and the first run save it for the phone; "Who played this?" changes only this take, on Show the score.
+     */
+    fun chooseSeat(choice: SeatChoice) {
+        when (seatPicker) {
+            SeatPickerMode.FIRST_RUN -> { container.updateSeat(choice); endFirstRun() }
+            SeatPickerMode.SETTINGS -> { container.updateSeat(choice); focusSeatRow.value = true; back() }
+            SeatPickerMode.WHO_PLAYED -> { output.update { it.withSeat(choice, container.seats) }; back() }
+        }
+    }
+
+    /** "Not now" on the first run: nothing is set, and it is not asked again. */
+    fun skipSeat() = endFirstRun()
+
+    /** "Make this my part", per score: saved with it; the seat in Settings stays as it is. */
+    val myPartOverride = MutableStateFlow<String?>(null)
+
+    fun makeMyPart(part: String) {
+        myPartOverride.value = part
+        result.value?.let(::saveCurrentScore)
+        say(R.string.my_part_made, no.brasscribe.play.ui.PartNames.display(part))
+    }
+
+    /** "Your part" among [parts] of [r]: this score's pick, else the seat's part (the core's table). */
+    fun yourPart(parts: List<String>, r: TranscriptionResult?): YourPart =
+        YourParts.resolve(parts, r?.lineup ?: Lineup.ofParts(parts), container.seat, myPartOverride.value, container.seats, container.core::seatPart)
+
+    /** Where each part of [r] came from, by part name (the core's part_sources); empty for an opened score. */
+    fun partSources(r: TranscriptionResult): Map<String, no.brasscribe.play.model.PartSource> =
+        r.compositionJsonFor(container.core)?.let { runCatching { container.core.partSources(it) }.getOrNull() }.orEmpty()
 
     /** Shows [p] full screen, replacing the step that failed (the recording is kept). */
     fun showProblem(p: Problem, detail: String? = null) {
@@ -412,6 +501,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         result.value = null
         checked.value = emptyMap()
         renderedScoreAudio = null
+        myPartOverride.value = null
+        // A new take is the player's own, as Settings says; a friend's seat from the last one does not carry over.
+        output.update { it.withSeat(container.seat, container.seats) }
         profile.value = null
         where.value = if (s.kind == SourceKind.MICROPHONE && container.hasPitchModel) Where.DEVICE else Where.COMPANION
     }
@@ -442,10 +534,13 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         job = viewModelScope.launch {
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
+                val ignored = seatIgnored(r)
                 result.value = r
                 saveCurrentScore(r)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
-                say(R.string.transcribe_done)
+                // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
+                if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
+                else say(R.string.transcribe_done)
                 replaceTop(Screen.REVIEW)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -542,6 +637,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 then()
             } catch (e: QuartetNeedsGroupException) {
                 say(R.string.lineup_quartet_needs_group)
+            } catch (e: LeadSeatRefusedException) {
+                say(R.string.lead_seat_refused)
             } catch (e: Exception) {
                 say(R.string.transcribe_failed, e.message ?: e.javaClass.simpleName)
             } finally {
@@ -552,6 +649,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private var lastApplied: OutputOptions = OutputOptions()
 
+    /** A seat went to the computer and came back unrecorded: that Brasscribe is too old to write for it. */
+    private fun seatIgnored(r: TranscriptionResult): Boolean =
+        !r.onDevice && output.value.seat != null && r.composition != null && r.composition.arrangementString("seat") == null
+
     private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
         val engine = container.engine() ?: error(res.getString(R.string.where_companion_missing))
         val core = opts.toCore()
@@ -559,10 +660,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val job = try {
             engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
                 allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.engine,
-                difficulty = core.difficulty, transpose = core.transpose))
+                difficulty = core.difficulty, transpose = core.transpose, seat = core.seat, reads = core.reads, lead = core.lead))
         } catch (e: EngineException) {
             // The engine's own words stay out of the app: a refused quartet gets the card's reason.
             if (e.status == 422 && opts.lineup == Lineup.QUARTET) throw QuartetNeedsGroupException()
+            if (e.status == 422 && core.lead == "seat") throw LeadSeatRefusedException()
             throw e
         }
         engine.events(job.id).collect { }
@@ -591,7 +693,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         transcribe.update { it.copy(fraction = 0.0) }
         val created = engine.createJob(
             JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                title = ScoreTitles.withoutExtension(s.name)),
+                title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null }),
         )
         engineJobId = created.id
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
@@ -633,7 +735,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             ?: res.getString(R.string.score_title)
         val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
             jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet())
+            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value)
         currentSavedScoreId = saved.id
         savedScores.value = scoreLibrary.list()
     }
@@ -658,6 +760,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     engineOutputs = job.outputs.toSet(), evidence = runCatching { engine.evidence(jobId) }.getOrNull())
                 source.value = Source(entry.title, SourceKind.SCORE, 0.0)
                 currentSavedScoreId = null
+                myPartOverride.value = null
                 checked.value = emptyMap()
                 result.value = r
                 saveCurrentScore(r, entry.title)
@@ -697,6 +800,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSavedScore(saved: SavedScore, review: Boolean = false) {
         currentSavedScoreId = saved.id
+        myPartOverride.value = saved.part
         source.value = Source(saved.title, SourceKind.SCORE, 0.0)
         result.value = TranscriptionResult(
             composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
@@ -723,7 +827,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
             val compositionJson = composition?.let(container.core::encodeComposition)
             val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
-            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part)
             savedScores.value = scoreLibrary.list()
             saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
             if (currentSavedScoreId == id) {
@@ -753,8 +857,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val options = OutputOptions(
             lineup = current.lineup ?: output.value.lineup,
             difficulty = Difficulty.of(current.arrangementText("difficulty")) ?: output.value.difficulty,
+            // Whoever the score was written for, as recorded: a change in Settings never re-arranges it.
+            seat = composition.arrangementString("seat"), reads = composition.arrangementString("reads"),
+            lead = composition.arrangementString("lead")?.takeIf { !current.isSoloTake },
         )
-        val arranged = runCatching { arrangeComposition(updatedComposition, options) }.getOrNull()
+        val arranged = runCatching { arrangeComposition(updatedComposition, options, current.isSoloTake) }.getOrNull()
         val xml = arranged?.second
             ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
             ?: return false
@@ -779,16 +886,17 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
      * (the recorded total goes back in). Returns the Composition with its arrangement recorded as the
      * core made it, and the MusicXML; null without the core.
      */
-    private fun arrangeComposition(composition: Composition, options: OutputOptions): Pair<Composition, String>? {
+    private fun arrangeComposition(composition: Composition, options: OutputOptions, soloTake: Boolean): Pair<Composition, String>? {
         val transposed = (composition.arrangement?.get("transpose_semitones") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
         val xml = container.core.arrangeMusicXmlWith(composition,
-            ArrangeOptions(lineup = options.lineup.core, difficulty = options.difficulty.id, transpose = transposed)) ?: return null
-        return composition.arrangedFor(options.lineup, options.difficulty.id) to xml
+            options.toCore().copy(transpose = transposed)) ?: return null
+        val core = options.toCore()
+        return composition.arrangedFor(options.lineup, options.difficulty.id, core.seat, core.reads, core.lead, soloTake) to xml
     }
 
     /** A score arranged on the phone, re-arranged from its Composition (the rest of a key shift stays display-only). */
     private fun rearrange(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult? {
-        val (composition, xml) = arrangeComposition(r.composition ?: return null, opts) ?: return null
+        val (composition, xml) = arrangeComposition(r.composition ?: return null, opts, r.isSoloTake) ?: return null
         return r.copy(composition = composition, musicXml = xml, compositionJson = container.core.encodeComposition(composition))
     }
 

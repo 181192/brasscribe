@@ -92,9 +92,9 @@ object MusicStandRules {
     }
 
     /**
-     * "Your part" for the stand: the seat's part will come from Settings (my-instrument §2.3); until
-     * then it is the lineup's lead. Null when there is no part to name (none of the known leads, as in
-     * a pop score): the stand then says no "(you)".
+     * "Your part" for the stand while "What do you play?" has no answer: the lineup's lead. Null when
+     * there is no part to name (none of the known leads, as in a pop score): the stand then says no
+     * "(you)". With an answer, [no.brasscribe.play.YourParts] decides.
      */
     fun yourPart(parts: List<String>, lineup: no.brasscribe.play.Lineup?): Int? {
         val clean = parts.map { it.replace('\u00A0', ' ').trim() }
