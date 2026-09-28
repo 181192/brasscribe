@@ -54,7 +54,7 @@ class Job:
             if e.get("type") == "stage":
                 st = self.stages.setdefault(e["stage"], {"name": e["stage"], "kind": e.get("kind"), "status": "pending"})
                 st["status"] = e["status"]
-                for k in ("seconds", "device"):
+                for k in ("seconds", "queue_wait_s", "run_s", "device"):
                     if k in e:
                         st[k] = e[k]
             elif e.get("type") == "job" and e.get("status") in TERMINAL:
@@ -258,7 +258,8 @@ class JobManager:
                   created=mpath.stat().st_ctime, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
-                                       "seconds": st.get("seconds"), "device": (st.get("adapter") or {}).get("device")}
+                                       "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),
+                                       "run_s": st.get("run_s"), "device": (st.get("adapter") or {}).get("device")}
         ev = self.run_dir(job_id) / "events.jsonl"
         if events and ev.exists():
             job.events = [json.loads(line) for line in ev.read_text().splitlines() if line.strip()]

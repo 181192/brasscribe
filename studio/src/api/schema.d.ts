@@ -1882,6 +1882,16 @@ export interface components {
             key?: string | null;
             /** Kind */
             kind?: string | null;
+            /**
+             * Queue Wait S
+             * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+             */
+            queue_wait_s?: number | null;
+            /**
+             * Run S
+             * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+             */
+            run_s?: number | null;
             /** Seconds */
             seconds?: number | null;
             /** Stage */
@@ -1897,7 +1907,20 @@ export interface components {
             kind?: string | null;
             /** Name */
             name: string;
-            /** Seconds */
+            /**
+             * Queue Wait S
+             * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+             */
+            queue_wait_s?: number | null;
+            /**
+             * Run S
+             * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+             */
+            run_s?: number | null;
+            /**
+             * Seconds
+             * @description wall clock, including any wait for the GPU mutex
+             */
             seconds?: number | null;
             /**
              * Status
@@ -2790,8 +2813,18 @@ export interface operations {
                         kind?: string | null;
                         /** Message */
                         message?: string | null;
+                        /**
+                         * Queue Wait S
+                         * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+                         */
+                        queue_wait_s?: number | null;
                         /** Run */
                         run: string;
+                        /**
+                         * Run S
+                         * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+                         */
+                        run_s?: number | null;
                         /** Seconds */
                         seconds?: number | null;
                         /** Stage */

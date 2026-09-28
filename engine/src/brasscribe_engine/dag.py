@@ -72,16 +72,22 @@ class StageResult:
     key: str
     out_dir: Path
     files: dict[str, str]
-    seconds: float = 0.0
+    seconds: float = 0.0  # wall clock: queue_wait_s + run_s
+    queue_wait_s: float = 0.0  # waiting for the machine-wide GPU mutex
     inputs: dict[str, str] = field(default_factory=dict)
     adapter: dict | None = None
     provenance: dict = field(default_factory=dict)
     matches_cache: bool | None = None
     error: str | None = None
 
+    @property
+    def run_s(self) -> float:
+        return max(0.0, self.seconds - self.queue_wait_s)
+
     def record(self) -> dict:
         d = {"stage": self.stage, "kind": self.kind, "status": self.status, "key": self.key,
-             "seconds": round(self.seconds, 3), "inputs": self.inputs, "outputs": self.files,
+             "seconds": round(self.seconds, 3), "queue_wait_s": round(self.queue_wait_s, 3),
+             "run_s": round(self.run_s, 3), "inputs": self.inputs, "outputs": self.files,
              "outputs_digest": digest_of_files(self.files) if self.files else None}
         if self.adapter:
             d["adapter"] = self.adapter
@@ -119,7 +125,8 @@ class StageContext:
         self.executor.emit({"type": "log", "stage": self.stage.name, "message": message})
 
     def adapter(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None) -> float:
-        return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log)
+        return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log,
+                                          waited=lambda s: self.executor.add_wait(self.stage.name, s))
 
 
 class Executor:
@@ -134,6 +141,17 @@ class Executor:
         self.cold = cold or set()
         self.cancel = cancel or threading.Event()
         self._fingerprints: dict[tuple, str] = {}
+        self._waits: dict[str, float] = {}
+        self._waits_lock = threading.Lock()
+
+    def add_wait(self, stage: str, seconds: float) -> None:
+        """Time a stage spent waiting for the GPU mutex; kept apart from the time it ran."""
+        with self._waits_lock:
+            self._waits[stage] = self._waits.get(stage, 0.0) + seconds
+
+    def _take_wait(self, stage: str) -> float:
+        with self._waits_lock:
+            return self._waits.pop(stage, 0.0)
 
     def emit(self, event: dict) -> None:
         self._emit({"time": time.time(), **event})
@@ -229,15 +247,18 @@ class Executor:
                             self.cache.store(key, stage.name, out, list(res.files), {"ran": True})
             except Exception as e:  # noqa: BLE001 - reported on the stage, then re-raised
                 res.seconds = time.time() - t0
+                res.queue_wait_s = min(self._take_wait(stage.name), res.seconds)
                 res.error = f"{type(e).__name__}: {e}"
                 results[stage.name] = res
                 self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed",
                            "error": res.error, "trace": traceback.format_exc(limit=5)})
                 raise StageFailed(stage.name, res.error) from e
             res.seconds = time.time() - t0
+            res.queue_wait_s = min(self._take_wait(stage.name), res.seconds)
             results[stage.name] = res
             event = {"type": "stage", "stage": stage.name, "kind": stage.kind, "status": res.status,
-                     "seconds": round(res.seconds, 3), "key": key, "fraction": round((index + 1) / total, 4)}
+                     "seconds": round(res.seconds, 3), "queue_wait_s": round(res.queue_wait_s, 3),
+                     "run_s": round(res.run_s, 3), "key": key, "fraction": round((index + 1) / total, 4)}
             if adapter:
                 event["device"] = adapter["device"]
             if res.matches_cache is not None:

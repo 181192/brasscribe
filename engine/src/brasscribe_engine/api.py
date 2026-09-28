@@ -706,7 +706,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                 files = {p.relative_to(d).as_posix(): None for p in sorted(d.rglob("*")) if p.is_file()} if d.is_dir() else {}
             out.append(m.StageArtifacts(
                 stage=name, kind=st.get("kind"), status=st["status"], key=rec.get("key"), seconds=st.get("seconds"),
-                device=st.get("device"),
+                queue_wait_s=st.get("queue_wait_s"), run_s=st.get("run_s"), device=st.get("device"),
                 files=[file_ref(d / f, f, f"/v1/jobs/{job.id}/stages/{name}/files/{f}", h) for f, h in files.items()]))
         return out
 

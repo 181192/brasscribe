@@ -6,6 +6,9 @@ export interface StageView {
   kind?: string | null;
   status: string;
   seconds?: number | null;
+  /** Of `seconds`: waiting for the machine-wide GPU mutex, and running. */
+  queue_wait_s?: number | null;
+  run_s?: number | null;
   device?: string | null;
   cacheHit: boolean;
   startedAt?: number;
@@ -57,6 +60,8 @@ export function reduce(state: RunView, e: JobEvent): RunView {
       if (e.status === "started") s.startedAt = e.time;
     }
     if (e.seconds !== undefined) s.seconds = e.seconds;
+    if (e.queue_wait_s !== undefined) s.queue_wait_s = e.queue_wait_s;
+    if (e.run_s !== undefined) s.run_s = e.run_s;
     if (e.device) s.device = e.device;
     stages[i] = s;
     next.stages = stages;

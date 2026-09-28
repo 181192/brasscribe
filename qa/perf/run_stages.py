@@ -4,7 +4,8 @@
 
 Prints, per (stage, status), how many runs and the median and largest seconds, then the
 runs in which some stage actually ran (not cached or imported). A stage's seconds include
-any wait for the GPU mutex (adapters.py), so an outlier on a short input is usually queueing.
+any wait for the GPU mutex (adapters.py); manifests that record it (queue_wait_s, run_s) also
+get the median and largest wait, so queueing is told apart from running.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "data/runs")
 per: dict[tuple[str, str], list[float]] = defaultdict(list)
+waits: dict[tuple[str, str], list[float]] = defaultdict(list)
 ran = []
 for mf in sorted(root.glob("*/manifest.json")):
     try:
@@ -25,6 +27,8 @@ for mf in sorted(root.glob("*/manifest.json")):
     stages = m.get("stages", [])
     for s in stages:
         per[(s["stage"], s["status"])].append(s.get("seconds") or 0.0)
+        if s.get("queue_wait_s") is not None:
+            waits[(s["stage"], s["status"])].append(s["queue_wait_s"])
     if any(s["status"] == "ran" for s in stages):
         total = sum(s.get("seconds") or 0.0 for s in stages)
         worst = max(stages, key=lambda s: s.get("seconds") or 0.0)
@@ -32,9 +36,11 @@ for mf in sorted(root.glob("*/manifest.json")):
                     (m.get("input") or {}).get("bytes")))
 
 print(f"{len(list(root.glob('*/manifest.json')))} manifests under {root}\n")
-print(f"{'stage':36s} {'status':9s} {'n':>4s} {'median s':>9s} {'max s':>8s}")
+print(f"{'stage':36s} {'status':9s} {'n':>4s} {'median s':>9s} {'max s':>8s} {'wait med':>9s} {'wait max':>9s}")
 for (stage, status), v in sorted(per.items()):
-    print(f"{stage:36s} {status:9s} {len(v):4d} {statistics.median(v):9.2f} {max(v):8.2f}")
+    w = waits.get((stage, status))
+    wait = f" {statistics.median(w):9.2f} {max(w):9.2f}" if w else ""
+    print(f"{stage:36s} {status:9s} {len(v):4d} {statistics.median(v):9.2f} {max(v):8.2f}{wait}")
 print(f"\n{'run':48s} {'status':9s} {'total s':>8s}  slowest stage")
 for run, status, total, stage, secs, size in ran:
     print(f"{run:48s} {status or '-':9s} {total:8.1f}  {stage} {secs:.1f} s (input {size or 0:,} B)")

@@ -3,7 +3,8 @@
 // the inspector; status is text plus border style, never colour alone.
 import type { RunView, StageView } from "../lib/events";
 import { t } from "../i18n";
-import { clear, fmt, h } from "../ui/dom";
+import { stageTime, stageTimeTip } from "../lib/stagetime";
+import { clear, h } from "../ui/dom";
 
 const ORDER = ["beats", "stems", "separate", "layers", "transcribe", "vote", "arrange", "export"];
 
@@ -63,10 +64,10 @@ export class StageGraph extends HTMLElement {
     const fromCache = s.status === "cached" || s.status === "imported";
     const meta = [
       fromCache ? null : t(`status.${s.status}`),
-      s.seconds !== undefined && s.seconds !== null ? fmt.seconds(s.seconds) : null,
+      s.seconds !== undefined && s.seconds !== null ? stageTime(s) : null,
     ].filter(Boolean).join(" · ");
     return h("button", {
-      type: "button", class: `stage-node status-${s.status}`, "data-stage": s.name,
+      type: "button", class: `stage-node status-${s.status}`, "data-stage": s.name, title: stageTimeTip(s),
       "aria-pressed": String(this.selected === s.name),
       onclick: () => this.dispatchEvent(new CustomEvent("select", { detail: s.name })),
     },

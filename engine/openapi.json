@@ -2287,6 +2287,30 @@
             ],
             "title": "Kind"
           },
+          "queue_wait_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+            "title": "Queue Wait S"
+          },
+          "run_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+            "title": "Run S"
+          },
           "seconds": {
             "anyOf": [
               {
@@ -2343,6 +2367,30 @@
             "title": "Name",
             "type": "string"
           },
+          "queue_wait_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+            "title": "Queue Wait S"
+          },
+          "run_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+            "title": "Run S"
+          },
           "seconds": {
             "anyOf": [
               {
@@ -2352,6 +2400,7 @@
                 "type": "null"
               }
             ],
+            "description": "wall clock, including any wait for the GPU mutex",
             "title": "Seconds"
           },
           "status": {
@@ -4035,9 +4084,33 @@
                       ],
                       "title": "Message"
                     },
+                    "queue_wait_s": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+                      "title": "Queue Wait S"
+                    },
                     "run": {
                       "title": "Run",
                       "type": "string"
+                    },
+                    "run_s": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+                      "title": "Run S"
                     },
                     "seconds": {
                       "anyOf": [
