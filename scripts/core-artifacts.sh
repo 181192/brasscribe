@@ -14,8 +14,9 @@
 # The key is a hash of the core sources (tracked and untracked, not ignored), Cargo.lock, this
 # script, rustc -vV and the component's own toolchain (Xcode, NDK, cargo-ndk). An edit to the core
 # makes a new key, so the next ensure rebuilds from this checkout's sources. Entries live in
-# $BRASSCRIBE_CACHE/core-artifacts (default ~/.cache/brasscribe); builds go through one shared
-# CARGO_TARGET_DIR there, under a lock, so only dependencies that changed are compiled again.
+# $BRASSCRIBE_CACHE/core-artifacts (default ~/.cache/brasscribe). Builds run under a lock on a copy
+# of the sources at a fixed path (core-src) with one shared CARGO_TARGET_DIR, so only what changed
+# is compiled again.
 # Files are copied into the checkout as APFS clones (cp -c): instant, and no extra disk.
 set -euo pipefail
 
@@ -48,15 +49,26 @@ have() {
   esac
 }
 
-sources_hash() {
+sources() {
   # Everything that goes into the library: the crates' sources and manifests (not their tests),
   # the lock file, the cargo config and the Swift header/modulemap packed into the xcframework.
-  (git -C "$ROOT" ls-files -co --exclude-standard -z -- \
-      core/Cargo.toml core/Cargo.lock core/.cargo \
-      core/brasscribe-core core/brasscribe-ffi core/brasscribe-cli core/tools \
-      core/bindings/swift/brasscribe_ffiFFI.h core/bindings/swift/brasscribe_ffiFFI.modulemap \
-      ':(exclude)core/*/tests/*' \
-    | xargs -0 shasum -a 256)
+  git -C "$ROOT" ls-files -co --exclude-standard -z -- \
+    core/Cargo.toml core/Cargo.lock core/.cargo \
+    core/brasscribe-core core/brasscribe-ffi core/brasscribe-cli core/tools \
+    core/bindings/swift/brasscribe_ffiFFI.h core/bindings/swift/brasscribe_ffiFFI.modulemap \
+    ':(exclude)core/*/tests/*'
+}
+sources_hash() { (cd "$ROOT" && sources | xargs -0 shasum -a 256); }
+
+# Builds run on a copy of the sources at one fixed path, $CACHE/core-src. Cargo decides freshness
+# by mtime, so building different checkouts into one target dir directly could reuse another
+# checkout's objects. rsync -c without -t rewrites only the files whose content differs, with a new
+# mtime, and leaves the rest alone: cargo then rebuilds exactly what changed.
+sync_sources() {
+  local src="$CACHE/core-src"
+  mkdir -p "$src"
+  (cd "$ROOT" && sources | tr '\0' '\n' | rsync -rc --files-from=- ./ "$src/")
+  echo "$src/core"
 }
 
 key() {
@@ -91,7 +103,7 @@ unlock() { rm -rf "$STORE/.build.lock"; trap - EXIT; }
 build() {
   local comp="$1" out="$2"
   mkdir -p "$out"
-  cd "$CORE"
+  cd "$(sync_sources)"
   case "$comp" in
     host)
       cargo build --release -q --locked -p brasscribe-ffi
@@ -129,7 +141,7 @@ entry() {
     lock
     if [ ! -f "$dir/.complete" ]; then
       local tmp="$STORE/.tmp-$comp-$$" s=$SECONDS
-      rm -rf "$tmp"
+      rm -rf "$STORE"/.tmp-*   # left by an interrupted build; only the lock holder builds
       log "building $comp ($k) from $CORE"
       build "$comp" "$tmp"
       touch "$tmp/.complete"
