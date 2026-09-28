@@ -926,7 +926,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger."
+            "value": "Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger."
           }
         }
       }
@@ -2246,7 +2246,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av"
+            "value": "Demp"
           }
         }
       }
@@ -2256,7 +2256,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av for %@"
+            "value": "Demp %@"
           }
         }
       }
@@ -2266,7 +2266,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av min stemme"
+            "value": "Demp stemmen min"
           }
         }
       }
@@ -2276,7 +2276,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skru av stemmen din, sett ned tempoet, gjenta de vanskelige taktene."
+            "value": "Demp stemmen din, sett ned tempoet, gjenta de vanskelige taktene."
           }
         }
       }
@@ -5086,7 +5086,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stemmen din skrus av med «Lyd av min stemme», så du kan spille med. «Bare denne» spiller én stemme alene."
+            "value": "Stemmen din dempes med «Demp stemmen min», så du kan spille med. «Bare denne» spiller én stemme alene."
           }
         }
       }
