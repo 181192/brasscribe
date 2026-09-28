@@ -186,7 +186,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
 
             var job = await engine.CreateJobAsync(new JobCreate(audioId, profile, RenderAudio: true,
                 Title: Path.GetFileNameWithoutExtension(source.DisplayName),
-                Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose), ct);
+                Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
+                Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), ct);
             _jobId = job.Id;
             estimator.Start();
 

@@ -146,6 +146,20 @@
     </Style>
 
     <!-- Plain: Cancel and Skip. -->
+    <!-- A part's source label: neutral chrome, never a colour. An outline pill with an icon and words that opens one
+         sentence of explanation; the same words on every screen and platform. -->
+    <Style x:Key="SourcePillStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
     <Style x:Key="PlainButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="MinHeight" Value="48" />
         <Setter Property="Padding" Value="16,10" />

@@ -30,8 +30,13 @@ public sealed record JobCreate(
     string? Reads = null,
     string? Lead = null);
 
-/// <summary>Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a transposition.</summary>
-public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null)
+/// <summary>
+/// Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a
+/// transposition, and the player: their seat (a core seat id; a solo take is written for it), how they read it
+/// (treble|bass; null for the band's own clef) and who plays the tune (lineup|seat; null for the lineup's lead).
+/// </summary>
+public sealed record ArrangementOptions(string Lineup = "full", string Difficulty = "faithful", string? Key = null, int? Transpose = null,
+    string? Seat = null, string? Reads = null, string? Lead = null)
 {
     public static readonly ArrangementOptions Default = new();
 }

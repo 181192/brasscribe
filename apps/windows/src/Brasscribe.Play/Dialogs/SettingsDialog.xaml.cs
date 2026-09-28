@@ -20,10 +20,54 @@ public sealed partial class SettingsDialog : ContentDialog
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
         AppearanceBox.SelectedIndex = (int)viewModel.Appearance;
+        ShowSeat();
+        // Without the core's seats there is nothing to choose from.
+        SeatChangeButton.IsEnabled = main.Seats.IsAvailable;
         CoreVersion.Text = App.Strings.Format("Settings_CoreVersion", main.Core.IsNative ? main.Core.Version : App.Strings["Settings_CoreManaged"]);
     }
 
     public SettingsViewModel ViewModel { get; }
+
+    private Brasscribe.Play.Core.Seats.SeatPickerViewModel? _seatPicker;
+
+    private void ShowSeat() => SeatValue.Text = _main.Seats.Describe(ViewModel.SeatChoice);
+
+    /// <summary>Change: the first run's questions, from the current answer.</summary>
+    private void OnChangeSeat(object sender, RoutedEventArgs e)
+    {
+        _seatPicker = _main.NewSeatPicker();
+        SeatPicker.Show(_seatPicker);
+        SeatHint.Text = "";
+        SeatEditor.Visibility = Visibility.Visible;
+        SeatRow.Visibility = Visibility.Collapsed;
+        DispatcherQueue.TryEnqueue(SeatPicker.FocusFirst);
+    }
+
+    private void OnSaveSeat(object sender, RoutedEventArgs e)
+    {
+        if (_seatPicker?.Choice is not { } choice)
+        {
+            SeatHint.Text = _seatPicker?.ContinueHint ?? "";
+            return;
+        }
+        CloseSeat(choice);
+    }
+
+    private void OnConductSeat(object sender, RoutedEventArgs e) => CloseSeat(Brasscribe.Play.Core.Seats.SeatChoice.Conductor);
+
+    private void OnCancelSeat(object sender, RoutedEventArgs e) => CloseSeat(null);
+
+    /// <summary>Saves (or not) and puts focus back on the What you play row (design/system.md: focus returns where it came from).</summary>
+    private void CloseSeat(Brasscribe.Play.Core.Seats.SeatChoice? choice)
+    {
+        // Existing scores keep their arrangement; only "your part" in them follows the new answer.
+        if (choice is not null) ViewModel.SeatChoice = choice;
+        _seatPicker = null;
+        SeatEditor.Visibility = Visibility.Collapsed;
+        SeatRow.Visibility = Visibility.Visible;
+        ShowSeat();
+        DispatcherQueue.TryEnqueue(() => SeatChangeButton.Focus(FocusState.Programmatic));
+    }
 
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)
     {

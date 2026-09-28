@@ -22,10 +22,31 @@ public sealed partial class ChooseOutputPage : Page, IScreenPage
         ViewModel = Main.Output;
         Bindings.Update();
         Select(ViewModel.Lineup);
+        _fillingPlayer = true;
+        WhoPlayedBox.Items.Clear();
+        foreach (var name in ViewModel.WhoPlayedChoices) WhoPlayedBox.Items.Add(name);
+        WhoPlayedBox.SelectedIndex = ViewModel.WhoPlayedIndex;
+        TuneChoices.SelectedIndex = ViewModel.TuneOnMyPart ? 1 : 0;
+        _fillingPlayer = false;
         (ViewModel.Difficulty switch { Difficulty.Easier => EasierChoice, Difficulty.Standard => StandardChoice, _ => FaithfulChoice }).IsChecked = true;
     }
 
     public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+
+    private bool _fillingPlayer;
+
+    /// <summary>"Who played this?": waits for Show the score like every other answer here (WCAG 3.2.2).</summary>
+    private void OnWhoPlayedChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_fillingPlayer || WhoPlayedBox.SelectedIndex < 0) return;
+        ViewModel.WhoPlayedIndex = WhoPlayedBox.SelectedIndex;
+    }
+
+    private void OnTuneChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_fillingPlayer || TuneChoices.SelectedIndex < 0) return;
+        ViewModel.TuneOnMyPart = TuneChoices.SelectedIndex == 1;
+    }
 
     private static int IndexOf(Lineup lineup) => lineup switch
     {

@@ -60,6 +60,21 @@
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Brasscribe Play</value>
   </data>
+  <data name="AppearanceBox.Header" xml:space="preserve">
+    <value>Utseende</value>
+  </data>
+  <data name="AppearanceContrastNote.Text" xml:space="preserve">
+    <value>Kontrasttemaet ditt er på, så Windows velger fargene.</value>
+  </data>
+  <data name="AppearanceDark.Content" xml:space="preserve">
+    <value>Mørkt</value>
+  </data>
+  <data name="AppearanceLight.Content" xml:space="preserve">
+    <value>Lyst</value>
+  </data>
+  <data name="AppearanceSystem.Content" xml:space="preserve">
+    <value>Følg systemet</value>
+  </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Spør på datamaskinen i stedet</value>
   </data>
@@ -122,6 +137,12 @@
   </data>
   <data name="ChangeNote_Up" xml:space="preserve">
     <value>En halvtone opp</value>
+  </data>
+  <data name="CheckOtherPartsButton.Content" xml:space="preserve">
+    <value>Sjekk de andre stemmene</value>
+  </data>
+  <data name="CheckOtherPartsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Tonene merket ? i alle stemmene</value>
   </data>
   <data name="CheckThemButton.Content" xml:space="preserve">
     <value>Sjekk dem</value>
@@ -834,6 +855,9 @@
   <data name="Output_KeyConcertDetail" xml:space="preserve">
     <value>Klingende</value>
   </data>
+  <data name="Output_KeyOnYourPart" xml:space="preserve">
+    <value>{0} på stemmen din</value>
+  </data>
   <data name="Output_KeyWritten" xml:space="preserve">
     <value>{0} for {1}-instrumenter</value>
   </data>
@@ -842,6 +866,9 @@
   </data>
   <data name="Output_NeedsEngine" xml:space="preserve">
     <value>Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem.</value>
+  </data>
+  <data name="Output_OldComputer" xml:space="preserve">
+    <value>Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</value>
   </data>
   <data name="Output_QuartetBody" xml:space="preserve">
     <value>4 musikere, én på hver stemme</value>
@@ -854,6 +881,18 @@
   </data>
   <data name="Output_Rearranging" xml:space="preserve">
     <value>Arrangerer på nytt med valgene dine</value>
+  </data>
+  <data name="Output_TuneLineup" xml:space="preserve">
+    <value>{0} (som vanlig)</value>
+  </data>
+  <data name="Output_TuneSeat" xml:space="preserve">
+    <value>Deg: {0}</value>
+  </data>
+  <data name="Output_YourPart" xml:space="preserve">
+    <value>stemmen din: {0}</value>
+  </data>
+  <data name="Output_YourPartNone" xml:space="preserve">
+    <value>ingen stemme for deg: alle stemmene åpnes</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Kode</value>
@@ -1047,6 +1086,9 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>til</value>
   </data>
+  <data name="ReviewArrangedTitle.Text" xml:space="preserve">
+    <value>Stemmen din er arrangert</value>
+  </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Velg hva tonen skal være; hele partituret følger med</value>
   </data>
@@ -1112,6 +1154,12 @@
   </data>
   <data name="Review_AllDone" xml:space="preserve">
     <value>Alle tonene er sjekket</value>
+  </data>
+  <data name="Review_ArrangedBody" xml:space="preserve">
+    <value>Ingen spilte {0} alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.</value>
+  </data>
+  <data name="Review_ArrangedTitle" xml:space="preserve">
+    <value>Stemmen din er arrangert</value>
   </data>
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Takt {0}</value>
@@ -1293,6 +1341,12 @@
   <data name="Score_LoopLabel" xml:space="preserve">
     <value>Gjenta {0}–{1}</value>
   </data>
+  <data name="Score_MadeMine" xml:space="preserve">
+    <value>{0} er stemmen din i dette partituret.</value>
+  </data>
+  <data name="Score_MakeMine" xml:space="preserve">
+    <value>Gjør til min stemme</value>
+  </data>
   <data name="Score_NoOriginal" xml:space="preserve">
     <value>Det finnes ikke noe opptak å høre: partituret ble åpnet uten.</value>
   </data>
@@ -1344,6 +1398,147 @@
   <data name="Screen_Transcribing" xml:space="preserve">
     <value>Lager partituret</value>
   </data>
+  <data name="Screen_WhatDoYouPlay" xml:space="preserve">
+    <value>Hva spiller du?</value>
+  </data>
+  <data name="SeatBody.Text" xml:space="preserve">
+    <value>Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger.</value>
+  </data>
+  <data name="SeatCancelButton.Content" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="SeatCancelButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Behold det du spiller slik det var</value>
+  </data>
+  <data name="SeatCaption.Text" xml:space="preserve">
+    <value>Nye partiturer åpner på stemmen din. Partiturer du har fra før, beholder stemmen du valgte.</value>
+  </data>
+  <data name="SeatChangeButton.Content" xml:space="preserve">
+    <value>Endre …</value>
+  </data>
+  <data name="SeatChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Endre hva du spiller</value>
+  </data>
+  <data name="SeatConductButton.Content" xml:space="preserve">
+    <value>Jeg dirigerer eller lytter</value>
+  </data>
+  <data name="SeatConductButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Partiturene åpner på alle stemmene</value>
+  </data>
+  <data name="SeatConductSettingsButton.Content" xml:space="preserve">
+    <value>Jeg dirigerer eller lytter</value>
+  </data>
+  <data name="SeatConductSettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Partiturene åpner på alle stemmene</value>
+  </data>
+  <data name="SeatContinueButton.Content" xml:space="preserve">
+    <value>Fortsett</value>
+  </data>
+  <data name="SeatContinueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Lagre hva du spiller, og gå til startsiden</value>
+  </data>
+  <data name="SeatHeading.Text" xml:space="preserve">
+    <value>Hva spiller du?</value>
+  </data>
+  <data name="SeatInstrumentChoices.Header" xml:space="preserve">
+    <value>Instrument</value>
+  </data>
+  <data name="SeatPartChoices.Header" xml:space="preserve">
+    <value>Hvilken stemme?</value>
+  </data>
+  <data name="SeatReadsChoices.Header" xml:space="preserve">
+    <value>Du leser</value>
+  </data>
+  <data name="SeatRowLabel.Text" xml:space="preserve">
+    <value>Hva du spiller</value>
+  </data>
+  <data name="SeatSaveButton.Content" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="SeatSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Lagre hva du spiller</value>
+  </data>
+  <data name="SeatSkipButton.Content" xml:space="preserve">
+    <value>Ikke nå</value>
+  </data>
+  <data name="SeatSkipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gå til startsiden uten å velge. Du kan velge i Innstillinger.</value>
+  </data>
+  <data name="Seat_ContinueHint" xml:space="preserve">
+    <value>Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».</value>
+  </data>
+  <data name="Seat_ContinueHintPart" xml:space="preserve">
+    <value>Velg hvilken stemme du spiller.</value>
+  </data>
+  <data name="Seat_Group_Baritone" xml:space="preserve">
+    <value>Baryton</value>
+  </data>
+  <data name="Seat_Group_Cornet" xml:space="preserve">
+    <value>Kornett</value>
+  </data>
+  <data name="Seat_Group_TenorHorn" xml:space="preserve">
+    <value>Althorn</value>
+  </data>
+  <data name="Seat_Group_Trombone" xml:space="preserve">
+    <value>Trombone</value>
+  </data>
+  <data name="Seat_KeyConcert" xml:space="preserve">
+    <value>klingende</value>
+  </data>
+  <data name="Seat_None" xml:space="preserve">
+    <value>Jeg dirigerer eller lytter</value>
+  </data>
+  <data name="Seat_NotSet" xml:space="preserve">
+    <value>Ikke valgt</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Full" xml:space="preserve">
+    <value>Det fulle bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Quartet" xml:space="preserve">
+    <value>Kvartetten har ingen stemme for {0}. Brasscribe åpner alle stemmene.</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Small" xml:space="preserve">
+    <value>Det lille bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Full" xml:space="preserve">
+    <value>Det fulle bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Quartet" xml:space="preserve">
+    <value>Kvartetten har ingen {0}. Her er stemmen din {1}, skrevet for {2}.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Small" xml:space="preserve">
+    <value>Det lille bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Full" xml:space="preserve">
+    <value>Det fulle bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Quartet" xml:space="preserve">
+    <value>Kvartetten har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Small" xml:space="preserve">
+    <value>Det lille bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.</value>
+  </data>
+  <data name="Seat_ReadsBass" xml:space="preserve">
+    <value>F-nøkkel, klingende</value>
+  </data>
+  <data name="Seat_ReadsBass_Value" xml:space="preserve">
+    <value>F-nøkkel, klingende</value>
+  </data>
+  <data name="Seat_ReadsTrebleBb" xml:space="preserve">
+    <value>G-nøkkel i B</value>
+  </data>
+  <data name="Seat_ReadsTrebleBb_Value" xml:space="preserve">
+    <value>G-nøkkel i B</value>
+  </data>
+  <data name="Seat_ReadsTrebleEb" xml:space="preserve">
+    <value>G-nøkkel i Ess</value>
+  </data>
+  <data name="Seat_ReadsTrebleEb_Value" xml:space="preserve">
+    <value>G-nøkkel i Ess</value>
+  </data>
+  <data name="Seat_Value" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
   <data name="SetLoopButton.Content" xml:space="preserve">
     <value>Gjenta</value>
   </data>
@@ -1379,6 +1574,9 @@
   </data>
   <data name="SettingsStandHeading.Text" xml:space="preserve">
     <value>Notestativ</value>
+  </data>
+  <data name="SettingsYouHeading.Text" xml:space="preserve">
+    <value>Instrumentet ditt</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>innebygd (den fulle arrangøren er ikke installert)</value>
@@ -1560,6 +1758,12 @@
   <data name="Shortcuts_Stand" xml:space="preserve">
     <value>På notestativet</value>
   </data>
+  <data name="ShowMyPartButton.Content" xml:space="preserve">
+    <value>Vis stemmen min</value>
+  </data>
+  <data name="ShowMyPartButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stemmen din i partituret</value>
+  </data>
   <data name="ShowScoreButton.Content" xml:space="preserve">
     <value>Vis partituret</value>
   </data>
@@ -1571,6 +1775,27 @@
   </data>
   <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Taster som U, R og P. Piltastene virker alltid.</value>
+  </data>
+  <data name="SoloOnePartNote.Text" xml:space="preserve">
+    <value>Et soloopptak gir én stemme: din.</value>
+  </data>
+  <data name="Source_Arranged" xml:space="preserve">
+    <value>Arrangert ut fra harmoniene i bandet</value>
+  </data>
+  <data name="Source_Explain_Arranged" xml:space="preserve">
+    <value>Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.</value>
+  </data>
+  <data name="Source_Explain_Recording" xml:space="preserve">
+    <value>Brasscribe skrev ned tonene den hørte for denne stemmen.</value>
+  </data>
+  <data name="Source_Explain_YourRecording" xml:space="preserve">
+    <value>Brasscribe skrev ned tonene du spilte.</value>
+  </data>
+  <data name="Source_Recording" xml:space="preserve">
+    <value>Fra opptaket</value>
+  </data>
+  <data name="Source_YourRecording" xml:space="preserve">
+    <value>Fra opptaket ditt</value>
   </data>
   <data name="SpeedLabel.Text" xml:space="preserve">
     <value>Tempo</value>
@@ -1911,6 +2136,12 @@
   <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
     <value>Skiller solisten fra bandet</value>
   </data>
+  <data name="TuneChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hvem spiller melodien?</value>
+  </data>
+  <data name="TuneHeading.Text" xml:space="preserve">
+    <value>Hvem spiller melodien?</value>
+  </data>
   <data name="UnpairButton.Content" xml:space="preserve">
     <value>Glem denne datamaskinen</value>
   </data>
@@ -1944,6 +2175,15 @@
   <data name="ViewMenuLabel.Text" xml:space="preserve">
     <value>Vis</value>
   </data>
+  <data name="WhoPlayedBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stemmen skrives for dette instrumentet når du viser partituret</value>
+  </data>
+  <data name="WhoPlayedBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hvem spilte?</value>
+  </data>
+  <data name="WhoPlayedHeading.Text" xml:space="preserve">
+    <value>Hvem spilte?</value>
+  </data>
   <data name="WrittenChoice.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Notert er det du leser i stemmen din.</value>
   </data>
@@ -1970,20 +2210,5 @@
   </data>
   <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Zoom ut</value>
-  </data>
-  <data name="AppearanceBox.Header" xml:space="preserve">
-    <value>Utseende</value>
-  </data>
-  <data name="AppearanceSystem.Content" xml:space="preserve">
-    <value>Følg systemet</value>
-  </data>
-  <data name="AppearanceLight.Content" xml:space="preserve">
-    <value>Lyst</value>
-  </data>
-  <data name="AppearanceDark.Content" xml:space="preserve">
-    <value>Mørkt</value>
-  </data>
-  <data name="AppearanceContrastNote.Text" xml:space="preserve">
-    <value>Kontrasttemaet ditt er på, så Windows velger fargene.</value>
   </data>
 </root>

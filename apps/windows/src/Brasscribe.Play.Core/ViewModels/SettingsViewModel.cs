@@ -49,6 +49,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         Verbosity = store.Get(nameof(Verbosity), Verbosity.Standard);
         EngineAddress = store.Get(nameof(EngineAddress), EngineClient.DefaultBaseAddress.ToString());
         FirstRunDone = store.Get(nameof(FirstRunDone), false);
+        Seat = store.Get<string?>(nameof(Seat), null);
+        Reads = store.Get<string?>(nameof(Reads), null);
         Credentials = new EngineCredentials(vault ?? new InMemorySecretVault(), store);
         EngineToken = Credentials.Current?.Token;
         Connection = new ConnectionMonitor(Credentials, _clients, _discovery, () => EngineUri, u => EngineAddress = u.ToString(),
@@ -64,6 +66,28 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>The first-run screen was seen (it shows once).</summary>
     [ObservableProperty] public partial bool FirstRunDone { get; set; }
     partial void OnFirstRunDoneChanged(bool value) => _store.Set(nameof(FirstRunDone), value);
+
+    /// <summary>What the player plays: a core seat id, "none" (I conduct or listen), or null (not set).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SeatChoice))]
+    public partial string? Seat { get; set; }
+    partial void OnSeatChanged(string? value) => _store.Set(nameof(Seat), value);
+
+    /// <summary>The clef the player reads their part in ("treble", "bass"); null for the band's own.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SeatChoice))]
+    public partial string? Reads { get; set; }
+    partial void OnReadsChanged(string? value) => _store.Set(nameof(Reads), value);
+
+    public Seats.SeatChoice SeatChoice
+    {
+        get => new(Seat, Reads);
+        set
+        {
+            Reads = value.Reads;
+            Seat = value.Seat;
+        }
+    }
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }

@@ -64,7 +64,7 @@ public class CaptureAndExportTests
     [Fact]
     public void Talking_score_html_has_headings_per_part_and_bar()
     {
-        var doc = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")));
+        var doc = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), nameNb: ScoreNavigatorTests.FixtureNb);
         var html = TalkingScoreExport.ToHtml(doc, new TalkingScoreSettings(), [0]);
         Assert.Contains("<h2>Solo Cornet</h2>", html);
         Assert.Contains("<h3>Bar 1</h3>", html);

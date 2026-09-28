@@ -189,9 +189,11 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 AttachVideo();
                 break;
             case nameof(ScoreViewModel.SelectedPartIndex):
-                ApplyPageLayout();
-                UpdatePartPickerLabel();
+                FillPartPicker();
                 QueueRender();
+                break;
+            case nameof(ScoreViewModel.MyPartIndex):
+                if (ViewModel.IsLoaded) FillPartPicker();
                 break;
             case nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
                 SyncChoices();
@@ -206,7 +208,10 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         }
     }
 
-    /// <summary>"All parts" and each part as radio items; choosing one opens the part view.</summary>
+    /// <summary>
+    /// "All parts" and each part as radio items (the player's marked "(you)"); choosing one opens the part view.
+    /// In the part view of another part, "Make this my part" follows.
+    /// </summary>
     private void FillPartPicker()
     {
         PartMenu.Items.Clear();
@@ -217,7 +222,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             PartMenu.Items.Add(item);
         }
         Add(App.Strings["Score_FullScore"], -1);
-        foreach (var p in ViewModel.Parts) Add(p.Name, p.Index);
+        foreach (var p in ViewModel.Parts)
+            Add(p.Index == ViewModel.MyPartIndex ? App.Strings.Format("Stand_PartYours", p.Name) : p.Name, p.Index);
+        if (ViewModel.CanMakeShownMine)
+        {
+            PartMenu.Items.Add(new MenuFlyoutSeparator());
+            var mine = new MenuFlyoutItem { Text = App.Strings["Score_MakeMine"] };
+            mine.Click += (_, _) => ViewModel.MakeMine(ViewModel.SelectedPartIndex);
+            PartMenu.Items.Add(mine);
+        }
         UpdatePartPickerLabel();
         ApplyPageLayout();
     }

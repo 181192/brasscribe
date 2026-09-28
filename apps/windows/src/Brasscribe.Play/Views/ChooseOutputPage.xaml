@@ -21,15 +21,26 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Which band? -->
+                <!-- Which band? A solo take written for a seat is one part: the question goes, and one line says why.
+                     "Who played this?" comes first on a solo take (a friend may have played it). -->
                 <StackPanel Spacing="12">
-                    <TextBlock x:Uid="OutputBandHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
-                    <RadioButtons x:Name="LineupChoices" x:Uid="LineupChoices" SelectionChanged="OnLineupChanged">
+                    <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowsWhoPlayed, Mode=OneWay}" Margin="0,0,0,12">
+                        <TextBlock x:Uid="WhoPlayedHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+                        <ComboBox x:Name="WhoPlayedBox" x:Uid="WhoPlayedBox" HorizontalAlignment="Stretch" SelectionChanged="OnWhoPlayedChanged" />
+                        <TextBlock x:Uid="SoloOnePartNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                                   Visibility="{x:Bind ViewModel.SoloGivesOnePart, Mode=OneWay}" />
+                    </StackPanel>
+                    <TextBlock x:Uid="OutputBandHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2"
+                               Visibility="{x:Bind ViewModel.ShowsLineupChoice, Mode=OneWay}" />
+                    <RadioButtons x:Name="LineupChoices" x:Uid="LineupChoices" SelectionChanged="OnLineupChanged"
+                                  Visibility="{x:Bind ViewModel.ShowsLineupChoice, Mode=OneWay}">
                         <RadioButton x:Name="FullBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"
                                      x:Uid="LineupFullChoice">
                             <StackPanel Spacing="2">
                                 <TextBlock x:Uid="LineupFullTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
                                 <TextBlock x:Uid="LineupFullBody" Style="{StaticResource MutedStyle}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.FullBandYourPart, Mode=OneWay}"
+                                           Visibility="{x:Bind views:Shown.HasText(ViewModel.FullBandYourPart), Mode=OneWay}" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="SmallBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"
@@ -37,6 +48,8 @@
                             <StackPanel Spacing="2">
                                 <TextBlock x:Uid="LineupSmallTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
                                 <TextBlock x:Uid="LineupSmallBody" Style="{StaticResource MutedStyle}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.SmallBandYourPart, Mode=OneWay}"
+                                           Visibility="{x:Bind views:Shown.HasText(ViewModel.SmallBandYourPart), Mode=OneWay}" />
                             </StackPanel>
                         </RadioButton>
                         <!-- A solo take has no harmony for a quartet: the card stays focusable (IsEnabled would drop it from
@@ -48,9 +61,19 @@
                                 <TextBlock x:Uid="LineupQuartetTitle" Style="{StaticResource LabelStyle}" FontSize="16"
                                            Opacity="{x:Bind views:Shown.Dimmed(ViewModel.QuartetAvailable), Mode=OneWay}" />
                                 <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.QuartetDescription, Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.QuartetYourPart, Mode=OneWay}"
+                                           Visibility="{x:Bind views:Shown.HasText(ViewModel.QuartetYourPart), Mode=OneWay}" />
                             </StackPanel>
                         </RadioButton>
                     </RadioButtons>
+                    <!-- Who plays the tune? For a soloist recording in a band lineup, when the player's part can carry it. -->
+                    <StackPanel Spacing="8" Margin="0,12,0,0" Visibility="{x:Bind ViewModel.ShowsTuneChoice, Mode=OneWay}">
+                        <TextBlock x:Uid="TuneHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
+                        <RadioButtons x:Name="TuneChoices" x:Uid="TuneChoices" SelectionChanged="OnTuneChanged">
+                            <RadioButton x:Name="TuneLineupChoice" MinHeight="44" Content="{x:Bind ViewModel.TuneLineupLabel, Mode=OneWay}" />
+                            <RadioButton x:Name="TuneSeatChoice" MinHeight="44" Content="{x:Bind ViewModel.TuneSeatLabel, Mode=OneWay}" />
+                        </RadioButtons>
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="12">

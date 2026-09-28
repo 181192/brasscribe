@@ -51,6 +51,27 @@ public static class Lineups
     /// <summary>The difficulty a Composition was arranged with (<c>arrangement.difficulty</c>), when it says.</summary>
     public static string? RecordedDifficulty(Composition? composition) => ArrangementField(composition, "difficulty");
 
+    /// <summary>The seat a Composition was arranged for (<c>arrangement.seat</c>), when it says.</summary>
+    public static string? RecordedSeat(Composition? composition) => ArrangementField(composition, "seat");
+
+    /// <summary>How the seat's part was written (<c>arrangement.reads</c>), when it says.</summary>
+    public static string? RecordedReads(Composition? composition) => ArrangementField(composition, "reads");
+
+    /// <summary>Who played the tune (<c>arrangement.lead</c>), when it says.</summary>
+    public static string? RecordedLead(Composition? composition) => ArrangementField(composition, "lead");
+
+    /// <summary>
+    /// A recording with a soloist over the band (the solo layer and another layer have notes): "Who plays the tune?"
+    /// may be asked. A solo take has only the solo layer.
+    /// </summary>
+    public static bool HasSoloist(Composition? composition, string? profile = null)
+    {
+        if (profile == "orchestra-with-soloist") return true;
+        if (composition is null) return false;
+        var sounding = composition.Voices.Where(v => v.Notes.Count > 0).ToList();
+        return sounding.Any(v => v.Layer == "solo") && sounding.Any(v => v.Layer is not null and not "solo" and not "drums");
+    }
+
     private static string? ArrangementField(Composition? composition, string field) =>
         composition?.Extra is { } extra
         && extra.TryGetValue("arrangement", out var a) && a.ValueKind == JsonValueKind.Object

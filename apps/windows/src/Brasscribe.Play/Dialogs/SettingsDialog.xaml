@@ -10,6 +10,32 @@
     DefaultButton="Close">
     <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12" MinWidth="420">
+            <!-- Your instrument: the first section. The row shows the answer; Change opens the same questions as the
+                 first run right here (a dialog can't open another), and nothing changes until Save. -->
+            <TextBlock x:Uid="SettingsYouHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <Grid ColumnSpacing="12" x:Name="SeatRow">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Uid="SeatRowLabel" Style="{StaticResource LabelStyle}" />
+                    <TextBlock x:Name="SeatValue" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button x:Name="SeatChangeButton" x:Uid="SeatChangeButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}" MinHeight="44"
+                        VerticalAlignment="Center" Click="OnChangeSeat" />
+            </Grid>
+            <StackPanel x:Name="SeatEditor" Spacing="12" Visibility="Collapsed">
+                <views:SeatPickerView x:Name="SeatPicker" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Uid="SeatSaveButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnSaveSeat" />
+                    <Button x:Uid="SeatConductSettingsButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnConductSeat" />
+                    <Button x:Uid="SeatCancelButton" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Click="OnCancelSeat" />
+                </StackPanel>
+                <TextBlock x:Name="SeatHint" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+            <TextBlock x:Uid="SeatCaption" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+
             <TextBlock x:Uid="SettingsLanguageHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <ComboBox x:Name="LanguageBox" x:Uid="LanguageBox" SelectionChanged="OnLanguageChanged" HorizontalAlignment="Stretch">
                 <ComboBoxItem x:Uid="LanguageSystem" Tag="system" />

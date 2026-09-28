@@ -53,15 +53,15 @@ public class LineupTests
     }
 
     [Fact]
-    public void Part_name_tables_know_the_quartet_parts()
+    public void The_core_names_the_quartet_parts_in_norwegian()
     {
-        Assert.Contains("1st Cornet", PartNames.Known);
-        Assert.Contains("Tenor Horn", PartNames.Known);
-        Assert.Equal("1. kornett", PartNames.Nb("1st Cornet"));
-        Assert.Equal("2. kornett", PartNames.Nb("2nd Cornet"));
-        Assert.Equal("Althorn", PartNames.Nb("Tenor Horn"));
-        Assert.Equal("Eufonium", PartNames.Nb("Euphonium"));
-        Assert.All(Lineups.QuartetParts, p => Assert.Contains(p, PartNames.Known));
+        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return;
+        var core = NativeCoreBridge.TryCreate()!;
+        Assert.Equal("1. kornett", core.PartNameNb("1st Cornet"));
+        Assert.Equal("2. kornett", core.PartNameNb("2nd Cornet"));
+        Assert.Equal("Althorn", core.PartNameNb("Tenor Horn"));
+        Assert.Equal("Eufonium", core.PartNameNb("Euphonium"));
+        Assert.All(Lineups.QuartetParts, p => Assert.NotEqual(p, core.PartNameNb(p)));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class LineupTests
         Assert.Equal(("Score (all 4 parts)", "Partitur (alle 4 stemmer)"), (en["Export_Scope_QuartetScore"], nb["Export_Scope_QuartetScore"]));
         Assert.Equal(("Conductor's score", "Dirigentpartitur"), (en["Export_Scope_Conductor"], nb["Export_Scope_Conductor"]));
         Assert.Equal(("1st Cornet (you)", "1. kornett (deg)"),
-            (en.Format("Export_Scope_MyPart", "1st Cornet"), nb.Format("Export_Scope_MyPart", PartNames.Nb("1st Cornet"))));
+            (en.Format("Export_Scope_MyPart", "1st Cornet"), nb.Format("Export_Scope_MyPart", "1. kornett")));
         var resw = File.ReadAllText(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "nb-NO", "Resources.resw"));
         Assert.Contains("<value>Kvartett</value>", resw);
         Assert.DoesNotContain("Lite korps", resw);
@@ -132,7 +132,7 @@ public class LineupTests
         var composition = bridge.ParseComposition(json);
 
         var xml = bridge.ArrangeMusicXmlWith(composition, new ArrangementOptions("quartet"))!;
-        var doc = MusicXmlTalkingScoreBuilder.Build(xml);
+        var doc = MusicXmlTalkingScoreBuilder.Build(xml, nameNb: bridge.PartNameNb);
         Assert.Equal(Lineups.QuartetParts, doc.Parts.Select(p => p.Name));
         Assert.All(doc.Parts, p => Assert.Contains(p.Bars, b => b.Events.Count > 0));
         Assert.Equal(new[] { "1. kornett", "2. kornett", "Althorn", "Eufonium" }, doc.Parts.Select(p => p.NameNb));

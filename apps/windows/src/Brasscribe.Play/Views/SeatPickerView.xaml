@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Brasscribe.Play.Views.SeatPickerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- "What do you play?": three labelled radio groups. Instrument (two columns, one at large text), then
+         Which part? with nothing chosen, then You read with the band's own clef chosen. Choosing only reveals the
+         next question; the page's Continue or Save takes the answer (WCAG 3.2.2). The choices are filled from the
+         core's seats in code-behind. -->
+    <StackPanel Spacing="20">
+        <RadioButtons x:Name="InstrumentChoices" x:Uid="SeatInstrumentChoices" MaxColumns="2" SelectionChanged="OnInstrumentChanged" />
+        <RadioButtons x:Name="PartChoices" x:Uid="SeatPartChoices" SelectionChanged="OnPartChanged" Visibility="Collapsed" />
+        <RadioButtons x:Name="ReadsChoices" x:Uid="SeatReadsChoices" SelectionChanged="OnReadsChanged" Visibility="Collapsed" />
+    </StackPanel>
+</UserControl>
