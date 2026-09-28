@@ -194,6 +194,39 @@ import Testing
         userDataIsIntact(ws, root: root)
     }
 
+    @Test func oldFilesLeftAfterACommitNeverComeBack() throws {
+        // The journal went (the commit) but the old copy couldn't all be removed.
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio")
+        let swap = try WorkspaceSwap.install(from: v2, into: ws)
+        try fm.removeItem(at: swap.work.appending(path: WorkspaceSwap.journalName))
+        #expect(fm.fileExists(atPath: swap.backup.appending(path: "engine").path))
+        #expect(WorkspaceCheck.atLaunch(bundled: v2, installed: ws) == .upToDate)
+        #expect(studio(ws) == "fixed studio")
+        // And the next update isn't in its way.
+        try WorkspaceSwap.install(from: try bundle(in: root, name: "v3", studio: "newer studio"), into: ws).commit()
+        #expect(studio(ws) == "newer studio")
+        #expect(!fm.fileExists(atPath: ws.appending(path: WorkspaceSwap.workDir).path))
+        userDataIsIntact(ws, root: root)
+    }
+
+    @Test func codeFetchedAtRunTimeIsCarriedOver() throws {
+        // run_adapter.py clones MSST into ml/adapters/mega53/msst when the app didn't ship it.
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        try write("# inference\n", ws.appending(path: "ml/adapters/mega53/msst/inference.py"))
+        try WorkspaceSwap.install(from: try bundle(in: root, name: "v2", studio: "fixed studio"), into: ws).commit()
+        #expect(read(ws.appending(path: "ml/adapters/mega53/msst/inference.py")) == "# inference\n")
+        // An app that ships it wins.
+        let v3 = try bundle(in: root, name: "v3", studio: "fixed studio")
+        try write("# shipped\n", v3.appending(path: "ml/adapters/mega53/msst/inference.py"))
+        try WorkspaceSwap.install(from: v3, into: ws).commit()
+        #expect(read(ws.appending(path: "ml/adapters/mega53/msst/inference.py")) == "# shipped\n")
+    }
+
     @Test func entriesNewInTheUpdateGoOnRollback() throws {
         let root = tempDir()
         defer { try? fm.removeItem(at: root) }

@@ -15,7 +15,8 @@ from pathlib import Path
 STAMP_FILE = ".brasscribe-workspace.json"
 
 # engine/src/brasscribe_engine/build_info.py -> the workspace or repository root (an editable install).
-ROOT = Path(__file__).resolve().parents[3]
+_HERE = Path(__file__).resolve()
+ROOT = _HERE.parents[3] if len(_HERE.parents) > 3 else _HERE.parent
 
 
 def from_stamp(root: Path) -> str | None:

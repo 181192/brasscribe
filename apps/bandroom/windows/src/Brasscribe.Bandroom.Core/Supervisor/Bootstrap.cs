@@ -131,8 +131,11 @@ public sealed class Bootstrapper
     /// </summary>
     public bool HasInstalledEngine => File.Exists(_paths.Manifest) && MarkerMatches("env-default", InstalledLockHash);
 
-    /// <summary>What's pending replaces an engine that already ran (Updating), rather than making the first one.</summary>
-    public bool IsUpdate => HasInstalledEngine;
+    /// <summary>
+    /// What's pending replaces an engine that already ran with another build of the workspace (Updating), rather
+    /// than making the first one or resuming its adapters.
+    /// </summary>
+    public bool IsUpdate => HasInstalledEngine && !WorkspaceCurrent;
 
     /// <summary>Undoes an update the app didn't finish (it quit, or the power went): the old copy is back.</summary>
     public void RecoverInterruptedUpdate()

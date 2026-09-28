@@ -64,19 +64,33 @@ public sealed record WorkspaceStamp(
 /// and Bandroom's own state are outside it. The new copy is staged next to the old (same volume, so moves are
 /// renames); the old entries move aside, the new ones move in, stamp last. Until <see cref="Commit"/> the old
 /// entries are kept, so a failed <c>pixi install</c> can still <see cref="Rollback"/>. A journal names the replaced
-/// entries, so an update cut short (the app quit, a power cut) is undone by <see cref="Recover"/> at the next start.
+/// entries, so an update cut short (the app quit, a power cut) is undone by <see cref="Recover"/> at the next start;
+/// deleting the journal is the commit.
 /// </summary>
 public sealed class WorkspaceSwap
 {
     public const string WorkDir = ".bandroom-update";
     private const string JournalName = "journal.json";
 
+    /// <summary>
+    /// Fetched at run time into folders the swap replaces: carried over into the new copy when the app has none
+    /// (run_adapter.py clones the Mega-53 MSST code where a build didn't ship it).
+    /// </summary>
+    public static readonly string[] Preserved = ["ml/adapters/mega53/msst"];
+
     public sealed record Entry(string Name, bool HadOld);
 
     public string Workspace { get; }
-    private string Work => Path.Combine(Workspace, WorkDir);
+    /// <summary>This update's own folder under <see cref="WorkDir"/>, so leftovers of an earlier one never get in the way.</summary>
+    public string Work { get; }
+    public string Journal => Path.Combine(Work, JournalName);
+    public string Backup => Path.Combine(Work, "old");
 
-    private WorkspaceSwap(string workspace) => Workspace = workspace;
+    private WorkspaceSwap(string workspace)
+    {
+        Workspace = workspace;
+        Work = Path.Combine(workspace, WorkDir, Guid.NewGuid().ToString("N"));
+    }
 
     /// <summary>Makes a move that antivirus or the indexer holds for a moment wait a little and try again.</summary>
     public static Func<int, TimeSpan> RetryDelay { get; set; } = attempt => TimeSpan.FromMilliseconds(50 << attempt);
@@ -97,11 +111,11 @@ public sealed class WorkspaceSwap
             .Order(StringComparer.Ordinal).Append(WorkspaceStamp.FileName).ToList();
         var entries = names.Select(n => new Entry(n, Exists(Path.Combine(workspace, n)))).ToList();
         var swap = new WorkspaceSwap(workspace);
-        string staging = Path.Combine(swap.Work, "new"), backup = Path.Combine(swap.Work, "old");
+        string staging = Path.Combine(swap.Work, "new");
         try
         {
             Directory.CreateDirectory(staging);
-            Directory.CreateDirectory(backup);
+            Directory.CreateDirectory(swap.Backup);
             foreach (var e in entries)
             {
                 string src = Path.Combine(bundled, e.Name), dst = Path.Combine(staging, e.Name);
@@ -109,10 +123,15 @@ public sealed class WorkspaceSwap
                 else if (Directory.Exists(src)) CopyDirectory(src, dst);
                 else File.Copy(src, dst);
             }
-            File.WriteAllText(Path.Combine(swap.Work, JournalName), JsonSerializer.Serialize(entries));
+            foreach (var rel in Preserved.Where(r => names.Contains(r.Split('/')[0])))
+            {
+                string old = Path.Combine(workspace, rel), fresh = Path.Combine(staging, rel);
+                if (Directory.Exists(old) && !Exists(fresh)) CopyDirectory(old, fresh);
+            }
+            File.WriteAllText(swap.Journal, JsonSerializer.Serialize(entries));
             foreach (var e in entries)
             {
-                if (e.HadOld) Move(Path.Combine(workspace, e.Name), Path.Combine(backup, e.Name));
+                if (e.HadOld) Move(Path.Combine(workspace, e.Name), Path.Combine(swap.Backup, e.Name));
                 beforeMove?.Invoke(e.Name);
                 Move(Path.Combine(staging, e.Name), Path.Combine(workspace, e.Name));
             }
@@ -125,40 +144,61 @@ public sealed class WorkspaceSwap
         return swap;
     }
 
-    /// <summary>Drops the old copy: the update is done.</summary>
+    /// <summary>The update is done: the journal goes first (that is the commit), then the old copy, as far as it can.</summary>
     public void Commit()
     {
-        try { Directory.Delete(Work, recursive: true); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        File.Delete(Journal);
+        DeleteQuietly(Work);
+        DeleteQuietly(Path.Combine(Workspace, WorkDir), onlyIfEmpty: true);
     }
 
     /// <summary>Puts the old copy back.</summary>
     public void Rollback() => Recover(Workspace);
 
     /// <summary>
-    /// Undoes an update that didn't commit: each replaced entry gets its old self back, entries new in the update
-    /// go. Without a journal nothing was replaced yet; leftover staging is removed either way.
+    /// Undoes every update that didn't commit: each replaced entry gets its old self back, entries new in the update
+    /// go. A folder without a journal holds nothing to undo (never swapped, or committed) and is removed as far as it
+    /// can be: files the old engine still holds never block the next update.
     /// </summary>
     public static void Recover(string workspace)
     {
-        var work = Path.Combine(workspace, WorkDir);
-        if (!Directory.Exists(work)) return;
-        List<Entry>? entries = null;
-        try { entries = JsonSerializer.Deserialize<List<Entry>>(File.ReadAllText(Path.Combine(work, JournalName))); }
-        catch (Exception e) when (e is IOException or JsonException) { }
-        foreach (var e in Enumerable.Reverse(entries ?? []))
+        var root = Path.Combine(workspace, WorkDir);
+        if (!Directory.Exists(root)) return;
+        foreach (var work in Directory.EnumerateDirectories(root).ToList())
         {
-            string live = Path.Combine(workspace, e.Name), old = Path.Combine(work, "old", e.Name);
-            if (e.HadOld)
+            var journal = Path.Combine(work, JournalName);
+            List<Entry>? entries = null;
+            try { entries = JsonSerializer.Deserialize<List<Entry>>(File.ReadAllText(journal)); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { }
+            if (entries is not null)
             {
-                // Not moved aside yet: the original is still in place.
-                if (!Exists(old)) continue;
-                Delete(live);
-                Move(old, live);
+                foreach (var e in Enumerable.Reverse(entries))
+                {
+                    string live = Path.Combine(workspace, e.Name), old = Path.Combine(work, "old", e.Name);
+                    if (e.HadOld)
+                    {
+                        // Not moved aside yet (or already back): the original is in place.
+                        if (!Exists(old)) continue;
+                        Delete(live);
+                        Move(old, live);
+                    }
+                    else Delete(live);
+                }
+                File.Delete(journal);
             }
-            else Delete(live);
+            DeleteQuietly(work);
         }
-        Directory.Delete(work, recursive: true);
+        DeleteQuietly(root, onlyIfEmpty: true);
+    }
+
+    private static void DeleteQuietly(string dir, bool onlyIfEmpty = false)
+    {
+        try
+        {
+            if (!Directory.Exists(dir) || (onlyIfEmpty && Directory.EnumerateFileSystemEntries(dir).Any())) return;
+            Directory.Delete(dir, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     private static bool Exists(string path) => File.Exists(path) || Directory.Exists(path);

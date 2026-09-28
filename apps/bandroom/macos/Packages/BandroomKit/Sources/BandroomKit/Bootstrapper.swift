@@ -87,7 +87,12 @@ public final class Bootstrapper {
                     return false
                 }
             }
-            swap.commit()
+            do {
+                try swap.commit()
+            } catch {
+                try? swap.rollback()
+                throw error
+            }
             phase = .done
             return true
         } catch {

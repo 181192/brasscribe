@@ -102,10 +102,11 @@ public enum WorkspaceCheck: Equatable, Sendable {
 /// the rest of the data folder are outside it. The new copy is staged next to the old one (same volume, so moves are
 /// renames), the old entries are moved aside, the new ones moved in, stamp last. Until `commit()` the old entries are
 /// kept, so a failed `pixi install` can still `rollback()`. A journal records the replaced entries, so an update cut
-/// short by a crash or power cut is undone at the next launch by `recover(_:)`.
+/// short by a crash or power cut is undone at the next launch by `recover(_:)`; deleting the journal is the commit.
 public struct WorkspaceSwap: Sendable {
     public let workspace: URL
-    let entries: [Entry]
+    /// This update's own folder under `.bandroom-update`, so leftovers of an earlier one never get in the way.
+    let work: URL
 
     struct Entry: Codable, Equatable, Sendable {
         var name: String
@@ -114,8 +115,10 @@ public struct WorkspaceSwap: Sendable {
 
     static let workDir = ".bandroom-update"
     static let journalName = "journal.json"
+    /// Fetched at run time into folders the swap replaces: carried over into the new copy when the app has none.
+    /// (run_adapter.py clones the Mega-53 MSST code where a build didn't ship it.)
+    static let preserved = ["ml/adapters/mega53/msst"]
 
-    var work: URL { workspace.appending(path: Self.workDir, directoryHint: .isDirectory) }
     var staging: URL { work.appending(path: "new", directoryHint: .isDirectory) }
     var backup: URL { work.appending(path: "old", directoryHint: .isDirectory) }
 
@@ -134,7 +137,8 @@ public struct WorkspaceSwap: Sendable {
         let computed = names.last == WorkspaceStamp.fileName ? nil : try WorkspaceStamp.compute(bundled)
         if computed != nil { names.append(WorkspaceStamp.fileName) }
         let entries = names.map { Entry(name: $0, hadOld: fm.fileExists(atPath: workspace.appending(path: $0).path)) }
-        let swap = WorkspaceSwap(workspace: workspace, entries: entries)
+        let swap = WorkspaceSwap(workspace: workspace,
+                                 work: workspace.appending(path: "\(workDir)/\(UUID().uuidString)", directoryHint: .isDirectory))
         do {
             try fm.createDirectory(at: swap.staging, withIntermediateDirectories: true)
             try fm.createDirectory(at: swap.backup, withIntermediateDirectories: true)
@@ -146,8 +150,13 @@ public struct WorkspaceSwap: Sendable {
                     try fm.copyItem(at: bundled.appending(path: e.name), to: target)
                 }
             }
-            let journal = JSONEncoder()
-            try journal.encode(entries).write(to: swap.work.appending(path: journalName), options: .atomic)
+            for path in preserved where names.contains(String(path.prefix { $0 != "/" })) {
+                let old = workspace.appending(path: path), new = swap.staging.appending(path: path)
+                guard fm.fileExists(atPath: old.path), !fm.fileExists(atPath: new.path) else { continue }
+                try fm.createDirectory(at: new.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try fm.copyItem(at: old, to: new)
+            }
+            try JSONEncoder().encode(entries).write(to: swap.work.appending(path: journalName), options: .atomic)
             for e in entries {
                 if e.hadOld { try fm.moveItem(at: workspace.appending(path: e.name), to: swap.backup.appending(path: e.name)) }
                 try beforeMove(e.name)
@@ -160,9 +169,11 @@ public struct WorkspaceSwap: Sendable {
         return swap
     }
 
-    /// Drops the old copy: the update is done.
-    public func commit() {
-        try? FileManager.default.removeItem(at: work)
+    /// The update is done: the journal goes first (that is the commit), then the old copy, as far as it can.
+    public func commit() throws {
+        try FileManager.default.removeItem(at: work.appending(path: Self.journalName))
+        Self.removeQuietly(work)
+        Self.removeQuietly(work.deletingLastPathComponent(), onlyIfEmpty: true)
     }
 
     /// Puts the old copy back.
@@ -170,27 +181,38 @@ public struct WorkspaceSwap: Sendable {
         try Self.recover(workspace)
     }
 
-    /// Undoes an update that didn't commit: every replaced entry gets its old self back, new-only entries go.
-    /// Without a journal there is nothing to undo; leftover staging is removed either way.
+    /// Undoes every update that didn't commit: each replaced entry gets its old self back, entries new in the update
+    /// go. A folder without a journal holds nothing to undo (never swapped, or committed) and is removed as far as
+    /// it can be.
     public static func recover(_ workspace: URL) throws {
         let fm = FileManager.default
-        let work = workspace.appending(path: workDir, directoryHint: .isDirectory)
-        guard fm.fileExists(atPath: work.path) else { return }
-        let journal = work.appending(path: journalName)
-        if let data = try? Data(contentsOf: journal), let entries = try? JSONDecoder().decode([Entry].self, from: data) {
-            let backup = work.appending(path: "old", directoryHint: .isDirectory)
-            for e in entries.reversed() {
-                let live = workspace.appending(path: e.name), old = backup.appending(path: e.name)
-                if e.hadOld {
-                    // Not moved aside yet: the original is still in place.
-                    guard fm.fileExists(atPath: old.path) else { continue }
-                    if fm.fileExists(atPath: live.path) { try fm.removeItem(at: live) }
-                    try fm.moveItem(at: old, to: live)
-                } else if fm.fileExists(atPath: live.path) {
-                    try fm.removeItem(at: live)
+        let root = workspace.appending(path: workDir, directoryHint: .isDirectory)
+        guard let runs = try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) else { return }
+        for work in runs {
+            let journal = work.appending(path: journalName)
+            if let data = try? Data(contentsOf: journal), let entries = try? JSONDecoder().decode([Entry].self, from: data) {
+                let backup = work.appending(path: "old", directoryHint: .isDirectory)
+                for e in entries.reversed() {
+                    let live = workspace.appending(path: e.name), old = backup.appending(path: e.name)
+                    if e.hadOld {
+                        // Not moved aside yet (or already back): the original is in place.
+                        guard fm.fileExists(atPath: old.path) else { continue }
+                        if fm.fileExists(atPath: live.path) { try fm.removeItem(at: live) }
+                        try fm.moveItem(at: old, to: live)
+                    } else if fm.fileExists(atPath: live.path) {
+                        try fm.removeItem(at: live)
+                    }
                 }
+                try fm.removeItem(at: journal)
             }
+            removeQuietly(work)
         }
-        try fm.removeItem(at: work)
+        removeQuietly(root, onlyIfEmpty: true)
+    }
+
+    private static func removeQuietly(_ url: URL, onlyIfEmpty: Bool = false) {
+        let fm = FileManager.default
+        if onlyIfEmpty, (try? fm.contentsOfDirectory(atPath: url.path))?.isEmpty != true { return }
+        try? fm.removeItem(at: url)
     }
 }

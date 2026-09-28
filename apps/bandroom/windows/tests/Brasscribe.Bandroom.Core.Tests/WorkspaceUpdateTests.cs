@@ -230,6 +230,52 @@ public sealed class WorkspaceUpdateTests : IDisposable
         UserDataIsIntact();
     }
 
+    [Fact]
+    public async Task Old_files_left_after_a_commit_never_come_back()
+    {
+        // The journal went (the commit) but files the old engine still held couldn't be removed.
+        await Installed(Bundle("v1", "old studio"));
+        var v2 = Bundle("v2", "fixed studio");
+        var swap = WorkspaceSwap.Install(v2, _paths.Workspace, WorkspaceStamp.Compute(v2));
+        File.Delete(swap.Journal);
+        Assert.True(Directory.Exists(Path.Combine(swap.Backup, "engine")));
+
+        var boot = Boot(_paths, v2, new FakeLauncher());
+        boot.RecoverInterruptedUpdate();
+        Assert.Equal("fixed studio", Read(Studio));
+        Assert.True(boot.WorkspaceCurrent);
+        // And the next update isn't in its way.
+        var v3 = Bundle("v3", "newer studio");
+        WorkspaceSwap.Install(v3, _paths.Workspace, WorkspaceStamp.Compute(v3)).Commit();
+        Assert.Equal("newer studio", Read(Studio));
+        Assert.False(Directory.Exists(Path.Combine(_paths.Workspace, WorkspaceSwap.WorkDir)));
+        UserDataIsIntact();
+    }
+
+    [Fact]
+    public async Task Code_fetched_at_run_time_is_carried_over()
+    {
+        // run_adapter.py clones MSST into ml\adapters\mega53\msst when the app didn't ship it.
+        await Installed(Bundle("v1", "old studio"));
+        Write(Path.Combine(_paths.Adapters, "mega53", "msst", "inference.py"), "# inference\n");
+        var v2 = Bundle("v2", "fixed studio");
+        WorkspaceSwap.Install(v2, _paths.Workspace, WorkspaceStamp.Compute(v2)).Commit();
+        Assert.Equal("# inference\n", Read(Path.Combine(_paths.Adapters, "mega53", "msst", "inference.py")));
+    }
+
+    [Fact]
+    public async Task A_first_run_stopped_during_the_adapters_resumes_as_setup_not_as_an_update()
+    {
+        var bundle = Bundle("v1", "old studio");
+        var launcher = new FakeLauncher { ExitImmediately = spec => spec.Arguments[^1] == "swift-f0" ? 1 : 0 };
+        var boot = Boot(_paths, bundle, launcher);
+        await Assert.ThrowsAsync<BootstrapException>(() => boot.RunAsync(false, null, CancellationToken.None));
+        Assert.True(boot.EngineReady);
+        Assert.True(boot.WorkspaceCurrent);
+        Assert.False(boot.IsUpdate);
+        Assert.False(boot.IsComplete(false));
+    }
+
     // ----- what the flyout says -----
 
     [Fact]
