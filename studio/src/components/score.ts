@@ -7,6 +7,7 @@ import { patchAlphaTab } from "../lib/alphatabfix";
 import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
+import { soundFontBytes } from "../lib/soundfontstore";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
@@ -54,10 +55,7 @@ function loadBandSounds(): Promise<PartSoundResolver | null> {
  * The page's one synthesizer with the SoundFont loaded once (lib/sharedsynth.ts). Opening another
  * score reuses it; in Compare the score that plays has it.
  */
-const synth = new SharedSynth((url) => fetch(url).then((r) => {
-  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-  return r.arrayBuffer();
-}));
+const synth = new SharedSynth((url) => soundFontBytes(url));
 /** The score that has the synth, if any. */
 let holder: ScoreElement | null = null;
 

@@ -4,7 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // One synthesizer per page (src/lib/sharedsynth.ts): opening scores again, leaving the viewer and
-// coming back, and two scores on one page all use one synth and one SoundFont download.
+// coming back, and two scores on one page all use one synth and one SoundFont download, and a
+// reload revalidates the SoundFont kept in IndexedDB instead of downloading it again.
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = join(here, "..", "..", "apps", "fixtures", "old-hundredth", "brass-band.musicxml");
@@ -73,4 +74,13 @@ test("two scores on one page: one synth, moved to the score that plays, with tha
   expect(b.end).toBeGreaterThan(0);
   expect(b.end).toBeLessThan(a.end * 0.5);
   expect(await stats(page)).toEqual({ synths: 1, loads: 1 });
+});
+
+test("a reload revalidates the kept SoundFont instead of downloading it again", async ({ page }) => {
+  const sf = soundFontRequests(page);
+  await page.goto("/#/viewer");
+  await openInViewer(page);
+  await page.reload();
+  await openInViewer(page);
+  expect(sf.map((r) => r.status)).toEqual([200, 304]);
 });
