@@ -40,6 +40,7 @@ struct HomeView: View {
             .padding(.horizontal, wide ? Space.s10 : Space.s5)
             .padding(.vertical, Space.s6)
             .frame(maxWidth: wide ? 920 : .infinity, alignment: .leading)
+            .layoutProbe("pageColumn")
             .frame(maxWidth: .infinity)
         }
         .pageBackground()
@@ -91,6 +92,15 @@ struct HomeView: View {
         }
     }
 
+    /// The cards under the drop area. The Mac has two ways in, side by side in two equal columns.
+    private var waysInColumns: [GridItem] {
+        #if os(macOS)
+        Array(repeating: GridItem(.flexible(), spacing: Space.s4), count: 2)
+        #else
+        [GridItem(.adaptive(minimum: 220), spacing: Space.s4)]
+        #endif
+    }
+
     private var wideWaysIn: some View {
         VStack(spacing: Space.s4) {
             HStack(spacing: Space.s4) {
@@ -106,14 +116,17 @@ struct HomeView: View {
             .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
             .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(dropTargeted ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
                                                                              lineWidth: dropTargeted ? 2 : 1))
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: Space.s4)], spacing: Space.s4) {
+            .layoutProbe("dropArea")
+            LazyVGrid(columns: waysInColumns, spacing: Space.s4) {
                 WayInCard(icon: BrasscribeIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
                           subtitle: String(localized: "Play your part in the room")) { app.showRecorder = true }
                     .accessibilityIdentifier("record")
+                    .layoutProbe("wayIn-record")
                 #if os(macOS)
                 WayInCard(icon: BrasscribeIcon.recordDevice.systemName, title: String(localized: "Record what's playing"),
                           subtitle: String(localized: "Sound from another app on this Mac")) { app.showCapture = true }
                     .accessibilityIdentifier("capture")
+                    .layoutProbe("wayIn-capture")
                 #endif
             }
         }
@@ -238,7 +251,7 @@ struct FirstRunView: View {
         }
         .interactiveDismissDisabled()
         #if os(macOS)
-        .frame(minWidth: 520, minHeight: 640)
+        .sheetSize(minWidth: 520, idealWidth: 600, maxWidth: 680)
         #endif
     }
 

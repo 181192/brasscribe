@@ -69,6 +69,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(Font.Brasscribe.label)
             .foregroundStyle(Color.Brasscribe.onPrimary)
+            .modifier(OneLineLabel(fullWidth: fullWidth))
             .padding(.horizontal, Space.s5)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: buttonHeight)
             .background(Color.Brasscribe.primary.opacity(configuration.isPressed ? 0.8 : 1), in: RoundedRectangle(cornerRadius: Radius.md))
@@ -87,6 +88,7 @@ struct SecondaryButtonStyle: ButtonStyle {
         configuration.label
             .font(Font.Brasscribe.label)
             .foregroundStyle(outline ? Color.Brasscribe.text : Color.Brasscribe.onSecondary)
+            .modifier(OneLineLabel(fullWidth: fullWidth))
             .padding(.horizontal, Space.s4)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: minHeight ?? buttonHeight)
             .background {
@@ -112,10 +114,24 @@ struct ListenStopLabel: View {
     }
 }
 
+/// On the Mac a button's label keeps one line at its full width: a row too narrow for it wraps the
+/// row instead ("Can-cel" and "Co…" never happen). Touch screens keep wrapping for large text.
+struct OneLineLabel: ViewModifier {
+    var fullWidth = false
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        content.lineLimit(1).fixedSize(horizontal: !fullWidth, vertical: false)
+        #else
+        content
+        #endif
+    }
+}
+
 /// Plain text buttons (Cancel, Skip, Finish later), at least 44 pt tall.
 struct PlainButtonStyle44: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .modifier(OneLineLabel())
             .font(Font.Brasscribe.label)
             .foregroundStyle(Color.Brasscribe.text)
             .padding(.horizontal, Space.s3)
@@ -178,11 +194,15 @@ struct ChipLabel: View {
     let title: String
     let systemImage: String
     var active = false
+    /// A chip that opens a menu: no ✓ (it isn't a switch), a chevron instead. The tonal fill still
+    /// says something inside is on.
+    var menu = false
     var body: some View {
         HStack(spacing: Space.s2) {
-            if active { Image(systemName: "checkmark").font(.body.weight(.bold)) }
+            if active && !menu { Image(systemName: "checkmark").font(.body.weight(.bold)) }
             Image(systemName: systemImage)
             Text(title).monospacedDigit()
+            if menu { Image(systemName: "chevron.down").font(.caption.weight(.semibold)).accessibilityHidden(true) }
         }
         .font(Font.Brasscribe.label)
         .foregroundStyle(Color.Brasscribe.text)
@@ -320,7 +340,61 @@ struct HelperLine: View {
     }
 }
 
+/// Where a flow page's actions go. On the Mac they follow the content, trailing in its column
+/// (design/system.md §2: "Bottom right of the content, after Cancel"), so a tall window never leaves
+/// them far below it. On iPhone and iPad they sit in a band at the bottom of the screen.
+enum PageActions {
+    static var followContent: Bool {
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }
+}
+
+/// A row of actions, trailing: secondary first, the primary last. Where the row doesn't fit, the
+/// buttons stack, trailing, so no label wraps or truncates.
+struct ActionRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.s3) { Spacer(minLength: 0); content }
+            VStack(alignment: .trailing, spacing: Space.s2) { content }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
+}
+
+/// A column beside the content, with a hairline between (the Mac's parts list).
+struct SidePanel<Panel: View>: ViewModifier {
+    let shown: Bool
+    let width: CGFloat
+    let panel: Panel
+
+    func body(content: Content) -> some View {
+        HStack(spacing: 0) {
+            content.frame(maxWidth: .infinity)
+            if shown {
+                Divider().overlay(Color.Brasscribe.border)
+                panel.frame(width: width).frame(maxHeight: .infinity)
+            }
+        }
+    }
+}
+
 extension View {
+    func sidePanel<P: View>(shown: Bool, width: CGFloat, @ViewBuilder _ panel: () -> P) -> some View {
+        modifier(SidePanel(shown: shown, width: width, panel: panel()))
+    }
+
+    /// iPhone and iPad: the page's actions in a band at the bottom of the screen. On the Mac the page
+    /// puts them after its content instead (`PageActions.followContent`).
+    @ViewBuilder func bottomActions<A: View>(@ViewBuilder _ actions: () -> A) -> some View {
+        if PageActions.followContent { self } else { safeAreaInset(edge: .bottom) { actions() } }
+    }
+
     func card(padding: CGFloat = Space.s4) -> some View { modifier(CardModifier(padding: padding)) }
 
     /// The page background and the reading column (at most 720 pt, centred).

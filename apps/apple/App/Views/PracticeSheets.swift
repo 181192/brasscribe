@@ -138,7 +138,7 @@ struct ExportView: View {
             marks = (model.piece.toCheck ?? 1) > 0
         }
         #if os(macOS)
-        .frame(width: 620, height: 720)
+        .sheetSize(minWidth: 560, idealWidth: 620, maxWidth: 680)
         #else
         .presentationDetents([.large])
         #endif

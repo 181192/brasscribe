@@ -53,7 +53,18 @@ final class MusicStand {
     // MARK: layout
 
     /// Two pages side by side: a tablet on its side, or a wide window.
-    var twoUp: Bool { form == .wide && viewport.width > viewport.height * 1.1 && viewport.width >= 900 }
+    var twoUp: Bool { form == .wide && viewport.width > viewport.height * 1.1 && viewport.width >= 900 && !singlePage }
+
+    /// A spread whose music fits on one page shows that page alone, at the full width, instead of
+    /// half the screen next to an empty half. Set after an engraving; a new music area clears it.
+    private(set) var singlePage = false
+
+    /// After an engraving: a spread of one page becomes one page. Returns true to engrave again.
+    func settleSpread(_ model: PracticeModel) -> Bool {
+        guard twoUp, pages(model).count < 2 else { return false }
+        singlePage = true
+        return true
+    }
 
     /// The sizing contract (§3): 3 bars upright on a phone, else 4; fewer as the text grows.
     var barsPerSystem: Int {
@@ -103,7 +114,7 @@ final class MusicStand {
     func setViewport(_ size: CGSize, form: Form, largerText: Int) -> Bool {
         let before = (columnWidth, barsPerSystem, zoom, twoUp)
         let hadSize = viewport != .zero
-        if size != viewport { fitFactor = 1 }
+        if size != viewport { fitFactor = 1; singlePage = false }
         viewport = size
         self.form = form
         self.largerText = largerText

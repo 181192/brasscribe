@@ -119,10 +119,24 @@ struct PracticeView: View {
         #endif
     }
 
+    #if os(macOS)
+    /// The parts column's width, and the screen width from which the score and the column both fit.
+    static let partsWidth: CGFloat = 320
+    static let partsFitWidth: CGFloat = 820
+    @State private var partsFit = true
+
+    /// Parts: shows or hides the column; where it doesn't fit, opens the parts in a sheet.
+    private var partsShown: Binding<Bool> {
+        Binding(get: { showInspector && partsFit }, set: { on in if partsFit { showInspector = on } else if on { showParts = true } })
+    }
+    #else
+    private var partsShown: Binding<Bool> { $showInspector }
+    #endif
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
-                ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
+                ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: partsShown,
                              showTalking: $showTalking, showVideo: $showVideo)
                 // phone: the count scrolls with the music (NotationView), so the score keeps the screen
                 if wide { StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) } }
@@ -156,10 +170,18 @@ struct PracticeView: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("playerArea")
         }
+        #if os(macOS)
+        // The parts sit in a column of the screen's own, not an inspector: an inspector adds its width
+        // to the window's minimum. Where the score and the column don't both fit, the column steps
+        // aside and Parts opens them in a sheet.
+        .sidePanel(shown: showInspector && partsFit, width: Self.partsWidth) { PartsPanel(model: model).layoutProbe("partsColumn") }
+        .onGeometryChange(for: Bool.self) { $0.size.width >= Self.partsFitWidth } action: { partsFit = $0 }
+        #else
         .inspector(isPresented: Binding(get: { wide && showInspector }, set: { showInspector = $0 })) {
             PartsPanel(model: model)
                 .inspectorColumnWidth(min: 260, ideal: 320, max: 400)
         }
+        #endif
         .toolbar {
             if !wide {
                 // phone: the music stand sits in the navigation bar, so the part row keeps its room
@@ -211,6 +233,10 @@ struct PracticeView: View {
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showParts = false } } }
             }
             .presentationDetents([.medium, .large])
+            #if os(macOS)
+            // a narrow window's parts: the list scrolls inside the sheet
+            .sheetSize(minWidth: 380, idealWidth: 420, maxWidth: 520, minHeight: 420)
+            #endif
             .appAppearance()
         }
         .sheet(isPresented: $showTalking) { TalkingScoreView(model: model).appAppearance() }
@@ -843,7 +869,7 @@ struct PlayerBar: View {
             }
         } label: {
             ChipLabel(title: String(localized: "Practice"), systemImage: BrasscribeIcon.more.systemName,
-                      active: model.playAlong || model.looping || model.speedPercent != 100 || model.countIn || model.metronome || model.hearOriginal)
+                      active: model.playAlong || model.looping || model.speedPercent != 100 || model.countIn || model.metronome || model.hearOriginal, menu: true)
                 .lineLimit(1)
         }
         .buttonStyle(.plain)
@@ -863,7 +889,7 @@ struct PlayerBar: View {
             }
         } label: {
             ChipLabel(title: String(localized: "Practice"), systemImage: BrasscribeIcon.more.systemName,
-                      active: model.countIn || model.metronome || model.hearOriginal)
+                      active: model.countIn || model.metronome || model.hearOriginal, menu: true)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("practiceMenu")
@@ -979,6 +1005,7 @@ struct PartsPanel: View {
             }
             .toggleStyle(SmallToggleStyle())
             .accessibilityLabel(Text("Only \(p.displayName)"))
+            .layoutProbe("onlyThis-\(p.id)")
             .help(Text("Only this: hear this part alone."))
         }
         .padding(.vertical, 2)
@@ -995,6 +1022,9 @@ struct SmallToggleStyle: ToggleStyle {
                 if configuration.isOn { Image(systemName: "checkmark").font(.caption.weight(.bold)) }
                 configuration.label.labelStyle(.titleAndIcon)
             }
+            // the part's name wraps; the toggles never do
+            .lineLimit(1)
+            .fixedSize()
             .font(labelFont)
             .foregroundStyle(Color.Brasscribe.text)
             .padding(.horizontal, Space.s2)

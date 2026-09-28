@@ -3,6 +3,18 @@ import CoreGraphics
 /// Keeps a Mac window on its screen: inside the visible frame (no part under the Dock or the menu
 /// bar), in AppKit screen coordinates (y up). Pure functions, so the rules are unit-tested.
 enum WindowFit {
+    /// The main window's one minimum, a frame size (design/system.md §2). Every screen lays out at it
+    /// without clipping, and no screen asks for more.
+    static let minimumWindow = CGSize(width: 900, height: 600)
+    /// The title bar and toolbar above the content.
+    static let toolbarHeight: CGFloat = 52
+    /// The content area at the minimum window.
+    static var minimumContent: CGSize { CGSize(width: minimumWindow.width, height: minimumWindow.height - toolbarHeight) }
+    /// Below this window width the library sidebar steps aside; its button brings it back.
+    static let sidebarCollapseWidth: CGFloat = 1000
+    /// Sheets: at most this share of the visible screen height; longer content scrolls inside.
+    static let sheetHeightShare: CGFloat = 0.9
+
     /// The first window's size: 1280 × 900, or 90 % of the visible area on a smaller screen.
     static func defaultSize(visible v: CGRect) -> CGSize {
         CGSize(width: min(1280, (v.width * 0.9).rounded(.down)), height: min(900, (v.height * 0.9).rounded(.down)))

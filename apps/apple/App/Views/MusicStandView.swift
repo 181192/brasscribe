@@ -74,7 +74,9 @@ struct MusicStandView: View {
         .background(Color.Brasscribe.bg.ignoresSafeArea())
         .background { keys }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { screen = $0 }
-        .onChange(of: model.layoutVersion) { _, _ in if stand.refit(model) { model.relayout() } else { stand.reset(model) } }
+        .onChange(of: model.layoutVersion) { _, _ in
+            if stand.refit(model) || stand.settleSpread(model) { model.relayout() } else { stand.reset(model) }
+        }
         .onChange(of: focus) { _, f in
             // Tab (or any focus move into the band or the layer) shows the layer
             if let f, f != .score { stand.layerShown = true; stand.interaction += 1 }
@@ -191,6 +193,7 @@ struct MusicStandView: View {
             HStack(alignment: .top, spacing: Space.s4) {
                 ForEach(shown, id: \.self) { p in
                     StandPageView(model: model, window: stand.window(page: p, model), framed: stand.twoUp, maxHeight: size.height)
+                        .layoutProbe("standPage-\(p)")
                         .frame(maxWidth: stand.twoUp ? (size.width - Space.s4 * 3) / 2 : .infinity)
                 }
             }

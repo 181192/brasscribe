@@ -50,8 +50,13 @@ struct ChangeNoteSheet: View {
                 }
                 Text("The ? mark goes when you save. Changes are kept with this score.")
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            #if os(iOS)
+            // the phone's sheet is taller than the content: it stays at the top
+            .frame(maxHeight: .infinity, alignment: .top)
+            #endif
             .padding(Space.s6)
             .pageBackground()
             .navigationTitle(Text("Change note"))
@@ -66,7 +71,9 @@ struct ChangeNoteSheet: View {
             } message: { Text(saveError ?? "") }
             .task { load() }
         }
-        .frame(minWidth: 420, minHeight: 360)
+        #if os(macOS)
+        .sheetSize(minWidth: 420, idealWidth: 480, maxWidth: 560)
+        #endif
     }
 
     /// Model pitches, written for this part, grouped with the models that heard each one.

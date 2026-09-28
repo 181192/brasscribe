@@ -196,25 +196,13 @@ struct RootView: View {
         @Bindable var app = app
         Group {
             if split {
-                NavigationSplitView(columnVisibility: $columns) {
-                    LibrarySidebar()
-                        .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
-                } detail: {
-                    flow
-                }
-                .navigationSplitViewStyle(.balanced)
+                LibrarySplit(columns: $columns) { flow }
                 #if os(iOS)
                 // on iPad the library steps aside while a score is open; the sidebar button brings it back
                 .onChange(of: app.path.isEmpty) { _, home in columns = home ? .all : .detailOnly }
-                #endif
                 // the music stand has the whole window
-                .onChange(of: app.standOpen) { _, open in
-                    #if os(iOS)
-                    columns = open || !app.path.isEmpty ? .detailOnly : .all
-                    #else
-                    columns = open ? .detailOnly : .all
-                    #endif
-                }
+                .onChange(of: app.standOpen) { _, open in columns = open || !app.path.isEmpty ? .detailOnly : .all }
+                #endif
             } else {
                 flow
             }
@@ -453,11 +441,15 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
 
     @MainActor static func fit(_ w: NSWindow) {
         guard w.canBecomeMain, !w.styleMask.contains(.fullScreen), let screen = w.screen ?? NSScreen.main else { return }
+        // the one minimum of the main window, whichever screen it shows
+        if w.minSize.width < WindowFit.minimumWindow.width || w.minSize.height < WindowFit.minimumWindow.height {
+            w.minSize = WindowFit.minimumWindow
+        }
         let f = WindowFit.clamp(w.frame, into: screen.visibleFrame, minSize: minFrameSize(w))
         if f != w.frame { w.setFrame(f, display: true, animate: false) }
     }
 
-    /// The content's own minimum (the home screen asks for 520 × 640), as a frame size.
+    /// The window's minimum (`WindowFit.minimumWindow`), or its content's when that is larger, as a frame size.
     @MainActor static func minFrameSize(_ w: NSWindow) -> CGSize {
         let content = w.frameRect(forContentRect: CGRect(origin: .zero, size: w.contentMinSize)).size
         return CGSize(width: max(w.minSize.width, content.width), height: max(w.minSize.height, content.height))

@@ -4,15 +4,58 @@
     "renders" : [
       {
         "content" : [
-          583,
-          16
+          900,
+          548
         ],
         "file" : "home-empty-min",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              193
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          583,
-          68
+          900,
+          600
         ]
       },
       {
@@ -21,7 +64,50 @@
           548
         ],
         "file" : "home-empty-900x600",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              193
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -34,7 +120,50 @@
           648
         ],
         "file" : "home-empty-1024x700",
+        "probes" : {
+          "dropArea" : [
+            [
+              328,
+              193
+            ],
+            [
+              656,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              288,
+              0
+            ],
+            [
+              736,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              664,
+              301
+            ],
+            [
+              320,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              328,
+              301
+            ],
+            [
+              320,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -47,7 +176,50 @@
           748
         ],
         "file" : "home-empty-1280x800",
+        "probes" : {
+          "dropArea" : [
+            [
+              364,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              324,
+              0
+            ],
+            [
+              920,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              792,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              364,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -60,7 +232,50 @@
           848
         ],
         "file" : "home-empty-1512x900",
+        "probes" : {
+          "dropArea" : [
+            [
+              480,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              440,
+              0
+            ],
+            [
+              920,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              908,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              480,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -73,7 +288,50 @@
           1028
         ],
         "file" : "home-empty-1920x1080",
+        "probes" : {
+          "dropArea" : [
+            [
+              684,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              644,
+              0
+            ],
+            [
+              920,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              1112,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              684,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -86,7 +344,50 @@
           1348
         ],
         "file" : "home-empty-2560x1400",
+        "probes" : {
+          "dropArea" : [
+            [
+              1004,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              964,
+              0
+            ],
+            [
+              920,
+              576
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              1432,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              1004,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-empty",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -101,12 +402,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        583,
-        16
+        900,
+        548
       ]
     }
   },
@@ -115,15 +416,58 @@
     "renders" : [
       {
         "content" : [
-          583,
-          16
+          900,
+          548
         ],
         "file" : "home-scores-min",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              193
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          583,
-          68
+          900,
+          600
         ]
       },
       {
@@ -132,7 +476,50 @@
           548
         ],
         "file" : "home-scores-900x600",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              193
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              301
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -145,7 +532,50 @@
           648
         ],
         "file" : "home-scores-1024x700",
+        "probes" : {
+          "dropArea" : [
+            [
+              328,
+              193
+            ],
+            [
+              656,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              288,
+              0
+            ],
+            [
+              736,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              664,
+              301
+            ],
+            [
+              320,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              328,
+              301
+            ],
+            [
+              320,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -158,7 +588,50 @@
           748
         ],
         "file" : "home-scores-1280x800",
+        "probes" : {
+          "dropArea" : [
+            [
+              364,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              324,
+              0
+            ],
+            [
+              920,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              792,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              364,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -171,7 +644,50 @@
           848
         ],
         "file" : "home-scores-1512x900",
+        "probes" : {
+          "dropArea" : [
+            [
+              480,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              440,
+              0
+            ],
+            [
+              920,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              908,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              480,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -184,7 +700,50 @@
           1028
         ],
         "file" : "home-scores-1920x1080",
+        "probes" : {
+          "dropArea" : [
+            [
+              684,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              644,
+              0
+            ],
+            [
+              920,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              1112,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              684,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -197,7 +756,50 @@
           1348
         ],
         "file" : "home-scores-2560x1400",
+        "probes" : {
+          "dropArea" : [
+            [
+              1004,
+              193
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              964,
+              0
+            ],
+            [
+              920,
+              917
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              1432,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              1004,
+              301
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-scores",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -212,12 +814,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        583,
-        16
+        900,
+        548
       ]
     }
   },
@@ -226,15 +828,58 @@
     "renders" : [
       {
         "content" : [
-          583,
-          16
+          900,
+          548
         ],
         "file" : "home-offline-min",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              223
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              606
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              331
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              331
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-offline",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          583,
-          68
+          900,
+          600
         ]
       },
       {
@@ -243,7 +888,50 @@
           748
         ],
         "file" : "home-offline-1280x800",
+        "probes" : {
+          "dropArea" : [
+            [
+              364,
+              223
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              324,
+              0
+            ],
+            [
+              920,
+              606
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              792,
+              331
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              364,
+              331
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-offline",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -258,12 +946,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        583,
-        16
+        900,
+        548
       ]
     }
   },
@@ -272,15 +960,58 @@
     "renders" : [
       {
         "content" : [
-          583,
-          16
+          900,
+          548
         ],
         "file" : "home-needs-pairing-min",
+        "probes" : {
+          "dropArea" : [
+            [
+              40,
+              223
+            ],
+            [
+              820,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              0,
+              0
+            ],
+            [
+              900,
+              606
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              458,
+              331
+            ],
+            [
+              402,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              40,
+              331
+            ],
+            [
+              402,
+              116
+            ]
+          ]
+        },
         "screen" : "home-needs-pairing",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          583,
-          68
+          900,
+          600
         ]
       },
       {
@@ -289,7 +1020,50 @@
           748
         ],
         "file" : "home-needs-pairing-1280x800",
+        "probes" : {
+          "dropArea" : [
+            [
+              364,
+              223
+            ],
+            [
+              840,
+              92
+            ]
+          ],
+          "pageColumn" : [
+            [
+              324,
+              0
+            ],
+            [
+              920,
+              606
+            ]
+          ],
+          "wayIn-capture" : [
+            [
+              792,
+              331
+            ],
+            [
+              412,
+              116
+            ]
+          ],
+          "wayIn-record" : [
+            [
+              364,
+              331
+            ],
+            [
+              412,
+              116
+            ]
+          ]
+        },
         "screen" : "home-needs-pairing",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -304,12 +1078,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        583,
-        16
+        900,
+        548
       ]
     }
   },
@@ -318,15 +1092,78 @@
     "renders" : [
       {
         "content" : [
-          500,
-          84
+          900,
+          548
         ],
         "file" : "source-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              122,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              458,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              122,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              458,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              122,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          500,
-          136
+          900,
+          600
         ]
       },
       {
@@ -335,7 +1172,70 @@
           548
         ],
         "file" : "source-900x600",
+        "probes" : {
+          "pageActions" : [
+            [
+              122,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              458,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              122,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              458,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              122,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -348,7 +1248,70 @@
           648
         ],
         "file" : "source-1024x700",
+        "probes" : {
+          "pageActions" : [
+            [
+              328,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              296,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              664,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              328,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              664,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              328,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -361,7 +1324,70 @@
           748
         ],
         "file" : "source-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              456,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              424,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              792,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              456,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              792,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              456,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -374,7 +1400,70 @@
           848
         ],
         "file" : "source-1512x900",
+        "probes" : {
+          "pageActions" : [
+            [
+              572,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              540,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              908,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              572,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              908,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              572,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -387,7 +1476,70 @@
           1028
         ],
         "file" : "source-1920x1080",
+        "probes" : {
+          "pageActions" : [
+            [
+              776,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              744,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              1112,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              776,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              1112,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              776,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -400,7 +1552,70 @@
           1348
         ],
         "file" : "source-2560x1400",
+        "probes" : {
+          "pageActions" : [
+            [
+              1096,
+              496.0623779296875
+            ],
+            [
+              656,
+              74
+            ]
+          ],
+          "pageColumn" : [
+            [
+              1064,
+              -0.0623779296875
+            ],
+            [
+              720,
+              594.124755859375
+            ]
+          ],
+          "profile-brass-band" : [
+            [
+              1432,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-orchestra-with-soloist" : [
+            [
+              1096,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-pop-rock" : [
+            [
+              1432,
+              258.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ],
+          "profile-solo" : [
+            [
+              1096,
+              154.0623779296875
+            ],
+            [
+              320,
+              88
+            ]
+          ]
+        },
         "screen" : "source",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -415,12 +1630,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        500,
-        84
+        900,
+        548
       ]
     }
   },
@@ -429,15 +1644,38 @@
     "renders" : [
       {
         "content" : [
-          427,
-          76
+          900,
+          548
         ],
         "file" : "transcribing-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              122,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          427,
-          128
+          900,
+          600
         ]
       },
       {
@@ -446,7 +1684,30 @@
           548
         ],
         "file" : "transcribing-900x600",
+        "probes" : {
+          "pageActions" : [
+            [
+              122,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -459,7 +1720,30 @@
           648
         ],
         "file" : "transcribing-1024x700",
+        "probes" : {
+          "pageActions" : [
+            [
+              328,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              296,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -472,7 +1756,30 @@
           748
         ],
         "file" : "transcribing-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              456,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              424,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -485,7 +1792,30 @@
           848
         ],
         "file" : "transcribing-1512x900",
+        "probes" : {
+          "pageActions" : [
+            [
+              572,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              540,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -498,7 +1828,30 @@
           1028
         ],
         "file" : "transcribing-1920x1080",
+        "probes" : {
+          "pageActions" : [
+            [
+              776,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              744,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -511,7 +1864,30 @@
           1348
         ],
         "file" : "transcribing-2560x1400",
+        "probes" : {
+          "pageActions" : [
+            [
+              1096,
+              537
+            ],
+            [
+              656,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              1064,
+              0
+            ],
+            [
+              720,
+              605
+            ]
+          ]
+        },
         "screen" : "transcribing",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -526,12 +1902,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        427,
-        76
+        900,
+        548
       ]
     }
   },
@@ -540,15 +1916,38 @@
     "renders" : [
       {
         "content" : [
-          588,
-          76
+          900,
+          548
         ],
         "file" : "output-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              42,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              10,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          588,
-          128
+          900,
+          600
         ]
       },
       {
@@ -557,7 +1956,30 @@
           548
         ],
         "file" : "output-900x600",
+        "probes" : {
+          "pageActions" : [
+            [
+              42,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              10,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -570,7 +1992,30 @@
           648
         ],
         "file" : "output-1024x700",
+        "probes" : {
+          "pageActions" : [
+            [
+              320,
+              459
+            ],
+            [
+              672,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              288,
+              0
+            ],
+            [
+              736,
+              527
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -583,7 +2028,30 @@
           748
         ],
         "file" : "output-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              376,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              344,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -596,7 +2064,30 @@
           848
         ],
         "file" : "output-1512x900",
+        "probes" : {
+          "pageActions" : [
+            [
+              492,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              460,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -609,7 +2100,30 @@
           1028
         ],
         "file" : "output-1920x1080",
+        "probes" : {
+          "pageActions" : [
+            [
+              696,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              664,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -622,7 +2136,30 @@
           1348
         ],
         "file" : "output-2560x1400",
+        "probes" : {
+          "pageActions" : [
+            [
+              1016,
+              431
+            ],
+            [
+              816,
+              44
+            ]
+          ],
+          "pageColumn" : [
+            [
+              984,
+              0
+            ],
+            [
+              880,
+              499
+            ]
+          ]
+        },
         "screen" : "output",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -637,12 +2174,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        588,
-        76
+        900,
+        548
       ]
     }
   },
@@ -651,24 +2188,410 @@
     "renders" : [
       {
         "content" : [
-          1291,
-          803
+          900,
+          548
         ],
         "file" : "score-all-min",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              786,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              786,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              786,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              786,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              786,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              786,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              786,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              786,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              786,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              786,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              786,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              786,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              786,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              786,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              786,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              786,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              786,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              786,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              580,
+              0
+            ],
+            [
+              320,
+              548
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          1291,
-          855
+          900,
+          600
         ]
       },
       {
         "content" : [
-          1291,
-          803
+          900,
+          548
         ],
         "file" : "score-all-900x600",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              786,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              786,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              786,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              786,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              786,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              786,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              786,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              786,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              786,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              786,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              786,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              786,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              786,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              786,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              786,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              786,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              786,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              786,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              580,
+              0
+            ],
+            [
+              320,
+              548
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -677,11 +2600,15 @@
       },
       {
         "content" : [
-          1291,
-          803
+          1024,
+          648
         ],
         "file" : "score-all-1024x700",
+        "probes" : {
+
+        },
         "screen" : "score-all",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -690,11 +2617,204 @@
       },
       {
         "content" : [
-          1291,
-          803
+          1280,
+          748
         ],
         "file" : "score-all-1280x800",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1166,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1166,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1166,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1166,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1166,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1166,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1166,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1166,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1166,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1166,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1166,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1166,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1166,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1166,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1166,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1166,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1166,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1166,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              960,
+              0
+            ],
+            [
+              320,
+              748
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -707,7 +2827,200 @@
           848
         ],
         "file" : "score-all-1512x900",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1398,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1398,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1398,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1398,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1398,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1398,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1398,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1398,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1398,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1398,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1398,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1398,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1398,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1398,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1398,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1398,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1398,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1398,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              1192,
+              0
+            ],
+            [
+              320,
+              848
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -720,7 +3033,200 @@
           1028
         ],
         "file" : "score-all-1920x1080",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1806,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1806,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1806,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1806,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1806,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1806,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1806,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1806,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1806,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1806,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1806,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1806,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1806,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1806,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1806,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1806,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1806,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1806,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              1600,
+              0
+            ],
+            [
+              320,
+              1028
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -733,7 +3239,200 @@
           1348
         ],
         "file" : "score-all-2560x1400",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              2446,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              2446,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              2446,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              2446,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              2446,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              2446,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              2446,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              2446,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              2446,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              2446,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              2446,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              2446,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              2446,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              2446,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              2446,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              2446,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              2446,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              2446,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              2240,
+              0
+            ],
+            [
+              320,
+              1348
+            ]
+          ]
+        },
         "screen" : "score-all",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -748,12 +3447,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        1291,
-        803
+        900,
+        548
       ]
     }
   },
@@ -762,24 +3461,410 @@
     "renders" : [
       {
         "content" : [
-          1291,
-          883
+          900,
+          548
         ],
         "file" : "score-part-min",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              786,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              786,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              786,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              786,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              786,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              786,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              786,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              786,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              786,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              786,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              786,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              786,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              786,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              786,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              786,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              786,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              786,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              786,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              580,
+              0
+            ],
+            [
+              320,
+              548
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          1291,
-          935
+          900,
+          600
         ]
       },
       {
         "content" : [
-          1291,
-          883
+          900,
+          548
         ],
         "file" : "score-part-900x600",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              786,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              786,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              786,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              786,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              786,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              786,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              786,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              786,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              786,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              786,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              786,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              786,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              786,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              786,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              786,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              786,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              786,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              786,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              580,
+              0
+            ],
+            [
+              320,
+              548
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -788,11 +3873,15 @@
       },
       {
         "content" : [
-          1291,
-          883
+          1024,
+          648
         ],
         "file" : "score-part-1024x700",
+        "probes" : {
+
+        },
         "screen" : "score-part",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -801,11 +3890,204 @@
       },
       {
         "content" : [
-          1291,
-          883
+          1280,
+          748
         ],
         "file" : "score-part-1280x800",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1166,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1166,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1166,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1166,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1166,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1166,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1166,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1166,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1166,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1166,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1166,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1166,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1166,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1166,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1166,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1166,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1166,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1166,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              960,
+              0
+            ],
+            [
+              320,
+              748
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -815,10 +4097,203 @@
       {
         "content" : [
           1512,
-          883
+          848
         ],
         "file" : "score-part-1512x900",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1398,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1398,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1398,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1398,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1398,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1398,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1398,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1398,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1398,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1398,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1398,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1398,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1398,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1398,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1398,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1398,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1398,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1398,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              1192,
+              0
+            ],
+            [
+              320,
+              848
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -831,7 +4306,200 @@
           1028
         ],
         "file" : "score-part-1920x1080",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              1806,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              1806,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              1806,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              1806,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              1806,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              1806,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              1806,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              1806,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              1806,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              1806,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              1806,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              1806,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              1806,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              1806,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              1806,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              1806,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              1806,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              1806,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              1600,
+              0
+            ],
+            [
+              320,
+              1028
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -844,7 +4512,200 @@
           1348
         ],
         "file" : "score-part-2560x1400",
+        "probes" : {
+          "onlyThis-P1" : [
+            [
+              2446,
+              67.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P10" : [
+            [
+              2446,
+              661.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P11" : [
+            [
+              2446,
+              724.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P12" : [
+            [
+              2446,
+              787.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P13" : [
+            [
+              2446,
+              850.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P14" : [
+            [
+              2446,
+              915
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P15" : [
+            [
+              2446,
+              973
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P16" : [
+            [
+              2446,
+              1023
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P17" : [
+            [
+              2446,
+              1073
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P18" : [
+            [
+              2446,
+              1129.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P2" : [
+            [
+              2446,
+              140
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P3" : [
+            [
+              2446,
+              212.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P4" : [
+            [
+              2446,
+              283.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P5" : [
+            [
+              2446,
+              346.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P6" : [
+            [
+              2446,
+              409.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P7" : [
+            [
+              2446,
+              472.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P8" : [
+            [
+              2446,
+              535.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "onlyThis-P9" : [
+            [
+              2446,
+              598.5
+            ],
+            [
+              98,
+              30
+            ]
+          ],
+          "partsColumn" : [
+            [
+              2240,
+              0
+            ],
+            [
+              320,
+              1348
+            ]
+          ]
+        },
         "screen" : "score-part",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -859,12 +4720,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        1291,
-        883
+        900,
+        548
       ]
     }
   },
@@ -873,15 +4734,28 @@
     "renders" : [
       {
         "content" : [
-          151,
-          72
+          900,
+          548
         ],
         "file" : "stand-min",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              900,
+              343.51159815912246
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          151,
-          124
+          900,
+          600
         ]
       },
       {
@@ -890,7 +4764,20 @@
           548
         ],
         "file" : "stand-900x600",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              900,
+              343.51159815912246
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -903,7 +4790,20 @@
           648
         ],
         "file" : "stand-1024x700",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              1024,
+              395.048
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -916,7 +4816,20 @@
           748
         ],
         "file" : "stand-1280x800",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              1280,
+              642.8872948328267
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -929,7 +4842,20 @@
           848
         ],
         "file" : "stand-1512x900",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              1512,
+              642.7278048780488
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -942,7 +4868,20 @@
           1028
         ],
         "file" : "stand-1920x1080",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              1920,
+              642.7028139183057
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -955,7 +4894,20 @@
           1348
         ],
         "file" : "stand-2560x1400",
+        "probes" : {
+          "standPage-0" : [
+            [
+              0,
+              64
+            ],
+            [
+              2560,
+              642.6111999999999
+            ]
+          ]
+        },
         "screen" : "stand",
+        "sidebar" : false,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -970,12 +4922,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        151,
-        72
+        900,
+        548
       ]
     }
   },
@@ -984,15 +4936,38 @@
     "renders" : [
       {
         "content" : [
-          688,
-          80
+          900,
+          548
         ],
         "file" : "review-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              313,
+              435
+            ],
+            [
+              555,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              281,
+              0
+            ],
+            [
+              619,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          688,
-          132
+          900,
+          600
         ]
       },
       {
@@ -1001,7 +4976,30 @@
           548
         ],
         "file" : "review-900x600",
+        "probes" : {
+          "pageActions" : [
+            [
+              313,
+              435
+            ],
+            [
+              555,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              281,
+              0
+            ],
+            [
+              619,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -1014,7 +5012,30 @@
           648
         ],
         "file" : "review-1024x700",
+        "probes" : {
+          "pageActions" : [
+            [
+              601,
+              435
+            ],
+            [
+              391,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              569,
+              0
+            ],
+            [
+              455,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -1027,7 +5048,30 @@
           748
         ],
         "file" : "review-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              601,
+              435
+            ],
+            [
+              647,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              569,
+              0
+            ],
+            [
+              711,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -1040,7 +5084,30 @@
           848
         ],
         "file" : "review-1512x900",
+        "probes" : {
+          "pageActions" : [
+            [
+              712.5,
+              435
+            ],
+            [
+              656,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              680.5,
+              0
+            ],
+            [
+              720,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -1053,7 +5120,30 @@
           1028
         ],
         "file" : "review-1920x1080",
+        "probes" : {
+          "pageActions" : [
+            [
+              916.5,
+              435
+            ],
+            [
+              656,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              884.5,
+              0
+            ],
+            [
+              720,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -1066,7 +5156,30 @@
           1348
         ],
         "file" : "review-2560x1400",
+        "probes" : {
+          "pageActions" : [
+            [
+              1236.5,
+              435
+            ],
+            [
+              656,
+              56
+            ]
+          ],
+          "pageColumn" : [
+            [
+              1204.5,
+              0
+            ],
+            [
+              720,
+              523
+            ]
+          ]
+        },
         "screen" : "review",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -1081,12 +5194,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        688,
-        80
+        900,
+        548
       ]
     }
   },
@@ -1095,15 +5208,38 @@
     "renders" : [
       {
         "content" : [
-          399,
-          132
+          900,
+          548
         ],
         "file" : "problem-silence-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              110,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          399,
-          184
+          900,
+          600
         ]
       },
       {
@@ -1112,7 +5248,30 @@
           548
         ],
         "file" : "problem-silence-900x600",
+        "probes" : {
+          "pageActions" : [
+            [
+              110,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : false,
         "size" : "900x600",
         "window" : [
           900,
@@ -1125,7 +5284,30 @@
           648
         ],
         "file" : "problem-silence-1024x700",
+        "probes" : {
+          "pageActions" : [
+            [
+              316,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              296,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : true,
         "size" : "1024x700",
         "window" : [
           1024,
@@ -1138,7 +5320,30 @@
           748
         ],
         "file" : "problem-silence-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              444,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              424,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -1151,7 +5356,30 @@
           848
         ],
         "file" : "problem-silence-1512x900",
+        "probes" : {
+          "pageActions" : [
+            [
+              560,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              540,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : true,
         "size" : "1512x900",
         "window" : [
           1512,
@@ -1164,7 +5392,30 @@
           1028
         ],
         "file" : "problem-silence-1920x1080",
+        "probes" : {
+          "pageActions" : [
+            [
+              764,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              744,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : true,
         "size" : "1920x1080",
         "window" : [
           1920,
@@ -1177,7 +5428,30 @@
           1348
         ],
         "file" : "problem-silence-2560x1400",
+        "probes" : {
+          "pageActions" : [
+            [
+              1084,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              1064,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-silence",
+        "sidebar" : true,
         "size" : "2560x1400",
         "window" : [
           2560,
@@ -1192,12 +5466,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        399,
-        132
+        900,
+        548
       ]
     }
   },
@@ -1206,15 +5480,38 @@
     "renders" : [
       {
         "content" : [
-          399,
-          132
+          900,
+          548
         ],
         "file" : "problem-copy-protected-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              110,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-copy-protected",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          399,
-          184
+          900,
+          600
         ]
       },
       {
@@ -1223,7 +5520,30 @@
           748
         ],
         "file" : "problem-copy-protected-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              444,
+              336
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              424,
+              0
+            ],
+            [
+              720,
+              412
+            ]
+          ]
+        },
         "screen" : "problem-copy-protected",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -1238,12 +5558,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        399,
-        132
+        900,
+        548
       ]
     }
   },
@@ -1252,15 +5572,38 @@
     "renders" : [
       {
         "content" : [
-          391,
-          132
+          900,
+          548
         ],
         "file" : "problem-cant-open-min",
+        "probes" : {
+          "pageActions" : [
+            [
+              110,
+              250
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              90,
+              0
+            ],
+            [
+              720,
+              326
+            ]
+          ]
+        },
         "screen" : "problem-cant-open",
+        "sidebar" : false,
         "size" : "min",
         "window" : [
-          391,
-          184
+          900,
+          600
         ]
       },
       {
@@ -1269,7 +5612,30 @@
           748
         ],
         "file" : "problem-cant-open-1280x800",
+        "probes" : {
+          "pageActions" : [
+            [
+              444,
+              250
+            ],
+            [
+              680,
+              52
+            ]
+          ],
+          "pageColumn" : [
+            [
+              424,
+              0
+            ],
+            [
+              720,
+              326
+            ]
+          ]
+        },
         "screen" : "problem-cant-open",
+        "sidebar" : true,
         "size" : "1280x800",
         "window" : [
           1280,
@@ -1284,12 +5650,12 @@
         0
       ],
       "max" : [
-        100000,
-        100000
+        0,
+        0
       ],
       "min" : [
-        391,
-        132
+        900,
+        548
       ]
     }
   },
@@ -1298,31 +5664,44 @@
     "renders" : [
       {
         "content" : [
-          744,
-          1023
+          600,
+          786
         ],
         "file" : "sheet-settings",
+        "probes" : {
+          "settingsDone" : [
+            [
+              507,
+              730
+            ],
+            [
+              73,
+              44
+            ]
+          ]
+        },
         "screen" : "settings",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          744,
-          1023
+          600,
+          786
         ]
       }
     ],
     "screen" : "settings",
     "sizes" : {
       "ideal" : [
-        744,
-        1023
+        600,
+        786
       ],
       "max" : [
-        100000,
-        100000
+        680,
+        786
       ],
       "min" : [
-        480,
-        520
+        520,
+        360
       ]
     }
   },
@@ -1331,31 +5710,44 @@
     "renders" : [
       {
         "content" : [
-          744,
-          1194
+          600,
+          786
         ],
         "file" : "sheet-settings-pairing",
+        "probes" : {
+          "settingsDone" : [
+            [
+              507,
+              730
+            ],
+            [
+              73,
+              44
+            ]
+          ]
+        },
         "screen" : "settings-pairing",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          744,
-          1194
+          600,
+          786
         ]
       }
     ],
     "screen" : "settings-pairing",
     "sizes" : {
       "ideal" : [
-        744,
-        1194
+        600,
+        786
       ],
       "max" : [
-        100000,
-        100000
+        680,
+        786
       ],
       "min" : [
-        480,
-        520
+        520,
+        360
       ]
     }
   },
@@ -1365,14 +5757,18 @@
       {
         "content" : [
           620,
-          720
+          756
         ],
         "file" : "sheet-export",
+        "probes" : {
+
+        },
         "screen" : "export",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
           620,
-          720
+          756
         ]
       }
     ],
@@ -1380,15 +5776,15 @@
     "sizes" : {
       "ideal" : [
         620,
-        720
+        756
       ],
       "max" : [
-        620,
-        720
+        680,
+        786
       ],
       "min" : [
-        620,
-        720
+        560,
+        1
       ]
     }
   },
@@ -1401,7 +5797,11 @@
           560
         ],
         "file" : "sheet-talking-score",
+        "probes" : {
+
+        },
         "screen" : "talking-score",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
           480,
@@ -1430,31 +5830,35 @@
     "renders" : [
       {
         "content" : [
-          420,
-          360
+          480,
+          186
         ],
         "file" : "sheet-change-note",
+        "probes" : {
+
+        },
         "screen" : "change-note",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          420,
-          360
+          480,
+          186
         ]
       }
     ],
     "screen" : "change-note",
     "sizes" : {
       "ideal" : [
-        420,
-        360
+        480,
+        186
       ],
       "max" : [
-        100000,
-        100000
+        560,
+        786
       ],
       "min" : [
         420,
-        360
+        1
       ]
     }
   },
@@ -1463,31 +5867,35 @@
     "renders" : [
       {
         "content" : [
-          678,
-          640
+          600,
+          619
         ],
         "file" : "sheet-first-run",
+        "probes" : {
+
+        },
         "screen" : "first-run",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          678,
-          640
+          600,
+          619
         ]
       }
     ],
     "screen" : "first-run",
     "sizes" : {
       "ideal" : [
-        678,
-        640
+        600,
+        619
       ],
       "max" : [
-        100000,
-        100000
+        680,
+        786
       ],
       "min" : [
         520,
-        640
+        1
       ]
     }
   },
@@ -1496,31 +5904,35 @@
     "renders" : [
       {
         "content" : [
-          420,
-          360
+          460,
+          210
         ],
         "file" : "sheet-record-mic",
+        "probes" : {
+
+        },
         "screen" : "record-mic",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          420,
-          360
+          460,
+          210
         ]
       }
     ],
     "screen" : "record-mic",
     "sizes" : {
       "ideal" : [
-        420,
-        360
+        460,
+        210
       ],
       "max" : [
-        420,
-        360
+        560,
+        786
       ],
       "min" : [
         420,
-        360
+        1
       ]
     }
   },
@@ -1529,31 +5941,35 @@
     "renders" : [
       {
         "content" : [
-          531,
-          360
+          540,
+          286
         ],
         "file" : "sheet-record-capture",
+        "probes" : {
+
+        },
         "screen" : "record-capture",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
-          531,
-          360
+          540,
+          286
         ]
       }
     ],
     "screen" : "record-capture",
     "sizes" : {
       "ideal" : [
-        531,
-        360
+        540,
+        286
       ],
       "max" : [
-        100000,
-        100000
+        640,
+        786
       ],
       "min" : [
         480,
-        360
+        1
       ]
     }
   },
@@ -1566,7 +5982,11 @@
           116
         ],
         "file" : "sheet-match-code",
+        "probes" : {
+
+        },
         "screen" : "match-code",
+        "sidebar" : false,
         "size" : "ideal",
         "window" : [
           185,

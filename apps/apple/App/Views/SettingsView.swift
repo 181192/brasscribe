@@ -106,11 +106,35 @@ struct SettingsView: View {
             .navigationTitle(Text("Settings"))
             #if os(iOS)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            #else
+            // a Mac sheet has no title bar: the title above the form, Done below it
+            .safeAreaInset(edge: .top, spacing: 0) {
+                DisplayTitle(text: String(localized: "Settings"), size: 30)
+                    .padding(.horizontal, Space.s5)
+                    .padding(.top, Space.s5)
+                    .padding(.bottom, Space.s1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.Brasscribe.bg)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: { Text("Done") }
+                        .buttonStyle(.primary)
+                        .keyboardShortcut(.defaultAction)
+                        .accessibilityIdentifier("settingsDone")
+                        .layoutProbe("settingsDone")
+                }
+                .padding(.horizontal, Space.s5)
+                .padding(.vertical, Space.s3)
+                .background(Color.Brasscribe.bg)
+                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+            }
             #endif
         }
         #if os(macOS)
-        // the Mac sheet's size; on a phone the sheet is the screen's width
-        .frame(minWidth: 480, minHeight: 520)
+        // the form's own height, up to 90 % of the screen; past that it scrolls
+        .sheetSize(minWidth: 520, idealWidth: 600, maxWidth: 680, minHeight: 360)
         #endif
     }
 

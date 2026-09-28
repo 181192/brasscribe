@@ -82,7 +82,7 @@ struct ReviewView: View {
                 HStack(spacing: 0) {
                     noteList.frame(width: 280)
                     Divider()
-                    ScrollView { detail.padding(Space.s8).readingColumn() }
+                    ScrollView { detail.padding(Space.s8).layoutProbe("pageColumn").readingColumn() }
                 }
             } else {
                 ScrollView { VStack(alignment: .leading, spacing: Space.s5) { detail; stillToCheck }.padding(Space.s5) }
@@ -101,7 +101,7 @@ struct ReviewView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) { if !allOpen.isEmpty, item != nil { actionBar } }
+        .bottomActions { if !allOpen.isEmpty, item != nil { actionBar } }
         .alert("Finish checking later?", isPresented: $confirmLater) {
             Button("Finish later") { finish() }
             Button("Keep checking", role: .cancel) {}
@@ -230,6 +230,8 @@ struct ReviewView: View {
                     .buttonStyle(.plainText)
                     .accessibilityIdentifier("keepRestOfBar")
                 }
+                // Mac: Skip and Keep follow the note, before the evidence
+                if PageActions.followContent { actionButtons.padding(.top, Space.s2).layoutProbe("pageActions") }
                 EvidencePanel(note: evidenceFor(it), fifths: fifths(it), part: model.score.parts[it.partIndex])
             }
             .accessibilityElement(children: .contain)
@@ -309,9 +311,14 @@ struct ReviewView: View {
     private var actionButtons: some View {
         HStack(spacing: Space.s3) {
             if wide {
-                Text(model?.listening != nil ? "Space stops · K keeps" : "Space listens · K keeps")
-                    .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
-                Spacer()
+                // the keys, where there's room beside the buttons
+                ViewThatFits(in: .horizontal) {
+                    Text(model?.listening != nil ? "Space stops · K keeps" : "Space listens · K keeps")
+                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .fixedSize()
+                    Color.clear.frame(width: 0, height: 0)
+                }
+                Spacer(minLength: 0)
             }
             Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
                 .buttonStyle(SecondaryButtonStyle(fullWidth: !wide, minHeight: 48))

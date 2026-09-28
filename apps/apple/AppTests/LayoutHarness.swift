@@ -14,7 +14,7 @@ import TranscriptionKit
 final class OffscreenHost {
     /// The unified title bar and toolbar of the real window. The borderless test window has none, so
     /// a window size W × H renders its content area at W × (H − toolbar).
-    static let toolbarHeight: CGFloat = 52
+    static let toolbarHeight: CGFloat = WindowFit.toolbarHeight
 
     let window: NSWindow
     let hosting: NSHostingView<AnyView>
@@ -25,8 +25,9 @@ final class OffscreenHost {
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .aqua)
         hosting = NSHostingView(rootView: AnyView(view.environment(\.colorScheme, .light)))
-        // the test decides the size; the content's own minimum is measured separately (`Measure`)
-        hosting.sizingOptions = []
+        // SwiftUI hands the window its content minimum (`contentMinSize`), as in the app; the test still
+        // sets the size itself
+        hosting.sizingOptions = .minSize
         hosting.frame = CGRect(origin: .zero, size: size)
         window.contentView = hosting
     }
@@ -100,22 +101,18 @@ final class OffscreenHost {
 
     static func descendants(_ v: NSView) -> [NSView] { v.subviews + v.subviews.flatMap(descendants) }
 
-    /// The smallest content size the window allows for this view: what SwiftUI hands the window as
-    /// its content minimum (a window group's hosting view reports its minimum).
-    static func windowMinimum(_ view: some View) async -> CGSize {
-        let hv = NSHostingView(rootView: AnyView(view.environment(\.colorScheme, .light)))
-        hv.sizingOptions = .minSize
-        let w = NSWindow(contentRect: CGRect(x: -30_000, y: -30_000, width: 1280, height: 748), styleMask: [.borderless],
-                         backing: .buffered, defer: false)
-        w.isReleasedWhenClosed = false
-        w.contentView = hv
-        try? await Task.sleep(for: .seconds(0.5))
-        hv.layoutSubtreeIfNeeded()
-        let m = w.contentMinSize
-        w.contentView = nil
-        w.close()
-        return m
+    /// The split view's sidebar is showing (not collapsed).
+    var sidebarShown: Bool {
+        for case let split as NSSplitView in Self.descendants(hosting) {
+            if let controller = split.delegate as? NSSplitViewController, let sidebar = controller.splitViewItems.first(where: { $0.behavior == .sidebar }) {
+                return !sidebar.isCollapsed
+            }
+        }
+        return false
     }
+
+    /// The smallest content size the window allows for this view: what SwiftUI hands the window.
+    var windowMinimum: CGSize { window.contentMinSize }
 
     func close() { window.contentView = nil; window.close() }
 }
@@ -135,21 +132,32 @@ enum Measure {
     }
 }
 
-/// The window's layout, as `RootView` builds it on the Mac: the library in a sidebar and the
-/// screen in the detail column's navigation stack.
+/// The window's layout, as `RootView` builds it on the Mac: the library in a sidebar (`LibrarySplit`,
+/// with its window minimum and the sidebar rule) and the screen in the detail column's navigation stack.
 struct HarnessShell<Content: View>: View {
-    var sidebar = true
-    @ViewBuilder var content: Content
+    @State private var columns: NavigationSplitViewVisibility
+    private let content: Content
+
+    init(sidebar: Bool = true, @ViewBuilder content: () -> Content) {
+        _columns = State(initialValue: sidebar ? .all : .detailOnly)
+        self.content = content()
+    }
 
     var body: some View {
-        NavigationSplitView(columnVisibility: .constant(sidebar ? .all : .detailOnly)) {
-            LibrarySidebar()
-                .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
-        } detail: {
-            NavigationStack { content }
+        LibrarySplit(columns: $columns) { NavigationStack { content } }
+            .tint(Color.Brasscribe.primary)
+    }
+}
+
+/// The score screen's switch between the score and the music stand (`ScoreScreen`), for a model the
+/// test holds.
+struct ScoreOrStand: View {
+    @Bindable var model: PracticeModel
+    var body: some View {
+        Group {
+            if let stand = model.stand { MusicStandView(model: model, stand: stand) } else { PracticeView(model: model) }
         }
-        .navigationSplitViewStyle(.balanced)
-        .tint(Color.Brasscribe.primary)
+        .pageBackground()
     }
 }
 

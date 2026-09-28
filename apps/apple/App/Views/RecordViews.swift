@@ -66,7 +66,11 @@ struct MicRecordView: View {
             .navigationTitle(Text("Record"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { rec.stop(); dismiss() } } }
         }
+        #if os(macOS)
+        .sheetSize(minWidth: 420, idealWidth: 460, maxWidth: 560)
+        #else
         .frame(minWidth: 420, minHeight: 360)
+        #endif
     }
 }
 
@@ -111,7 +115,8 @@ struct CaptureView: View {
                 if let r = recorder { seconds = r.elapsedSeconds; level = r.currentPeak }
             }
         }
-        .frame(minWidth: 480, minHeight: 360)
+        // the form's own height
+        .sheetSize(minWidth: 480, idealWidth: 540, maxWidth: 640)
     }
 
     func toggle() {

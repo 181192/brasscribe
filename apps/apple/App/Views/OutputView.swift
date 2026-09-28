@@ -71,27 +71,17 @@ struct OutputView: View {
                 if let failure {
                     NoticeBox(systemImage: BrasscribeIcon.error.systemName, text: failure)
                 }
+                if PageActions.followContent { actionButtons.layoutProbe("pageActions") }
             }
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s6)
             .frame(maxWidth: wide ? 880 : .infinity, alignment: .leading)
+            .layoutProbe("pageColumn")
             .frame(maxWidth: .infinity)
         }
         .pageBackground()
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: Space.s3) {
-                if wide {
-                    Spacer()
-                    Button { app.path.removeLast() } label: { Text("Back") }.buttonStyle(.plainText)
-                }
-                Button { Task { await show() } } label: {
-                    if busy { ProgressView().controlSize(.small).tint(Color.Brasscribe.onPrimary) } else { Text("Show the score") }
-                }
-                .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
-                .disabled(busy)
-                .keyboardShortcut(.defaultAction)
-                .accessibilityIdentifier("showScore")
-            }
+        .bottomActions {
+            actionButtons
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s3)
             .frame(maxWidth: wide ? 880 : .infinity)
@@ -119,6 +109,22 @@ struct OutputView: View {
             recordedFifths = comp?.keys.first?.fifths
             quartetPossible = piece.canArrangeQuartet(comp)
             if let target = chosen.keyFifths, let from = recordedFifths { semitones = Self.semitones(from: from, to: target) }
+        }
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: Space.s3) {
+            if wide {
+                Spacer()
+                Button { app.path.removeLast() } label: { Text("Back") }.buttonStyle(.plainText)
+            }
+            Button { Task { await show() } } label: {
+                if busy { ProgressView().controlSize(.small).tint(Color.Brasscribe.onPrimary) } else { Text("Show the score") }
+            }
+            .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
+            .disabled(busy)
+            .keyboardShortcut(.defaultAction)
+            .accessibilityIdentifier("showScore")
         }
     }
 

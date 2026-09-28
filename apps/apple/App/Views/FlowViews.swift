@@ -43,14 +43,16 @@ struct SourceView: View {
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
 
                 whereItRuns
+                if PageActions.followContent { actionButtons.padding(.top, Space.s2).layoutProbe("pageActions") }
                 if !wide { Color.clear.frame(height: Space.s2) }
             }
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s6)
+            .layoutProbe("pageColumn")
             .readingColumn()
         }
         .pageBackground()
-        .safeAreaInset(edge: .bottom) { actions }
+        .bottomActions { actions }
         .navigationTitle(Text(source.title))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -79,7 +81,7 @@ struct SourceView: View {
                     .accessibilityHidden(true)
             }
             .padding(Space.s4)
-            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 88, maxHeight: .infinity, alignment: .topLeading)
             .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
             .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
                                                                             lineWidth: on ? 2 : 1))
@@ -88,6 +90,7 @@ struct SourceView: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? [.isSelected] : [])
         .accessibilityIdentifier("profile-\(p.rawValue)")
+        .layoutProbe("profile-\(p.rawValue)")
     }
 
     /// Where the listening happens, and a way to change it. At large text sizes the
@@ -118,6 +121,14 @@ struct SourceView: View {
     }
 
     private var actions: some View {
+        actionButtons
+            .padding(.horizontal, wide ? Space.s8 : Space.s5)
+            .padding(.vertical, Space.s3)
+            .readingColumn()
+            .background(Color.Brasscribe.bg)
+    }
+
+    private var actionButtons: some View {
         let cont = Button {
             guard let profile else { return }
             app.startTranscription(source, profile: profile, output: output)
@@ -125,14 +136,13 @@ struct SourceView: View {
             .disabled(profile == nil)
             .accessibilityIdentifier("transcribe")
             .accessibilityHint(profile == nil ? Text("Choose one to continue.") : Text(""))
-        return VStack(spacing: Space.s2) {
+        return VStack(alignment: wide ? .trailing : .center, spacing: Space.s2) {
             if profile == nil {
                 Text("Choose one to continue.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                     .accessibilityHidden(true)
             }
             if wide {
-                HStack(spacing: Space.s3) {
-                    Spacer()
+                ActionRow {
                     Button { app.path.removeLast() } label: { Text("Cancel") }.buttonStyle(.plainText)
                         .keyboardShortcut(.cancelAction)
                     cont.buttonStyle(.primary).keyboardShortcut(.defaultAction)
@@ -141,10 +151,7 @@ struct SourceView: View {
                 cont.buttonStyle(.primaryWide)
             }
         }
-        .padding(.horizontal, wide ? Space.s8 : Space.s5)
-        .padding(.vertical, Space.s3)
-        .readingColumn()
-        .background(Color.Brasscribe.bg)
+        .frame(maxWidth: .infinity, alignment: wide ? .trailing : .center)
     }
 
     static func duration(of url: URL) async -> String? {
@@ -282,29 +289,35 @@ struct TranscribeView: View {
                 }
                 NoticeBox(systemImage: BrasscribeIcon.computer.systemName,
                           text: "\(app.whereItRuns(for: job.profile)) " + String(localized: "You can leave this screen. Brasscribe will tell you when the score is ready."))
+                if PageActions.followContent { cancelRow(job).layoutProbe("pageActions") }
             }
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s6)
+            .layoutProbe("pageColumn")
             .readingColumn()
         }
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                if wide { Spacer() }
-                Button { confirmCancel = true } label: { Text("Cancel") }
-                    .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide))
-                    .keyboardShortcut(.cancelAction)
-                    .accessibilityIdentifier("cancelTranscription")
-                    .confirmationDialog(String(localized: "Stop making this score?"), isPresented: $confirmCancel, titleVisibility: .visible) {
-                        Button(String(localized: "Stop making the score"), role: .destructive) { job.cancel(); app.goHome() }
-                        Button(String(localized: "Keep going")) {}
-                    } message: { Text("You can start again from the recording.") }
-            }
-            .padding(.horizontal, wide ? Space.s8 : Space.s5)
-            .padding(.vertical, Space.s3)
-            .readingColumn()
+        .bottomActions {
+            cancelRow(job)
+                .padding(.horizontal, wide ? Space.s8 : Space.s5)
+                .padding(.vertical, Space.s3)
+                .readingColumn()
         }
         .onChange(of: job.progress.stage) { _, s in announce(s.plain, fraction: job.progress.fraction, force: true) }
         .onChange(of: job.progress.fraction) { _, f in announce(nil, fraction: f, force: false) }
+    }
+
+    private func cancelRow(_ job: TranscriptionJob) -> some View {
+        HStack {
+            if wide { Spacer() }
+            Button { confirmCancel = true } label: { Text("Cancel") }
+                .buttonStyle(SecondaryButtonStyle(outline: true, fullWidth: !wide))
+                .keyboardShortcut(.cancelAction)
+                .accessibilityIdentifier("cancelTranscription")
+                .confirmationDialog(String(localized: "Stop making this score?"), isPresented: $confirmCancel, titleVisibility: .visible) {
+                    Button(String(localized: "Stop making the score"), role: .destructive) { job.cancel(); app.goHome() }
+                    Button(String(localized: "Keep going")) {}
+                } message: { Text("You can start again from the recording.") }
+        }
     }
 
     /// Announce the step when it changes, and the percentage at most every 10 % or 10 s.
@@ -320,12 +333,19 @@ struct TranscribeView: View {
                        lead: nil,
                        reasons: [String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
                        hint: nil, detail: reason) {
+            let full = !PageActions.followContent
+            if PageActions.followContent {
+                Button { app.goHome() } label: { Text("Back to Home") }
+                    .buttonStyle(SecondaryButtonStyle(fullWidth: full))
+            }
             Button { app.startTranscription(job.source, profile: job.profile, output: job.output) } label: {
                 Label("Try again", systemImage: BrasscribeIcon.retry.systemName)
             }
-            .buttonStyle(.primaryWide)
-            Button { app.goHome() } label: { Text("Back to Home") }
-                .buttonStyle(SecondaryButtonStyle(fullWidth: true))
+            .buttonStyle(PrimaryButtonStyle(fullWidth: full))
+            if !PageActions.followContent {
+                Button { app.goHome() } label: { Text("Back to Home") }
+                    .buttonStyle(SecondaryButtonStyle(fullWidth: full))
+            }
         }
     }
 
@@ -360,9 +380,12 @@ struct ProblemView: View {
 
     var body: some View {
         ProblemContent(title: problem.title, lead: problem.lead, reasons: problem.reasons, hint: problem.hint, detail: problem.detail) {
-            ForEach(Array(problem.actions.enumerated()), id: \.offset) { i, a in
+            // phone: the way forward on top, full width; Mac: a row with the primary last, on the right
+            let wide = !PageActions.followContent
+            let actions = Array(problem.actions.enumerated())
+            ForEach(PageActions.followContent ? actions.reversed() : actions, id: \.offset) { i, a in
                 let button = Button { run(a) } label: { label(a) }
-                if i == 0 { button.buttonStyle(.primaryWide) } else { button.buttonStyle(SecondaryButtonStyle(fullWidth: true)) }
+                if i == 0 { button.buttonStyle(PrimaryButtonStyle(fullWidth: wide)) } else { button.buttonStyle(SecondaryButtonStyle(fullWidth: wide)) }
             }
         }
         .navigationTitle(Text(problem.title))
@@ -433,13 +456,19 @@ struct ProblemContent<Actions: View>: View {
                     } label: { Text("Details for the band's tech person").font(Font.Brasscribe.callout) }
                     .tint(Color.Brasscribe.text)
                 }
+                if PageActions.followContent {
+                    ActionRow { actions }
+                        .padding(.top, Space.s2)
+                        .layoutProbe("pageActions")
+                }
             }
             .padding(.horizontal, Space.s5)
             .padding(.vertical, Space.s6)
+            .layoutProbe("pageColumn")
             .readingColumn()
         }
         .pageBackground()
-        .safeAreaInset(edge: .bottom) {
+        .bottomActions {
             VStack(spacing: Space.s3) { actions }
                 .padding(.horizontal, Space.s5)
                 .padding(.vertical, Space.s3)

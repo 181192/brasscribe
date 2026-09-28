@@ -20,7 +20,7 @@ with the macOS Human Interface Guidelines and [design/system.md](../../design/sy
   a MacBook), 1920×1080 and 2560×1400. These are window sizes. The unified toolbar (52 pt) isn't drawn
   by a borderless window, so the content is rendered at W × (H − 52).
 - **Minimum:** the window's content minimum is what SwiftUI hands the window (`NSHostingView` with
-  `.minSize`, then `NSWindow.contentMinSize`), measured for each screen. A window never goes below that
+  `.minSize`, then `NSWindow.contentMinSize`), read from the window each screen renders in. A window never goes below that
   minimum, so when a requested size is smaller, the render is taken at the size the window grows to.
   That's the behaviour the owner sees.
 - **Sheets** open at their ideal size (`fittingSize`), clamped to their minimum and maximum. That's how
@@ -43,7 +43,7 @@ with the macOS Human Interface Guidelines and [design/system.md](../../design/sy
   in `settings-pairing`.
 - Read aloud's row text is empty in the render (the part is chosen in `onAppear`). The layout is still
   representative.
-- Accessibility frames aren't available off screen, so the phase-2 assertions will need geometry probes.
+- Accessibility frames aren't available off screen, so the checks read geometry probes (`layoutProbe`).
 - A real window was compared with the harness using the committed `docs/screenshots/macos-score-light.png`.
   Both show the same inspector overflow and the same wrapping of the player bar.
 
@@ -60,7 +60,7 @@ From the macOS HIG (Layout, Windows, Sheets, Split views) and design/system.md �
 | Sidebar | 240–340 pt. It collapses when the window is too narrow for sidebar plus detail, rather than squeezing the detail. |
 | Sheets | Size to their content, with a sensible minimum (about 480 pt wide) and a maximum (about 680 pt wide and the screen height minus a margin). Longer content scrolls inside. A title and a way to close. |
 
-## Findings
+## Findings (the audit, before the fixes)
 
 | # | Where | Finding | Expected |
 |---|---|---|---|
@@ -84,208 +84,243 @@ From the macOS HIG (Layout, Windows, Sheets, Split views) and design/system.md �
 What is already right: the score and the stand fill the window at every size, Home and the flow screens
 cap their column (920 and 720) and top-align, and Review's list fills the height.
 
-## Screens × sizes
+## Fixes
+
+Every finding is fixed, and each fix has a check in `ResponsiveLayoutTests.check(_:)`. The check runs
+on every render, so the fixes can't regress quietly. The screens mark a few landmarks with
+`layoutProbe` (their column, their actions, the parts column, the stand's pages), which the test
+reads back. The modifier records only while unit tests run, and does nothing in the app.
+
+| # | Fix | Check in the harness |
+|---|---|---|
+| F1 | On the Mac the parts sit in a column of the score screen's own (`SidePanel`, 320 pt), not an `.inspector`: inside a split view the inspector added its width, and more, to the window's minimum. The column scrolls. Where the score and the column don't both fit (below 820 pt of detail), the column steps aside and Parts opens the parts in a sheet. | Every screen's window minimum equals the global one, the score's with every part included. The parts column is never taller than the window and never runs off it, and it shows at 1280. |
+| F2, F3 | One minimum for the main window: 900 × 600 (`WindowFit.minimumWindow`). SwiftUI gets it as the root's minimum content size (`LibrarySplit`), and AppKit gets it as the window's `minSize` (`MacLaunch.fit`). On the Mac, button labels keep one line at their full width (`OneLineLabel`), and a row of actions that doesn't fit stacks, trailing (`ActionRow`). | The window minimum is 900 × 548 content on every screen. Every landmark lies inside the window at every size, the minimum included. |
+| F4 | On the Mac a flow page's actions follow its content, trailing in its column: What is this?, Choose output, Transcribing, Review, the problem screens (`PageActions.followContent`, `bottomActions`). iPhone and iPad keep the bottom band. The problem screens' actions form a row with the way forward last, on the right. Only the score's player stays docked. | At 1920 × 1080 and 2560 × 1400 each page's actions lie inside its column, end with it, and sit more than 200 pt above the window's bottom. |
+| F5 | Home's two ways in are two equal columns on the Mac. | The two cards are the same width, and the second ends where the drop area does. |
+| F6 | The sidebar steps aside below 1000 pt and comes back above it. It changes only when the width crosses the line, so a sidebar the user opened or closed stays that way. The toolbar's sidebar button still works. The stand keeps the sidebar aside. | The sidebar is shown exactly when the window is at least 1000 wide, and never on the stand. |
+| F7 | Settings on the Mac has the title "Settings" above the form and a Done button (the default action) below it. It opens 520–680 wide, as tall as its form up to 90 % of the screen's visible height, and scrolls inside. | It opens 520–680 wide, no taller than 90 % of the screen, and has a Done button. |
+| F8 | Share or print: 560–680 wide, and as tall as its content up to 90 % of the screen. | No fixed height, and no minimum taller than the content. |
+| F9, F10, F11 | Change note, First run and both recording sheets hug their content: no minimum height, no `Spacer`. | No minimum height, and the sheet isn't held taller than its content. |
+| F12 | — | — |
+| F13 | A spread shows two pages only when there are two. When the music fits one page, the stand engraves it again at the full width, centred (`MusicStand.settleSpread`). A new window size tries the spread again. The left-edge clip came from the half-width spread, and it's gone with it. | While the window is resized the stand stays open, shows one page when there is one, and centres it without cutting its left edge. |
+| F14 | See F2 and F4. On a narrow Review, the "Space listens · K keeps" hint hides instead of truncating. | See F4. |
+| F15 | The parts' Mute and Only this toggles keep one line; the part's name wraps instead. | Every Only this toggle is at most 36 pt tall. |
+| F16 | The What is this? cards stretch to their grid row's height. | Cards in the same row are the same height. |
+| P3 | The Practice menu chip (phone, AX3 "Øving") no longer shows a ✓, since it opens a menu and isn't a switch. It shows a chevron instead, and keeps the tonal fill when something inside is on. | — (iPhone) |
+
+### How the harness changed for the checks
+
+- The window minimum is read from the same off-screen window the screen renders in. Measuring it in a
+  second, throwaway window made the stand's view disappear, and a disappearing stand leaves itself.
+- A window that is never shown gets no display pass, so after the sidebar comes or goes the split
+  view lays out the detail again only at the next resize. The harness nudges the size by one point,
+  as a live resize would. Check this in the macOS VM (resize across 1000, and zoom).
+- The stand is opened from the score, as the toolbar button does (`ScoreOrStand`).
+
+## Screens × sizes (after the fixes)
 
 "Asked for" is the window size requested. "Got" is the window the content allows (a window grows to
-its minimum). Click a thumbnail for the larger image.
+its minimum, now 900 × 600 on every screen). Click a thumbnail for the larger image. The audit's
+thumbnails, from before the fixes, are in the history of `apps/apple/docs/responsive/` (commit
+"docs(apple): audit macOS window and sheet sizing").
 
 ### Home, empty
 
-Window content minimum reported by SwiftUI: **583 × 16** (a window of 583 × 68).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 583 × 68 | [![home-empty min](../../apps/apple/docs/responsive/home-empty-min.jpg)](../../apps/apple/docs/responsive/home-empty-min.jpg) | The window shrinks to 583 × 68, leaving only the sidebar lockup (F2). |
-| 900 × 600 | 900 × 600 | [![home-empty 900x600](../../apps/apple/docs/responsive/home-empty-900x600.jpg)](../../apps/apple/docs/responsive/home-empty-900x600.jpg) | The sidebar keeps 288 of the 900 pt; the content still fits. |
-| 1024 × 700 | 1024 × 700 | [![home-empty 1024x700](../../apps/apple/docs/responsive/home-empty-1024x700.jpg)](../../apps/apple/docs/responsive/home-empty-1024x700.jpg) |  |
+| min | 900 × 600 | [![home-empty min](../../apps/apple/docs/responsive/home-empty-min.jpg)](../../apps/apple/docs/responsive/home-empty-min.jpg) | The window minimum, 900 × 600. The sidebar has stepped aside. |
+| 900 × 600 | 900 × 600 | [![home-empty 900x600](../../apps/apple/docs/responsive/home-empty-900x600.jpg)](../../apps/apple/docs/responsive/home-empty-900x600.jpg) |  |
+| 1024 × 700 | 1024 × 700 | [![home-empty 1024x700](../../apps/apple/docs/responsive/home-empty-1024x700.jpg)](../../apps/apple/docs/responsive/home-empty-1024x700.jpg) | The sidebar is back (≥ 1000 wide) and the column fits beside it. |
 | 1280 × 800 | 1280 × 800 | [![home-empty 1280x800](../../apps/apple/docs/responsive/home-empty-1280x800.jpg)](../../apps/apple/docs/responsive/home-empty-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![home-empty 1512x900](../../apps/apple/docs/responsive/home-empty-1512x900.jpg)](../../apps/apple/docs/responsive/home-empty-1512x900.jpg) |  |
 | 1920 × 1080 | 1920 × 1080 | [![home-empty 1920x1080](../../apps/apple/docs/responsive/home-empty-1920x1080.jpg)](../../apps/apple/docs/responsive/home-empty-1920x1080.jpg) |  |
-| 2560 × 1400 | 2560 × 1400 | [![home-empty 2560x1400](../../apps/apple/docs/responsive/home-empty-2560x1400.jpg)](../../apps/apple/docs/responsive/home-empty-2560x1400.jpg) | 920 pt column, centred and top-aligned (correct). The way-in grid leaves an empty third column (F5). |
+| 2560 × 1400 | 2560 × 1400 | [![home-empty 2560x1400](../../apps/apple/docs/responsive/home-empty-2560x1400.jpg)](../../apps/apple/docs/responsive/home-empty-2560x1400.jpg) | 920 pt column, centred and top-aligned. The two ways in fill the row. |
 
 ### Home, with scores
 
-Window content minimum reported by SwiftUI: **583 × 16** (a window of 583 × 68).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 583 × 68 | [![home-scores min](../../apps/apple/docs/responsive/home-scores-min.jpg)](../../apps/apple/docs/responsive/home-scores-min.jpg) | Same as empty: 583 × 68 (F2). |
+| min | 900 × 600 | [![home-scores min](../../apps/apple/docs/responsive/home-scores-min.jpg)](../../apps/apple/docs/responsive/home-scores-min.jpg) |  |
 | 900 × 600 | 900 × 600 | [![home-scores 900x600](../../apps/apple/docs/responsive/home-scores-900x600.jpg)](../../apps/apple/docs/responsive/home-scores-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![home-scores 1024x700](../../apps/apple/docs/responsive/home-scores-1024x700.jpg)](../../apps/apple/docs/responsive/home-scores-1024x700.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![home-scores 1280x800](../../apps/apple/docs/responsive/home-scores-1280x800.jpg)](../../apps/apple/docs/responsive/home-scores-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![home-scores 1512x900](../../apps/apple/docs/responsive/home-scores-1512x900.jpg)](../../apps/apple/docs/responsive/home-scores-1512x900.jpg) |  |
 | 1920 × 1080 | 1920 × 1080 | [![home-scores 1920x1080](../../apps/apple/docs/responsive/home-scores-1920x1080.jpg)](../../apps/apple/docs/responsive/home-scores-1920x1080.jpg) |  |
-| 2560 × 1400 | 2560 × 1400 | [![home-scores 2560x1400](../../apps/apple/docs/responsive/home-scores-2560x1400.jpg)](../../apps/apple/docs/responsive/home-scores-2560x1400.jpg) | Correct: the column is capped, the list hugs its rows, top-aligned. |
+| 2560 × 1400 | 2560 × 1400 | [![home-scores 2560x1400](../../apps/apple/docs/responsive/home-scores-2560x1400.jpg)](../../apps/apple/docs/responsive/home-scores-2560x1400.jpg) | The column is capped and the list hugs its rows. |
 
 ### Home, offline
 
-Window content minimum reported by SwiftUI: **583 × 16** (a window of 583 × 68).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 583 × 68 | [![home-offline min](../../apps/apple/docs/responsive/home-offline-min.jpg)](../../apps/apple/docs/responsive/home-offline-min.jpg) |  |
+| min | 900 × 600 | [![home-offline min](../../apps/apple/docs/responsive/home-offline-min.jpg)](../../apps/apple/docs/responsive/home-offline-min.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![home-offline 1280x800](../../apps/apple/docs/responsive/home-offline-1280x800.jpg)](../../apps/apple/docs/responsive/home-offline-1280x800.jpg) |  |
 
 ### Home, needs pairing
 
-Window content minimum reported by SwiftUI: **583 × 16** (a window of 583 × 68).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 583 × 68 | [![home-needs-pairing min](../../apps/apple/docs/responsive/home-needs-pairing-min.jpg)](../../apps/apple/docs/responsive/home-needs-pairing-min.jpg) |  |
+| min | 900 × 600 | [![home-needs-pairing min](../../apps/apple/docs/responsive/home-needs-pairing-min.jpg)](../../apps/apple/docs/responsive/home-needs-pairing-min.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![home-needs-pairing 1280x800](../../apps/apple/docs/responsive/home-needs-pairing-1280x800.jpg)](../../apps/apple/docs/responsive/home-needs-pairing-1280x800.jpg) |  |
 
 ### What is this?
 
-Window content minimum reported by SwiftUI: **500 × 84** (a window of 500 × 136).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 500 × 136 | [![source min](../../apps/apple/docs/responsive/source-min.jpg)](../../apps/apple/docs/responsive/source-min.jpg) | 500 × 136: "Can-cel" wraps and Continue truncates to "Co…" (F2). |
+| min | 900 × 600 | [![source min](../../apps/apple/docs/responsive/source-min.jpg)](../../apps/apple/docs/responsive/source-min.jpg) | Cancel and Continue follow the cards, on one line. |
 | 900 × 600 | 900 × 600 | [![source 900x600](../../apps/apple/docs/responsive/source-900x600.jpg)](../../apps/apple/docs/responsive/source-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![source 1024x700](../../apps/apple/docs/responsive/source-1024x700.jpg)](../../apps/apple/docs/responsive/source-1024x700.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![source 1280x800](../../apps/apple/docs/responsive/source-1280x800.jpg)](../../apps/apple/docs/responsive/source-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![source 1512x900](../../apps/apple/docs/responsive/source-1512x900.jpg)](../../apps/apple/docs/responsive/source-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![source 1920x1080](../../apps/apple/docs/responsive/source-1920x1080.jpg)](../../apps/apple/docs/responsive/source-1920x1080.jpg) | Cancel and Continue are pinned to the window bottom, about 600 pt below the cards (F4). |
-| 2560 × 1400 | 2560 × 1400 | [![source 2560x1400](../../apps/apple/docs/responsive/source-2560x1400.jpg)](../../apps/apple/docs/responsive/source-2560x1400.jpg) | The actions sit about 1000 pt below the content (F4). Cards in the same row have different heights (F16). |
+| 1920 × 1080 | 1920 × 1080 | [![source 1920x1080](../../apps/apple/docs/responsive/source-1920x1080.jpg)](../../apps/apple/docs/responsive/source-1920x1080.jpg) | The actions sit under "Made on this Mac", not at the window bottom. |
+| 2560 × 1400 | 2560 × 1400 | [![source 2560x1400](../../apps/apple/docs/responsive/source-2560x1400.jpg)](../../apps/apple/docs/responsive/source-2560x1400.jpg) | 720 pt column, top-aligned. Cards in a row are the same height. |
 
 ### Transcribing
 
-Window content minimum reported by SwiftUI: **427 × 76** (a window of 427 × 128).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 427 × 128 | [![transcribing min](../../apps/apple/docs/responsive/transcribing-min.jpg)](../../apps/apple/docs/responsive/transcribing-min.jpg) | 427 × 128 (F2). |
+| min | 900 × 600 | [![transcribing min](../../apps/apple/docs/responsive/transcribing-min.jpg)](../../apps/apple/docs/responsive/transcribing-min.jpg) |  |
 | 900 × 600 | 900 × 600 | [![transcribing 900x600](../../apps/apple/docs/responsive/transcribing-900x600.jpg)](../../apps/apple/docs/responsive/transcribing-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![transcribing 1024x700](../../apps/apple/docs/responsive/transcribing-1024x700.jpg)](../../apps/apple/docs/responsive/transcribing-1024x700.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![transcribing 1280x800](../../apps/apple/docs/responsive/transcribing-1280x800.jpg)](../../apps/apple/docs/responsive/transcribing-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![transcribing 1512x900](../../apps/apple/docs/responsive/transcribing-1512x900.jpg)](../../apps/apple/docs/responsive/transcribing-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![transcribing 1920x1080](../../apps/apple/docs/responsive/transcribing-1920x1080.jpg)](../../apps/apple/docs/responsive/transcribing-1920x1080.jpg) | Cancel is pinned bottom-right, far from the steps (F4). |
+| 1920 × 1080 | 1920 × 1080 | [![transcribing 1920x1080](../../apps/apple/docs/responsive/transcribing-1920x1080.jpg)](../../apps/apple/docs/responsive/transcribing-1920x1080.jpg) | Cancel follows the notice. |
 | 2560 × 1400 | 2560 × 1400 | [![transcribing 2560x1400](../../apps/apple/docs/responsive/transcribing-2560x1400.jpg)](../../apps/apple/docs/responsive/transcribing-2560x1400.jpg) |  |
 
 ### Choose output
 
-Window content minimum reported by SwiftUI: **588 × 76** (a window of 588 × 128).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 588 × 128 | [![output min](../../apps/apple/docs/responsive/output-min.jpg)](../../apps/apple/docs/responsive/output-min.jpg) | 588 × 128: only the action bar shows (F2). |
+| min | 900 × 600 | [![output min](../../apps/apple/docs/responsive/output-min.jpg)](../../apps/apple/docs/responsive/output-min.jpg) | Everything fits at the minimum. Back and Show the score follow the choices. |
 | 900 × 600 | 900 × 600 | [![output 900x600](../../apps/apple/docs/responsive/output-900x600.jpg)](../../apps/apple/docs/responsive/output-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![output 1024x700](../../apps/apple/docs/responsive/output-1024x700.jpg)](../../apps/apple/docs/responsive/output-1024x700.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![output 1280x800](../../apps/apple/docs/responsive/output-1280x800.jpg)](../../apps/apple/docs/responsive/output-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![output 1512x900](../../apps/apple/docs/responsive/output-1512x900.jpg)](../../apps/apple/docs/responsive/output-1512x900.jpg) |  |
 | 1920 × 1080 | 1920 × 1080 | [![output 1920x1080](../../apps/apple/docs/responsive/output-1920x1080.jpg)](../../apps/apple/docs/responsive/output-1920x1080.jpg) |  |
-| 2560 × 1400 | 2560 × 1400 | [![output 2560x1400](../../apps/apple/docs/responsive/output-2560x1400.jpg)](../../apps/apple/docs/responsive/output-2560x1400.jpg) | Back and Show the score are pinned about 1000 pt below the choices (F4). |
+| 2560 × 1400 | 2560 × 1400 | [![output 2560x1400](../../apps/apple/docs/responsive/output-2560x1400.jpg)](../../apps/apple/docs/responsive/output-2560x1400.jpg) | 880 pt column, with the actions following it. |
 
 ### Score, all parts
 
-Window content minimum reported by SwiftUI: **1291 × 803** (a window of 1291 × 855).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 1291 × 855 | [![score-all min](../../apps/apple/docs/responsive/score-all-min.jpg)](../../apps/apple/docs/responsive/score-all-min.jpg) | The minimum is 1291 × 855 (F1), so every smaller requested size grows to it. |
-| 900 × 600 | 1291 × 855 | [![score-all 900x600](../../apps/apple/docs/responsive/score-all-900x600.jpg)](../../apps/apple/docs/responsive/score-all-900x600.jpg) | Asked for 900 × 600, got 1291 × 855. The inspector is cut off at the bottom (Sound section). |
-| 1024 × 700 | 1291 × 855 | [![score-all 1024x700](../../apps/apple/docs/responsive/score-all-1024x700.jpg)](../../apps/apple/docs/responsive/score-all-1024x700.jpg) | Same: grows to 1291 × 855. |
-| 1280 × 800 | 1291 × 855 | [![score-all 1280x800](../../apps/apple/docs/responsive/score-all-1280x800.jpg)](../../apps/apple/docs/responsive/score-all-1280x800.jpg) | Same: grows to 1291 × 855, wider and taller than a 1280 × 800 display. |
+| min | 900 × 600 | [![score-all min](../../apps/apple/docs/responsive/score-all-min.jpg)](../../apps/apple/docs/responsive/score-all-min.jpg) | At 900 × 600 the sidebar steps aside, and the parts column (320) sits beside the score. The player wraps onto three rows. |
+| 900 × 600 | 900 × 600 | [![score-all 900x600](../../apps/apple/docs/responsive/score-all-900x600.jpg)](../../apps/apple/docs/responsive/score-all-900x600.jpg) |  |
+| 1024 × 700 | 1024 × 700 | [![score-all 1024x700](../../apps/apple/docs/responsive/score-all-1024x700.jpg)](../../apps/apple/docs/responsive/score-all-1024x700.jpg) | With the sidebar shown, the score is too narrow for the parts column as well, so the column steps aside. Parts opens the parts in a sheet. |
+| 1280 × 800 | 1280 × 800 | [![score-all 1280x800](../../apps/apple/docs/responsive/score-all-1280x800.jpg)](../../apps/apple/docs/responsive/score-all-1280x800.jpg) | Sidebar, score and parts column. |
 | 1512 × 900 | 1512 × 900 | [![score-all 1512x900](../../apps/apple/docs/responsive/score-all-1512x900.jpg)](../../apps/apple/docs/responsive/score-all-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![score-all 1920x1080](../../apps/apple/docs/responsive/score-all-1920x1080.jpg)](../../apps/apple/docs/responsive/score-all-1920x1080.jpg) | The score fills (correct) and the inspector fits. |
-| 2560 × 1400 | 2560 × 1400 | [![score-all 2560x1400](../../apps/apple/docs/responsive/score-all-2560x1400.jpg)](../../apps/apple/docs/responsive/score-all-2560x1400.jpg) | The score fills (correct). |
+| 1920 × 1080 | 1920 × 1080 | [![score-all 1920x1080](../../apps/apple/docs/responsive/score-all-1920x1080.jpg)](../../apps/apple/docs/responsive/score-all-1920x1080.jpg) |  |
+| 2560 × 1400 | 2560 × 1400 | [![score-all 2560x1400](../../apps/apple/docs/responsive/score-all-2560x1400.jpg)](../../apps/apple/docs/responsive/score-all-2560x1400.jpg) | The score fills the window. |
 
 ### Score, one part
 
-Window content minimum reported by SwiftUI: **1291 × 883** (a window of 1291 × 935).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 1291 × 935 | [![score-part min](../../apps/apple/docs/responsive/score-part-min.jpg)](../../apps/apple/docs/responsive/score-part-min.jpg) | 1291 × 935 (F1). The part view needs even more height than all parts. |
-| 900 × 600 | 1291 × 935 | [![score-part 900x600](../../apps/apple/docs/responsive/score-part-900x600.jpg)](../../apps/apple/docs/responsive/score-part-900x600.jpg) | Grows to 1291 × 935, which doesn't fit a 13" MacBook Air's visible area. |
-| 1024 × 700 | 1291 × 935 | [![score-part 1024x700](../../apps/apple/docs/responsive/score-part-1024x700.jpg)](../../apps/apple/docs/responsive/score-part-1024x700.jpg) |  |
-| 1280 × 800 | 1291 × 935 | [![score-part 1280x800](../../apps/apple/docs/responsive/score-part-1280x800.jpg)](../../apps/apple/docs/responsive/score-part-1280x800.jpg) |  |
-| 1512 × 900 | 1512 × 935 | [![score-part 1512x900](../../apps/apple/docs/responsive/score-part-1512x900.jpg)](../../apps/apple/docs/responsive/score-part-1512x900.jpg) | Grows to 1512 × 935, taller than the MacBook visible area. |
+| min | 900 × 600 | [![score-part min](../../apps/apple/docs/responsive/score-part-min.jpg)](../../apps/apple/docs/responsive/score-part-min.jpg) | The same minimum as every other screen. |
+| 900 × 600 | 900 × 600 | [![score-part 900x600](../../apps/apple/docs/responsive/score-part-900x600.jpg)](../../apps/apple/docs/responsive/score-part-900x600.jpg) |  |
+| 1024 × 700 | 1024 × 700 | [![score-part 1024x700](../../apps/apple/docs/responsive/score-part-1024x700.jpg)](../../apps/apple/docs/responsive/score-part-1024x700.jpg) |  |
+| 1280 × 800 | 1280 × 800 | [![score-part 1280x800](../../apps/apple/docs/responsive/score-part-1280x800.jpg)](../../apps/apple/docs/responsive/score-part-1280x800.jpg) |  |
+| 1512 × 900 | 1512 × 900 | [![score-part 1512x900](../../apps/apple/docs/responsive/score-part-1512x900.jpg)](../../apps/apple/docs/responsive/score-part-1512x900.jpg) | Fits a MacBook's visible area. |
 | 1920 × 1080 | 1920 × 1080 | [![score-part 1920x1080](../../apps/apple/docs/responsive/score-part-1920x1080.jpg)](../../apps/apple/docs/responsive/score-part-1920x1080.jpg) |  |
 | 2560 × 1400 | 2560 × 1400 | [![score-part 2560x1400](../../apps/apple/docs/responsive/score-part-2560x1400.jpg)](../../apps/apple/docs/responsive/score-part-2560x1400.jpg) |  |
 
 ### The music stand
 
-Window content minimum reported by SwiftUI: **151 × 72** (a window of 151 × 124).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 151 × 124 | [![stand min](../../apps/apple/docs/responsive/stand-min.jpg)](../../apps/apple/docs/responsive/stand-min.jpg) | 151 × 124: unusable, with the controls clipped (F2, F13). |
+| min | 900 × 600 | [![stand min](../../apps/apple/docs/responsive/stand-min.jpg)](../../apps/apple/docs/responsive/stand-min.jpg) | The window minimum. The sidebar stays aside for the stand. |
 | 900 × 600 | 900 × 600 | [![stand 900x600](../../apps/apple/docs/responsive/stand-900x600.jpg)](../../apps/apple/docs/responsive/stand-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![stand 1024x700](../../apps/apple/docs/responsive/stand-1024x700.jpg)](../../apps/apple/docs/responsive/stand-1024x700.jpg) |  |
-| 1280 × 800 | 1280 × 800 | [![stand 1280x800](../../apps/apple/docs/responsive/stand-1280x800.jpg)](../../apps/apple/docs/responsive/stand-1280x800.jpg) | Two pages side by side with only one page: the right half is empty. The page is clipped at the left (F13, to check in the VM). |
+| 1280 × 800 | 1280 × 800 | [![stand 1280x800](../../apps/apple/docs/responsive/stand-1280x800.jpg)](../../apps/apple/docs/responsive/stand-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![stand 1512x900](../../apps/apple/docs/responsive/stand-1512x900.jpg)](../../apps/apple/docs/responsive/stand-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![stand 1920x1080](../../apps/apple/docs/responsive/stand-1920x1080.jpg)](../../apps/apple/docs/responsive/stand-1920x1080.jpg) |  |
-| 2560 × 1400 | 2560 × 1400 | [![stand 2560x1400](../../apps/apple/docs/responsive/stand-2560x1400.jpg)](../../apps/apple/docs/responsive/stand-2560x1400.jpg) | One short system in the left half; nothing scales up (F13). |
+| 1920 × 1080 | 1920 × 1080 | [![stand 1920x1080](../../apps/apple/docs/responsive/stand-1920x1080.jpg)](../../apps/apple/docs/responsive/stand-1920x1080.jpg) | One page takes the full width, centred, instead of half of a spread. |
+| 2560 × 1400 | 2560 × 1400 | [![stand 2560x1400](../../apps/apple/docs/responsive/stand-2560x1400.jpg)](../../apps/apple/docs/responsive/stand-2560x1400.jpg) | One page, full width. |
 
 ### Review (Check the notes)
 
-Window content minimum reported by SwiftUI: **688 × 80** (a window of 688 × 132).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 688 × 132 | [![review min](../../apps/apple/docs/responsive/review-min.jpg)](../../apps/apple/docs/responsive/review-min.jpg) | 688 × 132: Keep wraps onto three lines (F2). |
+| min | 900 × 600 | [![review min](../../apps/apple/docs/responsive/review-min.jpg)](../../apps/apple/docs/responsive/review-min.jpg) | The sidebar steps aside. Skip and Keep follow the note. |
 | 900 × 600 | 900 × 600 | [![review 900x600](../../apps/apple/docs/responsive/review-900x600.jpg)](../../apps/apple/docs/responsive/review-900x600.jpg) |  |
-| 1024 × 700 | 1024 × 700 | [![review 1024x700](../../apps/apple/docs/responsive/review-1024x700.jpg)](../../apps/apple/docs/responsive/review-1024x700.jpg) |  |
+| 1024 × 700 | 1024 × 700 | [![review 1024x700](../../apps/apple/docs/responsive/review-1024x700.jpg)](../../apps/apple/docs/responsive/review-1024x700.jpg) | The keys hint hides where there's no room beside the buttons. |
 | 1280 × 800 | 1280 × 800 | [![review 1280x800](../../apps/apple/docs/responsive/review-1280x800.jpg)](../../apps/apple/docs/responsive/review-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![review 1512x900](../../apps/apple/docs/responsive/review-1512x900.jpg)](../../apps/apple/docs/responsive/review-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![review 1920x1080](../../apps/apple/docs/responsive/review-1920x1080.jpg)](../../apps/apple/docs/responsive/review-1920x1080.jpg) | Skip and Keep are pinned bottom-right, far from the note (F4). The note list fills the height (correct). |
+| 1920 × 1080 | 1920 × 1080 | [![review 1920x1080](../../apps/apple/docs/responsive/review-1920x1080.jpg)](../../apps/apple/docs/responsive/review-1920x1080.jpg) | Skip and Keep sit under the note, in the column. |
 | 2560 × 1400 | 2560 × 1400 | [![review 2560x1400](../../apps/apple/docs/responsive/review-2560x1400.jpg)](../../apps/apple/docs/responsive/review-2560x1400.jpg) |  |
 
 ### Problem: nothing was heard
 
-Window content minimum reported by SwiftUI: **399 × 132** (a window of 399 × 184).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 399 × 184 | [![problem-silence min](../../apps/apple/docs/responsive/problem-silence-min.jpg)](../../apps/apple/docs/responsive/problem-silence-min.jpg) | 399 × 184 (F2). |
+| min | 900 × 600 | [![problem-silence min](../../apps/apple/docs/responsive/problem-silence-min.jpg)](../../apps/apple/docs/responsive/problem-silence-min.jpg) | The actions form a row under the text, with the way forward last and on the right. |
 | 900 × 600 | 900 × 600 | [![problem-silence 900x600](../../apps/apple/docs/responsive/problem-silence-900x600.jpg)](../../apps/apple/docs/responsive/problem-silence-900x600.jpg) |  |
 | 1024 × 700 | 1024 × 700 | [![problem-silence 1024x700](../../apps/apple/docs/responsive/problem-silence-1024x700.jpg)](../../apps/apple/docs/responsive/problem-silence-1024x700.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![problem-silence 1280x800](../../apps/apple/docs/responsive/problem-silence-1280x800.jpg)](../../apps/apple/docs/responsive/problem-silence-1280x800.jpg) |  |
 | 1512 × 900 | 1512 × 900 | [![problem-silence 1512x900](../../apps/apple/docs/responsive/problem-silence-1512x900.jpg)](../../apps/apple/docs/responsive/problem-silence-1512x900.jpg) |  |
-| 1920 × 1080 | 1920 × 1080 | [![problem-silence 1920x1080](../../apps/apple/docs/responsive/problem-silence-1920x1080.jpg)](../../apps/apple/docs/responsive/problem-silence-1920x1080.jpg) | The actions are full-width buttons pinned to the window's bottom-right corner, not under the column (F4). |
-| 2560 × 1400 | 2560 × 1400 | [![problem-silence 2560x1400](../../apps/apple/docs/responsive/problem-silence-2560x1400.jpg)](../../apps/apple/docs/responsive/problem-silence-2560x1400.jpg) | Same, about 1000 pt from the text (F4). |
+| 1920 × 1080 | 1920 × 1080 | [![problem-silence 1920x1080](../../apps/apple/docs/responsive/problem-silence-1920x1080.jpg)](../../apps/apple/docs/responsive/problem-silence-1920x1080.jpg) | The actions follow the text, inside the column. |
+| 2560 × 1400 | 2560 × 1400 | [![problem-silence 2560x1400](../../apps/apple/docs/responsive/problem-silence-2560x1400.jpg)](../../apps/apple/docs/responsive/problem-silence-2560x1400.jpg) |  |
 
 ### Problem: copy-protected
 
-Window content minimum reported by SwiftUI: **399 × 132** (a window of 399 × 184).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 399 × 184 | [![problem-copy-protected min](../../apps/apple/docs/responsive/problem-copy-protected-min.jpg)](../../apps/apple/docs/responsive/problem-copy-protected-min.jpg) |  |
+| min | 900 × 600 | [![problem-copy-protected min](../../apps/apple/docs/responsive/problem-copy-protected-min.jpg)](../../apps/apple/docs/responsive/problem-copy-protected-min.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![problem-copy-protected 1280x800](../../apps/apple/docs/responsive/problem-copy-protected-1280x800.jpg)](../../apps/apple/docs/responsive/problem-copy-protected-1280x800.jpg) |  |
 
 ### Problem: can't open the file
 
-Window content minimum reported by SwiftUI: **391 × 132** (a window of 391 × 184).
+Window content minimum reported by SwiftUI: **900 × 548** (a window of 900 × 600).
 
 | Asked for | Got (window) | Render | Notes |
 |---|---|---|---|
-| min | 391 × 184 | [![problem-cant-open min](../../apps/apple/docs/responsive/problem-cant-open-min.jpg)](../../apps/apple/docs/responsive/problem-cant-open-min.jpg) |  |
+| min | 900 × 600 | [![problem-cant-open min](../../apps/apple/docs/responsive/problem-cant-open-min.jpg)](../../apps/apple/docs/responsive/problem-cant-open-min.jpg) |  |
 | 1280 × 800 | 1280 × 800 | [![problem-cant-open 1280x800](../../apps/apple/docs/responsive/problem-cant-open-1280x800.jpg)](../../apps/apple/docs/responsive/problem-cant-open-1280x800.jpg) |  |
 
-## Sheets
+## Sheets (after the fixes)
 
 A sheet opens at its ideal size, within its minimum and maximum (sizes in pt; ∞ = no limit). The
-buttons a macOS sheet shows along its bottom edge aren't drawn (see Limits).
+maximum height is 90 % of the visible height of the screen the test ran on. The buttons a macOS sheet
+shows along its bottom edge (Change note's Cancel and Save) aren't drawn (see Limits).
 
 | Sheet | Min | Ideal (opens at) | Max | Render |
 |---|---|---|---|---|
-| settings | 480 × 520 | 744 × 1023 | ∞ × ∞ | [![settings](../../apps/apple/docs/responsive/sheet-settings.jpg)](../../apps/apple/docs/responsive/sheet-settings.jpg) |
-| settings-pairing | 480 × 520 | 744 × 1194 | ∞ × ∞ | [![settings-pairing](../../apps/apple/docs/responsive/sheet-settings-pairing.jpg)](../../apps/apple/docs/responsive/sheet-settings-pairing.jpg) |
-| export | 620 × 720 | 620 × 720 | 620 × 720 | [![export](../../apps/apple/docs/responsive/sheet-export.jpg)](../../apps/apple/docs/responsive/sheet-export.jpg) |
+| settings | 520 × 360 | 600 × 786 | 680 × 786 | [![settings](../../apps/apple/docs/responsive/sheet-settings.jpg)](../../apps/apple/docs/responsive/sheet-settings.jpg) |
+| settings-pairing | 520 × 360 | 600 × 786 | 680 × 786 | [![settings-pairing](../../apps/apple/docs/responsive/sheet-settings-pairing.jpg)](../../apps/apple/docs/responsive/sheet-settings-pairing.jpg) |
+| export | 560 × 1 | 620 × 756 | 680 × 786 | [![export](../../apps/apple/docs/responsive/sheet-export.jpg)](../../apps/apple/docs/responsive/sheet-export.jpg) |
 | talking-score | 480 × 560 | 480 × 560 | ∞ × ∞ | [![talking-score](../../apps/apple/docs/responsive/sheet-talking-score.jpg)](../../apps/apple/docs/responsive/sheet-talking-score.jpg) |
-| change-note | 420 × 360 | 420 × 360 | ∞ × ∞ | [![change-note](../../apps/apple/docs/responsive/sheet-change-note.jpg)](../../apps/apple/docs/responsive/sheet-change-note.jpg) |
-| first-run | 520 × 640 | 678 × 640 | ∞ × ∞ | [![first-run](../../apps/apple/docs/responsive/sheet-first-run.jpg)](../../apps/apple/docs/responsive/sheet-first-run.jpg) |
-| record-mic | 420 × 360 | 420 × 360 | 420 × 360 | [![record-mic](../../apps/apple/docs/responsive/sheet-record-mic.jpg)](../../apps/apple/docs/responsive/sheet-record-mic.jpg) |
-| record-capture | 480 × 360 | 531 × 360 | ∞ × ∞ | [![record-capture](../../apps/apple/docs/responsive/sheet-record-capture.jpg)](../../apps/apple/docs/responsive/sheet-record-capture.jpg) |
+| change-note | 420 × 1 | 480 × 186 | 560 × 786 | [![change-note](../../apps/apple/docs/responsive/sheet-change-note.jpg)](../../apps/apple/docs/responsive/sheet-change-note.jpg) |
+| first-run | 520 × 1 | 600 × 619 | 680 × 786 | [![first-run](../../apps/apple/docs/responsive/sheet-first-run.jpg)](../../apps/apple/docs/responsive/sheet-first-run.jpg) |
+| record-mic | 420 × 1 | 460 × 210 | 560 × 786 | [![record-mic](../../apps/apple/docs/responsive/sheet-record-mic.jpg)](../../apps/apple/docs/responsive/sheet-record-mic.jpg) |
+| record-capture | 480 × 1 | 540 × 286 | 640 × 786 | [![record-capture](../../apps/apple/docs/responsive/sheet-record-capture.jpg)](../../apps/apple/docs/responsive/sheet-record-capture.jpg) |
 | match-code | 40 × 64 | 185 × 116 | ∞ × 116 | [![match-code](../../apps/apple/docs/responsive/sheet-match-code.jpg)](../../apps/apple/docs/responsive/sheet-match-code.jpg) |
 
 ## Next
 
-Phase 2 fixes every finding above, adds an assertion to the harness for each one (for example, the
-window minimum stays the same on every screen and nothing clips at it, the score's minimum height
-doesn't depend on the number of parts, forms and sheets are no taller than their content plus padding
-at 1080, and the reading column is capped at 2560), and retakes the thumbnails. Resize and zoom
-XCUITests belong in the macOS VM, never on a Mac someone is using.
+- Resize and zoom XCUITests in the macOS VM (never on a Mac someone is using): resize across the
+  1000 pt sidebar line and down to the minimum on each screen, zoom from a small window, and confirm
+  that the detail lays out again at once after the sidebar comes or goes.
+- The pairing "waiting for the computer" state can't be reached from a test yet.
