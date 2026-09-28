@@ -18,8 +18,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from brasscribe_music.arranger import _hold_small_gaps, _moved, _phrases, _place_line
-from brasscribe_music.instruments import MINIMAL_BAND
+from dataclasses import replace
+
+from brasscribe_music.arranger import _hold_small_gaps, _moved, _phrases, _place_line, place_soloist
+from brasscribe_music.instruments import MINIMAL_BAND, Part
 from brasscribe_music.score_model import Note
 
 REPO = Path(__file__).resolve().parents[3]
@@ -27,33 +29,29 @@ CB = REPO / "data/choralebricks/01_AudioAndAnnotations"
 NAMES = {"tp": "Trumpet", "fh": "Flugelhorn", "fho": "French horn", "bar": "Baritone", "tb": "Trombone", "tba": "Tuba"}
 SOLO = (52, 84)
 SHARE = 0.95
-# "phrase": a phrase moves as a whole when any note is outside; "note": a phrase with SHARE of its
-# notes inside keeps them, and only the notes outside move (octave nearest the previous note).
+# "note": arranger.place_soloist (a phrase keeps its octave, and only the notes outside move);
+# "phrase": the variant not taken, where a phrase moves as a whole when any note is outside.
 RULE = "phrase" if "--phrase" in sys.argv else "note"
 TPS = 48  # ticks per second for the tick mapping (as my-instrument/measure.py)
 TOL = 5  # ticks, about 0.1 s
 
 
 def soloist(notes: list[Note], lo: int, hi: int) -> list[Note] | None:
-    """The rule: None when under SHARE of the notes are inside; else each phrase as played when it
-    fits, otherwise the fewest octaves that fit (ties: nearest the previous note), else per note."""
+    """The rule (arranger.place_soloist): None when under SHARE of the line is inside."""
     if not notes or sum(lo <= n.pitch <= hi for n in notes) < SHARE * len(notes):
         return None
+    if RULE == "note":
+        return place_soloist(notes, Part("Solo Cornet", replace(MINIMAL_BAND.by_name("Solo Cornet").instrument, solo=(lo, hi))), [])
     placed: list[Note] = []
     for ph in _phrases(notes):
         ps = [n.pitch for n in ph]
         prev = placed[-1].pitch if placed else None
         ks = [k for k in (0, -1, 1, -2, 2, -3, 3) if all(lo <= p + 12 * k <= hi for p in ps)]
-        if RULE == "note" and sum(lo <= p <= hi for p in ps) >= SHARE * len(ps):
-            ks = []  # keep the phrase; only the notes outside move (below)
         if ks:
             best = min(ks, key=lambda k: (abs(k), abs(ps[0] + 12 * k - prev) if prev is not None else 0))
             placed.extend(_moved(n, n.pitch + 12 * best) for n in ph)
             continue
         for n in ph:
-            if RULE == "note" and lo <= n.pitch <= hi:
-                placed.append(n)
-                continue
             opts = [n.pitch % 12 + 12 * j for j in range(11) if lo <= n.pitch % 12 + 12 * j <= hi]
             r = placed[-1].pitch if placed else n.pitch
             placed.append(_moved(n, min(opts, key=lambda x: (abs(x - r), x))))

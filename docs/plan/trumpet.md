@@ -196,8 +196,10 @@ else
 - **`in_register`.** At least `SOLOIST_SHARE` = 0.95 of the solo layer's notes lie inside `solo_range()`.
   - A recording in another register keeps today's placement. That includes a euphonium played on the phone with no seat set.
 - **`place_soloist`.** It goes phrase by phrase, over the same phrases as today (`phrases()`):
-  - **At least 95 % of the phrase inside the range.** Every note inside is written as played. A note outside moves to its octave inside the range nearest the previous note, with the warning `"{part}: moved {p} to {q} at tick {t} (outside the range)"`. That is `place_as_played`'s format, so `inspection.py:97` `_MOVED` reads it.
-  - **Otherwise.** The phrase takes the octave shift of fewest octaves that puts every note inside, with ties going to the shift nearest the previous note. If none fits, each note is fitted as above.
+  - **At least half of the phrase inside the range.** Every note inside is written as played. A note outside moves by the fewest octaves into the range, with the warning `"{part}: moved {p} to {q} at tick {t} (outside the range)"`. That is `place_as_played`'s format, so `inspection.py:97` `_MOVED` reads it.
+  - **Otherwise.** The phrase takes the octave shift that puts the most notes inside. Ties go to the fewest octaves, then to the shift nearest the previous note. Notes still outside are fitted as above.
+  - **Why the fewest octaves, not "nearest the previous note".** A per-note fit toward the previous note is the rule `743c04d` removed, because it flips leaps. A +12 outlier moved back by one octave keeps the run's direction, and a unit test on both sides checks this (critic P3).
+  - **Why half the phrase, not 95 %.** A short phrase with one outlier (5 of 6 inside) would otherwise be shifted as a whole.
   - Then `hold_small_gaps`, as today.
 - **Why note by note inside a phrase.** A single tracker outlier, such as a harmonic an octave up, must not move the whole phrase. §2.5 measures this: moving a whole phrase leaves trumpet stems 10.5 % moved, and moving only the outliers leaves 0 %.
 - **Unchanged:** standard and easier (placement by the reading range, limit 82, then `fold`), the quartet, `lead=seat` for a band part, solo takes (`place_as_played` keeps `pro`), and the non-layered arrangers.
@@ -571,7 +573,9 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
 
 ## 9. Questions for the owner
 
-1. **The cornet soloist's top.** 84 (written D6, the qa "solo cornet" row), or 85 like the trumpet? Mikkel is the same either way. Default: 84.
-2. **The low solo takes.** With no seat set, horn and upper baritone takes are now written on the Solo Cornet in the octave played (§2.5). Is that right, or should a take with no seat keep today's lift into the cornet's middle?
+The coordinator answered 1 and 2 on the owner's behalf on 2026-09-29. Both are defaults the owner can change.
+
+1. **The cornet soloist's top.** **Default: 84** (written D6, the qa "solo cornet" row). It covers Mikkel's top note and stays one step under MuseScore's trumpet top. A trumpet seat gets 85, MuseScore's professional trumpet top.
+2. **The low solo takes.** **Default: keep them in the octave played.** With no seat set, horn and upper baritone takes are written on the Solo Cornet in the octave played (§2.5). A note outside the solo range is moved, and it carries a range warning. A test pins this: `test_a_low_take_in_the_cornets_range_is_written_as_played`.
 3. **A soloist in front of the band.** Should a separate "Trumpet" part stand above a full cornet section (the insert model, §3.3), for a conductor with a guest trumpeter? That comes with (d).
 4. **(d).** Should the sound pack be rebuilt and republished with a raw trumpet preset? If the mobile pack goes over the heap, is the fallback the cornet sound?
