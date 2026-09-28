@@ -4,6 +4,7 @@
 // uncertain), so nothing relies on colour alone.
 import { t } from "../i18n";
 import { announce, clear, fmt, h, token } from "../ui/dom";
+import { maxOf, minOf } from "../lib/extent";
 import { pitchName } from "../lib/validate";
 import { hatch, plot, timeAxis, type Plot } from "./canvas";
 
@@ -46,9 +47,9 @@ export class PianoRoll extends HTMLElement {
     const blocks = this.layers.filter((l) => l.style === "block").flatMap((l) => l.notes);
     const range = blocks.length ? blocks : all;
     if (all.length) {
-      this.lo = Math.max(0, Math.min(...range.map((n) => n.pitch)) - 3);
-      this.hi = Math.min(127, Math.max(...range.map((n) => n.pitch)) + 3);
-      this.t0 = Math.max(0, Math.min(...all.map((n) => n.start)) - 1);
+      this.lo = Math.max(0, minOf(range, (n) => n.pitch) - 3);
+      this.hi = Math.min(127, maxOf(range, (n) => n.pitch) + 3);
+      this.t0 = Math.max(0, minOf(all, (n) => n.start) - 1);
     }
     this.render();
   }
