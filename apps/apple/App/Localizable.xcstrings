@@ -921,6 +921,26 @@
         }
       }
     },
+    "Brasscribe on your computer couldn't finish the score. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på datamaskinen klarte ikke å gjøre ferdig partituret. Prøv igjen."
+          }
+        }
+      }
+    },
+    "Brasscribe on your computer didn't accept these choices. It may need an update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering."
+          }
+        }
+      }
+    },
     "Brasscribe opens MusicXML scores and its own score files.": {
       "localizations": {
         "nb": {
@@ -977,6 +997,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "B"
+          }
+        }
+      }
+    },
+    "Can't reach Brasscribe on your computer. Check that it is running and on the same network.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med Brasscribe på datamaskinen. Sjekk at den kjører og er på samme nettverk."
           }
         }
       }
@@ -3711,6 +3741,16 @@
         }
       }
     },
+    "Something went wrong. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noe gikk galt. Prøv igjen."
+          }
+        }
+      }
+    },
     "Soprano": {
       "localizations": {
         "nb": {
@@ -4361,6 +4401,16 @@
         }
       }
     },
+    "The tune can't go on your part in this band. Under Who plays the tune?, choose the band's usual part.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?"
+          }
+        }
+      }
+    },
     "These files couldn't be made. Try fewer formats, or try again.": {
       "localizations": {
         "nb": {
@@ -5001,12 +5051,42 @@
         }
       }
     },
+    "Your computer no longer knows this device. Connect them again in Settings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne enheten lenger. Koble dem sammen på nytt i Innstillinger."
+          }
+        }
+      }
+    },
+    "Your computer took too long to answer. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen brukte for lang tid på å svare. Prøv igjen."
+          }
+        }
+      }
+    },
     "Your instrument": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Instrumentet ditt"
+          }
+        }
+      }
+    },
+    "Your instrument isn't written in that clef. Choose again under What you play.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller."
           }
         }
       }

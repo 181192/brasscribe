@@ -343,7 +343,7 @@ struct TranscribeView: View {
     private func failed(_ job: TranscriptionJob, reason: String) -> some View {
         ProblemContent(title: String(localized: "The score couldn't be made"),
                        lead: nil,
-                       reasons: [String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
+                       reasons: [job.failureWords ?? String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
                        hint: nil, detail: reason) {
             let full = !PageActions.followContent
             if PageActions.followContent {

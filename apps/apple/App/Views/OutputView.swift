@@ -345,7 +345,7 @@ struct OutputView: View {
         do {
             try app.rearrange(piece, composition: comp, output: choice)
         } catch {
-            failure = String(localized: "The score couldn't be arranged this way. Try another choice.")
+            failure = ErrorWords.specific(error) ?? String(localized: "The score couldn't be arranged this way. Try another choice.")
         }
     }
 }

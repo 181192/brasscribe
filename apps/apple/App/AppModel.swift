@@ -365,6 +365,7 @@ final class AppModel {
                 self.jobs[job.id] = nil
             } catch {
                 job.failure = error.localizedDescription
+                job.failureWords = ErrorWords.specific(error)
             }
         }
     }
@@ -421,6 +422,8 @@ final class TranscriptionJob: Identifiable {
     let service: TranscriptionService
     var progress = TranscriptionProgress(stage: .uploading, fraction: 0, etaSeconds: nil)
     var failure: String?
+    /// What went wrong in the player's words, when more is known than "it failed" (ErrorWords).
+    var failureWords: String?
     var cancelled = false
     private var task: Task<Void, Never>?
     var onUnauthorized: (@MainActor () -> Void)?
@@ -447,6 +450,7 @@ final class TranscriptionJob: Identifiable {
                     self.failure = String(localized: "Needs a recording of the whole group")
                 } else if !Task.isCancelled {
                     self.failure = error.localizedDescription
+                    self.failureWords = ErrorWords.specific(error)
                 }
             }
         }
