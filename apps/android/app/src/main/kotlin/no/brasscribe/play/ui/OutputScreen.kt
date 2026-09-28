@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
 import no.brasscribe.design.BrasscribeButtonShape
@@ -78,6 +79,12 @@ fun OutputScreen(vm: PlayViewModel) {
     val soloTake = r?.isSoloTake == true
     val needsGroup = stringResource(R.string.lineup_quartet_needs_group)
     val key = r?.composition?.keys?.firstOrNull()
+    // Who the score is for: the take's player (pre-filled from Settings), and their part in each lineup.
+    val seats = vm.container.seats
+    val seat = seats.firstOrNull { it.id == options.seat }
+    val yourPartIn = { l: Lineup -> seat?.let { s -> vm.container.core.seatPart(l.core, s.id)?.part } }
+    val onePart = soloTake && seat != null
+    val yourName = seat?.let { PartNames.display(it.name) }
 
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = r?.composition?.title?.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.back), status = status,
@@ -90,12 +97,41 @@ fun OutputScreen(vm: PlayViewModel) {
             ScreenTitle(stringResource(R.string.output_title))
             Lead(stringResource(R.string.output_lead))
         }
-        SubHeading(stringResource(R.string.lineup))
-        ChoiceGroup(lineups.size) {
-            lineups.forEachIndexed { i, l ->
-                val reason = needsGroup.takeIf { l == Lineup.QUARTET && soloTake }
-                ChoiceCard(stringResource(l.label), stringResource(l.desc), options.lineup == l, canArrange || l == Lineup.FULL, i, reason) {
-                    vm.output.update { it.copy(lineup = l) }
+        // A solo take: whoever played it. Changing it writes for another instrument, on Show the score.
+        if (soloTake && seats.isNotEmpty() && canArrange) {
+            SubHeading(stringResource(R.string.who_played))
+            RowGroup {
+                ListRow(yourName ?: stringResource(R.string.settings_seat_not_set), { vm.openSeatPicker(no.brasscribe.play.SeatPickerMode.WHO_PLAYED) },
+                    androidx.compose.ui.Modifier.semantics { testTag = "who-played" },
+                    subtitle = seat?.takeIf { it.reads.size > 1 }?.let { s -> stringResource(readsLabel(options.reads ?: s.reads.first(), s)) },
+                    icon = R.drawable.ic_bc_parts)
+            }
+        }
+        if (onePart) InfoNote(stringResource(R.string.solo_one_part), boxed = false)
+        else {
+            SubHeading(stringResource(R.string.lineup))
+            ChoiceGroup(lineups.size) {
+                lineups.forEachIndexed { i, l ->
+                    val reason = needsGroup.takeIf { l == Lineup.QUARTET && soloTake }
+                    // "Small band · 8 players · your part: Euphonium": known before Show the score.
+                    val desc = yourPartIn(l)?.let { stringResource(R.string.lineup_your_part, stringResource(l.desc), PartNames.display(it)) } ?: stringResource(l.desc)
+                    ChoiceCard(stringResource(l.label), desc, options.lineup == l, canArrange || l == Lineup.FULL, i, reason) {
+                        vm.output.update { it.copy(lineup = l, lead = it.lead.takeIf { l != Lineup.QUARTET }) }
+                    }
+                }
+            }
+        }
+        // A soloist recording: the tune on the lineup's lead as usual, or on the player's part (band lineups only).
+        val yourBandPart = yourPartIn(options.lineup)
+        if (!soloTake && canArrange && seat != null && seat.tune && options.lineup != Lineup.QUARTET && yourBandPart != null &&
+            yourBandPart != options.lineup.lead && r?.profile in setOf(no.brasscribe.play.engine.Profile.ORCHESTRA_WITH_SOLOIST, no.brasscribe.play.engine.Profile.BRASS_BAND)) {
+            SubHeading(stringResource(R.string.who_plays_tune))
+            ChoiceGroup(2) {
+                ChoiceCard(stringResource(R.string.tune_lineup, PartNames.display(options.lineup.lead)), null, options.lead != "seat", true, 0) {
+                    vm.output.update { it.copy(lead = null) }
+                }
+                ChoiceCard(stringResource(R.string.tune_seat, PartNames.display(yourBandPart)), null, options.lead == "seat", true, 1) {
+                    vm.output.update { it.copy(lead = "seat") }
                 }
             }
         }
@@ -136,7 +172,14 @@ fun OutputScreen(vm: PlayViewModel) {
             if (key != null) {
                 val minor = key.mode == "minor"
                 Text(stringResource(R.string.key_concert, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.key_for_bflat, keyName(key.fifths, minor, options.keyShift + 2, lang)), style = MaterialTheme.typography.bodyLarge)
+                // With a seat: the key on the player's own part (or as it sounds in bass clef); else B♭ players' key.
+                val part = if (onePart) seat?.name else yourPartIn(options.lineup)
+                val chromatic = part?.let { no.brasscribe.play.YourParts.chromatic(it, seats) }
+                when {
+                    seat != null && options.reads == "bass" -> Text(stringResource(R.string.key_as_it_sounds, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.bodyLarge)
+                    chromatic != null && chromatic != 0 -> Text(stringResource(R.string.key_on_your_part, keyName(key.fifths, minor, options.keyShift - chromatic, lang)), style = MaterialTheme.typography.bodyLarge)
+                    seat == null -> Text(stringResource(R.string.key_for_bflat, keyName(key.fifths, minor, options.keyShift + 2, lang)), style = MaterialTheme.typography.bodyLarge)
+                }
             }
             Text(shiftText, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }

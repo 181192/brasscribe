@@ -156,6 +156,9 @@ data class StageState(
     val kind: String? = null,
     val device: String? = null,
     val seconds: Double? = null,
+    /** Of [seconds], the time spent waiting for the machine, and the time the stage itself took. */
+    @SerialName("queue_wait_s") val queueWaitS: Double? = null,
+    @SerialName("run_s") val runS: Double? = null,
 )
 
 @Serializable
@@ -231,6 +234,8 @@ data class JobEvent(
     val kind: String? = null,
     val device: String? = null,
     val seconds: Double? = null,
+    @SerialName("queue_wait_s") val queueWaitS: Double? = null,
+    @SerialName("run_s") val runS: Double? = null,
     /** Share of the job's stages done (stage events). */
     val fraction: Double? = null,
     val message: String? = null,

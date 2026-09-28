@@ -81,6 +81,7 @@ import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.engine.NoteEvidence
 import no.brasscribe.play.noteAt
+import no.brasscribe.play.arrangementString
 import kotlin.math.roundToInt
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
@@ -95,16 +96,37 @@ import java.util.Locale
 
 fun currentLang(): Lang = if (Locale.getDefault().language in setOf("nb", "no", "nn")) Lang.NB else Lang.EN
 
-/** Name and instrument for a Composition voice: the melody reads as the B-flat solo cornet part. */
+/** The recording's layers by name (not band parts): what Review calls the voices other than the tune. */
+private val LAYER_NAMES = mapOf(
+    "bass" to ("Bass" to "Bass"), "strings" to ("Strings" to "Strykere"),
+    "brass" to ("Brass" to "Messing"), "drums" to ("Drums" to "Trommer"),
+)
+
+/**
+ * The part that carries the recorded tune and its instrument: the seat's part when the arrangement put
+ * the tune there (a solo take with a seat always does), else Solo Cornet in B♭. A bass-clef reader sees
+ * it at concert pitch.
+ */
+fun melodyPart(c: Composition, core: no.brasscribe.play.model.CoreBridge): Pair<String, Instrument> {
+    val seatId = c.arrangementString("seat")
+    val seat = seatId?.let { id -> core.seats().firstOrNull { it.id == id } }
+    if (seat == null || c.arrangementString("lead") != "seat") return no.brasscribe.play.PlayViewModel.SOLO_PART_NAME to Instrument.CORNET
+    val soloTake = c.voices.count { it.notes.isNotEmpty() } <= 1
+    val part = if (soloTake) seat.name else core.seatPart((Lineup.recorded(c) ?: Lineup.FULL).core, seat.id)?.part ?: seat.name
+    val chromatic = if (c.arrangementString("reads") == "bass") 0 else no.brasscribe.play.YourParts.chromatic(part, core.seats()) ?: seat.chromatic
+    val instrument = if (chromatic == 0) Instrument.CONCERT else Instrument.entries.firstOrNull { it.chromatic == chromatic } ?: Instrument.CORNET
+    return part to instrument
+}
+
+/** Name and instrument for a Composition voice: the melody reads as the part that carries the tune. */
 fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>, core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge): PartView {
     val v = c.voice(voiceId) ?: c.voices.first()
-    val names = mapOf(
-        "solo" to ("Solo Cornet" to "Solokornett"), "bass" to ("Bass" to "Bass"), "strings" to ("Strings" to "Strykere"),
-        "brass" to ("Brass" to "Messing"), "drums" to ("Drums" to "Trommer"),
-    )
-    val (en, nb) = names[v.id] ?: (v.id.replaceFirstChar { it.uppercase() } to v.id)
-    val instrument = if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT
-    return PartView(c, v, instrument, en, nb, checked, core)
+    if (v.role == VoiceRole.MELODY) {
+        val (part, instrument) = melodyPart(c, core)
+        return PartView(c, v, instrument, part, core.partNameNb(part), checked, core)
+    }
+    val (en, nb) = LAYER_NAMES[v.id] ?: (v.id.replaceFirstChar { it.uppercase() } to v.id)
+    return PartView(c, v, Instrument.CONCERT, en, nb, checked, core)
 }
 
 /** Screen-reader text of every event, each spoken in the context of the one before (spec §4). */
@@ -139,7 +161,10 @@ fun ReviewScreen(vm: PlayViewModel) {
     // Review checks a transcription; an opened score has nothing to check against.
     val composition = r.composition ?: return
     val voices = composition.voices.filter { it.notes.isNotEmpty() }
-    var voiceId by rememberSaveable { mutableStateOf(voices.firstOrNull { it.role == VoiceRole.MELODY }?.id ?: voices.first().id) }
+    // "Yours": the layer your part follows (the tune, the bass line, ...), or none when your part is arranged.
+    val mine = yoursInReview(vm, r, composition)
+    val melodyVoice = voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
+    var voiceId by rememberSaveable { mutableStateOf(mine.voice ?: melodyVoice ?: voices.first().id) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
     val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }
@@ -223,8 +248,15 @@ fun ReviewScreen(vm: PlayViewModel) {
                         grouped != null -> pluralStringResource(R.plurals.review_title_places, todo.size, todo.size)
                         else -> pluralStringResource(R.plurals.review_title, todo.size, todo.size)
                     })
-                    val melody = composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
-                    if (todo.isNotEmpty() && voiceId == melody) {
+                    val own = mine.voice ?: melodyVoice.takeIf { !mine.arranged }
+                    if (mine.arranged && mine.part != null) ArrangedNotice(mine.part,
+                        checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.navigate(Screen.OUTPUT) },
+                        showMine = { vm.navigate(Screen.SCORE) })
+                    if (voiceId == own && mine.source != null) {
+                        SourceLabel(mine.source)
+                        mine.writtenFor?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = c.textMuted) }
+                    }
+                    if (todo.isNotEmpty() && voiceId == own) {
                         Text(stringResource(R.string.review_your_part_first), style = MaterialTheme.typography.titleMedium)
                         Lead(pluralStringResource(if (grouped != null) R.plurals.review_your_part_places else R.plurals.review_your_part_count,
                             todo.size, todo.size, partName) + " " + when {
@@ -238,7 +270,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                         })
                     } else Lead(stringResource(R.string.review_lead))
                     Legend()
-                    if (voices.size > 1) PartChips(voices, voiceId, composition, checkedMap, vm, lang) { voiceId = it }
+                    if (voices.size > 1) PartChips(voices, voiceId, composition, checkedMap, vm, lang, mine) { voiceId = it }
                 }
             }
             item {
@@ -269,9 +301,9 @@ fun ReviewScreen(vm: PlayViewModel) {
                             // The bar on a staff: the arranged part when this is the solo, else the layer on its own.
                             val xml = remember(r.musicXml, voiceId) {
                                 val names = no.brasscribe.play.model.MusicXmlParts.names(r.musicXml)
-                                val solo = defaultPart(names, Lineup.recorded(composition)).takeIf { i ->
-                                    names.getOrNull(i)?.trim()?.let { n -> Lineup.LEADS.any { it.equals(n, true) } } == true
-                                } ?: -1
+                                // The part the tune is written on: the lineup's lead, or the seat's part when the tune went there.
+                                val lead = no.brasscribe.play.YourParts.leadPart(composition, names, vm.container.core::seatPart)
+                                val solo = lead?.let { l -> names.indexOfFirst { it.replace('\u00A0', ' ').trim().equals(l, true) } } ?: -1
                                 if (voiceId == composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id && solo >= 0)
                                     no.brasscribe.play.model.MusicXmlParts.single(r.musicXml, solo)
                                 else vm.container.core.toMusicXml(composition, listOf(no.brasscribe.play.model.PartSpec(voiceId, partName, view.instrument)))
@@ -366,7 +398,7 @@ fun ReviewScreen(vm: PlayViewModel) {
 @Composable
 private fun PartChips(
     voices: List<no.brasscribe.play.model.Voice>, voiceId: String, composition: Composition, checkedMap: Map<String, Set<Int>>,
-    vm: PlayViewModel, lang: Lang, choose: (String) -> Unit,
+    vm: PlayViewModel, lang: Lang, mine: ReviewYours, choose: (String) -> Unit,
 ) {
     val left = remember(composition, checkedMap) {
         voices.associate { v ->
@@ -374,12 +406,18 @@ private fun PartChips(
             v.id to reviewGroups(composition, v.id, partViewFor(composition, v.id, done, vm.container.core)).count { g -> g.members.any { it.index !in done } }
         }
     }
-    val own = voices.filter { it.role == VoiceRole.MELODY }
+    // Your own voice first; with your part arranged there is none, and the notice above says why.
+    val own = when {
+        mine.voice != null -> voices.filter { it.id == mine.voice }
+        mine.arranged -> emptyList()
+        else -> voices.filter { it.role == VoiceRole.MELODY }
+    }
     val accompaniment = voices - own.toSet()
     var open by rememberSaveable { mutableStateOf(voiceId in accompaniment.map { it.id }) }
     val name = { v: no.brasscribe.play.model.Voice -> partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName } }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-        own.forEach { v -> PracticeChip("${name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
+        val yoursLabel = mine.part?.let { stringResource(R.string.stand_part_yours, PartNames.display(it, lang)) }
+        own.forEach { v -> PracticeChip("${yoursLabel ?: name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
         val n = accompaniment.sumOf { left[it.id] ?: 0 }
         if (accompaniment.isNotEmpty() && (n > 0 || voiceId in accompaniment.map { it.id })) {
             PracticeChip(stringResource(R.string.review_accompaniment, n), open, { open = !open }, role = Role.Button,

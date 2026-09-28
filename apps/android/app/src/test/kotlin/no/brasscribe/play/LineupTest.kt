@@ -63,14 +63,6 @@ class LineupTest {
         assertNull(Lineup.ofParts(listOf("Solo Cornet", "Euphonium")))
     }
 
-    @Test
-    fun quartetPartsHaveNorwegianNames() {
-        assertEquals("1. kornett", PartNames.display("1st Cornet", Lang.NB))
-        assertEquals("Althorn", PartNames.display("Tenor Horn", Lang.NB))
-        assertEquals("1st Cornet", PartNames.display("1st Cornet", Lang.EN))
-        for (part in Lineup.QUARTET_PARTS) assertNotEquals(part, PartNames.display(part, Lang.NB))
-    }
-
     private fun composition(arrangement: JsonObject?) = Composition(
         "T", listOf(Voice("melody", VoiceRole.MELODY, listOf(Note(70, 0, 24)))), listOf(Meter(0, 4)), listOf(KeySig(0, -2)),
         arrangement = arrangement,

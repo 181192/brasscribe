@@ -24,7 +24,11 @@ class PartsAndAnnouncementsTest {
             "T", listOf(Voice("solo", VoiceRole.MELODY, listOf(Note(70, 0, 24, 0.5, listOf("swiftf0")), Note(72, 24, 24, 0.9)))),
             listOf(Meter(0, 4)), listOf(KeySig(0, -2)),
         )
-        val view = partViewFor(c, "solo", emptySet())
+        // The Norwegian part name is the core's (part_name_nb); here a stand-in for it.
+        val core = object : no.brasscribe.play.model.CoreBridge by KotlinCoreBridge {
+            override fun partNameNb(name: String) = if (name == "Solo Cornet") "Solokornett" else name
+        }
+        val view = partViewFor(c, "solo", emptySet(), core)
         assertEquals(
             listOf("Solo Cornet. bar 1, no sharps or flats, beat 1: C 5, quarter note, uncertain", "beat 2: D 5, quarter note"),
             announcements(view, Lang.EN, KotlinCoreBridge),
