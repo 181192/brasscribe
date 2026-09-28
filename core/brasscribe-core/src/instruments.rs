@@ -543,11 +543,19 @@ pub fn reading_instrument(inst: &'static Instrument, reads: Option<&str>) -> &'s
     all.iter().copied().find(|i| i.id == inst.id).unwrap_or(inst)
 }
 
+/// A solo take for a seat without a clef (percussion) is refused: the pitch trackers' notes are no
+/// drum part.
+pub const PERCUSSION_SOLO: &str = "percussion can't be written down from a solo take yet: record the band; a recording with drums gets a percussion part";
+
 /// A solo take written for the player: one part, the seat's own (named as in the band, so every
-/// name table resolves), in their clef and key.
+/// name table resolves), in their clef and key. Percussion is refused ([`PERCUSSION_SOLO`]).
 pub fn seat_lineup(seat: &str, reads: Option<&str>) -> Result<Lineup, String> {
     check_reads(Some(seat), reads)?;
-    let mut part = seat_by_id(seat)?.band_part();
+    let s = seat_by_id(seat)?;
+    if s.reads.is_empty() {
+        return Err(PERCUSSION_SOLO.into());
+    }
+    let mut part = s.band_part();
     part.instrument = reading_instrument(part.instrument, reads);
     let name = part.name;
     Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true })

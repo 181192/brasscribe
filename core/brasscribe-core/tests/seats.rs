@@ -96,6 +96,13 @@ fn default_reading_in_every_lineup() {
 }
 
 #[test]
+fn percussion_has_no_solo_take() {
+    use brasscribe_core::instruments::{seat_lineup, PERCUSSION_SOLO};
+    assert_eq!(seat_lineup("percussion", None).unwrap_err(), PERCUSSION_SOLO);
+    assert!(SEATS.iter().filter(|s| !s.reads.is_empty()).all(|s| seat_lineup(s.id, None).is_ok()));
+}
+
+#[test]
 fn clef_readings() {
     assert!(check_reads(Some("euphonium"), Some("bass")).is_ok());
     assert!(check_reads(None, None).is_ok());

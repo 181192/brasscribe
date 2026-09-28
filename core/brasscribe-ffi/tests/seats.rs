@@ -77,6 +77,9 @@ fn a_solo_take_for_a_seat_is_one_part() {
 #[test]
 fn seat_options_are_checked() {
     let bad = |o: ArrangeOptions| arrange_musicxml_with(SOLO.into(), o).is_err();
+    // A drummer's solo take is no drum part: refused, not drawn as hits.
+    let e = arrange_musicxml_with(SOLO.into(), ArrangeOptions { lineup: "minimal".into(), seat: Some("percussion".into()), ..Default::default() });
+    assert!(e.unwrap_err().to_string().contains(brasscribe_core::instruments::PERCUSSION_SOLO));
     assert!(bad(ArrangeOptions { seat: Some("tuba".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { reads: Some("bass".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { lead: Some("seat".into()), ..Default::default() }));

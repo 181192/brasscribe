@@ -79,9 +79,13 @@ def job_options(profile: str, params: dict) -> dict:
     the seat's part in the band lineups only)."""
     from brasscribe_music.instruments import lead_lineup, lineup_by_name
 
+    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_by_id
+
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
         raise ValueError(QUARTET_NEEDS_GROUP)
+    if profile == "solo" and opts.get("seat") and not seat_by_id(opts["seat"]).reads:
+        raise ValueError(PERCUSSION_SOLO)
     if profile != "solo" and opts.get("lead") == "seat":
         lineup = params.get("lineup") or ("minimal" if profile in ("brass-band", "pop-rock") else "full")
         lead_lineup(lineup_by_name(lineup), opts["seat"])
@@ -193,6 +197,10 @@ def solo(title: str, params: dict) -> Pipeline:
     """
     if params.get("lineup") == "quartet":
         raise ValueError(QUARTET_NEEDS_GROUP)
+    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_by_id
+
+    if params.get("seat") and not seat_by_id(params["seat"]).reads:
+        raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
     st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
                 outputs=("mix.beats",), reuse_subdir=".")]

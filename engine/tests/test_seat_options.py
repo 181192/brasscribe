@@ -33,6 +33,16 @@ def test_seat_options_validated():
         profiles.job_options("orchestra-with-soloist", {"seat": "eb-bass", "lead": "seat"})
 
 
+def test_percussion_solo_take_is_refused():
+    # The pitch trackers' notes from a drummer's take are no drum part: refused before any transcription.
+    with pytest.raises(ValueError, match="percussion"):
+        profiles.job_options("solo", {"seat": "percussion"})
+    with pytest.raises(ValueError, match="percussion"):
+        profiles.build("solo", Path("a.wav"), params={"seat": "percussion"})
+    # A band recording with drums still gets the percussion part.
+    assert profiles.job_options("orchestra-with-soloist", {"seat": "percussion"}) == {"seat": "percussion"}
+
+
 def test_solo_profile_with_a_seat_writes_on_the_seat():
     arrange = profiles.build("solo", Path("a.wav"), params={"seat": "1st-baritone"}).stage("arrange").params
     assert arrange["arrangement"] == {"lineup": "minimal", "seat": "1st-baritone", "lead": "seat"}

@@ -394,10 +394,16 @@ def reading_instrument(inst: Instrument, reads: str | None) -> Instrument:
     return inst
 
 
+# A solo take for a seat without a clef (percussion) is refused: the pitch trackers' notes are no drum part.
+PERCUSSION_SOLO = "percussion can't be written down from a solo take yet: record the band; a recording with drums gets a percussion part"
+
+
 def seat_lineup(seat: str, reads: str | None = None) -> Lineup:
     """A solo take written for the player: one part, the seat's own (named as in the band, so every
-    name table resolves), in their clef and key."""
+    name table resolves), in their clef and key. Percussion is refused (PERCUSSION_SOLO)."""
     check_reads(seat, reads)
+    if not seat_by_id(seat).reads:
+        raise ValueError(PERCUSSION_SOLO)
     band = seat_by_id(seat).band_part
     part = replace(band, instrument=reading_instrument(band.instrument, reads))
     return Lineup(part.name, [part], lead=part.name, bass=part.name, second_bass=None, as_played=True)

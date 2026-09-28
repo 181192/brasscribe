@@ -119,6 +119,15 @@ def test_bass_trombone_reads_bass_clef_in_the_small_band_and_quartet():
         assert [p for p in lu.parts if p.name != part] == [p for p in LINEUPS[lineup].parts if p.name != part]
 
 
+def test_percussion_has_no_solo_take():
+    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_lineup
+
+    with pytest.raises(ValueError, match="percussion"):
+        seat_lineup("percussion")
+    assert "record the band" in PERCUSSION_SOLO
+    assert all(seat_lineup(s.id).parts for s in SEATS if s.reads)
+
+
 def test_seat_errors():
     with pytest.raises(ValueError):
         seat_part("band", "tuba")

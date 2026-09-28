@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.arranger import arrange, arrange_composition
-from brasscribe_music.instruments import CLEF_READINGS, SEAT_IDS, check_reads, seat_by_id
+from brasscribe_music.instruments import CLEF_READINGS, SEAT_IDS, PERCUSSION_SOLO, check_reads, seat_by_id
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
 from brasscribe_music.score_model import Composition, KeySig, Meter, Voice, VoiceRole
@@ -47,6 +47,8 @@ def build(beats: Path, sw: Path, mus: Path, bp: Path, title: str, seat: str | No
     downs = np.where(pos == 1)[0]
     beats_per_bar = Counter(np.diff(downs)).most_common(1)[0][0] if len(downs) > 1 else 4
     first_down = int(np.argmax(pos == 1))
+    if seat and not seat_by_id(seat).reads:
+        raise SystemExit(PERCUSSION_SOLO)
     window = seat_by_id(seat).band_part.instrument.pro if seat else (52, 88)
     notes = solo_line(pitched(sw), pitched(mus), pitched(bp), window)
     if not notes:
