@@ -42,7 +42,7 @@ extension Phrase {
 /// The full-band phrase's pitched parts at each dynamic, under the band gain so nothing reaches the
 /// limiter, against the same phrase through alphaSynth 12 dB under its gain
 /// (dynamics.sampler_velocity.alphatab_lufs).
-@Suite(.serialized, .enabled(if: bandPhrase() != nil && bandSoundFont() != nil && outputStageVectors() != nil))
+@Suite(.serialized, .tags(.slow), .enabled(if: bandPhrase() != nil && bandSoundFont() != nil && outputStageVectors() != nil))
 struct DynamicsLevelTests {
     let phrase: Phrase
     let score: Score
@@ -104,7 +104,7 @@ struct DynamicsLevelTests {
 }
 
 /// A whole arrangement played with its dynamics lands where Windows plays it.
-@Suite(.serialized, .enabled(if: goldenDir() != nil && bandSoundFont() != nil)) struct ArrangementLevelTests {
+@Suite(.serialized, .tags(.slow), .enabled(if: goldenDir() != nil && bandSoundFont() != nil)) struct ArrangementLevelTests {
     @Test func goldenArrangementMatchesTheOtherApps() throws {
         let dir = try #require(goldenDir())
         let score = try MusicXMLParser.parse(url: dir.appending(path: "brass-band.musicxml"))

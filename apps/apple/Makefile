@@ -20,7 +20,7 @@ comma := ,
 IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(shell DEVELOPER_DIR="$(DEVELOPER_DIR)" scripts/newest-iphone.sh))
 DERIVED := build/DerivedData
 # Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/dev/verify.md).
-APPLE_SLOW ?= ArrangementLevelTests
+APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 
 .PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size \
@@ -81,7 +81,8 @@ test-ios-unit:
 	SIMCTL_CHILD_BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
 	  -only-testing:BrasscribePlayTests_iOS test-without-building
 
-# Package tests without the slow audio-rendering suites (tier 1).
+# Package tests without the slow audio-rendering suites (tier 1). --no-parallel as in package-test:
+# PlaybackKitTests crash (SIGTRAP) when Swift Testing runs them in parallel.
 package-test-fast:
-	cd Packages/BrasscribeKit && swift test --skip '$(APPLE_SLOW)'
-	cd Packages/NotationKit && swift test --skip '$(APPLE_SLOW)'
+	cd Packages/BrasscribeKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd Packages/NotationKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
