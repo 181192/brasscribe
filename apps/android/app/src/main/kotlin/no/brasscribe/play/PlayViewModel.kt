@@ -787,7 +787,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 saveCurrentScore(r, entry.title)
                 backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
             } catch (e: Exception) {
-                showProblem(Problem.FILE_UNREADABLE, e.message, ErrorWords.of(e).takeIf { it != R.string.error_generic })
+                // A connection or engine failure is no unreadable file: its own words, not "try an MP3".
+                val why = ErrorWords.of(e).takeIf { it != R.string.error_generic }
+                showProblem(if (why != null) Problem.SCORE_FAILED else Problem.FILE_UNREADABLE, e.message, why)
             } finally {
                 openingScore.value = null
             }
