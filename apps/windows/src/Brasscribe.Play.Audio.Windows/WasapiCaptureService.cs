@@ -20,6 +20,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
     private Stopwatch _clock = new();
     private string? _path;
     private CaptureNotice? _lastNotice;
+    private Task<CaptureResult>? _stopping;
     private readonly object _gate = new();
 
     public bool SupportsAppCapture => ProcessLoopback.IsSupported;
@@ -71,6 +72,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
     public async Task StartAsync(CaptureRequest request, CancellationToken ct = default)
     {
         if (IsCapturing) throw new InvalidOperationException("Already recording");
+        _stopping = null;
         _path = request.OutputPath;
         _lastNotice = null;
         switch (request.Kind)
@@ -142,24 +144,30 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         return peak;
     }
 
-    public Task<CaptureResult> StopAsync(CancellationToken ct = default)
+    /// <summary>A second stop while the first still waits for the device gets the first one's result.</summary>
+    public Task<CaptureResult> StopAsync(CancellationToken ct = default) => _stopping ??= StopCoreAsync(ct);
+
+    private async Task<CaptureResult> StopCoreAsync(CancellationToken ct)
     {
+        var waveIn = _waveIn;
+        var process = _process;
+        _waveIn = null;
+        _process = null;
         WaveFormat? format = null;
-        if (_waveIn is not null)
+        if (waveIn is not null)
         {
-            var done = new TaskCompletionSource();
-            _waveIn.RecordingStopped += (_, _) => done.TrySetResult();
-            format = _waveIn.WaveFormat;
-            _waveIn.StopRecording();
-            done.Task.Wait(TimeSpan.FromSeconds(2), ct);
-            _waveIn.Dispose();
-            _waveIn = null;
+            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            waveIn.RecordingStopped += (_, _) => done.TrySetResult();
+            format = waveIn.WaveFormat;
+            waveIn.StopRecording();
+            // RecordingStopped comes through the UI thread's context: wait without holding that thread.
+            await StopWait.WithinAsync(done.Task, StopWait.Limit, ct).ConfigureAwait(false);
+            waveIn.Dispose();
         }
-        if (_process is not null && ProcessLoopback.IsSupported)
+        if (process is not null && ProcessLoopback.IsSupported)
         {
-            format = _process.WaveFormat;
-            _process.Dispose();
-            _process = null;
+            format = process.WaveFormat;
+            process.Dispose();
         }
         TimeSpan duration;
         lock (_gate)
@@ -169,7 +177,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
             _writer = null;
         }
         IsCapturing = false;
-        return Task.FromResult(new CaptureResult(_path ?? "", duration, format?.SampleRate ?? 0, format?.Channels ?? 0, _lastNotice));
+        return new CaptureResult(_path ?? "", duration, format?.SampleRate ?? 0, format?.Channels ?? 0, _lastNotice);
     }
 
     public void Dispose()
