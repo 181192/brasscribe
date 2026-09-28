@@ -2827,6 +2827,12 @@ data class LayersSongOptions (
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     var `lead`: kotlin.String? = null 
+    , 
+    /**
+     * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+     * harmony."): "en" (None) or "nb".
+     */
+    var `lang`: kotlin.String? = null 
     
 ){
     
@@ -2856,6 +2862,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -2872,7 +2879,8 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalInt.allocationSize(value.`transpose`) +
             FfiConverterOptionalString.allocationSize(value.`seat`) +
             FfiConverterOptionalString.allocationSize(value.`reads`) +
-            FfiConverterOptionalString.allocationSize(value.`lead`)
+            FfiConverterOptionalString.allocationSize(value.`lead`) +
+            FfiConverterOptionalString.allocationSize(value.`lang`)
     )
 
     override fun write(value: LayersSongOptions, buf: ByteBuffer) {
@@ -2889,6 +2897,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalString.write(value.`seat`, buf)
             FfiConverterOptionalString.write(value.`reads`, buf)
             FfiConverterOptionalString.write(value.`lead`, buf)
+            FfiConverterOptionalString.write(value.`lang`, buf)
     }
 }
 
@@ -3184,6 +3193,12 @@ data class SeatInfo (
      * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
      */
     var `reads`: List<kotlin.String>
+    , 
+    /**
+     * The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+     * "Who plays the tune?" (the `lead` option "seat").
+     */
+    var `tune`: kotlin.Boolean
     
 ){
     
@@ -3206,6 +3221,7 @@ public object FfiConverterTypeSeatInfo: FfiConverterRustBuffer<SeatInfo> {
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -3215,7 +3231,8 @@ public object FfiConverterTypeSeatInfo: FfiConverterRustBuffer<SeatInfo> {
             FfiConverterString.allocationSize(value.`nbName`) +
             FfiConverterString.allocationSize(value.`instrument`) +
             FfiConverterString.allocationSize(value.`clef`) +
-            FfiConverterSequenceString.allocationSize(value.`reads`)
+            FfiConverterSequenceString.allocationSize(value.`reads`) +
+            FfiConverterBoolean.allocationSize(value.`tune`)
     )
 
     override fun write(value: SeatInfo, buf: ByteBuffer) {
@@ -3225,6 +3242,7 @@ public object FfiConverterTypeSeatInfo: FfiConverterRustBuffer<SeatInfo> {
             FfiConverterString.write(value.`instrument`, buf)
             FfiConverterString.write(value.`clef`, buf)
             FfiConverterSequenceString.write(value.`reads`, buf)
+            FfiConverterBoolean.write(value.`tune`, buf)
     }
 }
 

@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from brasscribe_music.arranger import ARRANGED, RECORDING, YOUR_RECORDING, part_sources
-from brasscribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS, SEATS, check_reads, part_banks,
-                                          seat_by_id, seat_part)
+from brasscribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS, SEATS, check_reads, lead_lineup,
+                                          part_banks, seat_by_id, seat_part)
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -69,6 +69,22 @@ def test_every_resolved_part_has_a_sound_and_a_bank():
                 continue
             assert name in mapping["parts"]
             assert name == "Percussion" or name in banks
+
+
+# Seats whose part can carry the tune (Role MELODY/SOLO, not the bass line); the Rust core's list too.
+TUNE = ["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn", "1st-horn",
+        "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium"]
+
+
+def test_tune_follows_the_roles():
+    assert [s.id for s in SEATS if s.tune] == TUNE
+    for s in SEATS:
+        try:
+            lead_lineup(BRASS_BAND, s.id)
+            leads = True
+        except ValueError:
+            leads = False
+        assert s.tune == leads, s.id
 
 
 def test_seat_errors():

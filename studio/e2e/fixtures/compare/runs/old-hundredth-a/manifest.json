@@ -1,0 +1,13 @@
+{
+ "schema": 1,
+ "run_id": "old-hundredth-a",
+ "created": "2026-01-01T00:00:00+00:00",
+ "profile": "orchestra-with-soloist",
+ "pipeline": "layered",
+ "title": "Old Hundredth",
+ "params": {},
+ "options": {"allow_heavy": false, "cold": []},
+ "input": {"path": "apps/fixtures/old-hundredth/composition.json"},
+ "status": "succeeded",
+ "stages": []
+}

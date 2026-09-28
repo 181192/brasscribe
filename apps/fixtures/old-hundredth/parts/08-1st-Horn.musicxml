@@ -20,6 +20,10 @@
       <tenths>40</tenths>
     </scaling>
   </defaults>
+  <credit page="1">
+    <credit-type>rights</credit-type>
+    <credit-words justify="center" valign="bottom" font-size="8">Arranged by Brasscribe from the band's harmony.</credit-words>
+  </credit>
   <part-list>
     <score-part id="P8">
       <part-name>1st Horn</part-name>

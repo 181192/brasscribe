@@ -1,9 +1,12 @@
 // Live stage graph: one node per stage, grouped into columns by kind in
 // pipeline order. Each node is a toggle button that selects the stage for
-// the inspector; status is text plus border style, never colour alone.
+// the inspector; status is text plus border style, never colour alone. A stage
+// that waited for the GPU is explained in the stage panel, which the selected
+// node is described by (not a hover title, which keyboard, touch and screen
+// readers do not get).
 import type { RunView, StageView } from "../lib/events";
 import { t } from "../i18n";
-import { stageTime, stageTimeTip } from "../lib/stagetime";
+import { stageTime, stageTimeTip, WAIT_NOTE_ID } from "../lib/stagetime";
 import { clear, h } from "../ui/dom";
 
 const ORDER = ["beats", "stems", "separate", "layers", "transcribe", "vote", "arrange", "export"];
@@ -67,8 +70,9 @@ export class StageGraph extends HTMLElement {
       s.seconds !== undefined && s.seconds !== null ? stageTime(s) : null,
     ].filter(Boolean).join(" · ");
     return h("button", {
-      type: "button", class: `stage-node status-${s.status}`, "data-stage": s.name, title: stageTimeTip(s),
+      type: "button", class: `stage-node status-${s.status}`, "data-stage": s.name,
       "aria-pressed": String(this.selected === s.name),
+      "aria-describedby": this.selected === s.name && stageTimeTip(s) ? WAIT_NOTE_ID : null,
       onclick: () => this.dispatchEvent(new CustomEvent("select", { detail: s.name })),
     },
     h("span", { class: "label" }, stageLabel(s.name)),

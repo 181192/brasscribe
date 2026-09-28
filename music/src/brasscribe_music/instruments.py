@@ -283,6 +283,13 @@ class Seat:
     def band_part(self) -> Part:
         return BRASS_BAND.by_name(self.part)
 
+    @property
+    def tune(self) -> bool:
+        """The seat's part can carry the tune in the band: its instrument has Role.MELODY or SOLO and it
+        is not the band's bass line. The seats `lead_lineup` accepts for lead="seat"."""
+        return self.part not in (BRASS_BAND.bass, BRASS_BAND.second_bass) \
+            and bool({Role.MELODY, Role.SOLO} & self.band_part.instrument.roles)
+
 
 _TREBLE, _BOTH, _BASS = ("treble",), ("treble", "bass"), ("bass",)
 SEATS: list[Seat] = [

@@ -37,6 +37,8 @@ MIKKEL_VARIANTS = [
     ("layers-lead-seat-euphonium-easier", ["--lead", "seat", "--seat", "euphonium", "--difficulty", "easier"]),
     ("layers-minimal-lead-seat-1st-horn", ["--lineup", "minimal", "--lead", "seat", "--seat", "1st-horn"]),
     ("layers-lead-seat-flugelhorn", ["--lead", "seat", "--seat", "flugelhorn"]),
+    # The footer on the arranged parts in Norwegian.
+    ("layers-lang-nb", ["--lang", "nb"]),
 ]
 # Song lineup options on the chorales: the tune on the player's part (non-layered arranger).
 SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]

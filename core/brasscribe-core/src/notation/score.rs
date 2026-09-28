@@ -1602,10 +1602,11 @@ pub fn write_score(spec: &ScoreSpec) -> String {
     to_string(&build_score_xml(spec))
 }
 
-/// The score and its individual parts ((file name, MusicXML) in score order).
-pub fn write_score_with_parts(spec: &ScoreSpec) -> (String, Vec<(String, String)>) {
+/// The score and its individual parts ((file name, MusicXML) in score order), with a footer on
+/// each part named in `footers` ((part name, text)).
+pub fn write_score_with_parts(spec: &ScoreSpec, footers: &[(String, String)]) -> (String, Vec<(String, String)>) {
     let root = build_score_xml(spec);
-    let parts = super::parts::split_parts(&root).into_iter().map(|(n, d)| (n, to_string(&d))).collect();
+    let parts = super::parts::split_parts_with_footers(&root, footers).into_iter().map(|(n, d)| (n, to_string(&d))).collect();
     (to_string(&root), parts)
 }
 

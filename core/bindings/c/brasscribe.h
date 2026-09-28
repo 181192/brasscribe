@@ -57,10 +57,11 @@ int32_t bc_arrange_with(const char *composition_json, const char *options, char 
 //   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 //   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
 //   "transpose": null, "seat": "euphonium" | null, "reads": "treble" | "bass" | null,
-//   "lead": "lineup" | "seat" | null}`: the SwiftF0 contour of the solo stem (where
+//   "lead": "lineup" | "seat" | null, "lang": "en" | "nb" | null}`: the SwiftF0 contour of the solo stem (where
 // sustained notes end), free-time detection on/off, a fixed BPM for free-time
 // passages, the energy gate, beat cleanup, key changes, the lineup, the
-// difficulty and a transposition (to a concert key or by semitones). Without stems the
+// difficulty, a transposition (to a concert key or by semitones) and the language of the
+// arranged parts' footer. Without stems the
 // gate, dynamics and rehearsal marks have nothing to read; see
 // [`bc_arrange_layers_band`].
 int32_t bc_arrange_layers_song(const uint8_t *const *midi,
@@ -91,7 +92,7 @@ int32_t bc_part_sources(const char *composition_json,
                         char **err);
 
 // The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
-// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"]}, ...]` to `*out`.
+// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"], "tune": true}, ...]` to `*out`.
 int32_t bc_seats(char **out,
                  char **err);
 
@@ -104,6 +105,9 @@ int32_t bc_part_name_nb(const char *name, char **out, char **err);
 // given). Writes one JSON object to `*out`:
 // `{"composition": "<composition.json text>", "musicxml": "...",
 //   "parts": [{"file_name": "...", "musicxml": "..."}], "separation_check": "<json text>" | null}`.
+//
+// Every buffer is borrowed for the duration of the call and never copied: the
+// stems are read in place while they are decoded.
 int32_t bc_arrange_layers_band(const uint8_t *const *midi,
                                const uintptr_t *midi_len,
                                const uint8_t *const *wav,
@@ -113,6 +117,25 @@ int32_t bc_arrange_layers_band(const uint8_t *const *midi,
                                const char *options,
                                char **out,
                                char **err);
+
+// [`bc_arrange_layers_band`] with the solo contour as arrays instead of JSON:
+// `contour` holds four pointers to `contour_len` doubles each (times in
+// seconds, pitch in Hz, loudness in dB, SwiftF0 confidence; a null confidence
+// = none), borrowed for the call like the stems. Non-finite values are read
+// as the JSON form has them: time 0, pitch 0 Hz (no pitch), loudness −140 dB,
+// confidence 0. A null `contour` falls back to `solo_contour` in `options`;
+// `contour_len` 0 is an empty contour.
+int32_t bc_arrange_layers_band_contour(const uint8_t *const *midi,
+                                       const uintptr_t *midi_len,
+                                       const uint8_t *const *wav,
+                                       const uintptr_t *wav_len,
+                                       const double *const *contour,
+                                       uintptr_t contour_len,
+                                       const char *beats_text,
+                                       const char *title,
+                                       const char *options,
+                                       char **out,
+                                       char **err);
 
 // Humanize one player's notes. `request` is JSON
 // `{"notes": [{"tick", "dur_tick", "start_s", "end_s", "pitch", "velocity"}...],

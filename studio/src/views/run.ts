@@ -11,7 +11,7 @@ import { runTitle } from "./runs";
 import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../lib/beats";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
-import { stageTime } from "../lib/stagetime";
+import { stageTime, waitNote } from "../lib/stagetime";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
@@ -138,6 +138,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         h("dt", {}, t("run.kv.status")), h("dd", {}, pill(status)),
         h("dt", {}, t("run.kv.time")), h("dd", {}, stageTime(s?.seconds != null ? s : files)),
         h("dt", {}, t("run.kv.device")), h("dd", {}, s?.device ?? files?.device ?? "–")),
+      waitNote(s?.seconds != null ? s : files),
       status === "failed" && view?.error ? errorSummary(view.error) : null,
       files ? more(t("run.filesKey"), [
         h("dl", { class: "kv" }, h("dt", {}, t("run.kv.key")), h("dd", { class: "mono" }, fmt.hash(files.key))),

@@ -1847,6 +1847,11 @@ public struct LayersSongOptions: Equatable, Hashable {
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     public var lead: String?
+    /**
+     * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+     * harmony."): "en" (None) or "nb".
+     */
+    public var lang: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1893,7 +1898,11 @@ public struct LayersSongOptions: Equatable, Hashable {
         /**
          * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
          * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
-         */lead: String? = nil) {
+         */lead: String? = nil, 
+        /**
+         * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+         * harmony."): "en" (None) or "nb".
+         */lang: String? = nil) {
         self.soloContour = soloContour
         self.freeTime = freeTime
         self.freeTempo = freeTempo
@@ -1907,6 +1916,7 @@ public struct LayersSongOptions: Equatable, Hashable {
         self.seat = seat
         self.reads = reads
         self.lead = lead
+        self.lang = lang
     }
 
     
@@ -1937,7 +1947,8 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
                 transpose: FfiConverterOptionInt32.read(from: &buf), 
                 seat: FfiConverterOptionString.read(from: &buf), 
                 reads: FfiConverterOptionString.read(from: &buf), 
-                lead: FfiConverterOptionString.read(from: &buf)
+                lead: FfiConverterOptionString.read(from: &buf), 
+                lang: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1955,6 +1966,7 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.seat, into: &buf)
         FfiConverterOptionString.write(value.reads, into: &buf)
         FfiConverterOptionString.write(value.lead, into: &buf)
+        FfiConverterOptionString.write(value.lang, into: &buf)
     }
 }
 
@@ -2332,6 +2344,11 @@ public struct SeatInfo: Equatable, Hashable {
      * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
      */
     public var reads: [String]
+    /**
+     * The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+     * "Who plays the tune?" (the `lead` option "seat").
+     */
+    public var tune: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -2353,13 +2370,18 @@ public struct SeatInfo: Equatable, Hashable {
          */clef: String, 
         /**
          * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
-         */reads: [String]) {
+         */reads: [String], 
+        /**
+         * The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+         * "Who plays the tune?" (the `lead` option "seat").
+         */tune: Bool) {
         self.id = id
         self.name = name
         self.nbName = nbName
         self.instrument = instrument
         self.clef = clef
         self.reads = reads
+        self.tune = tune
     }
 
     
@@ -2383,7 +2405,8 @@ public struct FfiConverterTypeSeatInfo: FfiConverterRustBuffer {
                 nbName: FfiConverterString.read(from: &buf), 
                 instrument: FfiConverterString.read(from: &buf), 
                 clef: FfiConverterString.read(from: &buf), 
-                reads: FfiConverterSequenceString.read(from: &buf)
+                reads: FfiConverterSequenceString.read(from: &buf), 
+                tune: FfiConverterBool.read(from: &buf)
         )
     }
 
@@ -2394,6 +2417,7 @@ public struct FfiConverterTypeSeatInfo: FfiConverterRustBuffer {
         FfiConverterString.write(value.instrument, into: &buf)
         FfiConverterString.write(value.clef, into: &buf)
         FfiConverterSequenceString.write(value.reads, into: &buf)
+        FfiConverterBool.write(value.tune, into: &buf)
     }
 }
 

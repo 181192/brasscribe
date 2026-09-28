@@ -132,8 +132,10 @@ def arrange_layered(ctx: StageContext) -> None:
                 import pretty_midi
 
                 pretty_midi.PrettyMIDI().write(str(view / f"{layer}.mid"))
+        # The footer on arranged parts is in the job's language when it has one (en otherwise).
+        lang = ["--lang", ctx.params["lang"]] if ctx.params.get("lang") else []
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
-                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render",
+                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render", *lang,
                 *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
     _stable_musicxml(ctx)
 

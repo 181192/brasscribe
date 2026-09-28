@@ -185,6 +185,8 @@ pub struct LayersOptions {
     pub reads: Option<String>,
     /// Who plays the tune: "lineup" (default when empty) or "seat" (a solo take always the seat).
     pub lead: String,
+    /// Language of the source footer on the parts: "en" (default when empty) or "nb".
+    pub lang: String,
 }
 
 /// The solo line's window without a seat: a cornet or trumpet soloist, E3-E6.
@@ -259,6 +261,10 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
     }
     let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
+    let lang = if opts.lang.is_empty() { "en" } else { opts.lang.as_str() };
+    if !crate::arranger::FOOTER_LANGS.contains(&lang) {
+        return Err(format!("lang must be one of {:?}", crate::arranger::FOOTER_LANGS));
+    }
     let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
     if !crate::instruments::LEADS.contains(&lead) {
         return Err(format!("lead must be one of {:?}", crate::instruments::LEADS));
@@ -543,7 +549,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         .collect();
     let lineup = crate::arranger::composition_lineup(&comp).0;
     let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
-    let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
+    let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp), &crate::arranger::part_footers(&comp, lang));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
 }
 
