@@ -78,6 +78,7 @@ NB = {
     "Check the internet connection, then try again. It continues where it stopped.":
         "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet.",
     "Check this computer": "Sjekk datamaskinen",
+    "Checking the download · %lld%%": "Kontrollerer nedlastingen · %lld %%",
     "Close window": "Lukk vinduet",
     "Code: %@ %@ %@, %@ %@ %@": "Kode: %@ %@ %@, %@ %@ %@",
     "Collapsed": "Lukket",

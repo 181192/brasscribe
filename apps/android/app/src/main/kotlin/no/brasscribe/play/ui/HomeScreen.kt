@@ -36,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import no.brasscribe.play.audio.TakeSink
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -300,20 +301,26 @@ fun RecordScreen(vm: PlayViewModel) {
             else -> R.string.level_loud
         },
     )
+    var stopping by remember { mutableStateOf(false) }
+    fun finish() {
+        if (stopping) return
+        stopping = true
+        scope.launch {
+            val silent = device && state.silentFor >= state.seconds - 1.0
+            val take = CaptureController.stop(context) ?: return@launch
+            if (silent) { take.file.delete(); vm.showProblem(Problem.NOTHING_HEARD) }
+            else vm.recorded(take, if (device) SourceKind.DEVICE else SourceKind.MICROPHONE)
+        }
+    }
+    // At the length limit the take ends as if Stop was pressed.
+    LaunchedEffect(state.full) { if (state.full) finish() }
     PlayScaffold(
         title = null,
-        onBack = { scope.launch { CaptureController.stop(context) }; vm.back() },
+        onBack = { scope.launch { CaptureController.discard(context) }; vm.back() },
         backLabel = stringResource(R.string.home),
         status = status,
         bottom = {
-            PrimaryButton(stringResource(R.string.record_stop), {
-                scope.launch {
-                    val silent = device && state.silentFor >= state.seconds - 1.0
-                    val audio = CaptureController.stop(context) ?: return@launch
-                    if (silent) vm.showProblem(Problem.NOTHING_HEARD)
-                    else vm.recorded(audio, if (device) SourceKind.DEVICE else SourceKind.MICROPHONE)
-                }
-            }, enabled = state.recording, icon = R.drawable.ic_bc_stop)
+            PrimaryButton(stringResource(R.string.record_stop), { finish() }, enabled = state.recording && !stopping, icon = R.drawable.ic_bc_stop)
         },
     ) {
         ScreenTitle(stringResource(if (device) R.string.record_title_device else R.string.record_title_mic))
@@ -322,6 +329,8 @@ fun RecordScreen(vm: PlayViewModel) {
             style = no.brasscribe.design.BrasscribeNumericStyle.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize),
             modifier = Modifier.semantics { contentDescription = vm.durationText(state.seconds) },
         )
+        val hours = (TakeSink.MAX_TAKE_SECONDS / 3600).toInt()
+        Text(androidx.compose.ui.res.pluralStringResource(R.plurals.record_limit, hours, hours), color = t.textMuted)
         val label = stringResource(R.string.record_level)
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
             Text(label, style = MaterialTheme.typography.titleMedium)
@@ -336,8 +345,17 @@ fun RecordScreen(vm: PlayViewModel) {
             )
             Text(levelWord, color = t.textMuted)
         }
+        // Past what the phone holds in memory the take is kept on disk only: the engine makes its score.
+        if (state.recording && !state.fitsPhone && vm.container.hasPitchModel) {
+            val minutes = phoneMinutes()
+            InfoNote(androidx.compose.ui.res.pluralStringResource(R.plurals.record_past_phone_limit, minutes, minutes),
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        }
         if (device && state.recording && state.silentFor > 5.0) {
             InfoNote(stringResource(R.string.device_silent), Modifier.semantics { liveRegion = LiveRegionMode.Assertive }, icon = R.drawable.ic_bc_error)
         }
     }
 }
+
+/** Whole minutes of a 48 kHz take the phone keeps in memory to make its score itself. */
+fun phoneMinutes(): Int = (no.brasscribe.play.audio.AudioDecoder.maxSamplesInMemory / (48_000L * 60)).toInt()

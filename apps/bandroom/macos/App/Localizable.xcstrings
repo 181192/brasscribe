@@ -621,6 +621,16 @@
         }
       }
     },
+    "Checking the download · %lld%%": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrollerer nedlastingen · %lld %%"
+          }
+        }
+      }
+    },
     "Close window": {
       "localizations": {
         "nb": {

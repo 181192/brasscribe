@@ -9,6 +9,7 @@
     <string name="cancel">Avbryt</string>
     <string name="continue_label">Fortsett</string>
     <string name="more">Mer</string>
+    <string name="controls_hidden">Kontroller</string>
     <string name="settings">Innstillinger</string>
     <string name="change">Endre</string>
     <string name="retry">Prøv igjen</string>
@@ -88,6 +89,14 @@
     <string name="record_stopped">Innspillingen er stoppet, %1$s</string>
     <string name="record_stop">Stopp innspillingen</string>
     <string name="record_level">Lydnivå</string>
+    <plurals name="record_limit">
+        <item quantity="one">Innspillinger stopper etter %d time.</item>
+        <item quantity="other">Innspillinger stopper etter %d timer.</item>
+    </plurals>
+    <plurals name="record_past_phone_limit">
+        <item quantity="one">Lengre enn %d minutt: partituret lages på datamaskinen, ikke på telefonen.</item>
+        <item quantity="other">Lengre enn %d minutter: partituret lages på datamaskinen, ikke på telefonen.</item>
+    </plurals>
     <string name="level_silent">Stille</string>
     <string name="level_low">Svakt</string>
     <string name="level_good">Bra</string>
@@ -122,6 +131,10 @@
     <string name="where_companion">På datamaskinen din</string>
     <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
+    <plurals name="where_device_too_long">
+        <item quantity="one">Bare for innspillinger på opptil %d minutt.</item>
+        <item quantity="other">Bare for innspillinger på opptil %d minutter.</item>
+    </plurals>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
 
     <!-- Lager partituret -->

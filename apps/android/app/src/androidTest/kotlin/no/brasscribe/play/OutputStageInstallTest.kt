@@ -48,12 +48,18 @@ class OutputStageInstallTest {
         val file = File(activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(xml) }
         instrumentation.runOnMainSync { vm.openScoreUri(android.net.Uri.fromFile(file)) }
         val end = SystemClock.uptimeMillis() + 60_000
-        while (vm.scoreController?.state?.value?.bandSoundFont != true) {
-            assertTrue("band SoundFont loaded in time", SystemClock.uptimeMillis() < end)
+        while (vm.scoreController?.state?.value?.loaded != true) {
+            assertTrue("score loaded in time", SystemClock.uptimeMillis() < end)
             Thread.sleep(100)
         }
         assertTrue("alphaTab's output is staged once the score is open", installed())
+        // The band SoundFont loads with the first Play.
         instrumentation.runOnMainSync { vm.scoreController!!.togglePlay() }
+        while (vm.scoreController?.state?.value?.bandSoundFont != true || vm.scoreController?.state?.value?.playing != true) {
+            assertTrue("band SoundFont loaded and playing in time", SystemClock.uptimeMillis() < end)
+            Thread.sleep(100)
+        }
+        assertTrue("staged with the band SoundFont in", installed())
         Thread.sleep(500)
         instrumentation.runOnMainSync { vm.scoreController!!.stop() }
         Thread.sleep(300)

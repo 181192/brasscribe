@@ -398,3 +398,103 @@ func sha256Hex(_ d: Data) -> String { SHA256.hash(data: d).map { String(format: 
         #expect(ModelComponent.allCases.filter(\.needsHuggingFaceKey) == [.bandWriter])
     }
 }
+
+/// The checksum of a finished file: off the main thread, in chunks, with progress, and cancellable.
+@Suite struct ChecksumTests {
+    func file(_ bytes: Int) throws -> (URL, Data) {
+        let data = Data((0..<bytes).map { UInt8(truncatingIfNeeded: $0 &* 31 &+ 7) })
+        let url = FileManager.default.temporaryDirectory.appending(path: "bandroom-sum-\(UUID().uuidString)")
+        try data.write(to: url)
+        return (url, data)
+    }
+
+    final class Seen: @unchecked Sendable {
+        let lock = NSLock()
+        var fractions: [Double] = []
+        var onMain = false
+        func add(_ f: Double) { lock.withLock { fractions.append(f); if Thread.isMainThread { onMain = true } } }
+        var snapshot: (fractions: [Double], onMain: Bool) { lock.withLock { (fractions, onMain) } }
+    }
+
+    static func file(named name: String, _ data: Data) -> ModelFile {
+        ModelFile(name: name, url: URL(string: "https://example.org/\(name)")!, size: Int64(data.count), sha256: sha256Hex(data))
+    }
+
+    @Test func aMultiChunkFileHashesToItsSHA256WithRisingProgressOffTheMainThread() async throws {
+        let (url, data) = try file(1_000_003)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let seen = Seen()
+        let hex = try await ModelDownloader.digest(of: url, .sha256, chunk: 64 << 10, interval: .zero) { seen.add($0) }
+        #expect(hex == sha256Hex(data))
+        let (fractions, onMain) = seen.snapshot
+        #expect(fractions.count >= 16)
+        #expect(fractions == fractions.sorted())
+        #expect(fractions.last == 1)
+        #expect(!onMain)
+    }
+
+    /// Called from the main actor, as the downloader does: the hashing still runs elsewhere.
+    @MainActor @Test func fromTheMainActorTheHashingRunsElsewhere() async throws {
+        let (url, data) = try file(300_000)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let seen = Seen()
+        try await ModelDownloader.verify(url, as: Self.file(named: "x.bin", data), interval: .zero) { seen.add($0) }
+        #expect(!seen.snapshot.onMain)
+        #expect(!seen.snapshot.fractions.isEmpty)
+        #expect(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func theGitBlobIDMatchesGit() async throws {
+        let (url, data) = try file(200_000)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let want = Insecure.SHA1.hash(data: Data("blob \(data.count)\u{0}".utf8) + data).map { String(format: "%02x", $0) }.joined()
+        #expect(try await ModelDownloader.digest(of: url, .gitBlob, chunk: 16 << 10) == want)
+    }
+
+    @Test func progressIsThrottled() async throws {
+        let (url, _) = try file(2_000_000)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let seen = Seen()
+        _ = try await ModelDownloader.digest(of: url, .sha256, chunk: 4 << 10, interval: .seconds(10)) { seen.add($0) }
+        // The first chunk and the end, not one per chunk.
+        #expect(seen.snapshot.fractions.count == 2)
+    }
+
+    @Test func cancellingStopsTheHashingAndKeepsTheFile() async throws {
+        let (url, data) = try file(4_000_000)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let seen = Seen()
+        let started = AsyncStream<Void>.makeStream()
+        let f = Self.file(named: "x.bin", data)
+        let work = Task {
+            try await ModelDownloader.verify(url, as: f, chunk: 64 << 10, interval: .zero) { fraction in
+                seen.add(fraction)
+                started.continuation.yield()
+                // Slow enough that the cancel lands mid-file.
+                Thread.sleep(forTimeInterval: 0.002)
+            }
+        }
+        for await _ in started.stream { break }
+        work.cancel()
+        await #expect(throws: CancellationError.self) { try await work.value }
+        let fractions = seen.snapshot.fractions
+        #expect(fractions.last.map { $0 < 1 } == true, "stopped at \(String(describing: fractions.last))")
+        // A cancelled check isn't a bad file: the part stays whole for the next try.
+        #expect(try Data(contentsOf: url) == data)
+    }
+}
+
+@Suite struct ThrottleTests {
+    final class Box: @unchecked Sendable {
+        let lock = NSLock()
+        var values: [Int] = []
+    }
+
+    @Test func holdsBackBurstsButDeliversTheLastValue() async throws {
+        let box = Box()
+        let t = Throttle<Int>(interval: .milliseconds(100)) { v in box.lock.withLock { box.values.append(v) } }
+        for i in 1...1000 { t.offer(i) }
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(box.lock.withLock { box.values } == [1, 1000])
+    }
+}

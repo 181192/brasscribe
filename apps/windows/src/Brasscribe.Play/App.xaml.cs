@@ -243,7 +243,7 @@ public partial class App : Application
         var dir = Path.Combine(AppContext.BaseDirectory, "SoundFonts");
         string band = Path.Combine(dir, "brasscribe-band.sf2"), map = Path.Combine(dir, "mapping.json");
         if (File.Exists(band) && File.Exists(map)) _ = BandSoundFont.Load(map, band).ApplyTo(player, inBackground: true);
-        else if (Directory.Exists(Path.Combine(dir, "built"))) BrassSoundSet.Load(Path.Combine(dir, "built"), map).ApplyTo(player);
+        else if (Directory.Exists(Path.Combine(dir, "built"))) _ = BrassSoundSet.Load(Path.Combine(dir, "built"), map).ApplyTo(player, inBackground: true);
         else
         {
             player.SoundsMissingFrom = band;

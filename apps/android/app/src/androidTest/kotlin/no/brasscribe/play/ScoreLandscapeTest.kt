@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
@@ -101,12 +102,23 @@ class ScoreLandscapeTest {
             val h = n.boundsInRoot.height / density
             assertTrue("$label: a control shows $h dp of its height (${n.config})", h >= 47.5f)
         }
-        // The music stand is one tap away: in the row, or under More when the row has no room for it.
+        // One overflow entry: the row has no More chip; what does not fit is in the top bar's ⋯ sheet.
+        assertTrue("$label: no More chip in the row", rule.onAllNodesWithText("More").fetchSemanticsNodes().isEmpty())
+        // The music stand is one tap away: in the row, or in the ⋯ sheet, which always has it.
         if (rule.onAllNodesWithTag("stand-enter").fetchSemanticsNodes().none { it.layoutInfo.isPlaced }) {
-            rule.onNodeWithTag("controls-more").performClick()
-            rule.waitUntil(5_000) { rule.onAllNodesWithText("Music stand").fetchSemanticsNodes().isNotEmpty() }
+            rule.onNodeWithTag("top-more").performClick()
+            rule.waitUntil(5_000) { rule.onAllNodesWithTag("performance").fetchSemanticsNodes().isNotEmpty() }
             Thread.sleep(400)
             instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label-more.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+            // The sheet's content ends above the navigation bar: nothing under the gesture handle.
+            var navTop = 0
+            rule.runOnUiThread {
+                val decor = rule.activity.window.decorView
+                navTop = decor.height - ViewCompat.getRootWindowInsets(decor)!!.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            }
+            rule.onNodeWithTag("performance").performScrollTo()
+            val stand = rule.onNodeWithTag("performance").getBoundsInRoot()
+            assertTrue("$label: the stand entry ends above the navigation bar", stand.bottom.value * density <= navTop + 1)
         }
     }
 

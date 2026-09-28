@@ -189,7 +189,6 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _controller = new BandroomController(_supervisor, ApiFor, new WindowsMetrics(), _s, _paths,
             new MachineInfo(computer, _cuda ? "Health_Speed_Nvidia" : "Health_Speed_Cpu", runsOn, Machine.LanAddresses()))
         {
-            SetupComplete = _bootstrap.IsComplete(_cuda),
             CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
             Downloads = _downloads,
         };
@@ -204,8 +203,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     private async Task RunAsync()
     {
-        _ = _controller!.RunAsync(_quit.Token);
-        if (!_bootstrap!.IsComplete(_cuda)) await SetupAsync();
+        // Hashes pixi.lock and walks the bundled workspace: off the UI thread, before the first snapshot.
+        bool complete = await _bootstrap!.IsCompleteAsync(_cuda);
+        _controller!.SetupComplete = complete;
+        _ = _controller.RunAsync(_quit.Token);
+        if (!complete) await SetupAsync();
         else await _supervisor!.StartAsync();
     }
 
@@ -449,7 +451,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     public void FinishSetup()
     {
         if (_bootstrap is null || _controller is null) return;
-        if (!_bootstrap.IsComplete(_cuda)) _ = SetupAsync();
+        _ = FinishSetupAsync(_bootstrap);
+    }
+
+    private async Task FinishSetupAsync(Bootstrapper bootstrap)
+    {
+        if (!await bootstrap.IsCompleteAsync(_cuda)) await SetupAsync();
         else StartMissingDownloads();
     }
 

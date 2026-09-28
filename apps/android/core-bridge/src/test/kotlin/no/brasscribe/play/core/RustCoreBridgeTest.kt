@@ -137,6 +137,28 @@ class RustCoreBridgeTest {
     }
 
     @Test
+    fun aScoreParsesItsCompositionOnceForAllParts() {
+        assumeTrue(File(golden, "composition.json").isFile)
+        val c = core()
+        val json = File(golden, "composition.json").readText()
+        val parts = listOf("Solo Cornet", "Repiano Cornet", "Flugelhorn", "Solo Horn", "Baritone", "Euphonium", "Eb Bass")
+        val notes = (0 until 16).map { ScoreNote(it * 24L, 24, it * 0.5, it * 0.5 + 0.5, 60 + it % 7, 80) }
+        // The same text again as a new String (a score reloaded): equal content hits the cache too.
+        val t0 = System.nanoTime()
+        val shared = parts.mapIndexed { i, p -> c.humanize(notes, p, 0, if (i % 2 == 0) json else String(json.toCharArray()))!! }
+        val t1 = System.nanoTime()
+        assertEquals("one parse of the composition for ${parts.size} parts", 1, c.performancesBuilt)
+        // Identical to a Performance built for each part on its own.
+        val alone = parts.map { p -> RustCoreBridge.load()!!.humanize(notes, p, 0, json)!! }
+        println("humanize ${parts.size} parts: %d ms with one parse, %d ms with one per part".format((t1 - t0) / 1_000_000, (System.nanoTime() - t1) / 1_000_000))
+        assertEquals(alone, shared)
+        assertTrue("the composition shapes the result", shared.zip(parts.map { c.humanize(notes, it, 0, null)!! }).any { (a, b) -> a != b })
+        // Another composition replaces the cached one.
+        c.humanize(notes, "Solo Cornet", 0, json.replaceFirst("{", "{ "))
+        assertEquals(2, c.performancesBuilt)
+    }
+
+    @Test
     fun partViewSpellsThroughTheCore() {
         val c = core()
         assumeTrue(File(golden, "composition.json").isFile)

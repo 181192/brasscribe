@@ -39,6 +39,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -416,3 +419,33 @@ fun PracticeChip(label: String, on: Boolean, onClick: () -> Unit, modifier: Modi
     }
 }
 
+/**
+ * Every bottom sheet in the app: fully open (a half-open sheet leaves its end below the screen at large
+ * text), and its content kept clear of the navigation bar and gesture handle, at the bottom and, with
+ * the bar on the side in landscape, at the sides. Insets the sheet already applied are consumed, so
+ * nothing is padded twice.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun PlaySheet(
+    onDismiss: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color,
+    dragHandle: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = containerColor,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle = if (dragHandle) ({ androidx.compose.material3.BottomSheetDefaults.DragHandle() }) else null,
+    ) {
+        androidx.compose.foundation.layout.Column(
+            Modifier.windowInsetsPadding(
+                androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(
+                    androidx.compose.foundation.layout.WindowInsetsSides.Horizontal + androidx.compose.foundation.layout.WindowInsetsSides.Bottom,
+                ),
+            ),
+            content = content,
+        )
+    }
+}

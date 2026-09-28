@@ -27,40 +27,58 @@ public sealed record LayerInputs(byte[][] Midi, byte[]?[] Wav, string Beats, Sol
     /// From named files (a stage-file listing or a folder). Null when a MIDI layer or the beats are
     /// missing; stems and contour are optional.
     /// </summary>
-    public static LayerInputs? From(Func<string, byte[]?> file)
+    public static LayerInputs? From(Func<string, byte[]?> file) =>
+        From(file, () => file(ContourName) is { } npz ? ReadContour(npz) : null);
+
+    private static LayerInputs? From(Func<string, byte[]?> file, Func<SoloContour?> contour)
     {
         var midi = new byte[MidiNames.Length][];
         for (int i = 0; i < MidiNames.Length; i++)
             if ((midi[i] = file(MidiNames[i])!) is null) return null;
         if (file(BeatsName) is not { } beats) return null;
         var wav = WavNames.Select(file).ToArray();
-        var contour = file(ContourName) is { } npz ? ReadContour(npz) : null;
-        return new LayerInputs(midi, wav, Encoding.UTF8.GetString(beats), contour);
+        return new LayerInputs(midi, wav, Encoding.UTF8.GetString(beats), contour());
     }
 
-    /// <summary>From a folder holding the layer files, with the beats and contour next to them or one level up.</summary>
-    public static LayerInputs? FromDirectory(string dir, string? beatsPath = null, string? contourPath = null) => From(name =>
+    /// <summary>
+    /// From a folder holding the layer files, with the beats and contour next to them or one level up.
+    /// Each file is read once into an array of its size (the C ABI takes each layer as one pointer and
+    /// length); the contour is decoded straight from the archive on disk. Blocking: call it off the UI thread.
+    /// </summary>
+    public static LayerInputs? FromDirectory(string dir, string? beatsPath = null, string? contourPath = null)
     {
-        string? p = name switch
+        string? PathOf(string name)
         {
-            BeatsName when beatsPath is not null => beatsPath,
-            ContourName when contourPath is not null => contourPath,
-            _ => new[] { Path.Combine(dir, name), Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dir)) ?? dir, name) }.FirstOrDefault(File.Exists),
-        };
-        return p is not null && File.Exists(p) ? File.ReadAllBytes(p) : null;
-    });
+            string? p = name switch
+            {
+                BeatsName when beatsPath is not null => beatsPath,
+                ContourName when contourPath is not null => contourPath,
+                _ => new[] { Path.Combine(dir, name), Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dir)) ?? dir, name) }.FirstOrDefault(File.Exists),
+            };
+            return p is not null && File.Exists(p) ? p : null;
+        }
+        return From(name => PathOf(name) is { } p ? File.ReadAllBytes(p) : null, () =>
+        {
+            if (PathOf(ContourName) is not { } p) return null;
+            using var file = File.OpenRead(p);
+            return ReadContour(file);
+        });
+    }
 
     /// <summary>Reads the contour arrays (t, pitch_hz, loudness_db) from a NumPy .npz archive of little-endian float64 vectors.</summary>
-    public static SoloContour ReadContour(byte[] npz)
+    public static SoloContour ReadContour(byte[] npz) => ReadContour(new MemoryStream(npz, writable: false));
+
+    /// <inheritdoc cref="ReadContour(byte[])"/>
+    public static SoloContour ReadContour(Stream npz)
     {
-        using var zip = new ZipArchive(new MemoryStream(npz), ZipArchiveMode.Read);
+        using var zip = new ZipArchive(npz, ZipArchiveMode.Read);
         double[] Array(string name)
         {
             var entry = zip.GetEntry(name + ".npy") ?? throw new InvalidDataException($"contour without {name}");
             using var s = entry.Open();
-            using var ms = new MemoryStream();
-            s.CopyTo(ms);
-            return ReadNpy(ms.ToArray(), name);
+            var bytes = new byte[entry.Length];
+            s.ReadExactly(bytes);
+            return ReadNpy(bytes, name);
         }
         return new SoloContour(Array("t"), Array("pitch_hz"), Array("loudness_db"));
     }

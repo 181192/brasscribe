@@ -15,10 +15,12 @@ class OverflowRowState {
 
 /**
  * One line of controls that never clips (system.md §7: "rows wrap, or move into a sheet"): [lead]
- * always shows, then [items] in order while they fit. What does not fit gives way to [more], which
- * opens a sheet showing the rest (the items from [OverflowRowState.firstHidden], drawn with inSheet =
- * true). With [flexibleMin] set, the last item takes the rest of the row when it has at least that
- * width, and otherwise goes to the sheet. Items are centred on the row's height.
+ * always shows, then [items] in order while they fit. What does not fit is left out of the row, from
+ * [OverflowRowState.firstHidden] on; the screen shows those items in a sheet (drawn with inSheet =
+ * true). [more], when given, takes the place of the left-out items and opens that sheet; without it
+ * the screen offers them in a sheet it already has. With [flexibleMin] set, the last item takes the
+ * rest of the row when it has at least that width, and otherwise goes to the sheet. Items are centred
+ * on the row's height.
  */
 @Composable
 fun OverflowRow(
@@ -26,7 +28,7 @@ fun OverflowRow(
     spacing: Dp,
     lead: @Composable () -> Unit,
     items: List<@Composable (inSheet: Boolean) -> Unit>,
-    more: @Composable () -> Unit,
+    more: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
     flexibleMin: Dp? = null,
 ) {
@@ -52,12 +54,12 @@ fun OverflowRow(
             }
             shown = items.size
         } else {
-            val moreP = subcompose("more", more).map { it.measure(loose) }
-            val budget = max - gap - (moreP.maxOfOrNull { it.width } ?: 0)
+            val moreP = more?.let { m -> subcompose("more", m).map { it.measure(loose) } }.orEmpty()
+            val budget = if (more == null) max else max - gap - (moreP.maxOfOrNull { it.width } ?: 0)
             var end = leadW
             var k = 0
             while (k < fixedCount && end + gap + widths[k] <= budget) { end += gap + widths[k]; placed += fixed[k]; k++ }
-            placed += moreP
+            if (more != null) placed += moreP
             shown = k
         }
         state.firstHidden = if (shown >= items.size) Int.MAX_VALUE else shown

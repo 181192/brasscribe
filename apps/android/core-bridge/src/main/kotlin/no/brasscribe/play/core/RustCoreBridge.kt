@@ -139,15 +139,33 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         override fun close() = ts.close()
     }
 
+    // Synchronized with the cache below, so a part never runs on a Performance another score just replaced.
+    @Synchronized
     override fun humanize(notes: List<ModelScoreNote>, part: String, player: Int, compositionJson: String?): List<ModelPlayedNote> {
-        val perf = compositionJson?.let { Performance(it) }
-        try {
-            val out = humanizePart(notes.map { CoreScoreNote(it.tick, it.durTicks, it.startS, it.endS, it.pitch, it.velocity.toLong()) },
-                part, player.toLong(), "brasscribe", perf, false)
-            return out.notes.map { ModelPlayedNote(it.start, it.end, it.pitch, it.velocity.toInt(), it.staccato) }
-        } finally {
-            perf?.close()
-        }
+        val perf = compositionJson?.let { performance(it) }
+        val out = humanizePart(notes.map { CoreScoreNote(it.tick, it.durTicks, it.startS, it.endS, it.pitch, it.velocity.toLong()) },
+            part, player.toLong(), "brasscribe", perf, false)
+        return out.notes.map { ModelPlayedNote(it.start, it.end, it.pitch, it.velocity.toInt(), it.staccato) }
+    }
+
+    /**
+     * The composition's [Performance], parsed once and reused for every part of the score: a band's
+     * 18 parts share one parse of the (about 1.3 MB) composition instead of one each. One score is
+     * humanized at a time, so one entry is kept; a new composition replaces (and closes) it.
+     */
+    private var performance: Pair<String, Performance>? = null
+
+    /** Compositions parsed into a [Performance] so far, for the test that each is parsed once. */
+    @Volatile internal var performancesBuilt = 0
+        private set
+
+    private fun performance(compositionJson: String): Performance {
+        performance?.let { (json, perf) -> if (json === compositionJson || json == compositionJson) return perf }
+        val perf = Performance(compositionJson)
+        performancesBuilt++
+        performance?.second?.close()
+        performance = compositionJson to perf
+        return perf
     }
 
     companion object {

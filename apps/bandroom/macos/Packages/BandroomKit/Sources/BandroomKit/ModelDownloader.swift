@@ -43,6 +43,8 @@ public final class ModelDownloader {
     public private(set) var bytesTotal: Int64 = 0
     /// Smoothed, for "about 12 min left".
     public private(set) var bytesPerSecond: Double = 0
+    /// While a finished file's checksum is computed (off the main actor): how far, 0...1. Nil otherwise.
+    public private(set) var verifying: Double?
 
     public var fraction: Double { bytesTotal > 0 ? min(1, Double(bytesDone) / Double(bytesTotal)) : (phase == .done ? 1 : 0) }
     public var minutesLeft: Int? {
@@ -87,6 +89,7 @@ public final class ModelDownloader {
         bytesTotal = self.components.reduce(0) { total, c in total + catalog(c).reduce(0) { $0 + $1.size } }
         bytesDone = 0
         bytesPerSecond = 0
+        verifying = nil
         lastSample = nil
         guard !self.components.isEmpty else { phase = .done; onFinished?(); return }
         phase = .checking
@@ -97,6 +100,7 @@ public final class ModelDownloader {
     public func pause() {
         guard isActive else { return }
         phase = .paused
+        verifying = nil
         task?.cancel()
         fetch?.cancel()
     }
@@ -210,9 +214,11 @@ public final class ModelDownloader {
         if f.url.host == ModelCatalog.huggingFaceHost, let key = token(), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
-        let fetch = FileFetch(request: request, part: part, configuration: configuration) { [weak self] written in
+        // At most four main-actor hops a second, however small the network's chunks.
+        let gate = Throttle<Int64>(interval: Self.progressInterval) { [weak self] written in
             Task { @MainActor in self?.progress(already + written, fetch: number) }
         }
+        let fetch = FileFetch(request: request, part: part, configuration: configuration) { gate.offer($0) }
         self.fetch = fetch
         defer { self.fetch = nil }
         log?("models: fetching \(f.url.absoluteString)")
@@ -220,11 +226,20 @@ public final class ModelDownloader {
             try await fetch.run()
         } onCancel: { fetch.cancel() }
         try Task.checkCancellation()
-        try verify(part, as: f)
+        verifying = 0
+        defer { verifying = nil }
+        try await Self.verify(part, as: f, interval: Self.progressInterval) { [weak self] fraction in
+            Task { @MainActor in self?.verified(fraction, fetch: number) }
+        }
         do {
             try? fm.removeItem(at: dest)
             try fm.moveItem(at: part, to: dest)
         } catch { throw DownloadError.disk(error.localizedDescription) }
+    }
+
+    private func verified(_ fraction: Double, fetch number: Int) {
+        guard phase == .downloading, number == fetchNumber, let v = verifying else { return }
+        verifying = max(v, fraction)
     }
 
     private func progress(_ done: Int64, fetch number: Int) {
@@ -266,12 +281,25 @@ public final class ModelDownloader {
         ModelCheck.fileMatches(destination(f, of: c), size: f.size)
     }
 
-    /// Size, then SHA-256 or git blob id where upstream publishes them. A bad file is deleted.
-    private func verify(_ part: URL, as f: ModelFile) throws {
+    /// Size, then SHA-256 or git blob id where upstream publishes them, read on a background thread with
+    /// `progress` (0...1) at most once per `interval`. A bad file is deleted; a cancelled check leaves it as it
+    /// was, so resuming checks it again.
+    nonisolated static func verify(_ part: URL, as f: ModelFile, chunk: Int = 4 << 20, interval: Duration = progressInterval,
+                                   progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
         let size = Self.size(of: part) ?? -1
         var ok = f.size <= 0 || size == f.size
-        if ok, let sha = f.sha256 { ok = (try? Self.sha256(of: part)) == sha }
-        else if ok, let blob = f.gitBlob { ok = (try? Self.gitBlobID(of: part)) == blob }
+        if ok, f.sha256 != nil || f.gitBlob != nil {
+            let kind: Digest = f.sha256 != nil ? .sha256 : .gitBlob
+            let digest: String?
+            do {
+                digest = try await Self.digest(of: part, kind, chunk: chunk, interval: interval, progress: progress)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                digest = nil
+            }
+            ok = digest == (f.sha256 ?? f.gitBlob)
+        }
         if !ok {
             try? FileManager.default.removeItem(at: part)
             throw DownloadError.checksumMismatch(file: f.name)
@@ -310,24 +338,57 @@ public final class ModelDownloader {
         return probe.path
     }
 
-    nonisolated static func sha256(of url: URL) throws -> String {
-        var hasher = SHA256()
-        try stream(url) { hasher.update(data: $0) }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    /// How often progress reaches the main actor: four times a second.
+    nonisolated static let progressInterval: Duration = .milliseconds(250)
+
+    enum Digest: Sendable {
+        case sha256
+        /// `git hash-object`: SHA-1 of "blob <size>\0" and the bytes.
+        case gitBlob
     }
 
-    /// `git hash-object`: SHA-1 of "blob <size>\0" and the bytes.
-    nonisolated static func gitBlobID(of url: URL) throws -> String {
-        var hasher = Insecure.SHA1()
-        hasher.update(data: Data("blob \(size(of: url) ?? 0)\u{0}".utf8))
-        try stream(url) { hasher.update(data: $0) }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    /// The file's digest as lowercase hex, computed in a detached task (never on the caller's actor) in
+    /// `chunk`-sized reads. Cancelling the caller cancels the read between chunks with CancellationError.
+    nonisolated static func digest(of url: URL, _ kind: Digest, chunk: Int = 4 << 20, interval: Duration = progressInterval,
+                                   progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws -> String {
+        let work = Task.detached(priority: .utility) {
+            try hash(url, kind, chunk: chunk, interval: interval, progress: progress)
+        }
+        return try await withTaskCancellationHandler { try await work.value } onCancel: { work.cancel() }
     }
 
-    nonisolated private static func stream(_ url: URL, _ body: (Data) -> Void) throws {
+    /// Synchronous: call it from a background task. Checks for cancellation between chunks.
+    nonisolated private static func hash(_ url: URL, _ kind: Digest, chunk: Int = 4 << 20, interval: Duration = .zero,
+                                         progress: (Double) -> Void = { _ in }) throws -> String {
+        let total = Double(max(1, size(of: url) ?? 0))
+        var sha256 = SHA256(), sha1 = Insecure.SHA1()
+        if kind == .gitBlob { sha1.update(data: Data("blob \(size(of: url) ?? 0)\u{0}".utf8)) }
         let h = try FileHandle(forReadingFrom: url)
         defer { try? h.close() }
-        while let chunk = try h.read(upToCount: 4 << 20), !chunk.isEmpty { body(chunk) }
+        let clock = ContinuousClock()
+        var last: ContinuousClock.Instant?
+        var read: Int64 = 0
+        while true {
+            if Task.isCancelled { throw CancellationError() }
+            let more: Bool = try autoreleasepool {
+                guard let data = try h.read(upToCount: chunk), !data.isEmpty else { return false }
+                switch kind {
+                case .sha256: sha256.update(data: data)
+                case .gitBlob: sha1.update(data: data)
+                }
+                read += Int64(data.count)
+                return true
+            }
+            guard more else { break }
+            let now = clock.now
+            if last.map({ now - $0 >= interval }) ?? true {
+                last = now
+                progress(min(1, Double(read) / total))
+            }
+        }
+        progress(1)
+        let bytes: [UInt8] = kind == .sha256 ? Array(sha256.finalize()) : Array(sha1.finalize())
+        return bytes.map { String(format: "%02x", $0) }.joined()
     }
 
     /// The HTTP status of a request, or nil when the network didn't answer (the download then says so itself).
@@ -341,6 +402,50 @@ public final class ModelDownloader {
             throw CancellationError()
         } catch {
             return nil
+        }
+    }
+}
+
+/// Passes on at most one value per `interval`; a value held back goes out when the interval ends, so the
+/// last one is never lost (a stalled download still shows where it stopped).
+final class Throttle<Value: Sendable>: @unchecked Sendable {
+    private let interval: Duration
+    private let sink: @Sendable (Value) -> Void
+    private let lock = NSLock()
+    private let clock = ContinuousClock()
+    private var last: ContinuousClock.Instant?
+    private var latest: Value?
+    private var pending = false
+
+    init(interval: Duration, sink: @escaping @Sendable (Value) -> Void) {
+        self.interval = interval; self.sink = sink
+    }
+
+    func offer(_ value: Value) {
+        lock.lock()
+        let now = clock.now
+        guard let last, now - last < interval else {
+            self.last = now
+            latest = nil
+            lock.unlock()
+            sink(value)
+            return
+        }
+        latest = value
+        guard !pending else { lock.unlock(); return }
+        pending = true
+        let wait = interval - (now - last)
+        lock.unlock()
+        let (seconds, atto) = wait.components
+        let nanos = Int(seconds * 1_000_000_000 + atto / 1_000_000_000)
+        DispatchQueue.global().asyncAfter(deadline: .now() + .nanoseconds(nanos)) { [self] in
+            lock.lock()
+            let value = latest
+            latest = nil
+            pending = false
+            self.last = clock.now
+            lock.unlock()
+            if let value { sink(value) }
         }
     }
 }
