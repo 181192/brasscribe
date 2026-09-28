@@ -399,7 +399,31 @@ EOF
   return "$status"
 }
 
+# One VM user at a time across all worktrees and agents: runs queue on a host-wide lock instead of
+# fighting over the two guests. A full test-ui run (no ONLY) needs MAC_VM_FULL=1; everything else
+# runs named classes or tests only (docs/dev/macos-vm.md, "When to use the VM").
+LOCK="$HOME/.tart/brasscribe-ui.lock"
+take_lock() {
+  local waited=0
+  until mkdir "$LOCK" 2>/dev/null; do
+    local pid; pid="$(cat "$LOCK/pid" 2>/dev/null || true)"
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
+    [ "$waited" -eq 0 ] && log "VM busy (pid ${pid:-?}: $(cat "$LOCK/what" 2>/dev/null || echo '?')); waiting"
+    waited=$((waited + 5)); sleep 5
+  done
+  echo $$ >"$LOCK/pid"; echo "$*" >"$LOCK/what"
+  trap 'rm -rf "$LOCK"' EXIT
+}
+
 cmd="${1:-}"; shift || true
+case "$cmd" in
+  test-ui)
+    if [ -z "${1:-}" ] && [ "${MAC_VM_FULL:-}" != 1 ]; then
+      echo "error: the full suite runs once before a release (MAC_VM_FULL=1). Name the classes or tests: test-ui PlayUITests/testX,WindowSizeUITests" >&2; exit 2
+    fi
+    take_lock "test-ui ${1:-all} from $ROOT" ;;
+  test-ui-bandroom|up|down|provision) take_lock "$cmd from $ROOT" ;;
+esac
 case "$cmd" in
   up) up >/dev/null ;;
   down) down "${1:-}" ;;

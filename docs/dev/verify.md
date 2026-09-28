@@ -137,11 +137,14 @@ fail instead of skipping.
 - **iOS simulators.** Headless only. Use `make -C apps/apple test-ios-unit` for the app unit tests.
 - **macOS UI tests** move the real pointer and keyboard. Run them only in the macOS VM
   ([macos-vm.md](macos-vm.md)), never on a Mac someone is using.
-  - Run them before a release, and for changes to window, input or navigation code.
+  - Most branches don't need them. The full suite runs once, before a release (`MAC_VM_FULL=1`).
+    A branch may run only the named tests that confirm a fix the layout harness can't see
+    (hit-testing, clicks, keyboard, the window delegate).
   - Layout and resize regressions are covered earlier, in tiers 1 and 2, by the off-screen layout
     harness in the macOS app unit tests (`AppTests/LayoutHarness.swift`).
   - Run the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests[,PlayUITests/testKeyboardShortcuts]`.
-    That takes under a minute warm. The full suite (`scripts/mac-vm.sh test-ui`) takes about 6 minutes over two VMs.
+    That takes under a minute warm. The full suite (`MAC_VM_FULL=1 scripts/mac-vm.sh test-ui`) takes about 6 minutes over two VMs.
+    Runs from different worktrees queue on a host-wide lock.
   - `scripts/mac-vm.sh down` suspends the VMs when you're done.
 
 ## Measurements

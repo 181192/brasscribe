@@ -186,9 +186,13 @@ They skip themselves outside a virtual machine (`kern.hv_vmm_present`).
 - Never start the VM with a window or VNC (`tart run` without `--no-graphics`). The script never does.
 - Building on the host (`make build`, `build-for-testing`) and the unit tests (`make test`) are fine.
   They do not touch the pointer.
-- Pass the affected classes: `test-ui <Class>[,<Class>/<test>…]`. Run the whole suite before a release.
-- One run at a time: a run uses both VMs, and macOS allows no third. Other agents wait for it to
-  finish.
+- Most branches don't need the VM. Use the unit tests and the layout harness. Use the VM only
+  to confirm a fix the harness can't see (hit-testing, clicks, keyboard, the window delegate), and
+  then only the named tests: `test-ui <Class>/<test>[,…]`, at most two at a time.
+- The full suite is run once, before a release, by whoever cuts it. The script refuses
+  `test-ui` without a list unless `MAC_VM_FULL=1` is set.
+- One VM user at a time: the script holds a host-wide lock (`~/.tart/brasscribe-ui.lock`), and other
+  runs wait on it. Never kill another run.
 - Read the results from `build/mac-vm/<run>/<vm>/`: `summary.json` for the failures,
   `attachments/*-last.png` for the screen at each failure.
 - Run `scripts/mac-vm.sh down` when finished. It suspends the VMs, which frees their RAM.
