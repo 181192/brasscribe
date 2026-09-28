@@ -8,7 +8,8 @@ struct ChangeNoteSheet: View {
     let target: ReviewItem
     let xml: String
     let evidence: NoteEvidence.Note?
-    let onSave: () -> Void
+    /// The note was written, from the first pitch to the second; Review stays on it.
+    let onSave: (SpelledPitch, SpelledPitch) -> Void
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var lead: ScoreNote?
@@ -48,7 +49,7 @@ struct ChangeNoteSheet: View {
                         }
                     }
                 }
-                Text("The ? mark goes when you save. Changes are kept with this score.")
+                Text("Save changes the note in the score. Listen to it, then keep it to take the ? mark away.")
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -100,27 +101,32 @@ struct ChangeNoteSheet: View {
     }
 
     private func save() {
-        guard let written, let original else { return }
+        guard let written, let original, let lead else { return }
         do {
-            var checked = piece.loadChecked()
-            checked.insert(target.id)
-            try? JSONEncoder().encode(checked).write(to: piece.checkedURL)
-            // The Composition changes and the core arranges the score again, so parts doubling the line follow;
-            // without the Composition only this printed note changes.
-            if var comp = piece.loadComposition(), let lead, let p = lead.midiPitch,
-               let change = CompositionEdit.change(&comp, scoreTick: lead.startTick, concertPitch: p, by: written.midi - original.midi) {
-                try piece.saveComposition(comp)
-                if let e = piece.loadEvidence() { piece.saveEvidence(CompositionEdit.follow(e, change)) }
-                try app.rearrange(piece, composition: comp, output: piece.output ?? OutputChoice(), open: false)
-            } else {
-                let updated = try MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: written)
-                try piece.saveMusicXML(updated)
-                piece.saveChecked(checked, remaining: max(0, (piece.toCheck ?? 1) - 1))
-            }
-            onSave()
+            try ReviewChange.apply(piece: piece, app: app, xml: xml, target: target, lead: lead, from: original, to: written)
+            onSave(original, written)
             dismiss()
         } catch {
             saveError = error.localizedDescription
+        }
+    }
+}
+
+/// Writes a changed note to the piece, which stays open in Review until it is kept.
+enum ReviewChange {
+    /// The note `lead` of `target` moves from `from` to `to`. The Composition changes and the core arranges
+    /// the score again, so parts doubling the line follow; without the Composition only this printed note
+    /// changes. `undo` puts back what Brasscribe wrote.
+    @MainActor
+    static func apply(piece: Piece, app: AppModel, xml: String, target: ReviewItem, lead: ScoreNote,
+                      from: SpelledPitch, to: SpelledPitch, undo: Bool = false) throws {
+        if var comp = piece.loadComposition(), let p = lead.midiPitch,
+           let change = CompositionEdit.change(&comp, scoreTick: lead.startTick, concertPitch: p, by: to.midi - from.midi, undo: undo) {
+            try piece.saveComposition(comp)
+            if let e = piece.loadEvidence() { piece.saveEvidence(CompositionEdit.follow(e, change)) }
+            try app.rearrange(piece, composition: comp, output: piece.output ?? OutputChoice(), open: false)
+        } else {
+            try piece.saveMusicXML(MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: to))
         }
     }
 }

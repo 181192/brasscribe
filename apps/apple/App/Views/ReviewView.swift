@@ -21,6 +21,9 @@ struct ReviewView: View {
     @State private var confirmLater = LaunchOptions.screen == "finish-later"
     @State private var loadError: String?
     @State private var filter: Filter = .mine
+    /// Notes changed in this review, by item: what Brasscribe wrote. They stay open until Keep.
+    @State private var changes: [ReviewItem.ID: SpelledPitch] = [:]
+    @AccessibilityFocusState private var changedFocused: Bool
 
     /// Triage: your own part first (very unsure first), then the other parts, then all.
     enum Filter: Hashable { case mine, others, all }
@@ -109,8 +112,10 @@ struct ReviewView: View {
             Text("\(allOpen.count) notes keep their ? marks. You can check them any time from the score: tap “Check them”.")
         }
         .sheet(item: $changing) { target in
-            ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { reload(keeping: target) }
-                .appAppearance()
+            ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: evidenceFor(target)) { from, to in
+                changed(target, from: from, to: to)
+            }
+            .appAppearance()
         }
         .task { load() }
         // choosing another note stops the bar that is playing
@@ -206,6 +211,7 @@ struct ReviewView: View {
                     Spacer()
                     Text("\(index) of \(open.count) · \(it.partName)")
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .accessibilityIdentifier("reviewPosition")
                 }
                 BarSnippet(xml: xml, partID: it.partID, bar: it.bar, lastBar: it.lastBar ?? it.bar, noteTick: it.tick, level: it.level, score: model.score)
                     .card(padding: Space.s2)
@@ -217,6 +223,7 @@ struct ReviewView: View {
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if let was = changes[it.id] { changedRow(it, was: was) }
                 // Listen and Change note come straight after the note, before anything that scrolls
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
@@ -271,7 +278,32 @@ struct ReviewView: View {
 
     private func bars(_ it: ReviewItem) -> ClosedRange<Int> { it.bar...max(it.bar, it.lastBar ?? it.bar) }
 
-    private func toggleListen(_ it: ReviewItem) { model?.toggleListen(bars: bars(it), original: true) }
+    /// A changed note plays from the score, so the new note is heard; otherwise the recording plays.
+    private func toggleListen(_ it: ReviewItem) { model?.toggleListen(bars: bars(it), original: changes[it.id] == nil) }
+
+    /// "Changed to D5 (was C5)" and Undo change, on the card after Save.
+    private func changedRow(_ it: ReviewItem, was: SpelledPitch) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.s3) { changedText(it, was: was); Spacer(minLength: 0); undoButton(it, was: was) }
+            VStack(alignment: .leading, spacing: Space.s2) { changedText(it, was: was); undoButton(it, was: was) }
+        }
+    }
+
+    private func changedText(_ it: ReviewItem, was: SpelledPitch) -> some View {
+        Text(Self.changedWords(now: pitchWithOctave(it), was: ReviewWords.name(was) + "\(was.octave)"))
+            .font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityFocused($changedFocused)
+            .accessibilityIdentifier("noteChanged")
+    }
+
+    private func undoButton(_ it: ReviewItem, was: SpelledPitch) -> some View {
+        Button { undoChange(it, was: was) } label: { Label("Undo change", systemImage: "arrow.uturn.backward") }
+            .buttonStyle(.plainText)
+            .accessibilityIdentifier("undoChange")
+    }
+
+    static func changedWords(now: String, was: String) -> String { String(localized: "Changed to \(now) (was \(was))") }
 
     /// "Listen to this bar", and "Stop" in the same place and size while it plays.
     private func listenButton(_ it: ReviewItem) -> some View {
@@ -441,6 +473,42 @@ struct ReviewView: View {
         }
     }
 
+    /// Change note… → Save: the score now has the new note and Review stays on it, still open, so the
+    /// player can listen, change it again or undo. "was" stays what Brasscribe wrote.
+    private func changed(_ target: ReviewItem, from: SpelledPitch, to: SpelledPitch) {
+        let was = changes[target.id] ?? from
+        reload(keeping: target)
+        changes[target.id] = was.midi == to.midi ? nil : was
+        let now = ReviewWords.name(to) + "\(to.octave)", before = ReviewWords.name(was) + "\(was.octave)"
+        AccessibilityNotifier.announce(was.midi == to.midi ? Self.undoneWords(before) : Self.changedWords(now: now, was: before))
+        focusChanged()
+    }
+
+    /// "Undo change": the note goes back to what Brasscribe wrote, and stays open.
+    private func undoChange(_ it: ReviewItem, was: SpelledPitch) {
+        guard let lead = note(it), case .pitched(let now) = lead.kind else { return }
+        model?.stopListening(announce: false)
+        do {
+            try ReviewChange.apply(piece: piece, app: app, xml: xml, target: it, lead: lead, from: now, to: was, undo: true)
+        } catch {
+            AccessibilityNotifier.announce(error.localizedDescription)
+            return
+        }
+        reload(keeping: it)
+        changes[it.id] = nil
+        AccessibilityNotifier.announce(Self.undoneWords(ReviewWords.name(was) + "\(was.octave)"))
+    }
+
+    static func undoneWords(_ was: String) -> String { String(localized: "Back to \(was), as Brasscribe wrote it") }
+
+    /// VoiceOver stays on the card: on the changed line once the sheet has gone.
+    private func focusChanged() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(600))
+            changedFocused = true
+        }
+    }
+
     private func reload(keeping target: ReviewItem) {
         model?.stopAll()
         model = nil
@@ -473,6 +541,12 @@ struct ReviewView: View {
     private func pitchName(_ it: ReviewItem) -> String {
         guard let n = note(it), case .pitched(let p) = n.kind else { return "?" }
         return ReviewWords.name(p)
+    }
+
+    /// "D5": the written note with its octave.
+    private func pitchWithOctave(_ it: ReviewItem) -> String {
+        guard let n = note(it), case .pitched(let p) = n.kind else { return "?" }
+        return ReviewWords.name(p) + "\(p.octave)"
     }
 
     private func noteWords(_ it: ReviewItem) -> String {

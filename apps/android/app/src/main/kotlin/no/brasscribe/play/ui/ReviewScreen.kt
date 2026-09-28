@@ -3,6 +3,7 @@ package no.brasscribe.play.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -159,6 +160,7 @@ fun ReviewScreen(vm: PlayViewModel) {
     val result by vm.result.collectAsState()
     val checkedMap by vm.checked.collectAsState()
     val playingBar by vm.clipPlaying.collectAsState()
+    val changes by vm.reviewChanges.collectAsState()
     val r = result ?: return
     val c = BrasscribeTheme.colors
     // Review checks a transcription; an opened score has nothing to check against.
@@ -196,6 +198,15 @@ fun ReviewScreen(vm: PlayViewModel) {
     // Keep, Skip or picking another note moves to another bar: what was playing stops.
     LaunchedEffect(current?.index) { vm.stopListening(announce = false) }
     var changing by remember { mutableStateOf(false) }
+    // After Save the card keeps TalkBack's and the keyboard's focus (not the next note).
+    val cardFocus = remember { FocusRequester() }
+    var focusCard by remember { mutableStateOf(false) }
+    LaunchedEffect(focusCard) {
+        if (!focusCard) return@LaunchedEffect
+        delay(300)
+        runCatching { cardFocus.requestFocus() }
+        focusCard = false
+    }
 
     fun advance(from: Int, announce: Boolean = true) {
         picked = null
@@ -293,9 +304,20 @@ fun ReviewScreen(vm: PlayViewModel) {
                     val cardTitle = (if (span.first == span.last) stringResource(R.string.review_card_title, current.bar, partName)
                         else stringResource(R.string.review_card_title_bars, span.first, span.last, partName)) +
                         (group?.members?.size?.takeIf { it > 1 }?.let { " · " + pluralStringResource(R.plurals.review_group_notes, it, it) } ?: "")
+                    val changeKey = note?.let { vm.changeKey(voiceId, it.start) }
+                    val was = changeKey?.let { changes[it] }
                     NoteCard(
                         current, partName, todo.indexOf(current) + 1, todo.size, spoken[current.index], lang, playingBar == current.bar,
                         title = cardTitle, very = group?.very,
+                        changed = if (note != null && was != null) stringResource(R.string.review_changed_from, label(note.pitch), label(was)) else null,
+                        undo = {
+                            if (note != null && was != null && vm.undoReviewChange(voiceId, note.start, note.pitch)) {
+                                picked = current.index
+                                vm.say(R.string.review_change_undone, label(was))
+                                focusCard = true
+                            }
+                        },
+                        focus = cardFocus,
                         listen = { vm.listenToBar(current.bar) }, stop = vm::stopListening,
                         keep = { keep(current) }, next = { advance(current.index) },
                         changeNote = { changing = true },
@@ -320,11 +342,16 @@ fun ReviewScreen(vm: PlayViewModel) {
                     if (changing && note != null) ChangeNoteSheet(
                         written = note.pitch, evidence = evidence, pitchLabel = label,
                         dismiss = { changing = false },
+                        // Save writes the note and stays on it, still open: listen, change again or undo, then Keep.
                         save = { shift ->
                             changing = false
-                            if (shift == 0 || vm.correctNote(voiceId, note.start, note.pitch, shift)) {
-                                if (shift != 0) vm.say(R.string.note_saved)
-                                keep(current)
+                            val before = was ?: note.pitch
+                            val now = note.pitch + shift
+                            if (vm.changeReviewNote(voiceId, note.start, note.pitch, shift)) {
+                                picked = current.index
+                                if (now == before) vm.say(R.string.review_change_undone, label(before))
+                                else vm.say(R.string.review_changed_from, label(now), label(before))
+                                focusCard = true
                             }
                         },
                     )
@@ -481,6 +508,7 @@ private fun noteLine(e: PartEvent, lang: Lang): String {
 private fun NoteCard(
     e: PartEvent, partName: String, position: Int, total: Int, spoken: String, lang: Lang, playing: Boolean,
     title: String, very: Boolean?,
+    changed: String?, undo: () -> Unit, focus: FocusRequester,
     listen: () -> Unit, stop: () -> Unit, keep: () -> Unit, next: () -> Unit,
     changeNote: () -> Unit,
     neighbours: List<PartEvent>, checked: Set<Int>, snippet: @Composable () -> Unit = {},
@@ -491,6 +519,7 @@ private fun NoteCard(
     val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
+    val undoLabel = stringResource(R.string.review_undo_change)
     val level = stringResource(if (very ?: (e.uncertainty == Uncertainty.VERY_UNCERTAIN)) R.string.level_very_uncertain else R.string.level_uncertain)
     val alternative = evidence?.alternativeShift?.let { pitchLabel(evidence.pitch + it) }
     val levelSentence = if (alternative != null) stringResource(R.string.review_could_also_be, level, withArticle(alternative, lang))
@@ -498,12 +527,13 @@ private fun NoteCard(
     Surface(shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border)) {
         Column(Modifier.fillMaxWidth().padding(BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
             Column(
-                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                    contentDescription = "$spoken. $levelSentence"
-                    customActions = listOf(
+                Modifier.fillMaxWidth().focusRequester(focus).focusable().semantics(mergeDescendants = true) {
+                    contentDescription = listOfNotNull(spoken, changed, levelSentence).joinToString(". ")
+                    customActions = listOfNotNull(
                         CustomAccessibilityAction(listenLabel) { if (playing) stop() else listen(); true },
                         CustomAccessibilityAction(checkLabel) { keep(); true },
                         CustomAccessibilityAction(nextLabel) { next(); true },
+                        changed?.let { CustomAccessibilityAction(undoLabel) { undo(); true } },
                     )
                 },
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
@@ -514,11 +544,14 @@ private fun NoteCard(
                 }
                 snippet()
                 Text(noteLine(e, lang), style = MaterialTheme.typography.titleMedium)
+                // After Save: what the note is now and what Brasscribe wrote. It keeps its "?" until Keep.
+                if (changed != null) Text(changed, style = MaterialTheme.typography.titleMedium, modifier = Modifier.tagged("note-changed"))
                 Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
             if (evidence != null) EvidencePanel(evidence, pitchLabel)
             ListenButton(playing, listen, stop)
             OutlineButton(stringResource(R.string.change_note), changeNote, icon = R.drawable.ic_bc_transpose)
+            if (changed != null) PlainButton(undoLabel, undo, Modifier.fillMaxWidth().tagged("undo-change"))
         }
     }
 }
@@ -577,7 +610,7 @@ private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
 
 /**
  * "Change note…": move the written note by semitones or take what a transcriber heard, then Save.
- * Saving writes the score and marks the note checked, as on every platform.
+ * Saving writes the score and stays on the note, which is checked only by Keep, as on every platform.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -615,7 +648,7 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
                     }
                 }
             }
-            PrimaryButton(stringResource(R.string.save), { save(shift) })
+            PrimaryButton(stringResource(R.string.save), { save(shift) }, enabled = shift != 0)
             PlainButton(stringResource(R.string.cancel), dismiss, Modifier.fillMaxWidth())
         }
     }

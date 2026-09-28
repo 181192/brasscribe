@@ -27,6 +27,10 @@ class SavedScoreLibraryTest {
             assertEquals("run-1", renamedComputer.jobId)
             assertEquals("{}", library.list().first { it.id == fromComputer.id }.evidenceJson)
             assertEquals(setOf("melody:3"), library.list().first { it.id == fromComputer.id }.checked)
+            // A note changed on the phone is remembered: the computer's renders are older than the score.
+            val changed = library.save(fromComputer.id, "Take 2", "brass-band", "<y/>", null, jobId = "run-1", changedOnPhone = true)
+            assertEquals(true, library.list().first { it.id == changed.id }.changedOnPhone)
+            assertEquals(true, library.rename(changed.id, "Take 3")!!.changedOnPhone)
             library.delete(fromComputer.id)
             assertEquals(1, library.list().size)
         } finally {

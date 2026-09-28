@@ -138,7 +138,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
 
     /// <summary>
     /// "Change note…": the note moved by semitones or to what a transcriber heard; Save writes the score
-    /// and keeps the note (the same on every platform).
+    /// and stays on the note, which stays open until Keep (the same on every platform).
     /// </summary>
     private async void OnChangeNote(object sender, RoutedEventArgs e)
     {
@@ -148,9 +148,11 @@ public sealed partial class ReviewPage : Page, IScreenPage
         var name = new TextBlock { Style = (Style)Application.Current.Resources["BcTitle1TextBlockStyle"], HorizontalAlignment = HorizontalAlignment.Center };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(name, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         var choices = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        ContentDialog? dialog = null;
         void Update()
         {
             name.Text = ViewModel.ChangeLabel(shift);
+            if (dialog is not null) dialog.IsPrimaryButtonEnabled = shift != 0;
             foreach (var child in choices.Children.OfType<ToggleButton>()) child.IsChecked = (int)child.Tag == shift;
         }
         var down = new Button { Content = strings["ChangeNote_Down"], Style = (Style)Application.Current.Resources["SecondaryButtonStyle"] };
@@ -174,8 +176,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
             content.Children.Add(new TextBlock { Text = strings["ChangeNote_Heard"], Style = (Style)Application.Current.Resources["OverlineStyle"] });
             content.Children.Add(choices);
         }
-        Update();
-        var dialog = new ContentDialog
+        dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
             Title = strings["ChangeNote_Title"],
@@ -184,9 +185,15 @@ public sealed partial class ReviewPage : Page, IScreenPage
             CloseButtonText = strings["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Primary,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) ViewModel.ChangeNote(shift);
+        Update();
+        // Save stays on the note: focus goes to "Changed to …" (the change is also announced), else back to Change note….
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
+            ChangedLine.Focus(FocusState.Programmatic);
         else ChangeNoteButton.Focus(FocusState.Programmatic);
     }
+
+    /// <summary>Undo hides its own row: focus goes back to Change note… instead of being lost.</summary>
+    private void OnUndoChange(object sender, RoutedEventArgs e) => ChangeNoteButton.Focus(FocusState.Programmatic);
 
     /// <summary>K keeps and Space listens, only while single-key shortcuts are on (WCAG 2.1.4) and no text box or list item has focus.</summary>
     private bool SingleKeysAllowed(bool space) =>

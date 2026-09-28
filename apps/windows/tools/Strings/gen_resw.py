@@ -122,6 +122,7 @@ name("ReviewScope", "Which notes to check", "Hvilke toner som skal sjekkes")
 name("ReviewChangeNoteButton", "Change note…", "Endre tonen …"); help_("ReviewChangeNoteButton", "Choose what the note should be; the whole score follows", "Velg hva tonen skal være; hele partituret følger med")
 prop("ReviewChangeNoteLabel", "Text", "Change note…", "Endre tonen …")
 prop("ReviewKeys", "Text", "Space listens · K keeps · arrows move", "Mellomrom lytter · K beholder · piltastene flytter")
+text_button("ReviewUndoChangeButton", "Undo change", "Angre endringen", "Put the note back as Brasscribe wrote it", "Sett tonen tilbake slik Brasscribe skrev den")
 text_button("ReviewSkipButton", "Skip", "Hopp over", "Leave this note marked and go to the next", "La tonen være merket og gå til neste")
 name("ReviewKeepButton", "Keep, go to next", "Behold, gå til neste"); help_("ReviewKeepButton", "The note is right; its “?” goes (K)", "Tonen er riktig; «?» fjernes (K)")
 prop("ReviewKeepLabel", "Text", "Keep, go to next", "Behold, gå til neste")
@@ -364,7 +365,8 @@ code = {
     "Review_ScopeAll": ("All parts ({0})", "Alle stemmer ({0})"),
     "Review_Accompaniment": ("Accompaniment", "Akkompagnement"),
     "Review_MyPartDone": ("Your part is checked. Now the other parts.", "Stemmen din er sjekket. Nå de andre stemmene."),
-    "Review_Changed": ("Changed to {0}", "Endret til {0}"),
+    "Review_ChangedFrom": ("Changed to {0} (was {1})", "Endret til {0} (var {1})"),
+    "Review_ChangeUndone": ("Back to {0}, as Brasscribe wrote it", "Tilbake til {0}, slik Brasscribe skrev den"),
     "Review_ListItem": ("Bar {0} · {1}", "Takt {0} · {1}"),
     "Review_ListItemUncertain": ("Bar {0}, {1}, uncertain", "Takt {0}, {1}, usikker"),
     "Review_ListItemVeryUncertain": ("Bar {0}, {1}, very uncertain", "Takt {0}, {1}, svært usikker"),

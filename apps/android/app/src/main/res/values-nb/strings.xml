@@ -46,7 +46,9 @@
     <string name="save">Lagre</string>
     <string name="pitch_down">En halvtone ned</string>
     <string name="pitch_up">En halvtone opp</string>
-    <string name="note_saved">Tonen er endret</string>
+    <string name="review_changed_from">Endret til %1$s (var %2$s)</string>
+    <string name="review_change_undone">Tilbake til %1$s, slik Brasscribe skrev den</string>
+    <string name="review_undo_change">Angre endringen</string>
     <string name="score_options">Valg for %1$s</string>
     <string name="check_notes">Sjekk tonene</string>
     <string name="delete">Slett</string>

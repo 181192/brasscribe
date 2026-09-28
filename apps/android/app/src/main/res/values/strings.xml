@@ -48,7 +48,9 @@
     <string name="save">Save</string>
     <string name="pitch_down">Down a semitone</string>
     <string name="pitch_up">Up a semitone</string>
-    <string name="note_saved">Note changed</string>
+    <string name="review_changed_from">Changed to %1$s (was %2$s)</string>
+    <string name="review_change_undone">Back to %1$s, as Brasscribe wrote it</string>
+    <string name="review_undo_change">Undo change</string>
     <string name="score_options">Options for %1$s</string>
     <string name="check_notes">Check the notes</string>
     <string name="delete">Delete</string>

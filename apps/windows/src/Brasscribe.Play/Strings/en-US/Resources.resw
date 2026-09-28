@@ -1122,6 +1122,12 @@
   <data name="ReviewStopLabel.Text" xml:space="preserve">
     <value>Stop</value>
   </data>
+  <data name="ReviewUndoChangeButton.Content" xml:space="preserve">
+    <value>Undo change</value>
+  </data>
+  <data name="ReviewUndoChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Put the note back as Brasscribe wrote it</value>
+  </data>
   <data name="Review_Accompaniment" xml:space="preserve">
     <value>Accompaniment</value>
   </data>
@@ -1134,8 +1140,11 @@
   <data name="Review_BarsHeading" xml:space="preserve">
     <value>Bars {0}–{1}</value>
   </data>
-  <data name="Review_Changed" xml:space="preserve">
-    <value>Changed to {0}</value>
+  <data name="Review_ChangeUndone" xml:space="preserve">
+    <value>Back to {0}, as Brasscribe wrote it</value>
+  </data>
+  <data name="Review_ChangedFrom" xml:space="preserve">
+    <value>Changed to {0} (was {1})</value>
   </data>
   <data name="Review_Count" xml:space="preserve">
     <value>{0} notes to check</value>

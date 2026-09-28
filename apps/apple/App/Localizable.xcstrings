@@ -711,6 +711,16 @@
         }
       }
     },
+    "Back to %@, as Brasscribe wrote it": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake til %@, slik Brasscribe skrev den"
+          }
+        }
+      }
+    },
     "Back to Home": {
       "localizations": {
         "nb": {
@@ -1057,6 +1067,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Endre hva jeg spiller"
+          }
+        }
+      }
+    },
+    "Changed to %@ (was %@)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endret til %1$@ (var %2$@)"
           }
         }
       }
@@ -3461,6 +3481,16 @@
         }
       }
     },
+    "Save changes the note in the score. Listen to it, then keep it to take the ? mark away.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagre endrer tonen i partituret. Lytt til den, og behold den for å fjerne «?»-merket."
+          }
+        }
+      }
+    },
     "Save to Files": {
       "localizations": {
         "nb": {
@@ -4037,16 +4067,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med brasscribe://pair."
-          }
-        }
-      }
-    },
-    "The ? mark goes when you save. Changes are kept with this score.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "«?»-merket forsvinner når du lagrer. Endringene lagres med partituret."
           }
         }
       }
@@ -4657,6 +4677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Usikre noter"
+          }
+        }
+      }
+    },
+    "Undo change": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angre endringen"
           }
         }
       }
