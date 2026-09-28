@@ -32,6 +32,8 @@ struct NotationView: View {
                             PartHeader(model: model)
                         }
                         .padding(.top, BrasscribeDesign.Space.s1)
+                        // like the phone's other chrome, it grows to about twice the default size
+                        .dynamicTypeSize(hsize == .compact ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5)
                         .id("page-top")
                         ForEach(model.pages, id: \.number) { page in
                             PageView(model: model, page: page, rotorNS: rotorNS)

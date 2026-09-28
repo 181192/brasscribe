@@ -87,7 +87,7 @@ struct PartHeader: View {
             Button { explaining = true } label: {
                 HStack(spacing: Space.s2) {
                     Image(systemName: BrasscribeIcon.info.systemName).accessibilityHidden(true)
-                    Text(short).lineLimit(typeSize >= .accessibility1 ? 3 : 1).minimumScaleFactor(0.7).truncationMode(.middle)
+                    Text(short).lineLimit(typeSize >= .accessibility1 ? 2 : 1).minimumScaleFactor(0.7).truncationMode(.tail)
                     Spacer(minLength: 0)
                 }
                 .font(Font.Brasscribe.caption)

@@ -2991,16 +2991,6 @@
         }
       }
     },
-    "Plays the recording instead of the band, at the same place.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spiller opptaket i stedet for bandet, på samme sted."
-          }
-        }
-      }
-    },
     "Plays these bars over and over.": {
       "localizations": {
         "nb": {

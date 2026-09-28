@@ -276,6 +276,7 @@ struct StatusLine: View {
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
     @Environment(AppModel.self) private var app
+    @State private var explainSource: PartSourceKind?
     @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var standButtonA11y: Bool
     @FocusState private var standButtonKeys: Bool
@@ -304,7 +305,9 @@ struct ScoreToolbar: View {
     var body: some View {
         Group {
             if !wide && typeSize >= .accessibility1 {
-                HStack(spacing: Space.s2) { parts; sourcePill; Spacer(minLength: 0); view }
+                // the largest sizes: the part's name keeps the row (cut at its end); the source label
+                // sits above the music, where it can wrap
+                HStack(spacing: Space.s2) { parts.frame(maxWidth: .infinity, alignment: .leading); view }
             } else if !wide {
                 // phone: one row, the part and where it comes from, then View (pitch, zoom, the stand)
                 ViewThatFits(in: .horizontal) {
@@ -384,12 +387,7 @@ struct ScoreToolbar: View {
                 partChoices.pickerStyle(.inline)
             } label: {
                 HStack(spacing: Space.s1) {
-                    if typeSize >= .accessibility1 {
-                        // the largest sizes: the icon, so the row stays one row (the staff names the part)
-                        Image(systemName: BrasscribeIcon.parts.systemName).frame(minWidth: 44)
-                    } else {
-                        Text(shownTitle).lineLimit(1)
-                    }
+                    Text(shownTitle).lineLimit(1).truncationMode(.tail)
                     Image(systemName: "chevron.up.chevron.down").font(.footnote.weight(.semibold)).accessibilityHidden(true)
                 }
                 .font(Font.Brasscribe.body)
@@ -437,6 +435,13 @@ struct ScoreToolbar: View {
 
     private func viewMenu(iconOnly: Bool) -> some View {
         Menu {
+            if !wide, typeSize >= .accessibility1, let id = model.shownPart, let kind = model.partSources[id] {
+                // the largest sizes: where the part comes from, whole, with its explanation
+                Section {
+                    Button { explainSource = kind } label: { Label(kind.title, systemImage: kind.icon.systemName) }
+                        .accessibilityIdentifier("sourceLabel")
+                }
+            }
             if !wide {
                 // phone: the pitch and the zoom live here, so the music keeps the screen
                 Section {
@@ -480,6 +485,9 @@ struct ScoreToolbar: View {
         .frame(minHeight: 44)
         .fixedSize()
         .accessibilityIdentifier("viewMenu")
+        .alert(explainSource?.title ?? "", isPresented: Binding(get: { explainSource != nil }, set: { if !$0 { explainSource = nil } })) {
+            Button("OK") {}
+        } message: { Text(explainSource?.explanation ?? "") }
     }
 }
 
