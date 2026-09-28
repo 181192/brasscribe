@@ -11,7 +11,8 @@ const R = (pro: [number, number], comfortable: [number, number]): Range => ({ pr
 const CORNET = R([52, 82], [52, 79]);
 export const RANGES: Record<string, Range> = {
   "Soprano Cornet": R([57, 87], [57, 84]),
-  "Solo Cornet": CORNET,
+  // The band's soloist lead: checked against the cornet's solo range (written D6), not the section's 82.
+  "Solo Cornet": R([52, 84], [52, 79]),
   "1st Cornet": CORNET,
   "Repiano Cornet": CORNET,
   "2nd Cornet": CORNET,

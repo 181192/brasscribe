@@ -48,6 +48,9 @@ class Instrument:
     sound: str = ""  # MusicXML <instrument-sound> id (MuseScore sound library naming)
     reading: tuple[int, int] | None = None  # sounding, preferred placement (easy to read); default comfortable
     reading_limit: tuple[int, int] | None = None  # sounding, placement never goes past this; default pro
+    # Sounding, the range a soloist plays: the band's own lead is written as played inside it in
+    # faithful mode, and checked against it; default pro.
+    solo: tuple[int, int] | None = None
 
     @property
     def preferred(self) -> tuple[int, int]:
@@ -56,6 +59,11 @@ class Instrument:
     @property
     def placement_limit(self) -> tuple[int, int]:
         return self.reading_limit or self.pro
+
+    @property
+    def solo_range(self) -> tuple[int, int]:
+        """The range a soloist plays (see `solo`)."""
+        return self.solo or self.pro
 
     def written(self, sounding: int) -> int:
         return sounding - self.chromatic
@@ -89,7 +97,9 @@ _INSTRUMENTS = [
     Instrument("eb-soprano-cornet", "Soprano Cornet in E♭", "Sop. Cnt.", 3, 2, "treble", (57, 87), (57, 84),
                frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano", reading=(63, 84)),
     Instrument("bb-cornet", "Cornet in B♭", "Cnt.", -2, -1, "treble", (52, 82), (52, 79),
-               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 82)),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 82),
+               # The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
+               solo=(52, 84)),
     Instrument("flugelhorn", "Flugelhorn in B♭", "Flug.", -2, -1, "treble", (52, 82), (52, 79),
                frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn", reading=(55, 77)),
     Instrument("eb-tenor-horn", "Tenor Horn in E♭", "Hn.", -9, -5, "treble", (45, 75), (45, 72),
@@ -145,12 +155,30 @@ class Lineup:
     second_bass: str | None = "B♭ Bass"
     satb: bool = False
     as_played: bool = False  # the player's own part (a solo take for their seat): written in the octave played
+    lead_moved: bool = False  # the tune was moved onto the player's part (lead="seat", lead_lineup)
 
     def by_name(self, name: str) -> Part:
         return next(p for p in self.parts if p.name == name)
 
     def has(self, name: str) -> bool:
         return any(p.name == name for p in self.parts)
+
+    @property
+    def soloist_lead(self) -> bool:
+        """The lead is the band's own soloist: not the quartet's 1st Cornet, not a solo take, and not a
+        band part the tune was moved onto. Its faithful line is written as played inside the
+        instrument's solo range (arranger.place_soloist), and it is checked against that range."""
+        return not (self.satb or self.as_played or self.lead_moved)
+
+    def check(self, name: str, sounding: int) -> str:
+        """Range check of a pitch on the part `name`: the soloist lead's hard limit is its instrument's
+        solo range, every other part's its pro range; the soft limit is always the comfortable range."""
+        inst = self.by_name(name).instrument
+        lo, hi = inst.solo_range if name == self.lead and self.soloist_lead else inst.pro
+        if not lo <= sounding <= hi:
+            return "impossible"
+        clo, chi = inst.comfortable
+        return "ok" if clo <= sounding <= chi else "uncomfortable"
 
     @property
     def lead_part(self) -> Part:
@@ -262,6 +290,17 @@ def validate_range(part: Part, sounding_pitches: list[int]) -> list[RangeIssue]:
         level = part.instrument.check(p)
         if level != "ok":
             issues.append(RangeIssue(part.name, i, p, part.instrument.written(p), level))
+    return issues
+
+
+def validate_part(lineup: Lineup, name: str, sounding_pitches: list[int]) -> list[RangeIssue]:
+    """validate_range for the part `name` of `lineup`, with the lineup's check (Lineup.check)."""
+    inst = lineup.by_name(name).instrument
+    issues = []
+    for i, p in enumerate(sounding_pitches):
+        level = lineup.check(name, p)
+        if level != "ok":
+            issues.append(RangeIssue(name, i, p, inst.written(p), level))
     return issues
 
 
@@ -444,4 +483,4 @@ def lead_lineup(lineup: Lineup, seat: str) -> Lineup:
         return lineup
     if part in (lineup.bass, lineup.second_bass) or not {Role.MELODY, Role.SOLO} & lineup.by_name(part).instrument.roles:
         raise ValueError(f"the {part} does not carry the tune")
-    return replace(lineup, lead=part)
+    return replace(lineup, lead=part, lead_moved=True)

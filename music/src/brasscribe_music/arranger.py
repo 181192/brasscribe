@@ -181,6 +181,60 @@ def place_as_played(notes: list[Note], part: Part, warnings: list[str]) -> list[
     return _hold_small_gaps(placed)
 
 
+# Share of a line inside the soloist's range for place_soloist.
+SOLOIST_SHARE = 0.95
+
+
+def in_register(notes: list[Note], rng: tuple[int, int]) -> bool:
+    """The line lies in the soloist's register: at least SOLOIST_SHARE of its notes inside `rng`."""
+    return bool(notes) and sum(rng[0] <= n.pitch <= rng[1] for n in notes) >= SOLOIST_SHARE * len(notes)
+
+
+def _fewest_octaves(pitch: int, rng: tuple[int, int]) -> int | None:
+    """The octave of `pitch` inside `rng` that is the fewest octaves away (None: no octave fits)."""
+    for k in range(11):
+        for p in (pitch - 12 * k, pitch + 12 * k):
+            if rng[0] <= p <= rng[1]:
+                return p
+    return None
+
+
+def place_soloist(notes: list[Note], part: Part, warnings: list[str]) -> list[Note]:
+    """The soloist's own line on the band's lead, in faithful mode: written as played.
+
+    Phrase by phrase (as _place_line), inside the instrument's solo range: a phrase with at least
+    half its notes inside keeps its octave, and a note outside moves by the fewest octaves into the
+    range (a warning each), so one tracker outlier moves alone and the notes around it stay. A phrase
+    mostly outside takes the octave shift that puts the most notes inside (ties: fewest octaves, then
+    nearest the previous note), and its notes still outside are fitted the same way.
+    """
+    lo, hi = rng = part.instrument.solo_range
+
+    def inside(ph: list[Note], k: int) -> int:
+        return sum(lo <= n.pitch + 12 * k <= hi for n in ph)
+
+    placed: list[Note] = []
+    for phrase in _phrases(notes):
+        if 2 * inside(phrase, 0) >= len(phrase):
+            shift = 0
+        else:
+            prev = placed[-1].pitch if placed else None
+            shift = min(range(-4, 5), key=lambda k: (-inside(phrase, k), abs(k),
+                                                     abs(phrase[0].pitch + 12 * k - prev) if prev is not None else 0))
+        for n in phrase:
+            p = n.pitch + 12 * shift
+            if lo <= p <= hi:
+                placed.append(_moved(n, p))
+                continue
+            q = _fewest_octaves(n.pitch, rng)
+            if q is None:
+                warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
+                continue
+            warnings.append(f"{part.name}: moved {n.pitch} to {q} at tick {n.start} (outside the range)")
+            placed.append(_moved(n, q))
+    return _hold_small_gaps(placed)
+
+
 def _hold_small_gaps(notes: list[Note]) -> list[Note]:
     notes.sort(key=lambda n: n.start)
     for a, b in zip(notes, notes[1:]):
@@ -746,7 +800,11 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         arr.parts[lead] = place_as_played(solo, lineup.lead_part, arr.warnings)
         arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
         return arr
-    arr.parts[lead] = _place_line(solo, lineup.lead_part, arr.warnings)
+    # The band's own soloist, faithful and in the soloist's register: the line as played.
+    if difficulty == "faithful" and lineup.soloist_lead and in_register(solo, lineup.lead_part.instrument.solo_range):
+        arr.parts[lead] = place_soloist(solo, lineup.lead_part, arr.warnings)
+    else:
+        arr.parts[lead] = _place_line(solo, lineup.lead_part, arr.warnings)
 
     bass = _layer(comp, "bass")
     eb, bb = lineup.bass_part, lineup.second_bass_part

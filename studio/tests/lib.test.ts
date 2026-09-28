@@ -210,6 +210,17 @@ describe("musicxml and validation", () => {
     expect(validateScore(s)).toHaveLength(2);
     expect(pitchName(70)).toBe("B♭4");
   });
+
+  it("checks the soloist lead against the cornet's solo range, the section against 82", () => {
+    // Sounding C6 (84): written D6 on a B♭ part.
+    const part = (name: string) => `<score-part id="P1"><part-name>${name}</part-name></score-part></part-list>
+      <part id="P1"><measure number="1"><attributes><divisions>1</divisions>
+        <transpose><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose></attributes>
+        <note><pitch><step>D</step><octave>6</octave></pitch><duration>4</duration></note></measure></part>`;
+    const score = (name: string) => parseMusicXml(`<?xml version="1.0"?><score-partwise version="4.0"><part-list>${part(name)}</score-partwise>`);
+    expect(checkRanges(score("Solo Cornet").parts[0])).toMatchObject([{ severity: "warning", kind: "range" }]);
+    expect(checkRanges(score("Repiano Cornet").parts[0])).toMatchObject([{ severity: "error", kind: "range" }]);
+  });
 });
 
 describe("dsp", () => {

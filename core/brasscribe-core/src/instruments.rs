@@ -64,6 +64,9 @@ pub struct Instrument {
     pub reading: Option<(i32, i32)>,
     /// Sounding, placement never goes past this; default pro.
     pub reading_limit: Option<(i32, i32)>,
+    /// Sounding, the range a soloist plays: the band's own lead is written as played inside it in
+    /// faithful mode, and checked against it; default pro.
+    pub solo: Option<(i32, i32)>,
 }
 
 impl Instrument {
@@ -75,6 +78,11 @@ impl Instrument {
     /// The range placement never leaves.
     pub fn placement_limit(&self) -> (i32, i32) {
         self.reading_limit.unwrap_or(self.pro)
+    }
+
+    /// The range a soloist plays (see [`Instrument::solo`]).
+    pub fn solo_range(&self) -> (i32, i32) {
+        self.solo.unwrap_or(self.pro)
     }
 
     pub fn written(&self, sounding: i32) -> i32 {
@@ -125,57 +133,59 @@ use Role::*;
 pub static SOPRANO_CORNET: Instrument = Instrument {
     id: "eb-soprano-cornet", name: "Soprano Cornet in E♭", short: "Sop. Cnt.", chromatic: 3, diatonic: 2, clef: Clef::Treble,
     pro: (57, 87), comfortable: (57, 84), roles: &[Melody, UpperHarmony, Solo], gm_program: 56, musescore_id: "eb-cornet",
-    section: "cornets", sound: "brass.cornet.soprano",    reading: Some((63, 84)), reading_limit: None,
+    section: "cornets", sound: "brass.cornet.soprano",    reading: Some((63, 84)), reading_limit: None, solo: None,
 };
 pub static CORNET: Instrument = Instrument {
     id: "bb-cornet", name: "Cornet in B♭", short: "Cnt.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
     pro: (52, 82), comfortable: (52, 79), roles: &[Melody, Countermelody, UpperHarmony, InnerHarmony, RhythmicSupport, Solo],
     gm_program: 56, musescore_id: "bb-cornet", section: "cornets", sound: "brass.cornet",    reading: Some((55, 79)), reading_limit: Some((52, 82)),
+    // The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
+    solo: Some((52, 84)),
 };
 pub static FLUGELHORN: Instrument = Instrument {
     id: "flugelhorn", name: "Flugelhorn in B♭", short: "Flug.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
     pro: (52, 82), comfortable: (52, 79), roles: &[Melody, Countermelody, InnerHarmony, Solo], gm_program: 56,
-    musescore_id: "flugelhorn", section: "horns", sound: "brass.flugelhorn",    reading: Some((55, 77)), reading_limit: None,
+    musescore_id: "flugelhorn", section: "horns", sound: "brass.flugelhorn",    reading: Some((55, 77)), reading_limit: None, solo: None,
 };
 pub static TENOR_HORN: Instrument = Instrument {
     id: "eb-tenor-horn", name: "Tenor Horn in E♭", short: "Hn.", chromatic: -9, diatonic: -5, clef: Clef::Treble,
     pro: (45, 75), comfortable: (45, 72), roles: &[Countermelody, InnerHarmony, RhythmicSupport, Melody, Solo], gm_program: 60,
-    musescore_id: "eb-alto-horn", section: "horns", sound: "brass.alto-horn",    reading: Some((48, 70)), reading_limit: None,
+    musescore_id: "eb-alto-horn", section: "horns", sound: "brass.alto-horn",    reading: Some((48, 70)), reading_limit: None, solo: None,
 };
 pub static BARITONE: Instrument = Instrument {
     id: "baritone", name: "Baritone in B♭", short: "Bar.", chromatic: -14, diatonic: -8, clef: Clef::Treble,
     pro: (40, 70), comfortable: (40, 67), roles: &[InnerHarmony, Countermelody, RhythmicSupport], gm_program: 58,
-    musescore_id: "baritone-horn-treble", section: "baritones", sound: "brass.baritone-horn",    reading: Some((43, 65)), reading_limit: None,
+    musescore_id: "baritone-horn-treble", section: "baritones", sound: "brass.baritone-horn",    reading: Some((43, 65)), reading_limit: None, solo: None,
 };
 pub static TENOR_TROMBONE: Instrument = Instrument {
     id: "tenor-trombone", name: "Trombone in B♭", short: "Tbn.", chromatic: -14, diatonic: -8, clef: Clef::Treble,
     pro: (36, 74), comfortable: (40, 71), roles: &[InnerHarmony, RhythmicSupport, Countermelody, Melody], gm_program: 57,
-    musescore_id: "trombone-treble", section: "trombones", sound: "brass.trombone",    reading: Some((43, 67)), reading_limit: Some((40, 72)),
+    musescore_id: "trombone-treble", section: "trombones", sound: "brass.trombone",    reading: Some((43, 67)), reading_limit: Some((40, 72)), solo: None,
 };
 pub static BASS_TROMBONE: Instrument = Instrument {
     id: "bass-trombone", name: "Bass Trombone", short: "B. Tbn.", chromatic: 0, diatonic: 0, clef: Clef::Bass,
     pro: (21, 77), comfortable: (32, 65), roles: &[Bass, InnerHarmony, RhythmicSupport], gm_program: 57,
-    musescore_id: "bass-trombone", section: "trombones", sound: "brass.trombone.bass",    reading: Some((36, 60)), reading_limit: Some((28, 65)),
+    musescore_id: "bass-trombone", section: "trombones", sound: "brass.trombone.bass",    reading: Some((36, 60)), reading_limit: Some((28, 65)), solo: None,
 };
 pub static EUPHONIUM: Instrument = Instrument {
     id: "euphonium", name: "Euphonium in B♭", short: "Euph.", chromatic: -14, diatonic: -8, clef: Clef::Treble,
     pro: (34, 74), comfortable: (40, 70), roles: &[Countermelody, Melody, Solo, InnerHarmony, Bass], gm_program: 58,
-    musescore_id: "euphonium-treble", section: "euphoniums", sound: "brass.euphonium",    reading: Some((40, 67)), reading_limit: Some((34, 72)),
+    musescore_id: "euphonium-treble", section: "euphoniums", sound: "brass.euphonium",    reading: Some((40, 67)), reading_limit: Some((34, 72)), solo: None,
 };
 pub static EB_BASS: Instrument = Instrument {
     id: "eb-bass", name: "E♭ Tuba", short: "E♭ Bass", chromatic: -21, diatonic: -12, clef: Clef::Treble,
     pro: (24, 72), comfortable: (26, 64), roles: &[Bass, Pedal, RhythmicSupport], gm_program: 58,
-    musescore_id: "eb-tuba-treble", section: "basses", sound: "brass.tuba",    reading: Some((33, 53)), reading_limit: Some((27, 58)),
+    musescore_id: "eb-tuba-treble", section: "basses", sound: "brass.tuba",    reading: Some((33, 53)), reading_limit: Some((27, 58)), solo: None,
 };
 pub static BB_BASS: Instrument = Instrument {
     id: "bb-bass", name: "B♭ Tuba", short: "B♭ Bass", chromatic: -26, diatonic: -15, clef: Clef::Treble,
     pro: (22, 72), comfortable: (28, 58), roles: &[Bass, Pedal], gm_program: 58, musescore_id: "bb-tuba-treble",
-    section: "basses", sound: "brass.tuba",    reading: Some((28, 48)), reading_limit: Some((22, 53)),
+    section: "basses", sound: "brass.tuba",    reading: Some((28, 48)), reading_limit: Some((22, 53)), solo: None,
 };
 pub static PERCUSSION: Instrument = Instrument {
     id: "drum-kit", name: "Drum Kit", short: "Dr.", chromatic: 0, diatonic: 0, clef: Clef::Percussion,
     pro: (0, 127), comfortable: (0, 127), roles: &[RhythmicSupport], gm_program: 0, musescore_id: "drumset",
-    section: "percussion", sound: "drum.group.set",    reading: None, reading_limit: None,
+    section: "percussion", sound: "drum.group.set",    reading: None, reading_limit: None, solo: None,
 };
 
 pub static INSTRUMENTS: [&Instrument; 11] = [
@@ -226,6 +236,8 @@ pub struct Lineup {
     pub satb: bool,
     /// One part, the player's own (a solo take for their seat): written in the octave played.
     pub as_played: bool,
+    /// The tune was moved onto the player's part (lead "seat", [`lead_lineup`]).
+    pub lead_moved: bool,
 }
 
 impl Lineup {
@@ -247,6 +259,29 @@ impl Lineup {
 
     pub fn has(&self, name: &str) -> bool {
         self.parts.iter().any(|p| p.name == name)
+    }
+
+    /// The lead is the band's own soloist: not the quartet's 1st Cornet, not a solo take, and not a
+    /// band part the tune was moved onto. Its faithful line is written as played inside the
+    /// instrument's solo range (`arranger::place_soloist`), and it is checked against that range.
+    pub fn soloist_lead(&self) -> bool {
+        !self.satb && !self.as_played && !self.lead_moved
+    }
+
+    /// Range check of a pitch on the part `name`: the soloist lead's hard limit is its instrument's
+    /// solo range, every other part's its pro range; the soft limit is always the comfortable range.
+    pub fn check(&self, name: &str, sounding: i32) -> RangeCheck {
+        let inst = self.by_name(name).instrument;
+        let (lo, hi) = if name == self.lead && self.soloist_lead() { inst.solo_range() } else { inst.pro };
+        if !(lo <= sounding && sounding <= hi) {
+            return RangeCheck::Impossible;
+        }
+        let (clo, chi) = inst.comfortable;
+        if clo <= sounding && sounding <= chi {
+            RangeCheck::Ok
+        } else {
+            RangeCheck::Uncomfortable
+        }
     }
 }
 
@@ -287,6 +322,7 @@ pub fn brass_band() -> Lineup {
         second_bass: Some("B♭ Bass"),
         satb: false,
         as_played: false,
+        lead_moved: false,
     }
 }
 
@@ -309,6 +345,7 @@ pub fn minimal_band() -> Lineup {
         second_bass: Some("B♭ Bass"),
         satb: false,
         as_played: false,
+        lead_moved: false,
     }
 }
 
@@ -328,6 +365,7 @@ pub fn quartet() -> Lineup {
         second_bass: None,
         satb: true,
         as_played: false,
+        lead_moved: false,
     }
 }
 
@@ -386,6 +424,19 @@ pub fn validate_range(part: &Part, sounding: &[i32]) -> Vec<RangeIssue> {
         .filter_map(|(i, &p)| {
             let level = part.instrument.check(p);
             (level != RangeCheck::Ok).then(|| RangeIssue { part: part.name.to_string(), index: i, sounding: p, written: part.instrument.written(p), level })
+        })
+        .collect()
+}
+
+/// [`validate_range`] for the part `name` of `lineup`, with the lineup's check ([`Lineup::check`]).
+pub fn validate_part(lineup: &Lineup, name: &str, sounding: &[i32]) -> Vec<RangeIssue> {
+    let inst = lineup.by_name(name).instrument;
+    sounding
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &p)| {
+            let level = lineup.check(name, p);
+            (level != RangeCheck::Ok).then(|| RangeIssue { part: name.to_string(), index: i, sounding: p, written: inst.written(p), level })
         })
         .collect()
 }
@@ -558,7 +609,7 @@ pub fn seat_lineup(seat: &str, reads: Option<&str>) -> Result<Lineup, String> {
     let mut part = s.band_part();
     part.instrument = reading_instrument(part.instrument, reads);
     let name = part.name;
-    Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true })
+    Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true, lead_moved: false })
 }
 
 /// `lineup` with `part`, the seat's part in it, written the way the player reads (bass clef: at
@@ -596,5 +647,6 @@ pub fn lead_lineup(mut lineup: Lineup, seat: &str) -> Result<Lineup, String> {
         return Err(format!("the {part} does not carry the tune"));
     }
     lineup.lead = part;
+    lineup.lead_moved = true;
     Ok(lineup)
 }

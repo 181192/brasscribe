@@ -49,7 +49,7 @@ def test_arranger_keeps_melody_and_bass_and_respects_ranges():
     assert [n.pitch % 12 for n in arr.parts["E♭ Bass"]] == [5, 0, 5]
     for part in arr.lineup.parts:
         for n in arr.parts[part.name]:
-            assert part.instrument.check(n.pitch) != "impossible", (part.name, n.pitch)
+            assert arr.lineup.check(part.name, n.pitch) != "impossible", (part.name, n.pitch)
 
 
 def test_instrument_sounds_are_written(tmp_path):

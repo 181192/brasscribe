@@ -251,6 +251,58 @@ pub fn place_as_played(notes: &[Note], part: &Part, warnings: &mut Vec<String>) 
     hold_small_gaps(placed)
 }
 
+/// Share of a line inside the soloist's range for [`place_soloist`].
+pub const SOLOIST_SHARE: f64 = 0.95;
+
+/// The line lies in the soloist's register: at least [`SOLOIST_SHARE`] of its notes inside `range`.
+pub fn in_register(notes: &[Note], range: (i32, i32)) -> bool {
+    let inside = notes.iter().filter(|n| range.0 <= n.pitch && n.pitch <= range.1).count();
+    !notes.is_empty() && inside as f64 >= SOLOIST_SHARE * notes.len() as f64
+}
+
+/// The octave of `pitch` inside `range` that is the fewest octaves away (None: no octave fits).
+fn fewest_octaves(pitch: i32, range: (i32, i32)) -> Option<i32> {
+    (0..=10).flat_map(|k| [pitch - 12 * k, pitch + 12 * k]).find(|&p| range.0 <= p && p <= range.1)
+}
+
+/// The soloist's own line on the band's lead, in faithful mode: written as played.
+///
+/// Phrase by phrase (as `place_line`), inside the instrument's solo range: a phrase with at least
+/// half its notes inside keeps its octave, and a note outside moves by the fewest octaves into the
+/// range (a warning each), so one tracker outlier moves alone and the notes around it stay. A phrase
+/// mostly outside takes the octave shift that puts the most notes inside (ties: fewest octaves,
+/// then nearest the previous note), and its notes still outside are fitted the same way.
+pub fn place_soloist(notes: &[Note], part: &Part, warnings: &mut Vec<String>) -> Vec<Note> {
+    let range = part.instrument.solo_range();
+    let inside = |ph: &[Note], k: i32| ph.iter().filter(|n| range.0 <= n.pitch + 12 * k && n.pitch + 12 * k <= range.1).count();
+    let mut placed: Vec<Note> = Vec::new();
+    for phrase in phrases(notes) {
+        let shift = if 2 * inside(&phrase, 0) >= phrase.len() {
+            0
+        } else {
+            let prev = placed.last().map(|n| n.pitch);
+            (-4..=4)
+                .min_by_key(|&k: &i32| (std::cmp::Reverse(inside(&phrase, k)), k.abs(), prev.map(|q| (phrase[0].pitch + 12 * k - q).abs()).unwrap_or(0)))
+                .unwrap_or(0)
+        };
+        for n in &phrase {
+            let p = n.pitch + 12 * shift;
+            if range.0 <= p && p <= range.1 {
+                placed.push(renote(n, p));
+                continue;
+            }
+            match fewest_octaves(n.pitch, range) {
+                None => warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start)),
+                Some(q) => {
+                    warnings.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, n.pitch, q, n.start));
+                    placed.push(renote(n, q));
+                }
+            }
+        }
+    }
+    hold_small_gaps(placed)
+}
+
 /// Inside the instrument's preferred (reading) range.
 fn readable(inst: &crate::instruments::Instrument, pitch: i32) -> bool {
     let (lo, hi) = inst.preferred();
@@ -791,7 +843,12 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
         return Ok(arr);
     }
-    let placed = place_line(&solo, lineup.lead_part(), &mut arr.warnings, 0, false);
+    // The band's own soloist, faithful and in the soloist's register: the line as played.
+    let placed = if faithful && lineup.soloist_lead() && in_register(&solo, lineup.lead_part().instrument.solo_range()) {
+        place_soloist(&solo, lineup.lead_part(), &mut arr.warnings)
+    } else {
+        place_line(&solo, lineup.lead_part(), &mut arr.warnings, 0, false)
+    };
     arr.set(lead, placed);
 
     let bass = layer(comp, "bass");
