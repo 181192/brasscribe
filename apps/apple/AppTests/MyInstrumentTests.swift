@@ -112,6 +112,11 @@ import TranscriptionKit
     #expect(byName["Flugelhorn"] == .arranged)
     #expect(byName["1st Baritone"] == .arranged)
     #expect(byName.count == 18)
+    // faithful: the Soprano Cornet doubles no climax, so it is empty, not arranged
+    #expect(byName["Soprano Cornet"] == .empty)
+    var comp = try #require(p.loadComposition())
+    for i in comp.voices.indices where comp.voices[i].layer == "drums" { comp.voices[i].notes = [] }
+    #expect(PartSourceKind.sources(composition: comp, output: p.output)["Percussion"] == .empty)
 }
 
 /// The small band has no 1st Baritone: your part is Euphonium, and the score says why.

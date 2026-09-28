@@ -2471,6 +2471,36 @@
         }
       }
     },
+    "Nothing in the recording gave the %@ part any notes, so there is nothing of yours to check.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting i opptaket ga %@ noen toner, så det er ingenting av ditt å sjekke."
+          }
+        }
+      }
+    },
+    "Nothing in the recording gave this part any notes, so it is left empty.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting i opptaket ga denne stemmen noen toner, så den står tom."
+          }
+        }
+      }
+    },
+    "Nothing to play in this arrangement": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tom i dette arrangementet"
+          }
+        }
+      }
+    },
     "Nothing was heard": {
       "localizations": {
         "nb": {
@@ -4987,6 +5017,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stemmen din er arrangert. %@"
+          }
+        }
+      }
+    },
+    "Your part is empty": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din er tom"
+          }
+        }
+      }
+    },
+    "Your part is empty. %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din er tom. %@"
           }
         }
       }

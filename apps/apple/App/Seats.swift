@@ -237,12 +237,15 @@ enum PartSourceKind: String, Sendable {
     case yourRecording = "your-recording"
     case recording
     case arranged
+    /// Nothing to play in this arrangement (Percussion without drums, the Soprano Cornet with no climax).
+    case empty
 
     var title: String {
         switch self {
         case .yourRecording: return String(localized: "From your recording")
         case .recording: return String(localized: "From the recording")
         case .arranged: return String(localized: "Arranged from the band's harmony")
+        case .empty: return String(localized: "Nothing to play in this arrangement")
         }
     }
 
@@ -251,11 +254,12 @@ enum PartSourceKind: String, Sendable {
         switch self {
         case .yourRecording, .recording: return String(localized: "Brasscribe wrote down the notes it heard for this part.")
         case .arranged: return String(localized: "Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.")
+        case .empty: return String(localized: "Nothing in the recording gave this part any notes, so it is left empty.")
         }
     }
 
     /// Record-mic for what was heard, parts for what was arranged.
-    var icon: BrasscribeIcon { self == .arranged ? .parts : .recordMic }
+    var icon: BrasscribeIcon { self == .arranged || self == .empty ? .parts : .recordMic }
 
     /// Part name → source, for a score's composition. The composition's own record of how it was
     /// arranged is not kept on the device, so the piece's choice (lineup, seat, reading, lead) is
