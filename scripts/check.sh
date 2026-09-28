@@ -36,7 +36,7 @@ changed_areas() {
       engine/*|music/*|eval/*|pixi.toml|pixi.lock) add engine ;;
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
-      core/*) add core; [ "$tier" = full ] && add conformance ;;
+      core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;
       apps/android/*) add android ;;
@@ -57,7 +57,11 @@ run_area() {
     full:engine) pixi run test ;;
     fast:core) (cd core && cargo test --profile fast -q) ;;
     full:core) (cd core && cargo test --release) ;;
-    fast:conformance) (cd core/conformance && uv run python -m brasscribe_conformance.run --only mikkel --work "$ROOT/core/target/conformance") ;;
+    # The Python reference and the extras take minutes; the fast tier compares the Rust side of the
+    # Mikkel cases against reference outputs of an earlier run in this worktree (none yet: all of Mikkel).
+    fast:conformance) if [ -d core/target/conformance/mikkel ]; then conf=(--skip-python --no-extras); else conf=(); fi
+                      (cd core/conformance && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
+                         --work "$ROOT/core/target/conformance") ;;
     full:conformance) (cd core/conformance && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") ;;
     fast:studio) need_node_modules && (cd studio && npx vitest run) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
