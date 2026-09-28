@@ -9,6 +9,7 @@
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only when
 #                    nobody is using the Mac (or in CI)
+#   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
 FIXTURES ?= $(ROOT)/apps/fixtures/old-hundredth
@@ -23,7 +24,7 @@ DERIVED := build/DerivedData
 APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 
-.PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size \
+.PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size install-mac \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
@@ -56,6 +57,20 @@ test: project package-test
 # only on a Mac nobody is using, or in CI.
 test-mac-ui: project
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' test
+
+# Ad-hoc signatures carry no Team ID, so under the hardened runtime dyld rejects the embedded
+# Verovio.framework; the runtime only matters for notarised Developer ID builds.
+INSTALLED_APP := /Applications/Brasscribe Play.app
+install-mac: project
+	$(XCB) -scheme BrasscribePlay-macOS -configuration Release -destination 'platform=macOS' \
+	  ENABLE_HARDENED_RUNTIME=NO build
+	codesign --verify --deep --strict "$(DERIVED)/Build/Products/Release/BrasscribePlay.app"
+	test -s "$(DERIVED)/Build/Products/Release/BrasscribePlay.app/Contents/Resources/Sounds/mapping.json"
+	-osascript -e 'quit app "Brasscribe Play"'
+	rm -rf "$(INSTALLED_APP)"
+	ditto "$(DERIVED)/Build/Products/Release/BrasscribePlay.app" "$(INSTALLED_APP)"
+	open "$(INSTALLED_APP)"
+	sleep 5; pgrep -xq BrasscribePlay || { echo 'Brasscribe Play exited at launch; see ~/Library/Logs/DiagnosticReports'; exit 1; }
 
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
