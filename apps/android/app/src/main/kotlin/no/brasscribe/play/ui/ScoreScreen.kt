@@ -3,6 +3,8 @@ package no.brasscribe.play.ui
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -97,7 +100,7 @@ import no.brasscribe.play.score.ScoreUiState
 /** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
 fun defaultPart(parts: List<String>, lineup: no.brasscribe.play.Lineup? = null): Int = no.brasscribe.play.leadPartIndex(parts, lineup)
 
-private enum class Sheet { PARTS, SPEED, LOOP, SOUND }
+private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, OVERFLOW }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -337,6 +340,10 @@ fun ScoreScreen(vm: PlayViewModel) {
     val turnPill = ms.open && shape.lockAvailable && autoRotateOff && !ms.locked && held != null && held != configuration.orientation
     val standSummary = stringResource(R.string.stand_score_summary, position.part, st.bar, st.totalBars, ms.page + 1, ms.pageCount)
 
+    // A phone on its side: the score keeps most of the height and the controls fold under it (ScoreSplit).
+    val overflow = remember { OverflowRowState() }
+    var overflowItems by remember { mutableStateOf<List<@Composable (Boolean) -> Unit>>(emptyList()) }
+    val compact = !performance && ScoreSplit.compact(configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE, configuration.screenHeightDp)
     Scaffold(
         containerColor = c.bg,
         topBar = {
@@ -349,7 +356,14 @@ fun ScoreScreen(vm: PlayViewModel) {
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding).onPreviewKeyEvent { e ->
+      val statusBar = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+      val density = androidx.compose.ui.platform.LocalDensity.current
+      // Two engraved systems (the tallest), so the score never shows less than two while the controls keep a row.
+      val twoSystems = remember(renders) { controller.standSystems().maxOfOrNull { it.bottom - it.top }?.let { with(density) { (it * 2).toDp() } } ?: 0.dp }
+      androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding)) {
+        val controlsMax = ScoreSplit.controlsMax(
+            available = (maxHeight + padding.calculateTopPadding() - statusBar).value, content = maxHeight.value, twoSystems = twoSystems.value).dp
+        Column(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             val n = e.nativeKeyEvent
             when {
                 ms.open -> standKey(e, ms.layerFocused, ::standCommand)
@@ -361,7 +375,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         }) {
             if (performance) MusicStandBand(position, shape, ms, onlyMineOffered, { ms.onlyMine = !ms.onlyMine }, ::toggleLock, ::leaveStand)
             // The score toolbar: part picker, written or concert pitch, zoom, and the music stand.
-            if (!performance) FlowRow(
+            if (!performance && !compact) FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
                 horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
             ) {
@@ -388,8 +402,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                     MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
                 }
             }
-            if (writtenTip && !performance) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
-            if (toCheck > 0 && !performance) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
+            if (writtenTip && !performance && !compact) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
+            if (toCheck > 0 && !performance && !compact) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
                 UncertainMark(false)
                 Text(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
                     color = c.textMuted, modifier = Modifier.weight(1f))
@@ -436,9 +450,46 @@ fun ScoreScreen(vm: PlayViewModel) {
                         Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                 }
             }
-            if (!performance && st.basicTier) BandSoundsMissing(st.bandSoundsExpected)
-            if (!performance) PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
+            if (!performance && !compact && st.basicTier) BandSoundsMissing(st.bandSoundsExpected)
+            if (!performance && !compact) PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
+            // On its side: one row (Play, bars, position, then Parts, Practice, View and the stand), wrapping
+            // and scrolling inside its share at large text; notices fold to one line, details in a sheet.
+            if (compact) Column(
+                Modifier.fillMaxWidth().heightIn(max = controlsMax).verticalScroll(rememberScrollState())
+                    .padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1).semantics { testTag = "score-controls" },
+                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+            ) {
+                // One line: what does not fit (at 200 % text, a long part name) moves behind More, into a sheet.
+                val controlItems = buildList<@Composable (Boolean) -> Unit> {
+                    add { _ -> PracticeChip(shownText, false, { sheet = Sheet.PARTS }, icon = R.drawable.ic_bc_parts, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) }
+                    add { _ -> PracticeChip(stringResource(R.string.practice), false, { sheet = Sheet.PRACTICE }, icon = R.drawable.ic_bc_speed,
+                        role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) }
+                    add { inSheet ->
+                        if (inSheet) PracticeChip(stringResource(R.string.stand_enter), false, { sheet = null; enterStand(StandOrigin.BUTTON) },
+                            icon = R.drawable.ic_stand_music_stand, role = Role.Button)
+                        else MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
+                    }
+                    if (toCheck > 0) add { _ ->
+                        PracticeChip(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck),
+                            false, { sheet = null; vm.navigate(Screen.REVIEW) }, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+                    }
+                    if (st.basicTier) add { inSheet ->
+                        // In the More sheet there is room for the notice in full.
+                        if (inSheet) BandSoundsMissing(st.bandSoundsExpected)
+                        else NoticeLine(stringResource(R.string.band_sounds_missing), { sheet = Sheet.NOTICE })
+                    }
+                }
+                OverflowRow(
+                    overflow, BrasscribeSpace.s2,
+                    lead = { Transport(controller, st, ::moveBar) },
+                    items = controlItems,
+                    more = { PracticeChip(stringResource(R.string.more), false, { overflowItems = controlItems; sheet = Sheet.OVERFLOW },
+                        Modifier.semantics { testTag = "controls-more" }, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) },
+                    flexibleMin = if (st.basicTier) 160.dp else null,
+                )
+            }
         }
+      }
     }
 
     when (sheet) {
@@ -449,6 +500,21 @@ fun ScoreScreen(vm: PlayViewModel) {
                 controller.setLoop(a..b); ms.lastLoop = a..b; vm.say(R.string.loop_set_announce, a, b); sheet = null
             }, onClear = { controller.setLoop(null); vm.say(R.string.loop_cleared); sheet = null }, invalid = { vm.say(R.string.loop_invalid, st.totalBars) })
         }
+        Sheet.PRACTICE -> BottomSheet({ sheet = null }) {
+            SubHeading(stringResource(R.string.practice))
+            PracticeChips(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP })
+        }
+        Sheet.OVERFLOW -> BottomSheet({ sheet = null }) {
+            SubHeading(stringResource(R.string.more))
+            for (item in overflowItems.drop(overflow.firstHidden.coerceAtMost(overflowItems.size))) item(true)
+        }
+        Sheet.NOTICE -> BottomSheet({ sheet = null }) {
+            InfoNote(stringResource(R.string.band_sounds_missing), boxed = false)
+            if (st.bandSoundsExpected.isNotBlank()) {
+                SubHeading(stringResource(R.string.details_show))
+                Text(st.bandSoundsExpected, style = MaterialTheme.typography.bodySmall, color = c.textMuted)
+            }
+        }
         Sheet.SOUND -> BottomSheet({ sheet = null }) {
             // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))
@@ -456,6 +522,19 @@ fun ScoreScreen(vm: PlayViewModel) {
                 PracticeChip(stringResource(R.string.read_aloud), textView, { textView = !textView; sheet = null }, icon = R.drawable.ic_bc_talking_score)
                 PracticeChip(stringResource(R.string.stand_enter), false, { sheet = null; enterStand(StandOrigin.BUTTON) },
                     Modifier.semantics { testTag = "performance" }, icon = R.drawable.ic_stand_music_stand, role = Role.Button)
+            }
+            // On a phone on its side the zoom and the written or concert pitch live here, not over the score.
+            if (compact) {
+                Row(Modifier.background(c.secondary, MaterialTheme.shapes.medium)) {
+                    IconButton({ controller.setZoom(st.zoom - 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out)) }
+                    IconButton({ controller.setZoom(st.zoom + 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in)) }
+                }
+                val writtenLabel = controller.writtenKey()?.let { stringResource(R.string.written_pitch_for, it) } ?: stringResource(R.string.written_pitch)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    PracticeChip(writtenLabel, !st.concertPitch, { controller.setConcertPitch(false) }, role = Role.RadioButton)
+                    PracticeChip(stringResource(R.string.concert_pitch), st.concertPitch, { controller.setConcertPitch(true) }, role = Role.RadioButton)
+                }
+                InfoNote(stringResource(R.string.written_tip))
             }
             SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) } }
         null -> Unit
@@ -501,32 +580,46 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
         shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = BorderStroke(1.dp, c.border), shadowElevation = 1.dp,
     ) {
         Column(Modifier.padding(BrasscribeSpace.s3), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                FilledIconButton(
-                    controller::togglePlay, Modifier.size(56.dp).semantics { testTag = "play" }, shape = CircleShape,
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.primary, contentColor = c.onPrimary),
-                ) { BcIcon(if (st.playing) R.drawable.ic_bc_pause else R.drawable.ic_bc_play, stringResource(if (st.playing) R.string.pause else R.string.play)) }
-                IconButton({ onBar(-1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
-                IconButton({ onBar(1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar)) }
-                Column(Modifier.weight(1f).padding(start = BrasscribeSpace.s1)) {
-                    Text(stringResource(R.string.bar_of, st.bar, st.totalBars), style = BrasscribeNumericStyle.copy(fontWeight = FontWeight.SemiBold))
-                    BeatCounter(st.beat, st.beatsInBar)
-                }
-            }
+            Transport(controller, st, onBar, Modifier.fillMaxWidth())
             // At large text the practice chips sit behind one Practice button (system.md §2).
             var practice by rememberSaveable { mutableStateOf(false) }
             val large = largeText()
             if (large) PracticeChip(stringResource(R.string.practice), practice, { practice = !practice }, icon = R.drawable.ic_bc_speed,
                 role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
-            if (!large || practice) FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                PracticeChip(stringResource(R.string.speed_chip, st.speed), st.speed != 100, onSpeed, icon = R.drawable.ic_bc_speed, role = Role.Button)
-                PracticeChip(st.loop?.let { stringResource(R.string.loop_chip_on, it.first, it.last) } ?: stringResource(R.string.loop),
-                    st.loop != null, onLoop, icon = R.drawable.ic_bc_loop, role = Role.Button)
-                PracticeChip(stringResource(R.string.count_in), st.countIn, { controller.setCountIn(!st.countIn) }, icon = R.drawable.ic_bc_count_in)
-                PracticeChip(stringResource(R.string.metronome), st.metronome, { controller.setMetronome(!st.metronome) }, icon = R.drawable.ic_bc_metronome)
-                PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) }, icon = R.drawable.ic_bc_play_along)
-            }
+            if (!large || practice) PracticeChips(controller, st, myPart, onSpeed, onLoop)
         }
+    }
+}
+
+/** Play first (the round ink primary), previous and next bar, then the position and the beat counter. */
+@Composable
+private fun Transport(controller: ScoreController, st: ScoreUiState, onBar: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val c = BrasscribeTheme.colors
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        FilledIconButton(
+            controller::togglePlay, Modifier.size(56.dp).semantics { testTag = "play" }, shape = CircleShape,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.primary, contentColor = c.onPrimary),
+        ) { BcIcon(if (st.playing) R.drawable.ic_bc_pause else R.drawable.ic_bc_play, stringResource(if (st.playing) R.string.pause else R.string.play)) }
+        IconButton({ onBar(-1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
+        IconButton({ onBar(1) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar)) }
+        Column(Modifier.padding(start = BrasscribeSpace.s1)) {
+            Text(stringResource(R.string.bar_of, st.bar, st.totalBars), style = BrasscribeNumericStyle.copy(fontWeight = FontWeight.SemiBold))
+            BeatCounter(st.beat, st.beatsInBar)
+        }
+    }
+}
+
+/** Speed, Loop, Count-in, Metronome and Mute my part; they wrap and never clip. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PracticeChips(controller: ScoreController, st: ScoreUiState, myPart: Int, onSpeed: () -> Unit, onLoop: () -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        PracticeChip(stringResource(R.string.speed_chip, st.speed), st.speed != 100, onSpeed, icon = R.drawable.ic_bc_speed, role = Role.Button)
+        PracticeChip(st.loop?.let { stringResource(R.string.loop_chip_on, it.first, it.last) } ?: stringResource(R.string.loop),
+            st.loop != null, onLoop, icon = R.drawable.ic_bc_loop, role = Role.Button)
+        PracticeChip(stringResource(R.string.count_in), st.countIn, { controller.setCountIn(!st.countIn) }, icon = R.drawable.ic_bc_count_in)
+        PracticeChip(stringResource(R.string.metronome), st.metronome, { controller.setMetronome(!st.metronome) }, icon = R.drawable.ic_bc_metronome)
+        PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) }, icon = R.drawable.ic_bc_play_along)
     }
 }
 
