@@ -95,6 +95,10 @@ int32_t bc_part_sources(const char *composition_json,
 int32_t bc_seats(char **out,
                  char **err);
 
+// A part's name in Norwegian (the core's one table): writes the name to `*out`, unchanged when the
+// table doesn't know it.
+int32_t bc_part_name_nb(const char *name, char **out, char **err);
+
 // Like [`bc_arrange_layers_song`], plus the stems' audio: `wav` and `wav_len`
 // hold four WAV files (solo, bass, drums, orchestra; a null pointer = not
 // given). Writes one JSON object to `*out`:

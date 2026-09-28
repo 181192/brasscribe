@@ -50,6 +50,9 @@ public class BrasscribeCoreTests
         Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));
         Assert.Equal(new SeatPart(null, false, false), BrasscribeCore.SeatPart("quartet", "percussion"));
         Assert.Throws<BrasscribeException>(() => BrasscribeCore.SeatPart("band", "tuba"));
+        Assert.Equal("Solo althorn", BrasscribeCore.PartNameNb("Solo Horn"));
+        Assert.Equal("1. kornett", BrasscribeCore.PartNameNb("1st Cornet"));
+        Assert.Equal("Strings", BrasscribeCore.PartNameNb("Strings"));
     }
 
     [Fact]

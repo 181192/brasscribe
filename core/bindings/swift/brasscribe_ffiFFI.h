@@ -391,6 +391,11 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_layers_song_defaults(RustCallStatus *_N
 RustBuffer uniffi_brasscribe_ffi_fn_func_normalize_composition(RustBuffer json, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_NAME_NB
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_NAME_NB
+RustBuffer uniffi_brasscribe_ffi_fn_func_part_name_nb(RustBuffer name, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_SOURCES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_PART_SOURCES
 RustBuffer uniffi_brasscribe_ffi_fn_func_part_sources(RustBuffer composition_json, RustCallStatus *_Nonnull out_status
@@ -761,6 +766,12 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_layers_song_defaults(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_NORMALIZE_COMPOSITION
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_NORMALIZE_COMPOSITION
 uint16_t uniffi_brasscribe_ffi_checksum_func_normalize_composition(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_PART_NAME_NB
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_PART_NAME_NB
+uint16_t uniffi_brasscribe_ffi_checksum_func_part_name_nb(void
     
 );
 #endif
