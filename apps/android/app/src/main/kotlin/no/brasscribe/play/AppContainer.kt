@@ -104,11 +104,6 @@ class AppContainer(private val context: Context) {
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
 
-    /** Settings → Display: turning the phone sideways opens the music stand (off by default, WCAG 2.5.4). */
-    var standOnTurn: Boolean
-        get() = prefs.getBoolean("stand_on_turn", false)
-        set(v) = prefs.edit().putBoolean("stand_on_turn", v).apply()
-
     /** Settings → Display: the stand's control layer never hides by itself. */
     var standKeepControls: Boolean
         get() = prefs.getBoolean("stand_keep_controls", false)
@@ -130,6 +125,8 @@ class AppContainer(private val context: Context) {
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.
         runCatching { no.brasscribe.play.score.SoundPack(context) }
+        // "Open the music stand when I turn the phone sideways" is gone; so is what it stored.
+        prefs.edit().remove("stand_on_turn").apply()
     }
 
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */

@@ -171,7 +171,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val activity = remember(context) { context.findActivity() }
     val container = vm.container
     val assistive = rememberAssistive(container.assistiveOverride)
-    val keyboard = keyboardInUse()
+    // Tab or Space since the last touch; a Bluetooth pedal (arrows, Page Up/Down) keeps nothing up.
+    val keyboard = ms.keyboardControls
     val keepControls = remember(ms.open) { container.standKeepControls }
     val follow = remember(ms.open) { container.standFollow }
     val standButton = remember { FocusRequester() }
@@ -229,6 +230,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         ms.layer = false
     }
     fun tapMusic() {
+        ms.keyboardControls = false
         ms.touches++
         ms.hint = false
         if (!ms.layer) { ms.layer = true; return }
@@ -253,9 +255,10 @@ fun ScoreScreen(vm: PlayViewModel) {
             else -> sheet = Sheet.LOOP
         }
     }
-    fun standCommand(cmd: StandCommand) {
+    fun standCommand(cmd: StandCommand, showsControls: Boolean) {
         ms.touches++
-        if (cmd != StandCommand.LEAVE) ms.layer = true
+        // Only Tab and Space bring the controls up and keep them (§4.2); a page turner's keys just turn.
+        if (showsControls && cmd != StandCommand.LEAVE) { ms.layer = true; ms.keyboardControls = true }
         when (cmd) {
             StandCommand.NEXT_PAGE -> turnPage(ms.page + 1)
             StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1)
@@ -272,16 +275,6 @@ fun ScoreScreen(vm: PlayViewModel) {
     // "Open on the music stand" in the library opens the score and the stand in one step.
     LaunchedEffect(Unit) {
         vm.standFromLibrary.value?.let { id -> vm.standFromLibrary.value = null; libraryEntry = id; enterStand(StandOrigin.LIBRARY) }
-    }
-    // Settings: Open the music stand when I turn the phone sideways (off by default); turning it upright leaves.
-    var lastOrientation by remember { androidx.compose.runtime.mutableIntStateOf(configuration.orientation) }
-    LaunchedEffect(configuration.orientation) {
-        val was = lastOrientation
-        lastOrientation = configuration.orientation
-        if (was == configuration.orientation || shape.tablet) return@LaunchedEffect
-        val sideways = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        if (!ms.open && sideways && container.standOnTurn) enterStand(StandOrigin.TURN)
-        else if (ms.open && !sideways && ms.origin == StandOrigin.TURN) leaveStand()
     }
     // The layout (the section 3 sizing table) and your part, once the score is there.
     // A narrow column (or zoom) takes fewer bars per system, never smaller or squeezed notes.

@@ -44,7 +44,6 @@ class MusicStandPlaybackTest {
         container.firstRunDone = true
         container.standFollow = true
         container.standKeepControls = false
-        container.standOnTurn = false
         container.standHintShown = true
         container.assistiveOverride = false
         instrumentation.runOnMainSync { vm.home() }
@@ -198,11 +197,17 @@ class MusicStandPlaybackTest {
         instrumentation.runOnMainSync { container.assistiveOverride = false }
         waitFor("it hides again without", 8_000) { !onScreen("Speed 50%") }
 
-        // A keyboard: a key shows the layer, and it stays while the keyboard is in use.
+        // A Bluetooth page turner is a keyboard: its keys turn the page and leave the layer hidden,
+        // and having sent them keeps nothing up.
+        for (k in listOf(KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_UP)) {
+            key(k)
+            assertTrue("a page key leaves the layer hidden", !onScreen("Speed 50%"))
+        }
+        // Tab shows the layer, and it stays until the next touch.
         key(KeyEvent.KEYCODE_TAB)
-        waitFor("a key shows the layer", 3_000) { onScreen("Speed 50%") }
+        waitFor("Tab shows the layer", 3_000) { onScreen("Speed 50%") }
         Thread.sleep(6_000)
-        assertTrue("the layer stays with a keyboard", onScreen("Speed 50%"))
+        assertTrue("the layer stays after Tab", onScreen("Speed 50%"))
         assertTrue("still playing", controller.state.value.playing)
     }
 }

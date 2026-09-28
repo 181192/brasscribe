@@ -63,7 +63,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
@@ -74,7 +73,6 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
@@ -108,7 +106,7 @@ import no.brasscribe.play.score.StandPages
 import kotlin.math.roundToInt
 
 /** Where the stand was opened from: that opener gets the focus back on leaving (design/music-stand.md §6). */
-enum class StandOrigin { BUTTON, LIBRARY, TURN }
+enum class StandOrigin { BUTTON, LIBRARY }
 
 /**
  * The music stand (design/music-stand.md): the score alone, in pages, with a persistent band at the top
@@ -146,6 +144,8 @@ class MusicStandState(
     /** Focus on Only my part or Lock rotation in the band (a phone on its side): part of the layer too. */
     var focusInBand by mutableStateOf(false)
     val layerFocused get() = focusInLayer || focusInBand
+    /** Tab or Space was pressed since the last touch: the layer then stays (§4.2). Page keys don't count. */
+    var keyboardControls by mutableStateOf(false)
     /** Every touch restarts the auto-hide timer. */
     var touches by mutableIntStateOf(0)
     var hint by mutableStateOf(false)
@@ -160,7 +160,7 @@ class MusicStandState(
             save = { listOf(it.open, it.origin.name, it.topBar, it.layer, it.locked, it.onlyMine, ArrayList(it.before)) },
             restore = {
                 @Suppress("UNCHECKED_CAST")
-                MusicStandState(it[0] as Boolean, StandOrigin.valueOf(it[1] as String), it[2] as Int, it[3] as Boolean,
+                MusicStandState(it[0] as Boolean, (StandOrigin.entries.firstOrNull { o -> o.name == it[1] } ?: StandOrigin.BUTTON), it[2] as Int, it[3] as Boolean,
                     it[4] as Boolean, it[5] as Boolean, it[6] as List<Int>)
             },
         )
@@ -540,7 +540,7 @@ private fun StandLayer(
             .onFocusChanged { ms.focusInLayer = it.hasFocus }
             .semantics { testTag = "stand-layer" }
             // A touch on the card is not a tap on the music, and it keeps the layer up a while longer.
-            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); ms.touches++ } },
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); ms.keyboardControls = false; ms.touches++ } },
         shape = MaterialTheme.shapes.large, color = c.surfaceRaised, contentColor = c.text,
         border = BorderStroke(1.dp, if (c.isHighContrast) c.borderStrong else c.border),
         shadowElevation = if (c.isHighContrast) 0.dp else 2.dp,
@@ -618,20 +618,21 @@ private fun SpeedStepper(speed: Int, onSpeed: (Int) -> Unit) {
     }
 }
 
-/** Handles a key on the stand (§7); true when it was the stand's. */
-fun standKey(e: androidx.compose.ui.input.key.KeyEvent, focusInLayer: Boolean, run: (StandCommand) -> Unit): Boolean {
+/**
+ * Handles a key on the stand (§7); true when it was the stand's. [run] also gets whether the key
+ * shows the controls: Tab and Space do; page keys, which pedals send, turn the page with the layer as it is.
+ */
+fun standKey(e: androidx.compose.ui.input.key.KeyEvent, focusInLayer: Boolean, run: (StandCommand, Boolean) -> Unit): Boolean {
     val n = e.nativeKeyEvent
-    val cmd = MusicStandRules.command(e.key.nativeKeyCode, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) ?: return false
+    val code = e.key.nativeKeyCode
+    val cmd = MusicStandRules.command(code, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) ?: return false
+    val shows = MusicStandRules.showsControls(code)
     // Space on a focused button presses that button; Tab still moves the focus.
-    if (cmd == StandCommand.PLAY_PAUSE && focusInLayer && e.key.nativeKeyCode == android.view.KeyEvent.KEYCODE_SPACE) return false
-    if (cmd == StandCommand.SHOW_CONTROLS) { if (e.type == KeyEventType.KeyDown) run(cmd); return false }
-    if (e.type == KeyEventType.KeyDown) run(cmd)
+    if (cmd == StandCommand.PLAY_PAUSE && focusInLayer && code == android.view.KeyEvent.KEYCODE_SPACE) return false
+    if (cmd == StandCommand.SHOW_CONTROLS) { if (e.type == KeyEventType.KeyDown) run(cmd, shows); return false }
+    if (e.type == KeyEventType.KeyDown) run(cmd, shows)
     return true
 }
-
-/** A keyboard is in use (Tab, arrows): the layer then never hides by itself. */
-@Composable
-fun keyboardInUse(): Boolean = LocalInputModeManager.current.inputMode == InputMode.Keyboard
 
 /** Locks the orientation the phone has now, or gives the choice back to the system. */
 fun lockRotation(activity: Activity?, lock: Boolean, to: Int = ActivityInfo.SCREEN_ORIENTATION_LOCKED) {

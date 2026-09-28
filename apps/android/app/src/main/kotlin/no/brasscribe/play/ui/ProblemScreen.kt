@@ -146,21 +146,14 @@ fun SettingsScreen(vm: PlayViewModel) {
             ListRow(stringResource(R.string.settings_text_motion), { open(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) },
                 icon = R.drawable.ic_bc_text_size, subtitle = stringResource(R.string.settings_text_motion_desc))
         }
-        // The music stand (design/music-stand.md section 9): turning the phone opens it only when asked (2.5.4).
+        // The music stand (design/music-stand.md section 9).
         SectionLabel(stringResource(R.string.stand_enter))
         RowGroup {
-            val phone = androidx.compose.ui.platform.LocalConfiguration.current.smallestScreenWidthDp < 600
             var follow by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standFollow) }
             var keep by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standKeepControls) }
-            var onTurn by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standOnTurn) }
             SwitchRow(stringResource(R.string.settings_stand_follow), null, follow, "setting-stand-follow") { follow = it; vm.container.standFollow = it }
             RowDivider()
             SwitchRow(stringResource(R.string.settings_stand_controls), null, keep, "setting-stand-controls") { keep = it; vm.container.standKeepControls = it }
-            if (phone) {
-                RowDivider()
-                SwitchRow(stringResource(R.string.settings_stand_on_turn), stringResource(R.string.settings_stand_on_turn_sub), onTurn,
-                    "setting-stand-on-turn") { onTurn = it; vm.container.standOnTurn = it }
-            }
         }
         RowGroup {
             ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
