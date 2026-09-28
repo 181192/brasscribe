@@ -24,6 +24,7 @@ from typing import Callable
 
 import numpy as np
 
+from .gpulock import gpu_lock
 from .paths import ADAPTERS, ROOT
 
 BASELINES = ROOT / "eval" / "baselines.json"
@@ -45,7 +46,6 @@ class Suite:
 
 
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
-GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK", "/tmp/brasscribe-gpu.lock"))
 
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
@@ -54,16 +54,8 @@ def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     if tool not in HEAVY:
         subprocess.run(cmd, check=True)
         return
-    while True:
-        try:
-            GPU_LOCK.mkdir()
-            break
-        except FileExistsError:
-            time.sleep(5)
-    try:
+    with gpu_lock(poll=5):
         subprocess.run(cmd, check=True)
-    finally:
-        GPU_LOCK.rmdir()
 
 
 def _need(data: Path, *rels: str) -> None:

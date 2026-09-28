@@ -8,6 +8,7 @@ import time
 import pytest
 
 from brasscribe_engine.dag import SOURCE, Executor, Input, Pipeline, StageFailed, Stage
+from brasscribe_engine.gpulock import is_locked
 
 from .test_dag import session
 
@@ -78,7 +79,7 @@ def test_two_overlaps_cpu_with_gpu_but_never_two_gpu_stages(settings, audio, tmp
     assert wall < 4.5 * SLEEP  # 5 stages of SLEEP in 3 rounds (in order: 5 SLEEP or more)
     fractions = [e["fraction"] for e in events if e["type"] == "stage" and e["status"] == "ran"]
     assert fractions == sorted(fractions) and fractions[-1] == 1.0
-    assert not settings.gpu_lock.exists()
+    assert not is_locked(settings.gpu_lock)
 
 
 def test_a_failed_stage_fails_the_run_after_the_others_finish(settings, audio, tmp_path):

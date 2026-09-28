@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from .gpulock import file_lock
 from .hashing import HashIndex, sha256_bytes
 
 
@@ -166,26 +167,11 @@ class AdapterRegistry:
 
     @contextmanager
     def gpu_mutex(self, poll: float | None = None, on_blocked: Callable[[], None] | None = None):
-        """Machine-wide lock (an atomic mkdir, so it excludes other processes and other threads alike).
+        """Machine-wide lock on `gpu_lock` (an OS file lock: it excludes other processes and other
+        threads alike, and the kernel drops it when the holder dies, so a crash cannot block the GPU).
         Yields the seconds spent waiting; `on_blocked` is called once, only if the lock was held."""
-        t0 = time.monotonic()
-        blocked = False
-        while True:
-            try:
-                self.gpu_lock.mkdir()
-                break
-            except FileExistsError:
-                if not blocked and on_blocked:
-                    on_blocked()
-                blocked = True
-                time.sleep(self.gpu_poll if poll is None else poll)
-        try:
-            yield time.monotonic() - t0
-        finally:
-            try:
-                self.gpu_lock.rmdir()
-            except OSError:
-                pass
+        with file_lock(self.gpu_lock, poll=self.gpu_poll if poll is None else poll, on_blocked=on_blocked) as waited:
+            yield waited
 
     def run(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None, allow_heavy: bool = True,
             log=None, waited: Callable[[float], None] | None = None) -> float:

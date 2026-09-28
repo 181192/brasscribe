@@ -7,6 +7,7 @@ import time
 
 from brasscribe_engine import stages as S
 from brasscribe_engine.dag import SOURCE, Executor, Input, Pipeline, Stage
+from brasscribe_engine.gpulock import file_lock, is_locked
 
 from .test_dag import session
 
@@ -30,9 +31,18 @@ def waiting_logs(events):
 
 
 def test_wait_for_the_gpu_mutex_is_not_run_time(settings, audio, tmp_path):
-    settings.gpu_lock.mkdir()  # another job holds the GPU
-    threading.Timer(0.8, settings.gpu_lock.rmdir).start()
+    held = threading.Event()
+
+    def other_job():  # another job holds the GPU for 0.8 s
+        with file_lock(settings.gpu_lock):
+            held.set()
+            time.sleep(0.8)
+
+    t = threading.Thread(target=other_job)
+    t.start()
+    held.wait(5)
     res, events = run_heavy(settings, audio, tmp_path, "r1")
+    t.join()
 
     assert res.status == "ran"
     assert res.queue_wait_s >= 0.7
@@ -43,7 +53,7 @@ def test_wait_for_the_gpu_mutex_is_not_run_time(settings, audio, tmp_path):
     done = [e for e in events if e["type"] == "stage" and e["status"] == "ran"][0]
     assert done["queue_wait_s"] >= 0.7 and done["run_s"] < done["seconds"]
     assert len(waiting_logs(events)) == 1
-    assert not settings.gpu_lock.exists()
+    assert not is_locked(settings.gpu_lock)
 
 
 def test_no_wait_is_logged_when_the_gpu_is_free(settings, audio, tmp_path):
