@@ -86,3 +86,11 @@ your SDK is not at `/opt/homebrew/opt/dotnet/libexec`.
 
 The full Windows build, the start-up smoke test and the Axe.Windows scan run in
 [.github/workflows/windows.yml](../../.github/workflows/windows.yml).
+
+## Test tiers
+
+| Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
+| --- | --- | --- |
+| `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows (CI) |
+
+See [docs/dev/verify.md](../../docs/dev/verify.md).

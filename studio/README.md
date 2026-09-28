@@ -75,3 +75,11 @@ Styling is the Brasscribe design system (`design/system.md` §7, the workbench v
 Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colours and reduced motion all come from the tokens. The notation takes its ink and staff colours from them too.
 
 Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
+
+## Test tiers
+
+| Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
+| --- | --- | --- |
+| `npx vitest run` | `npm test && npm run build && npm run test:browser` | `npm run e2e` (starts an engine) |
+
+See [docs/dev/verify.md](../docs/dev/verify.md).

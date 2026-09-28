@@ -126,3 +126,11 @@ The TalkBack acceptance script (`qa/screen-reader-scripts/talkback-android.md`) 
 - **alphaTab 1.8.4 on Android** has three more bugs worked around here: `api.loadSoundFont(ByteArray)` returns false for the same `when` reason as `load` (the app hands the bytes to `api.player` directly); registering on `api.midiLoaded` recurses forever in `AlphaSynthWebWorkerApi.loadedMidiInfo` (the app re-applies channel volumes on `postRenderFinished` instead); and it cannot hold the full band SoundFont (see above).
 - **Beat grid of solo takes.** On the URMP clips Beat This marks most beats as downbeats, so both the engine and the phone write 1/4 bars; the engine's `arrange_solo` path and the phone agree on the notes (onset+pitch F1 0.963 on URMP March) but not on bar positions.
 - **alphaTab's `api.load(bytes)`** returns false on Android: `AndroidUiFacade.load` uses `when (data) { (data is ByteArray) -> … }`, which compares values rather than checking the type. The app parses with `ScoreLoader.loadScoreFromBytes` and calls `renderScore` itself.
+
+## Test tiers
+
+| Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
+| --- | --- | --- |
+| `./gradlew testDebugUnitTest -Pbrasscribe.fast` | `./gradlew testDebugUnitTest lint assembleDebug` | `scripts/emulator-pool.sh acquire`, then `connectedDebugAndroidTest` |
+
+See [docs/dev/verify.md](../../docs/dev/verify.md).
