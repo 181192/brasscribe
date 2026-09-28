@@ -26,9 +26,12 @@ import hmac
 import json
 import secrets
 import shutil
+import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Literal
+
+import anyio
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
@@ -42,8 +45,17 @@ from .config import Settings
 from .jobs import TERMINAL, Job, JobManager
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+# Studio's own files keep their names across releases, so the browser revalidates them on every load
+# (a 304 via the ETag) instead of guessing a freshness lifetime and running an old studio.js after an
+# update. The band SoundFont is large and changes only with a new sound build: a day before revalidating.
+STUDIO_CACHE = "no-cache"
+BAND_SOUNDS_CACHE = "public, max-age=86400"
 STATIC = Path(__file__).resolve().parent / "static"
+BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from BRASSCRIBE_BAND_SOUNDS_DIR
 HEARTBEAT_S = 15.0
+# Event streams wait on their job in threads of their own: in the shared pool (40 threads) forty open
+# streams would leave no thread for any other request.
+STREAM_WAITERS = 256
 ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 
 MEDIA = {
@@ -62,6 +74,19 @@ SUFFIX_MEDIA = {".json": "application/json", ".musicxml": MEDIA["brass-band.musi
 
 def media_type(name: str) -> str:
     return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
+
+
+class CachedStaticFiles(StaticFiles):
+    """StaticFiles with a Cache-Control header on every file, 200 and 304 alike."""
+
+    def __init__(self, *args, cache_control: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache_control = cache_control
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = self.cache_control
+        return response
 
 
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
@@ -83,6 +108,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     )
     app.state.settings = settings
     app.state.jobs = JobManager(settings, workers=workers)
+    stream_waiters = anyio.CapacityLimiter(STREAM_WAITERS)
     app.state.trust_loopback = settings.trust_local if trust_loopback is None else trust_loopback
     app.state.admin_token = settings.admin_credential()
     from .discovery import service_name
@@ -161,8 +187,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return job
 
     def outputs_of(job: Job) -> list[str]:
-        d = jobs.run_dir(job.id) / "outputs"
-        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file()) if d.is_dir() else []
+        return jobs.outputs(job)
 
     def job_model(job: Job) -> m.Job:
         stages = list(job.stages.values())
@@ -392,7 +417,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         path, filename = job_input(body)
         title = body.title or profiles.default_title(body.profile, Path(filename))
         params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
-                  "key": body.key, "transpose": body.transpose}
+                  "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
         if not body.muscriptor:
             params["muscriptor"] = False
         try:
@@ -422,11 +447,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
                                title: str | None = Form(None), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
-                               key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11)) -> m.Job:
+                               key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11),
+                               seat: m.Seat | None = Form(None), reads: m.Reads | None = Form(None),
+                               lead: m.Lead = Form("lineup")) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
-                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose), request)
+                                      lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
+                                      reads=reads, lead=lead), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:
@@ -479,10 +507,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         job = job_or_404(job_id)
         start = int(last_event_id) if last_event_id and last_event_id.lstrip("-").isdigit() else after
 
-        def gen():
+        async def gen():
             last = start
             while True:
-                batch = job.events_after(last, HEARTBEAT_S)
+                batch = await anyio.to_thread.run_sync(job.events_after, last, HEARTBEAT_S, limiter=stream_waiters)
                 for e in batch:
                     last = e["id"]
                     yield f"id: {e['id']}\nevent: {e.get('type', 'message')}\ndata: {json.dumps(e)}\n\n"
@@ -678,7 +706,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                 files = {p.relative_to(d).as_posix(): None for p in sorted(d.rglob("*")) if p.is_file()} if d.is_dir() else {}
             out.append(m.StageArtifacts(
                 stage=name, kind=st.get("kind"), status=st["status"], key=rec.get("key"), seconds=st.get("seconds"),
-                device=st.get("device"),
+                queue_wait_s=st.get("queue_wait_s"), run_s=st.get("run_s"), device=st.get("device"),
                 files=[file_ref(d / f, f, f"/v1/jobs/{job.id}/stages/{name}/files/{f}", h) for f, h in files.items()]))
         return out
 
@@ -760,6 +788,18 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             roundtrip_file(job_id).write_text(json.dumps(r, indent=1))
         return m.Roundtrip(**r)
 
+    @app.get("/v1/jobs/{job_id}/part-sources", response_model=m.PartSources, operation_id="getPartSources",
+             tags=["results"], dependencies=[Depends(auth)])
+    def get_part_sources(job_id: str) -> m.PartSources:
+        """Where each part comes from: the player's own recording, the recording, or arranged from the harmony."""
+        from brasscribe_music.arranger import part_sources
+        from brasscribe_music.score_model import Composition
+
+        comp = jobs.run_dir(job_or_404(job_id).id) / "outputs" / "composition.json"
+        if not comp.exists():
+            raise HTTPException(404, "job has no Composition output")
+        return m.PartSources(parts=part_sources(Composition.from_json(comp)))
+
     @app.get("/v1/jobs/{job_id}/validation", response_model=list[m.ValidationIssue], operation_id="getValidation",
              tags=["inspection"], dependencies=[Depends(auth)])
     def get_validation(job_id: str) -> list[m.ValidationIssue]:
@@ -835,6 +875,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         """State of the latest conformance run started by this server, with the last lines of its log."""
         return m.ConformanceRun(**conformance_runner.snapshot())
 
+    band = settings.band_sounds_dir
+    if band is not None:
+        # Before "/": the first matching mount wins.
+        if all((band / f).is_file() for f in BAND_SOUND_FILES):
+            app.mount("/assets/band", CachedStaticFiles(directory=band, cache_control=BAND_SOUNDS_CACHE),
+                      name="band-sounds")
+        else:
+            print(f"band sounds: {band} has no {' and '.join(BAND_SOUND_FILES)}; Studio plays General MIDI sounds",
+                  file=sys.stderr, flush=True)
     if STATIC.is_dir():
-        app.mount("/", StaticFiles(directory=STATIC, html=True), name="studio")
+        app.mount("/", CachedStaticFiles(directory=STATIC, html=True, cache_control=STUDIO_CACHE), name="studio")
     return app

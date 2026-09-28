@@ -39,7 +39,10 @@ public sealed record JobView(string? Title, string StepKey, double Fraction, int
 /// <summary>For the tech disclosure: addresses, port, version, device, server id, data folder.</summary>
 public sealed record TechDetails(IReadOnlyList<string> Addresses, int? Port, string Version, string RunsOn, string? ServerId, string DataDir);
 
-/// <summary>Everything the flyout shows at one moment.</summary>
+/// <summary>
+/// Everything the flyout shows at one moment. DownloadProgress is "3.1 of 9.8 GB · about 12 min left" while the
+/// models download (or are paused), else null.
+/// </summary>
 public sealed record BandroomSnapshot(
     StateInputs Inputs,
     string Header,
@@ -47,4 +50,5 @@ public sealed record BandroomSnapshot(
     JobView? Job,
     HealthSnapshot? Health,
     string SpeedKey,
-    TechDetails Tech);
+    TechDetails Tech,
+    string? DownloadProgress = null);

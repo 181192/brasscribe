@@ -231,7 +231,7 @@ public class AlphaTabTests(ITestOutputHelper log)
         var dir = TestPaths.RepoRoot is { } root ? Path.Combine(root, "data", "sounds", "built") : null;
         if (golden is null || dir is null || !Directory.Exists(dir)) return;
         var set = BrassSoundSet.Load(dir, TestPaths.RepoFile("sounds/mapping.json"));
-        if (set.Fonts.Count == 0) return;
+        if (set.Files.Count == 0) return;
 
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
@@ -267,7 +267,7 @@ public class AlphaTabTests(ITestOutputHelper log)
                 if (rms < 1e-4) silent++;
             }
         }
-        log.WriteLine($"{set.Fonts.Count} SoundFonts, programs {string.Join(",", set.Programs.Select(p => $"{p.Key}={p.Value}"))}; per-track rms from bar 20: " + string.Join("; ", levels));
+        log.WriteLine($"{set.Files.Count} SoundFonts, programs {string.Join(",", set.Programs.Select(p => $"{p.Key}={p.Value}"))}; per-track rms from bar 20: " + string.Join("; ", levels));
         Assert.Equal(0, silent);
     }
 

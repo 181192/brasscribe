@@ -68,18 +68,23 @@ impl Audio {
 
     /// Mean over channels (float32, as the reference averages).
     pub fn mono(&self) -> Vec<f32> {
-        let c = self.channels.max(1);
-        if c == 1 {
-            return self.samples.clone();
-        }
-        self.samples
-            .chunks_exact(c)
-            .map(|f| {
-                let s: f32 = crate::py::pairwise_sum_f32(f);
-                s / c as f32
-            })
-            .collect()
+        mono_of(&self.samples, self.channels)
     }
+}
+
+/// Interleaved samples as mono: the mean of each frame, summed pairwise like numpy.
+pub fn mono_of(samples: &[f32], channels: usize) -> Vec<f32> {
+    let c = channels.max(1);
+    if c == 1 {
+        return samples.to_vec();
+    }
+    samples
+        .chunks_exact(c)
+        .map(|f| {
+            let s: f32 = crate::py::pairwise_sum_f32(f);
+            s / c as f32
+        })
+        .collect()
 }
 
 /// k-th smallest of a float slice.

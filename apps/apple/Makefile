@@ -4,7 +4,9 @@
 #   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
 #   make project     generate BrasscribePlay.xcodeproj with XcodeGen
 #   make build       build macOS, iOS Simulator and iPad Simulator
-#   make test        package tests + app unit/UI tests on macOS and an iOS simulator
+#   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
+#   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only when
+#                    nobody is using the Mac (or in CI)
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
 FIXTURES ?= $(ROOT)/apps/fixtures/old-hundredth
@@ -17,7 +19,7 @@ IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(she
 DERIVED := build/DerivedData
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 
-.PHONY: verovio soundfont bandsound project build test package-test size
+.PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size
 
 verovio:
 	./scripts/build-verovio.sh
@@ -44,6 +46,11 @@ package-test:
 test: project package-test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
+
+# The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
+# only on a Mac nobody is using, or in CI.
+test-mac-ui: project
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' test
 
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build

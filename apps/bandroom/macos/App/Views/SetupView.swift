@@ -7,6 +7,8 @@ struct SetupView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismissWindow) private var dismissWindow
     @State private var step = 0
+    /// Went straight to the downloads ("Finish setting up" after the first run): only what is missing.
+    @State private var finishing = false
     @State private var pasteOpen = false
     @State private var key = ""
     @State private var keySaved = HuggingFaceKey.read() != nil
@@ -46,9 +48,18 @@ struct SetupView: View {
             .padding(32)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(minWidth: 760, minHeight: 500)
+        .frame(minWidth: 760, minHeight: 520)
         .background(Color.Brasscribe.bg)
         .foregroundStyle(Color.Brasscribe.text)
+        .onDisappear { app.isSetupWindowOpen = false }
+        .onAppear {
+            app.isSetupWindowOpen = true
+            // Finish setting up: straight to what is left. The band writer without a key starts at the licence.
+            guard app.setupComplete else { return }
+            finishing = true
+            let missing = app.models.missing
+            step = missing.contains(.bandWriter) && !keySaved && !app.downloader.isActive ? 1 : 2
+        }
     }
 
     // MARK: 1
@@ -91,6 +102,8 @@ struct SetupView: View {
                 .brFont(.body).fixedSize(horizontal: false, vertical: true)
             Text("1. Sign in and choose **Agree** on the MuScriptor page.").brFont(.body)
             Text("2. Come back here. Brasscribe downloads it for you.").brFont(.body)
+            Text("Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.")
+                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 Button { NSWorkspace.shared.open(URL(string: "https://huggingface.co/MuScriptor/muscriptor-medium")!) } label: {
                     Text("Read the licence")
@@ -125,7 +138,11 @@ struct SetupView: View {
                 }
                 Spacer()
                 Button {
-                    if !key.isEmpty { keySaved = HuggingFaceKey.save(key) }
+                    if !key.isEmpty {
+                        keySaved = HuggingFaceKey.save(key.trimmingCharacters(in: .whitespacesAndNewlines))
+                        app.huggingFaceKeyChanged()
+                    }
+                    if case .failed = app.downloader.phase { app.downloader.resume() }
                     step = 2
                 } label: { Text("Continue") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40))
@@ -137,46 +154,180 @@ struct SetupView: View {
 
     // MARK: 3
 
+    /// What this step fetches: the engine's own tools on the first run, then only the missing models.
+    private var items: [ModelComponent] {
+        let d = app.downloader
+        return d.components.isEmpty || d.phase == .idle ? app.models.missing : d.components
+    }
+
     private var download: some View {
-        let phase = app.bootstrapper.phase
+        let boot = app.bootstrapper.phase
+        let d = app.downloader
+        let needsTools = !finishing
+        let fraction: Double = needsTools
+            ? (boot == .done ? 0.3 + 0.7 * d.fraction : Double(app.bootstrapper.percent) / 100 * 0.3)
+            : d.fraction
         return VStack(alignment: .leading, spacing: 14) {
             Text("Downloading what Brasscribe needs").brFont(.display)
-            BrassProgress(fraction: Double(app.bootstrapper.percent) / 100)
+            BrassProgress(fraction: fraction)
                 .accessibilityElement()
                 .accessibilityLabel(Text("Downloading what Brasscribe needs"))
-                .accessibilityValue(Text("\(app.bootstrapper.percent)%"))
-            Text("\(app.bootstrapper.percent)%").brFont(.callout)
+                .accessibilityValue(Text("\(Int(fraction * 100))%"))
+            Text(progressLine(fraction: fraction)).brFont(.callout)
             VStack(alignment: .leading, spacing: 6) {
-                ForEach(["Listening tools", "Band writer (MuScriptor)", "Instrument separator", "Beat finder"], id: \.self) { item in
-                    Label(LocalizedStringKey(item), systemImage: phase == .done ? "checkmark.circle" : "arrow.down.circle").brFont(.body)
+                if needsTools {
+                    itemRow(String(localized: "Listening tools"), size: nil, state: toolsState)
+                }
+                ForEach(items, id: \.self) { c in
+                    itemRow(Strings.componentItem(c), size: c.totalBytes, state: state(of: c))
                 }
             }
-            if case .failed(let why) = phase {
+            if case .failed(let why) = boot {
                 ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",
                             tint: Color.Brasscribe.warning)
+            }
+            if case .failed(let e) = d.phase { downloadProblem(e) }
+            if items.contains(where: { $0 != .bandWriter }) {
+                Text("The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.")
+                    .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
             }
             Text("You can close this window. Brasscribe keeps downloading and tells you when it's ready.")
                 .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
             Spacer()
             HStack {
+                if d.phase == .downloading || d.phase == .checking {
+                    Button { d.pause() } label: { Text("Pause") }.buttonStyle(.brOutline)
+                } else if d.phase == .paused {
+                    Button { d.resume() } label: { Text("Resume") }.buttonStyle(.brOutline)
+                }
                 Spacer()
-                if phase == .done {
+                if (boot == .done || finishing) && (d.phase == .done || items.isEmpty) {
                     Button { step = 3 } label: { Text("Continue") }
                         .buttonStyle(BRButtonStyle(kind: .primary, height: 40)).keyboardShortcut(.defaultAction)
-                } else if case .failed = phase {
+                } else if case .failed = boot {
                     Button { run() } label: { Text("Try again") }.buttonStyle(BRButtonStyle(kind: .primary, height: 40))
+                } else if case .failed = d.phase {
+                    if boot == .done || finishing {
+                        // Carry on without what failed; the popover says what is missing (§6.2).
+                        Button { step = 3 } label: { Text("Continue without it") }.buttonStyle(.brPlain)
+                    }
+                    Button { d.resume() } label: { Text("Try again") }.buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                 } else {
                     Button { dismissWindow(id: "setup") } label: { Text("Close window") }.buttonStyle(.brOutline)
                 }
             }
         }
-        .onAppear { if phase == .idle { run() } }
+        .onAppear { if (boot == .idle && !finishing) || (finishing && !d.isActive && d.phase != .paused) { run() } }
+    }
+
+    private enum ItemState { case waiting, active, done, failed }
+
+    private var toolsState: ItemState {
+        switch app.bootstrapper.phase {
+        case .done: .done
+        case .failed: .failed
+        case .idle: .waiting
+        default: .active
+        }
+    }
+
+    private func state(of c: ModelComponent) -> ItemState {
+        let d = app.downloader
+        if !app.models.missing.contains(c) || d.finished.contains(c) { return .done }
+        // Held back (the key or the licence) after the rest came.
+        if case .failed = d.phase, d.current == nil, d.components.contains(c) { return .failed }
+        if d.current == c {
+            if case .failed = d.phase { return .failed }
+            return d.phase == .downloading ? .active : .waiting
+        }
+        return .waiting
+    }
+
+    private func itemRow(_ title: String, size: Int64?, state: ItemState) -> some View {
+        let symbol = switch state {
+        case .waiting: "circle"
+        case .active: "arrow.down.circle"
+        case .done: "checkmark.circle"
+        case .failed: "exclamationmark.triangle"
+        }
+        let word = switch state {
+        case .waiting: String(localized: "Waiting")
+        case .active: String(localized: "Downloading")
+        case .done: String(localized: "Done")
+        case .failed: String(localized: "Stopped")
+        }
+        return HStack(spacing: 8) {
+            Image(systemName: symbol).frame(width: 20).accessibilityHidden(true)
+            Text(title).brFont(.body)
+            if let size { Text("\(Strings.gigabytes(size)) GB").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted) }
+            Spacer()
+            Text(word).brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// "3.1 of 9.8 GB · about 12 min left", "Paused · 3.1 of 9.8 GB", "Checking the download · 40%".
+    private func progressLine(fraction: Double) -> String {
+        let d = app.downloader
+        guard d.bytesTotal > 0, d.phase != .idle else {
+            return String(localized: "\(Int(fraction * 100))%")
+        }
+        let amount = String(localized: "\(Strings.gigabytes(d.bytesDone)) of \(Strings.gigabytes(d.bytesTotal)) GB")
+        if d.phase == .paused { return String(localized: "Paused · \(amount)") }
+        if let v = d.verifying { return String(localized: "Checking the download · \(Int(v * 100))%") }
+        if let m = d.minutesLeft { return String(localized: "\(amount) · about \(m) min left") }
+        return amount
+    }
+
+    /// Each reason in its own words, with the one thing that fixes it.
+    @ViewBuilder private func downloadProblem(_ e: DownloadError) -> some View {
+        let warn = Color.Brasscribe.warning
+        switch e {
+        case .keyMissing:
+            ProblemCard(title: String(localized: "The band writer needs your Hugging Face access key"),
+                        why: String(localized: "Add the key, then try again. The instrument separators download without it."),
+                        symbol: "key", tint: warn)
+            Button { step = 1 } label: { Text("Add an access key") }.buttonStyle(.brOutline)
+        case .keyRefused:
+            ProblemCard(title: String(localized: "Hugging Face didn't accept the access key"),
+                        why: String(localized: "The key may have been deleted or have expired."), symbol: "key", tint: warn)
+            Button { step = 1 } label: { Text("Paste a new key") }.buttonStyle(.brOutline)
+        case .licenceNotAccepted:
+            ProblemCard(title: String(localized: "Accept the licence on Hugging Face, then try again"),
+                        why: String(localized: "Signed in, but the licence isn't accepted yet. Choose **Agree** on the MuScriptor page."),
+                        symbol: "doc.text", tint: warn)
+            Button { NSWorkspace.shared.open(ModelComponent.bandWriter.page) } label: { Text("Open the MuScriptor page") }
+                .buttonStyle(.brOutline)
+        case .notEnoughSpace(let needed, let free):
+            ProblemCard(title: String(localized: "Not enough space"),
+                        why: String(localized: "The downloads need about \(Strings.gigabytes(needed)) GB; \(Strings.gigabytes(free)) GB is free."),
+                        symbol: "internaldrive", tint: warn)
+            Button { app.openStorageSettings() } label: { Text("Free up space…") }.buttonStyle(.brOutline)
+        case .checksumMismatch:
+            ProblemCard(title: String(localized: "A download arrived damaged"),
+                        why: String(localized: "Brasscribe deleted it. Try again to fetch it afresh."),
+                        symbol: "exclamationmark.triangle.fill", tint: warn)
+        case .http, .network:
+            ProblemCard(title: String(localized: "The download stopped"),
+                        why: String(localized: "Check the internet connection, then try again. It continues where it stopped."),
+                        symbol: "wifi.exclamationmark", tint: warn)
+        case .disk(let why):
+            ProblemCard(title: String(localized: "Brasscribe couldn't save the download"), why: why,
+                        symbol: "exclamationmark.triangle.fill", tint: warn)
+        }
     }
 
     private func run() {
+        if finishing {
+            app.downloadMissing()
+            return
+        }
         let config = app.supervisor.configuration
         let bundled = Bundle.main.resourceURL?.appending(path: "workspace")
-        Task { await app.bootstrapper.run(configuration: config, bundledWorkspace: bundled) }
+        Task {
+            await app.bootstrapper.run(configuration: config, bundledWorkspace: bundled)
+            if app.bootstrapper.phase == .done { app.downloadMissing() }
+        }
     }
 
     // MARK: 4
@@ -185,6 +336,8 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Brasscribe is ready").brFont(.display)
             Text("It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.").brFont(.body)
+            Text("Don't see it? On a MacBook it can hide behind the camera notch. Open Brasscribe from Launchpad any time.")
+                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
             Toggle(isOn: $startAtLogin) { Text("Start when I log in").brFont(.body) }
                 .toggleStyle(.switch)
             Text("Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect.")
@@ -193,7 +346,7 @@ struct SetupView: View {
             HStack {
                 Spacer()
                 Button { finish(); dismissWindow(id: "setup") } label: { Text("Done") }.buttonStyle(.brOutline)
-                Button { finish(); dismissWindow(id: "setup"); app.openWindow?("pair") } label: { Text("Pair a phone") }
+                Button { finish(); dismissWindow(id: "setup"); app.openWindow("pair") } label: { Text("Pair a phone") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40)).keyboardShortcut(.defaultAction)
             }
         }

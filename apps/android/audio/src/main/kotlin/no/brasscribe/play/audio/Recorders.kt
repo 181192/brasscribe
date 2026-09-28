@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.math.abs
 
 /** Live state of a capture, for the level meter and the silence notice. */
@@ -26,40 +28,56 @@ data class CaptureState(
     val level: Float = 0f,
     /** Seconds since the input was last above the silence threshold. */
     val silentFor: Double = 0.0,
+    /** The take is still short enough to keep in memory, so the phone itself can make the score. */
+    val fitsPhone: Boolean = true,
+    /** The take reached [TakeSink.MAX_TAKE_SECONDS]: nothing more is recorded. */
+    val full: Boolean = false,
 )
 
-/** Something that records mono float audio until stopped. */
+/** Something that records mono float audio into a WAV file until stopped. */
 interface AudioCapture {
     val state: StateFlow<CaptureState>
     fun start(scope: CoroutineScope): Boolean
-    suspend fun stop(): PcmAudio
+    suspend fun stop(): CapturedTake
+    /** Stops and deletes the take. */
+    suspend fun discard()
 }
 
 private const val SILENCE = 1e-3f
 
-/** Microphone capture through Oboe/AAudio (native, low latency). */
-class MicRecorder(private val requestedRate: Int = 48000) : AudioCapture {
+/** The live state after [sink] took a buffer whose peak was [level]; [lastSound] is the sample count at the last sound. */
+private fun TakeSink.state(level: Float, lastSound: Long) = CaptureState(
+    recording = true, seconds = samples.toDouble() / sampleRate, level = level,
+    silentFor = (samples - lastSound).toDouble() / sampleRate, fitsPhone = inMemory, full = full,
+)
+
+/** Peak of the first [n] samples. */
+private fun peak(buf: FloatArray, n: Int): Float { var p = 0f; for (i in 0 until n) p = maxOf(p, abs(buf[i])); return p }
+
+/**
+ * Microphone capture through Oboe/AAudio (native, low latency), written to [file] as it is recorded
+ * ([TakeSink]): memory holds a 4096-sample buffer and, while the take is short enough, its samples.
+ */
+class MicRecorder(private val file: File, private val requestedRate: Int = 48000) : AudioCapture {
     private val _state = MutableStateFlow(CaptureState())
     override val state: StateFlow<CaptureState> = _state
-    private val pcm = FloatBuilder()
+    private var sink: TakeSink? = null
     private var job: Job? = null
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     override fun start(scope: CoroutineScope): Boolean {
         if (!NativeAudio.recorderStart(requestedRate)) return false
-        val rate = NativeAudio.recorderSampleRate()
+        val take = runCatching { TakeSink(file, NativeAudio.recorderSampleRate()) }.getOrElse { NativeAudio.recorderStop(); return false }
+        sink = take
         job = scope.launch(Dispatchers.Default) {
             val buf = FloatArray(4096)
-            var lastSound = 0
+            var lastSound = 0L
             while (isActive) {
                 val n = NativeAudio.recorderRead(buf)
                 if (n > 0) {
-                    pcm.addAll(buf, n)
-                    var peak = 0f
-                    for (i in 0 until n) peak = maxOf(peak, abs(buf[i]))
-                    if (peak > SILENCE) lastSound = pcm.size
-                    _state.value = CaptureState(true, pcm.size.toDouble() / rate, NativeAudio.recorderLevel(),
-                        (pcm.size - lastSound).toDouble() / rate)
+                    take.add(buf, n)
+                    if (peak(buf, n) > SILENCE) lastSound = take.samples
+                    _state.value = take.state(NativeAudio.recorderLevel(), lastSound)
                 } else delay(10)
             }
         }
@@ -67,32 +85,41 @@ class MicRecorder(private val requestedRate: Int = 48000) : AudioCapture {
         return true
     }
 
-    override suspend fun stop(): PcmAudio {
-        val rate = NativeAudio.recorderSampleRate()
+    private suspend fun end() {
         NativeAudio.recorderStop()
         job?.cancel()
         job?.join()
+        _state.value = _state.value.copy(recording = false)
+    }
+
+    override suspend fun stop(): CapturedTake {
+        end()
+        val take = sink!!
         // Drain what the callback wrote after the last read.
         val buf = FloatArray(4096)
         while (true) {
             val n = NativeAudio.recorderRead(buf)
             if (n <= 0) break
-            pcm.addAll(buf, n)
+            take.add(buf, n)
         }
-        _state.value = _state.value.copy(recording = false)
-        return PcmAudio(pcm.toArray(), rate)
+        return withContext(Dispatchers.IO) { take.finish() }
     }
+
+    override suspend fun discard() { end(); sink?.discard() }
 }
 
 /**
  * Records what other apps play (Android 10+ AudioPlaybackCapture) through a MediaProjection the user
  * consented to. Apps can opt out, and DRM playback is never captured: both give silence, which
- * [CaptureState.silentFor] exposes so the UI can say so instead of recording nothing.
+ * [CaptureState.silentFor] exposes so the UI can say so instead of recording nothing. Written to
+ * [file] as it is recorded, as [MicRecorder] does.
  */
-class PlaybackCaptureRecorder(private val projection: MediaProjection, private val sampleRate: Int = 48000) : AudioCapture {
+class PlaybackCaptureRecorder(
+    private val projection: MediaProjection, private val file: File, private val sampleRate: Int = 48000,
+) : AudioCapture {
     private val _state = MutableStateFlow(CaptureState())
     override val state: StateFlow<CaptureState> = _state
-    private val pcm = FloatBuilder()
+    private var sink: TakeSink? = null
     private var record: AudioRecord? = null
     private var job: Job? = null
 
@@ -113,26 +140,27 @@ class PlaybackCaptureRecorder(private val projection: MediaProjection, private v
             AudioRecord.Builder().setAudioFormat(format).setBufferSizeInBytes(maxOf(minBuf, sampleRate)).setAudioPlaybackCaptureConfig(config).build()
         }.getOrNull() ?: return false
         if (rec.state != AudioRecord.STATE_INITIALIZED) { rec.release(); return false }
+        val take = runCatching { TakeSink(file, sampleRate) }.getOrElse { rec.release(); return false }
+        sink = take
         record = rec
         rec.startRecording()
         job = scope.launch(Dispatchers.IO) {
             val buf = FloatArray(4096)
-            var lastSound = 0
+            var lastSound = 0L
             while (isActive) {
                 val n = rec.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
                 if (n <= 0) continue
-                pcm.addAll(buf, n)
-                var peak = 0f
-                for (i in 0 until n) peak = maxOf(peak, abs(buf[i]))
-                if (peak > SILENCE) lastSound = pcm.size
-                _state.value = CaptureState(true, pcm.size.toDouble() / sampleRate, peak, (pcm.size - lastSound).toDouble() / sampleRate)
+                take.add(buf, n)
+                val p = peak(buf, n)
+                if (p > SILENCE) lastSound = take.samples
+                _state.value = take.state(p, lastSound)
             }
         }
         _state.value = CaptureState(recording = true)
         return true
     }
 
-    override suspend fun stop(): PcmAudio {
+    private suspend fun end() {
         job?.cancel()
         record?.stop()
         job?.join()
@@ -140,6 +168,13 @@ class PlaybackCaptureRecorder(private val projection: MediaProjection, private v
         record = null
         projection.stop()
         _state.value = _state.value.copy(recording = false)
-        return PcmAudio(pcm.toArray(), sampleRate)
     }
+
+    override suspend fun stop(): CapturedTake {
+        end()
+        val take = sink!!
+        return withContext(Dispatchers.IO) { take.finish() }
+    }
+
+    override suspend fun discard() { end(); sink?.discard() }
 }

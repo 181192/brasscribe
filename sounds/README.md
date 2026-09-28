@@ -2,6 +2,31 @@
 
 Sample fetching, brass-band instrument building, seating and room placement, and the offline reference renderer the native players are expected to match (docs/plan/apps-plan.md §5.4).
 
+## Band sounds for the apps
+
+The apps bundle the band SoundFont at build time; users never download it. The files are not in git.
+`band-sounds.json` pins one sound pack: a pre-release of this (private) repository, currently `sounds-2026.09.27`,
+with the size and sha256 of each file.
+
+```sh
+pixi run fetch-sounds            # once per checkout: data/sounds/band/*.sf2, verified (needs gh auth login)
+python3 sounds/tools/band_sounds.py fetch brasscribe-band-mobile.sf2   # one file; --dir DIR elsewhere
+python3 sounds/tools/band_sounds.py verify                              # exit 1 if missing or different
+```
+
+| File | Size | Bundled by |
+|---|---|---|
+| `brasscribe-band-mobile.sf2` | 77 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`) |
+| `brasscribe-band-16bit.sf2` | 195 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
+
+CI uses the same script through `.github/actions/band-sounds` (the job's `GITHUB_TOKEN`, cached per pin). The
+Android, Apple and Windows release builds and the Bandroom Windows job fail when the files cannot be fetched or do
+not match. A local build without them still works: the app says the band sounds are missing and plays the basic tier.
+
+A new pack: rebuild (`band.py --bits 16`, `apps/android/scripts/mobile_soundfont.py`), run
+`python3 sounds/tools/band_sounds.py pin --version sounds-YYYY.MM.DD` (rewrites the pin and `SHA256SUMS`),
+publish the two files and `SHA256SUMS` as a pre-release with that tag, and commit the pin.
+
 ## Run it
 
 ```sh
@@ -20,6 +45,8 @@ uv run --project sounds python sounds/soundcheck.py render ENGINE -o RUN        
 uv run --project sounds python sounds/checks.py coverage                           # every lineup part -> own real-sample preset (gate)
 uv run --project sounds python sounds/checks.py phrases RUN...                     # clicks, chops, dropouts, clipping, release, balance (gate)
 python3 sounds/partsound.py --check                                                # CI: part -> preset rules and test vectors
+python3 sounds/playback_levels.py --check                                          # CI: output stage vectors match playback-levels.json
+uv run --project sounds python sounds/playback_levels.py --vectors                 # rewrite output-stage-vectors.json
 uv run --project sounds python sounds/timbre_probe.py                              # source/EQ candidates vs real references
 uv run --project sounds python sounds/ab-test/room_baseline.py --baseline B.mp3 --realistic-info R.json -o OUT.mp3
 ```

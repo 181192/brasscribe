@@ -116,6 +116,12 @@ data class JobCreate(
     val transpose: Int? = null,
     /** Solo profile: confirm SwiftF0 with MuScriptor; false uses Basic Pitch, as on device. */
     val muscriptor: Boolean = true,
+    /** The player's seat id (e.g. "2nd-cornet"); a solo take is written for it. */
+    val seat: String? = null,
+    /** "treble" or "bass": the clef the player reads. */
+    val reads: String? = null,
+    /** "lineup" or "seat": who plays the tune. */
+    val lead: String? = null,
 )
 
 @Serializable

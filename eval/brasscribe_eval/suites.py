@@ -24,6 +24,7 @@ from typing import Callable
 
 import numpy as np
 
+from .gpulock import gpu_lock
 from .paths import ADAPTERS, ROOT
 
 BASELINES = ROOT / "eval" / "baselines.json"
@@ -45,7 +46,6 @@ class Suite:
 
 
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
-GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK", "/tmp/brasscribe-gpu.lock"))
 
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
@@ -54,16 +54,8 @@ def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     if tool not in HEAVY:
         subprocess.run(cmd, check=True)
         return
-    while True:
-        try:
-            GPU_LOCK.mkdir()
-            break
-        except FileExistsError:
-            time.sleep(5)
-    try:
+    with gpu_lock(poll=5):
         subprocess.run(cmd, check=True)
-    finally:
-        GPU_LOCK.rmdir()
 
 
 def _need(data: Path, *rels: str) -> None:
@@ -384,6 +376,28 @@ def _readability(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
+def _solo_instruments(data: Path, mode: str) -> dict[str, float]:
+    """solo_instruments_bench on the frozen ChoraleBricks solo fixtures (in the repository; no models run)."""
+    from .solo_instruments_bench import FIXTURES, metrics
+
+    if not FIXTURES.is_dir():
+        raise SkipSuite(f"missing fixtures: {FIXTURES}")
+    m = metrics(seats=True)
+    # The seat's gates (docs/plan/my-instrument.md §6.3): recall on low brass, and a solo take written as played.
+    recall = {"baritone": 0.93, "trombone": 0.93, "tuba": 0.85}
+    m["seat_gates"] = float(all(m[f"{k}.seat_recall"] >= v for k, v in recall.items())
+                            and all(v <= 0.01 for k, v in m.items() if k.endswith(".seat_moved")))
+    return m
+
+
+def _seat_voices(data: Path, mode: str) -> dict[str, float]:
+    """seat_voices_bench: each seat's voice picked out of the brass4 mixes by range (cached MIDI)."""
+    from .seat_voices_bench import evaluate
+
+    _need(data, "eval/choralebricks-brass4")
+    return evaluate(data / "eval" / "choralebricks-brass4")
+
+
 def _durations(data: Path, mode: str) -> dict[str, float]:
     """duration_bench: written-duration accuracy per rule, reference offsets and SwiftF0-contour offsets."""
     from .duration_bench import RULES, evaluate
@@ -527,6 +541,10 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
     Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
           _readability, ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
+    Suite("solo-instruments", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
+          _solo_instruments, (), ci=True),
+    Suite("seat-voices", "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
+          _seat_voices, ("eval/choralebricks-brass4",), ci=True),
     Suite("durations", "written durations and staccato from performed lengths (duration_bench)", _durations,
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,

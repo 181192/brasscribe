@@ -42,10 +42,12 @@ enum ScreenshotScenes {
             if let p = openScore() { app.path = [.review(p)] }
         case "output":
             if let p = openScore() { app.path = [.output(p)] }
-        case "score", "part", "export":
+        case "score", "part", "export", "stand", "stand-hidden", "stand-hint", "stand-locked", "stand-all":
             _ = openScore()   // ScoreScreen reads the scene name for the part view and the export sheet
         case "error":
             app.show(.silence)
+        case "settings":
+            app.showSettings = true
         default:
             break
         }
@@ -65,6 +67,18 @@ extension ScreenshotScenes {
 
     /// The score screens show the states reviewers asked to see: a chip turned on, a
     /// repeat on, and the ad lib tint with the cursor elsewhere.
+    /// The stand's states: the controls shown, hidden, or with the rotation locked.
+    @MainActor static func stageStand(_ m: PracticeModel) {
+        guard let stand = m.stand else { return }
+        switch LaunchOptions.screen {
+        case "stand-hidden": stand.layerShown = false
+        case "stand-hint": stand.layerShown = false; stand.showHint = true
+        case "stand-all": m.setOnlyMine(false)
+        case "stand-locked": stand.rotationLocked = true
+        default: break
+        }
+    }
+
     @MainActor static func stage(_ m: PracticeModel) {
         switch LaunchOptions.screen {
         case "score":
@@ -74,6 +88,8 @@ extension ScreenshotScenes {
             m.goToBar(9)
         case "part":
             m.goToBar(8)
+        case "stand", "stand-hidden", "stand-hint", "stand-locked", "stand-all":
+            m.goToBar(4)
         default:
             break
         }

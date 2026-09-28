@@ -697,7 +697,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_normalize_composition(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_part_sources(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_quantize_notes(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_seat_part(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_seats(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_spell_pitches(
     ): Int
@@ -815,7 +821,13 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_normalize_composition(`json`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_part_sources(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_quantize_notes(`notes`: RustBuffer.ByValue,`beatTimes`: RustBuffer.ByValue,`monophonic`: Byte,`autoLevel`: Byte,`fillGapTicks`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_seat_part(`lineup`: RustBuffer.ByValue,`seat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_seats(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_spell_pitches(`onsetsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -979,7 +991,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_normalize_composition() and 0xFFFF) != 7581) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_part_sources() and 0xFFFF) != 8498) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_quantize_notes() and 0xFFFF) != 61455) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_seat_part() and 0xFFFF) != 14392) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_seats() and 0xFFFF) != 39596) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 24205) {
@@ -2202,6 +2223,24 @@ data class ArrangeOptions (
      * already transposed by that much is not moved again.
      */
     var `transpose`: kotlin.Int? = null 
+    , 
+    /**
+     * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+     * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+     */
+    var `seat`: kotlin.String? = null 
+    , 
+    /**
+     * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+     * transposition); None: the brass-band part's own.
+     */
+    var `reads`: kotlin.String? = null 
+    , 
+    /**
+     * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+     * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+     */
+    var `lead`: kotlin.String? = null 
     
 ){
     
@@ -2222,6 +2261,9 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalInt.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -2229,7 +2271,10 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterString.allocationSize(value.`lineup`) +
             FfiConverterString.allocationSize(value.`difficulty`) +
             FfiConverterOptionalString.allocationSize(value.`key`) +
-            FfiConverterOptionalInt.allocationSize(value.`transpose`)
+            FfiConverterOptionalInt.allocationSize(value.`transpose`) +
+            FfiConverterOptionalString.allocationSize(value.`seat`) +
+            FfiConverterOptionalString.allocationSize(value.`reads`) +
+            FfiConverterOptionalString.allocationSize(value.`lead`)
     )
 
     override fun write(value: ArrangeOptions, buf: ByteBuffer) {
@@ -2237,6 +2282,9 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterString.write(value.`difficulty`, buf)
             FfiConverterOptionalString.write(value.`key`, buf)
             FfiConverterOptionalInt.write(value.`transpose`, buf)
+            FfiConverterOptionalString.write(value.`seat`, buf)
+            FfiConverterOptionalString.write(value.`reads`, buf)
+            FfiConverterOptionalString.write(value.`lead`, buf)
     }
 }
 
@@ -2754,6 +2802,24 @@ data class LayersSongOptions (
      * Transpose the whole arrangement by this many semitones (instead of `key`).
      */
     var `transpose`: kotlin.Int?
+    , 
+    /**
+     * The player's seat (`seats()` ids, e.g. "euphonium"): a solo take is written for it (one
+     * part, the seat's, in the octave played); a band take's notes do not change. None: no seat.
+     */
+    var `seat`: kotlin.String? = null 
+    , 
+    /**
+     * "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch, no
+     * transposition); None: the brass-band part's own.
+     */
+    var `reads`: kotlin.String? = null 
+    , 
+    /**
+     * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
+     * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
+     */
+    var `lead`: kotlin.String? = null 
     
 ){
     
@@ -2780,6 +2846,9 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalInt.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -2793,7 +2862,10 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterString.allocationSize(value.`lineup`) +
             FfiConverterString.allocationSize(value.`difficulty`) +
             FfiConverterOptionalString.allocationSize(value.`key`) +
-            FfiConverterOptionalInt.allocationSize(value.`transpose`)
+            FfiConverterOptionalInt.allocationSize(value.`transpose`) +
+            FfiConverterOptionalString.allocationSize(value.`seat`) +
+            FfiConverterOptionalString.allocationSize(value.`reads`) +
+            FfiConverterOptionalString.allocationSize(value.`lead`)
     )
 
     override fun write(value: LayersSongOptions, buf: ByteBuffer) {
@@ -2807,6 +2879,9 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterString.write(value.`difficulty`, buf)
             FfiConverterOptionalString.write(value.`key`, buf)
             FfiConverterOptionalInt.write(value.`transpose`, buf)
+            FfiConverterOptionalString.write(value.`seat`, buf)
+            FfiConverterOptionalString.write(value.`reads`, buf)
+            FfiConverterOptionalString.write(value.`lead`, buf)
     }
 }
 
@@ -2848,6 +2923,48 @@ public object FfiConverterTypePartScore: FfiConverterRustBuffer<PartScore> {
     override fun write(value: PartScore, buf: ByteBuffer) {
             FfiConverterString.write(value.`fileName`, buf)
             FfiConverterString.write(value.`musicxml`, buf)
+    }
+}
+
+
+
+/**
+ * Where one part comes from: "your-recording" (a solo take's own line), "recording" (a line heard
+ * in the recording) or "arranged" (voiced from the band's harmony).
+ */
+data class PartSource (
+    var `part`: kotlin.String
+    , 
+    var `source`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePartSource: FfiConverterRustBuffer<PartSource> {
+    override fun read(buf: ByteBuffer): PartSource {
+        return PartSource(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PartSource) = (
+            FfiConverterString.allocationSize(value.`part`) +
+            FfiConverterString.allocationSize(value.`source`)
+    )
+
+    override fun write(value: PartSource, buf: ByteBuffer) {
+            FfiConverterString.write(value.`part`, buf)
+            FfiConverterString.write(value.`source`, buf)
     }
 }
 
@@ -3022,6 +3139,140 @@ public object FfiConverterTypeScoreNote: FfiConverterRustBuffer<ScoreNote> {
             FfiConverterDouble.write(value.`endS`, buf)
             FfiConverterInt.write(value.`pitch`, buf)
             FfiConverterLong.write(value.`velocity`, buf)
+    }
+}
+
+
+
+/**
+ * One seat of the contest band, for the "What do you play?" picker.
+ */
+data class SeatInfo (
+    /**
+     * Stable id (the `seat` option).
+     */
+    var `id`: kotlin.String
+    , 
+    /**
+     * The part's English name ("2nd Cornet"), as the band score prints it.
+     */
+    var `name`: kotlin.String
+    , 
+    /**
+     * The part's Norwegian name («2. kornett», «Solo althorn»): the core's one table.
+     */
+    var `nbName`: kotlin.String
+    , 
+    /**
+     * Instrument id (`instruments()`).
+     */
+    var `instrument`: kotlin.String
+    , 
+    /**
+     * The part's own clef: "treble", "bass" or "percussion".
+     */
+    var `clef`: kotlin.String
+    , 
+    /**
+     * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
+     */
+    var `reads`: List<kotlin.String>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSeatInfo: FfiConverterRustBuffer<SeatInfo> {
+    override fun read(buf: ByteBuffer): SeatInfo {
+        return SeatInfo(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SeatInfo) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterString.allocationSize(value.`nbName`) +
+            FfiConverterString.allocationSize(value.`instrument`) +
+            FfiConverterString.allocationSize(value.`clef`) +
+            FfiConverterSequenceString.allocationSize(value.`reads`)
+    )
+
+    override fun write(value: SeatInfo, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterString.write(value.`nbName`, buf)
+            FfiConverterString.write(value.`instrument`, buf)
+            FfiConverterString.write(value.`clef`, buf)
+            FfiConverterSequenceString.write(value.`reads`, buf)
+    }
+}
+
+
+
+/**
+ * The player's part in a lineup for their seat.
+ */
+data class SeatPart (
+    /**
+     * The lineup's part name for the seat; None: the lineup has none (percussion outside the band).
+     */
+    var `part`: kotlin.String?
+    , 
+    /**
+     * The seat's own part.
+     */
+    var `exact`: kotlin.Boolean
+    , 
+    /**
+     * The part is in the seat's key (transposition), so it reads without transposing.
+     */
+    var `sameKey`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSeatPart: FfiConverterRustBuffer<SeatPart> {
+    override fun read(buf: ByteBuffer): SeatPart {
+        return SeatPart(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SeatPart) = (
+            FfiConverterOptionalString.allocationSize(value.`part`) +
+            FfiConverterBoolean.allocationSize(value.`exact`) +
+            FfiConverterBoolean.allocationSize(value.`sameKey`)
+    )
+
+    override fun write(value: SeatPart, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`part`, buf)
+            FfiConverterBoolean.write(value.`exact`, buf)
+            FfiConverterBoolean.write(value.`sameKey`, buf)
     }
 }
 
@@ -4051,6 +4302,34 @@ public object FfiConverterSequenceTypePartScore: FfiConverterRustBuffer<List<Par
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypePartSource: FfiConverterRustBuffer<List<PartSource>> {
+    override fun read(buf: ByteBuffer): List<PartSource> {
+        val len = buf.getInt()
+        return List<PartSource>(len) {
+            FfiConverterTypePartSource.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PartSource>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePartSource.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PartSource>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePartSource.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypePerformedNote: FfiConverterRustBuffer<List<PerformedNote>> {
     override fun read(buf: ByteBuffer): List<PerformedNote> {
         val len = buf.getInt()
@@ -4125,6 +4404,34 @@ public object FfiConverterSequenceTypeScoreNote: FfiConverterRustBuffer<List<Sco
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeScoreNote.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSeatInfo: FfiConverterRustBuffer<List<SeatInfo>> {
+    override fun read(buf: ByteBuffer): List<SeatInfo> {
+        val len = buf.getInt()
+        return List<SeatInfo>(len) {
+            FfiConverterTypeSeatInfo.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SeatInfo>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSeatInfo.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SeatInfo>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSeatInfo.write(it, buf)
         }
     }
 }
@@ -4370,6 +4677,21 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     
 
         /**
+         * Where each part of a Composition's arrangement comes from, in score order.
+         */
+    @Throws(CoreException::class) fun `partSources`(`compositionJson`: kotlin.String): List<PartSource> {
+            return FfiConverterSequenceTypePartSource.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_part_sources(
+    
+        
+        FfiConverterString.lower(`compositionJson`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Quantize performed notes onto a beat grid; optionally keep one voice and
          * hold notes across gaps up to `fill_gap_ticks` (0 = no gap filling).
          */
@@ -4384,6 +4706,36 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
         FfiConverterBoolean.lower(`monophonic`),
         FfiConverterBoolean.lower(`autoLevel`),
         FfiConverterLong.lower(`fillGapTicks`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Which part of `lineup` ("band", "minimal" or "quartet") is the player's, for `seat`. One table in
+         * the core for every app.
+         */
+    @Throws(CoreException::class) fun `seatPart`(`lineup`: kotlin.String, `seat`: kotlin.String): SeatPart {
+            return FfiConverterTypeSeatPart.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_seat_part(
+    
+        
+        FfiConverterString.lower(`lineup`),
+        FfiConverterString.lower(`seat`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The 18 seats of the contest band, in score order.
+         */ fun `seats`(): List<SeatInfo> {
+            return FfiConverterSequenceTypeSeatInfo.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_seats(
+    
+        _status)
 }
     )
     }

@@ -1,6 +1,7 @@
 using System.Net;
 using Brasscribe.Bandroom.Core.Engine;
 using Brasscribe.Bandroom.Core.Health;
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.Pairing;
 using Brasscribe.Bandroom.Core.State;
 using Brasscribe.Bandroom.Core.Supervisor;
@@ -26,7 +27,6 @@ public sealed class BandroomController
     private readonly IHostMetrics _metrics;
     private readonly IStrings _s;
     private readonly BandroomPaths _paths;
-    private readonly MachineInfo _machine;
     private readonly TimeProvider _time;
     private readonly LoadAverager _load;
     private (int Port, IEngineApi Api)? _api;
@@ -34,6 +34,7 @@ public sealed class BandroomController
     private StatusInfo? _status;
     private JobView? _job;
     private HealthSnapshot? _health;
+    private ModelCheckResult _models = ModelCheckResult.Ready;
     private bool _flyoutOpen;
 
     public BandroomController(EngineSupervisor supervisor, Func<int, IEngineApi> apiFor, IHostMetrics metrics, IStrings strings,
@@ -44,7 +45,7 @@ public sealed class BandroomController
         _metrics = metrics;
         _s = strings;
         _paths = paths;
-        _machine = machine;
+        Machine = machine;
         _time = time ?? TimeProvider.System;
         _load = new LoadAverager(_time);
         _sup.Changed += () => Publish();
@@ -55,8 +56,12 @@ public sealed class BandroomController
     /// <summary>Setup: whether every environment is installed, and how far it is (0..1).</summary>
     public bool SetupComplete { get; set; } = true;
     public double SetupFraction { get; set; }
-    /// <summary>The models the band writer needs are on this computer.</summary>
-    public Func<bool> ModelsReady { get; set; } = () => true;
+    /// <summary>Which of the downloads a full-band score needs are missing (<see cref="ModelCheck"/>); checked every tick.</summary>
+    public Func<ModelCheckResult> CheckModels { get; set; } = () => ModelCheckResult.Ready;
+    /// <summary>The model download, when one has been started: its progress replaces the missing-download problem.</summary>
+    public ModelDownloader? Downloads { get; set; }
+    /// <summary>The computer's name and hardware; the name changes when one is set in Settings.</summary>
+    public MachineInfo Machine { get; set; }
     public bool Updating { get; set; }
 
     public event Action<BandroomSnapshot>? SnapshotReady;
@@ -151,7 +156,8 @@ public sealed class BandroomController
             double cpu = _load.Add(_metrics.SampleCpuPercent());
             var (total, avail) = _metrics.Memory();
             long free = _metrics.FreeBytes(_paths.DataDir);
-            _health = new HealthSnapshot(cpu, total == 0 ? 1 : (double)avail / total, free, ModelsReady());
+            _models = CheckModels();
+            _health = new HealthSnapshot(cpu, total == 0 ? 1 : (double)avail / total, free, _models.Missing);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
     }
@@ -161,20 +167,29 @@ public sealed class BandroomController
         var problems = new List<Problem>();
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
-        if (SetupComplete && _health is { ModelsReady: false }) problems.Add(Problems.MissingDownload(_s));
+        string? downloading = null;
+        if (SetupComplete && _health is { ModelsReady: false })
+        {
+            if (Downloads is { Phase: DownloadPhase.Checking or DownloadPhase.Downloading or DownloadPhase.Paused } d)
+                downloading = DownloadText.Progress(_s, d.BytesDone, d.BytesTotal, d.MinutesLeft, d.Phase == DownloadPhase.Paused);
+            else if (Downloads is { Phase: DownloadPhase.Failed, Error: { } error })
+                problems.Add(Problems.DownloadStopped(_s, error));
+            else
+                problems.Add(Problems.MissingDownload(_s, _models.Missing, _models.MissingFiles));
+        }
 
         var inputs = new StateInputs(_sup.State, SetupComplete, SetupFraction, Updating, problems,
             _job?.Fraction, _status?.OnlineDevices ?? 0);
-        string header = _status?.ServerName ?? _sup.Health?.ServerName ?? _s.Format("Header", _machine.ComputerName);
+        string header = _status?.ServerName ?? _sup.Health?.ServerName ?? _s.Format("Header", Machine.ComputerName);
         if (_s.Language == "nb") header = _s.Format("Header", PairViewModel.HostName(header));
         var tech = new TechDetails(
-            _machine.Addresses.Select(a => _sup.Port is { } p ? $"{a}:{p}" : a).ToList(),
+            Machine.Addresses.Select(a => _sup.Port is { } p ? $"{a}:{p}" : a).ToList(),
             _sup.Port,
             _status?.Version ?? _sup.Health?.Version ?? "–",
-            _machine.RunsOn,
+            Machine.RunsOn,
             _status?.ServerId ?? _sup.Health?.ServerId,
             _paths.DataDir);
-        return new BandroomSnapshot(inputs, header, _status, _job, _health, _machine.SpeedKey, tech);
+        return new BandroomSnapshot(inputs, header, _status, _job, _health, Machine.SpeedKey, tech, downloading);
     }
 
     public void Publish() => SnapshotReady?.Invoke(Build());

@@ -4,9 +4,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.onUpload
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.forms.ChannelProvider
 import io.ktor.client.request.delete
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
@@ -27,6 +31,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -49,6 +54,8 @@ class KtorEngineApi(
     private val http = HttpClient(engine) {
         expectSuccess = false
         install(ContentNegotiation) { json(BrasscribeJson) }
+        // No timeouts of its own: requests keep the engine's (OkHttp: 10 s); the event stream sets a longer one.
+        install(HttpTimeout)
         defaultRequest { url(baseUrl.trimEnd('/') + "/") }
         configure()
     }
@@ -91,8 +98,8 @@ class KtorEngineApi(
 
     override suspend fun profiles(): List<ProfileInfo> = http.get("v1/profiles") { auth() }.ok().body()
 
-    override suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef =
-        http.submitFormWithBinaryData("v1/audio", formData { appendFile(filename, bytes) }) { auth() }.ok().body()
+    override suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress): AudioRef =
+        http.submitFormWithBinaryData("v1/audio", formData { appendFile(source) }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
 
     override suspend fun createJob(request: JobCreate): Job =
         http.post("v1/jobs") {
@@ -112,13 +119,13 @@ class KtorEngineApi(
             pitchMode?.let { parameter("pitch_mode", it) }
         }.ok().bodyAsText()
 
-    override suspend fun createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean): Job =
+    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress): Job =
         http.submitFormWithBinaryData("v1/jobs/upload", formData {
-            appendFile(filename, bytes)
+            appendFile(source)
             append("profile", profile.id)
             append("render_audio", renderAudio.toString())
             title?.let { append("title", it) }
-        }) { auth() }.ok().body()
+        }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
 
     override suspend fun job(jobId: String): Job = http.get("v1/jobs/$jobId") { auth() }.ok().body()
     override suspend fun jobs(): List<Job> = http.get("v1/jobs") { auth() }.ok().body()
@@ -134,6 +141,8 @@ class KtorEngineApi(
                     auth()
                     parameter("after", last)
                     header(HttpHeaders.Accept, "text/event-stream")
+                    // The engine only sends a keepalive every 15 s while a stage runs.
+                    timeout { socketTimeoutMillis = EVENTS_SOCKET_TIMEOUT_MS }
                     if (last >= 0) header("Last-Event-ID", last.toString())
                 }.execute { response ->
                     response.ok()
@@ -190,10 +199,15 @@ class KtorEngineApi(
 
     override fun close() = http.close()
 
-    private fun io.ktor.client.request.forms.FormBuilder.appendFile(filename: String, bytes: ByteArray) {
-        append("file", bytes, Headers.build {
+    /**
+     * The file part is a stream with a known size: the multipart body then has a Content-Length and
+     * the HTTP engine writes it straight from the file, a buffer at a time. The stream is opened
+     * when the body is written (again on a retry), never read into memory.
+     */
+    private fun io.ktor.client.request.forms.FormBuilder.appendFile(source: UploadSource) {
+        append("file", ChannelProvider(source.size) { source.open().toByteReadChannel() }, Headers.build {
             append(HttpHeaders.ContentType, "application/octet-stream")
-            append(HttpHeaders.ContentDisposition, "filename=\"${filename.replace("\"", "")}\"")
+            append(HttpHeaders.ContentDisposition, "filename=\"${source.filename.replace("\"", "")}\"")
         })
     }
 
@@ -201,6 +215,7 @@ class KtorEngineApi(
         val TERMINAL = setOf("succeeded", "failed", "cancelled")
         const val MAX_RECONNECTS = 5
         const val RECONNECT_MS = 1000L
+        const val EVENTS_SOCKET_TIMEOUT_MS = 60_000L
     }
 }
 

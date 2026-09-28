@@ -25,6 +25,9 @@ environments) or an installed package.
                                  if missing; on POSIX it must not be readable by group or others)
     BRASSCRIBE_PARITY_REPORTS       conversion parity reports (default: <repo>/convert/reports, else <repo>/models/convert/reports)
     BRASSCRIBE_CONFORMANCE_REPORTS  core conformance results (default: <data>/runs/core-conformance)
+    BRASSCRIBE_BAND_SOUNDS_DIR      the band sounds Studio plays, served at /assets/band/: a folder with
+                                    brasscribe-band.sf2 and mapping.json (plus band.json, NOTICE.txt), as
+                                    Bandroom bundles it. Unset: whatever the Studio build copied in, if anything.
 """
 
 from __future__ import annotations
@@ -62,6 +65,11 @@ class Settings:
     admin_token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_ADMIN_TOKEN") or None)
     admin_token_file: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_ADMIN_TOKEN_FILE", Path())
                                           if os.environ.get("BRASSCRIBE_ADMIN_TOKEN_FILE") else None)
+    # Stages of one job that may run at once when their inputs are ready (at most one on the GPU); 1 runs
+    # them one after another in pipeline order.
+    stage_parallelism: int = field(default_factory=lambda: max(1, int(os.environ.get("BRASSCRIBE_STAGE_PARALLELISM") or 1)))
+    band_sounds_dir: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_BAND_SOUNDS_DIR", Path())
+                                         if os.environ.get("BRASSCRIBE_BAND_SOUNDS_DIR") else None)
 
     def admin_credential(self) -> str | None:
         """The owner credential: `admin_token`, else the contents of `admin_token_file` (created with a random

@@ -60,14 +60,17 @@ public final class SVGDocument: @unchecked Sendable {
     /// Draw into a context whose user space is y-down and matches `size` (scale the CTM first
     /// to zoom). `highlight` recolours ops belonging to the given ids; `ink` replaces black
     /// (used for dark mode and high contrast).
+    /// `visible`, when given, skips everything outside that rectangle (a window onto a long page).
     public func draw(in ctx: CGContext, ink: CGColor = CGColor(gray: 0, alpha: 1),
-                     highlight: [String: CGColor] = [:], keepDocumentColors: Bool = true) {
+                     highlight: [String: CGColor] = [:], keepDocumentColors: Bool = true, visible: CGRect? = nil) {
         let hi: [Int32: CGColor] = Dictionary(uniqueKeysWithValues: highlight.compactMap { k, v in
             idIndex[k].map { ($0, v) }
         })
         ctx.saveGState()
         ctx.setLineCap(.butt)
-        for op in ops {
+        let bounds = visible == nil ? [] : opBounds
+        for (i, op) in ops.enumerated() {
+            if let visible, !bounds[i].intersects(visible) { continue }
             var color = keepDocumentColors ? (op.color ?? ink) : ink
             if !hi.isEmpty { for o in op.owners.reversed() { if let c = hi[o] { color = c; break } } }
             switch op.kind {
@@ -90,6 +93,15 @@ public final class SVGDocument: @unchecked Sendable {
             }
         }
         ctx.restoreGState()
+    }
+
+    /// Each op's bounds (text by its baseline point, padded to a line's height).
+    private lazy var opBounds: [CGRect] = ops.map { op in
+        switch op.kind {
+        case .text(_, let pt): return CGRect(x: pt.x - 200, y: pt.y - 100, width: 400, height: 200)
+        case .stroke(let w): return op.path?.boundingBoxOfPath.insetBy(dx: -w, dy: -w) ?? .null
+        case .fill: return op.path?.boundingBoxOfPath ?? .null
+        }
     }
 
     private lazy var idIndex: [String: Int32] = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, Int32($0)) })

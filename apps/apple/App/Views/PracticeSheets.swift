@@ -130,7 +130,7 @@ struct ExportView: View {
                 saving = nil
             }
             #if os(iOS)
-            .sheet(isPresented: $sharing) { ShareSheet(items: shareURLs) }
+            .sheet(isPresented: $sharing) { ShareSheet(items: shareURLs).appAppearance() }
             #endif
         }
         .onAppear {

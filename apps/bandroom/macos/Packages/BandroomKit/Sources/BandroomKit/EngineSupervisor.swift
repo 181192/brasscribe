@@ -26,7 +26,8 @@ public final class EngineSupervisor {
     @ObservationIgnored private let sleep: @Sendable (TimeInterval) async -> Void
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let pickPort: () -> Int?
-    @ObservationIgnored private let baseEnvironment: [String: String]
+    /// What the engine starts with; a new Hugging Face key replaces it before the next start.
+    @ObservationIgnored public var baseEnvironment: [String: String]
     @ObservationIgnored public var healthTimeout: TimeInterval
     @ObservationIgnored public var terminateGrace: TimeInterval = 8
     @ObservationIgnored private var healthTask: Task<Void, Never>?

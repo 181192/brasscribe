@@ -278,6 +278,98 @@ CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 | focus / uncertain | 25.7 | 6.6 weak | 15.0 weak | 25.7 | 5.3 weak |
 | focus / very-uncertain | 30.5 | 30.4 | 29.7 | 10.3 weak | 1.7 weak |
 
+## high-contrast-light
+
+| foreground | background | ratio | min | SC | result |
+|---|---|---|---|---|---|
+| text `#000000` | bg `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text `#000000` | surface `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text-muted `#000000` | bg `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text-muted `#000000` | surface `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text-muted `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text-muted `#000000` | secondary `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text `#000000` | adlib-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| text `#000000` | brass-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| on-primary `#FFFFFF` | primary `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| on-secondary `#000000` | secondary `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| brass-text `#000000` | bg `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| brass-text `#000000` | brass-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
+| success `#005C1F` | bg `#FFFFFF` | 8.23:1 | 4.5:1 | 1.4.3 | pass |
+| success `#005C1F` | surface-raised `#FFFFFF` | 8.23:1 | 4.5:1 | 1.4.3 | pass |
+| warning `#6B4500` | bg `#FFFFFF` | 8.48:1 | 4.5:1 | 1.4.3 | pass |
+| warning `#6B4500` | surface-raised `#FFFFFF` | 8.48:1 | 4.5:1 | 1.4.3 | pass |
+| error `#A10000` | bg `#FFFFFF` | 8.35:1 | 4.5:1 | 1.4.3 | pass |
+| error `#A10000` | surface-raised `#FFFFFF` | 8.35:1 | 4.5:1 | 1.4.3 | pass |
+| error `#A10000` | surface `#FFFFFF` | 8.35:1 | 4.5:1 | 1.4.3 | pass |
+| border-strong `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| border-strong `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| border-strong `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| primary `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| primary `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| primary `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| brass `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| brass `#000000` | brass-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| brass `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| focus `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 2.4.13 (AAA, used as target) | pass |
+| focus `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| focus `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| ink `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| ink `#000000` | adlib-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| ink `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| ink `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| ink `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| staff `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| staff `#000000` | adlib-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| staff `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| staff `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| staff `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | bg `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | adlib-tint `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | loop-tint `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | cursor-tint `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | selection-tint `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| uncertain `#004EC2` | surface-raised `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | bg `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | adlib-tint `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | loop-tint `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | cursor-tint `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | selection-tint `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| very-uncertain `#9E3400` | surface-raised `#FFFFFF` | 7.13:1 | 3.0:1 | 1.4.11 | pass |
+| loop-edge `#6B4500` | bg `#FFFFFF` | 8.48:1 | 3.0:1 | 1.4.11 | pass |
+| loop-edge `#6B4500` | loop-tint `#FFFFFF` | 8.48:1 | 3.0:1 | 1.4.11 | pass |
+| cursor `#A8006E` | bg `#FFFFFF` | 7.27:1 | 3.0:1 | 1.4.11 | pass |
+| cursor `#A8006E` | loop-tint `#FFFFFF` | 7.27:1 | 3.0:1 | 1.4.11 | pass |
+| cursor `#A8006E` | adlib-tint `#FFFFFF` | 7.27:1 | 3.0:1 | 1.4.11 | pass |
+| cursor `#A8006E` | cursor-tint `#FFFFFF` | 7.27:1 | 3.0:1 | 1.4.11 | pass |
+| selection-edge `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| selection-edge `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| focus `#000000` | adlib-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| focus `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| model-1 `#004EC2` | bg `#FFFFFF` | 7.32:1 | 3.0:1 | 1.4.11 | pass |
+| model-2 `#8A4200` | bg `#FFFFFF` | 7.34:1 | 3.0:1 | 1.4.11 | pass |
+| model-3 `#006241` | bg `#FFFFFF` | 7.44:1 | 3.0:1 | 1.4.11 | pass |
+| model-4 `#A3007A` | bg `#FFFFFF` | 7.40:1 | 3.0:1 | 1.4.11 | pass |
+| success `#005C1F` | surface `#FFFFFF` | 8.23:1 | 3.0:1 | 1.4.11 | pass |
+| warning `#6B4500` | surface `#FFFFFF` | 8.48:1 | 3.0:1 | 1.4.11 | pass |
+| brass `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+
+CIEDE2000 difference (weak below 20; shape encoding is required regardless):
+
+| pair | normal | protan | deutan | tritan | achroma |
+|---|---|---|---|---|---|
+| ink / uncertain | 37.0 | 38.9 | 36.8 | 34.7 | 24.9 |
+| ink / very-uncertain | 36.8 | 29.3 | 36.6 | 36.9 | 25.5 |
+| uncertain / very-uncertain | 47.2 | 54.2 | 59.2 | 57.4 | 0.6 weak |
+| cursor / uncertain | 31.5 | 13.3 weak | 20.7 | 58.0 | 0.2 weak |
+| cursor / very-uncertain | 34.0 | 41.8 | 30.4 | 5.8 weak | 0.4 weak |
+| cursor / ink | 36.7 | 26.0 | 28.9 | 37.6 | 25.1 |
+| model-1 / model-2 | 48.8 | 54.5 | 58.6 | 52.6 | 0.1 weak |
+| model-1 / model-3 | 42.5 | 42.1 | 38.2 | 13.4 weak | 0.4 weak |
+| model-2 / model-4 | 41.4 | 45.4 | 37.0 | 8.5 weak | 0.2 weak |
+| focus / uncertain | 37.0 | 38.9 | 36.8 | 34.7 | 24.9 |
+| focus / very-uncertain | 36.8 | 29.3 | 36.6 | 36.9 | 25.5 |
+
 ## Current engine output (reference)
 
 | colour | vs bg | vs ink (normal / protan / deutan / tritan / achroma) |

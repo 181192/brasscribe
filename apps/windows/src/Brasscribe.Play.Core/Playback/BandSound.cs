@@ -11,19 +11,23 @@ public sealed record TrackSound(int Program, int Bank, double GainDb = 0, bool P
 /// </summary>
 public sealed class BandSoundFont
 {
-    private BandSoundFont(PartSoundResolver resolver, byte[]? soundFont)
+    private BandSoundFont(PartSoundResolver resolver, string? soundFontPath)
     {
         Resolver = resolver;
-        SoundFont = soundFont;
+        SoundFontPath = soundFontPath;
     }
 
-    public byte[]? SoundFont { get; }
+    /// <summary>The SoundFont file, read only when it is applied to a player.</summary>
+    public string? SoundFontPath { get; }
     public PartSoundResolver Resolver { get; }
 
-    /// <summary>Reads the part map from mapping.json; the SoundFont file is optional (tests of the map need none).</summary>
+    /// <summary>
+    /// Reads the part map from mapping.json; the SoundFont file is optional (tests of the map need none).
+    /// The SoundFont itself (195 MB for Windows) is read by <see cref="ApplyTo"/>, so an app can load the
+    /// map before its first frame and leave the file to a background task.
+    /// </summary>
     public static BandSoundFont Load(string mappingJson, string? soundFontPath = null) =>
-        new(PartSoundResolver.Load(mappingJson),
-            soundFontPath is not null && File.Exists(soundFontPath) ? File.ReadAllBytes(soundFontPath) : null);
+        new(PartSoundResolver.Load(mappingJson), soundFontPath is not null && File.Exists(soundFontPath) ? soundFontPath : null);
 
     /// <summary>
     /// The sound of a part by its name as the arranger (or any other writer) names it: E♭ Bass,
@@ -31,17 +35,20 @@ public sealed class BandSoundFont
     /// </summary>
     public TrackSound? For(string partName, int? gmProgram = null) => Resolver.Resolve(partName, null, gmProgram)?.Sound;
 
-    /// <summary>Routes the player's parts to this map and loads the SoundFont (parsing a band SF2 takes a moment, so the app does it off the UI thread).</summary>
+    /// <summary>
+    /// Routes the player's parts to this map at once, then reads and loads the SoundFont (reading and
+    /// parsing a band SF2 takes a moment, so the app does both off the UI thread).
+    /// </summary>
     public Task ApplyTo(AlphaTabScorePlayer player, bool inBackground = false)
     {
         player.SoundMap = For;
-        if (SoundFont is not { } bytes) return Task.CompletedTask;
+        if (SoundFontPath is not { } path) return Task.CompletedTask;
         if (!inBackground)
         {
-            player.LoadSoundFont(bytes);
+            player.LoadSoundFont(File.ReadAllBytes(path));
             return Task.CompletedTask;
         }
-        return Task.Run(() => player.LoadSoundFont(bytes));
+        return Task.Run(() => player.LoadSoundFont(File.ReadAllBytes(path)));
     }
 }
 

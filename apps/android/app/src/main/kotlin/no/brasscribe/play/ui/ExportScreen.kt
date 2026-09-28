@@ -64,7 +64,8 @@ fun ExportScreen(vm: PlayViewModel) {
     val c = BrasscribeTheme.colors
     val scope = rememberCoroutineScope()
     val exporter = remember { Exporter(context, vm.container.core) }
-    val midiFromScore = vm.scoreController != null
+    val scoreMidi = remember { vm.scoreController?.midiSource() ?: vm.scoreMidi }
+    val midiFromScore = scoreMidi != null
     val order = LABELS.keys.toList()
     val available = order.filter { exporter.available(r, it, midiFromScore) }
     var chosen by rememberSaveable { mutableStateOf(setOf(if (ExportFormat.PDF in available) ExportFormat.PDF else ExportFormat.MUSICXML).map { it.name }.toSet()) }
@@ -72,7 +73,7 @@ fun ExportScreen(vm: PlayViewModel) {
     var pendingSave by remember { mutableStateOf<List<ExportFile>>(emptyList()) }
     // What: the player's own part first (the part on screen), every part, or the conductor's score.
     val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
-    val shown = vm.scoreController?.state?.collectAsState()?.value?.shown
+    val shown = scoreMidi?.shown
     // The labels follow the recorded lineup: a quartet has no conductor, so its third choice is the score.
     val lineup = r.lineup ?: Lineup.ofParts(partNames)
     val myPart = shown?.singleOrNull() ?: defaultPart(partNames, lineup)
@@ -97,7 +98,7 @@ fun ExportScreen(vm: PlayViewModel) {
             val comp = r.composition
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val files = withContext(Dispatchers.Default) {
-                exporter.buildAll(r, formats, what, myPart, partNames, vm.container.engine(), vm.scoreController?.let { sc -> { sc.midiBytes() } }, parts, currentLang())
+                exporter.buildAll(r, formats, what, myPart, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang())
             }
             vm.say(R.string.exported, files.joinToString { it.file.nameWithoutExtension })
             then(files)

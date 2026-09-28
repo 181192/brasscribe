@@ -11,6 +11,10 @@ struct SettingsView: View {
     @State private var busy = false
     @State private var modelTick = 0
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
+    @AppStorage(AppearanceSetting.key) private var appearance = AppearanceSetting.system.rawValue
+    @Environment(\.colorSchemeContrast) private var contrast
+    @AppStorage(StandSettings.followKey) private var standTurnPages = true
+    @AppStorage(StandSettings.keepControlsKey) private var standKeepControls = false
 
     var body: some View {
         @Bindable var app = app
@@ -35,9 +39,36 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppearanceSetting.allCases) { a in Text(a.title).tag(a.rawValue) }
+                    } label: { Text("Appearance") }
+                    .pickerStyle(.inline)
+                    .accessibilityIdentifier("settingAppearance")
+                    if contrast == .increased {
+                        // Increase Contrast wins: the choice stays, with the high-contrast colours in either mode
+                        Text("Increase contrast is on, so Brasscribe uses its high-contrast colours.")
+                            .font(Font.Brasscribe.callout)
+                            .foregroundStyle(Color.Brasscribe.textMuted)
+                    }
+                    Toggle(isOn: $standTurnPages) { Text("Turn the pages while playing") }
+                        .accessibilityIdentifier("settingStandTurnPages")
+                    Toggle(isOn: $standKeepControls) { Text("Keep the stand controls visible") }
+                        .accessibilityIdentifier("settingStandKeepControls")
+                } header: { Text("Display") } footer: {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.")
+                        #if os(iOS)
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            Text("To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).")
+                        }
+                        #endif
+                    }
+                }
+
+                Section {
                     Toggle(isOn: $singleKeys) { Text("Single-key shortcuts") }
                 } header: { Text("Keyboard") } footer: {
-                    Text("Space plays and pauses, the arrow keys move by bar, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.")
+                    Text("Space plays and pauses, the arrow keys move by bar, F opens the music stand, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.")
                 }
 
                 Section {
@@ -61,7 +92,10 @@ struct SettingsView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             #endif
         }
+        #if os(macOS)
+        // the Mac sheet's size; on a phone the sheet is the screen's width
         .frame(minWidth: 480, minHeight: 520)
+        #endif
     }
 
     var modelStatus: String {

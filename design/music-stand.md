@@ -11,11 +11,11 @@ Mockups: `mockups/music-stand-{entry,phone,landscape,tablet}.html`, with a `?sta
 ## 1. Decisions
 
 1. **The stand follows the device and never forces a rotation** (WCAG 1.3.4). Upright gives more systems; on its side gives more bars per system. On a phone, the player can lock the rotation from inside the stand.
-2. **One tap in.** A visible **Music stand** button sits in the score toolbar on every platform (today Android needs two taps, More → Full screen). Keyboards get F (plus F11 on Windows). On the Mac, View › Music Stand is there too, and the green button stays the normal full screen. Two things are optional extras: **Open on the music stand** on a score in the library, and turning the phone sideways (a setting, off by default).
+2. **One tap in.** A visible **Music stand** button sits in the score toolbar on every platform (today Android needs two taps, More → Full screen). Keyboards get F (plus F11 on Windows). On the Mac, View › Music Stand is there too, and the green button stays the normal full screen. **Open on the music stand** on a score in the library is an optional extra.
 3. **The stand has pages, not scrolling.** A page is whatever fits the screen. A turn keeps the last line in view, so the player never loses their place, and Bluetooth page turners work.
 4. **Controls are one layer that hides itself, with two small pieces that always stay**: **Leave** and the bar number. They live in their own band at the top and never cover the music. The layer never covers the current system. It never hides while a screen reader, switch access or keyboard focus is in use.
 5. **Double tap and pinch do not open the stand** (see §5.3). They collide with the score's own taps, and there is no pinch zoom to go "past".
-6. **Owner decisions (§12):** the stand opens on your part; playback turns the pages by default, and Settings can turn that off; opening on turning the phone sideways is a setting, off by default.
+6. **Owner decisions (§12):** the stand opens on your part; playback turns the pages by default, and Settings can turn that off; turning the phone sideways never opens the stand.
 
 ## 2. Today, and why it doesn't turn
 
@@ -94,7 +94,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
 
 ### 4.2 Showing and hiding
 
-- **Showing.** A tap on the music shows the layer, on pointer-up (2.5.2), and so does a key press (Tab, Space, or any mapped key). The layer also shows on entry while the music is paused.
+- **Showing.** A tap on the music shows the layer, on pointer-up (2.5.2), and so does Tab or Space. The page keys (arrows, Page Up/Down, Home/End) turn the page and leave the layer as it is: a Bluetooth page turner is a keyboard that sends them, and a pedal press must not put controls over the music. A hardware keyboard being attached keeps nothing on screen by itself. The layer also shows on entry while the music is paused.
 - **Hiding.**
   - A tap on the music hides the layer.
   - It also hides itself 4 s after the last touch, **only while the music plays**. While paused it stays.
@@ -103,6 +103,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
     - switch access is running (Switch Control, Switch Access)
     - Full Keyboard Access is on
     - focus is inside the layer
+    - Tab or Space was pressed since the last touch
     - Settings → Display → **Keep the stand controls visible** is on
 
   So no one depends on a timer (2.2.1), and focus is never hidden (2.4.11).
@@ -147,7 +148,6 @@ A player who clips a phone to a stand does not want it to turn when they lean in
 | **View › Music Stand** (with F) | Mac | The green button, ⌃⌘F and Globe+F stay the system's normal full screen of the window, with the ordinary score in it. Entering the stand in a window may also take the window full screen; leaving the stand then restores the window as it was. |
 | **F11** | Windows | The Windows idiom for full screen, and it has a modifier-free sibling in F |
 | **Open on the music stand** | A score's context menu in the library: long press on touch, right-click, Shift+F10 or the menu key | Opens the score and the stand in one step. It is a normal menu item, so it reaches every input. |
-| Turn the phone sideways | Settings → Display → **Open the music stand when I turn the phone sideways**, **off by default** | Motion actuation (2.5.4): the toolbar button does the same, and the setting turns it off. A stand opened this way closes when the phone is turned upright again. A stand opened with the button stays. Phones only. |
 
 ### 5.2 Gestures inside the stand
 
@@ -163,7 +163,7 @@ A player who clips a phone to a stand does not want it to turn when they lean in
 |---|---|
 | Double tap on the score to enter | A single tap already acts on every platform: Apple goes to that bar (`NotationView.swift:257`), alphaTab moves the cursor (`enableUserInteraction`, `ScoreController.kt:95`), and Windows opens the "?" mark under the finger (`ScoreView.cs:83-91`). A double-tap recogniser makes every single tap wait about 300 ms. Its first tap would also seek during playback. |
 | Pinch out past "fit" | No score uses pinch zoom today: zoom is buttons, and `ZoomMode.Disabled` on Windows. "Past fit" means nothing yet, and nobody would find it. Revisit if pinch zoom arrives. It would then still need the button (2.5.1). |
-| Always enter on turning sideways | That changes the context on an orientation change the player did not ask for (3.2.1), and players turn phones for other reasons. It is offered as a setting instead. |
+| Enter on turning sideways, always or as a setting | That changes the context on an orientation change the player did not ask for (3.2.1), and players turn phones for other reasons. The owner dropped the setting too: the toolbar button is one tap. |
 | Edge tap zones for page turns | These are invisible targets that are easy to hit by accident on a stand clip. The visible page buttons and the swipe cover it. |
 
 ## 6. Entering, leaving, and what is announced
@@ -250,8 +250,6 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | `stand_locked` | Rotation locked. The music stays this way up. | Retningen er låst. Notene blir stående slik. |
 | `stand_unlocked` | The music turns with the phone again. | Notene snur seg med telefonen igjen. |
 | `stand_left` | Music stand closed. | Notestativet er lukket. |
-| `settings_stand_on_turn` | Open the music stand when I turn the phone sideways | Åpne notestativet når jeg snur telefonen på siden |
-| `settings_stand_on_turn_sub` | Turn it upright again to leave. | Snu den tilbake for å gå ut. |
 | `settings_stand_controls` | Keep the stand controls visible | Vis alltid knappene på notestativet |
 | `settings_stand_follow` (on by default) | Turn the pages while playing | Bla om mens musikken spiller |
 | `help_stand_pedal` | Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. | Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken. |
@@ -340,4 +338,4 @@ The plan is sized for one workstream per platform. The first step on each platfo
 
 1. **What opens on the stand:** your part (the seat's part, else the part shown). With no seat, the parts shown, and **Only my part** is hidden.
 2. **Turning pages during playback:** on by default. Settings → Display → **Turn the pages while playing** / «Bla om mens musikken spiller» turns it off.
-3. **Opening on turning the phone sideways:** a setting, off by default (§5.1).
+3. **Opening on turning the phone sideways:** not offered, not even as a setting (§5.3).

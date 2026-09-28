@@ -27,7 +27,9 @@ import tomllib
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
+from .gpulock import file_lock
 from .hashing import HashIndex, sha256_bytes
 
 
@@ -161,25 +163,20 @@ class AdapterRegistry:
         return {"name": name, "version": self.version(name), "fingerprint": self.fingerprint(name),
                 "heavy": a.heavy, "device": adapter_device(a), "licence": a.licence, "models": self.models(name)}
 
+    gpu_poll = 1.0  # seconds between tries while another process holds the GPU mutex
+
     @contextmanager
-    def gpu_mutex(self, poll: float = 5.0):
-        while True:
-            try:
-                self.gpu_lock.mkdir()
-                break
-            except FileExistsError:
-                time.sleep(poll)
-        try:
-            yield
-        finally:
-            try:
-                self.gpu_lock.rmdir()
-            except OSError:
-                pass
+    def gpu_mutex(self, poll: float | None = None, on_blocked: Callable[[], None] | None = None):
+        """Machine-wide lock on `gpu_lock` (an OS file lock: it excludes other processes and other
+        threads alike, and the kernel drops it when the holder dies, so a crash cannot block the GPU).
+        Yields the seconds spent waiting; `on_blocked` is called once, only if the lock was held."""
+        with file_lock(self.gpu_lock, poll=self.gpu_poll if poll is None else poll, on_blocked=on_blocked) as waited:
+            yield waited
 
     def run(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None, allow_heavy: bool = True,
-            log=None) -> float:
-        """Run an adapter; returns wall-clock seconds."""
+            log=None, waited: Callable[[float], None] | None = None) -> float:
+        """Run an adapter; returns wall-clock seconds, including any wait for the GPU mutex, which is
+        also reported to `waited` (heavy adapters only)."""
         a = self.get(name)
         if a.heavy and not allow_heavy:
             raise HeavyRunRefused(f"{name} would run on {src.name}, but heavy runs are disabled (cache miss)")
@@ -199,9 +196,15 @@ class AdapterRegistry:
                 raise AdapterError(f"{name} failed ({proc.returncode}): {(proc.stderr or proc.stdout)[-2000:]}")
 
         if a.heavy:
-            if log:
-                log(f"{name}: waiting for GPU mutex {self.gpu_lock}")
-            with self.gpu_mutex():
+            def blocked():
+                if log:
+                    log(f"{name}: waiting for GPU mutex {self.gpu_lock}")
+
+            with self.gpu_mutex(on_blocked=blocked) as wait:
+                if waited:
+                    waited(wait)
+                if log and wait >= 1.0:
+                    log(f"{name}: got GPU mutex after {wait:.1f} s")
                 call()
         else:
             call()

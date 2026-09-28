@@ -5,8 +5,9 @@
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
 //!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal|quartet]
 //!                               [--difficulty faithful|standard|easier] [--key KEY | --transpose N]
+//!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
-//!                               [--lineup minimal|quartet]
+//!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat]
 //! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
@@ -71,6 +72,14 @@ fn read(p: &Path) -> R<Vec<u8>> {
 
 fn midi(p: &Path) -> R<MidiFile> {
     MidiFile::parse(&read(p)?).map_err(|e| format!("{}: {e}", p.display()))
+}
+
+/// A layer's MIDI; no notes when the file is absent (a solo take has only a solo layer).
+fn midi_if(p: &Path) -> R<MidiFile> {
+    if !p.exists() {
+        return Ok(MidiFile { resolution: 480, instruments: Vec::new() });
+    }
+    midi(p)
 }
 
 fn beats(p: &Path) -> R<Beats> {
@@ -168,12 +177,12 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         "arrange-layers" => {
             let l = PathBuf::from(a.one("layers")?);
             let layers = Layers {
-                solo_sw: midi(&l.join("solo-sw.mid"))?,
-                solo_mus: midi(&l.join("solo-mus.mid"))?,
-                solo_bp: midi(&l.join("solo-bp.mid"))?,
-                bass: midi(&l.join("bass-mus.mid"))?,
-                orchestra: midi(&l.join("orchestra-mus.mid"))?,
-                drums: midi(&l.join("drums-mus.mid"))?,
+                solo_sw: midi_if(&l.join("solo-sw.mid"))?,
+                solo_mus: midi_if(&l.join("solo-mus.mid"))?,
+                solo_bp: midi_if(&l.join("solo-bp.mid"))?,
+                bass: midi_if(&l.join("bass-mus.mid"))?,
+                orchestra: midi_if(&l.join("orchestra-mus.mid"))?,
+                drums: midi_if(&l.join("drums-mus.mid"))?,
                 solo_audio: wav_if(&l.join("solo.wav"))?,
                 bass_audio: wav_if(&l.join("bass.wav"))?,
                 drums_audio: wav_if(&l.join("drums.wav"))?,
@@ -191,6 +200,9 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 difficulty: a.opt("difficulty").unwrap_or_default(),
                 key: a.opt("key"),
                 transpose: a.opt("transpose").map(|s| s.parse::<i32>().map_err(|e| e.to_string())).transpose()?,
+                seat: a.opt("seat"),
+                reads: a.opt("reads"),
+                lead: a.opt("lead").unwrap_or_default(),
             };
             let r = pipeline::arrange_layers_song(&layers, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
@@ -202,7 +214,12 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 bass: midi(Path::new(&a.one("bass")?))?,
                 harmony: a.many("harmony").iter().map(|p| midi(Path::new(p))).collect::<R<Vec<_>>>()?,
             };
-            let opts = pipeline::SongOptions { lineup: a.opt("lineup").unwrap_or_default() };
+            let opts = pipeline::SongOptions {
+                lineup: a.opt("lineup").unwrap_or_default(),
+                seat: a.opt("seat"),
+                reads: a.opt("reads"),
+                lead: a.opt("lead").unwrap_or_default(),
+            };
             let r = pipeline::arrange_song_opts(&inp, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
         }

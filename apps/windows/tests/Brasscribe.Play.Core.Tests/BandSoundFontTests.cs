@@ -167,4 +167,39 @@ public class BandSoundFontTests(ITestOutputHelper log)
         log.WriteLine($"drum kit rms over 2 s: {rms:0.00000}");
         Assert.True(rms > 1e-4, "bank 128 drum kit is silent");
     }
+
+    /// <summary>
+    /// The app loads the map before its first frame; the SoundFont (195 MB) must not be read then,
+    /// only by ApplyTo's background task.
+    /// </summary>
+    [Fact]
+    public async Task Load_leaves_reading_the_soundfont_to_ApplyTo()
+    {
+        var mapping = TestPaths.RepoFile("sounds/mapping.json");
+        var small = TestPaths.RepoFile("engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2");
+        if (mapping is null || small is null) return;
+        var path = Path.Combine(Path.GetTempPath(), $"band-{Guid.NewGuid():N}.sf2");
+        File.Copy(small, path);
+        try
+        {
+            BandSoundFont band;
+            // Locked: reading the file inside Load would throw.
+            using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.Throws<IOException>(() => File.ReadAllBytes(path));
+                band = BandSoundFont.Load(mapping, path);
+            }
+            Assert.Equal(path, band.SoundFontPath);
+
+            using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+            var loading = band.ApplyTo(player, inBackground: true);
+            Assert.NotNull(player.SoundMap); // parts are routed before the file is read
+            await loading;
+            Assert.True(player.HasSoundFont);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

@@ -1,3 +1,5 @@
+using Brasscribe.Bandroom.Core.Downloads;
+
 namespace Brasscribe.Bandroom.Core.Health;
 
 /// <summary>Readings from the host (never from the engine): CPU busy share, memory and free space.</summary>
@@ -56,9 +58,10 @@ public sealed class LoadAverager(TimeProvider? time = null, TimeSpan? window = n
     public double Average => _samples.Count == 0 ? 0 : _samples.Average(s => s.Value);
 }
 
-/// <summary>One reading of "This computer", ready for words.</summary>
-public sealed record HealthSnapshot(double LoadPercent, double MemoryFreeFraction, long FreeBytes, bool ModelsReady)
+/// <summary>One reading of "This computer", ready for words. MissingModels: the downloads a full-band score still needs, in catalogue order.</summary>
+public sealed record HealthSnapshot(double LoadPercent, double MemoryFreeFraction, long FreeBytes, IReadOnlyList<ModelComponent> MissingModels)
 {
+    public bool ModelsReady => MissingModels.Count == 0;
     public Level Load => HealthWords.Load(LoadPercent);
     public Level Memory => HealthWords.Memory(MemoryFreeFraction);
     public bool LowDisk => FreeBytes < HealthWords.WarnFreeBytes;

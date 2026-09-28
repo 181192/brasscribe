@@ -88,7 +88,7 @@ URMP gives the same picture on real trombones and tubas as ChoraleBricks did: th
 - **Proxy instruments.** URMP covers real trombone and tuba (above). There is no recording of a real euphonium, tenor horn or E♭ Bass. ChoraleBricks "Baritone" is the German Bariton, close to a euphonium, and was measured against the euphonium's range. French horn stands in for tenor horn. The trombone plays the chorale's bass line, which sits low for a tenor trombone. The tuba plays an octave below the notated chorale.
 - **Recording conditions.** These are clean close-mic studio stems. A phone in a practice room adds room sound and noise. `docs/research/pitch-benchmark-notes.md` puts SwiftF0 at the top of its tracker benchmark under noise and reverb, but not on brass.
 - **Runtime.** These are the desktop Python adapters, not the Core ML and TFLite conversions the phones run. `convert/swift-f0/parity.py` checks the conversion against the reference. The phone runtime was not measured here.
-- **SwiftF0 has a floor.** The lowest pitch it reports is 46.875 Hz (`swift_f0.FMIN`), a quarter-tone above F♯1. Tuba and B♭ Bass pedal notes from F♯1 down cannot be tracked by the phone or the engine. This is a real model limit, not the window.
+- **SwiftF0 has a floor.** The lowest pitch it reports is 46.875 Hz (`swift_f0.FMIN`), about 23 cents (a quarter of a semitone) above F♯1 (46.25 Hz). Tuba and B♭ Bass pedal notes from F♯1 down cannot be tracked by the phone or the engine. This is a real model limit, not the window.
 - **The octave-move columns are approximate.** The tick mapping (48 ticks per second) only estimates where the phrases break.
 
 ### 1.3 Measured: can the player's inner part be picked out of a section recording?

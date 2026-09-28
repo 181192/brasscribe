@@ -157,12 +157,18 @@ public sealed class JsonSettingsStore : ISettingsStore
     }
 }
 
-/// <summary>The original recording or video through Windows' media player (for "listen to this bar").</summary>
+/// <summary>
+/// The original recording or video through Windows' media player (for "listen to this bar"), at the
+/// level-matching volume, fading out over the band's 80 ms when it stops.
+/// </summary>
 public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
 {
     private readonly MediaPlayer _player = new() { AutoPlay = false };
     private readonly DispatcherQueue? _queue;
     private TimeSpan? _loopStart, _loopEnd, _stopAt;
+    private double _volume = 1;
+    private int _fade;
+    private bool _fading;
 
     public MediaPlayerOriginal(DispatcherQueue? queue = null)
     {
@@ -182,7 +188,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     {
         if (_stopAt is null) return;
         _stopAt = null;
-        _player.Pause();
+        FadeThenPause();
         if (_queue is null) RangeEnded?.Invoke(this, EventArgs.Empty);
         else _queue.TryEnqueue(() => RangeEnded?.Invoke(this, EventArgs.Empty));
     }
@@ -198,12 +204,59 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
         HasVideo = hasVideo;
     }
 
-    public void Play() => _player.Play();
+    public void Play()
+    {
+        CancelFade();
+        _player.Play();
+    }
 
     public void Pause()
     {
         _loopStart = _loopEnd = _stopAt = null;
+        FadeThenPause();
+    }
+
+    /// <summary>The level-matching volume (Core's RecordingLevel); the media player cannot go above 1.</summary>
+    public double Volume
+    {
+        get => _volume;
+        set
+        {
+            _volume = Math.Clamp(value, 0, 1);
+            _player.Volume = _volume;
+        }
+    }
+
+    /// <summary>Ramps the volume down over the band's stop fade (80 ms), then pauses, so stopping never clicks.</summary>
+    private async void FadeThenPause()
+    {
+        if (_fading) return; // a fade under way finishes; asking again (the video follower does) must not restart it
+        if (_player.IsMuted)
+        {
+            _fade++;
+            _player.Pause(); // nothing to hear, nothing to fade
+            _player.Volume = _volume;
+            return;
+        }
+        _fading = true;
+        int fade = ++_fade;
+        const int steps = 8;
+        for (int i = 1; i <= steps; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(Brasscribe.Play.Core.Playback.BufferedSynthOutput.StopFadeMs / steps));
+            if (fade != _fade) return; // played again meanwhile (CancelFade cleared _fading)
+            _player.Volume = _volume * (1 - (double)i / steps);
+        }
+        _fading = false;
         _player.Pause();
+        _player.Volume = _volume;
+    }
+
+    private void CancelFade()
+    {
+        _fade++;
+        _fading = false;
+        _player.Volume = _volume;
     }
 
     public bool IsPlaying => _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
@@ -225,6 +278,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
         _loopStart = loop ? start : null;
         _loopEnd = loop ? end : null;
         _stopAt = loop ? null : end;
+        CancelFade();
         _player.PlaybackSession.Position = start;
         _player.Play();
     }
@@ -232,7 +286,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     public void Stop()
     {
         _loopStart = _loopEnd = _stopAt = null;
-        _player.Pause();
+        FadeThenPause();
     }
 
     public TimeSpan Position

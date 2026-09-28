@@ -27,9 +27,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import no.brasscribe.play.R
 import no.brasscribe.play.audio.AudioCapture
 import no.brasscribe.play.audio.CaptureState
+import no.brasscribe.play.audio.CapturedTake
 import no.brasscribe.play.audio.MicRecorder
-import no.brasscribe.play.audio.PcmAudio
 import no.brasscribe.play.audio.PlaybackCaptureRecorder
+import java.io.File
 
 enum class CaptureKind { MICROPHONE, DEVICE }
 
@@ -76,13 +77,25 @@ object CaptureController {
         )
     }
 
-    suspend fun stop(context: Context): PcmAudio? {
+    /** Ends the take: its WAV (and, for a short take, its samples). */
+    suspend fun stop(context: Context): CapturedTake? {
         val capture = current.value ?: return null
-        val audio = capture.stop()
+        val take = capture.stop()
+        detach(context)
+        return take
+    }
+
+    /** Ends the take and deletes it (the player went back without keeping it). */
+    suspend fun discard(context: Context) {
+        val capture = current.value ?: return
+        capture.discard()
+        detach(context)
+    }
+
+    private fun detach(context: Context) {
         current.value = null
         kind.value = null
         context.stopService(Intent(context, CaptureService::class.java))
-        return audio
     }
 }
 
@@ -99,13 +112,15 @@ class CaptureService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val device = intent?.action == ACTION_DEVICE
         startInForeground(device)
+        // Written to disk as it is recorded (TakeSink): a long take never has to fit in memory.
+        val file = File(cacheDir, "takes").apply { mkdirs() }.resolve("take-${System.currentTimeMillis()}.wav")
         val capture: AudioCapture? = if (device) {
             val code = intent?.getIntExtra(EXTRA_CODE, 0) ?: 0
             val data = intent?.let { IntentCompat.getParcelableExtra(it, EXTRA_DATA, Intent::class.java) }
             val mpm = getSystemService(MediaProjectionManager::class.java)
             val projection = data?.let { runCatching { mpm.getMediaProjection(code, it) }.getOrNull() }
-            projection?.let { PlaybackCaptureRecorder(it) }
-        } else MicRecorder()
+            projection?.let { PlaybackCaptureRecorder(it, file) }
+        } else MicRecorder(file)
 
         @Suppress("MissingPermission") // The UI only starts the service after RECORD_AUDIO was granted.
         val started = capture?.start(scope) == true

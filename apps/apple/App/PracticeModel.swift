@@ -36,6 +36,12 @@ final class PracticeModel {
     var pitchMode: PitchMode = .written { didSet { if pitchMode != oldValue { relayout() } } }
     var zoom: CGFloat = 1 { didSet { if zoom != oldValue { relayout() } } }
     var viewWidth: CGFloat = 820
+    /// The music stand while it is open (PracticeModel+Stand.swift).
+    var stand: MusicStand?
+    /// The phone opens the score on your part once; coming back from the stand keeps the parts shown.
+    var openedOnMyPart = false
+    /// After leaving the stand, focus goes back to the Music stand button.
+    var focusStandButton = false
 
     // Transport state mirrored for the UI
     private(set) var position: Double = 0
@@ -52,6 +58,8 @@ final class PracticeModel {
     var loopFrom: Int = 0
     var loopTo: Int = 0
     private(set) var looping = false
+    /// A repeat range has been used (the stand's Repeat asks for bars until then).
+    private(set) var loopWasSet = false
     /// Part the musician plays themselves (muted in play-along).
     var myPart: String? {
         didSet {
@@ -75,11 +83,14 @@ final class PracticeModel {
     private var timer: Timer?
     private var announcedBar = -1
 
-    init(piece: Piece) throws {
+    convenience init(piece: Piece) throws {
+        self.init(piece: piece, score: try piece.loadScore(), composition: piece.loadComposition())
+    }
+
+    init(piece: Piece, score parsed: Score, composition: Composition?) {
         self.piece = piece
-        let parsed = try piece.loadScore()
         score = parsed
-        composition = piece.loadComposition()
+        self.composition = composition
         uncertainty = composition.map(UncertaintyIndex.init) ?? .empty
         let q = Double(Score.ticksPerQuarter)
         freeTimeBars = (composition?.freeTimeBeats ?? []).map { r in
@@ -99,11 +110,43 @@ final class PracticeModel {
     func start() {
         guard engine == nil else { return }
         MediaTools.configureSession(recording: false)
-        do {
-            engine = try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL,
-                                        soundBank: .locate())
-        } catch {
-            loadError = error.localizedDescription
+        adopt(Result { try Self.makeEngine(piece: piece, score: score, composition: composition) })
+    }
+
+    /// Opens a piece without holding the main thread: the MusicXML parse, the composition decode
+    /// and the playback engine (one SoundFont preset load per part) run on a background task, and
+    /// the model is made on the main actor once they are ready. `start()` is then already done.
+    static func open(_ piece: Piece) async throws -> PracticeModel {
+        MediaTools.configureSession(recording: false)
+        let opened = try await Task.detached(priority: .userInitiated) { try Opened(piece: piece) }.value
+        let m = PracticeModel(piece: piece, score: opened.score, composition: opened.composition)
+        m.adopt(opened.engine)
+        return m
+    }
+
+    /// What `open` prepares off the main actor. The engine is made there and handed over once,
+    /// before anything else touches it; from then on only the main actor uses it.
+    private struct Opened: @unchecked Sendable {
+        let score: Score
+        let composition: Composition?
+        let engine: Result<PlaybackEngine, Error>
+
+        init(piece: Piece) throws {
+            score = try piece.loadScore()
+            composition = piece.loadComposition()
+            let (score, composition) = (score, composition)
+            engine = Result { try PracticeModel.makeEngine(piece: piece, score: score, composition: composition) }
+        }
+    }
+
+    nonisolated private static func makeEngine(piece: Piece, score: Score, composition: Composition?) throws -> PlaybackEngine {
+        try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+    }
+
+    private func adopt(_ made: Result<PlaybackEngine, Error>) {
+        switch made {
+        case .success(let e): engine = e
+        case .failure(let error): loadError = error.localizedDescription
         }
         startTimer()
     }
@@ -139,8 +182,9 @@ final class PracticeModel {
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }
         if renderer == nil { renderer = ScoreRenderer(musicXML: PartNames.localized(xml)) }
         guard let r = renderer else { loadError = String(localized: "The notation engine could not start."); return }
-        let layout = ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
-                                          height: max(600, viewWidth * 1.3))
+        let layout = stand.map { $0.layout(parts: layoutPart.map { [$0] }, pitch: pitchMode, staves: layoutPart == nil ? score.parts.count : 1) }
+            ?? ScoreRenderer.Layout(width: max(320, viewWidth), zoom: zoom, parts: shownPart.map { [$0] }, pitch: pitchMode,
+                                    height: max(600, viewWidth * 1.3))
         engraving = true
         layoutGeneration += 1
         let gen = layoutGeneration
@@ -169,7 +213,15 @@ final class PracticeModel {
     }
 
     /// Displayed parts, in order.
-    var displayedParts: [Part] { shownPart.flatMap { id in score.parts.filter { $0.id == id } } ?? score.parts }
+    var displayedParts: [Part] { layoutPart.flatMap { id in score.parts.filter { $0.id == id } } ?? score.parts }
+
+    /// The one part engraved, or nil for all: the stand's own choice while it is open.
+    var layoutPart: String? {
+        guard let stand else { return shownPart }
+        if stand.onlyMine { return myPart ?? shownPart }
+        // off goes back to the parts shown before, or to all of them when that was your part alone
+        return shownPart == myPart ? nil : shownPart
+    }
 
     // MARK: transport
 
@@ -196,6 +248,7 @@ final class PracticeModel {
     func setLoop(_ on: Bool) {
         guard let engine else { return }
         if on {
+            loopWasSet = true
             let lo = min(loopFrom, loopTo), hi = max(loopFrom, loopTo)
             engine.setLoop(lo...hi)
         } else {
@@ -286,6 +339,7 @@ final class PracticeModel {
 
     private func tick() {
         guard let engine else { return }
+        defer { stand?.follow(self) }
         position = engine.position
         isPlaying = engine.state != .stopped
         if case .countingIn(let b) = engine.state { countInBeat = b } else { countInBeat = nil }

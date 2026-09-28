@@ -21,6 +21,13 @@ dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x6
 $env:BRASSCRIBE_BANDROOM_WORKSPACE = "C:\src\brasscribe"; .\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
 ```
 
+The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the phone
+build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the
+repository root once (needs `gh auth login`). Bandroom passes the folder to the engine as
+`BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`; without it `engine.log` says the band
+sounds are missing and Studio plays General MIDI sounds. The SoundFont adds 195 MB to the install (about 150 MB
+compressed). The engine's MP3 export does not use it: that is MuseScore's own sounds.
+
 On macOS: `tools/check-macos.sh` runs the Core tests and type-checks the app's C# (the XAML compiler only runs
 on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
 
@@ -88,9 +95,12 @@ Axe.Windows scan of six views; screenshots (artifact `bandroom-windows-screensho
 - The MSIX build itself: the manifest and StartupTask path are written but not yet built or installed in CI.
 
 - The four-step first-run window (§3.2: check this computer, the Hugging Face licence step, download progress
-  with Pause, Ready) and the model downloads after the licence step. Today setup installs the environments in the
-  background and the flyout shows **Setting up** / **Finish setting up**.
-- Settings page, Check for updates and About (the More menu has Open Studio, Start when I log in, Remove, Quit).
+  with Pause, Ready). Today setup installs the environments in the background, then fetches the model weights
+  (the separators into `models\`, the band writer into the Hugging Face hub cache) from their upstream URLs:
+  progress shows in the flyout's **Ready to make scores** row, Pause and Resume are in the icon's menu, and the
+  Hugging Face key (HF_TOKEN, or the one saved in Settings in Credential Manager) is asked for through a
+  Needs-attention problem.
+- Check for updates and About (the More menu has Open Studio, Start when I log in, Remove, Quit).
 - Needs-attention detection for Windows Firewall blocking and a Public network (strings and fixes are in place).
 - Actionable toast for a pair request while the Pair window is closed: an always-on-top Allow window is shown instead.
 - The GPU half of Work load (CPU only today).

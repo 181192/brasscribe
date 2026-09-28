@@ -223,6 +223,40 @@ internal static partial class Native
 
     public const int ComputerNameDnsHostname = 1;
 
+    // ----- Credential Manager: the Hugging Face key -----
+    public const uint CRED_TYPE_GENERIC = 1;
+    public const uint CRED_PERSIST_LOCAL_MACHINE = 2;
+    public const int ERROR_NOT_FOUND = 1168;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct CREDENTIAL
+    {
+        public uint Flags;
+        public uint Type;
+        public string TargetName;
+        public string? Comment;
+        public FILETIME LastWritten;
+        public uint CredentialBlobSize;
+        public IntPtr CredentialBlob;
+        public uint Persist;
+        public uint AttributeCount;
+        public IntPtr Attributes;
+        public string? TargetAlias;
+        public string? UserName;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CredReadW")]
+    public static extern bool CredRead(string target, uint type, uint flags, out IntPtr credential);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CredWriteW")]
+    public static extern bool CredWrite(ref CREDENTIAL credential, uint flags);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CredDeleteW")]
+    public static extern bool CredDelete(string target, uint type, uint flags);
+
+    [DllImport("advapi32.dll")]
+    public static extern void CredFree(IntPtr buffer);
+
     // ----- Keep awake while a score is made -----
     public const uint ES_CONTINUOUS = 0x80000000, ES_SYSTEM_REQUIRED = 0x00000001;
 

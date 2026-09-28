@@ -8,6 +8,8 @@ struct BrasscribePlayApp: App {
     @State private var app = AppModel()
     #if os(macOS)
     @NSApplicationDelegateAdaptor(MacLaunch.self) private var launch
+    #else
+    @UIApplicationDelegateAdaptor(OrientationLock.self) private var orientation
     #endif
 
     init() {
@@ -23,7 +25,7 @@ struct BrasscribePlayApp: App {
             RootView()
                 .environment(app)
                 .tint(Color.Brasscribe.primary)
-                .preferredColorScheme(LaunchOptions.colorScheme)
+                .appAppearance()
                 .onOpenURL { url in
                     if url.scheme?.lowercased() == "brasscribe" {
                         if let link = PairingLink(url: url) { app.openPairingLink(link) }
@@ -33,13 +35,52 @@ struct BrasscribePlayApp: App {
                 }
         }
         #if os(macOS)
-        .defaultSize(width: 1280, height: 900)
+        .defaultSize(WindowFit.defaultSize(visible: NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)))
         // always open a fresh window; a restored "no windows" state left the UI tests with none
         .restorationBehavior(.disabled)
         .commands { PlaybackCommands() }
         #endif
 
     }
+}
+
+/// Settings → Appearance: match the system (the default), or always light or dark. Stored per
+/// device. Increase Contrast still applies on top of either.
+enum AppearanceSetting: String, CaseIterable, Identifiable {
+    case system, light, dark
+    static let key = "appearance"
+    var id: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .system: String(localized: "Match system")
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
+        }
+    }
+
+    /// The scheme to apply: a test's `-appearance` wins, then the setting.
+    static func scheme(stored: String) -> ColorScheme? {
+        LaunchOptions.colorScheme ?? (AppearanceSetting(rawValue: stored) ?? .system).colorScheme
+    }
+}
+
+/// Applies the Appearance setting to a window or a sheet; it changes at once when the setting does.
+struct AppAppearance: ViewModifier {
+    @AppStorage(AppearanceSetting.key) private var stored = AppearanceSetting.system.rawValue
+    func body(content: Content) -> some View { content.preferredColorScheme(AppearanceSetting.scheme(stored: stored)) }
+}
+
+extension View {
+    func appAppearance() -> some View { modifier(AppAppearance()) }
 }
 
 /// Launch arguments for tests and screenshots.
@@ -57,6 +98,18 @@ enum LaunchOptions {
         guard let i = args.firstIndex(of: "-screen"), i + 1 < args.count else { return nil }
         return args[i + 1]
     }
+
+    /// `-stand-bars N`: a fixed number of bars per system on the music stand (UI tests use 1 to get pages).
+    static var standBars: Int? {
+        guard let i = args.firstIndex(of: "-stand-bars"), i + 1 < args.count else { return nil }
+        return Int(args[i + 1])
+    }
+
+    /// `-stand-assistive`: behave as if a screen reader were running (the stand controls stay).
+    static var standAssistive: Bool { args.contains("-stand-assistive") }
+
+    /// `-stand-ignore-keyboard`: a simulator's hardware keyboard does not keep the stand controls (the auto-hide test).
+    static var standIgnoreKeyboard: Bool { args.contains("-stand-ignore-keyboard") }
 
     /// `-connection connected|reconnecting|offline|needs-pairing`: show that connection state without
     /// talking to a computer (screenshots and UI tests).
@@ -155,20 +208,33 @@ struct RootView: View {
                 // on iPad the library steps aside while a score is open; the sidebar button brings it back
                 .onChange(of: app.path.isEmpty) { _, home in columns = home ? .all : .detailOnly }
                 #endif
+                // the music stand has the whole window
+                .onChange(of: app.standOpen) { _, open in
+                    #if os(iOS)
+                    columns = open || !app.path.isEmpty ? .detailOnly : .all
+                    #else
+                    columns = open ? .detailOnly : .all
+                    #endif
+                }
             } else {
                 flow
             }
         }
+        #if os(iOS)
+        // the music stand hides the status bar and the home indicator for the whole scene (a split view on iPad)
+        .statusBarHidden(app.standOpen)
+        .persistentSystemOverlays(app.standOpen ? .hidden : .automatic)
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(verbatim: "Brasscribe Play"))
         .modifier(ConnectionLifecycle())
         .scoreOptionDialogs()
-        .sheet(isPresented: $app.showRecorder) { MicRecordView() }
-        .sheet(isPresented: $app.showSettings) { SettingsView() }
+        .sheet(isPresented: $app.showRecorder) { MicRecordView().appAppearance() }
+        .sheet(isPresented: $app.showSettings) { SettingsView().appAppearance() }
         #if os(macOS)
-        .sheet(isPresented: $app.showCapture) { CaptureView() }
+        .sheet(isPresented: $app.showCapture) { CaptureView().appAppearance() }
         #endif
-        .sheet(isPresented: $app.showFirstRun) { FirstRunView() }
+        .sheet(isPresented: $app.showFirstRun) { FirstRunView().appAppearance() }
         .task {
             // after the split view's navigation stack is in place, or the first path is dropped
             try? await Task.sleep(for: .milliseconds(100))
@@ -251,6 +317,7 @@ struct LibrarySidebar: View {
                     HStack(spacing: Space.s1) {
                         row(title: entry.title, icon: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName,
                             selected: entry.piece?.id == openPiece && openPiece != nil) { app.open(entry) }
+                            .scoreRowFocus(entry.id)
                         if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                         ScoreOptionsMenu(entry: entry)
                     }
@@ -301,8 +368,9 @@ struct PlaybackCommands: Commands {
         CommandMenu(Text("Playback")) {
             Group {
                 Button("Play or pause") { model?.togglePlay() }.keyboardShortcut(key(.space))
-                Button("Previous bar") { model?.previousBar() }.keyboardShortcut(key(.leftArrow))
-                Button("Next bar") { model?.nextBar() }.keyboardShortcut(key(.rightArrow))
+                // in the music stand the arrows turn pages (menu shortcuts fire before the view's keys)
+                Button("Previous bar") { model?.previousBarOrPage() }.keyboardShortcut(key(.leftArrow))
+                Button("Next bar") { model?.nextBarOrPage() }.keyboardShortcut(key(.rightArrow))
                 Divider()
                 Button("Loop this bar") { model?.toggleLoopCurrentBar() }.keyboardShortcut(key("l"))
                 Button("Slower") { model?.changeSpeed(by: -5) }.keyboardShortcut(key(","))
@@ -314,6 +382,13 @@ struct PlaybackCommands: Commands {
                 Button("Band or recording") { model?.hearOriginal.toggle() }.keyboardShortcut(key("o"))
             }
             .disabled(model == nil)
+        }
+        // View › Music Stand (F). The green button and ⌃⌘F stay the window's own full screen.
+        CommandGroup(before: .toolbar) {
+            Button("Music Stand") { model?.toggleStand() }
+                .keyboardShortcut(key("f"))
+                .disabled(model == nil)
+            Divider()
         }
     }
 }
@@ -343,18 +418,39 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
                 NSApp.sendAction(#selector(NSResponder.newWindowForTab(_:)), to: nil, from: nil)
             }
         }
-        // Tests and screenshots (-reset): keep the window whole on the main screen, so no
-        // control lands between two displays.
-        if ProcessInfo.processInfo.arguments.contains("-reset") {
+        // UI tests (-ui-test-window): a fixed frame inside the main screen's visible area, clear of
+        // the Dock and the menu bar, so a click never lands outside the app.
+        if ProcessInfo.processInfo.arguments.contains("-ui-test-window") {
             placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
-                guard let w = n.object as? NSWindow, let screen = NSScreen.screens.first else { return }
-                let v = screen.visibleFrame
-                guard !v.contains(w.frame) else { return }
-                let size = CGSize(width: min(w.frame.width, v.width), height: min(w.frame.height, v.height))
-                w.setFrame(CGRect(x: v.minX + (v.width - size.width) / 2, y: v.minY + (v.height - size.height) / 2,
-                                  width: size.width, height: size.height), display: true)
+                guard let w = n.object as? NSWindow, let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+                if w.styleMask.contains(.fullScreen) { w.toggleFullScreen(nil) }
+                let v = screen.visibleFrame.insetBy(dx: 20, dy: 20)
+                let size = CGSize(width: min(1200, v.width), height: min(820, v.height))
+                let frame = CGRect(x: v.midX - size.width / 2, y: v.midY - size.height / 2, width: size.width, height: size.height)
+                if w.frame != frame { w.setFrame(frame, display: true) }
+            }
+        } else {
+            // Every window stays whole on its own screen, clear of the Dock and the menu bar: when it
+            // first shows or is restored (a frame saved on a larger display), and when it moves to
+            // another screen.
+            for name in [NSWindow.didBecomeMainNotification, NSWindow.didChangeScreenNotification] {
+                fitting.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { n in
+                    guard let w = n.object as? NSWindow else { return }
+                    MainActor.assumeIsolated { Self.fit(w) }
+                })
             }
         }
+    }
+
+    private var fitting: [NSObjectProtocol] = []
+
+    @MainActor static func fit(_ w: NSWindow) {
+        guard w.canBecomeMain, !w.styleMask.contains(.fullScreen), let screen = w.screen ?? NSScreen.main else { return }
+        // the content's own minimum (the home screen asks for 520 × 640), as a frame size
+        let content = w.frameRect(forContentRect: CGRect(origin: .zero, size: w.contentMinSize)).size
+        let minSize = CGSize(width: max(w.minSize.width, content.width), height: max(w.minSize.height, content.height))
+        let f = WindowFit.clamp(w.frame, into: screen.visibleFrame, minSize: minSize)
+        if f != w.frame { w.setFrame(f, display: true, animate: false) }
     }
 }
 #endif

@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import java.net.InetAddress
 import io.ktor.client.engine.okhttp.OkHttp
 import no.brasscribe.play.engine.EngineApi
@@ -81,6 +83,16 @@ class AppContainer(private val context: Context) {
     val credentials = CredentialStore(PrefsStore(context.getSharedPreferences(CREDENTIALS_PREFS, Context.MODE_PRIVATE)), KeystoreCipher())
     val settings = EngineSettings(context, credentials)
     private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
+    private val appearanceStore = AppearanceStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))
+
+    /** Settings › Display › Appearance. Compose state, so the theme changes at once when it is set. */
+    var appearance: Appearance by androidx.compose.runtime.mutableStateOf(appearanceStore.load())
+        private set
+
+    fun updateAppearance(value: Appearance) {
+        appearanceStore.save(value)
+        appearance = value
+    }
 
     /** The first-run screen (three points and Get started) has been seen. */
     /** Scores open with the realistic sound (SFZ instruments) instead of the standard one. */
@@ -92,9 +104,29 @@ class AppContainer(private val context: Context) {
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
 
+    /** Settings → Display: the stand's control layer never hides by itself. */
+    var standKeepControls: Boolean
+        get() = prefs.getBoolean("stand_keep_controls", false)
+        set(v) = prefs.edit().putBoolean("stand_keep_controls", v).apply()
+
+    /** Settings → Display: playback turns the stand's pages (on by default). */
+    var standFollow: Boolean
+        get() = prefs.getBoolean("stand_follow", true)
+        set(v) = prefs.edit().putBoolean("stand_follow", v).apply()
+
+    /** "Tap the music to show the controls." has been shown once, and does not come back. */
+    var standHintShown: Boolean
+        get() = prefs.getBoolean("stand_hint_shown", false)
+        set(v) = prefs.edit().putBoolean("stand_hint_shown", v).apply()
+
+    /** Tests stand in for TalkBack or Switch Access here (the stand keeps its controls); null asks the system. */
+    var assistiveOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
+
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.
         runCatching { no.brasscribe.play.score.SoundPack(context) }
+        // "Open the music stand when I turn the phone sideways" is gone; so is what it stored.
+        prefs.edit().remove("stand_on_turn").apply()
     }
 
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */

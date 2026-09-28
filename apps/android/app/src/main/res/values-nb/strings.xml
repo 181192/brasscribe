@@ -9,6 +9,7 @@
     <string name="cancel">Avbryt</string>
     <string name="continue_label">Fortsett</string>
     <string name="more">Mer</string>
+    <string name="controls_hidden">Kontroller</string>
     <string name="settings">Innstillinger</string>
     <string name="change">Endre</string>
     <string name="retry">Prøv igjen</string>
@@ -70,6 +71,7 @@
     <string name="imported">Åpnet %1$s, %2$s</string>
     <string name="imported_video">Åpnet %1$s, %2$s. Lyden brukes.</string>
     <string name="reading_file">Åpner %1$s</string>
+    <string name="extracting_sound">Henter lyden ut av %1$s</string>
 
     <plurals name="duration_minutes">
         <item quantity="one">%d minutt</item>
@@ -87,6 +89,14 @@
     <string name="record_stopped">Innspillingen er stoppet, %1$s</string>
     <string name="record_stop">Stopp innspillingen</string>
     <string name="record_level">Lydnivå</string>
+    <plurals name="record_limit">
+        <item quantity="one">Innspillinger stopper etter %d time.</item>
+        <item quantity="other">Innspillinger stopper etter %d timer.</item>
+    </plurals>
+    <plurals name="record_past_phone_limit">
+        <item quantity="one">Lengre enn %d minutt: partituret lages på datamaskinen, ikke på telefonen.</item>
+        <item quantity="other">Lengre enn %d minutter: partituret lages på datamaskinen, ikke på telefonen.</item>
+    </plurals>
     <string name="level_silent">Stille</string>
     <string name="level_low">Svakt</string>
     <string name="level_good">Bra</string>
@@ -121,6 +131,10 @@
     <string name="where_companion">På datamaskinen din</string>
     <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
+    <plurals name="where_device_too_long">
+        <item quantity="one">Bare for innspillinger på opptil %d minutt.</item>
+        <item quantity="other">Bare for innspillinger på opptil %d minutter.</item>
+    </plurals>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
 
     <!-- Lager partituret -->
@@ -345,6 +359,9 @@
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
+    <string name="problem_too_large_title">Denne filen er for stor for telefonen</string>
+    <string name="problem_too_large_body">Telefonen fikk ikke nok minne til å arbeide med den.</string>
+    <string name="problem_too_large_reason">Prøv et kortere opptak, eller del opp videoen.</string>
     <string name="problem_import_instead">Åpne en fil i stedet</string>
     <string name="problem_choose_another">Velg en annen fil</string>
     <string name="problem_record_instead">Spill inn i stedet</string>
@@ -366,8 +383,40 @@
     <string name="about_title">Om appen og lisenser</string>
     <string name="about_text">Brasscribe Play er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) til noter og avspilling med lydfonten Sonivox (Apache-2.0), sfizz (BSD-2-Clause) til realistisk lyd, Oboe (Apache-2.0) til lyd, og ONNX Runtime (MIT) med SwiftF0, Basic Pitch og Beat This! (MIT) til å lytte på telefonen. Fullt band på datamaskinen bruker MuScriptor (CC BY-NC 4.0), som lastes ned med din egen Hugging Face-konto.</string>
     <string name="about_font">Overskriftene er satt i Instrument Serif (SIL Open Font License 1.1).</string>
-    <string name="performance_enter">Full skjerm</string>
-    <string name="performance_exit">Avslutt full skjerm</string>
+    <!-- Music stand (design/music-stand.md §9) -->
+    <string name="stand_enter">Notestativ</string>
+    <string name="stand_enter_tip">Bare notene, til å spille fra notestativet (F)</string>
+    <string name="stand_open_from_library">Åpne på notestativet</string>
+    <string name="stand_leave">Gå ut</string>
+    <string name="stand_leave_name">Gå ut av notestativet</string>
+    <string name="stand_part_yours">%1$s (deg)</string>
+    <string name="stand_position">Takt %1$d · side %2$d av %3$d</string>
+    <string name="stand_position_line">%1$s · takt %2$d · side %3$d av %4$d</string>
+    <string name="stand_position_tablet">%1$s · %2$s · takt %3$d · side %4$d av %5$d</string>
+    <string name="stand_prev_page">Forrige side</string>
+    <string name="stand_next_page">Neste side</string>
+    <string name="stand_slower">Saktere</string>
+    <string name="stand_faster">Raskere</string>
+    <string name="stand_repeat">Gjenta</string>
+    <string name="stand_repeat_on">Gjenta %1$d–%2$d</string>
+    <string name="stand_only_mine">Bare stemmen min</string>
+    <string name="stand_lock">Lås retningen</string>
+    <string name="stand_lock_on">Retningen er låst</string>
+    <string name="stand_turn">Snu notene</string>
+    <string name="stand_turn_name">Snu notene så de passer telefonen</string>
+    <string name="stand_hint">Trykk på notene for å vise knappene.</string>
+    <string name="stand_entered">Notestativ. %1$s, takt %2$d av %3$d.</string>
+    <string name="stand_score_summary">%1$s, takt %2$d av %3$d, side %4$d av %5$d</string>
+    <string name="stand_first_page">Første side.</string>
+    <string name="stand_last_page">Siste side.</string>
+    <string name="stand_page_turned">Side %1$d av %2$d, takt %3$d til %4$d.</string>
+    <string name="stand_locked">Retningen er låst. Notene blir stående slik.</string>
+    <string name="stand_unlocked">Notene snur seg med telefonen igjen.</string>
+    <string name="stand_left">Notestativet er lukket.</string>
+    <string name="settings_stand_controls">Vis alltid knappene på notestativet</string>
+    <string name="settings_stand_follow">Bla om mens musikken spiller</string>
+    <string name="help_stand_pedal">Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.</string>
+    <string name="help_stand_tablet_lock">Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning.</string>
     <string name="opened_score">Åpnet %1$s.</string>
     <string name="home_open_score">Åpne et partitur</string>
     <string name="home_open_score_desc">MusicXML fra MuseScore, Sibelius eller Dorico</string>
@@ -410,6 +459,11 @@
     <string name="settings_display">Visning</string>
     <string name="settings_language">Språk</string>
     <string name="settings_language_desc">Norsk (bokmål) eller English, i telefonens innstillinger</string>
+    <string name="settings_appearance">Utseende</string>
+    <string name="appearance_system">Følg systemet</string>
+    <string name="appearance_light">Lyst</string>
+    <string name="appearance_dark">Mørkt</string>
+    <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Brasscribe bruker høykontrastfargene.</string>
     <string name="settings_text_motion">Tekststørrelse og mindre bevegelse</string>
     <string name="settings_text_motion_desc">Brasscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
     <string name="help_1_title">Lag et partitur</string>

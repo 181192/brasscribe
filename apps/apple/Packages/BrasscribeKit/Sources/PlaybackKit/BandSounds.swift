@@ -68,7 +68,20 @@ public enum BandSoundStatus: Sendable, Equatable {
 
 public enum BandSounds {
     static let log = Logger(subsystem: "no.brasscribe.play", category: "sound")
-    static let bandFiles = ["brasscribe-band-16bit.sf2", "brasscribe-band.sf2"]
+
+    /// The band SoundFont builds in the order this device prefers them. iPhone and iPad get the phone build
+    /// (77 MB, which the app bundles for iOS): smaller, for phone memory and download size. The Mac gets the
+    /// 16-bit build (195 MB), else the 24-bit master. Each falls back to the other so a checkout still plays.
+    static func bandFiles(phone: Bool = BandSounds.isPhone) -> [String] {
+        phone ? ["brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2"]
+              : ["brasscribe-band-16bit.sf2", "brasscribe-band.sf2", "brasscribe-band-mobile.sf2"]
+    }
+
+    #if os(iOS)
+    static let isPhone = true
+    #else
+    static let isPhone = false
+    #endif
 
     /// The band SoundFont (`data/sounds/band/brasscribe-band*.sf2`): every part has its own
     /// preset at (bank, program) with layered desks and a staccato bank; drums are bank 128.
@@ -160,9 +173,13 @@ public enum BandSounds {
 
     /// The band SoundFont from the first place that has both the file and its mapping.
     public static func locateBand(bundle: Bundle = .main) -> (BandSoundFont?, BandSoundStatus) {
+        locateBand(in: candidates(bundle: bundle), files: bandFiles())
+    }
+
+    static func locateBand(in candidates: [Candidate], files: [String]) -> (BandSoundFont?, BandSoundStatus) {
         var searched: [URL] = []
-        for c in candidates(bundle: bundle) {
-            for name in bandFiles {
+        for c in candidates {
+            for name in files {
                 let sf = c.dir.appending(path: name)
                 searched.append(sf)
                 guard FileManager.default.fileExists(atPath: sf.path), FileManager.default.fileExists(atPath: c.mapping.path),

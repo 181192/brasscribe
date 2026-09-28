@@ -19,34 +19,25 @@ import json
 import os
 import re
 import subprocess
-import time
 from pathlib import Path
 
 import pretty_midi
 
 from . import urmp
+from .gpulock import gpu_lock
 BRASS_QUARTET = {"S": "Trumpet", "A": "Flugelhorn", "T": "Baritone", "B": "Tuba"}  # as choralebricks.py
 
 # The adapters' environments live in the main checkout; BRASSCRIBE_ADAPTERS points there from a worktree.
 ADAPTERS = Path(os.environ.get("BRASSCRIBE_ADAPTERS") or Path(__file__).resolve().parents[2] / "ml" / "adapters")
-LOCK = Path("/tmp/brasscribe-gpu.lock")
 
 
 def _beats(wav: Path, dst: Path, model: str) -> None:
     if dst.exists():
         return
-    while True:
-        try:
-            LOCK.mkdir()
-            break
-        except FileExistsError:
-            time.sleep(5)
-    try:
+    with gpu_lock(poll=5):
         env = dict(os.environ, BEAT_THIS_MODEL=model)
         subprocess.run([str(ADAPTERS / "beat-this" / "run.sh"), str(wav), str(dst)], check=True, env=env,
                        capture_output=True)
-    finally:
-        LOCK.rmdir()
 
 
 def urmp_songs(root: Path, out: Path, model: str) -> None:

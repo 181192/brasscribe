@@ -169,18 +169,20 @@ fun ProfileScreen(vm: PlayViewModel) {
     }
 
     if (changeWhere) {
-        ModalBottomSheet(onDismissRequest = { changeWhere = false }, containerColor = BrasscribeTheme.colors.surfaceRaised, dragHandle = null) {
-            Column(Modifier.padding(horizontal = ScreenMargin).navigationBarsPadding().padding(bottom = BrasscribeSpace.s6),
+        PlaySheet({ changeWhere = false }, BrasscribeTheme.colors.surfaceRaised, dragHandle = false) {
+            Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 SubHeading(stringResource(R.string.where_title))
                 val deviceDesc = when {
                     profile != Profile.SOLO -> R.string.where_device_solo_only
                     !vm.container.hasPitchModel -> R.string.where_device_unavailable
-                    source?.audio == null -> R.string.where_device_unavailable
+                    source?.audio == null -> null
                     else -> R.string.where_device_desc
                 }
                 ChoiceGroup(2) {
-                    ChoiceCard(stringResource(R.string.where_device), stringResource(deviceDesc), where == Where.DEVICE, deviceOk, 0) {
+                    // A take too long to hold in memory is kept on disk only; the phone cannot make its score.
+                    val deviceText = deviceDesc?.let { stringResource(it) } ?: phoneMinutes().let { androidx.compose.ui.res.pluralStringResource(R.plurals.where_device_too_long, it, it) }
+                    ChoiceCard(stringResource(R.string.where_device), deviceText, where == Where.DEVICE, deviceOk, 0) {
                         vm.where.value = Where.DEVICE; changeWhere = false
                     }
                     ChoiceCard(

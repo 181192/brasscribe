@@ -1,5 +1,6 @@
 package no.brasscribe.play.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -20,9 +21,11 @@ val InstrumentSerif = FontFamily(
 /**
  * The app's one theme entry point: the generated Brasscribe theme (design/dist/android, colour scheme,
  * type ramp, shapes) with the display face. Colours come from [BrasscribeTheme.colors]; the score
- * palette (uncertain, very uncertain, loop, cursor) is for the notation only.
+ * palette (uncertain, very uncertain, loop, cursor) is for the notation only. [dark] is the resolved
+ * Settings › Display › Appearance: the score and every dialog take their colours from here, never from
+ * the phone's night mode directly. The phone's high contrast still wins over it.
  */
 @Composable
-fun PlayTheme(content: @Composable () -> Unit) {
-    BrasscribeTheme(display = InstrumentSerif, content = content)
+fun PlayTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    BrasscribeTheme(dark = dark, display = InstrumentSerif, content = content)
 }

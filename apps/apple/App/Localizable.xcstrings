@@ -71,6 +71,16 @@
         }
       }
     },
+    "%@ · %@ · bar %lld · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@ · takt %3$lld · %4$@"
+          }
+        }
+      }
+    },
     "%@ · Bar %lld": {
       "localizations": {
         "nb": {
@@ -87,6 +97,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · Sjekk tonene"
+          }
+        }
+      }
+    },
+    "%@ · bar %lld · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · takt %2$lld · %3$@"
           }
         }
       }
@@ -127,6 +147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@, %@, %@"
+          }
+        }
+      }
+    },
+    "%@, bar %lld of %lld, %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, takt %2$lld av %3$lld, %4$@"
           }
         }
       }
@@ -601,6 +631,16 @@
         }
       }
     },
+    "Appearance": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utseende"
+          }
+        }
+      }
+    },
     "Arrange again on this device": {
       "localizations": {
         "nb": {
@@ -767,6 +807,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Takt %lld har ingen fast puls (ad lib.). Rytmene der er omtrentlige."
+          }
+        }
+      }
+    },
+    "Bar %lld · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takt %1$lld · %2$@"
           }
         }
       }
@@ -1291,6 +1341,16 @@
         }
       }
     },
+    "Dark": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mørkt"
+          }
+        }
+      }
+    },
     "Delete": {
       "localizations": {
         "nb": {
@@ -1327,6 +1387,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vanskelighetsgrad"
+          }
+        }
+      }
+    },
+    "Display": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visning"
           }
         }
       }
@@ -1581,6 +1651,16 @@
         }
       }
     },
+    "First page.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Første side."
+          }
+        }
+      }
+    },
     "For other music apps": {
       "localizations": {
         "nb": {
@@ -1791,6 +1871,16 @@
         }
       }
     },
+    "Increase contrast is on, so Brasscribe uses its high-contrast colours.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene."
+          }
+        }
+      }
+    },
     "Input level": {
       "localizations": {
         "nb": {
@@ -1861,6 +1951,16 @@
         }
       }
     },
+    "Keep the stand controls visible": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis alltid knappene på notestativet"
+          }
+        }
+      }
+    },
     "Keep, go to next": {
       "localizations": {
         "nb": {
@@ -1921,6 +2021,16 @@
         }
       }
     },
+    "Last page.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siste side."
+          }
+        }
+      }
+    },
     "Last step": {
       "localizations": {
         "nb": {
@@ -1951,6 +2061,26 @@
         }
       }
     },
+    "Leave": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gå ut"
+          }
+        }
+      }
+    },
+    "Leave the music stand": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gå ut av notestativet"
+          }
+        }
+      }
+    },
     "Less than a minute left": {
       "localizations": {
         "nb": {
@@ -1967,6 +2097,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bibliotek"
+          }
+        }
+      }
+    },
+    "Light": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyst"
           }
         }
       }
@@ -2057,6 +2197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lyttefiler"
+          }
+        }
+      }
+    },
+    "Lock rotation": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lås retningen"
           }
         }
       }
@@ -2181,6 +2331,16 @@
         }
       }
     },
+    "Match system": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følg systemet"
+          }
+        }
+      }
+    },
     "Metronome": {
       "localizations": {
         "nb": {
@@ -2271,12 +2431,62 @@
         }
       }
     },
+    "Music Stand": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notestativ"
+          }
+        }
+      }
+    },
     "Music and video from streaming apps and shops are usually copy-protected.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Musikk og video fra strømmeapper og butikker er som regel kopibeskyttet."
+          }
+        }
+      }
+    },
+    "Music stand": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notestativ"
+          }
+        }
+      }
+    },
+    "Music stand closed.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notestativet er lukket."
+          }
+        }
+      }
+    },
+    "Music stand controls": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knappene på notestativet"
+          }
+        }
+      }
+    },
+    "Music stand. %@, bar %lld of %lld.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notestativ. %1$@, takt %2$lld av %3$lld."
           }
         }
       }
@@ -2437,6 +2647,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neste takt"
+          }
+        }
+      }
+    },
+    "Next page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste side"
           }
         }
       }
@@ -2721,6 +2941,16 @@
         }
       }
     },
+    "Only my part": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bare stemmen min"
+          }
+        }
+      }
+    },
     "Only silence was recorded": {
       "localizations": {
         "nb": {
@@ -2777,6 +3007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpne et opptak i stedet"
+          }
+        }
+      }
+    },
+    "Open on the music stand": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne på notestativet"
           }
         }
       }
@@ -2877,6 +3117,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "PDF"
+          }
+        }
+      }
+    },
+    "Page %lld of %lld, bars %lld to %lld.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %1$lld av %2$lld, takt %3$lld til %4$lld."
+          }
+        }
+      }
+    },
+    "Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken."
           }
         }
       }
@@ -3261,6 +3521,16 @@
         }
       }
     },
+    "Previous page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forrige side"
+          }
+        }
+      }
+    },
     "Print": {
       "localizations": {
         "nb": {
@@ -3577,6 +3847,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gjennomgang"
+          }
+        }
+      }
+    },
+    "Rotation locked": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retningen er låst"
+          }
+        }
+      }
+    },
+    "Rotation locked. The music stays this way up.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retningen er låst. Notene blir stående slik."
           }
         }
       }
@@ -3971,6 +4261,16 @@
         }
       }
     },
+    "Space plays and pauses, the arrow keys move by bar, F opens the music stand, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellomrom spiller av og pauser, piltastene flytter én takt, F åpner notestativet, og L, C, M, A og O slår øvekontrollene av og på. Slå dette av hvis du bruker talestyring eller bryterstyring."
+          }
+        }
+      }
+    },
     "Space plays and pauses, the arrow keys move by bar, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.": {
       "localizations": {
         "nb": {
@@ -4191,6 +4491,16 @@
         }
       }
     },
+    "Tap the music to show the controls.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk på notene for å vise knappene."
+          }
+        }
+      }
+    },
     "Text a screen reader can read aloud": {
       "localizations": {
         "nb": {
@@ -4371,12 +4681,32 @@
         }
       }
     },
+    "The music alone, for playing from the stand (F)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bare notene, til å spille fra notestativet (F)"
+          }
+        }
+      }
+    },
     "The music app blocks recording. Streaming apps usually do.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Musikkappen stopper opptak. Strømmeapper gjør som regel det."
+          }
+        }
+      }
+    },
+    "The music turns with the phone again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notene snur seg med telefonen igjen."
           }
         }
       }
@@ -4611,6 +4941,16 @@
         }
       }
     },
+    "To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning."
+          }
+        }
+      }
+    },
     "Today": {
       "localizations": {
         "nb": {
@@ -4687,6 +5027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gjør et opptak om til"
+          }
+        }
+      }
+    },
+    "Turn the pages while playing": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bla om mens musikken spiller"
           }
         }
       }
@@ -4916,7 +5266,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skriver ned notene"
+            "value": "Skriver ned tonene"
           }
         }
       }
@@ -5327,6 +5677,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "én PDF per musiker"
+          }
+        }
+      }
+    },
+    "page %lld of %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "side %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "pages %lld–%lld of %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "side %1$lld–%2$lld av %3$lld"
           }
         }
       }

@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "output_stage.h"
 #include "recorder.h"
 #include "sfizz_bridge.h"
 
@@ -63,6 +64,9 @@ JNIEXPORT void JNICALL FN(sfizzAllOff)(JNIEnv*, jobject) { sfizz_bridge::allOff(
 JNIEXPORT void JNICALL FN(sfizzReleaseAll)(JNIEnv*, jobject) { sfizz_bridge::releaseAll(); }
 JNIEXPORT void JNICALL FN(sfizzFadeOut)(JNIEnv*, jobject, jdouble seconds) { sfizz_bridge::fadeOut(seconds); }
 JNIEXPORT void JNICALL FN(sfizzSetGain)(JNIEnv*, jobject, jint ch, jfloat gain) { sfizz_bridge::setGain(ch, gain); }
+JNIEXPORT void JNICALL FN(sfizzSetOutputGain)(JNIEnv*, jobject, jfloat gain) { sfizz_bridge::setOutputGain(gain); }
+// The C++ limiter curve, for the tests that hold it to the shared vectors.
+JNIEXPORT jfloat JNICALL FN(outputStageLimit)(JNIEnv*, jobject, jfloat x) { return output_stage::limit(x); }
 JNIEXPORT jint JNICALL FN(sfizzActiveVoices)(JNIEnv*, jobject) { return sfizz_bridge::activeVoices(); }
 
 JNIEXPORT jint JNICALL FN(sfizzRenderOffline)(JNIEnv* env, jobject, jfloatArray interleaved) {

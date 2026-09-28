@@ -433,6 +433,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{job_id}/part-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Part Sources
+         * @description Where each part comes from: the player's own recording, the recording, or arranged from the harmony.
+         */
+        get: operations["getPartSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{job_id}/pdf": {
         parameters: {
             query?: never;
@@ -997,6 +1017,12 @@ export interface components {
             file: string;
             /** Key */
             key?: string | null;
+            /**
+             * Lead
+             * @default lineup
+             * @enum {string}
+             */
+            lead: "lineup" | "seat";
             /** Lineup */
             lineup?: ("full" | "minimal" | "quartet") | null;
             /**
@@ -1004,11 +1030,15 @@ export interface components {
              * @default orchestra-with-soloist
              */
             profile: string;
+            /** Reads */
+            reads?: ("treble" | "bass") | null;
             /**
              * Render Audio
              * @default true
              */
             render_audio: boolean;
+            /** Seat */
+            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion") | null;
             /** Title */
             title?: string | null;
             /** Transpose */
@@ -1379,6 +1409,13 @@ export interface components {
              */
             key?: string | null;
             /**
+             * Lead
+             * @description who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); seat writes it on the seat's part, for the full and minimal bands only. The solo profile with a seat always uses seat
+             * @default lineup
+             * @enum {string}
+             */
+            lead: "lineup" | "seat";
+            /**
              * Lineup
              * @description full: the 18-part brass band; minimal: the 8-part minimal band; quartet: 1st Cornet, 2nd Cornet, Tenor Horn and Euphonium, one player each (not for the solo profile: it needs a recording of the whole group); default: the profile's (minimal for solo, full otherwise)
              */
@@ -1400,11 +1437,21 @@ export interface components {
              */
             profile: string;
             /**
+             * Reads
+             * @description the clef the seat's part is written in: bass is at concert pitch (offered for baritone, euphonium, trombones and basses); default: the brass-band part's own
+             */
+            reads?: ("treble" | "bass") | null;
+            /**
              * Render Audio
              * @description also render an MP3 of the score
              * @default true
              */
             render_audio: boolean;
+            /**
+             * Seat
+             * @description the player's seat. A solo take is written for it: one part, the seat's, in its range and in the octave played. A band take's notes do not change; the seat names the player's part. Default: none
+             */
+            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion") | null;
             /** Source Id */
             source_id?: string | null;
             /** Title */
@@ -1700,6 +1747,19 @@ export interface components {
             /** Reference Notes */
             reference_notes: number;
         };
+        /**
+         * PartSources
+         * @description Where each part of the job's score comes from, in score order (derived from the Composition).
+         */
+        PartSources: {
+            /**
+             * Parts
+             * @description your-recording: a solo take's own line; recording: a line heard in the recording (the tune, the bass line, the countermelody, the drums); arranged: voiced from the band's harmony
+             */
+            parts: {
+                [key: string]: "your-recording" | "recording" | "arranged";
+            };
+        };
         /** ProfileInfo */
         ProfileInfo: {
             /** Description */
@@ -1822,6 +1882,16 @@ export interface components {
             key?: string | null;
             /** Kind */
             kind?: string | null;
+            /**
+             * Queue Wait S
+             * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+             */
+            queue_wait_s?: number | null;
+            /**
+             * Run S
+             * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+             */
+            run_s?: number | null;
             /** Seconds */
             seconds?: number | null;
             /** Stage */
@@ -1837,7 +1907,20 @@ export interface components {
             kind?: string | null;
             /** Name */
             name: string;
-            /** Seconds */
+            /**
+             * Queue Wait S
+             * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+             */
+            queue_wait_s?: number | null;
+            /**
+             * Run S
+             * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+             */
+            run_s?: number | null;
+            /**
+             * Seconds
+             * @description wall clock, including any wait for the GPU mutex
+             */
             seconds?: number | null;
             /**
              * Status
@@ -2730,8 +2813,18 @@ export interface operations {
                         kind?: string | null;
                         /** Message */
                         message?: string | null;
+                        /**
+                         * Queue Wait S
+                         * @description of `seconds`, time spent waiting for the machine-wide GPU mutex
+                         */
+                        queue_wait_s?: number | null;
                         /** Run */
                         run: string;
+                        /**
+                         * Run S
+                         * @description of `seconds`, time the stage itself took (seconds - queue_wait_s)
+                         */
+                        run_s?: number | null;
                         /** Seconds */
                         seconds?: number | null;
                         /** Stage */
@@ -2915,6 +3008,39 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.recordare.musicxml+xml": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getPartSources: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartSources"];
                 };
             };
             /** @description Validation Error */

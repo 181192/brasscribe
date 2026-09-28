@@ -11,6 +11,7 @@
     <string name="cancel">Cancel</string>
     <string name="continue_label">Continue</string>
     <string name="more">More</string>
+    <string name="controls_hidden">Controls</string>
     <string name="settings">Settings</string>
     <string name="change">Change</string>
     <string name="retry">Try again</string>
@@ -72,6 +73,7 @@
     <string name="imported">Opened %1$s, %2$s</string>
     <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
     <string name="reading_file">Opening %1$s</string>
+    <string name="extracting_sound">Taking the sound out of %1$s</string>
 
     <plurals name="duration_minutes">
         <item quantity="one">%d minute</item>
@@ -89,6 +91,14 @@
     <string name="record_stopped">Recording stopped, %1$s</string>
     <string name="record_stop">Stop recording</string>
     <string name="record_level">Sound level</string>
+    <plurals name="record_limit">
+        <item quantity="one">Recordings stop at %d hour.</item>
+        <item quantity="other">Recordings stop at %d hours.</item>
+    </plurals>
+    <plurals name="record_past_phone_limit">
+        <item quantity="one">Longer than %d minute: the score will be made on your computer, not on the phone.</item>
+        <item quantity="other">Longer than %d minutes: the score will be made on your computer, not on the phone.</item>
+    </plurals>
     <string name="level_silent">Silent</string>
     <string name="level_low">Quiet</string>
     <string name="level_good">Good</string>
@@ -123,6 +133,10 @@
     <string name="where_companion">On your computer</string>
     <string name="where_companion_desc">%1$s · nothing goes online</string>
     <string name="where_device_unavailable">This version can\'t make scores on the phone.</string>
+    <plurals name="where_device_too_long">
+        <item quantity="one">Only for recordings up to %d minute.</item>
+        <item quantity="other">Only for recordings up to %d minutes.</item>
+    </plurals>
     <string name="where_companion_missing">Connect Brasscribe on your computer first.</string>
 
     <!-- Making the score -->
@@ -347,6 +361,9 @@
     <string name="problem_score_title">The score couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
+    <string name="problem_too_large_title">This file is too big for the phone</string>
+    <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
+    <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>
     <string name="problem_import_instead">Open a file instead</string>
     <string name="problem_choose_another">Choose another file</string>
     <string name="problem_record_instead">Record instead</string>
@@ -368,8 +385,40 @@
     <string name="about_title">About and licences</string>
     <string name="about_text">Brasscribe Play is a non-commercial project. It uses alphaTab (MPL-2.0) for notation and playback with the Sonivox SoundFont (Apache-2.0), sfizz (BSD-2-Clause) for realistic sound, Oboe (Apache-2.0) for audio, and ONNX Runtime (MIT) with SwiftF0, Basic Pitch and Beat This! (MIT) to listen on the phone. A full band on your computer uses MuScriptor (CC BY-NC 4.0), downloaded with your own Hugging Face account.</string>
     <string name="about_font">Headings are set in Instrument Serif (SIL Open Font License 1.1).</string>
-    <string name="performance_enter">Full screen</string>
-    <string name="performance_exit">Leave full screen</string>
+    <!-- Music stand (design/music-stand.md §9) -->
+    <string name="stand_enter">Music stand</string>
+    <string name="stand_enter_tip">The music alone, for playing from the stand (F)</string>
+    <string name="stand_open_from_library">Open on the music stand</string>
+    <string name="stand_leave">Leave</string>
+    <string name="stand_leave_name">Leave the music stand</string>
+    <string name="stand_part_yours">%1$s (you)</string>
+    <string name="stand_position">Bar %1$d · page %2$d of %3$d</string>
+    <string name="stand_position_line">%1$s · bar %2$d · page %3$d of %4$d</string>
+    <string name="stand_position_tablet">%1$s · %2$s · bar %3$d · page %4$d of %5$d</string>
+    <string name="stand_prev_page">Previous page</string>
+    <string name="stand_next_page">Next page</string>
+    <string name="stand_slower">Slower</string>
+    <string name="stand_faster">Faster</string>
+    <string name="stand_repeat">Repeat</string>
+    <string name="stand_repeat_on">Repeat %1$d–%2$d</string>
+    <string name="stand_only_mine">Only my part</string>
+    <string name="stand_lock">Lock rotation</string>
+    <string name="stand_lock_on">Rotation locked</string>
+    <string name="stand_turn">Turn the music</string>
+    <string name="stand_turn_name">Turn the music to fit the phone</string>
+    <string name="stand_hint">Tap the music to show the controls.</string>
+    <string name="stand_entered">Music stand. %1$s, bar %2$d of %3$d.</string>
+    <string name="stand_score_summary">%1$s, bar %2$d of %3$d, page %4$d of %5$d</string>
+    <string name="stand_first_page">First page.</string>
+    <string name="stand_last_page">Last page.</string>
+    <string name="stand_page_turned">Page %1$d of %2$d, bars %3$d to %4$d.</string>
+    <string name="stand_locked">Rotation locked. The music stays this way up.</string>
+    <string name="stand_unlocked">The music turns with the phone again.</string>
+    <string name="stand_left">Music stand closed.</string>
+    <string name="settings_stand_controls">Keep the stand controls visible</string>
+    <string name="settings_stand_follow">Turn the pages while playing</string>
+    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</string>
+    <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
     <string name="opened_score">Opened %1$s.</string>
     <string name="home_open_score">Open a score</string>
     <string name="home_open_score_desc">MusicXML from MuseScore, Sibelius or Dorico</string>
@@ -412,6 +461,11 @@
     <string name="settings_display">Display</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_desc">English or Norsk (bokmål), in the phone\'s settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="appearance_system">Match system</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_contrast_note">Your contrast setting is on, so Brasscribe uses its high-contrast colours.</string>
     <string name="settings_text_motion">Text size and reduced motion</string>
     <string name="settings_text_motion_desc">Brasscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="help_1_title">Make a score</string>

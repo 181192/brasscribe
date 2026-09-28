@@ -77,23 +77,39 @@ public sealed class Bootstrapper
         _log = log;
     }
 
-    public string LockHash => Hash(Path.Combine(_bundledWorkspace, "pixi.lock"));
+    private readonly object _gate = new();
+    private (long Length, DateTime Written, string Hash)? _lock;
+    // Setup only ever adds markers, so once complete stays complete for the life of the process.
+    private readonly bool[] _complete = new bool[2];
+    private bool _engineReady;
 
-    /// <summary>The lockfile plus every bundled file's path and size: a new app version with other sources copies again.</summary>
-    public string BundleHash
+    /// <summary>SHA-256 of pixi.lock, streamed; computed again only when the file's size or time changes.</summary>
+    public string LockHash
     {
         get
         {
-            if (!Directory.Exists(_bundledWorkspace)) return "";
-            var sb = new System.Text.StringBuilder(LockHash);
-            foreach (var f in Directory.EnumerateFiles(_bundledWorkspace, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
-                sb.Append('\n').Append(Path.GetRelativePath(_bundledWorkspace, f).Replace('\\', '/')).Append(' ').Append(new FileInfo(f).Length);
-            return Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sb.ToString())));
+            var file = new FileInfo(Path.Combine(_bundledWorkspace, "pixi.lock"));
+            if (!file.Exists) return "";
+            lock (_gate)
+                if (_lock is { } c && c.Length == file.Length && c.Written == file.LastWriteTimeUtc) return c.Hash;
+            string hash;
+            using (var stream = file.OpenRead()) hash = Convert.ToHexStringLower(SHA256.HashData(stream));
+            lock (_gate) _lock = (file.Length, file.LastWriteTimeUtc, hash);
+            return hash;
         }
     }
 
-    private static string Hash(string file) =>
-        File.Exists(file) ? Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(file))) : "";
+    /// <summary>The lockfile plus every bundled file's path and size: a new app version with other sources copies again.</summary>
+    public string BundleHash => BundleHashWith(LockHash);
+
+    private string BundleHashWith(string lockHash)
+    {
+        if (!Directory.Exists(_bundledWorkspace)) return "";
+        var sb = new System.Text.StringBuilder(lockHash);
+        foreach (var f in Directory.EnumerateFiles(_bundledWorkspace, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+            sb.Append('\n').Append(Path.GetRelativePath(_bundledWorkspace, f).Replace('\\', '/')).Append(' ').Append(new FileInfo(f).Length);
+        return Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sb.ToString())));
+    }
 
     private string Marker(string name) => Path.Combine(_paths.SetupMarkers, name);
 
@@ -111,15 +127,38 @@ public sealed class Bootstrapper
     {
         string hash = LockHash;
         var steps = new List<string>();
-        if (!MarkerMatches("workspace", BundleHash)) steps.Add("workspace");
+        if (!MarkerMatches("workspace", BundleHashWith(hash))) steps.Add("workspace");
         steps.AddRange(EnvironmentPlan.Environments(cuda).Where(e => !MarkerMatches("env-" + e, hash)));
         return steps;
     }
 
-    public bool IsComplete(bool cuda) => Pending(cuda).Count == 0;
+    /// <summary>
+    /// Every step done. Hashes the lockfile and walks the bundled workspace until the answer is yes, and
+    /// remembers the yes; <see cref="IsCompleteAsync"/> does the first look off the calling thread.
+    /// </summary>
+    public bool IsComplete(bool cuda)
+    {
+        int i = cuda ? 1 : 0;
+        if (Volatile.Read(ref _complete[i])) return true;
+        bool complete = Pending(cuda).Count == 0;
+        if (complete) Volatile.Write(ref _complete[i], true);
+        return complete;
+    }
 
-    /// <summary>The engine environment is installed, so the engine can start while adapters still download.</summary>
-    public bool EngineReady => MarkerMatches("env-default", LockHash) && MarkerMatches("workspace", BundleHash);
+    public Task<bool> IsCompleteAsync(bool cuda, CancellationToken ct = default) => Task.Run(() => IsComplete(cuda), ct);
+
+    /// <summary>The engine environment is installed, so the engine can start while adapters still download (remembered once true).</summary>
+    public bool EngineReady
+    {
+        get
+        {
+            if (Volatile.Read(ref _engineReady)) return true;
+            string hash = LockHash;
+            bool ready = MarkerMatches("env-default", hash) && MarkerMatches("workspace", BundleHashWith(hash));
+            if (ready) Volatile.Write(ref _engineReady, true);
+            return ready;
+        }
+    }
 
     public ProcessSpec InstallSpec(string environment) => new(
         _pixiExe,

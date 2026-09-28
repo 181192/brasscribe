@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Brasscribe.Bandroom.Core;
+using Brasscribe.Bandroom.Core.Appearance;
 using Brasscribe.Bandroom.Core.Engine;
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.Pairing;
 using Brasscribe.Bandroom.Core.State;
 using Brasscribe.Bandroom.Core.Supervisor;
@@ -18,11 +20,11 @@ namespace Brasscribe.Bandroom;
 /// the engine, runs the first-run setup, polls status, and routes phones asking to pair.
 ///
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
-/// flyout|devices|confirm-stop|window|pair|allow (one view with sample content, for screenshots and the
-/// accessibility scan), --state running|busy|attention|stopped|error|setup|starting, --theme light|dark,
-/// --lang en|nb.
+/// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
+/// the accessibility scan), --state running|busy|attention|stopped|error|setup|starting, --theme light|dark
+/// (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
-public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
+public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, IAnnouncer
 {
     private readonly string[] _args = Environment.GetCommandLineArgs();
     private readonly IStrings _s;
@@ -34,6 +36,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     private FlyoutWindow? _flyout;
     private PanelWindow? _window;
     private PairWindow? _pairWindow;
+    private SettingsWindow? _settingsWindow;
+    private Windows.UI.ViewManagement.AccessibilitySettings _accessibility = null!;
+    private AppearanceViewModel _appearance = null!;
+    private ThemedWindows _themes = null!;
     private DemoEngine? _demoEngine;
     private EngineSupervisor? _supervisor;
     private BandroomController? _controller;
@@ -44,14 +50,21 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     private BandroomPaths _paths = BandroomPaths.ForCurrentUser();
     private EngineLog? _log;
     private bool _cuda;
+    private ModelDownloader? _downloads;
+    private string _hub = "";
+    private EngineLaunchConfig? _config;
+    private ComputerNameStore? _nameStore;
+    private string? _customName;
+    private readonly string _systemName = Machine.ComputerName();
+    /// <summary>A new name or key reaches the engine with a restart, done once nothing is being made.</summary>
+    private bool _restartWhenIdle;
 
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
         UnhandledException += (_, e) => WriteCrash(e.Exception);
+        // Themes are set per window (ThemedWindows), never here: Application.RequestedTheme can't change later.
         _theme = Option("--theme");
-        if (_theme is "light") RequestedTheme = ApplicationTheme.Light;
-        else if (_theme is "dark") RequestedTheme = ApplicationTheme.Dark;
         _demo = _args.Contains("--demo") || Option("--show") is not null;
         string lang = Option("--lang") ?? (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "nb" or "no" or "nn" ? "nb" : "en");
         _s = new ReswStrings(Path.Combine(AppContext.BaseDirectory, "Strings", lang == "nb" ? "nb-NO" : "en-US", "Resources.resw"), lang);
@@ -79,6 +92,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         _ui = DispatcherQueue.GetForCurrentThread();
+        StartAppearance();
         _vm = new FlyoutViewModel(_s, this, this);
         _vm.PropertyChanged += (_, e) =>
         {
@@ -98,7 +112,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
             WriteCrash(e); // no notification area: the window form still works
         }
 
-        _flyout = new FlyoutWindow(new BandroomPanel(_vm, this), () => _tray?.Bounds(), _theme);
+        _flyout = new FlyoutWindow(new BandroomPanel(_vm, this), () => _tray?.Bounds(), _themes);
         _flyout.Opened += () => { if (_controller is not null) { _controller.FlyoutOpen = true; _ = _controller.TickAsync(); } };
         _flyout.Closed2 += () => { if (_controller is not null) _controller.FlyoutOpen = false; };
         _flyout.EscapedToIcon += () => _tray?.Focus();
@@ -114,6 +128,22 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         if (!_demo && !background) OpenWindow();
     }
 
+    /// <summary>
+    /// Settings › Appearance (design/system.md §10): stored on this PC, applied to every window at once. A
+    /// Windows contrast theme always wins; the choice is kept for when it's turned off.
+    /// </summary>
+    private void StartAppearance()
+    {
+        _accessibility = new Windows.UI.ViewManagement.AccessibilitySettings();
+        AppearanceChoice? forced = _theme is null ? null : AppearanceRules.Parse(_theme);
+        // Sample-content runs never touch the user's stored choice.
+        var store = _demo ? null : new AppearanceStore(_paths.AppearanceFile);
+        _appearance = new AppearanceViewModel(_s, store, _accessibility.HighContrast, forced);
+        _themes = new ThemedWindows(_appearance.Resolved);
+        _appearance.ThemeChanged += _themes.Set;
+        _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
+    }
+
     // ----- Real mode -----
 
     private void StartForReal()
@@ -127,23 +157,40 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         foreach (var g in gpus) _log.Write($"bandroom: graphics {g.Description} vendor 0x{g.VendorId:X4} driver {g.DriverVersion} (NVIDIA {g.NvidiaDriver})");
         string pixi = FindPixi();
         string bundled = Environment.GetEnvironmentVariable("BRASSCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
-        string computer = Machine.ComputerName();
-        var config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda);
+        _nameStore = new ComputerNameStore(_paths.ComputerNameFile);
+        _customName = _nameStore.Load();
+        string computer = ComputerName.Shown(_systemName, _customName);
+        string? band = EngineLaunchConfig.FindBandSounds(AppContext.BaseDirectory);
+        _log.Write(band is null
+            ? "bandroom: band sounds missing next to the exe (band\\brasscribe-band.sf2); Studio plays General MIDI sounds"
+            : $"bandroom: band sounds {band}");
+        _config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda, band) { HuggingFaceToken = HuggingFaceKey.Read };
+        _hub = ModelCatalog.HubCache();
+        _downloads = new ModelDownloader(_paths.Models, _hub, HuggingFaceKey.Current) { Log = _log.Write };
+        _downloads.Changed += () => _controller?.Publish();
+        _downloads.Completed += () => _ui.TryEnqueue(() =>
+        {
+            var models = _controller?.CheckModels();
+            if (models?.IsReady == true) Announce(_s["Notify_Ready"]);
+            // The separators came without a key: ask for it now (a run that fails never completes, so no loop).
+            else if (models?.Missing is [ModelComponent.BandWriter] && HuggingFaceKey.Current() is null) _downloads.Start([ModelComponent.BandWriter]);
+            _controller?.Publish();
+        });
 
         _launcher = new JobObjectLauncher();
         _bootstrap = new Bootstrapper(_paths, bundled, pixi, _launcher, _log);
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
         IEngineApi ApiFor(int port) => new EngineApi(http, new Uri($"http://127.0.0.1:{port}/"), token);
         _supervisor = new EngineSupervisor(_launcher, new TcpPortProbe(),
-            async (port, ct) => await ApiFor(port).GetHealthAsync(ct), config.Build, _log,
+            async (port, ct) => await ApiFor(port).GetHealthAsync(ct), port => _config!.Build(port), _log,
             options: new SupervisorOptions { StatusFilePath = _paths.StatusFile });
 
         string runsOn = cudaGpu is { } gpu ? $"CUDA 12 · {gpu.Description}" : "CPU";
         _controller = new BandroomController(_supervisor, ApiFor, new WindowsMetrics(), _s, _paths,
             new MachineInfo(computer, _cuda ? "Health_Speed_Nvidia" : "Health_Speed_Cpu", runsOn, Machine.LanAddresses()))
         {
-            SetupComplete = _bootstrap.IsComplete(_cuda),
-            ModelsReady = () => _controller?.SetupComplete ?? false,
+            CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
+            Downloads = _downloads,
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));
@@ -156,8 +203,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
 
     private async Task RunAsync()
     {
-        _ = _controller!.RunAsync(_quit.Token);
-        if (!_bootstrap!.IsComplete(_cuda)) await SetupAsync();
+        // Hashes pixi.lock and walks the bundled workspace: off the UI thread, before the first snapshot.
+        bool complete = await _bootstrap!.IsCompleteAsync(_cuda);
+        _controller!.SetupComplete = complete;
+        _ = _controller.RunAsync(_quit.Token);
+        if (!complete) await SetupAsync();
         else await _supervisor!.StartAsync();
     }
 
@@ -176,6 +226,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
             await Task.Run(() => _bootstrap!.RunAsync(_cuda, progress, _quit.Token));
             _controller!.SetupComplete = true;
             await _supervisor!.StartAsync();
+            // The environments don't hold the model weights: fetch those now.
+            StartMissingDownloads();
         }
         catch (Exception e) when (e is BootstrapException or IOException or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
         {
@@ -214,6 +266,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     {
         _vm.Apply(snap);
         _tray?.Update(_vm.Badge, _vm.PieEighths, _vm.Tooltip);
+        if (_restartWhenIdle && !_vm.IsBusy && _supervisor?.State == EngineState.Running)
+        {
+            _restartWhenIdle = false;
+            _ = _supervisor.RestartAsync();
+        }
         if (!_trayLogged && _tray is not null)
         {
             _trayLogged = true;
@@ -260,6 +317,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
                     OpenPairWindow();
                     OnPairRequest(_demoEngine.AddRequest());
                     break;
+                case "settings":
+                    OpenSettings();
+                    break;
             }
         });
     }
@@ -289,7 +349,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     {
         if (_window is null)
         {
-            _window = new PanelWindow(new BandroomPanel(_vm, this), _s["WindowTitle"], _theme);
+            _window = new PanelWindow(new BandroomPanel(_vm, this), _s["WindowTitle"], _themes);
             _window.Closed += (_, _) => _window = null;
         }
         _window.Activate();
@@ -300,16 +360,20 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
     {
         if (_tray is null) return;
         bool running = _supervisor?.State is EngineState.Running or EngineState.Starting || _demo;
-        int chosen = _tray.ShowMenu(x, y,
-        [
+        var items = new List<(int, string?, bool)>
+        {
             (1, _s["Tray_Open"], true),
             (2, _s["Primary_Pair"], running),
             (0, null, true),
             (3, _s["Action_Restart"], running),
             (4, _s["Action_Stop"], running),
             (0, null, true),
-            (5, _s["More_Quit"], true),
-        ]);
+        };
+        // No setup window on Windows: the model download pauses and resumes here.
+        if (_downloads is { IsActive: true }) items.AddRange([(6, _s["Tray_PauseDownloads"], true), (0, null, true)]);
+        else if (_downloads is { Phase: DownloadPhase.Paused }) items.AddRange([(7, _s["Tray_ResumeDownloads"], true), (0, null, true)]);
+        items.Add((5, _s["More_Quit"], true));
+        int chosen = _tray.ShowMenu(x, y, [.. items]);
         switch (chosen)
         {
             case 1: _flyout?.ShowFlyout(); break;
@@ -317,6 +381,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
             case 3: _vm.RestartCommand.Execute(null); if (_vm.IsConfirmView) _flyout?.ShowFlyout(); break;
             case 4: _vm.StopCommand.Execute(null); if (_vm.IsConfirmView) _flyout?.ShowFlyout(); break;
             case 5: Quit(); break;
+            case 6: _downloads?.Pause(); break;
+            case 7: _downloads?.Resume(); break;
         }
     }
 
@@ -328,7 +394,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         if (_pairWindow is null)
         {
             var pair = new PairViewModel(_s, () => CurrentApi, this);
-            _pairWindow = new PairWindow(pair, _theme);
+            _pairWindow = new PairWindow(pair, _themes);
             _pairWindow.Closed += (_, _) => _pairWindow = null;
             _ = pair.OpenAsync();
         }
@@ -350,7 +416,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         }
         var pair = new PairViewModel(_s, () => CurrentApi, this);
         var vm = pair.AddRequest(r, Decide);
-        var w = new AllowWindow(vm, vm.Title, _theme);
+        var w = new AllowWindow(vm, vm.Title, _themes);
         w.Activate();
         Announce(_s.Format("Notify_PairRequest", r.Name));
     }
@@ -381,9 +447,32 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
     }
 
+    /// <summary>The environments first if they aren't all installed; else only the model downloads still missing.</summary>
     public void FinishSetup()
     {
-        if (_bootstrap is not null && _controller is not null && !_bootstrap.IsComplete(_cuda)) _ = SetupAsync();
+        if (_bootstrap is null || _controller is null) return;
+        _ = FinishSetupAsync(_bootstrap);
+    }
+
+    private async Task FinishSetupAsync(Bootstrapper bootstrap)
+    {
+        if (!await bootstrap.IsCompleteAsync(_cuda)) await SetupAsync();
+        else StartMissingDownloads();
+    }
+
+    /// <summary>
+    /// Fetches what ModelCheck finds missing. Without a Hugging Face key the separators still come; the band
+    /// writer then asks for the key on its own.
+    /// </summary>
+    private void StartMissingDownloads()
+    {
+        if (_downloads is null || _controller is null || _downloads.IsActive) return;
+        var missing = _controller.CheckModels().Missing;
+        if (HuggingFaceKey.Current() is null && missing.Any(c => !c.NeedsHuggingFaceKey()))
+            missing = missing.Where(c => !c.NeedsHuggingFaceKey()).ToList();
+        if (missing.Count == 0) return;
+        _log?.Write($"bandroom: downloading {string.Join(", ", missing)}");
+        _downloads.Start(missing);
     }
 
     public void Fix(ProblemKind problem)
@@ -392,9 +481,16 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
             ProblemKind.PublicNetwork => "ms-settings:network-status",
+            ProblemKind.MissingDownload => _downloads?.Error switch
+            {
+                DownloadError.LicenceNotAccepted => ModelComponent.BandWriter.Page().AbsoluteUri,
+                DownloadError.NotEnoughSpace => "ms-settings:storagesense",
+                _ => null,
+            },
             _ => null,
         };
         if (uri is not null) _ = Windows.System.Launcher.LaunchUriAsync(new Uri(uri));
+        else if (problem == ProblemKind.KeyRefused || (problem == ProblemKind.MissingDownload && _downloads?.Error is DownloadError.KeyMissing)) OpenSettings();
         else if (problem == ProblemKind.MissingDownload) FinishSetup();
     }
 
@@ -417,12 +513,71 @@ public partial class App : Application, IBandroomActions, IPanelHost, IAnnouncer
 
     public bool StartAtLoginChangeable => _startup.Changeable;
 
+    public void OpenSettings()
+    {
+        _flyout?.HideFlyout();
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(_appearance, this, this, _s, _themes);
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+        _settingsWindow.Activate();
+    }
+
     public void OpenRemoveSettings() => _ = Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:appsfeatures"));
+
+    // ----- ISettingsHost -----
+
+    public string SystemComputerName => _systemName;
+    public string? CustomComputerName => _customName;
+
+    public void SetCustomComputerName(string? name)
+    {
+        string? custom = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        if (custom == _customName) return;
+        _customName = custom;
+        // Sample-content runs keep the name in memory only.
+        if (_nameStore is not null && !_nameStore.Save(custom)) _log?.Write("bandroom: couldn't save the name shown to phones");
+        string shown = ComputerName.Shown(_systemName, custom);
+        if (_config is not null) _config = _config with { ComputerName = shown };
+        if (_controller is not null)
+        {
+            _controller.Machine = _controller.Machine with { ComputerName = shown };
+            _controller.Publish();
+        }
+        RestartWhenIdle();
+    }
+
+    public bool HuggingFaceKeyFromEnvironment => HuggingFaceKey.FromEnvironment() is not null;
+    public bool HuggingFaceKeySaved => !_demo && HuggingFaceKey.Read() is not null;
+
+    public bool SaveHuggingFaceKey(string key)
+    {
+        if (_demo) return true;
+        if (!HuggingFaceKey.Save(key)) { _log?.Write("bandroom: Credential Manager refused the Hugging Face key"); return false; }
+        _log?.Write("bandroom: Hugging Face key saved");
+        // A download that stopped for the key continues with it; the engine gets it as HF_TOKEN.
+        if (_downloads is { Phase: DownloadPhase.Failed or DownloadPhase.Idle or DownloadPhase.Done }) StartMissingDownloads();
+        RestartWhenIdle();
+        return true;
+    }
+
+    public void OpenModelPage() => _ = Windows.System.Launcher.LaunchUriAsync(ModelComponent.BandWriter.Page());
+
+    /// <summary>Restarts a running engine now if nothing is being made, else once the score is done.</summary>
+    private void RestartWhenIdle()
+    {
+        if (_supervisor?.State != EngineState.Running) return; // the next start reads the new settings
+        if (_vm.IsBusy) _restartWhenIdle = true;
+        else _ = _supervisor.RestartAsync();
+    }
 
     public async void Quit()
     {
         _quit.Cancel();
+        _downloads?.Pause(); // the .part files stay for the next start
         if (_supervisor is not null) await _supervisor.StopAsync();
+        _downloads?.Dispose();
         _launcher?.Dispose();
         _tray?.Dispose();
         KeepAwake.Set(false);

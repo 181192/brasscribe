@@ -92,40 +92,92 @@ def _nearest_octave(pitch: int, ranges: list[tuple[int, int]], prev: int | None)
     return None
 
 
+def _leap_cut(phrase: list[Note]) -> int:
+    """Index after the phrase's largest leap (ties go to the later leap)."""
+    return max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))[1]
+
+
 def _split_wide(phrase: list[Note], width: int) -> list[list[Note]]:
     """Split a phrase that spans more than `width` semitones at its largest leap, recursively,
     so each piece can take its own octave (the line changes octave where it jumps anyway)."""
     ps = [n.pitch for n in phrase]
     if len(phrase) < 4 or max(ps) - min(ps) <= width:
         return [phrase]
-    _, cut = max((abs(b.pitch - a.pitch), i + 1) for i, (a, b) in enumerate(zip(phrase, phrase[1:])))
+    cut = _leap_cut(phrase)
     return _split_wide(phrase[:cut], width) + _split_wide(phrase[cut:], width)
 
 
 def _place_line(notes: list[Note], part: Part, warnings: list[str], shift_extra: int = 0, prefer_low: bool = False,
                 bass_overflow_up: bool = False) -> list[Note]:
     inst = part.instrument
-    placed = []
+    placed: list[Note] = []
     phrases = _phrases(notes)
     if bass_overflow_up:
         width = inst.preferred[1] - inst.preferred[0]
         phrases = [q for ph in phrases for q in _split_wide(ph, width)]
     for phrase in phrases:
+        _place_phrase(phrase, part, warnings, shift_extra, prefer_low, bass_overflow_up, placed)
+    return _hold_small_gaps(placed)
+
+
+def _place_phrase(phrase: list[Note], part: Part, warnings: list[str], shift_extra: int, prefer_low: bool,
+                  bass_overflow_up: bool, placed: list[Note], split: bool = False, keep: int | None = None) -> int | None:
+    """Place one phrase at the best single octave; returns the octave shift used (None: per note).
+
+    A tune phrase no octave fits, but no wider than the placement limit, is split at its largest
+    leap and each piece placed on its own, keeping the previous piece's shift (`keep`) wherever it
+    fits: the line changes octave only where it jumps, so its contour is kept. Bass lines
+    (`prefer_low`), wider tune phrases and tune pieces under four notes are fitted note by note at
+    the octave nearest the previous note: their wide leaps are mostly tracker octave errors or
+    jumps between voices, which this folds back together.
+    """
+    inst = part.instrument
+    lo, hi = inst.placement_limit
+    pitches = [n.pitch + shift_extra for n in phrase]
+    if keep is not None and all(lo <= p + 12 * keep <= hi for p in pitches):
+        k = keep
+    else:
         prev = placed[-1].pitch if placed else None
-        k = _best_shift([n.pitch + shift_extra for n in phrase], *inst.preferred, inst.placement_limit, prefer_low, prev,
-                        bass_overflow_up=bass_overflow_up)
-        if k is None:
-            # No single octave fits the whole phrase: per note, the octave nearest the previous note.
-            for n in phrase:
-                p = _nearest_octave(n.pitch + shift_extra, [inst.preferred, inst.placement_limit], placed[-1].pitch if placed else None)
-                if p is None:
-                    warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
-                    continue
-                placed.append(_moved(n, p))
-            warnings.append(f"{part.name}: phrase at tick {phrase[0].start} needed per-note octave fitting")
+        k = _best_shift(pitches, *inst.preferred, inst.placement_limit, prefer_low, prev, bass_overflow_up=bass_overflow_up)
+    if k is not None:
+        placed.extend(_moved(n, p + 12 * k) for n, p in zip(phrase, pitches))
+        return k
+    if not prefer_low and len(phrase) >= 4 and (split or max(pitches) - min(pitches) <= hi - lo):
+        if not split:
+            warnings.append(f"{part.name}: phrase at tick {phrase[0].start} split at its leaps to fit the range")
+        cut = _leap_cut(phrase)
+        k = _place_phrase(phrase[:cut], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, True, keep)
+        return _place_phrase(phrase[cut:], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, True, k)
+    for n, p0 in zip(phrase, pitches):
+        p = _nearest_octave(p0, [inst.preferred, inst.placement_limit], placed[-1].pitch if placed else None)
+        if p is None:
+            warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
             continue
-        for n in phrase:
-            placed.append(_moved(n, n.pitch + shift_extra + 12 * k))
+        placed.append(_moved(n, p))
+    warnings.append(f"{part.name}: phrase at tick {phrase[0].start} needed per-note octave fitting")
+    return None
+
+
+def place_as_played(notes: list[Note], part: Part, warnings: list[str]) -> list[Note]:
+    """The player's own line written for their part, in the octave they played it.
+
+    A note keeps its octave while it is inside the instrument's professional range. A note outside
+    it (almost always a tracker octave error) moves by octaves into the comfortable range, else the
+    professional range, and each move is a warning. This writes down the player's notes; _place_line
+    arranges a heard line onto a part, which is another thing.
+    """
+    inst = part.instrument
+    lo, hi = inst.pro
+    placed = []
+    for n in sorted(notes, key=lambda n: n.start):
+        p = n.pitch
+        if not lo <= p <= hi:
+            p = inst.fit_octave(p)
+            if not lo <= p <= hi:
+                warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
+                continue
+            warnings.append(f"{part.name}: moved {n.pitch} to {p} at tick {n.start} (outside the range)")
+        placed.append(_moved(n, p))
     return _hold_small_gaps(placed)
 
 
@@ -350,7 +402,7 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = 
         pcs = sorted({n.pitch % 12 for n in sounding}
                      | {n.pitch % 12 for n in _sounding_at(melody, s)}
                      | {n.pitch % 12 for n in _sounding_at(bass, s)})
-        top = _sounding_at(arr.parts[lead.name], s)
+        top = _sounding_at(arr.parts[lead.name], s) if _tune_on_top(lineup) else []
         bot = _sounding_at(arr.parts[eb.name], s)
         ceiling = top[0].pitch if top else 90
         floor = bot[0].pitch if bot else 30
@@ -381,19 +433,85 @@ def arrange_composition(comp: Composition) -> Arrangement:
     Voices with layers: the layered arranger with the recorded lineup (default the band) and
     difficulty. Otherwise the minimal-band arranger, or the quartet when that is recorded.
     """
-    from .instruments import BRASS_BAND, QUARTET, lineup_by_name
+    difficulty = (comp.arrangement or {}).get("difficulty") or "faithful"
+    lineup, layered = composition_lineup(comp)
+    if not layered:
+        return arrange(comp, lineup, difficulty) if lineup is not MINIMAL_BAND else arrange(comp)
+    return arrange_layers(comp, lineup, difficulty=difficulty)
+
+
+def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
+    """The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether
+    the layered arranger makes it (its voices carry layers)."""
+    from .instruments import (BRASS_BAND, QUARTET, lead_lineup, lineup_by_name, lineup_key, seat_lineup, seat_part,
+                              with_reading)
 
     opts = comp.arrangement or {}
-    difficulty = opts.get("difficulty") or "faithful"
-    if not any(v.layer for v in comp.voices):
-        if opts.get("lineup") == "quartet":
-            return arrange(comp, QUARTET, difficulty)
-        return arrange(comp)
-    try:
-        lineup = lineup_by_name(opts.get("lineup"))
-    except ValueError:
-        lineup = BRASS_BAND
-    return arrange_layers(comp, lineup, difficulty=difficulty)
+    seat, reads = opts.get("seat"), opts.get("reads")
+    layered = any(v.layer for v in comp.voices)
+    if not layered:
+        lineup = QUARTET if opts.get("lineup") == "quartet" else MINIMAL_BAND
+    elif seat and is_solo_take(comp):
+        return seat_lineup(seat, reads), True
+    else:
+        try:
+            lineup = lineup_by_name(opts.get("lineup"))
+        except ValueError:
+            # Anything but a known lineup arranges for the band, as before lineups carried their roles.
+            lineup = BRASS_BAND
+    if seat:
+        lineup = with_reading(lineup, seat_part(lineup_key(lineup), seat).part, reads)
+        if opts.get("lead") == "seat":
+            try:
+                lineup = lead_lineup(lineup, seat)
+            except ValueError:
+                pass  # a lineup the tune cannot move in keeps its own lead
+    return lineup, layered
+
+
+# Where a part's notes come from (part_sources). The UI words never say "transcribed".
+YOUR_RECORDING = "your-recording"  # a solo take: the part carries the player's own line
+RECORDING = "recording"  # the part follows a line heard in a band recording
+ARRANGED = "arranged"  # voiced from the harmony, or doubling the tune
+
+
+def _has_notes(comp: Composition, *layers: str) -> bool:
+    return any(v.notes for v in comp.voices if v.layer in layers)
+
+
+def is_solo_take(comp: Composition) -> bool:
+    """A layered Composition with notes in its solo layer only: one player recorded alone."""
+    return any(v.layer for v in comp.voices) and _has_notes(comp, "solo") and \
+        not any(v.notes for v in comp.voices if v.layer != "solo")
+
+
+def part_sources(comp: Composition) -> dict[str, str]:
+    """Where each part of the Composition's arrangement comes from, in score order.
+
+    Derived, not stored: from the lineup's roles, the arranger that made it (layered or not)
+    and which layers have notes. `your-recording`: a solo take's line; `recording`: a line
+    heard in the recording (the tune, the bass line and its doublings, the countermelody from
+    the strings' top line, the drums); `arranged`: everything voiced from the harmony, and the
+    Soprano Cornet's doubling of the tune.
+    """
+    lineup, layered = composition_lineup(comp)
+    heard: set[str] = set()
+    if not layered:
+        heard |= {lineup.lead, lineup.bass, *([lineup.second_bass] if lineup.second_bass else [])}
+    elif is_solo_take(comp):
+        return {p.name: YOUR_RECORDING if p.name == lineup.lead else ARRANGED for p in lineup.parts}
+    else:
+        if _has_notes(comp, "solo"):
+            heard.add(lineup.lead)
+        if _has_notes(comp, "bass"):
+            heard |= {lineup.bass, *([lineup.second_bass] if lineup.second_bass else [])}
+            if not lineup.satb and lineup.has("Bass Trombone"):
+                heard.add("Bass Trombone")
+        if not lineup.satb and _has_notes(comp, "strings") and counter_part(lineup):
+            heard.add(counter_part(lineup))
+        if not lineup.satb and _has_notes(comp, "drums") and lineup.has("Percussion"):
+            heard.add("Percussion")
+    return {p.name: RECORDING if p.name in heard else ARRANGED for p in lineup.parts}
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +539,8 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
         return "solo"
     if name in (lineup.bass, lineup.second_bass):
         return "bass"
+    if name in BAND_LEADS:  # the band's usual lead, with the tune on the player's part (lead="seat")
+        return "strings"
     if lineup.satb:
         return "strings"
     if name in PAD_PARTS or name == "Euphonium":
@@ -432,6 +552,23 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
     if name == "Percussion":
         return "drums"
     return None
+
+
+BAND_LEADS = ("Solo Cornet",)  # the band lineups' own lead
+
+
+def counter_part(lineup: Lineup) -> str | None:
+    """The part that plays the countermelody: the Euphonium, or with the tune on it, Solo Horn, then 1st Baritone."""
+    if lineup.lead != "Euphonium":
+        return "Euphonium" if lineup.has("Euphonium") else None
+    return next((n for n in ("Solo Horn", "1st Baritone") if lineup.has(n)), None)
+
+
+def _tune_on_top(lineup: Lineup) -> bool:
+    """The tune's part sits on top of the band (a cornet or flugelhorn), so the inner parts go under it."""
+    from .instruments import TOP_INSTRUMENTS
+
+    return lineup.lead_part.instrument.id in TOP_INSTRUMENTS
 
 
 PAD_PARTS = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"]
@@ -565,6 +702,11 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
 
     lead = lineup.lead
     solo = _layer(comp, "solo")
+    if lineup.as_played:
+        # A solo take for the player's seat: their own line in their octave, and nothing else.
+        arr.parts[lead] = place_as_played(solo, lineup.lead_part, arr.warnings)
+        arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
+        return arr
     arr.parts[lead] = _place_line(solo, lineup.lead_part, arr.warnings)
 
     bass = _layer(comp, "bass")
@@ -602,19 +744,23 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
             arr.warnings.append(f"{lineup.name}: drums left out (no percussion part)")
         arr.parts = _inner_difficulty(arr, difficulty)
         return arr
-    if "Euphonium" in names:
-        euph = lineup.by_name("Euphonium")
-        arr.parts[euph.name] = _place_smooth(counter, euph)
+    cm = counter_part(lineup)
+    if cm is not None:
+        arr.parts[cm] = _place_smooth(counter, lineup.by_name(cm))
 
+    # With the tune on the player's part (lead="seat"), the band's own lead joins the pads, and the
+    # inner parts keep under the tune only while it is on top.
+    ceiling = arr.parts[lead] if _tune_on_top(lineup) else []
+    pads = [p for p in BAND_LEADS if p in names and p != lead] + [p for p in PAD_PARTS if p in names and p not in (lead, cm)]
     pad_slots = harmony_slots(strings + keys, end)
     if figuration:
         pad_slots = _figurate(pad_slots, [n.start for n in strings + keys])
-    _voice_layer(arr, pad_slots, [p for p in PAD_PARTS if p in names], arr.parts[lead], arr.parts[eb.name], 76, 0.8)
+    _voice_layer(arr, pad_slots, pads, ceiling, arr.parts[eb.name], 76, 0.8)
 
     choir_slots = harmony_slots(brass, end, max_pcs=3)
     if figuration:
         choir_slots = _figurate(choir_slots, [n.start for n in brass])
-    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names], arr.parts[lead], arr.parts[eb.name],
+    _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names and p != lead], ceiling, arr.parts[eb.name],
                  79, 0.8)
 
     # Bass trombone reinforces the bass line only while the brass choir is playing.
@@ -624,7 +770,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         tutti = [n for n in bass if any(s <= n.start < e for s, e in active)]
         arr.parts[btb.name] = _place_line(tutti, btb, arr.warnings, prefer_low=True)
 
-    if soprano and "Soprano Cornet" in names:
+    if soprano and "Soprano Cornet" in names and lead in BAND_LEADS:
         arr.parts["Soprano Cornet"] = _soprano_doubling(arr.parts[lead], lineup.by_name("Soprano Cornet"),
                                                         _climax_spans(comp))
 

@@ -3,7 +3,7 @@
 import type {
   AdapterInfo, AudioRef, BenchRun, Comparison, Composition, ConformanceReport, ConformanceRun, DatasetInfo, Health, Job, JobCreate,
   JobEvent, Manifest, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
-  SuiteRun, ValidationIssue,
+  SuiteRun, ValidationIssue, PartSources,
 } from "./types";
 
 /** The engine answered 404 for a route it does not have (as opposed to a missing resource). */
@@ -129,7 +129,7 @@ export const api = {
     return send<AudioRef>("POST", "/v1/audio", fd);
   },
   // Fields the engine defaults (difficulty, muscriptor, lineup…) may be left out.
-  createJob: (body: Omit<JobCreate, "difficulty" | "muscriptor"> & Partial<Pick<JobCreate, "difficulty" | "muscriptor">>) =>
+  createJob: (body: Omit<JobCreate, "difficulty" | "muscriptor" | "lead"> & Partial<Pick<JobCreate, "difficulty" | "muscriptor" | "lead">>) =>
     send<Job>("POST", "/v1/jobs", body as JobCreate),
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),
@@ -151,6 +151,7 @@ export const api = {
   roundtrip: (id: string) => get<RoundTrip>(`/v1/jobs/${enc(id)}/roundtrip`, "GET /v1/jobs/{id}/roundtrip"),
   runRoundtrip: (id: string) => send<RoundTrip>("POST", `/v1/jobs/${enc(id)}/roundtrip`, undefined, "POST /v1/jobs/{id}/roundtrip"),
   validation: (id: string) => get<ValidationIssue[]>(`/v1/jobs/${enc(id)}/validation`, "GET /v1/jobs/{id}/validation"),
+  partSources: (id: string) => get<PartSources>(`/v1/jobs/${enc(id)}/part-sources`, "GET /v1/jobs/{id}/part-sources"),
   suiteHistory: (suite?: string) =>
     get<SuiteRun[]>(`/v1/suites/history?limit=500${suite ? `&suite=${enc(suite)}` : ""}`, "GET /v1/suites/history"),
   adapters: () => get<AdapterInfo[]>("/v1/registry/adapters", "GET /v1/registry/adapters"),

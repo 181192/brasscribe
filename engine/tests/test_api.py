@@ -173,3 +173,47 @@ def test_pairing_state_says_when_wrong_codes_have_locked_it(client):
     assert client.get("/v1/pairing").json()["locked_until"]
     client.app.state.pairing.locked_until = 0
     assert client.get("/v1/pairing").json()["locked_until"] is None
+
+
+def test_band_sounds_dir_is_served_to_studio(settings, tmp_path):
+    band = tmp_path / "band"
+    band.mkdir()
+    (band / "brasscribe-band.sf2").write_bytes(b"RIFF-fake-sf2")
+    (band / "mapping.json").write_text('{"parts": {}}')
+    settings.band_sounds_dir = band
+    with TestClient(create_app(settings)) as c:
+        r = c.get("/assets/band/brasscribe-band.sf2")
+        assert r.status_code == 200 and r.content == b"RIFF-fake-sf2"
+        assert c.get("/assets/band/mapping.json").json() == {"parts": {}}
+        assert c.get("/v1/health").status_code == 200  # the API still answers beside the static mounts
+
+
+def test_static_files_say_how_long_to_cache(settings, tmp_path):
+    from brasscribe_engine.api import BAND_SOUNDS_CACHE, STATIC, STUDIO_CACHE
+
+    band = tmp_path / "band"
+    band.mkdir()
+    (band / "brasscribe-band.sf2").write_bytes(b"RIFF-fake-sf2")
+    (band / "mapping.json").write_text('{"parts": {}}')
+    settings.band_sounds_dir = band
+    with TestClient(create_app(settings)) as c:
+        r = c.get("/assets/band/brasscribe-band.sf2")
+        assert r.headers["cache-control"] == BAND_SOUNDS_CACHE and r.headers["etag"]
+        again = c.get("/assets/band/brasscribe-band.sf2", headers={"If-None-Match": r.headers["etag"]})
+        assert again.status_code == 304 and again.content == b""
+        assert again.headers["cache-control"] == BAND_SOUNDS_CACHE
+        if (STATIC / "index.html").is_file():
+            page = c.get("/")
+            assert page.status_code == 200 and page.headers["cache-control"] == STUDIO_CACHE
+        assert "cache-control" not in c.get("/v1/health").headers  # the API is not affected
+
+
+def test_band_sounds_dir_without_the_soundfont_is_skipped(settings, tmp_path, capsys):
+    from brasscribe_engine.api import STATIC
+
+    settings.band_sounds_dir = tmp_path / "empty"
+    settings.band_sounds_dir.mkdir()
+    with TestClient(create_app(settings)) as c:
+        if not (STATIC / "assets" / "band").exists():  # a local Studio build may carry its own copy
+            assert c.get("/assets/band/brasscribe-band.sf2").status_code == 404
+    assert "Studio plays General MIDI sounds" in capsys.readouterr().err

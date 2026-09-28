@@ -24,9 +24,11 @@ interface EngineApi {
     suspend fun pollPairingRequest(requestId: String): PairRequestResult
     suspend fun profiles(): List<ProfileInfo>
 
-    suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef
+    /** Streams [source] to the engine; [onProgress] reports bytes sent. */
+    suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress = { _, _ -> }): AudioRef
     suspend fun createJob(request: JobCreate): Job
-    suspend fun createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean = true): Job
+    suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean = true,
+                                    onProgress: UploadProgress = { _, _ -> }): Job
     suspend fun job(jobId: String): Job
     suspend fun jobs(): List<Job>
     suspend fun cancel(jobId: String): Job
@@ -73,6 +75,7 @@ interface EngineApi {
 
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(
+            "getPartSources",
             "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",

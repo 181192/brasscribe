@@ -5,6 +5,7 @@ import pytest
 from brasscribe_engine import stages as S
 from brasscribe_engine.adapters import AdapterRegistry
 from brasscribe_engine.cache import ArtifactCache
+from brasscribe_engine.gpulock import is_locked
 from brasscribe_engine.dag import SOURCE, Cancelled, Executor, Input, Pipeline, Stage, StageFailed
 from brasscribe_engine.hashing import HashIndex
 
@@ -101,7 +102,7 @@ def test_heavy_adapter_refused_without_heavy(settings, audio, tmp_path):
         run(settings, audio, tmp_path, "r1", pipeline=p, allow_heavy=False)
     r, _ = run(settings, audio, tmp_path, "r2", pipeline=p)
     assert r["transcribe.mix.muscriptor"].status == "ran"
-    assert not settings.gpu_lock.exists()  # mutex released
+    assert not is_locked(settings.gpu_lock)  # mutex released
     r, _ = run(settings, audio, tmp_path, "r3", pipeline=p, allow_heavy=False)
     assert r["transcribe.mix.muscriptor"].status == "cached"
 

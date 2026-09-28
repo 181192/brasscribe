@@ -72,16 +72,22 @@ class StageResult:
     key: str
     out_dir: Path
     files: dict[str, str]
-    seconds: float = 0.0
+    seconds: float = 0.0  # wall clock: queue_wait_s + run_s
+    queue_wait_s: float = 0.0  # waiting for the machine-wide GPU mutex
     inputs: dict[str, str] = field(default_factory=dict)
     adapter: dict | None = None
     provenance: dict = field(default_factory=dict)
     matches_cache: bool | None = None
     error: str | None = None
 
+    @property
+    def run_s(self) -> float:
+        return max(0.0, self.seconds - self.queue_wait_s)
+
     def record(self) -> dict:
         d = {"stage": self.stage, "kind": self.kind, "status": self.status, "key": self.key,
-             "seconds": round(self.seconds, 3), "inputs": self.inputs, "outputs": self.files,
+             "seconds": round(self.seconds, 3), "queue_wait_s": round(self.queue_wait_s, 3),
+             "run_s": round(self.run_s, 3), "inputs": self.inputs, "outputs": self.files,
              "outputs_digest": digest_of_files(self.files) if self.files else None}
         if self.adapter:
             d["adapter"] = self.adapter
@@ -119,13 +125,14 @@ class StageContext:
         self.executor.emit({"type": "log", "stage": self.stage.name, "message": message})
 
     def adapter(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None) -> float:
-        return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log)
+        return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log,
+                                          waited=lambda s: self.executor.add_wait(self.stage.name, s))
 
 
 class Executor:
     def __init__(self, cache: ArtifactCache, adapters: AdapterRegistry, emit: Callable[[dict], None] | None = None,
                  reuse_dir: Path | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
-                 cancel: threading.Event | None = None):
+                 cancel: threading.Event | None = None, parallelism: int = 1):
         self.cache = cache
         self.adapters = adapters
         self._emit = emit or (lambda e: None)
@@ -134,9 +141,24 @@ class Executor:
         self.cold = cold or set()
         self.cancel = cancel or threading.Event()
         self._fingerprints: dict[tuple, str] = {}
+        self._waits: dict[str, float] = {}
+        self._waits_lock = threading.Lock()
+        # Stages that may run at once (BRASSCRIBE_STAGE_PARALLELISM); 1 runs them in pipeline order.
+        self.parallelism = max(1, int(parallelism))
+        self._emit_lock = threading.RLock()
+
+    def add_wait(self, stage: str, seconds: float) -> None:
+        """Time a stage spent waiting for the GPU mutex; kept apart from the time it ran."""
+        with self._waits_lock:
+            self._waits[stage] = self._waits.get(stage, 0.0) + seconds
+
+    def _take_wait(self, stage: str) -> float:
+        with self._waits_lock:
+            return self._waits.pop(stage, 0.0)
 
     def emit(self, event: dict) -> None:
-        self._emit({"time": time.time(), **event})
+        with self._emit_lock:  # stages running side by side share the event log
+            self._emit({"time": time.time(), **event})
 
     def _is_cold(self, stage: Stage) -> bool:
         return any(c in ("all", stage.name, stage.kind) or (c.endswith("*") and stage.name.startswith(c[:-1])) for c in self.cold)
@@ -180,70 +202,136 @@ class Executor:
 
     def run(self, pipeline: Pipeline, source: Path, run_dir: Path) -> dict[str, StageResult]:
         source = Path(source)
-        source_digest = self.cache.hashes.file(source)
-        stages_dir = Path(run_dir) / "stages"
+        self._source = source
+        self._source_digest = self.cache.hashes.file(source)
+        self._stages_dir = Path(run_dir) / "stages"
+        self._total = len(pipeline.stages)
+        self._done = 0
         results: dict[str, StageResult] = {}
         self.results = results
-        total = len(pipeline.stages)
-        for index, stage in enumerate(pipeline.stages):
-            if self.cancel.is_set():
-                raise Cancelled("cancelled")
-            inputs: dict[str, Path] = {}
-            digests: dict[str, str] = {}
-            for name, inp in stage.inputs.items():
-                if inp.stage == SOURCE:
-                    inputs[name], digests[name] = source, source_digest
-                    continue
-                up = results[inp.stage]
-                if inp.file:
-                    inputs[name], digests[name] = up.out_dir / inp.file, up.files[inp.file]
-                else:
-                    inputs[name], digests[name] = up.out_dir, digest_of_files(up.files)
-            key = self.key(stage, digests)
-            out = stages_dir / stage.name
-            adapter = self.adapters.describe(stage.adapter) if stage.adapter else None
-            self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "started", "key": key,
-                       "fraction": round(index / total, 4)})
-            res = StageResult(stage.name, stage.kind, "failed", key, out, {}, inputs=digests, adapter=adapter)
-            t0 = time.time()
-            try:
-                entry = self.cache.lookup(key)
-                cold = self._is_cold(stage)
-                if entry and not cold:
-                    self._materialize(entry, out)
-                    res.status, res.files, res.provenance = "cached", entry.files, entry.provenance
-                else:
-                    cand = None if cold or entry else self._reuse_candidate(stage, pipeline, results, source_digest)
-                    if cand:
-                        base, files = cand
-                        entry = self.cache.store(key, stage.name, base, files, {"imported_from": str(base)})
-                        self._materialize(entry, out)
-                        res.status, res.files, res.provenance = "imported", entry.files, entry.provenance
-                    else:
-                        res.files = self._execute(stage, out, inputs)
-                        res.status = "ran"
-                        if entry:
-                            res.matches_cache = self._equivalent(out, res.files, entry)
-                            res.provenance = {"compared_with_cache": key}
-                        else:
-                            self.cache.store(key, stage.name, out, list(res.files), {"ran": True})
-            except Exception as e:  # noqa: BLE001 - reported on the stage, then re-raised
-                res.seconds = time.time() - t0
-                res.error = f"{type(e).__name__}: {e}"
-                results[stage.name] = res
-                self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed",
-                           "error": res.error, "trace": traceback.format_exc(limit=5)})
-                raise StageFailed(stage.name, res.error) from e
-            res.seconds = time.time() - t0
-            results[stage.name] = res
-            event = {"type": "stage", "stage": stage.name, "kind": stage.kind, "status": res.status,
-                     "seconds": round(res.seconds, 3), "key": key, "fraction": round((index + 1) / total, 4)}
-            if adapter:
-                event["device"] = adapter["device"]
-            if res.matches_cache is not None:
-                event["matches_cache"] = res.matches_cache
-            self.emit(event)
+        if self.parallelism <= 1:
+            for stage in pipeline.stages:
+                if self.cancel.is_set():
+                    raise Cancelled("cancelled")
+                self._run_stage(stage, pipeline, results)
+            return results
+        try:
+            self._run_parallel(pipeline, results)
+        finally:
+            # The manifest lists stages in pipeline order, whatever order they finished in.
+            ordered = {s.name: results[s.name] for s in pipeline.stages if s.name in results}
+            results.clear()
+            results.update(ordered)
         return results
+
+    def _heavy(self, stage: Stage) -> bool:
+        return bool(stage.adapter) and self.adapters.get(stage.adapter).heavy
+
+    def _run_parallel(self, pipeline: Pipeline, results: dict[str, StageResult]) -> None:
+        """Up to `parallelism` stages at once, each as soon as its inputs are done. At most one stage
+        with a heavy (GPU) adapter runs at a time: the others would only wait for the GPU mutex in a
+        worker slot a CPU stage could use."""
+        from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+
+        pending = list(pipeline.stages)
+        running: dict[Future, Stage] = {}
+        failure: BaseException | None = None
+        with ThreadPoolExecutor(max_workers=self.parallelism, thread_name_prefix="brasscribe-stage") as pool:
+            while pending or running:
+                if failure is None and not self.cancel.is_set():
+                    heavy_busy = any(self._heavy(st) for st in running.values())
+                    for stage in list(pending):
+                        if len(running) >= self.parallelism:
+                            break
+                        if any(inp.stage != SOURCE and inp.stage not in results for inp in stage.inputs.values()):
+                            continue
+                        if self._heavy(stage):
+                            if heavy_busy:
+                                continue
+                            heavy_busy = True
+                        pending.remove(stage)
+                        running[pool.submit(self._run_stage, stage, pipeline, results)] = stage
+                if not running:
+                    break
+                done, _ = wait(running, return_when=FIRST_COMPLETED)
+                for f in done:
+                    running.pop(f)
+                    if f.exception() is not None and failure is None:
+                        failure = f.exception()
+        if failure is not None:
+            raise failure
+        if self.cancel.is_set() and pending:
+            raise Cancelled("cancelled")
+        if pending:  # an input that no stage produces
+            raise StageFailed(pending[0].name, "inputs never became available")
+
+    def _run_stage(self, stage: Stage, pipeline: Pipeline, results: dict[str, StageResult]) -> StageResult:
+        source, source_digest, stages_dir, total = self._source, self._source_digest, self._stages_dir, self._total
+        inputs: dict[str, Path] = {}
+        digests: dict[str, str] = {}
+        for name, inp in stage.inputs.items():
+            if inp.stage == SOURCE:
+                inputs[name], digests[name] = source, source_digest
+                continue
+            up = results[inp.stage]
+            if inp.file:
+                inputs[name], digests[name] = up.out_dir / inp.file, up.files[inp.file]
+            else:
+                inputs[name], digests[name] = up.out_dir, digest_of_files(up.files)
+        key = self.key(stage, digests)
+        out = stages_dir / stage.name
+        adapter = self.adapters.describe(stage.adapter) if stage.adapter else None
+        with self._emit_lock:
+            started_fraction = round(self._done / total, 4)
+        self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "started", "key": key,
+                   "fraction": started_fraction})
+        res = StageResult(stage.name, stage.kind, "failed", key, out, {}, inputs=digests, adapter=adapter)
+        t0 = time.time()
+        try:
+            entry = self.cache.lookup(key)
+            cold = self._is_cold(stage)
+            if entry and not cold:
+                self._materialize(entry, out)
+                res.status, res.files, res.provenance = "cached", entry.files, entry.provenance
+            else:
+                cand = None if cold or entry else self._reuse_candidate(stage, pipeline, results, source_digest)
+                if cand:
+                    base, files = cand
+                    entry = self.cache.store(key, stage.name, base, files, {"imported_from": str(base)})
+                    self._materialize(entry, out)
+                    res.status, res.files, res.provenance = "imported", entry.files, entry.provenance
+                else:
+                    res.files = self._execute(stage, out, inputs)
+                    res.status = "ran"
+                    if entry:
+                        res.matches_cache = self._equivalent(out, res.files, entry)
+                        res.provenance = {"compared_with_cache": key}
+                    else:
+                        self.cache.store(key, stage.name, out, list(res.files), {"ran": True})
+        except Exception as e:  # noqa: BLE001 - reported on the stage, then re-raised
+            res.seconds = time.time() - t0
+            res.queue_wait_s = min(self._take_wait(stage.name), res.seconds)
+            res.error = f"{type(e).__name__}: {e}"
+            with self._emit_lock:
+                results[stage.name] = res
+            self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed",
+                       "error": res.error, "trace": traceback.format_exc(limit=5)})
+            raise StageFailed(stage.name, res.error) from e
+        res.seconds = time.time() - t0
+        res.queue_wait_s = min(self._take_wait(stage.name), res.seconds)
+        with self._emit_lock:
+            results[stage.name] = res
+            self._done += 1
+            done_fraction = round(self._done / total, 4)
+        event = {"type": "stage", "stage": stage.name, "kind": stage.kind, "status": res.status,
+                 "seconds": round(res.seconds, 3), "queue_wait_s": round(res.queue_wait_s, 3),
+                 "run_s": round(res.run_s, 3), "key": key, "fraction": done_fraction}
+        if adapter:
+            event["device"] = adapter["device"]
+        if res.matches_cache is not None:
+            event["matches_cache"] = res.matches_cache
+        self.emit(event)
+        return res
 
     def _equivalent(self, out: Path, files: dict[str, str], entry: Entry) -> bool:
         """Same files with the same content; MusicXML is compared after canonicalising

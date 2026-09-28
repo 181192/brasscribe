@@ -195,7 +195,7 @@ class PlayFlowA11yTest {
         }
     }
 
-    /** Full screen on a music stand: the score alone, with only the transport left. */
+    /** The music stand from the View menu: the score alone, the stand's controls, and none of the practice chrome. */
     @Test
     fun fullScreenLeavesOnlyTheScoreAndTheTransport() {
         openOldHundredth()
@@ -211,11 +211,12 @@ class PlayFlowA11yTest {
         rule.onNodeWithTag("performance").performClick()
         rule.waitForIdle()
 
-        // The score and the transport stay; every other control goes.
+        // The score, the stand's layer (paused, so it shows) and Leave stay; the toolbar and the practice chips go.
         rule.onNodeWithTag("score-view").assertExists()
+        rule.onNodeWithTag("stand-score").assertExists()
         rule.onNodeWithTag("play").assertExists().assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("performance-exit").assertExists().assertHeightIsAtLeast(48.dp)
-        for (gone in listOf("Read aloud", "Metronome", "Count-in", "Mute my part", "Speed 100%")) {
+        for (gone in listOf("Read aloud", "Metronome", "Count-in", "Mute my part", "As written", "Concert")) {
             rule.onAllNodesWithText(gone).assertCountEquals(0)
         }
         rule.onRoot().tryPerformAccessibilityChecks()

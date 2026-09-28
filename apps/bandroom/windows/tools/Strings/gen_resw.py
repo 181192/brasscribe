@@ -69,6 +69,7 @@ ROWS = [
     ("Health_Ready", "Ready to make scores", "Klar til å lage partitur"),
     ("Health_Ready_Yes", "Ready", "Klar"),
     ("Health_Ready_Missing", "Missing one download", "Mangler én nedlasting"),
+    ("Health_Ready_MissingMany", "Missing {0} downloads", "Mangler {0} nedlastinger"),
     ("Health_Speed_Gpu", "Uses the graphics chip", "Bruker grafikkbrikken"),
     ("Health_Speed_Nvidia", "Uses the graphics card (NVIDIA)", "Bruker grafikkortet (NVIDIA)"),
     ("Health_Speed_Cpu", "Processor only: slower", "Bare prosessoren: tregere"),
@@ -84,7 +85,25 @@ ROWS = [
     ("More_About", "About Brasscribe Bandroom", "Om Brasscribe Bandroom"),
     ("More_Remove", "Remove Brasscribe from this PC…", "Fjern Brasscribe fra denne PC-en …"),
     ("More_Quit", "Quit Brasscribe Bandroom", "Avslutt Brasscribe Bandroom"),
+    # Settings (the settings.* rows) and Appearance (design/system.md §10)
+    ("Settings_Title", "Settings", "Innstillinger"),
+    ("Settings_Login", "Start when I log in", "Start når jeg logger på"),
+    ("Settings_Name", "Name shown to phones", "Navnet telefonene ser"),
+    ("Settings_Name_Note", "Phones list this PC as “Brasscribe on {0}”.", "Telefonene viser denne PC-en som «Brasscribe på {0}»."),
+    ("Settings_Name_Use", "Use this name", "Bruk dette navnet"),
+    ("Settings_Hf", "Hugging Face access", "Tilgang til Hugging Face"),
+    ("Settings_Hf_Note", "Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in Windows Credential Manager.", "Brasscribe bruker nøkkelen bare til å laste ned bandskriveren fra Hugging Face, og oppbevarer den i Legitimasjonsbehandling i Windows."),  # (+) the macOS copy, Keychain → Credential Manager
+    ("Settings_Hf_Saved", "The key is saved in Credential Manager.", "Nøkkelen er lagret i Legitimasjonsbehandling."),  # (+)
+    ("Settings_Hf_FromEnvironment", "Brasscribe uses the HF_TOKEN key set on this PC.", "Brasscribe bruker HF_TOKEN-nøkkelen som er satt på denne PC-en."),  # (+)
+    ("Settings_Save", "Save", "Lagre"),  # (+)
+    ("Appearance_Title", "Appearance", "Utseende"),  # (+) design/system.md §10
+    ("Appearance_System", "Match system", "Følg systemet"),  # (+)
+    ("Appearance_Light", "Light", "Lyst"),  # (+)
+    ("Appearance_Dark", "Dark", "Mørkt"),  # (+)
+    ("Appearance_Contrast", "Your contrast theme is on, so Windows chooses the colours.", "Kontrasttemaet ditt er på, så Windows velger fargene."),  # (+)
     ("Tray_Open", "Open", "Åpne"),
+    ("Tray_PauseDownloads", "Pause the downloads", "Sett nedlastingene på pause"),  # (+) no setup window on Windows
+    ("Tray_ResumeDownloads", "Resume the downloads", "Fortsett nedlastingene"),  # (+)
     ("Tech_Summary", "Details for the band's tech person", "Detaljer for den tekniske i bandet"),
     ("Tech_Address", "Address", "Adresse"),
     ("Tech_Port", "Port", "Port"),  # (+)
@@ -151,7 +170,25 @@ ROWS = [
     ("Setup_3_Title", "Downloading what Brasscribe needs", "Laster ned det Brasscribe trenger"),
     ("Setup_3_Leave", "You can close this window. Brasscribe keeps downloading and tells you when it's ready.", "Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart."),
     ("Setup_Step", "{0} of {1}", "{0} av {1}"),  # (+) environments done while the size is unknown
+    ("Setup_3_Progress", "{0} of {1} GB · about {2} min left", "{0} av {1} GB · omtrent {2} min igjen"),
+    ("Setup_3_Amount", "{0} of {1} GB", "{0} av {1} GB"),  # (+) before the time left is known
+    ("Setup_3_Paused", "Paused · {0} of {1} GB", "På pause · {0} av {1} GB"),
+    ("Setup_3_NoKey_Title", "The band writer needs your Hugging Face access key", "Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face"),
+    ("Setup_3_NoKey_Why", "Add the key, then try again. The instrument separators download without it.", "Legg til nøkkelen, og prøv igjen. Instrumentskillerne lastes ned uten den."),
+    ("Setup_3_NoKey_Fix", "Add an access key", "Legg til en tilgangsnøkkel"),
+    ("Setup_3_Licence_Title", "Accept the licence on Hugging Face, then try again", "Godta lisensen på Hugging Face, og prøv igjen"),
+    ("Setup_3_Licence_Why", "Signed in, but the licence isn't accepted yet. Choose Agree on the MuScriptor page.", "Du er logget inn, men lisensen er ikke godtatt ennå. Velg Agree på MuScriptor-siden."),
+    ("Setup_3_Licence_Fix", "Open the MuScriptor page", "Åpne MuScriptor-siden"),
+    ("Setup_3_Space_Title", "Not enough space", "Ikke nok plass"),
+    ("Setup_3_Space_Why", "The downloads need about {0} GB; {1} GB is free.", "Nedlastingene trenger omtrent {0} GB, og {1} GB er ledig."),
+    ("Setup_3_Damaged_Title", "A download arrived damaged", "En nedlasting kom fram skadet"),
+    ("Setup_3_Damaged_Why", "Brasscribe deleted it. Try again to fetch it afresh.", "Brasscribe har slettet den. Prøv igjen for å hente den på nytt."),
+    ("Setup_3_Network_Title", "The download stopped", "Nedlastingen stoppet"),
+    ("Setup_3_Network_Why", "Check the internet connection, then try again. It continues where it stopped.", "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet."),
+    ("Setup_3_Disk_Title", "Brasscribe couldn't save the download", "Brasscribe fikk ikke lagret nedlastingen"),  # (+) mac setup window
+    ("Setup_2_Key_Label", "Access key from Hugging Face", "Tilgangsnøkkel fra Hugging Face"),
     ("Setup_Item_Listening", "Listening tools", "Lytteverktøy"),
+    ("Setup_Item_Soloist", "Soloist separator", "Solistskiller"),
     ("Setup_Item_BandWriter", "Band writer (MuScriptor)", "Bandskriver (MuScriptor)"),
     ("Setup_Item_Separator", "Instrument separator", "Instrumentskiller"),
     ("Setup_Item_BeatFinder", "Beat finder", "Taktfinner"),
@@ -170,6 +207,17 @@ ROWS = [
     ("Disk_Fix", "Free up space…", "Frigjør plass …"),
     ("Download_Title", "Full-band scores need one more step", "Partitur for fullt band trenger ett steg til"),
     ("Download_Why", "The band writer isn't downloaded yet.", "Bandskriveren er ikke lastet ned ennå."),
+    ("Download_Why_Soloist", "The soloist separator isn't downloaded yet.", "Solistskilleren er ikke lastet ned ennå."),
+    ("Download_Why_Instrument", "The instrument separator isn't downloaded yet.", "Instrumentskilleren er ikke lastet ned ennå."),
+    ("Download_Why_Many", "{0} aren't downloaded yet.", "{0} er ikke lastet ned ennå."),
+    ("Download_Why_Tools", "Brasscribe's own tools aren't installed yet.", "Verktøyene til Brasscribe er ikke installert ennå."),
+    ("Model_Soloist", "the soloist separator", "solistskilleren"),  # (+) download.why's list
+    ("Model_Instrument", "the instrument separator", "instrumentskilleren"),  # (+)
+    ("Model_BandWriter", "the band writer", "bandskriveren"),  # (+)
+    ("List_And", "{0} and {1}", "{0} og {1}"),  # (+) "a, b and c"
+    ("Key_Title", "Hugging Face didn't accept the access key", "Hugging Face godtok ikke tilgangsnøkkelen"),
+    ("Key_Why", "The key may have been deleted or have expired.", "Nøkkelen kan være slettet eller utløpt."),
+    ("Key_Paste", "Paste a new key", "Lim inn en ny nøkkel"),
     ("Port_Title", "Brasscribe can't start", "Brasscribe kan ikke starte"),
     ("Port_Why", "Another program on this computer is in the way.", "Et annet program på denne datamaskinen står i veien."),
     ("Error_Title", "Brasscribe stopped unexpectedly", "Brasscribe stoppet uventet"),

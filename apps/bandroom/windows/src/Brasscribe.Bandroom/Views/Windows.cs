@@ -27,12 +27,6 @@ internal static class WindowSizing
         Native.GetMonitorInfo(mon, ref info);
         return info.rcWork;
     }
-
-    public static void Theme(FrameworkElement root, string? theme)
-    {
-        if (theme is "light") root.RequestedTheme = ElementTheme.Light;
-        else if (theme is "dark") root.RequestedTheme = ElementTheme.Dark;
-    }
 }
 
 /// <summary>
@@ -45,13 +39,13 @@ internal sealed class FlyoutWindow : Window
     private readonly Func<Native.RECT?> _anchor;
     private readonly ScrollViewer _scroll;
 
-    public FlyoutWindow(BandroomPanel panel, Func<Native.RECT?> anchor, string? theme)
+    public FlyoutWindow(BandroomPanel panel, Func<Native.RECT?> anchor, ThemedWindows themes)
     {
         _panel = panel;
         _anchor = anchor;
         _scroll = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollMode = ScrollMode.Disabled };
         var root = new Grid { Children = { _scroll } };
-        WindowSizing.Theme(root, theme);
+        themes.Track(this, root);
         root.PreviewKeyDown += OnKey;
         Content = root;
         Title = panel.Vm.Header;
@@ -146,15 +140,15 @@ internal sealed class FlyoutWindow : Window
 /// <summary>"Brasscribe on this PC": the same content as a normal window, from the Start menu or past 150 % text size.</summary>
 internal sealed class PanelWindow : Window
 {
-    public PanelWindow(BandroomPanel panel, string title, string? theme)
+    public PanelWindow(BandroomPanel panel, string title, ThemedWindows themes)
     {
         Panel = panel;
         var root = new Grid
         {
-            Background = BandroomPanel.Res("BcBgBrush"),
+            Style = BandroomPanel.StyleRes("WindowRootStyle"),
             Children = { new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } },
         };
-        WindowSizing.Theme(root, theme);
+        themes.Track(this, root);
         Content = root;
         Title = title;
         double scale = WindowSizing.Scale(this);
@@ -170,13 +164,13 @@ internal sealed class PairWindow : Window
 {
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _timer;
 
-    public PairWindow(PairViewModel vm, string? theme)
+    public PairWindow(PairViewModel vm, ThemedWindows themes)
     {
         Vm = vm;
         var panel = new PairPanel(vm);
         panel.DoneRequested += Close;
-        var root = new Grid { Background = BandroomPanel.Res("BcBgBrush"), Children = { panel } };
-        WindowSizing.Theme(root, theme);
+        var root = new Grid { Style = BandroomPanel.StyleRes("WindowRootStyle"), Children = { panel } };
+        themes.Track(this, root);
         Content = root;
         Title = vm.Title;
         double scale = WindowSizing.Scale(this);
@@ -200,11 +194,11 @@ internal sealed class PairWindow : Window
 /// <summary>"Allow Kari's iPhone?" on its own, when a phone asks while the Pair window is closed.</summary>
 internal sealed class AllowWindow : Window
 {
-    public AllowWindow(AllowRequestViewModel vm, string title, string? theme)
+    public AllowWindow(AllowRequestViewModel vm, string title, ThemedWindows themes)
     {
         var card = new AllowCard(vm);
-        var root = new Grid { Background = BandroomPanel.Res("BcBgBrush"), Padding = new Thickness(16), Children = { card } };
-        WindowSizing.Theme(root, theme);
+        var root = new Grid { Style = BandroomPanel.StyleRes("WindowRootStyle"), Padding = new Thickness(16), Children = { card } };
+        themes.Track(this, root);
         Content = root;
         Title = title;
         double scale = WindowSizing.Scale(this);

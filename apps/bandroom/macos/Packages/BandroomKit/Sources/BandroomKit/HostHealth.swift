@@ -97,7 +97,7 @@ public final class HostSampler: @unchecked Sendable {
         return total == 0 ? 100 : min(100, Double(available) / Double(total) * 100)
     }
 
-    static func diskFree(_ url: URL) -> Int64 {
+    public static func diskFree(_ url: URL) -> Int64 {
         var probe = url
         while !FileManager.default.fileExists(atPath: probe.path), probe.path != "/" { probe.deleteLastPathComponent() }
         let values = try? probe.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey])
@@ -116,28 +116,45 @@ public final class HostSampler: @unchecked Sendable {
     }
 }
 
-/// Whether the downloads a full-band score needs are there (§7 "Ready to make scores").
+/// Whether the downloads a full-band score needs are there (§7 "Ready to make scores"). Runs every few
+/// seconds, so it looks at names and sizes only; checksums are checked once, when a download finishes.
 public enum ModelCheck {
     public struct Result: Equatable, Sendable {
-        public var missing: [String]
+        /// What is missing, in catalogue order.
+        public var missing: [ModelComponent]
         public var isReady: Bool { missing.isEmpty }
-        public init(missing: [String]) { self.missing = missing }
+        public init(missing: [ModelComponent]) { self.missing = missing }
     }
 
-    public static func check(models: URL, environment: [String: String] = ProcessInfo.processInfo.environment) -> Result {
-        let fm = FileManager.default
-        var missing: [String] = []
-        for dir in ["separator", "mega53"] where !fm.fileExists(atPath: models.appending(path: dir).path) {
-            missing.append(dir)
+    /// `models` is the folder the engine gets as BRASSCRIBE_MODELS; the band writer lives in the hub cache.
+    public static func check(models: URL, environment: [String: String] = ProcessInfo.processInfo.environment,
+                             home: URL = FileManager.default.homeDirectoryForCurrentUser,
+                             catalog: (ModelComponent) -> [ModelFile] = { ModelCatalog.files(for: $0) }) -> Result {
+        let hub = ModelCatalog.hubCache(environment: environment, home: home)
+        return Result(missing: ModelComponent.allCases.filter { !isPresent($0, models: models, hub: hub, files: catalog($0)) })
+    }
+
+    public static func isPresent(_ c: ModelComponent, models: URL, hub: URL, files: [ModelFile]) -> Bool {
+        switch c.home {
+        case .models(let folder):
+            let dir = models.appending(path: folder, directoryHint: .isDirectory)
+            return files.allSatisfy { fileMatches(dir.appending(path: $0.name), size: $0.size) }
+        case .hub(let repo, let pinned):
+            // As hf_hub_download resolves "main": refs/main names the snapshot the adapter reads.
+            let folder = ModelCatalog.hubRepoFolder(repo, hub: hub)
+            guard let rev = try? String(contentsOf: folder.appending(path: "refs/main"), encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines), !rev.isEmpty else { return false }
+            let snapshot = folder.appending(path: "snapshots/\(rev)", directoryHint: .isDirectory)
+            // A newer upstream revision has other sizes; then the files being there is enough.
+            return files.allSatisfy { fileMatches(snapshot.appending(path: $0.name), size: rev == pinned ? $0.size : 0) }
         }
-        let hub: URL
-        if let hf = environment["HF_HOME"] {
-            hub = URL(fileURLWithPath: hf).appending(path: "hub")
-        } else {
-            hub = fm.homeDirectoryForCurrentUser.appending(path: ".cache/huggingface/hub")
-        }
-        let muscriptor = [hub.appending(path: "models--MuScriptor--muscriptor-medium"), models.appending(path: "muscriptor")]
-        if !muscriptor.contains(where: { fm.fileExists(atPath: $0.path) }) { missing.append("MuScriptor/muscriptor-medium") }
-        return Result(missing: missing)
+    }
+
+    /// Exists (through symlinks) and, when `size` > 0, has exactly that many bytes.
+    static func fileMatches(_ url: URL, size: Int64) -> Bool {
+        let path = url.resolvingSymlinksInPath().path
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+              (attrs[.type] as? FileAttributeType) == .typeRegular else { return false }
+        return size <= 0 || (attrs[.size] as? NSNumber)?.int64Value == size
     }
 }

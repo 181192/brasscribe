@@ -141,6 +141,11 @@ fn nearest_octave(pitch: i32, ranges: &[(i32, i32)], prev: Option<i32>) -> Optio
     None
 }
 
+/// Index after the phrase's largest leap (ties go to the later leap).
+fn leap_cut(phrase: &[Note]) -> usize {
+    (0..phrase.len() - 1).map(|i| ((phrase[i + 1].pitch - phrase[i].pitch).abs(), i + 1)).max().unwrap().1
+}
+
 /// Split a phrase that spans more than `width` semitones at its largest leap,
 /// recursively, so each piece can take its own octave.
 fn split_wide(phrase: Vec<Note>, width: i32) -> Vec<Vec<Note>> {
@@ -149,8 +154,7 @@ fn split_wide(phrase: Vec<Note>, width: i32) -> Vec<Vec<Note>> {
     if phrase.len() < 4 || hi - lo <= width {
         return vec![phrase];
     }
-    // largest leap; ties go to the later one
-    let cut = (0..phrase.len() - 1).map(|i| ((phrase[i + 1].pitch - phrase[i].pitch).abs(), i + 1)).max().unwrap().1;
+    let cut = leap_cut(&phrase);
     let rest = phrase[cut..].to_vec();
     let mut out = split_wide(phrase[..cut].to_vec(), width);
     out.extend(split_wide(rest, width));
@@ -170,28 +174,79 @@ fn place_line_with(notes: &[Note], part: &Part, warnings: &mut Vec<String>, shif
         all = all.into_iter().flat_map(|ph| split_wide(ph, hi - lo)).collect();
     }
     for phrase in all {
-        let prev = placed.last().map(|n| n.pitch);
-        let ps: Vec<i32> = phrase.iter().map(|n| n.pitch + shift_extra).collect();
-        match best_shift(&ps, lo, hi, inst.placement_limit(), prefer_low, prev, bass_overflow_up) {
-            None => {
-                // No single octave fits the whole phrase: per note, the octave nearest the previous note.
-                for n in &phrase {
-                    let last = placed.last().map(|n| n.pitch);
-                    match nearest_octave(n.pitch + shift_extra, &[inst.preferred(), inst.placement_limit()], last) {
-                        None => {
-                            warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start));
-                        }
-                        Some(p) => placed.push(renote(n, p)),
-                    }
-                }
-                warnings.push(format!("{}: phrase at tick {} needed per-note octave fitting", part.name, phrase[0].start));
-            }
-            Some(k) => {
-                for n in &phrase {
-                    placed.push(renote(n, n.pitch + shift_extra + 12 * k));
-                }
-            }
+        place_phrase(&phrase, part, warnings, shift_extra, prefer_low, bass_overflow_up, &mut placed, false, None);
+    }
+    hold_small_gaps(placed)
+}
+
+/// Place one phrase at the best single octave; returns the octave shift used (None: per note).
+///
+/// A tune phrase no octave fits, but no wider than the placement limit, is split at its largest
+/// leap and each piece placed on its own, keeping the previous piece's shift (`keep`) wherever it
+/// fits: the line changes octave only where it jumps, so its contour is kept. Bass lines
+/// (`prefer_low`), wider tune phrases and tune pieces under four notes are fitted note by note at
+/// the octave nearest the previous note: their wide leaps are mostly tracker octave errors or
+/// jumps between voices, which this folds back together.
+#[allow(clippy::too_many_arguments)]
+fn place_phrase(phrase: &[Note], part: &Part, warnings: &mut Vec<String>, shift_extra: i32, prefer_low: bool,
+                bass_overflow_up: bool, placed: &mut Vec<Note>, split: bool, keep: Option<i32>) -> Option<i32> {
+    let inst = part.instrument;
+    let (lo, hi) = inst.preferred();
+    let limit = inst.placement_limit();
+    let ps: Vec<i32> = phrase.iter().map(|n| n.pitch + shift_extra).collect();
+    let k = match keep {
+        Some(k) if ps.iter().all(|&p| limit.0 <= p + 12 * k && p + 12 * k <= limit.1) => Some(k),
+        _ => best_shift(&ps, lo, hi, limit, prefer_low, placed.last().map(|n| n.pitch), bass_overflow_up),
+    };
+    if let Some(k) = k {
+        for (n, p) in phrase.iter().zip(&ps) {
+            placed.push(renote(n, p + 12 * k));
         }
+        return Some(k);
+    }
+    let span = ps.iter().max().unwrap_or(&0) - ps.iter().min().unwrap_or(&0);
+    if !prefer_low && phrase.len() >= 4 && (split || span <= limit.1 - limit.0) {
+        if !split {
+            warnings.push(format!("{}: phrase at tick {} split at its leaps to fit the range", part.name, phrase[0].start));
+        }
+        let cut = leap_cut(phrase);
+        let k = place_phrase(&phrase[..cut], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, true, keep);
+        return place_phrase(&phrase[cut..], part, warnings, shift_extra, prefer_low, bass_overflow_up, placed, true, k);
+    }
+    for (n, &p0) in phrase.iter().zip(&ps) {
+        let last = placed.last().map(|n| n.pitch);
+        match nearest_octave(p0, &[inst.preferred(), limit], last) {
+            None => warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start)),
+            Some(p) => placed.push(renote(n, p)),
+        }
+    }
+    warnings.push(format!("{}: phrase at tick {} needed per-note octave fitting", part.name, phrase[0].start));
+    None
+}
+
+/// The player's own line written for their part, in the octave they played it.
+///
+/// A note keeps its octave while it is inside the instrument's professional range. A note
+/// outside it (almost always a tracker octave error) moves by octaves into the comfortable
+/// range, else the professional range, and each move is a warning. This writes down the
+/// player's notes; `place_line` arranges a heard line onto a part, which is another thing.
+pub fn place_as_played(notes: &[Note], part: &Part, warnings: &mut Vec<String>) -> Vec<Note> {
+    let inst = part.instrument;
+    let (lo, hi) = inst.pro;
+    let mut sorted: Vec<&Note> = notes.iter().collect();
+    sorted.sort_by_key(|n| n.start);
+    let mut placed = Vec::new();
+    for n in sorted {
+        let mut p = n.pitch;
+        if !(lo <= p && p <= hi) {
+            p = inst.fit_octave(p);
+            if !(lo <= p && p <= hi) {
+                warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start));
+                continue;
+            }
+            warnings.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, n.pitch, p, n.start));
+        }
+        placed.push(renote(n, p));
     }
     hold_small_gaps(placed)
 }
@@ -208,6 +263,9 @@ pub fn layer_of_part(lineup: &Lineup, name: &str) -> Option<&'static str> {
         Some("solo")
     } else if name == lineup.bass || Some(name) == lineup.second_bass {
         Some("bass")
+    } else if BAND_LEADS.contains(&name) {
+        // The band's usual lead, with the tune on the player's part (lead "seat").
+        Some("strings")
     } else if lineup.satb {
         Some("strings")
     } else if PAD_PARTS.contains(&name) || name == "Euphonium" {
@@ -525,7 +583,7 @@ pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Res
         pcs.extend(sounding_at(&melody, s).iter().map(|n| n.pitch.rem_euclid(12)));
         pcs.extend(sounding_at(&bass, s).iter().map(|n| n.pitch.rem_euclid(12)));
         let pcs: Vec<i32> = pcs.into_iter().collect();
-        let top = sounding_at(&lead_notes, s);
+        let top = if tune_on_top(&lineup) { sounding_at(&lead_notes, s) } else { Vec::new() };
         let bot = sounding_at(&eb_notes, s);
         let ceiling = top.first().map(|n| n.pitch).unwrap_or(90);
         let floor = bot.first().map(|n| n.pitch).unwrap_or(30);
@@ -553,6 +611,22 @@ pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Res
     }
     arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, difficulty)?;
     Ok(arr)
+}
+
+/// The band lineups' own lead.
+pub const BAND_LEADS: [&str; 1] = ["Solo Cornet"];
+
+/// The part that plays the countermelody: the Euphonium, or with the tune on it, Solo Horn, then 1st Baritone.
+pub fn counter_part(lineup: &Lineup) -> Option<&'static str> {
+    if lineup.lead != "Euphonium" {
+        return lineup.has("Euphonium").then_some("Euphonium");
+    }
+    ["Solo Horn", "1st Baritone"].into_iter().find(|n| lineup.has(n))
+}
+
+/// The tune's part sits on top of the band (a cornet or flugelhorn), so the inner parts go under it.
+fn tune_on_top(lineup: &Lineup) -> bool {
+    crate::instruments::TOP_INSTRUMENTS.contains(&lineup.lead_part().instrument.id)
 }
 
 pub const PAD_PARTS: [&str; 6] = ["Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"];
@@ -710,6 +784,13 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
 
     let lead = lineup.lead;
     let solo = layer(comp, "solo");
+    if lineup.as_played {
+        // A solo take for the player's seat: their own line in their octave, and nothing else.
+        let placed = place_as_played(&solo, lineup.lead_part(), &mut arr.warnings);
+        arr.set(lead, placed);
+        arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
+        return Ok(arr);
+    }
     let placed = place_line(&solo, lineup.lead_part(), &mut arr.warnings, 0, false);
     arr.set(lead, placed);
 
@@ -769,9 +850,9 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         inner_difficulty(&mut arr, &opts.difficulty)?;
         return Ok(arr);
     }
-    if lineup.has("Euphonium") {
-        let euph = lineup.by_name("Euphonium");
-        arr.set(euph.name, place_smooth(&counter, euph));
+    let cm = counter_part(&lineup);
+    if let Some(cm) = cm {
+        arr.set(cm, place_smooth(&counter, lineup.by_name(cm)));
     }
 
     let mut pad_src = strings.clone();
@@ -780,16 +861,23 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     if figuration {
         pad_slots = figurate(&pad_slots, &pad_src.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
     }
-    let solo_notes = arr.part_notes(lead).to_vec();
+    // With the tune on the player's part (lead "seat"), the band's own lead joins the pads, and the
+    // inner parts keep under the tune only while it is on top.
+    let solo_notes = if tune_on_top(&lineup) { arr.part_notes(lead).to_vec() } else { Vec::new() };
     let eb_notes = arr.part_notes(eb.name).to_vec();
-    let pads: Vec<&str> = PAD_PARTS.iter().copied().filter(|p| lineup.has(p)).collect();
+    let pads: Vec<&str> = BAND_LEADS
+        .iter()
+        .copied()
+        .filter(|p| lineup.has(p) && *p != lead)
+        .chain(PAD_PARTS.iter().copied().filter(|p| lineup.has(p) && *p != lead && Some(*p) != cm))
+        .collect();
     voice_layer(&mut arr, &pad_slots, &pads, &solo_notes, &eb_notes, 76, 0.8);
 
     let mut choir_slots = harmony_slots(&brass, end, 3, 0.35);
     if figuration {
         choir_slots = figurate(&choir_slots, &brass.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
     }
-    let choir: Vec<&str> = CHOIR_PARTS.iter().copied().filter(|p| lineup.has(p)).collect();
+    let choir: Vec<&str> = CHOIR_PARTS.iter().copied().filter(|p| lineup.has(p) && *p != lead).collect();
     voice_layer(&mut arr, &choir_slots, &choir, &solo_notes, &eb_notes, 79, 0.8);
 
     // Bass trombone reinforces the bass line only while the brass choir is playing.
@@ -800,7 +888,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         arr.set(btb.name, placed);
     }
 
-    if soprano && lineup.has("Soprano Cornet") {
+    if soprano && lineup.has("Soprano Cornet") && BAND_LEADS.contains(&lead) {
         let sop = soprano_doubling(arr.part_notes(lead), lineup.by_name("Soprano Cornet"), &climax_spans(comp));
         arr.set("Soprano Cornet", sop);
     }
@@ -812,4 +900,107 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
     }
     arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
     Ok(arr)
+}
+
+// ---------------------------------------------------------------------------
+// Where each part comes from.
+// ---------------------------------------------------------------------------
+
+/// A solo take: the part carries the player's own line.
+pub const YOUR_RECORDING: &str = "your-recording";
+/// The part follows a line heard in a band recording.
+pub const RECORDING: &str = "recording";
+/// Voiced from the harmony, or doubling the tune.
+pub const ARRANGED: &str = "arranged";
+
+fn arrangement_opt(comp: &Composition, key: &str) -> Option<String> {
+    comp.arrangement.as_ref().and_then(|a| a.get(key)).and_then(|v| v.as_str()).map(String::from)
+}
+
+/// The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether the
+/// layered arranger makes it (its voices carry layers).
+pub fn composition_lineup(comp: &Composition) -> (Lineup, bool) {
+    let lineup = arrangement_opt(comp, "lineup");
+    let (seat, reads) = (arrangement_opt(comp, "seat"), arrangement_opt(comp, "reads"));
+    let layered = comp.voices.iter().any(|v| v.layer.is_some());
+    let (key, l) = if !layered {
+        if lineup.as_deref() == Some("quartet") {
+            ("quartet", crate::instruments::quartet())
+        } else {
+            ("minimal", minimal_band())
+        }
+    } else {
+        if let Some(s) = seat.as_deref().filter(|_| is_solo_take(comp)) {
+            if let Ok(l) = crate::instruments::seat_lineup(s, reads.as_deref()) {
+                return (l, true);
+            }
+        }
+        // Anything but a known lineup arranges for the band, as before lineups carried their roles.
+        match crate::instruments::lineup_key(lineup.as_deref().unwrap_or("band")) {
+            Ok(k) => (k, crate::instruments::lineup_by_name(k).expect("known lineup")),
+            Err(_) => ("band", brass_band()),
+        }
+    };
+    let l = match seat.as_deref().and_then(|s| crate::instruments::seat_part(key, s).ok()) {
+        Some(sp) => crate::instruments::with_reading(l, sp.part, reads.as_deref()),
+        None => l,
+    };
+    let l = match seat.as_deref().filter(|_| arrangement_opt(comp, "lead").as_deref() == Some("seat")) {
+        // A lineup the tune cannot move in keeps its own lead.
+        Some(s) => crate::instruments::lead_lineup(l.clone(), s).unwrap_or(l),
+        None => l,
+    };
+    (l, layered)
+}
+
+fn has_notes(comp: &Composition, layers: &[&str]) -> bool {
+    comp.voices.iter().any(|v| !v.notes.is_empty() && v.layer.as_deref().is_some_and(|l| layers.contains(&l)))
+}
+
+/// A layered Composition with notes in its solo layer only: one player recorded alone.
+pub fn is_solo_take(comp: &Composition) -> bool {
+    comp.voices.iter().any(|v| v.layer.is_some())
+        && has_notes(comp, &["solo"])
+        && !comp.voices.iter().any(|v| !v.notes.is_empty() && v.layer.as_deref() != Some("solo"))
+}
+
+/// Where each part of the Composition's arrangement comes from, in score order.
+///
+/// Derived, not stored: from the lineup's roles, the arranger that made it (layered or not) and
+/// which layers have notes. `your-recording`: a solo take's line; `recording`: a line heard in the
+/// recording (the tune, the bass line and its doublings, the countermelody from the strings' top
+/// line, the drums); `arranged`: everything voiced from the harmony, and the Soprano Cornet's
+/// doubling of the tune.
+pub fn part_sources(comp: &Composition) -> Vec<(String, &'static str)> {
+    let (lineup, layered) = composition_lineup(comp);
+    let mut heard: Vec<&str> = Vec::new();
+    let basses = |heard: &mut Vec<&'static str>| {
+        heard.push(lineup.bass);
+        if let Some(b) = lineup.second_bass {
+            heard.push(b);
+        }
+    };
+    if !layered {
+        heard.push(lineup.lead);
+        basses(&mut heard);
+    } else if is_solo_take(comp) {
+        return lineup.parts.iter().map(|p| (p.name.to_string(), if p.name == lineup.lead { YOUR_RECORDING } else { ARRANGED })).collect();
+    } else {
+        if has_notes(comp, &["solo"]) {
+            heard.push(lineup.lead);
+        }
+        if has_notes(comp, &["bass"]) {
+            basses(&mut heard);
+            if !lineup.satb && lineup.has("Bass Trombone") {
+                heard.push("Bass Trombone");
+            }
+        }
+        if let Some(cm) = counter_part(&lineup).filter(|_| !lineup.satb && has_notes(comp, &["strings"])) {
+            heard.push(cm);
+        }
+        if !lineup.satb && has_notes(comp, &["drums"]) && lineup.has("Percussion") {
+            heard.push("Percussion");
+        }
+    }
+    lineup.parts.iter().map(|p| (p.name.to_string(), if heard.contains(&p.name) { RECORDING } else { ARRANGED })).collect()
 }

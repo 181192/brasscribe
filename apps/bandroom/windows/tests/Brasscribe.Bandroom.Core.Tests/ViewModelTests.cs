@@ -1,5 +1,6 @@
 using Brasscribe.Bandroom.Core.Engine;
 using Brasscribe.Bandroom.Core.Health;
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.Pairing;
 using Brasscribe.Bandroom.Core.State;
 using Brasscribe.Bandroom.Core.Supervisor;
@@ -22,7 +23,7 @@ public sealed class FlyoutViewModelTests
             "Brasscribe on Kalli's PC",
             new StatusInfo("3f9c2a7e11", "Brasscribe on Kalli's PC", "0.9.4", online, paired, false, job is null ? 0 : 1, queued),
             job,
-            new HealthSnapshot(12, 0.2, 86_400_000_000, true),
+            new HealthSnapshot(12, 0.2, 86_400_000_000, []),
             "Health_Speed_Nvidia",
             new TechDetails(["192.168.1.20:8765"], 8765, "0.9.4", "CUDA · NVIDIA GeForce RTX 4070", "3f9c2a7e11deadbeef", @"C:\Users\kalli\AppData\Local\Brasscribe"));
 
@@ -454,6 +455,42 @@ public sealed class ControllerTests
             await ctl.TickAsync();
             Assert.Equal(ProblemKind.LowDisk, Assert.Single(last.Inputs.Problems).Kind);
             await sup.StopAsync();
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+    [Fact]
+    public async Task Missing_downloads_are_named_and_a_stopped_download_says_why()
+    {
+        var dir = Directory.CreateTempSubdirectory("bandroom-ctl").FullName;
+        try
+        {
+            var sup = new EngineSupervisor(new FakeLauncher(), new FakePorts(), (_, _) => Task.FromResult<HealthInfo?>(null),
+                p => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
+            var ctl = new BandroomController(sup, _ => new FakeEngine(), new Metrics(), Strings.En, new BandroomPaths(dir),
+                new MachineInfo("DESKTOP-4F2K9QZ", "Health_Speed_Cpu", "CPU", []))
+            {
+                CheckModels = () => new ModelCheckResult([ModelComponent.SoloistSeparator, ModelComponent.BandWriter], ["BS-Roformer-SW.ckpt"]),
+            };
+            BandroomSnapshot? last = null;
+            ctl.SnapshotReady += s => last = s;
+
+            await ctl.TickAsync();
+            var problem = Assert.Single(last!.Inputs.Problems);
+            Assert.Equal("The soloist separator and the band writer aren't downloaded yet.", problem.Why);
+            Assert.Equal([ModelComponent.SoloistSeparator, ModelComponent.BandWriter], last.Health!.MissingModels);
+            Assert.Null(last.DownloadProgress);
+
+            using var web = new StubWeb();
+            using var downloads = new ModelDownloader(Path.Combine(dir, "models"), Path.Combine(dir, "hub"), () => null, web, _ => long.MaxValue);
+            ctl.Downloads = downloads;
+            downloads.Start([ModelComponent.BandWriter]);
+            await downloads.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+            await ctl.TickAsync();
+            Assert.Equal("The band writer needs your Hugging Face access key", Assert.Single(last.Inputs.Problems).Title);
+
+            ctl.Machine = ctl.Machine with { ComputerName = "Korpset" };
+            ctl.Publish();
+            Assert.Equal("Brasscribe on Korpset", last.Header);
         }
         finally { Directory.Delete(dir, true); }
     }

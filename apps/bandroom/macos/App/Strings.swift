@@ -52,7 +52,7 @@ enum Strings {
     static func problemWhy(_ p: Problem) -> String {
         switch p {
         case .lowDisk(let gb): String(localized: "\(gb) GB free. Brasscribe needs 3 GB to make a score.")
-        case .missingDownload: String(localized: "The band writer isn't downloaded yet.")
+        case .missingDownload(let missing): notDownloaded(missing)
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
         }
     }
@@ -63,6 +63,56 @@ enum Strings {
         case .missingDownload: String(localized: "Finish setting up")
         case .noFreePort: String(localized: "Restart")
         }
+    }
+
+    /// "the soloist separator": the component inside a sentence.
+    static func componentName(_ c: ModelComponent) -> String {
+        switch c {
+        case .soloistSeparator: String(localized: "the soloist separator")
+        case .instrumentSeparator: String(localized: "the instrument separator")
+        case .bandWriter: String(localized: "the band writer")
+        }
+    }
+
+    /// The setup window's list: "Band writer (MuScriptor)" is the one place the model is named (§3.2.1).
+    static func componentItem(_ c: ModelComponent) -> String {
+        switch c {
+        case .soloistSeparator: String(localized: "Soloist separator")
+        case .instrumentSeparator: String(localized: "Instrument separator")
+        case .bandWriter: String(localized: "Band writer (MuScriptor)")
+        }
+    }
+
+    /// "The band writer isn't downloaded yet." · "The soloist separator and the band writer aren't downloaded yet."
+    static func notDownloaded(_ missing: [ModelComponent]) -> String {
+        switch missing.count {
+        case 0: return String(localized: "Brasscribe's own tools aren't installed yet.")
+        case 1:
+            switch missing[0] {
+            case .soloistSeparator: return String(localized: "The soloist separator isn't downloaded yet.")
+            case .instrumentSeparator: return String(localized: "The instrument separator isn't downloaded yet.")
+            case .bandWriter: return String(localized: "The band writer isn't downloaded yet.")
+            }
+        default:
+            // In the app's language ("og" in bokmål), not the region's.
+            let f = ListFormatter()
+            f.locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+            let list = f.string(from: missing.map(componentName)) ?? missing.map(componentName).joined(separator: ", ")
+            return capitalizedFirst(String(localized: "\(list) aren't downloaded yet."))
+        }
+    }
+
+    /// "Missing one download" · "Missing 2 downloads".
+    static func missingDownloads(_ n: Int) -> String {
+        n == 1 ? String(localized: "Missing one download") : String(localized: "Missing \(n) downloads")
+    }
+
+    static func capitalizedFirst(_ s: String) -> String { s.prefix(1).uppercased() + s.dropFirst() }
+
+    /// "1.4 GB", "3.1 of 9.8 GB".
+    static func gigabytes(_ bytes: Int64) -> String {
+        let gb = Double(bytes) / 1_000_000_000
+        return gb.formatted(.number.precision(.fractionLength(1)))
     }
 
     static func step(_ s: JobStep) -> String {

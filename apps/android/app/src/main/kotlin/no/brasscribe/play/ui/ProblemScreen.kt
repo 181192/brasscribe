@@ -7,6 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +42,7 @@ private val COPY = mapOf(
         listOf(R.string.problem_silent_reason_blocked, R.string.problem_silent_reason_nothing), R.string.problem_silent_note),
     Problem.RECORDING_FAILED to ProblemCopy(R.string.problem_record_title, R.string.problem_record_body, listOf(R.string.problem_record_reason), null),
     Problem.SCORE_FAILED to ProblemCopy(R.string.problem_score_title, R.string.problem_score_body, emptyList(), R.string.problem_score_kept),
+    Problem.TOO_LARGE to ProblemCopy(R.string.problem_too_large_title, R.string.problem_too_large_body, listOf(R.string.problem_too_large_reason), null),
 )
 
 /**
@@ -129,6 +135,8 @@ fun SettingsScreen(vm: PlayViewModel) {
         }
         SectionLabel(stringResource(R.string.settings_display))
         RowGroup {
+            AppearanceRow(vm)
+            RowDivider()
             // Per-app language is a system setting from Android 13; before that the app follows the phone.
             if (android.os.Build.VERSION.SDK_INT >= 33) {
                 ListRow(stringResource(R.string.settings_language), { open(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, withPackage = true) },
@@ -137,6 +145,15 @@ fun SettingsScreen(vm: PlayViewModel) {
             }
             ListRow(stringResource(R.string.settings_text_motion), { open(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) },
                 icon = R.drawable.ic_bc_text_size, subtitle = stringResource(R.string.settings_text_motion_desc))
+        }
+        // The music stand (design/music-stand.md section 9).
+        SectionLabel(stringResource(R.string.stand_enter))
+        RowGroup {
+            var follow by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standFollow) }
+            var keep by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standKeepControls) }
+            SwitchRow(stringResource(R.string.settings_stand_follow), null, follow, "setting-stand-follow") { follow = it; vm.container.standFollow = it }
+            RowDivider()
+            SwitchRow(stringResource(R.string.settings_stand_controls), null, keep, "setting-stand-controls") { keep = it; vm.container.standKeepControls = it }
         }
         RowGroup {
             ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
@@ -163,5 +180,34 @@ fun HelpScreen(vm: PlayViewModel) {
                 Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
         }
+        // The music stand: page turners, and how to keep a tablet one way up (it has no Lock rotation).
+        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+            SubHeading(stringResource(R.string.stand_enter))
+            Text(stringResource(R.string.help_stand_pedal), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+            if (androidx.compose.ui.platform.LocalConfiguration.current.smallestScreenWidthDp >= 600)
+                Text(stringResource(R.string.help_stand_tablet_lock), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+        }
+    }
+}
+
+/** A setting that is on or off: the whole row is the switch, at least 60 dp tall. */
+@Composable
+private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+    val c = BrasscribeTheme.colors
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp)
+            .toggleable(value = checked, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onChange)
+            .semantics { testTag = tag }
+            .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = c.text)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+        }
+        androidx.compose.material3.Switch(checked, null, colors = androidx.compose.material3.SwitchDefaults.colors(
+            checkedTrackColor = c.primary, checkedThumbColor = c.onPrimary, uncheckedBorderColor = c.borderStrong,
+            uncheckedTrackColor = c.surfaceRaised, uncheckedThumbColor = c.borderStrong))
     }
 }

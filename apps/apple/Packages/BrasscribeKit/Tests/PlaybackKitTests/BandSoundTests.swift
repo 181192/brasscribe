@@ -68,6 +68,50 @@ func partSoundVectors() -> URL? {
     if status.isMissing { #expect(!status.details.isEmpty, "the details say where the band sounds were looked for") }
 }
 
+/// iPhone and iPad prefer the phone build (the one the iOS app bundles), the Mac the 16-bit build;
+/// either falls back to the other builds rather than to the basic tier.
+@Test func eachDevicePrefersItsOwnBandSoundFont() {
+    let phone = BandSounds.bandFiles(phone: true), mac = BandSounds.bandFiles(phone: false)
+    #expect(phone.first == "brasscribe-band-mobile.sf2")
+    #expect(mac.first == "brasscribe-band-16bit.sf2")
+    #expect(Set(phone) == Set(mac))
+    #expect(BandSounds.bandFiles() == (BandSounds.isPhone ? phone : mac))
+    #if os(iOS)
+    #expect(BandSounds.isPhone)
+    #else
+    #expect(!BandSounds.isPhone)
+    #endif
+}
+
+/// A bundle's Sounds/ folder as each platform stages it: the phone build alone on iOS, the 16-bit
+/// build on macOS. The lookup finds the right file in each, and in a folder holding both.
+@Test(.enabled(if: repoRoot() != nil)) func theStagedSoundFontIsFoundPerPlatform() throws {
+    let root = try #require(repoRoot())
+    let fm = FileManager.default
+    func folder(_ files: [String]) throws -> BandSounds.Candidate {
+        let dir = fm.temporaryDirectory.appending(path: "band-\(UUID().uuidString)")
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        for f in files { fm.createFile(atPath: dir.appending(path: f).path, contents: Data("RIFF".utf8)) }
+        try fm.copyItem(at: root.appending(path: "sounds/mapping.json"), to: dir.appending(path: "mapping.json"))
+        return BandSounds.Candidate(dir: dir, mapping: dir.appending(path: "mapping.json"), seating: dir.appending(path: "seating.json"))
+    }
+    func found(_ c: BandSounds.Candidate, phone: Bool) -> String? {
+        let (band, status) = BandSounds.locateBand(in: [c], files: BandSounds.bandFiles(phone: phone))
+        #expect(band == nil || !status.isMissing)
+        return band?.soundFont.lastPathComponent
+    }
+    let ios = try folder(["brasscribe-band-mobile.sf2"])
+    #expect(found(ios, phone: true) == "brasscribe-band-mobile.sf2")
+    let mac = try folder(["brasscribe-band-16bit.sf2"])
+    #expect(found(mac, phone: false) == "brasscribe-band-16bit.sf2")
+    let both = try folder(["brasscribe-band-16bit.sf2", "brasscribe-band-mobile.sf2"])
+    #expect(found(both, phone: true) == "brasscribe-band-mobile.sf2")
+    #expect(found(both, phone: false) == "brasscribe-band-16bit.sf2")
+    let empty = try folder([])
+    let (none, status) = BandSounds.locateBand(in: [empty], files: BandSounds.bandFiles(phone: true))
+    #expect(none == nil && status.isMissing, "a broken install still reports the band sounds as missing")
+}
+
 /// Without any environment variable, a checkout finds the band SoundFont and every golden part
 /// (and the quartet names) plays a band preset, never the General MIDI bank.
 @Test(.enabled(if: bandSoundFont() != nil)) func bandSoundFontIsTheDefault() throws {

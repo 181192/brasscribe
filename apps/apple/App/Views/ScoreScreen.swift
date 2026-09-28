@@ -15,14 +15,18 @@ struct ScoreScreen: View {
         screenContent
             .navigationTitle(currentTitle)
             .toolbar { editToolbar }
-            .task { loadModel() }
+            .task { await loadModel() }
             .onDisappear { model?.stopAll() }
     }
 
     @ViewBuilder private var screenContent: some View {
         Group {
             if let model {
-                PracticeView(model: model)
+                if let stand = model.stand {
+                    MusicStandView(model: model, stand: stand)
+                } else {
+                    PracticeView(model: model)
+                }
             } else if let error {
                 ProblemContent(title: String(localized: "This score can't be opened"), lead: nil,
                                reasons: [String(localized: "The file may be damaged. Your recording is safe.")], hint: nil, detail: error) {
@@ -51,14 +55,23 @@ struct ScoreScreen: View {
         }
     }
 
-    private func loadModel() {
+    /// The score opens off the main thread (`PracticeModel.open`); the spinner shows meanwhile.
+    private func loadModel() async {
         guard model == nil else { return }
         do {
-            let loaded = try PracticeModel(piece: piece)
+            let loaded = try await PracticeModel.open(piece)
+            guard model == nil, !Task.isCancelled else { loaded.stopAll(); return }
             if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
-            loaded.start()
             model = loaded
             ScreenshotScenes.stage(loaded)
+            // "Open on the music stand" from the library
+            if let row = app.openOnStand {
+                app.openOnStand = nil
+                loaded.enterStand(from: .library(row))
+            } else if LaunchOptions.screen?.hasPrefix("stand") == true {
+                loaded.enterStand(from: .toolbar)
+                ScreenshotScenes.stageStand(loaded)
+            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -152,9 +165,10 @@ struct PracticeView: View {
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showParts = false } } }
             }
             .presentationDetents([.medium, .large])
+            .appAppearance()
         }
-        .sheet(isPresented: $showTalking) { TalkingScoreView(model: model) }
-        .sheet(isPresented: $showExport) { ExportView(model: model) }
+        .sheet(isPresented: $showTalking) { TalkingScoreView(model: model).appAppearance() }
+        .sheet(isPresented: $showExport) { ExportView(model: model).appAppearance() }
         .alert(String(localized: "The sound can't play"), isPresented: Binding(get: { model.loadError != nil }, set: { _ in })) {
             Button("OK") {}
         } message: { Text("The score is still here to read. Try closing and opening it again.") }
@@ -215,6 +229,8 @@ struct StatusLine: View {
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
     @Environment(\.dynamicTypeSize) private var typeSize
+    @AccessibilityFocusState private var standButtonA11y: Bool
+    @FocusState private var standButtonKeys: Bool
     let wide: Bool
     @Binding var showParts: Bool
     @Binding var showInspector: Bool
@@ -233,18 +249,39 @@ struct ScoreToolbar: View {
         Group {
             if typeSize >= .accessibility1 {
                 // the largest text sizes: one control per row, nothing squeezed
-                VStack(alignment: .leading, spacing: Space.s2) { parts; pitch; view; inspectorToggle }
+                VStack(alignment: .leading, spacing: Space.s2) { parts; pitch; standButton; view; inspectorToggle }
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { controls }
                     VStack(alignment: .leading, spacing: Space.s2) {
                         HStack(spacing: Space.s3) { parts; Spacer(minLength: 0); view; inspectorToggle }
-                        pitch
+                        // phone: the pitch row, then the Music stand button
+                        HStack(spacing: Space.s3) { pitch; standButton }
                     }
                 }
             }
         }
         .padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
+        .onAppear {
+            // back from the music stand: focus returns to the button that opened it
+            guard model.focusStandButton else { return }
+            model.focusStandButton = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { standButtonA11y = true; standButtonKeys = true }
+        }
+    }
+
+    /// Music stand: the score alone, for playing from the stand (F).
+    private var standButton: some View {
+        Button { model.enterStand(from: .toolbar) } label: {
+            Label("Music stand", systemImage: "arrow.up.left.and.arrow.down.right").labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+        .fixedSize()
+        .padShortcut("f")
+        .help(Text("The music alone, for playing from the stand (F)"))
+        .accessibilityFocused($standButtonA11y)
+        .focused($standButtonKeys)
+        .accessibilityIdentifier("musicStand")
     }
 
     @ViewBuilder private var inspectorToggle: some View {
@@ -260,6 +297,7 @@ struct ScoreToolbar: View {
         pitch
         if wide { ZoomButtons(model: model, vertical: false) }
         Spacer(minLength: Space.s2)
+        standButton
         view
         inspectorToggle
     }
@@ -287,6 +325,7 @@ struct ScoreToolbar: View {
 
     private var view: some View {
         Menu {
+            Button { model.enterStand(from: .toolbar) } label: { Label("Music stand", systemImage: "arrow.up.left.and.arrow.down.right") }
             Button { showTalking = true } label: { Label("Read aloud", systemImage: BrasscribeIcon.talkingScore.systemName) }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             if model.video != nil {
@@ -574,7 +613,7 @@ struct PlayerBar: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("loopToggle")
         .accessibilityValue(model.looping ? Text("Bars \(min(model.loopFrom, model.loopTo) + 1) to \(max(model.loopFrom, model.loopTo) + 1)") : Text("Off"))
-        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model) }
+        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
 
         Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
         Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")

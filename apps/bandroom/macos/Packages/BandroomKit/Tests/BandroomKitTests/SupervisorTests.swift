@@ -153,6 +153,7 @@ import Testing
         #expect(plan.environment["BRASSCRIBE_COMPUTER_NAME"] == "Kalli's MacBook")
         #expect(plan.environment["PATH"]?.hasPrefix("/usr/bin") == true)
         #expect(plan.environment["BRASSCRIBE_TOKEN"] == nil)
+        #expect(plan.environment["BRASSCRIBE_BAND_SOUNDS_DIR"] == nil)
         let file = try #require(EngineStatusFile.read(statusFile))
         #expect(file.port == 8765)
         #expect(file.serverId == engine.healthValue.serverId)
@@ -228,5 +229,23 @@ import Testing
     @Test func skipsBusyPorts() {
         #expect(PortPicker.firstFree(isFree: { $0 >= 8767 }) == 8767)
         #expect(PortPicker.firstFree(isFree: { _ in false }) == nil)
+    }
+}
+
+@Suite struct BandSoundsTests {
+    @Test func theBundledBandSoundsReachTheEngine() throws {
+        let resources = tempDir()
+        #expect(EngineConfiguration.findBandSounds(resources: resources) == nil)
+        let band = resources.appending(path: "band")
+        try FileManager.default.createDirectory(at: band, withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: band.appending(path: "brasscribe-band.sf2").path, contents: Data("RIFF".utf8))
+        #expect(EngineConfiguration.findBandSounds(resources: resources) == nil, "no part map: Studio could not use it")
+        FileManager.default.createFile(atPath: band.appending(path: "mapping.json").path, contents: Data("{}".utf8))
+        let found = try #require(EngineConfiguration.findBandSounds(resources: resources))
+        #expect(found.path == band.path)
+        let paths = BandroomPaths(data: resources.appending(path: "data"), logs: resources.appending(path: "logs"))
+        let config = EngineConfiguration(source: .checkout(resources), pixi: nil, paths: paths, computerName: "Mac",
+                                         adminToken: "secret", bandSounds: found)
+        #expect(config.environment(base: [:])["BRASSCRIBE_BAND_SOUNDS_DIR"] == band.path)
     }
 }

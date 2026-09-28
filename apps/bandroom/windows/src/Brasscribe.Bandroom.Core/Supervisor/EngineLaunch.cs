@@ -17,20 +17,41 @@ public sealed record BandroomPaths(string DataDir)
     public string State => Path.Combine(DataDir, "bandroom");
     public string AdminTokenFile => Path.Combine(State, "admin-token");
     public string SetupMarkers => Path.Combine(State, "setup");
+    /// <summary>The Appearance choice: this PC only, never roamed (design/system.md §10).</summary>
+    public string AppearanceFile => Path.Combine(State, "appearance");
+    /// <summary>The name shown to phones, when one is set in Settings.</summary>
+    public string ComputerNameFile => Path.Combine(State, "computer-name");
     public string StatusFile => Path.Combine(DataDir, "engine.json");
 
     public static BandroomPaths ForCurrentUser() =>
         new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe"));
 }
 
-/// <summary>What the engine process needs: the pinned pixi, the data folder, the computer's name and the admin credential.</summary>
+/// <summary>
+/// What the engine process needs: the pinned pixi, the data folder, the computer's name, the admin credential
+/// and the band sounds the app bundles (<c>band\</c> next to the exe; null when this build has none).
+/// </summary>
 public sealed record EngineLaunchConfig(
     BandroomPaths Paths,
     string PixiExe,
     string ComputerName,
     string AdminToken,
-    bool UseCuda)
+    bool UseCuda,
+    string? BandSoundsDir = null)
 {
+    /// <summary>The user's Hugging Face key (HF_TOKEN), read at each start so a key saved in Settings reaches the next one.</summary>
+    public Func<string?>? HuggingFaceToken { get; init; }
+
+    /// <summary>This process's environment variables (PATH, HF_HOME, HF_HUB_CACHE, HF_TOKEN), read at each start.</summary>
+    public Func<string, string?> Variable { get; init; } = Environment.GetEnvironmentVariable;
+
+    /// <summary>The bundled band sounds folder under <paramref name="appDir"/>, if the SoundFont and its part map are there.</summary>
+    public static string? FindBandSounds(string appDir)
+    {
+        string dir = Path.Combine(appDir, "band");
+        return File.Exists(Path.Combine(dir, "brasscribe-band.sf2")) && File.Exists(Path.Combine(dir, "mapping.json")) ? dir : null;
+    }
+
     /// <summary>
     /// <c>pixi run --manifest-path &lt;envs&gt;\pixi.toml --frozen -e default brasscribe serve --lan --port N</c>
     /// with the environment variables config.py reads (spec §5.2) and the admin credential.
@@ -50,10 +71,16 @@ public sealed record EngineLaunchConfig(
             ["PYTHONUTF8"] = "1",
             // run_adapter.py calls "pixi" by name.
             ["PATH"] = Path.GetDirectoryName(PixiExe) is { Length: > 0 } dir
-                ? dir + Path.PathSeparator + (Environment.GetEnvironmentVariable("PATH") ?? "")
-                : Environment.GetEnvironmentVariable("PATH") ?? "",
+                ? dir + Path.PathSeparator + (Variable("PATH") ?? "")
+                : Variable("PATH") ?? "",
         };
         if (UseCuda) env["BRASSCRIBE_CUDA"] = "1";
+        // The muscriptor adapter finds the band writer in the hub cache Bandroom downloaded it to, with the same key.
+        foreach (var name in (string[])["HF_HOME", "HF_HUB_CACHE"])
+            if (Variable(name) is { Length: > 0 } value) env[name] = value;
+        if ((Variable("HF_TOKEN") is { Length: > 0 } t ? t : HuggingFaceToken?.Invoke()) is { Length: > 0 } token) env["HF_TOKEN"] = token;
+        // Studio (served by the engine) plays the band SoundFont from here.
+        if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",

@@ -17,6 +17,7 @@ void allOff() {}
 void releaseAll() {}
 void fadeOut(double) {}
 void setGain(int, float) {}
+void setOutputGain(float) {}
 int renderOffline(float*, int) { return 0; }
 int activeVoices() { return 0; }
 }  // namespace sfizz_bridge

@@ -26,12 +26,16 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 - `eval/fixtures/choralebricks-brass4/`: our own adapter outputs on those chorales
   (MuScriptor medium/large with and without brass conditioning, Basic Pitch, Beat This!).
 - `eval/fixtures/contours/`: SwiftF0 contours of the ChoraleBricks part tracks.
+- `eval/fixtures/choralebricks-solo/`: SwiftF0 and Basic Pitch MIDI and Beat This! small0 beats of
+  all 93 ChoraleBricks brass stems (trumpet, flugelhorn, French horn, trombone, baritone, tuba), with
+  each stem's ChoraleBricks note annotation (`<stem>.notes.csv`, CC-BY 4.0, same source as above).
 
 | Suite | CI | Local only because |
 |---|---|---|
 | chorales-transcription | yes | |
 | quant-chorales | yes | |
 | consensus-chorales | yes | |
+| solo-instruments, seat-voices | yes | |
 | arrange | chorales part | URMP part: URMP licence not checked for redistribution |
 | durations | chorales part | URMP part: as above |
 | freetime | chorales part | URMP part and the combined means: as above |

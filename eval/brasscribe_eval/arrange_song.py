@@ -16,8 +16,8 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.arranger import arrange
-from brasscribe_music.instruments import lineup_by_name
+from brasscribe_music.arranger import arrange, arrange_composition
+from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
 from brasscribe_music.harmony import harmony_slots, slots_to_notes
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
@@ -34,7 +34,7 @@ def to_notes(qnotes, pickup: int, source: str) -> list[Note]:
 
 
 def song_composition(beats: Path, melody: Path, melody_support: Path | None, bass_mid: Path, harmony: list[Path],
-                     title: str) -> Composition:
+                     title: str, melody_window: tuple[int, int] = (52, 88)) -> Composition:
     """Melody, bass and harmony voices of a transcribed song on its beat grid (tick 0 = first downbeat)."""
     b = np.loadtxt(beats)
     pos = b[:, 1].astype(int)
@@ -56,7 +56,7 @@ def song_composition(beats: Path, melody: Path, melody_support: Path | None, bas
     if melody_support:
         sources["bp"] = load_notes(melody_support)
     cand, _ = consensus(sources, {"mus": 0.6, "bp": 0.4}, 0.5)
-    mel_raw = line(cand, 52, 88, top=True)
+    mel_raw = line(cand, *melody_window, top=True)
     melody = to_notes(fill_gaps(quantize(mel_raw, times, monophonic=True, auto_level=False), TICKS_PER_BEAT // 2), pickup, "melody")
     bass = to_notes(fill_gaps(quantize(line(load_notes(bass_mid), 28, 55, top=False), times, monophonic=True, auto_level=False),
                               TICKS_PER_BEAT // 2), pickup, "bass")
@@ -89,14 +89,28 @@ def main() -> None:
     ap.add_argument("--no-render", action="store_true", help="skip the MuseScore PDF export")
     ap.add_argument("--lineup", choices=["minimal", "quartet"], default="minimal",
                     help="minimal: the 8-part minimal band; quartet: 1st and 2nd Cornet, Tenor Horn and Euphonium")
+    ap.add_argument("--seat", choices=SEAT_IDS, help="the player's seat (their part; with --lead seat, the tune's)")
+    ap.add_argument("--reads", choices=CLEF_READINGS, help="the clef the seat's part is written in (bass: at concert pitch)")
+    ap.add_argument("--lead", choices=LEADS, default="lineup", help="who plays the tune: the lineup's lead, or the seat's part")
     args = ap.parse_args()
+    if args.lead == "seat" and not args.seat:
+        ap.error("--lead seat needs --seat")
+    try:
+        check_reads(args.seat, args.reads)
+        tune = lead_lineup(lineup_by_name(args.lineup), args.seat).lead_part if args.lead == "seat" else None
+    except ValueError as e:
+        ap.error(str(e))
     args.out.mkdir(parents=True, exist_ok=True)
 
-    comp = song_composition(args.beats, args.melody, args.melody_support, args.bass, args.harmony, args.title)
-    if args.lineup != "minimal":
+    comp = song_composition(args.beats, args.melody, args.melody_support, args.bass, args.harmony, args.title,
+                            tune.instrument.pro if tune else (52, 88))
+    if args.lineup != "minimal" or args.seat:
         comp.arrangement = {"lineup": args.lineup, "difficulty": "faithful", "transpose_semitones": 0}
+    if args.seat:
+        comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
+                                 **({"lead": "seat"} if args.lead == "seat" else {})})
     comp.to_json(args.out / "composition.json")
-    arr = arrange(comp, lineup_by_name(args.lineup))
+    arr = arrange_composition(comp)
     xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
     pdf = xml.with_suffix(".pdf")
     if not args.no_render:

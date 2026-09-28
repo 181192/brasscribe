@@ -9,6 +9,7 @@ import "./components/stagegraph";
 import "./components/stems";
 import type { ScoreElement } from "./components/score";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
+import { choice, contrast, onThemeChange, parseChoice, setChoice, watchContrast } from "./theme";
 import { clear, h, wireMenus } from "./ui/dom";
 import { lockup } from "./ui/icons";
 import { benchView } from "./views/bench";
@@ -108,6 +109,16 @@ function translateChrome(): void {
   renderStatus();
   const sel = document.getElementById("lang-select") as HTMLSelectElement;
   sel.value = lang();
+  renderTheme();
+}
+
+/** The Appearance picker and, while a system contrast setting wins, the line that says so. */
+function renderTheme(): void {
+  (document.getElementById("theme-select") as HTMLSelectElement).value = choice();
+  const note = document.getElementById("theme-note")!;
+  const c = contrast();
+  note.hidden = !c;
+  note.textContent = c === "forced" ? t("app.theme.forced") : c === "more" ? t("app.theme.more") : "";
 }
 
 let dialog: HTMLDialogElement | null = null;
@@ -189,6 +200,9 @@ function globalKeys(): void {
   });
 }
 
+document.getElementById("theme-select")!.addEventListener("change", (e) => setChoice(parseChoice((e.target as HTMLSelectElement).value)));
+onThemeChange(renderTheme);
+watchContrast();
 document.getElementById("lang-select")!.addEventListener("change", (e) => setLang((e.target as HTMLSelectElement).value as Lang));
 onLangChange(() => {
   translateChrome();

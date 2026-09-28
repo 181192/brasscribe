@@ -159,7 +159,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         var n = 0
         for (e in exports) {
             val out = android.provider.DocumentsContract.createDocument(resolver, dirDoc, e.format.mime, e.file.name) ?: continue
-            resolver.openOutputStream(out)?.use { it.write(e.file.readBytes()); n++ }
+            resolver.openOutputStream(out)?.use { o -> e.file.inputStream().use { it.copyTo(o, 1 shl 16) }; n++ }
         }
         return n
     }

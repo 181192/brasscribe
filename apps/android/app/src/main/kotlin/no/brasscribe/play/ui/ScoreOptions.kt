@@ -16,13 +16,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.ScoreEntry
 
-/** The "more" icon on a score row: Edit title, Check the notes, Delete. The same three on every platform. */
+/** The "more" icon on a score row: Edit title, Open on the music stand, Check the notes, Delete. */
 @Composable
 fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
     var menu by remember { mutableStateOf(false) }
@@ -40,6 +42,12 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
                 text = { Text(stringResource(R.string.edit_title)) },
                 leadingIcon = { BcIcon(R.drawable.ic_bc_text_size, null) },
                 onClick = { menu = false; draft = entry.title; renaming = true },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.stand_open_from_library)) },
+                leadingIcon = { BcIcon(R.drawable.ic_stand_music_stand, null) },
+                onClick = { menu = false; vm.openEntry(entry, stand = true) },
+                modifier = Modifier.semantics { testTag = "open-on-stand" },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.check_notes)) },

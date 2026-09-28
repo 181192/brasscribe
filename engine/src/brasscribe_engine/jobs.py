@@ -54,7 +54,7 @@ class Job:
             if e.get("type") == "stage":
                 st = self.stages.setdefault(e["stage"], {"name": e["stage"], "kind": e.get("kind"), "status": "pending"})
                 st["status"] = e["status"]
-                for k in ("seconds", "device"):
+                for k in ("seconds", "queue_wait_s", "run_s", "device"):
                     if k in e:
                         st[k] = e[k]
             elif e.get("type") == "job" and e.get("status") in TERMINAL:
@@ -76,6 +76,11 @@ class JobManager:
         self.jobs: dict[str, Job] = {}
         self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="brasscribe-job")
         self.lock = threading.Lock()
+        # Finished runs from disk for list(), keyed by the manifest's (mtime_ns, size): a list parses only
+        # manifests that changed since the last one, and never reads events.jsonl.
+        self._summaries: dict[str, tuple[tuple[int, int], Job, list[str]]] = {}
+        self._summaries_lock = threading.Lock()
+        self.manifest_parses = 0  # for tests: manifests parsed by list()
 
     def submit(self, audio: Path, profile: str, *, audio_id: str | None = None, title: str | None = None,
                params: dict | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
@@ -112,12 +117,53 @@ class JobManager:
     def list(self) -> list[Job]:
         with self.lock:
             live = dict(self.jobs)
-        for d in sorted(self.settings.runs_dir.glob("*/manifest.json")):
-            if d.parent.name not in live:
-                j = self._from_disk(d.parent.name)
-                if j:
-                    live[j.id] = j
+        seen: set[str] = set()
+        try:
+            entries = list(os.scandir(self.settings.runs_dir))
+        except FileNotFoundError:
+            entries = []
+        for d in entries:
+            if d.name in live or not d.is_dir():
+                continue
+            j = self._summary(d.name)
+            if j:
+                seen.add(d.name)
+                live[j.id] = j
+        with self._summaries_lock:
+            for gone in set(self._summaries) - seen:
+                del self._summaries[gone]
         return sorted(live.values(), key=lambda j: j.created, reverse=True)
+
+    def _summary(self, job_id: str) -> Job | None:
+        """A finished run from disk without its events, reparsed only when manifest.json changed."""
+        mpath = self.run_dir(job_id) / "manifest.json"
+        try:
+            st = mpath.stat()
+        except FileNotFoundError:
+            return None
+        key = (st.st_mtime_ns, st.st_size)
+        with self._summaries_lock:
+            hit = self._summaries.get(job_id)
+        if hit and hit[0] == key:
+            return hit[1]
+        try:
+            job = self._from_disk(job_id, events=False)
+        except (OSError, ValueError, KeyError):
+            return None
+        if job is None:
+            return None
+        with self._summaries_lock:
+            self.manifest_parses += 1
+            self._summaries[job_id] = (key, job, _list_outputs(self.run_dir(job_id) / "outputs"))
+        return job
+
+    def outputs(self, job: Job) -> list[str]:
+        """Files under the run's outputs/ (relative, sorted); cached with the summary for runs listed from disk."""
+        with self._summaries_lock:
+            hit = self._summaries.get(job.id)
+        if hit and hit[1] is job:
+            return hit[2]
+        return _list_outputs(self.run_dir(job.id) / "outputs")
 
     def counts(self) -> tuple[int, int]:
         """(running, queued) among the jobs this engine process runs; a cancelled queued job is not counted."""
@@ -201,7 +247,7 @@ class JobManager:
     def run_dir(self, job_id: str) -> Path:
         return self.settings.runs_dir / job_id
 
-    def _from_disk(self, job_id: str) -> Job | None:
+    def _from_disk(self, job_id: str, *, events: bool = True) -> Job | None:
         mpath = self.run_dir(job_id) / "manifest.json"
         if "/" in job_id or ".." in job_id or not mpath.exists():
             return None
@@ -212,14 +258,24 @@ class JobManager:
                   created=mpath.stat().st_ctime, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
-                                       "seconds": st.get("seconds"), "device": (st.get("adapter") or {}).get("device")}
+                                       "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),
+                                       "run_s": st.get("run_s"), "device": (st.get("adapter") or {}).get("device")}
         ev = self.run_dir(job_id) / "events.jsonl"
-        if ev.exists():
+        if events and ev.exists():
             job.events = [json.loads(line) for line in ev.read_text().splitlines() if line.strip()]
         if job.status == "running":  # the server that ran it is gone
             job.status = "failed"
             job.error = job.error or "interrupted"
         return job
+
+
+def _list_outputs(d: Path) -> list[str]:
+    out: list[str] = []
+    for root, _dirs, files in os.walk(d):
+        rel = os.path.relpath(root, d)
+        prefix = "" if rel == "." else rel.replace(os.sep, "/") + "/"
+        out.extend(prefix + f for f in files)
+    return sorted(out)
 
 
 def _write(path: Path, text: str) -> None:

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Rounded (Apache-2.0): the music stand's icons from design/mockups/music-stand.js,
+     until design/tokens/icons.json carries them (design/music-stand.md §8). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960">
+    <group android:translateY="960">
+        <path android:fillColor="#FF000000" android:pathData="M280-80q-33 0-56.5-23.5T200-160v-320q0-33 23.5-56.5T280-560h40v-80q0-66 47-113t113-47q66 0 113 47t47 113v80h40q33 0 56.5 23.5T760-480v320q0 33-23.5 56.5T680-80H280Zm0-80h400v-320H280v320Zm200-100q25 0 42.5-17.5T540-320q0-25-17.5-42.5T480-380q-25 0-42.5 17.5T420-320q0 25 17.5 42.5T480-260ZM400-560h160v-80q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640v80Z"/>
+    </group>
+</vector>

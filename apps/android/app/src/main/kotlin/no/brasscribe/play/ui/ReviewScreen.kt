@@ -544,8 +544,7 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
     var shift by remember(written) { mutableIntStateOf(0) }
     val c = BrasscribeTheme.colors
     // Fully open, and scrollable, so Save is reachable at large text sizes.
-    ModalBottomSheet(onDismissRequest = dismiss, containerColor = c.bg,
-        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    PlaySheet(dismiss, c.bg) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
             verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),

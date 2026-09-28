@@ -1,5 +1,7 @@
 {
- "about": "Pin, fetch and verify the band SoundFonts the apps bundle (they are built, not in git).",
+ "about": "The band SoundFonts every app bundles: assets of the GitHub release `version` in `repo`, fetched and checked by sounds/tools/band_sounds.py.",
+ "version": "sounds-2026.09.27",
+ "repo": "181192/brasscribe",
  "files": {
   "brasscribe-band-16bit.sf2": {
    "sha256": "c27bd1c1dd8d928f9b076c907c529d55d3c5180ec117454ca351f1ad4b3cba64",

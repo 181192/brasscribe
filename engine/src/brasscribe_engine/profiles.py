@@ -33,7 +33,8 @@ class Profile:
     build: callable  # (title, params) -> list[Stage] and outputs
 
 
-ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None, "transpose": None}
+ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None, "transpose": None,
+                        "seat": None, "reads": None, "lead": "lineup"}
 LINEUPS = ("full", "minimal", "quartet")
 DIFFICULTIES = ("faithful", "standard", "easier")
 # A solo take has one line and nothing for the other three quartet parts to play.
@@ -49,6 +50,7 @@ def arrangement_options(params: dict) -> dict:
         raise ValueError(f"difficulty must be one of {', '.join(DIFFICULTIES)}")
     if "key" in opts and "transpose" in opts:
         raise ValueError("give key or transpose, not both")
+    _check_seat(opts)
     if "transpose" in opts:
         opts["transpose"] = int(opts["transpose"])
         if not -11 <= opts["transpose"] <= 11:
@@ -58,11 +60,31 @@ def arrangement_options(params: dict) -> dict:
     return opts
 
 
+def _check_seat(opts: dict) -> None:
+    """seat, reads and lead: a known seat, a clef it offers, and a tune it can carry in a band lineup."""
+    from brasscribe_music.instruments import LEADS, SEAT_IDS, check_reads
+
+    seat = opts.get("seat")
+    if seat is not None and seat not in SEAT_IDS:
+        raise ValueError(f"seat must be one of {', '.join(SEAT_IDS)}")
+    check_reads(seat, opts.get("reads"))
+    if opts.get("lead") not in (None, *LEADS):
+        raise ValueError(f"lead must be one of {', '.join(LEADS)}")
+    if opts.get("lead") == "seat" and seat is None:
+        raise ValueError("lead=seat needs a seat")
+
+
 def job_options(profile: str, params: dict) -> dict:
-    """arrangement_options, plus what the profile cannot do (the solo profile has no quartet)."""
+    """arrangement_options, plus what the profile cannot do (the solo profile has no quartet; the tune moves to
+    the seat's part in the band lineups only)."""
+    from brasscribe_music.instruments import lead_lineup, lineup_by_name
+
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
         raise ValueError(QUARTET_NEEDS_GROUP)
+    if profile != "solo" and opts.get("lead") == "seat":
+        lineup = params.get("lineup") or ("minimal" if profile in ("brass-band", "pop-rock") else "full")
+        lead_lineup(lineup_by_name(lineup), opts["seat"])
     return opts
 
 
@@ -185,6 +207,9 @@ def solo(title: str, params: dict) -> Pipeline:
     st.append(Stage("contour.solo.swift-f0", "transcribe", {"audio": mix}, S.transcribe, adapter="swift-f0-contour",
                     params={"output": "solo-sw.contour.npz"}, outputs=("solo-sw.contour.npz",), reuse_subdir="layers"))
     arrange_inputs["solo-sw.contour.npz"] = Input("contour.solo.swift-f0", "solo-sw.contour.npz")
+    # A solo take with a seat is written on the seat's part: the tune is always the player's.
+    if params.get("seat"):
+        params = {**params, "lead": "seat"}
     st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, "minimal"),
                     code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))

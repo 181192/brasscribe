@@ -16,7 +16,7 @@ use crate::beats::clean_beats_gated;
 use crate::consensus::{cluster, consensus, Sources};
 use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
 use crate::dynamics::{layer_dynamics, Bar};
-use crate::energy::{gate, Audio, Envelope, GATE_DB};
+use crate::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
 use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
 use crate::harmony::{harmony_slots, slots_to_notes};
 use crate::keys::{key_plan, CHANGE_PENALTY};
@@ -179,7 +179,16 @@ pub struct LayersOptions {
     pub key: Option<String>,
     /// Transpose the whole arrangement by this many semitones (instead of `key`).
     pub transpose: Option<i32>,
+    /// The player's seat (instruments::SEATS): a solo take is written for it (one part, its range, as played).
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch); None = the band's.
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (default when empty) or "seat" (a solo take always the seat).
+    pub lead: String,
 }
+
+/// The solo line's window without a seat: a cornet or trumpet soloist, E3-E6.
+pub const SOLO_WINDOW: (i32, i32) = (52, 88);
 
 /// Detached notes are written as (staccato) 8ths in band parts, not 16ths and rests.
 pub const PART_HOLD_WITHIN: i64 = TICKS_PER_BEAT / 2;
@@ -210,14 +219,27 @@ fn separation(l: &Layers) -> Option<String> {
     if all.iter().any(|a| a.channels != ch) {
         return None;
     }
-    let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
-    let mut mix = take(s);
-    for a in [b, d, o] {
-        for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
-            *m += *v;
-        }
-    }
-    let c = check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB);
+    // Mono solo and mono mix straight from the stems, without a full-length copy of the solo or of
+    // the interleaved mix (each as large as a decoded stem). The sums run in the same order as
+    // mixing first and then down-mixing, so the result is the same to the bit.
+    let n = n_min * ch;
+    let solo = mono_of(&s.samples[..n], ch);
+    let c = ch.max(1);
+    let mut frame = vec![0f32; c];
+    let mix: Vec<f32> = (0..n / c)
+        .map(|k| {
+            for (j, f) in frame.iter_mut().enumerate() {
+                let i = k * c + j;
+                let mut m = s.samples[i];
+                m += b.samples[i];
+                m += d.samples[i];
+                m += o.samples[i];
+                *f = m;
+            }
+            if c == 1 { frame[0] } else { py::pairwise_sum_f32(&frame) / c as f32 }
+        })
+        .collect();
+    let c = check_stem(&solo, &mix, s.sample_rate, SEPARATION_FAIL_DB);
     Some(c.to_json_string())
 }
 
@@ -237,6 +259,16 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
     }
     let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
+    if !crate::instruments::LEADS.contains(&lead) {
+        return Err(format!("lead must be one of {:?}", crate::instruments::LEADS));
+    }
+    if let Some(s) = &opts.seat {
+        crate::instruments::seat_by_id(s)?;
+    } else if lead == "seat" {
+        return Err("lead seat needs a seat".into());
+    }
+    crate::instruments::check_reads(opts.seat.as_deref(), opts.reads.as_deref())?;
     if opts.key.is_some() && opts.transpose.is_some() {
         return Err("give a key or a transposition, not both".into());
     }
@@ -323,10 +355,22 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     let pickup = first_down * TICKS_PER_BEAT;
     let half = TICKS_PER_BEAT / 2;
 
+    // A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise
+    // the solo line is the soloist's, a cornet or trumpet (E3-E6).
+    let solo_take = opts.seat.is_some() && bass_raw.is_empty() && orch_raw.is_empty() && drum_raw.is_empty();
+    let (lo, hi) = match &opts.seat {
+        Some(s) if solo_take => crate::instruments::seat_by_id(s)?.band_part().instrument.pro,
+        _ => SOLO_WINDOW,
+    };
+    if let (Some(s), false) = (&opts.seat, solo_take) {
+        if lead == "seat" {
+            crate::instruments::lead_lineup(crate::instruments::lineup_by_name(lineup_name)?, s).map_err(|e| format!("--lead seat: {e}"))?;
+        }
+    }
     let votes: Sources = vec![
-        ("sw".into(), line(&solo_sw, 52, 88, true, MIN_DUR)),
-        ("mus".into(), line(&solo_mus, 52, 88, true, MIN_DUR)),
-        ("bp".into(), line(&solo_bp, 52, 88, true, MIN_DUR)),
+        ("sw".into(), line(&solo_sw, lo, hi, true, MIN_DUR)),
+        ("mus".into(), line(&solo_mus, lo, hi, true, MIN_DUR)),
+        ("bp".into(), line(&solo_bp, lo, hi, true, MIN_DUR)),
     ];
     // Basic Pitch standing in for MuScriptor (the solo path) is one vote for the
     // confidence, not two; the clustering is unchanged.
@@ -352,7 +396,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             RawNote { pitch: c.pitch, onset: on, offset: off, confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)) }
         })
         .collect();
-    let mut solo_line = line(&cand, 52, 88, true, MIN_DUR);
+    let mut solo_line = line(&cand, lo, hi, true, MIN_DUR);
     if let Some(c) = &opts.solo_contour {
         // Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
         let keys: Vec<(f64, i32)> = solo_line.iter().map(|n| (n.onset, n.pitch)).collect();
@@ -466,11 +510,21 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     if shift != 0 {
         comp = comp.transposed(shift);
     }
-    if lineup_name != "band" || difficulty != "faithful" || shift != 0 {
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() {
         let mut a = serde_json::Map::new();
         a.insert("lineup".into(), lineup_name.into());
         a.insert("difficulty".into(), difficulty.into());
         a.insert("transpose_semitones".into(), shift.into());
+        if let Some(s) = &opts.seat {
+            // The seat's options, like the others; the arrangers read them back (composition_lineup).
+            a.insert("seat".into(), s.as_str().into());
+            if let Some(r) = &opts.reads {
+                a.insert("reads".into(), r.as_str().into());
+            }
+            if solo_take || lead == "seat" {
+                a.insert("lead".into(), "seat".into());
+            }
+        }
         comp.arrangement = Some(serde_json::Value::Object(a));
     }
     // Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
@@ -487,7 +541,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
                 .collect::<Vec<_>>()
         })
         .collect();
-    let lineup = crate::instruments::lineup_by_name(lineup_name)?;
+    let lineup = crate::arranger::composition_lineup(&comp).0;
     let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
     let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
@@ -498,15 +552,14 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
 /// `arrangement`), else the minimal arranger.
 pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
     let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
-    if !comp.voices.iter().any(|v| v.layer.is_some()) {
-        if opt("lineup").as_deref() == Some("quartet") {
+    let (lineup, layered) = crate::arranger::composition_lineup(comp);
+    if !layered {
+        if lineup != crate::instruments::minimal_band() {
             let difficulty = opt("difficulty").filter(|d| !d.is_empty()).unwrap_or_else(|| "faithful".into());
-            return crate::arranger::arrange_opts(comp, crate::instruments::quartet(), &difficulty);
+            return crate::arranger::arrange_opts(comp, lineup, &difficulty);
         }
         return Ok(arrange(comp));
     }
-    // Anything but a known lineup arranges for the band, as before lineups carried their roles.
-    let lineup = crate::instruments::lineup_by_name(opt("lineup").as_deref().unwrap_or("band")).unwrap_or_else(|_| crate::instruments::brass_band());
     let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
     crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
 }
@@ -533,6 +586,12 @@ fn melody_votes(melody: &MidiFile, support: Option<&MidiFile>) -> Vec<RawNote> {
 pub struct SongOptions {
     /// "minimal" (8 parts; the default when empty) or "quartet".
     pub lineup: String,
+    /// The player's seat (instruments::SEATS): their part; with `lead` "seat", the tune's.
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch); None = the band's.
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (default when empty) or "seat".
+    pub lead: String,
 }
 
 /// The option value of a song lineup and the lineup ("" -> minimal).
@@ -545,12 +604,21 @@ fn song_lineup(name: &str) -> Result<(&'static str, crate::instruments::Lineup),
 }
 
 /// Records a non-default lineup of the non-layered arrangers in the composition.
-fn record_lineup(comp: &mut Composition, key: &str) {
-    if key != "minimal" {
+fn record_lineup(comp: &mut Composition, key: &str, seat: Option<&str>, reads: Option<&str>, lead: &str) {
+    if key != "minimal" || seat.is_some() {
         let mut a = serde_json::Map::new();
         a.insert("lineup".into(), key.into());
         a.insert("difficulty".into(), "faithful".into());
         a.insert("transpose_semitones".into(), 0.into());
+        if let Some(s) = seat {
+            a.insert("seat".into(), s.into());
+            if let Some(r) = reads {
+                a.insert("reads".into(), r.into());
+            }
+            if lead == "seat" {
+                a.insert("lead".into(), "seat".into());
+            }
+        }
         comp.arrangement = Some(serde_json::Value::Object(a));
     }
 }
@@ -564,6 +632,21 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
 /// [`arrange_song`] for a lineup (minimal band or quartet), recorded in the composition.
 pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &SongOptions) -> Result<BandResult, String> {
     let (lineup_key, lineup) = song_lineup(&opts.lineup)?;
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
+    if !crate::instruments::LEADS.contains(&lead) {
+        return Err(format!("lead must be one of {:?}", crate::instruments::LEADS));
+    }
+    crate::instruments::check_reads(opts.seat.as_deref(), opts.reads.as_deref())?;
+    // With the tune on the player's part, the melody is taken in that part's range.
+    let window = match (&opts.seat, lead) {
+        (Some(s), "seat") => crate::instruments::lead_lineup(lineup, s)?.lead_part().instrument.pro,
+        (None, "seat") => return Err("lead seat needs a seat".into()),
+        (Some(s), _) => {
+            crate::instruments::seat_by_id(s)?;
+            SOLO_WINDOW
+        }
+        _ => SOLO_WINDOW,
+    };
     let mel_all = inp.melody.pitched();
     let bass_all = inp.bass.pitched();
     let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();
@@ -573,7 +656,7 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
     let half = TICKS_PER_BEAT / 2;
 
     let cand = melody_votes(&inp.melody, inp.melody_support.as_ref());
-    let mel_raw = line(&cand, 52, 88, true, MIN_DUR);
+    let mel_raw = line(&cand, window.0, window.1, true, MIN_DUR);
     let melody = to_notes(&fill_gaps(quantize(&mel_raw, &times, true, false), half, 0.0), pickup, "melody");
     let bass = to_notes(&fill_gaps(quantize(&line(&bass_all, 28, 55, false, MIN_DUR), &times, true, false), half, 0.0), pickup, "bass");
 
@@ -605,8 +688,8 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
         review: Vec::new(),
         arrangement: None,
     };
-    record_lineup(&mut comp, lineup_key);
-    let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
+    record_lineup(&mut comp, lineup_key, opts.seat.as_deref(), opts.reads.as_deref(), lead);
+    let arrangement = crate::arranger::arrange_opts(&comp, crate::arranger::composition_lineup(&comp).0, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
 }
@@ -711,7 +794,7 @@ pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, S
 pub fn arrange_reference_with(reference: &Value, title: &str, lineup: &str) -> Result<BandResult, String> {
     let (lineup_key, lineup) = song_lineup(lineup)?;
     let mut comp = composition_from_reference(reference, title)?;
-    record_lineup(&mut comp, lineup_key);
+    record_lineup(&mut comp, lineup_key, None, None, "lineup");
     let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
@@ -736,4 +819,60 @@ pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
         })
         .collect();
     quantize(&raw, &beats.times, false, true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Deterministic pseudo-random samples in [-0.5, 0.5).
+    fn noise(seed: u64, n: usize) -> Vec<f32> {
+        let mut x = seed;
+        (0..n)
+            .map(|_| {
+                x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                ((x >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+            })
+            .collect()
+    }
+
+    fn layers(channels: usize, frames: [usize; 4]) -> Layers {
+        let midi = || MidiFile { resolution: 480, instruments: Vec::new() };
+        let audio = |seed: u64, f: usize| Some(Audio { samples: noise(seed, f * channels), channels, sample_rate: 8000 });
+        Layers {
+            solo_sw: midi(),
+            solo_mus: midi(),
+            solo_bp: midi(),
+            bass: midi(),
+            orchestra: midi(),
+            drums: midi(),
+            solo_audio: audio(1, frames[0]),
+            bass_audio: audio(2, frames[1]),
+            drums_audio: audio(3, frames[2]),
+            orchestra_audio: audio(4, frames[3]),
+        }
+    }
+
+    /// The check as first written: mix the stems, then down-mix solo and mix to mono.
+    fn separation_by_mixing(l: &Layers) -> String {
+        let all = [&l.solo_audio, &l.bass_audio, &l.drums_audio, &l.orchestra_audio].map(|a| a.as_ref().unwrap());
+        let n_min = all.iter().map(|a| a.frames()).min().unwrap();
+        let (s, ch) = (all[0], all[0].channels);
+        let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
+        let mut mix = take(s);
+        for a in &all[1..] {
+            for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
+                *m += *v;
+            }
+        }
+        check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB).to_json_string()
+    }
+
+    #[test]
+    fn separation_without_copies_matches_mixing_first() {
+        for ch in [1, 2, 3] {
+            let l = layers(ch, [20_011, 20_000, 19_993, 20_005]);
+            assert_eq!(separation(&l).unwrap(), separation_by_mixing(&l), "{ch} channels");
+        }
+    }
 }

@@ -81,6 +81,16 @@
     <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\brasscribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsAdapters)" DestinationFiles="@(_WsAdapters->'$(_Ws)ml\adapters\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
+  <!--
+    The band sounds Studio plays (the engine serves them through BRASSCRIBE_BAND_SOUNDS_DIR): the phone band
+    SoundFont with its part map and notice under band\ next to the exe. The SoundFont is not in git; fetch it with
+    `pixi run fetch-sounds` (sounds/tools/band_sounds.py). Without it Bandroom logs that the band sounds are missing.
+  -->
+  <ItemGroup Condition="Exists('$(RepoRoot)data\sounds\band\brasscribe-band-mobile.sf2')">
+    <Content Include="$(RepoRoot)data\sounds\band\brasscribe-band-mobile.sf2" Link="band\brasscribe-band.sf2" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)sounds\mapping.json" Link="band\mapping.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)sounds\band-notice.txt" Link="band\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup Condition="'$(BandroomPixiExe)' != '' And Exists('$(BandroomPixiExe)')">
     <Content Include="$(BandroomPixiExe)" Link="pixi\pixi.exe" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

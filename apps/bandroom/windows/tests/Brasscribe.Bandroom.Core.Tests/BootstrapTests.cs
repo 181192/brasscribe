@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Brasscribe.Bandroom.Core.Supervisor;
 
 namespace Brasscribe.Bandroom.Core.Tests;
@@ -140,6 +142,61 @@ public sealed class BootstrapTests : IDisposable
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
         Assert.True(launcher.Last.Killed);
         Assert.Contains("default", boot.Pending(false));
+    }
+
+    /// <summary>
+    /// Markers an installed Bandroom already has were written with SHA256.HashData(File.ReadAllBytes(pixi.lock))
+    /// and the path-and-size bundle hash. The streamed hash must match them, or an update reinstalls everything.
+    /// </summary>
+    [Fact]
+    public async Task Markers_from_before_the_streamed_hash_still_count_as_installed()
+    {
+        var paths = new BandroomPaths(Path.Combine(_dir, "data"));
+        var bundle = Bundle();
+        File.WriteAllText(Path.Combine(bundle, "pixi.lock"), string.Concat(Enumerable.Repeat("package: x\n", 200_000))); // 2.2 MB, several buffers
+        string lockHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(Path.Combine(bundle, "pixi.lock"))));
+        var sb = new StringBuilder(lockHash);
+        foreach (var f in Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+            sb.Append('\n').Append(Path.GetRelativePath(bundle, f).Replace('\\', '/')).Append(' ').Append(new FileInfo(f).Length);
+        string bundleHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
+        Directory.CreateDirectory(paths.SetupMarkers);
+        File.WriteAllText(Path.Combine(paths.SetupMarkers, "workspace"), bundleHash);
+        foreach (var env in EnvironmentPlan.Environments(cuda: false))
+            File.WriteAllText(Path.Combine(paths.SetupMarkers, "env-" + env), lockHash);
+
+        var boot = new Bootstrapper(paths, bundle, "pixi", new FakeLauncher(), new EngineLog(null));
+        Assert.Equal(lockHash, boot.LockHash);
+        Assert.Equal(bundleHash, boot.BundleHash);
+        Assert.True(await boot.IsCompleteAsync(cuda: false));
+        Assert.True(boot.EngineReady);
+        Assert.False(boot.IsComplete(cuda: true));
+    }
+
+    /// <summary>
+    /// The app asks at start-up, again when setup is finished and on every setup progress report. Once
+    /// the answer is yes, asking again reads nothing: here pixi.lock is locked and still the answer comes.
+    /// </summary>
+    [Fact]
+    public async Task Once_complete_asking_again_does_not_read_the_lockfile()
+    {
+        var paths = new BandroomPaths(Path.Combine(_dir, "data"));
+        var bundle = Bundle();
+        var boot = new Bootstrapper(paths, bundle, "pixi", new FakeLauncher { ExitImmediately = _ => 0 }, new EngineLog(null));
+        Assert.False(await boot.IsCompleteAsync(cuda: false));
+        await boot.RunAsync(false, null, CancellationToken.None);
+        Assert.True(boot.IsComplete(cuda: false));
+        Assert.True(boot.EngineReady);
+
+        var lockFile = Path.Combine(bundle, "pixi.lock");
+        using (new FileStream(lockFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            Assert.Throws<IOException>(() => File.ReadAllBytes(lockFile));
+            Assert.True(boot.IsComplete(cuda: false));
+            Assert.True(await boot.IsCompleteAsync(cuda: false));
+            Assert.True(boot.EngineReady);
+            // Pending is exact, but the lockfile's hash is kept while its size and time are unchanged.
+            Assert.Empty(boot.Pending(cuda: false));
+        }
     }
 
     private sealed class SyncProgress(List<BootstrapProgress> list) : IProgress<BootstrapProgress>

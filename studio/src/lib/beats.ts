@@ -1,6 +1,7 @@
 // Beat tracks: the beat tracker's `mix.beats` file and the beat grid a
 // Composition carries, plus irregular-tempo (free-time) regions.
 import type { Composition } from "../api/types";
+import { maxOf } from "./extent";
 
 export interface Beat {
   time: number; // seconds
@@ -50,7 +51,7 @@ export interface TempoSummary {
 export function summarise(beats: Beat[]): TempoSummary {
   const iv = intervals(beats);
   const med = median(iv);
-  const barBeats = Math.max(0, ...beats.map((b) => b.position));
+  const barBeats = maxOf(beats, (b) => b.position, 0);
   return { bpm: med > 0 ? 60 / med : 0, barBeats, downbeats: beats.filter((b) => b.position === 1).length, beats: beats.length };
 }
 

@@ -8,8 +8,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import secrets
 import threading
 from pathlib import Path
+
+from .gpulock import file_lock
 
 _CHUNK = 1 << 20
 
@@ -36,6 +40,7 @@ class HashIndex:
     def __init__(self, index_file: Path | None = None):
         self.index_file = index_file
         self._lock = threading.Lock()
+        self._save_lock = threading.Lock()  # stages running side by side save the index too
         self._memo: dict[str, list] = {}
         if index_file and index_file.exists():
             try:
@@ -63,14 +68,34 @@ class HashIndex:
         return {p.relative_to(root).as_posix(): self.file(p) for p in sorted(root.rglob("*")) if p.is_file()}
 
     def save(self) -> None:
+        """Write the index, merged with what other processes saved meanwhile.
+
+        Engine processes, the CLI and benchmark runs can share one index file. Under a lock file
+        next to it, the file on disk is read again, this process's entries are laid over it, and the
+        result goes to a temp file of this writer's own (pid and a random suffix) that atomically
+        replaces the index, so no writer loses another's entries or reads a half-written file.
+        """
         if not self.index_file:
             return
-        with self._lock:
-            data = json.dumps(self._memo)
         self.index_file.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.index_file.with_suffix(".tmp")
-        tmp.write_text(data)
-        tmp.replace(self.index_file)
+        lock = self.index_file.with_name(self.index_file.name + ".lock")
+        with self._save_lock, file_lock(lock, poll=0.01):
+            try:
+                on_disk = json.loads(self.index_file.read_text())
+                if not isinstance(on_disk, dict):
+                    on_disk = {}
+            except (OSError, ValueError):
+                on_disk = {}
+            with self._lock:
+                merged = {**on_disk, **self._memo}
+                self._memo = merged
+                data = json.dumps(merged)
+            tmp = self.index_file.with_name(f"{self.index_file.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp")
+            try:
+                tmp.write_text(data)
+                os.replace(tmp, self.index_file)
+            finally:
+                tmp.unlink(missing_ok=True)
 
 
 def digest_of_files(files: dict[str, str]) -> str:

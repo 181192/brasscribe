@@ -19,7 +19,8 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 ## Tokens
 
 - **Source:** [`tokens/tokens.json`](tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
-  - Colour roles are sibling groups `color.light`, `color.dark` and `color.high-contrast`.
+  - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground) and `color.high-contrast-light` (on a light ground).
+  - Studio's `brasscribe.css` picks the high-contrast palette that matches the resolved theme under `prefers-contrast: more`. Compose gets `BrasscribeHighContrastLightColors`, but `BrasscribeTheme` still chooses the dark one. The Apple asset catalog and WinUI (system colours) are unchanged.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
 - **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
@@ -112,6 +113,6 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 ## Open questions
 
 1. Do brass-band players read "?" and a boxed "?" as "check this note"? This is carried over from `docs/accessibility/visual-design-tokens.md`.
-2. On Apple, *Increase Contrast* in light mode switches to the dark high-contrast palette, as the accessibility spec says. A light high-contrast variant may suit low-vision users in light mode better; test it with users.
+2. On Apple and Android, more contrast in light mode still switches to the dark high-contrast palette. `high-contrast-light` now exists (Studio uses it) and is not yet wired into the asset catalog's `high` appearance or `BrasscribeTheme`; test it with low-vision users first.
 3. Instrument Serif at 28 pt with Dynamic Type AX sizes: confirm on a device that the relative scaling to `largeTitle` stays readable.
 4. The Windows XAML is checked for well-formed XML only; it has not been compiled with WinUI on this machine (no Windows).

@@ -98,6 +98,9 @@ Conformance proves the port produces the same Composition, MusicXML, humanizatio
 ### 4. Native apps
 
 ```sh
+# The band sounds every app bundles (not in git; once per checkout, needs gh auth login)
+pixi run fetch-sounds
+
 # macOS, iOS, iPadOS
 cd apps/apple && make verovio soundfont project build test && scripts/run-fixture-mac.sh
 

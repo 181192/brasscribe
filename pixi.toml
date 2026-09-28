@@ -17,6 +17,11 @@ requires-pixi = ">=0.80"
 [activation.env]
 PYTHONUTF8 = "1"
 
+# The band SoundFonts every app bundles (not in git): the pack pinned in sounds/band-sounds.json,
+# downloaded into data/sounds/band and verified. Needs the GitHub CLI, logged in (gh auth login).
+[tasks]
+fetch-sounds = "python sounds/tools/band_sounds.py fetch"
+
 # Plain platforms: every environment except the CUDA ones.
 [feature.host]
 platforms = ["osx-arm64-macos14", "linux-64", "linux-aarch64", "win-64"]

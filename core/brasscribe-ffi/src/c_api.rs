@@ -88,7 +88,8 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
 /// `options` may be null (defaults) or
 /// `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
-///   "key": "Bb" | null, "transpose": null}` (the keys of [`bc_arrange_layers_song`]); `transpose`
+///   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ...}` (the keys of
+///   [`bc_arrange_layers_song`]); `transpose`
 /// is the total from the recording, as in `arrange_musicxml_with`.
 #[no_mangle]
 pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, options: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
@@ -100,6 +101,9 @@ pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, option
             difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
             key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
             transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+            seat: str_of(&opts, "seat"),
+            reads: str_of(&opts, "reads"),
+            lead: str_of(&opts, "lead"),
         };
         crate::arrange_with_impl(&json, &o).map_err(map_err)
     })
@@ -115,7 +119,8 @@ pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, option
 ///   "free_time": true, "free_tempo": null, "gate": true, "beat_cleanup": true,
 ///   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 ///   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
-///   "transpose": null}`: the SwiftF0 contour of the solo stem (where
+///   "transpose": null, "seat": "euphonium" | null, "reads": "treble" | "bass" | null,
+///   "lead": "lineup" | "seat" | null}`: the SwiftF0 contour of the solo stem (where
 /// sustained notes end), free-time detection on/off, a fixed BPM for free-time
 /// passages, the energy gate, beat cleanup, key changes, the lineup, the
 /// difficulty and a transposition (to a concert key or by semitones). Without stems the
@@ -212,7 +217,50 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
         difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
         key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
         transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+        seat: str_of(opts, "seat"),
+        reads: str_of(opts, "reads"),
+        lead: str_of(opts, "lead"),
     }
+}
+
+fn str_of(opts: &serde_json::Value, key: &str) -> Option<String> {
+    opts.get(key).and_then(|v| v.as_str()).map(String::from)
+}
+
+/// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool}`
+/// to `*out` for `lineup` ("band", "minimal", "quartet") and `seat` (an id of [`bc_seats`]).
+#[no_mangle]
+pub unsafe extern "C" fn bc_seat_part(lineup: *const c_char, seat: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let (Some(lineup), Some(seat)) = (from_c(lineup), from_c(seat)) else { return BC_NULL };
+    run(out, err, || {
+        let sp = crate::seat_part(lineup, seat).map_err(map_err)?;
+        Ok(serde_json::json!({"part": sp.part, "exact": sp.exact, "same_key": sp.same_key}).to_string())
+    })
+}
+
+/// Where each part of a Composition's arrangement comes from, in score order: writes
+/// `[{"part": "Solo Cornet", "source": "your-recording" | "recording" | "arranged"}, ...]` to `*out`.
+#[no_mangle]
+pub unsafe extern "C" fn bc_part_sources(composition_json: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(json) = from_c(composition_json) else { return BC_NULL };
+    run(out, err, || {
+        let rows: Vec<serde_json::Value> =
+            crate::part_sources(json).map_err(map_err)?.into_iter().map(|p| serde_json::json!({"part": p.part, "source": p.source})).collect();
+        Ok(serde_json::Value::Array(rows).to_string())
+    })
+}
+
+/// The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
+/// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"]}, ...]` to `*out`.
+#[no_mangle]
+pub unsafe extern "C" fn bc_seats(out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    run(out, err, || {
+        let rows: Vec<serde_json::Value> = crate::seats()
+            .into_iter()
+            .map(|s| serde_json::json!({"id": s.id, "name": s.name, "nb_name": s.nb_name, "instrument": s.instrument, "clef": s.clef, "reads": s.reads}))
+            .collect();
+        Ok(serde_json::Value::Array(rows).to_string())
+    })
 }
 
 unsafe fn options_json(p: *const c_char) -> Result<serde_json::Value, (i32, String)> {
@@ -261,17 +309,13 @@ pub unsafe extern "C" fn bc_arrange_layers_band(
             }
         }
     }
-    run(out, err, || {
+    // Moved, not cloned, into the call: the stems are whole WAV files (tens of MB each).
+    run(out, err, move || {
         let opts = options_json(options)?;
-        let layers = crate::LayerMidi {
-            solo_swiftf0: files[0].clone(),
-            solo_muscriptor: files[1].clone(),
-            solo_basic_pitch: files[2].clone(),
-            bass: files[3].clone(),
-            orchestra: files[4].clone(),
-            drums: files[5].clone(),
-        };
-        let [solo, bass, drums, orchestra] = stems.clone();
+        let [solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums]: [Vec<u8>; 6] =
+            files.try_into().map_err(|_| (BC_INVALID, "six MIDI files".to_string()))?;
+        let layers = crate::LayerMidi { solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums };
+        let [solo, bass, drums, orchestra] = stems;
         let st = crate::LayerStems { solo, bass, drums, orchestra };
         let r = crate::band_impl(&layers, &st, &beats, &title, options_of(&opts)).map_err(map_err)?;
         let parts: Vec<serde_json::Value> = r.parts.iter().map(|p| serde_json::json!({"file_name": p.file_name, "musicxml": p.musicxml})).collect();
