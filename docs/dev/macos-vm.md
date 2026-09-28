@@ -10,13 +10,13 @@ It has no window on the host and no link to the host's mouse or keyboard. The te
 own virtual display, 1440 × 900 pt.
 
 ```sh
-scripts/mac-vm.sh up                 # start headless, wait for SSH (provisions the first time)
-scripts/mac-vm.sh test-ui            # sync, run the Play macOS UI tests, fetch the results
-scripts/mac-vm.sh test-ui BrasscribePlayUITests_macOS/WindowSizeUITests   # one class (or one test)
+scripts/mac-vm.sh up                 # start or resume headless, wait for SSH (provisions the first time)
+scripts/mac-vm.sh test-ui            # build on the host, run every Play macOS UI test over two VMs
+scripts/mac-vm.sh test-ui WindowSizeUITests,PlayUITests/testKeyboardShortcuts   # only these
 scripts/mac-vm.sh test-ui-bandroom   # Bandroom: its UI test scheme, or build + unit tests until it has one
 scripts/mac-vm.sh ssh [command]      # a shell in the VM
-scripts/mac-vm.sh down [--reset]     # stop; --reset also reclones the VM from the provisioned base
-scripts/mac-vm.sh status             # VMs, disk use, IP
+scripts/mac-vm.sh down [--stop|--reset]  # suspend; --stop shuts down; --reset also deletes the clones
+scripts/mac-vm.sh status             # VMs, disk use, state
 ```
 
 ## Install
@@ -84,38 +84,83 @@ Measured on the first setup (September 2026):
 | `brasscribe-ui-base` | 38 GB on the host's disk: 33 GB of image, 4 GB of Xcode, and the rest |
 | Image cache (`~/.tart/cache/OCIs`) | shares its blocks with the base (APFS clone), so deleting it frees almost nothing. Delete it anyway with `tart delete ghcr.io/cirruslabs/macos-tahoe-base:latest`, so it doesn't grow on the next pull. A later `provision` of a missing base pulls again |
 | `brasscribe-ui` | a clone: only what diverges from the base. That is the synced repo, the band sounds (0.5 GB) and DerivedData (about 2 GB). `down --reset` returns it |
-| RAM while running | 10 GB for the VM (6 CPUs), returned to the host at `down` |
+| RAM while running | 10 GB + 6 GB for the two VMs (6 CPUs each), returned to the host at `down` (suspend) |
 
 `up`, `test-ui` and `provision` refuse to start when the host has less than 15 GB free
 (`MAC_VM_MIN_FREE_GB`). The guest's disk can grow into the host's.
 
 A stopped VM uses no RAM or CPU. When the tests are done, run `scripts/mac-vm.sh down`.
 
+## Where these tests sit
+
+The VM click tests are **tier 3** ([verify.md](verify.md)). Run them before a release, and for
+changes to window, input or navigation code (the window delegate, `WindowFit`, menus and keyboard
+shortcuts, the split view, sheets, the stand's entry and exit).
+
+Layout and resize regressions are covered earlier by the off-screen layout harness
+(`AppTests/LayoutHarness.swift`, `ResponsiveLayoutTests.swift`). It runs with the app unit tests
+in seconds, never touches the pointer, and runs on every change (tier 1 and 2). When a VM test
+finds a layout bug, add the case to the harness too, so it is caught without the VM next time.
+
+Run only the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests`, or
+`test-ui WindowSizeUITests/testZoomStaysInsideTheVisibleFrame,PlayUITests`.
+
 ## How a test run works
 
-`test-ui`:
+Nothing compiles in the VM, and the VMs stay up between runs. `test-ui`:
 
-1. Starts the VM if it is not running and waits for SSH.
-2. Gets the parts of the build that are not in git, on the host:
+1. Builds on the host with `xcodebuild build-for-testing` into `apps/apple/build/DerivedData-vm`.
+   This is incremental, and the host has the same Xcode as the VM. It needs the parts of the build
+   that are not in git:
    - the Rust core `BrasscribeFFI.xcframework`: always this checkout's. It is built with
      `apps/apple/scripts/build-core.sh` when missing or older than the core's sources
    - Verovio (`apps/apple/Frameworks`): from this checkout, else from the main checkout when this is
      a worktree, else `make verovio`
-   - the band sounds (`data/sounds/band`) and the optional MuseScore SoundFont: found the same way.
-     Without them the app plays the basic tier
-3. Rsyncs the repo into `~admin/brasscribe` in the VM. It leaves out `.git`, `.claude/`
-   (worktrees), `node_modules`, `build/`, DerivedData, `core/target`, `data/` and `*.xcodeproj`, then
-   adds the items above.
-4. Runs `make test-mac-ui TEST_ARGS='-resultBundlePath …'` in `apps/apple` over SSH.
-5. Copies the `.xcresult` back to `build/mac-vm/play-<time>/`. It then:
+   - the band sounds (`data/sounds/band`): linked from the main checkout in a worktree. Without
+     them the app plays the basic tier
+2. Splits the tests over the VMs (`MAC_VM_PARALLEL`, default 2). The longest go first, each to
+   the VM with the least work, using the durations of earlier runs (`build/mac-vm/durations.json`,
+   `scripts/mac-vm-plan.py`). Only two macOS guests can run at once: macOS's licence, enforced by
+   Virtualization.framework.
+3. Starts or resumes the VMs (`brasscribe-ui`, `brasscribe-ui-2`: a second clone with 6 GB).
+4. Rsyncs, incrementally, the build products, `apps/fixtures` and `sounds/` into each VM.
+5. Runs `xcodebuild test-without-building -xctestrun …` in each VM, in parallel, with
+   `-only-testing` for its share. The fixture reaches the runner as
+   `TEST_RUNNER_BRASSCRIBE_FIXTURES`.
+6. Copies each `.xcresult` back to `build/mac-vm/play-<time>/<vm>/`. It then:
    - exports the attachments into `attachments/`. `manifest.json` there maps them to tests. Xcode 27
      keeps a screen recording of each failing test instead of a screenshot, and the script saves
      each recording's last frame as `<id>-last.png` (with ffmpeg)
-   - writes `summary.json` and `tests.json`, and prints the failures
+   - writes `summary.json` and `tests.json`, and prints the failures. The xcodebuild log is
+     `play-<time>/<vm>.log`
 
-   The full log is `build/mac-vm/play-<time>.log`.
+It prints the time of each step and exits non-zero when a test fails. `down` suspends the VMs
+(they run `--suspendable`), and the next `up` or `test-ui` resumes them in seconds.
 
-It exits non-zero when a test fails.
+### Timings
+
+Measured on September 29, 2026, on a host shared with other agents. All 30 tests (25 run, 5 skip themselves):
+
+| Step | The first design: build and test in one VM | Now, warm | Now, two tests |
+|---|---|---|---|
+| VM boot or resume | 20–40 s boot | 1 s (running) or about 20 s (resumed after `down`) | 1 s |
+| Sync | rsync of the repo, a few s | 5 s (products only) | 4 s |
+| Build | in the VM, 1–7 min | 5 s on the host (incremental; about 75 s after a larger change) | 6 s |
+| Tests | 13 min 20 s in one VM | about 5 min 30 s over two VMs | 30 s |
+| Results | rsync of the whole bundle | a few s: exported in the VM, recordings stay there | 3 s |
+| **Total** | **12–16 min** | **6 min** | **44 s** |
+
+Almost all of a full run is the tests themselves. The longest is
+`testMinimumWindowOnTheScoreAndEveryPart` at about 2.5 min: it resizes the window for each of the
+18 parts. That bounds a full run even with the work split perfectly. So a change runs its classes
+(`test-ui <Class>`), well under 3 minutes, and the full suite runs before a release.
+`MAC_VM_FETCH_BUNDLE=1` also copies the whole `.xcresult` back, with the recordings. Otherwise it
+stays in the VM at `~/results/`.
+
+The first macOS alert a fresh build meets, "Allow BrasscribePlay to find devices on local
+networks?", covers the window. `dismissLocalNetworkPrompt()` in `UITestSupport.swift` answers
+Don't Allow by its position, because the runner cannot reach the alert's buttons through
+accessibility.
 
 The window size tests (`AppUITests/WindowSizeUITests.swift`):
 
@@ -141,18 +186,13 @@ They skip themselves outside a virtual machine (`kern.hv_vmm_present`).
 - Never start the VM with a window or VNC (`tart run` without `--no-graphics`). The script never does.
 - Building on the host (`make build`, `build-for-testing`) and the unit tests (`make test`) are fine.
   They do not touch the pointer.
-- One run at a time: the VM has one display. Other agents that need it wait, or use a second VM:
-  `MAC_VM_NAME=brasscribe-ui-2 scripts/mac-vm.sh test-ui` clones another from the same base,
-  with another 10 GB of RAM.
-- Read the results from `build/mac-vm/…`: `summary.json` for the failures, `attachments/` for the
-  screenshots.
-- Run `scripts/mac-vm.sh down` when finished.
-
-## Verify
-
-This section stands in until a shared verify page exists. A change to the Mac app's windows,
-layout or input is verified with `scripts/mac-vm.sh test-ui` (or `test-ui <class>`). Screenshots
-for a review come from `build/mac-vm/<run>/attachments/`, not from the host's screen.
+- Pass the affected classes: `test-ui <Class>[,<Class>/<test>…]`. Run the whole suite before a release.
+- One run at a time: a run uses both VMs, and macOS allows no third. Other agents wait for it to
+  finish.
+- Read the results from `build/mac-vm/<run>/<vm>/`: `summary.json` for the failures,
+  `attachments/*-last.png` for the screen at each failure.
+- Run `scripts/mac-vm.sh down` when finished. It suspends the VMs, which frees their RAM.
+- Screenshots for a review come from `build/mac-vm/<run>/…/attachments/`, not from the host's screen.
 
 ## Troubleshooting
 

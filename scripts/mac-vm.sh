@@ -2,13 +2,15 @@
 # The macOS UI tests (they drive a real pointer and keyboard) run in a headless Tart VM, never on
 # the desktop of the Mac you are working on. See docs/dev/macos-vm.md.
 #
-#   scripts/mac-vm.sh up                 start the VM headless and wait for SSH (provisions it the first time)
-#   scripts/mac-vm.sh test-ui [ONLY]     sync the repo in, run the Brasscribe Play macOS UI tests, copy the
-#                                        .xcresult and screenshots back to build/mac-vm/<time>/
-#                                        ONLY: an -only-testing value, e.g. BrasscribePlayUITests_macOS/WindowSizeUITests
-#   scripts/mac-vm.sh test-ui-bandroom   the same for Brasscribe Bandroom (its UI test scheme when there is one)
+#   scripts/mac-vm.sh up                 start (or resume) the VM headless and wait for SSH (provisions it the first time)
+#   scripts/mac-vm.sh test-ui [ONLY]     build for testing on the host, copy the products into the VMs, run the
+#                                        Brasscribe Play macOS UI tests there (test-without-building, spread over
+#                                        MAC_VM_PARALLEL VMs), copy results and screenshots back to build/mac-vm/<run>/
+#                                        ONLY: comma-separated classes or Class/test, e.g. WindowSizeUITests,PlayUITests/testKeyboardShortcuts
+#   scripts/mac-vm.sh test-ui-bandroom   Brasscribe Bandroom in the VM (its UI test scheme when there is one)
 #   scripts/mac-vm.sh ssh [command]      a shell (or one command) in the VM
-#   scripts/mac-vm.sh down [--reset]     stop the VM; --reset also reclones it from the provisioned base
+#   scripts/mac-vm.sh down [--stop|--reset]  suspend the VMs (resume in seconds); --stop shuts them down,
+#                                        --reset also deletes the clones (the next up reclones them)
 #   scripts/mac-vm.sh provision          set up (or finish setting up) the base VM from the Cirrus Labs image
 #   scripts/mac-vm.sh status             VMs, disk use, IP
 #
@@ -28,7 +30,10 @@ HOST_XCODE="${MAC_VM_XCODE:-/Applications/Xcode.app}"
 KEY="$HOME/.tart/brasscribe-ui_ed25519"
 PROVISIONED="$HOME/.tart/$BASE.provisioned"   # written when provisioning finished
 MIN_FREE_GB="${MAC_VM_MIN_FREE_GB:-15}"
+PARALLEL="${MAC_VM_PARALLEL:-2}"   # VMs a test-ui run spreads the tests over (macOS allows 2 macOS guests at once)
+SHARD_MEMORY_MB="${MAC_VM_SHARD_MEMORY_MB:-6144}" # memory of the extra VMs
 OUT="$ROOT/build/mac-vm"
+HOST_DERIVED="$ROOT/apps/apple/build/DerivedData-vm"   # the host build the VMs run
 REMOTE="brasscribe"   # the checkout in the VM: ~admin/brasscribe
 export DEVELOPER_DIR="${DEVELOPER_DIR:-$HOST_XCODE/Contents/Developer}"
 
@@ -41,7 +46,8 @@ SSH_OPTS=(-i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null 
           -o ConnectTimeout=5 -o ServerAliveInterval=30 -o IdentitiesOnly=yes)
 
 exists() { "$TART" list --source local --quiet 2>/dev/null | grep -qx "$1"; }
-running() { "$TART" list --format json 2>/dev/null | python3 -c 'import json,sys; n=sys.argv[1]; print(any(v.get("Name")==n and v.get("State")=="running" for v in json.load(sys.stdin)))' "$1" | grep -q True; }
+state() { "$TART" list --format json 2>/dev/null | python3 -c 'import json,sys; n=sys.argv[1]; print(next((v.get("State", "") for v in json.load(sys.stdin) if v.get("Name") == n), ""))' "$1"; }
+running() { [ "$(state "$1")" = running ]; }
 ip_of() { "$TART" ip --wait 120 "$1"; }
 
 # Start <vm> headless in the background; extra arguments go to `tart run` (e.g. --dir=…).
@@ -50,7 +56,7 @@ start() {
   if running "$vm"; then return; fi
   mkdir -p "$OUT"
   log "starting $vm headless (no window, no host input)"
-  nohup "$TART" run --no-graphics --no-audio --no-clipboard "$@" "$vm" >"$OUT/$vm.log" 2>&1 &
+  nohup "$TART" run --no-graphics --no-audio --no-clipboard --suspendable "$@" "$vm" >"$OUT/$vm.log" 2>&1 &
   disown || true
 }
 
@@ -149,29 +155,47 @@ EOF
   touch "$PROVISIONED"
 }
 
-up() {
+# Start (or resume) <vm>, cloning it from the base first; prints its IP once SSH answers.
+up_vm() {
+  local vm="$1"
   { [ -f "$PROVISIONED" ] && exists "$BASE"; } || provision >&2
   check_disk
-  if ! exists "$VM"; then
+  if ! exists "$vm"; then
     if running "$BASE"; then "$TART" stop "$BASE" >&2; fi
-    log "cloning $BASE into $VM (copy-on-write, no extra disk until it diverges)"
-    "$TART" clone "$BASE" "$VM" >&2
+    log "cloning $BASE into $vm (copy-on-write, no extra disk until it diverges)"
+    "$TART" clone "$BASE" "$vm" >&2
+    [ "$vm" = "$VM" ] || "$TART" set "$vm" --memory "$SHARD_MEMORY_MB" >&2
   fi
-  start "$VM"
-  local ip; ip="$(wait_ssh "$VM")"
+  start "$vm"
+  local ip; ip="$(wait_ssh "$vm")"
   # every boot comes back in the image's saved 1024 x 768 mode, whatever tart's --display is;
   # switch to the configured size (a no-op when it already is)
   vssh "$ip" "cat > /tmp/mac-vm-display.swift && swift /tmp/mac-vm-display.swift ${DISPLAY_SIZE%pt}" \
-    <"$ROOT/scripts/mac-vm-display.swift" >&2
-  log "$VM is up at $ip"
+    <"$ROOT/scripts/mac-vm-display.swift" >/dev/null
+  log "$vm is up at $ip"
   echo "$ip"
 }
+up() { up_vm "$VM"; }
 
+# The VMs a parallel run uses: brasscribe-ui, brasscribe-ui-2, …
+vm_names() { local i; echo "$VM"; for i in $(seq 2 "$PARALLEL"); do echo "$VM-$i"; done; }
+all_vms() { "$TART" list --source local --quiet 2>/dev/null | grep -E "^$VM(-[0-9]+)?\$" || true; }
+
+# Suspend the VMs (the next up resumes them in seconds); --stop shuts them down, --reset also
+# deletes the clones so the next up reclones them from the base.
 down() {
-  running "$VM" && { log "stopping $VM"; "$TART" stop "$VM"; }
-  if [ "${1:-}" = --reset ] && exists "$VM"; then
-    log "deleting $VM; the next up reclones it from $BASE"
-    "$TART" delete "$VM"
+  local vm
+  for vm in $(all_vms); do
+    running "$vm" || continue
+    if [ -z "${1:-}" ] && "$TART" suspend "$vm" >/dev/null 2>&1; then
+      # the suspend finishes after the command returns (the VM's memory is saved to disk)
+      local i; for i in $(seq 1 60); do [ "$(state "$vm")" = suspended ] && break; sleep 1; done
+      log "suspended $vm"; continue
+    fi
+    log "stopping $vm"; "$TART" stop "$vm" >/dev/null
+  done
+  if [ "${1:-}" = --reset ]; then
+    for vm in $(all_vms); do log "deleting $vm"; "$TART" delete "$vm"; done
   fi
 }
 
@@ -232,21 +256,18 @@ fetch_results() {
   local ip="$1" remote="$2" dest="$3"
   mkdir -p "$dest"
   if ! vssh "$ip" "test -d $remote"; then log "no result bundle at $remote"; return; fi
-  rsync -a -e "ssh ${SSH_OPTS[*]}" "admin@$ip:$remote" "$dest/"
-  local bundle="$dest/$(basename "$remote")"
-  xcrun xcresulttool export attachments --path "$bundle" --output-path "$dest/attachments" >/dev/null 2>&1 \
-    || log "could not export attachments from $bundle"
-  # a failing test gets a screen recording; its last frame is the screen at the failure
-  if command -v ffmpeg >/dev/null; then
-    local m d
-    for m in "$dest"/attachments/*.mp4; do
-      [ -f "$m" ] || continue
-      d="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$m" 2>/dev/null || echo 0)"
-      ffmpeg -y -loglevel error -ss "$(python3 -c "print(max(0, float('${d:-0}') - 0.3))")" -i "$m" -frames:v 1 "${m%.mp4}-last.png" || true
-    done
-  fi
-  xcrun xcresulttool get test-results summary --path "$bundle" --compact >"$dest/summary.json" 2>/dev/null || true
-  xcrun xcresulttool get test-results tests --path "$bundle" --compact >"$dest/tests.json" 2>/dev/null || true
+  # exported in the VM: a failing test's screen recording stays there (hundreds of MB), and only
+  # its last frame, the screen at the failure, comes back as <id>-last.png
+  local out; out="$(dirname "$remote")/export"
+  vssh "$ip" "rm -rf $out && mkdir -p $out && cat > /tmp/mac-vm-lastframe.swift \
+    && xcrun xcresulttool export attachments --path $remote --output-path $out/attachments >/dev/null \
+    && xcrun xcresulttool get test-results summary --path $remote --compact > $out/summary.json \
+    && xcrun xcresulttool get test-results tests --path $remote --compact > $out/tests.json \
+    && { ls $out/attachments/*.mp4 >/dev/null 2>&1 || exit 0; swift /tmp/mac-vm-lastframe.swift $out/attachments/*.mp4; }" \
+    <"$ROOT/scripts/mac-vm-lastframe.swift" || log "could not export the results in the VM"
+  rsync -a --exclude '*.mp4' -e "ssh ${SSH_OPTS[*]}" "admin@$ip:$out/" "$dest/"
+  # the whole bundle (with the recordings) only on request
+  [ -z "${MAC_VM_FETCH_BUNDLE:-}" ] || rsync -a -e "ssh ${SSH_OPTS[*]}" "admin@$ip:$remote" "$dest/"
   python3 - "$dest" <<'EOF' || true
 import json, sys, pathlib
 d = pathlib.Path(sys.argv[1])
@@ -261,21 +282,95 @@ EOF
   log "results in ${dest#$ROOT/}"
 }
 
+# Build the app and its UI tests on the host (build-for-testing: no input, nothing on screen), so
+# nothing compiles in the VM. The VM has the same Xcode (provision copies the host's).
+build_host() {
+  host_prereqs
+  # the band sounds are bundled at build time from data/sounds/band; a worktree borrows the main checkout's
+  if [ ! -e "$ROOT/data/sounds/band" ] && [ -n "$BAND" ]; then mkdir -p "$ROOT/data/sounds"; ln -s "$BAND" "$ROOT/data/sounds/band"; fi
+  log "building for testing on the host"
+  (cd "$ROOT/apps/apple" && xcodegen generate >/dev/null \
+    && xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath "$HOST_DERIVED" -scheme BrasscribePlay-macOS-UITests \
+         -destination platform=macOS build-for-testing -quiet 2>&1 | grep -E "error:|FAILED" >&2) || true
+  XCTESTRUN="$(ls -t "$HOST_DERIVED"/Build/Products/*.xctestrun 2>/dev/null | head -1)"
+  [ -n "$XCTESTRUN" ] || { echo "error: build-for-testing produced no .xctestrun" >&2; exit 1; }
+}
+
+# Only what the tests need: the products (incrementally), the fixture score and the band's mapping.
+sync_products() {
+  local ip="$1"
+  vssh "$ip" "mkdir -p $REMOTE/apps products"
+  rsync -a --delete -e "ssh ${SSH_OPTS[*]}" "$HOST_DERIVED/Build/Products/" "admin@$ip:products/"
+  rsync -a --delete -e "ssh ${SSH_OPTS[*]}" "$ROOT/apps/fixtures" "admin@$ip:$REMOTE/apps/"
+  rsync -a --delete -e "ssh ${SSH_OPTS[*]}" "$ROOT/sounds" "admin@$ip:$REMOTE/"
+}
+
+# Run <ids> (Class/test …) on <vm> and fetch its results into $OUT/<run>/<vm>.
+run_shard() {
+  local vm="$1" ip="$2" run="$3" ids="$4" args="" t rc=0
+  for t in $ids; do args="$args -only-testing:BrasscribePlayUITests_macOS/$t"; done
+  local result="results/$run.xcresult"
+  vssh "$ip" "pkill -x xcodebuild; pkill -x BrasscribePlay; rm -rf results; mkdir -p results; \
+    TEST_RUNNER_BRASSCRIBE_FIXTURES=\$HOME/$REMOTE/apps/fixtures/old-hundredth \
+    xcodebuild test-without-building -xctestrun products/$(basename "$XCTESTRUN") -destination platform=macOS \
+      -resultBundlePath $result $args" >"$OUT/$run/$vm.log" 2>&1 || rc=$?
+  fetch_results "$ip" "$result" "$OUT/$run/$vm" >"$OUT/$run/$vm.summary" 2>&1
+  return "$rc"
+}
+
 test_ui() {
-  local only="${1:-}" ip stamp status=0
-  ip="$(up)"
-  sync_repo "$ip"
-  stamp="$(date +%Y%m%d-%H%M%S)"
-  local result="build/mac-vm/play-$stamp.xcresult"
-  log "running make test-mac-ui in the VM${only:+ (only $only)}"
-  set +e
-  vssh "$ip" "export PATH=/opt/homebrew/bin:\$PATH; cd $REMOTE/apps/apple && rm -rf $result && make test-mac-ui \
-      TEST_ARGS='-resultBundlePath $result ${only:+-only-testing:$only}'" 2>&1 | tee "$OUT/play-$stamp.log" \
-    | grep --line-buffered -E '^(Test Suite|Test Case|.*error:|\*\* TEST)'
-  status="${PIPESTATUS[0]}"
-  set -e
-  fetch_results "$ip" "$REMOTE/apps/apple/$result" "$OUT/play-$stamp"
+  local only="${1:-}" run t status=0 vm i k line
+  run="play-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$OUT/$run"
+  t=$SECONDS
+  build_host; log "time: host build $((SECONDS - t)) s"; t=$SECONDS
+  # every test (or ONLY's), spread over the VMs by the durations of earlier runs
+  local shards=() vms=() ips=() pids=()
+  while IFS= read -r line; do shards+=("$line"); done \
+    < <(python3 "$ROOT/scripts/mac-vm-plan.py" "$PARALLEL" "$only" "$OUT/durations.json" "$ROOT/apps/apple/AppUITests")
+  i=0
+  for vm in $(vm_names); do
+    if [ -n "${shards[$i]:-}" ]; then
+      vms+=("$vm"); ips+=("$(up_vm "$vm")")
+      [ -n "${ips[${#ips[@]} - 1]}" ] || { echo "error: $vm did not come up" >&2; exit 1; }
+    fi
+    i=$((i + 1))
+  done
+  log "time: VMs up $((SECONDS - t)) s"; t=$SECONDS
+  for i in "${!ips[@]}"; do sync_products "${ips[$i]}" & done
+  wait
+  log "time: sync $((SECONDS - t)) s"; t=$SECONDS
+  k=0
+  for i in "${!shards[@]}"; do
+    [ -n "${shards[$i]}" ] || continue
+    log "${vms[$k]}: $(echo "${shards[$i]}" | wc -w | tr -d ' ') tests"
+    run_shard "${vms[$k]}" "${ips[$k]}" "$run" "${shards[$i]}" &
+    pids+=($!)
+    k=$((k + 1))
+  done
+  for i in "${pids[@]}"; do wait "$i" || status=1; done
+  log "time: tests and results $((SECONDS - t)) s"
+  cat "$OUT/$run"/*.summary
+  record_durations "$OUT/$run"
+  log "results in ${OUT#$ROOT/}/$run (xcodebuild logs: <vm>.log)"
   return "$status"
+}
+
+# Test durations of a run's result bundles, for the next run's plan (build/mac-vm/durations.json).
+record_durations() {
+  python3 - "$1" "$OUT/durations.json" <<'EOF' || true
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[2])
+known = json.loads(p.read_text()) if p.exists() else {}
+def walk(n):
+    if n.get("nodeType") == "Test Case" and "durationInSeconds" in n:
+        known[n["nodeIdentifier"].removesuffix("()")] = round(n["durationInSeconds"], 1)
+    for c in n.get("children", []):
+        walk(c)
+for f in pathlib.Path(sys.argv[1]).glob("*/tests.json"):
+    for n in json.loads(f.read_text()).get("testNodes", []):
+        walk(n)
+p.write_text(json.dumps(known, indent=1, sort_keys=True))
+EOF
 }
 
 test_ui_bandroom() {
@@ -315,6 +410,6 @@ case "$cmd" in
   status)
     "$TART" list
     du -sh "$HOME/.tart/vms/"* "$HOME/.tart/cache" 2>/dev/null || true
-    running "$VM" && echo "$VM: $("$TART" ip "$VM")" || echo "$VM: stopped" ;;
+    for vm in $(all_vms); do echo "$vm: $(state "$vm")"; done ;;
   *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

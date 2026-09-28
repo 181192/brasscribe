@@ -225,6 +225,7 @@ final class WindowSizeUITests: XCTestCase {
             app.activate()
             if !window.waitForExistence(timeout: 5), app.state == .runningForeground { app.typeKey("n", modifierFlags: .command) }
         }
+        app.dismissLocalNetworkPrompt()
         app.activate()
         let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND hittable == true"), object: window)
         XCTAssertEqual(XCTWaiter.wait(for: [hittable], timeout: 15), .completed, "the app window is on screen")
@@ -233,7 +234,7 @@ final class WindowSizeUITests: XCTestCase {
     }
 
     /// Let a resize or zoom animation, and the app's own fitting after it, finish.
-    func settle() { Thread.sleep(forTimeInterval: 1.2) }
+    func settle() { Thread.sleep(forTimeInterval: 0.7) }
 
     /// Drag the window's bottom-right corner to `target` (screen coordinates, y down).
     func dragCorner(to target: CGPoint) {
