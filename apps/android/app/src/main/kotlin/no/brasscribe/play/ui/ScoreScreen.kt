@@ -171,7 +171,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val activity = remember(context) { context.findActivity() }
     val container = vm.container
     val assistive = rememberAssistive(container.assistiveOverride)
-    val keyboard = keyboardInUse()
+    // Tab or Space since the last touch; a Bluetooth pedal (arrows, Page Up/Down) keeps nothing up.
+    val keyboard = ms.keyboardControls
     val keepControls = remember(ms.open) { container.standKeepControls }
     val follow = remember(ms.open) { container.standFollow }
     val standButton = remember { FocusRequester() }
@@ -211,10 +212,11 @@ fun ScoreScreen(vm: PlayViewModel) {
             focusOpener = true
         }
     }
-    fun turnPage(to: Int) {
+    /** [touch]: a swipe or a page button restarts the hide timer; a page key (a pedal) does not. */
+    fun turnPage(to: Int, touch: Boolean = true) {
         val p = ms.pages ?: return
         val t = to.coerceIn(0, p.count - 1)
-        ms.touches++
+        if (touch) ms.touches++
         // Past either end the page stays, and says where it is, so a pedal press is never silent.
         if (t == ms.page) {
             if (to != t) quiet(res.getString(if (to < 0) R.string.stand_first_page else R.string.stand_last_page))
@@ -229,6 +231,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         ms.layer = false
     }
     fun tapMusic() {
+        ms.keyboardControls = false
         ms.touches++
         ms.hint = false
         if (!ms.layer) { ms.layer = true; return }
@@ -253,14 +256,15 @@ fun ScoreScreen(vm: PlayViewModel) {
             else -> sheet = Sheet.LOOP
         }
     }
-    fun standCommand(cmd: StandCommand) {
-        ms.touches++
-        if (cmd != StandCommand.LEAVE) ms.layer = true
+    fun standCommand(cmd: StandCommand, showsControls: Boolean) {
+        // Only Tab and Space bring the controls up and keep them (§4.2). A page turner's keys just turn:
+        // they neither show the layer nor restart its hide timer.
+        if (showsControls && cmd != StandCommand.LEAVE) { ms.touches++; ms.layer = true; ms.keyboardControls = true }
         when (cmd) {
-            StandCommand.NEXT_PAGE -> turnPage(ms.page + 1)
-            StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1)
-            StandCommand.FIRST_PAGE -> turnPage(0)
-            StandCommand.LAST_PAGE -> turnPage(ms.pageCount - 1)
+            StandCommand.NEXT_PAGE -> turnPage(ms.page + 1, touch = false)
+            StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1, touch = false)
+            StandCommand.FIRST_PAGE -> turnPage(0, touch = false)
+            StandCommand.LAST_PAGE -> turnPage(ms.pageCount - 1, touch = false)
             StandCommand.NEXT_BAR -> moveBar(1)
             StandCommand.PREVIOUS_BAR -> moveBar(-1)
             StandCommand.PLAY_PAUSE -> controller.togglePlay()
@@ -272,16 +276,6 @@ fun ScoreScreen(vm: PlayViewModel) {
     // "Open on the music stand" in the library opens the score and the stand in one step.
     LaunchedEffect(Unit) {
         vm.standFromLibrary.value?.let { id -> vm.standFromLibrary.value = null; libraryEntry = id; enterStand(StandOrigin.LIBRARY) }
-    }
-    // Settings: Open the music stand when I turn the phone sideways (off by default); turning it upright leaves.
-    var lastOrientation by remember { androidx.compose.runtime.mutableIntStateOf(configuration.orientation) }
-    LaunchedEffect(configuration.orientation) {
-        val was = lastOrientation
-        lastOrientation = configuration.orientation
-        if (was == configuration.orientation || shape.tablet) return@LaunchedEffect
-        val sideways = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        if (!ms.open && sideways && container.standOnTurn) enterStand(StandOrigin.TURN)
-        else if (ms.open && !sideways && ms.origin == StandOrigin.TURN) leaveStand()
     }
     // The layout (the section 3 sizing table) and your part, once the score is there.
     // A narrow column (or zoom) takes fewer bars per system, never smaller or squeezed notes.

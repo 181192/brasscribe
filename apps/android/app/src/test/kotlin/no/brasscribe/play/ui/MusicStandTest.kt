@@ -127,6 +127,12 @@ class MusicStandTest {
         assertNull(r.command(KeyEvent.KEYCODE_F, ctrl = true))
         assertNull(r.command(KeyEvent.KEYCODE_DPAD_RIGHT, alt = true))
         assertNull(r.command(KeyEvent.KEYCODE_A))
+        // Only Tab and Space show the controls: a Bluetooth page turner sends arrows and Page Up/Down.
+        assertTrue(r.showsControls(KeyEvent.KEYCODE_TAB))
+        assertTrue(r.showsControls(KeyEvent.KEYCODE_SPACE))
+        for (k in listOf(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END,
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_ESCAPE)) assertFalse(r.showsControls(k))
         assertTrue(r.opensStand(KeyEvent.KEYCODE_F, ctrl = false, alt = false, shift = false))
         assertFalse(r.opensStand(KeyEvent.KEYCODE_F, ctrl = true, alt = false, shift = false))
     }

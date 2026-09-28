@@ -38,14 +38,21 @@ object MusicStandRules {
         }
     }
 
+    /**
+     * Only Tab and Space show the control layer and keep it up (§4.2). A Bluetooth page turner is a
+     * keyboard that sends arrows or Page Up/Down, so those turn the page and leave the layer as it is,
+     * and a keyboard being attached keeps nothing on screen by itself.
+     */
+    fun showsControls(keyCode: Int) = keyCode == KeyEvent.KEYCODE_TAB || keyCode == KeyEvent.KEYCODE_SPACE
+
     /** F on the score (with the score focused) opens the stand; a single-key shortcut, so no modifiers. */
     fun opensStand(keyCode: Int, ctrl: Boolean, alt: Boolean, shift: Boolean) =
         keyCode == KeyEvent.KEYCODE_F && !ctrl && !alt && !shift
 
     /**
      * Whether the control layer may hide by itself (§4.2): only while the music plays, and never with
-     * a screen reader or switch access, with focus in the layer, with a keyboard in use, or with
-     * Settings → Keep the stand controls visible.
+     * a screen reader or switch access, with focus in the layer, after Tab or Space ([keyboard]; until
+     * the next touch), or with Settings → Keep the stand controls visible.
      */
     fun autoHides(playing: Boolean, assistive: Boolean, focusInLayer: Boolean, keyboard: Boolean, keepVisible: Boolean) =
         playing && !assistive && !focusInLayer && !keyboard && !keepVisible

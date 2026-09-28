@@ -64,7 +64,6 @@ class MusicStandTest {
         container.firstRunDone = true
         container.standFollow = true
         container.standKeepControls = false
-        container.standOnTurn = false
         container.standHintShown = true
         container.assistiveOverride = false
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()

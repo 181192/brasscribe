@@ -8,19 +8,38 @@ import android.media.MediaFormat
 import android.net.Uri
 import java.nio.ByteOrder
 
-/** What an imported file held. */
-data class DecodedMedia(val audio: PcmAudio, val mime: String, val hasVideo: Boolean, val durationS: Double)
+/**
+ * What an imported file held. [audio] is null when the sound is too long to hold in memory (more
+ * than [AudioDecoder.maxSamplesInMemory]); the file itself can still go to the engine.
+ */
+data class DecodedMedia(val audio: PcmAudio?, val mime: String, val hasVideo: Boolean, val durationS: Double)
 
 class UnsupportedMediaException(message: String) : Exception(message)
 
 /**
  * Decodes the first audio track of an audio or video file (anything MediaExtractor opens: MP3, AAC,
- * M4A, FLAC, Ogg, WAV, MP4, MKV, WebM, 3GP) to mono float PCM with MediaCodec.
+ * M4A, FLAC, Ogg, WAV, MP4, MKV, WebM, 3GP) to mono float PCM with MediaCodec. The file is read a
+ * sample at a time; only the decoded mono PCM is kept, and only up to the sample limit.
  */
 object AudioDecoder {
     private const val TIMEOUT_US = 10_000L
 
-    fun decode(context: Context, uri: Uri, onProgress: (Double) -> Unit = {}): DecodedMedia {
+    /**
+     * Mono samples one import may hold in memory: a sixth of the heap (the builder and its trimmed
+     * copy briefly hold two). A 512 MB heap holds about 7 minutes at 48 kHz.
+     */
+    val maxSamplesInMemory: Int
+        get() = (Runtime.getRuntime().maxMemory() / 6 / 4).coerceAtMost(Int.MAX_VALUE - 8L).toInt()
+
+    /**
+     * [wav], when given, receives every mono sample as it is decoded (a WAV written to disk as it
+     * goes), so the whole track is decoded even when it is too long to keep in memory. Without it,
+     * decoding stops once the track is known to be longer than [maxSamples].
+     */
+    fun decode(
+        context: Context, uri: Uri, onProgress: (Double) -> Unit = {},
+        maxSamples: Int = maxSamplesInMemory, wav: WavWriter? = null,
+    ): DecodedMedia {
         val extractor = MediaExtractor()
         try {
             extractor.setDataSource(context, uri, null)
@@ -36,6 +55,14 @@ object AudioDecoder {
             val format = extractor.getTrackFormat(audioTrack)
             val mime = format.getString(MediaFormat.KEY_MIME)!!
             val durationUs = if (format.containsKey(MediaFormat.KEY_DURATION)) format.getLong(MediaFormat.KEY_DURATION) else 0L
+            var sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+            var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+            wav?.sampleRate = sampleRate
+            fun expected(rate: Int): Long = if (durationUs > 0) durationUs * rate / 1_000_000L else -1L
+            // Known to be too long before a sample is decoded: say so without decoding it.
+            if (wav == null && expected(sampleRate) > maxSamples) {
+                return DecodedMedia(null, mime, hasVideo, durationUs / 1e6)
+            }
             val codec = try {
                 MediaCodec.createDecoderByType(mime)
             } catch (e: Exception) {
@@ -43,15 +70,23 @@ object AudioDecoder {
             }
             codec.configure(format, null, null, 0)
             codec.start()
-            var sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-            var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
             var encoding = AudioFormat.ENCODING_PCM_16BIT
-            val out = FloatBuilder()
+            // Sized from the duration up front (plus a second): doubling a large array briefly holds three copies.
+            fun capacity(rate: Int): Int = expected(rate).let { if (it < 0) 1 shl 16 else (it + rate).coerceIn(1024L, maxSamples.toLong()).toInt() }
+            var out: FloatBuilder? = if (expected(sampleRate) > maxSamples) null else FloatBuilder(capacity(sampleRate))
+            var decodedSamples = 0L
             val info = MediaCodec.BufferInfo()
             var inputDone = false
             var outputDone = false
+            fun add(v: Float) {
+                wav?.write(v)
+                decodedSamples++
+                val o = out ?: return
+                if (o.size >= maxSamples) out = null else o.add(v)
+            }
             try {
                 while (!outputDone) {
+                    if (out == null && wav == null) break
                     if (!inputDone) {
                         val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
                         if (inIndex >= 0) {
@@ -71,9 +106,15 @@ object AudioDecoder {
                     when {
                         outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                             val f = codec.outputFormat
-                            sampleRate = f.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                            val rate = f.getInteger(MediaFormat.KEY_SAMPLE_RATE)
                             channels = f.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
                             if (f.containsKey(MediaFormat.KEY_PCM_ENCODING)) encoding = f.getInteger(MediaFormat.KEY_PCM_ENCODING)
+                            if (rate != sampleRate) {
+                                // HE-AAC (SBR) decodes at twice the container's rate.
+                                sampleRate = rate
+                                wav?.sampleRate = rate
+                                out = if (expected(rate) > maxSamples) null else out?.apply { ensureCapacity(capacity(rate)) }
+                            }
                         }
                         outIndex >= 0 -> {
                             val buf = codec.getOutputBuffer(outIndex)!!.order(ByteOrder.nativeOrder())
@@ -81,14 +122,17 @@ object AudioDecoder {
                             buf.limit(info.offset + info.size)
                             if (encoding == AudioFormat.ENCODING_PCM_FLOAT) {
                                 val fb = buf.asFloatBuffer()
-                                val frame = FloatArray(channels)
-                                while (fb.remaining() >= channels) { fb.get(frame); out.add(frame.average().toFloat()) }
+                                while (fb.remaining() >= channels) {
+                                    var sum = 0f
+                                    repeat(channels) { sum += fb.get() }
+                                    add(sum / channels)
+                                }
                             } else {
                                 val sb = buf.asShortBuffer()
                                 while (sb.remaining() >= channels) {
                                     var sum = 0
                                     repeat(channels) { sum += sb.get() }
-                                    out.add(sum / (32768f * channels))
+                                    add(sum / (32768f * channels))
                                 }
                             }
                             codec.releaseOutputBuffer(outIndex, false)
@@ -97,18 +141,17 @@ object AudioDecoder {
                     }
                 }
             } finally {
-                codec.stop()
+                runCatching { codec.stop() }
                 codec.release()
             }
-            val audio = PcmAudio(out.toArray(), sampleRate)
+            val audio = out?.let { PcmAudio(it.toArray(), sampleRate) }
             onProgress(1.0)
-            return DecodedMedia(audio, mime, hasVideo, if (durationUs > 0) durationUs / 1e6 else audio.seconds)
+            val seconds = if (durationUs > 0) durationUs / 1e6 else decodedSamples.toDouble() / sampleRate
+            return DecodedMedia(audio, mime, hasVideo, seconds)
         } finally {
             extractor.release()
         }
     }
-
-    private fun FloatArray.average(): Double = if (isEmpty()) 0.0 else sum().toDouble() / size
 }
 
 /** Growable float array without boxing. */
@@ -128,5 +171,10 @@ class FloatBuilder(initial: Int = 1 shl 16) {
         size += n
     }
 
-    fun toArray(): FloatArray = data.copyOf(size)
+    fun ensureCapacity(n: Int) {
+        if (n > data.size) data = data.copyOf(n)
+    }
+
+    /** The samples; the backing array itself when it is exactly full, so no second copy is made. */
+    fun toArray(): FloatArray = if (size == data.size) data else data.copyOf(size)
 }

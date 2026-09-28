@@ -72,6 +72,7 @@
     <string name="imported">Opened %1$s, %2$s</string>
     <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
     <string name="reading_file">Opening %1$s</string>
+    <string name="extracting_sound">Taking the sound out of %1$s</string>
 
     <plurals name="duration_minutes">
         <item quantity="one">%d minute</item>
@@ -347,6 +348,9 @@
     <string name="problem_score_title">The score couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
+    <string name="problem_too_large_title">This file is too big for the phone</string>
+    <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
+    <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>
     <string name="problem_import_instead">Open a file instead</string>
     <string name="problem_choose_another">Choose another file</string>
     <string name="problem_record_instead">Record instead</string>
@@ -398,8 +402,6 @@
     <string name="stand_locked">Rotation locked. The music stays this way up.</string>
     <string name="stand_unlocked">The music turns with the phone again.</string>
     <string name="stand_left">Music stand closed.</string>
-    <string name="settings_stand_on_turn">Open the music stand when I turn the phone sideways</string>
-    <string name="settings_stand_on_turn_sub">Turn it upright again to leave.</string>
     <string name="settings_stand_controls">Keep the stand controls visible</string>
     <string name="settings_stand_follow">Turn the pages while playing</string>
     <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</string>
