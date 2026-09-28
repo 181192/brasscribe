@@ -434,10 +434,17 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
             // Every window stays whole on its own screen, clear of the Dock and the menu bar: when it
             // first shows or is restored (a frame saved on a larger display), and when it moves to
             // another screen.
-            for name in [NSWindow.didBecomeMainNotification, NSWindow.didChangeScreenNotification] {
+            // After a zoom or a live resize ends, a window that reaches under the Dock is pulled back.
+            for name in [NSWindow.didBecomeMainNotification, NSWindow.didChangeScreenNotification,
+                         NSWindow.didEndLiveResizeNotification, NSWindow.didResizeNotification] {
                 fitting.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { n in
                     guard let w = n.object as? NSWindow else { return }
-                    MainActor.assumeIsolated { Self.fit(w) }
+                    // while the pointer drags an edge the window follows it; it is fitted when the drag ends
+                    if n.name == NSWindow.didResizeNotification, w.inLiveResize { return }
+                    MainActor.assumeIsolated {
+                        ZoomToVisibleFrame.install(on: w)
+                        Self.fit(w)
+                    }
                 })
             }
         }
@@ -447,11 +454,52 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
 
     @MainActor static func fit(_ w: NSWindow) {
         guard w.canBecomeMain, !w.styleMask.contains(.fullScreen), let screen = w.screen ?? NSScreen.main else { return }
-        // the content's own minimum (the home screen asks for 520 × 640), as a frame size
-        let content = w.frameRect(forContentRect: CGRect(origin: .zero, size: w.contentMinSize)).size
-        let minSize = CGSize(width: max(w.minSize.width, content.width), height: max(w.minSize.height, content.height))
-        let f = WindowFit.clamp(w.frame, into: screen.visibleFrame, minSize: minSize)
+        let f = WindowFit.clamp(w.frame, into: screen.visibleFrame, minSize: minFrameSize(w))
         if f != w.frame { w.setFrame(f, display: true, animate: false) }
+    }
+
+    /// The content's own minimum (the home screen asks for 520 × 640), as a frame size.
+    @MainActor static func minFrameSize(_ w: NSWindow) -> CGSize {
+        let content = w.frameRect(forContentRect: CGRect(origin: .zero, size: w.contentMinSize)).size
+        return CGSize(width: max(w.minSize.width, content.width), height: max(w.minSize.height, content.height))
+    }
+}
+
+/// Zoom fills the window's own screen's visible frame, not the whole screen under the Dock. It sits
+/// in front of SwiftUI's own window delegate and passes every other message on to it.
+final class ZoomToVisibleFrame: NSObject, NSWindowDelegate {
+    private weak var inner: NSWindowDelegate?
+    @MainActor private static var proxies: [ObjectIdentifier: ZoomToVisibleFrame] = [:]
+
+    private init(inner: NSWindowDelegate?) { self.inner = inner }
+
+    @MainActor static func install(on w: NSWindow) {
+        guard w.canBecomeMain, !(w.delegate is ZoomToVisibleFrame) else { return }
+        let proxy = ZoomToVisibleFrame(inner: w.delegate)
+        proxies[ObjectIdentifier(w)] = proxy
+        w.delegate = proxy
+        // closed windows let their proxies go
+        proxies = proxies.filter { key, _ in NSApp.windows.contains { ObjectIdentifier($0) == key } }
+        proxies[ObjectIdentifier(w)] = proxy
+    }
+
+    func windowWillUseStandardFrame(_ window: NSWindow, defaultFrame newFrame: NSRect) -> NSRect {
+        let own = inner?.windowWillUseStandardFrame?(window, defaultFrame: newFrame) ?? newFrame
+        guard let screen = window.screen ?? NSScreen.main else { return own }
+        let fitted = MainActor.assumeIsolated {
+            WindowFit.standardFrame(visible: screen.visibleFrame, minSize: MacLaunch.minFrameSize(window))
+        }
+        return WindowFit.overflows(own, screen.visibleFrame) ? fitted : own
+    }
+
+    // everything else goes to SwiftUI's delegate
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || (inner?.responds(to: aSelector) ?? false)
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        if let inner, inner.responds(to: aSelector) { return inner }
+        return super.forwardingTarget(for: aSelector)
     }
 }
 #endif

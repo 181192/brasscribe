@@ -220,3 +220,18 @@ func testVideo() -> URL? {
     #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark"])
     #expect(AppearanceSetting.allCases.map(\.title).allSatisfy { !$0.isEmpty })
 }
+
+/// Zoom (a double-click on the title bar) fills the visible frame, clear of the Dock, and never goes
+/// below the content's minimum; a frame under the Dock is seen as reaching past it.
+@Test func zoomFillsTheVisibleFrameNotTheScreen() {
+    // a MacBook screen with the Dock at the bottom (70 pt) and the menu bar (33 pt)
+    let visible = CGRect(x: 0, y: 70, width: 1512, height: 879)
+    #expect(WindowFit.standardFrame(visible: visible, minSize: CGSize(width: 520, height: 640)) == visible)
+    // a screen smaller than the content's minimum: the top-left stays in view
+    let tiny = CGRect(x: 0, y: 50, width: 800, height: 500)
+    #expect(WindowFit.standardFrame(visible: tiny, minSize: CGSize(width: 520, height: 640)) == CGRect(x: 0, y: -90, width: 800, height: 640))
+    let underDock = CGRect(x: 0, y: 0, width: 1512, height: 949)
+    #expect(WindowFit.overflows(underDock, visible))
+    #expect(!WindowFit.overflows(visible, visible))
+    #expect(WindowFit.clamp(underDock, into: visible) == visible)
+}

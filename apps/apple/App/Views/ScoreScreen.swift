@@ -102,8 +102,14 @@ struct PracticeView: View {
     /// most 40 % of it, so the score keeps at least 55 % of the safe area with the navigation bar
     /// counted in (ScoreHeightUITests).
     @State private var screenHeight: CGFloat = 0
+    #if os(macOS)
+    // the Mac: the bands scroll only in a short window, so no content makes the window taller than the screen
+    static let headerShare: CGFloat = 0.3
+    static let playerShare: CGFloat = 0.35
+    #else
     static let headerShare: CGFloat = 0.15
     static let playerShare: CGFloat = 0.25
+    #endif
 
     private var wide: Bool {
         #if os(macOS)

@@ -9,7 +9,6 @@ struct HeightShare: ViewModifier {
     @State private var natural: CGFloat = 0
 
     func body(content: Content) -> some View {
-        #if os(iOS)
         if height > 0 {
             ScrollView(.vertical) {
                 content.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { natural = $0 }
@@ -19,9 +18,6 @@ struct HeightShare: ViewModifier {
         } else {
             content
         }
-        #else
-        content
-        #endif
     }
 }
 
