@@ -293,9 +293,9 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
         picker.safeTap(app)
         #if os(macOS)
-        app.menuItems["Solo Cornet"].safeTap(app)
+        app.menuItems["Solo Cornet (you)"].safeTap(app)
         #else
-        app.descendants(matching: .any)["Solo Cornet"].firstMatch.safeTap(app)
+        app.descendants(matching: .any)["Solo Cornet (you)"].firstMatch.safeTap(app)
         #endif
 
         let solo = app.descendants(matching: .any)

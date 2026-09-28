@@ -141,10 +141,10 @@ enum Seats {
             // One part: its own name (the core's). Several: the instrument, then Which part?
             switch (id, seats.count) {
             case ("bb-cornet", _): return Instrument(id: id, title: String(localized: "Cornet"), detail: nil, seats: seats)
-            case ("eb-tenor-horn", _): return Instrument(id: id, title: String(localized: "Tenor horn"), detail: inEb, seats: seats)
+            case ("eb-tenor-horn", _): return Instrument(id: id, title: String(localized: "Tenor Horn"), detail: inEb, seats: seats)
             case ("baritone", _): return Instrument(id: id, title: String(localized: "Baritone"), detail: nil, seats: seats)
             case ("tenor-trombone", _): return Instrument(id: id, title: String(localized: "Trombone"), detail: nil, seats: seats)
-            case ("eb-soprano-cornet", _): return Instrument(id: id, title: name(first), detail: inEb, seats: seats)
+            case ("eb-soprano-cornet", _): return Instrument(id: id, title: String(localized: "Soprano"), detail: String(localized: "E♭ cornet"), seats: seats)
             default: return Instrument(id: id, title: name(first), detail: nil, seats: seats)
             }
         }

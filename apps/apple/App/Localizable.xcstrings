@@ -1401,6 +1401,16 @@
         }
       }
     },
+    "E♭ cornet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ess-kornett"
+          }
+        }
+      }
+    },
     "Faster": {
       "localizations": {
         "nb": {
@@ -3341,6 +3351,16 @@
         }
       }
     },
+    "Scan the code": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skann koden"
+          }
+        }
+      }
+    },
     "Score": {
       "localizations": {
         "nb": {
@@ -3447,16 +3467,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Del …"
-          }
-        }
-      }
-    },
-    "Show": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vis"
           }
         }
       }
@@ -3587,6 +3597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Solist med orkester eller band"
+          }
+        }
+      }
+    },
+    "Soprano": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sopran"
           }
         }
       }
@@ -3811,6 +3831,16 @@
         }
       }
     },
+    "Tenor Horn": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Althorn"
+          }
+        }
+      }
+    },
     "Tenor horn": {
       "localizations": {
         "nb": {
@@ -3847,6 +3877,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koden er brukt eller utløpt. Vis en ny på datamaskinen, eller velg datamaskinen over og godkjenn den der."
+          }
+        }
+      }
+    },
+    "That code isn't a Brasscribe pairing code.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er ikke en tilkoblingskode fra Brasscribe."
           }
         }
       }
@@ -4287,6 +4327,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Til takt %lld"
+          }
+        }
+      }
+    },
+    "To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning."
           }
         }
       }
@@ -4777,16 +4827,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Instrumentet ditt"
-          }
-        }
-      }
-    },
-    "Your part": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stemmen din"
           }
         }
       }

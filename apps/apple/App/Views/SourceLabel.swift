@@ -50,7 +50,8 @@ struct SourceCaption: View {
     }
 }
 
-/// Above the part view: "Your part", where it comes from, and why it isn't your seat's own part.
+/// Above the part view, in one wrapping row: where the part comes from, "Make this my part" for
+/// another part, and why your part isn't your seat's own (the lineup has none).
 struct PartHeader: View {
     @Bindable var model: PracticeModel
 
@@ -59,15 +60,23 @@ struct PartHeader: View {
             let mine = id == model.myPart
             let kind = model.partSources[id]
             if mine || kind != nil {
-                VStack(alignment: .leading, spacing: Space.s2) {
-                    if mine { Text("Your part").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader) }
-                    if let kind { SourceLabel(kind: kind) }
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    FlowLayout(spacing: Space.s2) {
+                        if let kind { SourceLabel(kind: kind) }
+                        if !mine {
+                            Button { model.makeMine(id) } label: { Text("Make this my part") }
+                                .buttonStyle(.plainText)
+                                .accessibilityIdentifier("makeMine")
+                        }
+                    }
                     if mine, let notice = model.seatNotice {
-                        NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: notice)
+                        HelperLine(systemImage: BrasscribeIcon.info.systemName, text: notice)
                             .accessibilityIdentifier("seatNotice")
                     }
                 }
-                .padding(.horizontal, Space.s5)
+                .padding(.leading, Space.s5)
+                // clear of the zoom buttons that float at the score's trailing edge
+                .padding(.trailing, 64)
                 .padding(.bottom, Space.s2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

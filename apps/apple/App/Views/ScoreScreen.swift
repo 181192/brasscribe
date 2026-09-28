@@ -61,7 +61,7 @@ struct ScoreScreen: View {
         do {
             let loaded = try await PracticeModel.open(piece)
             guard model == nil, !Task.isCancelled else { loaded.stopAll(); return }
-            if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
+            if LaunchOptions.screen?.hasPrefix("part") == true { loaded.shownPart = loaded.myPart }
             if let id = app.showPartOnOpen { app.showPartOnOpen = nil; loaded.openedOnMyPart = true; loaded.shownPart = id }
             model = loaded
             // "This small band has no 1st Baritone…": said once, politely, when the score opens
@@ -111,7 +111,6 @@ struct PracticeView: View {
             ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
                          showTalking: $showTalking, showVideo: $showVideo)
             StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) }
-            PartHeader(model: model)
             Divider().overlay(Color.Brasscribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
@@ -307,36 +306,19 @@ struct ScoreToolbar: View {
         inspectorToggle
     }
 
-    /// "All parts ▾": the part to show, and "Make this my part" for the part shown.
     private var parts: some View {
-        Menu {
-            Picker(selection: $model.shownPart) {
-                Text("All parts").tag(String?.none)
-                ForEach(model.score.parts) { p in
-                    Text(p.id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName).tag(String?.some(p.id))
-                }
-            } label: { Text("Show") }
-            .pickerStyle(.inline)
-            if let id = model.shownPart, id != model.myPart {
-                Divider()
-                Button { model.makeMine(id) } label: { Label("Make this my part", systemImage: BrasscribeIcon.playAlong.systemName) }
-                    .accessibilityIdentifier("makeMine")
+        Picker(selection: $model.shownPart) {
+            Text("All parts").tag(String?.none)
+            ForEach(model.score.parts) { p in
+                Text(p.id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName).tag(String?.some(p.id))
             }
-        } label: {
-            Label(shownTitle, systemImage: BrasscribeIcon.parts.systemName).labelStyle(.titleOnly)
-        }
-        .menuStyle(.button)
+        } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
+        .pickerStyle(.menu)
+        .labelsHidden()
         .menuTint()
-        .accessibilityLabel(Text("Parts"))
-        .accessibilityValue(Text(shownTitle))
         .accessibilityIdentifier("partPicker")
         .frame(minHeight: 44)
         .fixedSize()
-    }
-
-    private var shownTitle: String {
-        guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "All parts") }
-        return id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName
     }
 
     private var pitch: some View {
