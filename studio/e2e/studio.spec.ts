@@ -480,35 +480,32 @@ test("re-run from a manifest, follow it live, compare with the original", async 
   expect((await page.request.get(`/v1/jobs/${id}`)).status()).toBe(404);
 });
 
+// Compare runs against its own engine (playwright.config.ts), whose data holds only the committed pair
+// in e2e/fixtures/compare: the Old Hundredth fixture and a copy with two Solo Cornet notes changed
+// (bar 2 E4 -> D4, bar 4 C#5 -> B4).
+const compareURL = process.env.STUDIO_COMPARE_URL ?? `http://127.0.0.1:${process.env.STUDIO_COMPARE_PORT ?? 8797}`;
+
 test("both scores side by side with the differences marked", async ({ page }) => {
-  // A Mikkel run that differs from data/golden (an older arrangement), else skip.
-  const jobs = (await (await page.request.get("/v1/jobs")).json()) as JobLite[];
-  let other: JobLite | undefined;
-  for (const j of jobs.filter((x) => /mikkel/i.test(x.title ?? "") && x.status === "succeeded" && x.outputs?.includes("brass-band.musicxml"))) {
-    const c = await page.request.get(`/v1/jobs/${j.id}/compare?reference=mikkel-arranged-band`);
-    if (c.ok() && !(await c.json()).ok) {
-      other = j;
-      break;
-    }
-  }
-  test.skip(!other, "no Mikkel run that differs from data/golden");
-  await page.goto(`/#/compare?a=${other!.id}&b=ref:mikkel-arranged-band`);
+  const cmp = await (await page.request.get(`${compareURL}/v1/jobs/old-hundredth-a/compare?job=old-hundredth-b`)).json();
+  expect(cmp.ok).toBe(false);
+  await page.goto(`${compareURL}/#/compare?a=old-hundredth-a&b=old-hundredth-b`);
   await page.waitForFunction(() => {
     const s = document.querySelectorAll("#main bs-score");
     return s.length === 2 && Array.from(s).every((x) => (x as unknown as { rendered: boolean }).rendered);
   }, undefined, { timeout: 120_000 });
   const status = page.locator("#cmp-notation-status");
-  await expect(status).toContainText(/bars differ in/);
+  await expect(page.locator("#cmp-part")).toHaveValue("Solo Cornet");
+  await expect(status).toHaveText("2 bars differ in Solo Cornet.");
   console.log(`notation: ${await status.textContent()}`);
   await page.getByRole("button", { name: "Next difference" }).click();
-  await expect(status).toContainText(/Bar \d+: \d+ changed in A, \d+ in B\./);
+  await expect(status).toHaveText("Bar 2: 1 changed in A, 1 in B.");
   console.log(`notation: ${await status.textContent()}`);
   const marked = await page.evaluate(() => Array.from(document.querySelectorAll("#main bs-score")).map((s) => {
     const api = (s as unknown as { api: { score: { tracks: { staves: { bars: { voices: { beats: { notes: { style?: { noteHead?: number } }[] }[] }[] }[] }[] }[] } } }).api;
     return api.score.tracks.flatMap((tr) => tr.staves[0].bars.flatMap((b) => b.voices.flatMap((v) => v.beats.flatMap((be) => be.notes)))).filter((n) => n.style?.noteHead !== undefined).length;
   }));
   console.log(`notes with a changed notehead: A ${marked[0]}, B ${marked[1]}`);
-  expect(marked[0] + marked[1]).toBeGreaterThan(0);
+  expect(marked).toEqual([2, 2]);
   await page.waitForTimeout(800);
   const views = page.locator("#main bs-score .score-view");
   await views.nth(0).screenshot({ path: join(shots, "compare-notation-a.png") });
