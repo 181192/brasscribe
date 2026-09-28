@@ -3,6 +3,7 @@
 // docs/accessibility/talking-score-spec.md) driven from the keyboard.
 import type * as AT from "@coderline/alphatab";
 import { lang, t } from "../i18n";
+import { patchAlphaTab } from "../lib/alphatabfix";
 import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
@@ -266,6 +267,7 @@ export class ScoreElement extends HTMLElement {
         nativeBrowserSmoothScroll: !prefersReducedMotion(),
       },
     } as unknown as AT.json.SettingsJson;
+    patchAlphaTab(alphaTab);
     const api = new alphaTab.AlphaTabApi(surface, settings);
     this.api = api;
     api.masterVolume = MASTER_VOLUME;
@@ -861,7 +863,9 @@ declare global {
 function addReleaseTail(midi: AT.midi.MidiFile): void {
   const events = midi.events;
   if (!events.length) return;
-  const last = Math.max(...events.map((e) => e.tick));
+  // A loop, not Math.max(...ticks): spreading a large score's events overflows the call stack.
+  let last = 0;
+  for (const e of events) if (e.tick > last) last = e.tick;
   const tempos = events.filter((e): e is AT.midi.TempoChangeEvent => e instanceof alphaTab.midi.TempoChangeEvent && e.tick <= last);
   const usPerBeat = tempos.length ? tempos[tempos.length - 1].microSecondsPerQuarterNote : 500000;
   const tail = Math.round((RELEASE_TAIL_S * 1e6) / usPerBeat * midi.division);
