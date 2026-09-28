@@ -283,6 +283,25 @@ fun BandSoundsMissing(expected: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * A non-urgent notice folded to one line (a phone on its side, where the score needs the height):
+ * the whole line is a 48 dp button that opens the notice in full.
+ */
+@Composable
+fun NoticeLine(text: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val c = BrasscribeTheme.colors
+    Row(
+        modifier.fillMaxWidth().sizeIn(minHeight = 48.dp).clickable(role = Role.Button, onClick = onOpen),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+    ) {
+        BcIcon(R.drawable.ic_bc_info, null, tint = c.textMuted)
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        BcIcon(R.drawable.ic_bc_open, null, tint = c.textMuted)
+    }
+}
+
 /** The brand mark (a flat sign that flares like a bell), in brass. For brand moments only. */
 @Composable
 fun BrandMark(size: Dp = 56.dp, modifier: Modifier = Modifier) {
