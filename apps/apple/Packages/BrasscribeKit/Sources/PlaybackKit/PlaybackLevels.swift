@@ -1,4 +1,5 @@
 import Foundation
+import ScoreKit
 
 /// The loudness every Play app plays at: sounds/playback-levels.json, which the tests check these
 /// against (docs/research/12-band-sound.md §11).
@@ -12,8 +13,17 @@ public enum PlaybackLevels {
     public static let bandArrangementLUFS = -11.8
     /// Make-up gain on the band before the limiter, measured for this app's band path.
     public static let bandGainDB = 26.0
-    /// The original recording plays at this integrated loudness: a whole arrangement from the band.
-    public static let recordingTargetLUFS = -16.0
+    /// The original recording plays at the loudness the band plays the arrangement at
+    /// (`bandEstimateLUFS`), clamped to this range; at the fallback without an arrangement.
+    public static let recordingFallbackLUFS = -16.0
+    public static let recordingMinTargetLUFS = -20.0
+    public static let recordingMaxTargetLUFS = -10.0
+    /// recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase.
+    public static let bandEstimateOffsetDB = -1.2
+    /// dynamics.sampler_velocity.alphatab_lufs: (velocity, LUFS of the phrase's pitched parts on alphaSynth).
+    public static let velocityLUFS: [(Int, Double)] = [
+        (15, -46.63), (31, -40.33), (47, -36.71), (63, -28.36), (79, -24.72), (95, -22.25), (111, -17.04), (127, -15.87),
+    ]
     public static let recordingMaxBoostDB = 12.0
     public static let recordingMaxCutDB = 30.0
     /// The metronome click's peak after the output.
@@ -45,10 +55,75 @@ public enum PlaybackLevels {
         return max(1, min(127, Int((Double(y0) + Double(y1 - y0) * Double(v - x0) / Double(x1 - x0)).rounded())))
     }
 
-    /// Gain that brings a recording measured at `lufs` (integrated, whole file) to the target;
-    /// 0 for silence.
-    public static func recordingGainDB(forLUFS lufs: Double) -> Double {
+    /// Gain that brings a recording measured at `lufs` (integrated, whole file) to `target`
+    /// (the fallback target when not given); 0 for silence.
+    public static func recordingGainDB(forLUFS lufs: Double, target: Double = recordingFallbackLUFS) -> Double {
         guard lufs.isFinite else { return 0 }
-        return max(-recordingMaxCutDB, min(recordingMaxBoostDB, recordingTargetLUFS - lufs))
+        return max(-recordingMaxCutDB, min(recordingMaxBoostDB, target - lufs))
+    }
+
+    /// A pitched note for `bandEstimateLUFS`: start and end in quarter notes, the velocity it plays at.
+    public struct EstimateNote: Sendable, Equatable {
+        public var start: Double
+        public var end: Double
+        public var velocity: Double
+        public init(start: Double, end: Double, velocity: Double) {
+            self.start = start
+            self.end = end
+            self.velocity = velocity
+        }
+    }
+
+    /// L(v) of the band estimate: `velocityLUFS`, linear between its knots, falling 20·log10(v/lowest)
+    /// below the lowest knot and flat above the highest.
+    public static func velocityLoudness(_ v: Double) -> Double {
+        let first = velocityLUFS[0], last = velocityLUFS[velocityLUFS.count - 1]
+        if v <= Double(first.0) { return first.1 + 20 * log10(max(v, 1e-9) / Double(first.0)) }
+        for (a, b) in zip(velocityLUFS, velocityLUFS.dropFirst()) where v <= Double(b.0) {
+            return a.1 + (b.1 - a.1) * (v - Double(a.0)) / Double(b.0 - a.0)
+        }
+        return last.1
+    }
+
+    /// Estimated integrated LUFS of the band playing an arrangement (recording.band_estimate):
+    /// offset + 10·log10(Σ d·10^(L(v)/10) / U) over the pitched notes, U the time in which at least
+    /// one of them sounds. Nil without a note of positive length.
+    public static func bandEstimateLUFS(_ notes: [EstimateNote]) -> Double? {
+        let ns = notes.filter { $0.end > $0.start }
+        guard !ns.isEmpty else { return nil }
+        let energy = ns.reduce(0.0) { $0 + ($1.end - $1.start) * pow(10, velocityLoudness($1.velocity) / 10) }
+        var union = 0.0, end = -Double.infinity
+        for n in ns.sorted(by: { ($0.start, $0.end) < ($1.start, $1.end) }) where n.end > end {
+            union += n.end - max(n.start, end)
+            end = n.end
+        }
+        return bandEstimateOffsetDB + 10 * log10(energy / union)
+    }
+
+    /// The recording's target for an arrangement's band estimate: clamped, the fallback without one.
+    public static func recordingTargetLUFS(forEstimate estimate: Double?) -> Double {
+        guard let e = estimate, e.isFinite else { return recordingFallbackLUFS }
+        return max(recordingMinTargetLUFS, min(recordingMaxTargetLUFS, e))
+    }
+}
+
+extension PlaybackLevels {
+    /// The notes of `score` the band estimate reads: every pitched note of the parts that are not
+    /// percussion, in quarter notes, at the velocity the score's dynamics give it (before
+    /// `samplerVelocity`). Grace notes are not in the score model; a tied note may stay split, which
+    /// does not change the estimate.
+    public static func estimateNotes(_ score: Score) -> [EstimateNote] {
+        let q = Double(Score.ticksPerQuarter)
+        return score.parts.filter { !$0.isPercussion }.flatMap { part in
+            part.notes.compactMap { n -> EstimateNote? in
+                guard n.midiPitch != nil, !n.isRest, n.durTicks > 0 else { return nil }
+                return EstimateNote(start: Double(n.startTick) / q, end: Double(n.endTick) / q, velocity: Double(n.velocity))
+            }
+        }
+    }
+
+    /// The recording's target for `score`: its band estimate, clamped.
+    public static func recordingTargetLUFS(for score: Score) -> Double {
+        recordingTargetLUFS(forEstimate: bandEstimateLUFS(estimateNotes(score)))
     }
 }

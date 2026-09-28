@@ -23,10 +23,38 @@ object PlaybackLevels {
      */
     const val SFIZZ_GAIN_DB = 4.0
 
-    /** The original recording plays at this integrated loudness: a whole arrangement from the band. */
-    const val RECORDING_TARGET_LUFS = -16.0
+    /**
+     * The original recording plays at the arrangement's estimated band loudness ([bandEstimateLufs]),
+     * clamped to [RECORDING_MIN_TARGET_LUFS]..[RECORDING_MAX_TARGET_LUFS]; at this level when there is
+     * no arrangement or it has no pitched note.
+     */
+    const val RECORDING_FALLBACK_LUFS = -16.0
+    const val RECORDING_MIN_TARGET_LUFS = -20.0
+    const val RECORDING_MAX_TARGET_LUFS = -10.0
     const val RECORDING_MAX_BOOST_DB = 12.0
     const val RECORDING_MAX_CUT_DB = 30.0
+
+    /** recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase. */
+    const val BAND_ESTIMATE_OFFSET_DB = -1.2
+
+    /**
+     * L(v) of the band estimate: dynamics.sampler_velocity.alphatab_lufs, the pitched parts of the
+     * full-band phrase through alphaSynth at each velocity, as (velocity, LUFS) knots.
+     */
+    /** dynamics.velocity: each mark's MIDI velocity (alphaTab's MidiUtils.dynamicToVelocity), by MusicXML element name. */
+    val DYNAMIC_VELOCITY: Map<String, Int> = mapOf(
+        "pppppp" to 3, "ppppp" to 5, "pppp" to 10, "ppp" to 15, "pp" to 31, "p" to 47, "mp" to 63, "mf" to 79,
+        "f" to 95, "ff" to 111, "fff" to 127, "ffff" to 127, "fffff" to 127, "ffffff" to 127,
+        "sf" to 111, "sfz" to 111, "fz" to 111, "sfp" to 111, "sfpp" to 111, "sfzp" to 111,
+        "fp" to 95, "rf" to 95, "rfz" to 95, "sffz" to 95, "pf" to 87, "n" to 1,
+    )
+
+    /** dynamics.step: what an accent adds to the velocity (a marcato adds two). */
+    const val DYNAMIC_STEP = 16
+
+    val VELOCITY_LUFS: List<Pair<Int, Double>> = listOf(
+        15 to -46.63, 31 to -40.33, 47 to -36.71, 63 to -28.36, 79 to -24.72, 95 to -22.25, 111 to -17.04, 127 to -15.87,
+    )
 
     /** The metronome click's peak after the output. */
     const val METRONOME_CLICK_PEAK_DBFS = -10.0
@@ -34,12 +62,50 @@ object PlaybackLevels {
     /** alphaTab's metronome (and count-in) volume that puts its click there through the stage, measured. */
     const val METRONOME_GAIN_DB = 0.0
 
-    /** Gain that brings a recording measured at [lufs] (integrated, whole file) to the target; 0 for silence. */
-    fun recordingGainDb(lufs: Double): Double =
-        if (!lufs.isFinite()) 0.0 else (RECORDING_TARGET_LUFS - lufs).coerceIn(-RECORDING_MAX_CUT_DB, RECORDING_MAX_BOOST_DB)
+    /** Gain that brings a recording measured at [lufs] (integrated, whole file) to [targetLufs]; 0 for silence. */
+    fun recordingGainDb(lufs: Double, targetLufs: Double = RECORDING_FALLBACK_LUFS): Double =
+        if (!lufs.isFinite()) 0.0 else (targetLufs - lufs).coerceIn(-RECORDING_MAX_CUT_DB, RECORDING_MAX_BOOST_DB)
+
+    /** The recording's target for an arrangement's band estimate; the fallback when there is none. */
+    fun recordingTargetLufs(estimate: Double?): Double =
+        if (estimate == null || !estimate.isFinite()) RECORDING_FALLBACK_LUFS
+        else estimate.coerceIn(RECORDING_MIN_TARGET_LUFS, RECORDING_MAX_TARGET_LUFS)
+
+    /** L(v): linear between the [VELOCITY_LUFS] knots, 20·log10 below the lowest, the highest's above it. */
+    fun velocityLufs(v: Double): Double {
+        val (v0, l0) = VELOCITY_LUFS.first()
+        if (v <= v0) return l0 + 20 * log10(maxOf(v, 1e-9) / v0)
+        for ((a, b) in VELOCITY_LUFS.zipWithNext()) {
+            if (v <= b.first) return a.second + (b.second - a.second) * (v - a.first) / (b.first - a.first)
+        }
+        return VELOCITY_LUFS.last().second
+    }
+
+    /**
+     * Estimated integrated LUFS of the band playing an arrangement (recording.band_estimate):
+     * offset + 10·log10(Σ d·10^(L(v)/10) / U) over its pitched notes, d each note's length and U the
+     * time in which at least one sounds, both in quarter notes. Null without notes.
+     */
+    fun bandEstimateLufs(notes: List<BandNote>): Double? {
+        val ns = notes.filter { it.end > it.start }
+        if (ns.isEmpty()) return null
+        val energy = ns.sumOf { (it.end - it.start) * 10.0.pow(velocityLufs(it.velocity) / 10) }
+        var union = 0.0
+        var end = Double.NEGATIVE_INFINITY
+        for (n in ns.sortedWith(compareBy({ it.start }, { it.end }))) {
+            if (n.end > end) {
+                union += n.end - maxOf(n.start, end)
+                end = n.end
+            }
+        }
+        return BAND_ESTIMATE_OFFSET_DB + 10 * log10(energy / union)
+    }
 
     fun factor(db: Double): Float = 10.0.pow(db / 20).toFloat()
 }
+
+/** One pitched note of an arrangement for the band estimate: start and end in quarter notes, the velocity it plays at. */
+data class BandNote(val start: Double, val end: Double, val velocity: Double)
 
 /**
  * The output stage: make-up gain, then a memoryless soft limiter, the same curve on every Play app.

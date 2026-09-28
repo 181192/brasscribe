@@ -12,8 +12,8 @@ import ScoreKit
 /// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch ─▶ output stage (level match) ─┘
 /// ```
 /// Band and recording play at the same loudness (sounds/playback-levels.json): the band through
-/// its make-up gain and limiter, the recording measured once when loaded and gained to the level of
-/// a whole arrangement from the band.
+/// its make-up gain and limiter, the recording measured once when loaded and gained to the loudness
+/// the band plays this score at (`recordingTargetLUFS`, from the score's dynamics and parts).
 /// Positions are in quarter-note beats from the start of bar 1, shared by score and
 /// original; the Composition's tempo map converts to seconds in the recording.
 public final class PlaybackEngine {
@@ -95,11 +95,15 @@ public final class PlaybackEngine {
     public private(set) var originalLUFS: Double?
     /// The gain the recording plays with (PlaybackLevels.recordingGainDB), 0 until measured.
     public private(set) var originalGainDB: Double = 0
+    /// The loudness the recording is brought to: the band's estimated loudness for this score
+    /// (PlaybackLevels.recordingTargetLUFS(for:)), so switching Band and Recording keeps the level.
+    public let recordingTargetLUFS: Double
     private var measuredGainDB: Double?
 
     public init(score: Score, tempoMap: TempoMap? = nil, originalURL: URL? = nil,
                 soundBank: SoundBank = .locate(), roomIR: URL? = RoomIR.locate(), offlineFormat: AVAudioFormat? = nil) throws {
         self.score = score
+        self.recordingTargetLUFS = PlaybackLevels.recordingTargetLUFS(for: score)
         self.tempoMap = tempoMap
         self.soundBank = soundBank
         if let f = offlineFormat {
@@ -280,7 +284,7 @@ public final class PlaybackEngine {
     /// next time the recording starts, never while it plays (the stage has no smoothing).
     private func levelOriginal(url: URL) {
         let lufs = (try? LoudnessMeter.integrated(url: url, monoAsDualMono: true)) ?? -.infinity
-        let gain = PlaybackLevels.recordingGainDB(forLUFS: lufs)
+        let gain = PlaybackLevels.recordingGainDB(forLUFS: lufs, target: recordingTargetLUFS)
         let apply = { [weak self] in
             guard let self else { return }
             self.originalLUFS = lufs

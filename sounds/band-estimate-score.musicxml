@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<!-- The score of the band-estimate extraction vector (sounds/playback_levels.py): two pitched parts and a
+     percussion part; marks in directions and in notations, an accent and a marcato, a chord,
+     rests and a stretch where nothing pitched sounds. -->
+<score-partwise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>Solo Cornet</part-name>
+      <score-instrument id="P1-I1"><instrument-name>Cornet</instrument-name></score-instrument>
+      <midi-instrument id="P1-I1"><midi-channel>1</midi-channel><midi-program>57</midi-program></midi-instrument>
+    </score-part>
+    <score-part id="P2"><part-name>Euphonium</part-name>
+      <score-instrument id="P2-I1"><instrument-name>Euphonium</instrument-name></score-instrument>
+      <midi-instrument id="P2-I1"><midi-channel>2</midi-channel><midi-program>59</midi-program></midi-instrument>
+    </score-part>
+    <score-part id="P3"><part-name>Percussion</part-name>
+      <score-instrument id="P3-I1"><instrument-name>Snare Drum</instrument-name></score-instrument>
+      <midi-instrument id="P3-I1"><midi-channel>10</midi-channel><midi-unpitched>39</midi-unpitched></midi-instrument>
+    </score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type></direction>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type>
+        <notations><articulations><accent/></articulations></notations></note>
+      <note><rest/><duration>2</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type>
+        <notations><dynamics><ff/></dynamics></notations></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type>
+        <notations><articulations><strong-accent/></articulations></notations></note>
+      <note><rest/><duration>4</duration><voice>1</voice><type>half</type></note>
+    </measure>
+  </part>
+  <part id="P2">
+    <measure number="1">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef></attributes>
+      <!-- An explicit f: alphaTab would otherwise carry the previous part's last mark (ff) into this part. -->
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type></direction>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+      <note><chord/><pitch><step>G</step><octave>3</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+    <measure number="2">
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type></direction>
+      <note><pitch><step>F</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <note><rest/><duration>4</duration><voice>1</voice><type>half</type></note>
+    </measure>
+  </part>
+  <part id="P3">
+    <measure number="1">
+      <attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>percussion</sign></clef></attributes>
+      <note><unpitched><display-step>C</display-step><display-octave>5</display-octave></unpitched><duration>8</duration><instrument id="P3-I1"/><voice>1</voice><type>whole</type></note>
+    </measure>
+    <measure number="2">
+      <note><unpitched><display-step>C</display-step><display-octave>5</display-octave></unpitched><duration>8</duration><instrument id="P3-I1"/><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+</score-partwise>

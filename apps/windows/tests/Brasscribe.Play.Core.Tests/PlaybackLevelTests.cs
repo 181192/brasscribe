@@ -57,10 +57,114 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         Assert.Equal(PlaybackLevels.BandPhraseLufs, band.GetProperty("phrase_lufs").GetDouble());
         Assert.Equal(PlaybackLevels.BandGainDb, band.GetProperty("gain_db").GetProperty("windows").GetDouble());
         var rec = levels.GetProperty("recording");
-        Assert.Equal(PlaybackLevels.RecordingTargetLufs, rec.GetProperty("target_lufs").GetDouble());
+        Assert.Equal(PlaybackLevels.RecordingFallbackLufs, rec.GetProperty("fallback_lufs").GetDouble());
+        Assert.Equal(PlaybackLevels.RecordingMinTargetLufs, rec.GetProperty("min_target_lufs").GetDouble());
+        Assert.Equal(PlaybackLevels.RecordingMaxTargetLufs, rec.GetProperty("max_target_lufs").GetDouble());
         Assert.Equal(PlaybackLevels.RecordingMaxBoostDb, rec.GetProperty("max_boost_db").GetDouble());
         Assert.Equal(PlaybackLevels.RecordingMaxCutDb, rec.GetProperty("max_cut_db").GetDouble());
+        Assert.Equal(PlaybackLevels.BandEstimateOffsetDb, rec.GetProperty("band_estimate").GetProperty("offset_db").GetDouble());
+        var table = levels.GetProperty("dynamics").GetProperty("sampler_velocity").GetProperty("alphatab_lufs").EnumerateObject()
+            .Select(p => (int.Parse(p.Name), p.Value.GetDouble())).OrderBy(p => p.Item1).ToArray();
+        Assert.Equal(table, PlaybackLevels.VelocityLufs.Select(k => (k.Velocity, k.Lufs)).ToArray());
+        var velocity = levels.GetProperty("dynamics").GetProperty("velocity").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetInt32());
+        Assert.Equal(velocity.OrderBy(p => p.Key), PlaybackLevels.DynamicsVelocity.OrderBy(p => p.Key));
+        // Every mark alphaTab reads has a velocity in the table.
+        foreach (var d in Enum.GetNames<AlphaTab.Model.DynamicValue>()) Assert.True(velocity.ContainsKey(d.ToLowerInvariant()), d);
         Assert.Equal(PlaybackLevels.MetronomeClickPeakDbfs, levels.GetProperty("metronome").GetProperty("click_peak_dbfs").GetDouble());
+    }
+
+    private static double? NullableDouble(JsonElement e) => e.ValueKind == JsonValueKind.Null ? null : e.GetDouble();
+
+    [Fact]
+    public void Band_estimate_and_recording_target_match_the_shared_rule()
+    {
+        if (Vectors is null) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
+        int n = 0;
+        foreach (var c in doc.RootElement.GetProperty("band_estimate").EnumerateArray())
+        {
+            var notes = c.GetProperty("notes").EnumerateArray()
+                .Select(x => (x[0].GetDouble(), x[1].GetDouble(), x[2].GetDouble())).ToList();
+            string name = c.GetProperty("name").GetString()!;
+            double? estimate = PlaybackLevels.BandEstimateLufs(notes);
+            if (NullableDouble(c.GetProperty("estimate_lufs")) is { } want) Assert.True(Math.Abs(want - estimate!.Value) < 1e-6, $"{name}: {estimate}");
+            else Assert.Null(estimate);
+            Assert.True(Math.Abs(c.GetProperty("target_lufs").GetDouble() - PlaybackLevels.RecordingTargetLufs(estimate)) < 1e-6, name);
+            n++;
+        }
+        Assert.True(n > 10);
+        foreach (var v in doc.RootElement.GetProperty("recording_gain_for_target").EnumerateArray())
+        {
+            double lufs = NullableDouble(v.GetProperty("lufs")) ?? double.NegativeInfinity;
+            Assert.Equal(v.GetProperty("gain_db").GetDouble(), PlaybackLevels.RecordingGainDb(lufs, v.GetProperty("target_lufs").GetDouble()), 6);
+        }
+    }
+
+    /// <summary>alphaTab's own notes of each vector score (and of the golden, when present) give the shared estimate.</summary>
+    [Fact]
+    public void Band_estimate_from_alphaTabs_notes_matches_the_shared_scores()
+    {
+        if (Vectors is null) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
+        var wrong = new List<string>();
+        foreach (var c in doc.RootElement.GetProperty("band_estimate_scores").EnumerateArray())
+        {
+            string path = c.GetProperty("path").GetString()!;
+            var (estimate, notes) = Estimate(TestPaths.RepoFile(path)!);
+            double want = c.GetProperty("estimate_lufs").GetDouble();
+            log.WriteLine($"{path}: {notes} pitched notes, estimate {estimate:0.000} (shared {want:0.000})");
+            if (notes != c.GetProperty("pitched_notes").GetInt32() || Math.Abs(want - estimate!.Value) >= 0.01) wrong.Add(path);
+        }
+        if (TestPaths.RepoFile(TestPaths.GoldenMusicXml) is { } golden)
+        {
+            var (estimate, notes) = Estimate(golden);
+            log.WriteLine($"golden: {notes} pitched notes, estimate {estimate:0.000}");
+            // sounds/playback_levels.py --calibrate: -11.82, the measured -11.8 of Golden_arrangement_plays_at_the_recording_target
+            if (Math.Abs(estimate!.Value + 11.82) > 0.1) wrong.Add("golden");
+        }
+        Assert.Empty(wrong);
+    }
+
+    private static (double? Estimate, int Notes) Estimate(string musicXml)
+    {
+        var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        try
+        {
+            player.LoadScore(File.ReadAllBytes(musicXml));
+            var notes = AlphaTabScorePlayer.PitchedNotes(player.Score!);
+            Assert.Equal(PlaybackLevels.BandEstimateLufs(notes), player.BandEstimateLufs);
+            // The velocities are the ones alphaTab's MIDI generator plays (a grace note plays at its
+            // main note's mark, so compare the velocities used, not note by note).
+            var pitchedTracks = player.Tracks.Where(t => !t.IsPercussion).Select(t => t.Index).ToHashSet();
+            var played = player.PlaybackMidi!.Events.OfType<AlphaTab.Midi.NoteOnEvent>()
+                .Where(on => on.NoteVelocity > 0 && pitchedTracks.Contains((int)on.Track)).Select(on => (double)on.NoteVelocity).ToHashSet();
+            Assert.Equal(played.Order(), notes.Select(n => n.Velocity).Distinct().Order());
+            return (player.BandEstimateLufs, notes.Count(n => n.End > n.Start));
+        }
+        finally { player.Dispose(); RecordingLevel.SetArrangement(null); }
+    }
+
+    /// <summary>A score load moves the recording's target, and the recording measured before follows it.</summary>
+    [Fact]
+    public async Task Recording_follows_the_arrangement_loaded_before_or_after_it()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            string loud = Path.Combine(dir.FullName, "loud.wav");
+            WriteWav(loud, Enumerable.Range(0, 44100 * 3).SelectMany(i => Enumerable.Repeat((float)(0.5 * Math.Sin(2 * Math.PI * 1000 * i / 44100.0)), 2)).ToArray(), 2, pcm16: true);
+            var a = new ScriptedOriginal();
+            RecordingLevel.SetArrangement(-11.0);
+            double lufs = (await RecordingLevel.ApplyAsync(a, loud))!.Value;
+            Assert.Equal(-11.0, lufs + 20 * Math.Log10(a.Volume), 1);
+            RecordingLevel.SetArrangement(-19.0);
+            Assert.Equal(-19.0, lufs + 20 * Math.Log10(a.Volume), 1);
+            Assert.Equal(-10.0, RecordingLevel.SetArrangement(-4.0)); // clamped
+            Assert.Equal(-10.0, lufs + 20 * Math.Log10(a.Volume), 1);
+            Assert.Equal(PlaybackLevels.RecordingFallbackLufs, RecordingLevel.SetArrangement(null));
+            Assert.Equal(PlaybackLevels.RecordingFallbackLufs, lufs + 20 * Math.Log10(a.Volume), 1);
+        }
+        finally { RecordingLevel.SetArrangement(null); dir.Delete(true); }
     }
 
     [Fact]
@@ -166,7 +270,7 @@ public class PlaybackLevelTests(ITestOutputHelper log)
             var a = new ScriptedOriginal();
             double? lufs = await RecordingLevel.ApplyAsync(a, loud);
             Assert.NotNull(lufs);
-            Assert.Equal(PlaybackLevels.RecordingTargetLufs, lufs!.Value + 20 * Math.Log10(a.Volume), 1);
+            Assert.Equal(RecordingLevel.TargetLufs, lufs!.Value + 20 * Math.Log10(a.Volume), 1);
             var b = new ScriptedOriginal();
             Assert.NotNull(await RecordingLevel.ApplyAsync(b, quiet));
             Assert.Equal(1.0, b.Volume);
@@ -227,22 +331,27 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>
-    /// A whole arrangement from the band sits between the recording's target and the phrase target.
-    /// alphaSynth plays the score's dynamics (the golden score is mostly f and ff), so it measures
-    /// louder than the recording target, which is the arrangement at one velocity (§11).
+    /// The golden arrangement from the band lands where its band estimate says, and the recording's
+    /// target is that estimate: the recording plays at the band's loudness for this score (§11).
     /// </summary>
     [Fact]
     public void Golden_arrangement_plays_at_the_recording_target()
     {
         if (GoldenPlayer() is not { } g) return;
         using var player = g.Player;
-        player.Play();
-        var all = Pull(g.Output, 252); // the arrangement is 250 s
-        player.Pause();
-        double lufs = LoudnessMeter.Integrated(all, 44100, 2);
-        log.WriteLine($"LEVELS windows golden arrangement peak {Db(Peak(all)):0.00} dBFS, {lufs:0.00} LUFS");
-        Assert.True(Peak(all) <= OutputStage.Ceiling);
-        Assert.InRange(lufs, PlaybackLevels.RecordingTargetLufs - 1.5, PlaybackLevels.BandPhraseLufs + 1);
+        try
+        {
+            double target = RecordingLevel.TargetLufs;
+            Assert.Equal(PlaybackLevels.RecordingTargetLufs(player.BandEstimateLufs), target);
+            player.Play();
+            var all = Pull(g.Output, 252); // the arrangement is 250 s
+            player.Pause();
+            double lufs = LoudnessMeter.Integrated(all, 44100, 2);
+            log.WriteLine($"LEVELS windows golden arrangement peak {Db(Peak(all)):0.00} dBFS, {lufs:0.00} LUFS, recording target {target:0.00}");
+            Assert.True(Peak(all) <= OutputStage.Ceiling);
+            Assert.InRange(lufs, target - 0.5, target + 0.5);
+        }
+        finally { RecordingLevel.SetArrangement(null); }
     }
 
     /// <summary>The metronome click peaks at the shared level after the stage.</summary>

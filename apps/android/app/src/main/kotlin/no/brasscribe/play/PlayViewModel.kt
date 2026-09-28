@@ -936,7 +936,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val original = source.value?.audio?.let { a ->
                 val span = map.barSeconds(bar)
                 // at the band's loudness: the whole recording measured once (off the main thread)
-                withContext(Dispatchers.Default) { recordingLevel.slice(a, span.start, span.endInclusive) }
+                withContext(Dispatchers.Default) { recordingLevel.slice(a, span.start, span.endInclusive, r.musicXml) }
             }
             val score = scoreBarAudio(r, map, bar)
             BarListening.Clips(listOfNotNull(original, score), withRecording = original != null)
@@ -958,7 +958,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val from = maxOf(0, map.barStart(bar)) * secondsPerTick
         val to = map.barEnd(bar) * secondsPerTick
         // the engine's render is mastered hot: it plays at the same loudness as the recording
-        return withContext(Dispatchers.Default) { renderedLevel.slice(rendered, from, to) }
+        return withContext(Dispatchers.Default) { renderedLevel.slice(rendered, from, to, r.musicXml) }
     }
 
     fun stopListening(announce: Boolean = true) = listening.stop(announce)

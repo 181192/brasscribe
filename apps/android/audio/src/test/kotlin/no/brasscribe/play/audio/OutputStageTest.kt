@@ -38,7 +38,16 @@ class OutputStageTest {
         assertEquals(gains.getValue("android_alphatab").jsonPrimitive.double, PlaybackLevels.ALPHATAB_GAIN_DB, 0.0)
         assertEquals(gains.getValue("android_sfizz").jsonPrimitive.double, PlaybackLevels.SFIZZ_GAIN_DB, 0.0)
         val rec = levels.getValue("recording").jsonObject
-        assertEquals(rec.getValue("target_lufs").jsonPrimitive.double, PlaybackLevels.RECORDING_TARGET_LUFS, 0.0)
+        assertEquals(rec.getValue("fallback_lufs").jsonPrimitive.double, PlaybackLevels.RECORDING_FALLBACK_LUFS, 0.0)
+        assertEquals(rec.getValue("min_target_lufs").jsonPrimitive.double, PlaybackLevels.RECORDING_MIN_TARGET_LUFS, 0.0)
+        assertEquals(rec.getValue("max_target_lufs").jsonPrimitive.double, PlaybackLevels.RECORDING_MAX_TARGET_LUFS, 0.0)
+        assertEquals(rec.getValue("band_estimate").jsonObject.getValue("offset_db").jsonPrimitive.double, PlaybackLevels.BAND_ESTIMATE_OFFSET_DB, 0.0)
+        val knots = levels.getValue("dynamics").jsonObject.getValue("sampler_velocity").jsonObject.getValue("alphatab_lufs").jsonObject
+            .map { (k, x) -> k.toInt() to x.jsonPrimitive.double }.sortedBy { it.first }
+        assertEquals(knots, PlaybackLevels.VELOCITY_LUFS)
+        val dyn = levels.getValue("dynamics").jsonObject
+        assertEquals(dyn.getValue("step").jsonPrimitive.int, PlaybackLevels.DYNAMIC_STEP)
+        assertEquals(dyn.getValue("velocity").jsonObject.mapValues { it.value.jsonPrimitive.int }, PlaybackLevels.DYNAMIC_VELOCITY)
         assertEquals(rec.getValue("max_boost_db").jsonPrimitive.double, PlaybackLevels.RECORDING_MAX_BOOST_DB, 0.0)
         assertEquals(rec.getValue("max_cut_db").jsonPrimitive.double, PlaybackLevels.RECORDING_MAX_CUT_DB, 0.0)
         val met = levels.getValue("metronome").jsonObject
@@ -69,6 +78,32 @@ class OutputStageTest {
             val o = r.jsonObject
             val lufs = o.getValue("lufs").jsonPrimitive.doubleOrNull ?: Double.NEGATIVE_INFINITY
             assertEquals("$lufs", o.getValue("gain_db").jsonPrimitive.double, PlaybackLevels.recordingGainDb(lufs), 1e-6)
+        }
+    }
+
+    @Test fun recordingGainForATargetMatchesTheSharedRule() {
+        val rows = v().getValue("recording_gain_for_target").jsonArray
+        assertTrue(rows.isNotEmpty())
+        for (r in rows) {
+            val o = r.jsonObject
+            val lufs = o.getValue("lufs").jsonPrimitive.doubleOrNull ?: Double.NEGATIVE_INFINITY
+            val target = o.getValue("target_lufs").jsonPrimitive.double
+            assertEquals("$lufs -> $target", o.getValue("gain_db").jsonPrimitive.double, PlaybackLevels.recordingGainDb(lufs, target), 1e-6)
+        }
+    }
+
+    @Test fun bandEstimateAndRecordingTargetMatchTheSharedRule() {
+        val rows = v().getValue("band_estimate").jsonArray
+        assertTrue(rows.size > 5)
+        for (c in rows.map { it.jsonObject }) {
+            val name = c.getValue("name").jsonPrimitive.content
+            val notes = c.getValue("notes").jsonArray.map { n ->
+                n.jsonArray.let { BandNote(it[0].jsonPrimitive.double, it[1].jsonPrimitive.double, it[2].jsonPrimitive.double) }
+            }
+            val e = PlaybackLevels.bandEstimateLufs(notes)
+            val want = c.getValue("estimate_lufs").jsonPrimitive.doubleOrNull
+            if (want == null) assertEquals(name, null, e) else assertEquals(name, want, e!!, 1e-6)
+            assertEquals(name, c.getValue("target_lufs").jsonPrimitive.double, PlaybackLevels.recordingTargetLufs(e), 1e-6)
         }
     }
 

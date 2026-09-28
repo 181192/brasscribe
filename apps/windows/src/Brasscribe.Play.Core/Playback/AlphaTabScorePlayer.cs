@@ -115,6 +115,9 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         var generator = new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(_midi, false));
         generator.Generate();
         _lookup = generator.TickLookup;
+        // Score-exact velocities and times: the humanizer moves only the MIDI.
+        BandEstimateLufs = PlaybackLevels.BandEstimateLufs(PitchedNotes(_score));
+        RecordingLevel.SetArrangement(BandEstimateLufs);
         HumanizedNotes = Humanizer is { } humanize
             ? MidiHumanizer.Apply(_midi, Tracks.Select(t => new MidiHumanizer.Track(t.Index, t.Name, t.IsPercussion,
                 ChannelsOf(t.Index).Select(c => (int)c).ToList())).ToList(), humanize, PerformanceJson)
@@ -156,6 +159,57 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     /// <summary>Notes the humanizer moved in the loaded score.</summary>
     public int HumanizedNotes { get; private set; }
+
+    /// <summary>
+    /// The loaded arrangement's estimated band loudness (<see cref="PlaybackLevels.BandEstimateLufs"/>),
+    /// null without pitched notes. Loading a score hands it to <see cref="RecordingLevel"/>.
+    /// </summary>
+    public double? BandEstimateLufs { get; private set; }
+
+    /// <summary>
+    /// The pitched notes of a loaded score as (start, end, velocity), times in quarter notes: every
+    /// note of every beat as the MIDI generator places it (tied pieces each count), grace notes, rests
+    /// and percussion tracks left out. The velocity is the one alphaTab plays: the note's dynamics
+    /// plus one step per accent, two per marcato (<see cref="AccentSteps"/>).
+    /// </summary>
+    public static List<(double Start, double End, double Velocity)> PitchedNotes(Score score)
+    {
+        const double ticksPerQuarter = 960; // MidiUtils.QuarterTime
+        var notes = new List<(double, double, double)>();
+        foreach (var track in score.Tracks)
+        {
+            if (track.Staves.Any(s => s.IsPercussion)) continue;
+            foreach (var staff in track.Staves)
+                foreach (var bar in staff.Bars)
+                    foreach (var voice in bar.Voices)
+                        foreach (var beat in voice.Beats)
+                        {
+                            if (beat.IsRest || beat.GraceType != GraceType.None || beat.PlaybackDuration <= 0) continue;
+                            double start = beat.AbsolutePlaybackStart / ticksPerQuarter, end = start + beat.PlaybackDuration / ticksPerQuarter;
+                            foreach (var note in beat.Notes)
+                            {
+                                double v = DynamicVelocity(note.Dynamics) + 16 * AccentSteps(note.Accentuated);
+                                notes.Add((start, end, Math.Clamp(v, 1, 127)));
+                            }
+                        }
+        }
+        return notes;
+    }
+
+    /// <summary>
+    /// The velocity of a dynamics mark (dynamics.velocity, alphaTab's MidiUtils.dynamicToVelocity,
+    /// which is internal): looked up by the mark's name.
+    /// </summary>
+    internal static int DynamicVelocity(DynamicValue d) =>
+        PlaybackLevels.DynamicsVelocity.TryGetValue(d.ToString().ToLowerInvariant(), out int v) ? v : PlaybackLevels.DynamicsVelocity["f"];
+
+    /// <summary>dynamics.accent_steps: an accent one step (16) up, a marcato (heavy accent) two.</summary>
+    private static int AccentSteps(AccentuationType a) => a switch
+    {
+        AccentuationType.Normal => 1,
+        AccentuationType.Heavy => 2,
+        _ => 0,
+    };
 
     /// <summary>The MIDI the synth plays (after humanization).</summary>
     internal MidiFile? PlaybackMidi => _midi;

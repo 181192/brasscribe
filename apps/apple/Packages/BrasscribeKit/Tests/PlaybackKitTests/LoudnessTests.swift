@@ -29,7 +29,14 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         #expect((sampler["apple_pitched"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPitched.map { [$0.0, $0.1] })
         #expect((sampler["apple_percussion"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPercussion.map { [$0.0, $0.1] })
         let rec = try #require(levels["recording"] as? [String: Any])
-        #expect(rec["target_lufs"] as? Double == PlaybackLevels.recordingTargetLUFS)
+        #expect(rec["fallback_lufs"] as? Double == PlaybackLevels.recordingFallbackLUFS)
+        #expect(rec["min_target_lufs"] as? Double == PlaybackLevels.recordingMinTargetLUFS)
+        #expect(rec["max_target_lufs"] as? Double == PlaybackLevels.recordingMaxTargetLUFS)
+        #expect((rec["band_estimate"] as? [String: Any])?["offset_db"] as? Double == PlaybackLevels.bandEstimateOffsetDB)
+        let knots = try #require(sampler["alphatab_lufs"] as? [String: Double])
+        let fromJSON: [String] = knots.map { (Int($0.key)!, $0.value) }.sorted { $0.0 < $1.0 }.map { "\($0.0) \($0.1)" }
+        let inCode: [String] = PlaybackLevels.velocityLUFS.map { "\($0.0) \($0.1)" }
+        #expect(fromJSON == inCode)
         #expect(rec["max_boost_db"] as? Double == PlaybackLevels.recordingMaxBoostDB)
         #expect(rec["max_cut_db"] as? Double == PlaybackLevels.recordingMaxCutDB)
         let met = try #require(levels["metronome"] as? [String: Any])
@@ -50,6 +57,47 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         for r in rows {
             let lufs = (r["lufs"] as? Double) ?? -.infinity
             #expect(abs(PlaybackLevels.recordingGainDB(forLUFS: lufs) - (r["gain_db"] as! Double)) < 1e-6, "\(lufs)")
+        }
+    }
+
+    @Test func recordingGainForATargetMatchesTheSharedRule() throws {
+        let rows = try #require(v["recording_gain_for_target"] as? [[String: Any]])
+        #expect(rows.count > 5)
+        for r in rows {
+            let lufs = (r["lufs"] as? Double) ?? -.infinity, target = r["target_lufs"] as! Double
+            #expect(abs(PlaybackLevels.recordingGainDB(forLUFS: lufs, target: target) - (r["gain_db"] as! Double)) < 1e-6, "\(lufs) to \(target)")
+        }
+    }
+
+    @Test func bandEstimateMatchesTheSharedRule() throws {
+        let cases = try #require(v["band_estimate"] as? [[String: Any]])
+        #expect(cases.count > 10)
+        for c in cases {
+            let notes = (c["notes"] as! [[Double]]).map { PlaybackLevels.EstimateNote(start: $0[0], end: $0[1], velocity: $0[2]) }
+            let name = c["name"] as! String
+            let e = PlaybackLevels.bandEstimateLUFS(notes)
+            if let want = c["estimate_lufs"] as? Double {
+                #expect(abs((e ?? .nan) - want) < 1e-6, "\(name)")
+            } else {
+                #expect(e == nil, "\(name)")
+            }
+            #expect(abs(PlaybackLevels.recordingTargetLUFS(forEstimate: e) - (c["target_lufs"] as! Double)) < 1e-6, "\(name)")
+        }
+    }
+
+    /// The same estimate from the notes ScoreKit reads from each score.
+    @Test func bandEstimateFromTheScoreModel() throws {
+        let scores = try #require(v["band_estimate_scores"] as? [[String: Any]])
+        let root = try #require(repoRoot())
+        #expect(scores.count == 2)
+        for c in scores {
+            let path = c["path"] as! String
+            let score = try MusicXMLParser.parse(url: root.appending(path: path))
+            let notes = PlaybackLevels.estimateNotes(score)
+            let e = try #require(PlaybackLevels.bandEstimateLUFS(notes))
+            print("LEVELS band estimate \(path): \(notes.count) notes, \(e) LUFS")
+            #expect(abs(e - (c["estimate_lufs"] as! Double)) < 0.01, "\(path)")
+            #expect(abs(PlaybackLevels.recordingTargetLUFS(for: score) - (c["target_lufs"] as! Double)) < 0.01, "\(path)")
         }
     }
 
@@ -132,6 +180,14 @@ struct RecordingLevelTests {
         return url
     }
 
+    /// The golden arrangement's recording target is its band estimate: what Windows measures it at.
+    @Test func goldenTargetIsTheBandsLoudness() throws {
+        let target = PlaybackLevels.recordingTargetLUFS(for: score)
+        print("LEVELS golden recording target \(target) LUFS")
+        #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.1)
+        #expect(abs(target - (-11.82)) < 0.01)
+    }
+
     @Test func loudnessIsMeasuredQuickly() throws {
         let t0 = Date()
         let lufs = try LoudnessMeter.integrated(url: recording)
@@ -148,11 +204,12 @@ struct RecordingLevelTests {
         let buf = try e.renderOriginal(fromBeat: 0, seconds: Double(f.length) / f.processingFormat.sampleRate)
         let lufs = LoudnessMeter.integrated(buf)
         print("LEVELS recording file \(file) LUFS, gain \(e.originalGainDB) dB, played \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.recordingTargetLUFS) < 0.5)
+        #expect(abs(lufs - e.recordingTargetLUFS) < 0.5)
         #expect(buf.peak <= OutputStageKernel.ceiling)
     }
 
-    /// Quiet, loud and mono recordings all play at the target, and the limiter catches the boost.
+    /// Quiet, loud and mono recordings all play at the target (or as close as the boost cap allows),
+    /// and the limiter catches the boost.
     @Test(arguments: [(-8.0, false), (8.0, false), (-6.0, true), (6.0, true)])
     func anyRecordingPlaysAtTheTarget(gainDB: Double, mono: Bool) throws {
         let url = try variant(seconds: 60, mono: mono, gainDB: gainDB)
@@ -161,7 +218,10 @@ struct RecordingLevelTests {
         let buf = try e.renderOriginal(fromBeat: 0, seconds: 60)
         let lufs = LoudnessMeter.integrated(buf)
         print("LEVELS variant \(gainDB) dB mono \(mono): file \(e.originalLUFS ?? .nan) LUFS, gain \(e.originalGainDB) dB, played \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.recordingTargetLUFS) < 0.5, "a mono file plays from both speakers at full level")
+        // at the target, unless the +12 dB cap stops a quiet file short of it
+        let file = try #require(e.originalLUFS)
+        let want = file + PlaybackLevels.recordingGainDB(forLUFS: file, target: e.recordingTargetLUFS)
+        #expect(abs(lufs - want) < 0.5, "a mono file plays from both speakers at full level")
         #expect(buf.peak <= OutputStageKernel.ceiling)
     }
 

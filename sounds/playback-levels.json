@@ -1,5 +1,5 @@
 {
-  "about": "One loudness target for every Play app (docs/research/12-band-sound.md §11). The band goes through make-up gain and then the soft limiter; the original recording (and any rendered clip played as the band) is measured once, as a whole, and gained to recording.target_lufs; the metronome click peaks at metronome.click_peak_dbfs. sounds/playback_levels.py --vectors writes sounds/output-stage-vectors.json from this file.",
+  "about": "One loudness target for every Play app (docs/research/12-band-sound.md §11). The band goes through make-up gain and then the soft limiter; the original recording (and any rendered clip played as the band) is measured once, as a whole, and gained to the loudness the band plays that arrangement at (recording.band_estimate); the metronome click peaks at metronome.click_peak_dbfs. sounds/playback_levels.py --vectors writes sounds/output-stage-vectors.json from this file.",
   "limiter": {
     "about": "Memoryless soft limiter: y = x for |x| <= threshold, else sign(x) * (threshold + (ceiling - threshold) * tanh((|x| - threshold) / (ceiling - threshold))). No attack or release, so it cannot pump, and below the threshold every part keeps its level.",
     "threshold": 0.8,
@@ -71,8 +71,14 @@
     }
   },
   "recording": {
-    "about": "The original recording is played at target_lufs integrated (EBU R128, whole file, a mono file measured as dual mono because it plays from both speakers), the level of a whole arrangement from the band. gain = clamp(target_lufs - measured, -max_cut_db, max_boost_db); 0 when the file is silent. The limiter follows the gain, so a boost cannot clip.",
-    "target_lufs": -16.0,
+    "about": "The original recording plays at the loudness the band plays the arrangement at: target = clamp(band_estimate(arrangement), min_target_lufs, max_target_lufs), or fallback_lufs when there is no arrangement or it has no pitched note. The recording is measured once, as a whole (EBU R128 integrated, whole file, a mono file measured as dual mono because it plays from both speakers). gain = clamp(target - measured, -max_cut_db, max_boost_db); 0 when the file is silent. The limiter follows the gain, so a boost cannot clip.",
+    "band_estimate": {
+      "about": "Estimated integrated LUFS of the band playing an arrangement, from its dynamics and how many parts sound at once: estimate = offset_db + 10*log10(sum over notes of d * 10^(L(v)/10) / U). The notes: every pitched note of every part (percussion parts are left out; each note of a chord counts, grace notes do not), d its length in quarter notes of score time (tempo is not read), v the velocity it plays at by the dynamics rules (the mark in effect plus accents, before any per-synth velocity correction). L(v): dynamics.sampler_velocity.alphatab_lufs, linear between its knots, L(lowest) + 20*log10(v/lowest) below the lowest knot, L(highest) above the highest. U: the length of score time in which at least one pitched note sounds. More parts sounding at once, or louder marks, raise the estimate by the energy they add. offset_db is fitted on the Mikkel golden arrangement (-11.8 LUFS measured with its dynamics on Windows; estimate -11.82) and checked on the full-band phrase (band.phrase_lufs -12.0; estimate -11.90) and on the golden at one velocity, 80 (-15.95 measured on Apple; estimate -15.97).",
+      "offset_db": -1.2
+    },
+    "fallback_lufs": -16.0,
+    "min_target_lufs": -20.0,
+    "max_target_lufs": -10.0,
     "max_boost_db": 12.0,
     "max_cut_db": 30.0
   },

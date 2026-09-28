@@ -10,7 +10,7 @@ import org.junit.Test
 import kotlin.math.PI
 import kotlin.math.sin
 
-/** "Listen to this bar" plays the recording at the band's loudness, one gain for the whole recording. */
+/** "Listen to this bar" plays the recording at the band's loudness for the score, one gain for the whole recording. */
 class LevelMatchTest {
     private fun tone(amplitude: Double, seconds: Double = 6.0, rate: Int = 22050) =
         PcmAudio(FloatArray((seconds * rate).toInt()) { (amplitude * sin(2 * PI * 1000 * it / rate)).toFloat() }, rate)
@@ -19,7 +19,23 @@ class LevelMatchTest {
         val loud = tone(0.5) // about −6 LUFS as dual mono
         val m = LevelMatch()
         val bar = m.slice(loud, 1.0, 3.0)
-        assertEquals(PlaybackLevels.RECORDING_TARGET_LUFS, LoudnessMeter.dualMono(bar), 0.3)
+        assertEquals(PlaybackLevels.RECORDING_FALLBACK_LUFS, LoudnessMeter.dualMono(bar), 0.3)
+    }
+
+    /** With a score, the target is its band estimate, estimated once per score. */
+    @Test fun theScoresTargetIsUsedAndEstimatedOnce() {
+        val loud = tone(0.5)
+        var estimates = 0
+        val m = LevelMatch { xml -> estimates++; if (xml == null) PlaybackLevels.RECORDING_FALLBACK_LUFS else -12.0 }
+        val score = "<score-partwise/>"
+        assertEquals(-12.0, LoudnessMeter.dualMono(m.slice(loud, 1.0, 3.0, score)), 0.3)
+        m.slice(loud, 3.0, 5.0, score)
+        assertEquals(1, estimates)
+        // another score, then none: each gets its own target
+        val other = "<score-partwise></score-partwise>"
+        m.slice(loud, 1.0, 3.0, other)
+        assertEquals(PlaybackLevels.RECORDING_FALLBACK_LUFS, LoudnessMeter.dualMono(m.slice(loud, 1.0, 3.0, null)), 0.3)
+        assertEquals(3, estimates)
     }
 
     @Test fun aQuietRecordingIsBoostedUpToTheCapAndLimited() {
