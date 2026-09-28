@@ -76,7 +76,8 @@ fun ArrangedNotice(part: String, checkOthers: () -> Unit, showMine: () -> Unit) 
             Text(stringResource(R.string.review_arranged_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.review_arranged_body, PartNames.display(part)), style = MaterialTheme.typography.bodyMedium, color = c.text)
         }
-        PrimaryButton(stringResource(R.string.review_check_others), checkOthers)
-        SecondaryButton(stringResource(R.string.review_show_mine), showMine)
+        // The review below keeps the screen's one primary (Keep, go to next): these two are quieter.
+        SecondaryButton(stringResource(R.string.review_check_others), checkOthers)
+        OutlineButton(stringResource(R.string.review_show_mine), showMine)
     }
 }

@@ -121,6 +121,19 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         reads = offered.firstOrNull()?.reads?.firstOrNull()
     }
 
+    // The reason Continue waits, and "I conduct or listen". On a phone on its side only Continue is docked,
+    // so the instruments keep the screen; these two scroll with them instead.
+    val short = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
+    val Extras = @Composable {
+        if (seat == null) Text(
+            stringResource(if (instrument == null) R.string.seat_continue_hint else R.string.seat_part_hint),
+            style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
+            modifier = Modifier.fillMaxWidth().testTag("seat-hint"),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        PlainButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) },
+            Modifier.fillMaxWidth().testTag("seat-none"))
+    }
     PlayScaffold(
         title = null,
         onBack = if (mode == SeatPickerMode.FIRST_RUN) null else ({ vm.back() }),
@@ -131,14 +144,7 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
             PrimaryButton(stringResource(R.string.continue_label), {
                 seat?.let { s -> vm.chooseSeat(SeatChoice.Player(s.id, reads?.takeIf { s.reads.size > 1 })) }
             }, enabled = seat != null, modifier = Modifier.testTag("seat-continue"))
-            if (seat == null) Text(
-                stringResource(if (instrument == null) R.string.seat_continue_hint else R.string.seat_part_hint),
-                style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
-                modifier = Modifier.fillMaxWidth().testTag("seat-hint"),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            PlainButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) },
-                Modifier.fillMaxWidth().testTag("seat-none"))
+            if (!short) Extras()
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
@@ -168,6 +174,7 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         if (offered.size > 1 && readsSeat != null) Choices(
             stringResource(R.string.seat_reads), offered.map { it to stringResource(readsLabel(it, readsSeat)) }, reads, large, "seat-reads",
         ) { reads = it }
+        if (short) Extras()
     }
 }
 
@@ -242,7 +249,7 @@ private fun Choices(label: String, options: List<Pair<String, String>>, selected
  * button (48 dp) that opens one sentence of explanation.
  */
 @Composable
-fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier = Modifier) {
+fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, onExplain: (() -> Unit)? = null) {
     val c = BrasscribeTheme.colors
     var open by rememberSaveable { mutableStateOf(false) }
     val (@StringRes text, @DrawableRes icon) = when (source) {
@@ -254,14 +261,14 @@ fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier 
         Row(
             Modifier.heightIn(min = 48.dp)
                 .border(1.dp, c.borderStrong, androidx.compose.foundation.shape.RoundedCornerShape(percent = 50))
-                .clickable(role = Role.Button) { open = !open }
+                .clickable(role = Role.Button) { if (onExplain != null) onExplain() else open = !open }
                 .testTag("source-${source.id}")
-                .padding(horizontal = BrasscribeSpace.s4),
+                .padding(horizontal = if (compact) BrasscribeSpace.s3 else BrasscribeSpace.s4),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) BrasscribeSpace.s1 else BrasscribeSpace.s2),
         ) {
-            BcIcon(icon, null, Modifier.size(20.dp), tint = c.text)
-            Text(stringResource(text), style = MaterialTheme.typography.labelLarge, color = c.text)
+            BcIcon(icon, null, Modifier.size(if (compact) 16.dp else 20.dp), tint = c.text)
+            Text(stringResource(text), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, color = c.text)
         }
         if (open) Text(
             stringResource(if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.string.explain_arranged else R.string.explain_recording),
@@ -286,3 +293,16 @@ fun mappedText(m: no.brasscribe.play.MappedSeat, reads: String?, seats: List<Sea
 /** "B♭" or "E♭": the key a part is written in, from its transposition. */
 @StringRes
 fun keyOf(chromatic: Int): Int = if (Math.floorMod(chromatic, 12) == 3) R.string.key_eflat else R.string.key_bflat
+
+/** The one-line form of [mappedText] for the score's banner: "The small band has no 1st Baritone — showing Euphonium". */
+@Composable
+fun mappedShort(m: no.brasscribe.play.MappedSeat): String {
+    val quartet = m.lineup == no.brasscribe.play.Lineup.QUARTET
+    val part = m.part ?: return stringResource(if (quartet) R.string.mapped_short_none_quartet else R.string.mapped_short_none_minimal)
+    return stringResource(if (quartet) R.string.mapped_short_quartet else R.string.mapped_short_minimal, PartNames.display(m.seat.name), PartNames.display(part))
+}
+
+/** Where a part came from, in one sentence: what the source pill opens. */
+@StringRes
+fun explainOf(source: no.brasscribe.play.model.PartSource): Int =
+    if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.string.explain_arranged else R.string.explain_recording

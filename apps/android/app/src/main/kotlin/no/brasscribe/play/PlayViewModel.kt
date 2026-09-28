@@ -357,6 +357,14 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     /** "Make this my part", per score: saved with it; the seat in Settings stays as it is. */
     val myPartOverride = MutableStateFlow<String?>(null)
 
+    /** The one-line lineup notice was closed for the score on screen; it is not shown for it again. */
+    val mappedNoticeSeen = MutableStateFlow(false)
+
+    fun closeMappedNotice() {
+        mappedNoticeSeen.value = true
+        result.value?.let(::saveCurrentScore)
+    }
+
     fun makeMyPart(part: String) {
         myPartOverride.value = part
         result.value?.let(::saveCurrentScore)
@@ -501,6 +509,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         result.value = null
         checked.value = emptyMap()
         renderedScoreAudio = null
+        mappedNoticeSeen.value = false
         myPartOverride.value = null
         // A new take is the player's own, as Settings says; a friend's seat from the last one does not carry over.
         output.update { it.withSeat(container.seat, container.seats) }
@@ -735,7 +744,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             ?: res.getString(R.string.score_title)
         val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
             jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value)
+            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value)
         currentSavedScoreId = saved.id
         savedScores.value = scoreLibrary.list()
     }
@@ -761,6 +770,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 source.value = Source(entry.title, SourceKind.SCORE, 0.0)
                 currentSavedScoreId = null
                 myPartOverride.value = null
+                mappedNoticeSeen.value = false
                 checked.value = emptyMap()
                 result.value = r
                 saveCurrentScore(r, entry.title)
@@ -801,6 +811,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     fun openSavedScore(saved: SavedScore, review: Boolean = false) {
         currentSavedScoreId = saved.id
         myPartOverride.value = saved.part
+        mappedNoticeSeen.value = saved.noticeSeen
         source.value = Source(saved.title, SourceKind.SCORE, 0.0)
         result.value = TranscriptionResult(
             composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
@@ -827,7 +838,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
             val compositionJson = composition?.let(container.core::encodeComposition)
             val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
-            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen)
             savedScores.value = scoreLibrary.list()
             saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
             if (currentSavedScoreId == id) {

@@ -1,0 +1,129 @@
+package no.brasscribe.play
+
+import android.app.UiAutomation
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import no.brasscribe.play.engine.Profile
+import no.brasscribe.play.model.ArrangeOptions
+import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+
+/**
+ * Upright, the score keeps the height too: with your part in a lineup that lacks your seat (the mapping
+ * banner) and its source pill both showing, the score view has at least 55 % of the height inside the
+ * system bars and shows notation, at 100 % and 200 % text. Closing the banner keeps it closed for the score.
+ * Screenshots go to the app's files, score-portrait/.
+ */
+@RunWith(AndroidJUnit4::class)
+class ScorePortraitTest {
+    @get:Rule
+    val rule = createAndroidComposeRule<MainActivity>()
+
+    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
+    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+    private val container get() = (rule.activity.application as PlayApplication).container
+
+    @Before
+    fun setUp() {
+        rule.runOnUiThread { container.firstRunDone = true; container.updateSeat(SeatChoice.Player("1st-baritone")) }
+        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
+    }
+
+    @After
+    fun tearDown() {
+        shell("settings put system font_scale 1.0")
+        rule.runOnUiThread { container.updateSeat(SeatChoice.NotSet) }
+    }
+
+    private fun shell(cmd: String) {
+        instrumentation.uiAutomation.executeShellCommand(cmd).close()
+        Thread.sleep(300)
+    }
+
+    /** Old Hundredth for the small band, which has no 1st Baritone: your part is Euphonium. */
+    private fun openSmallBand() {
+        val json = instrumentation.context.assets.open("old-hundredth/composition.json").use { String(it.readBytes()) }
+        val composition = container.core.decodeComposition(json)
+        val small = composition.arrangedFor(Lineup.MINIMAL, "faithful")
+        val xml = container.core.arrangeMusicXmlWith(composition, ArrangeOptions(lineup = "minimal"))!!
+        rule.runOnUiThread {
+            vm.home()
+            vm.setSource(Source("Old Hundredth", SourceKind.SCORE, 0.0))
+            vm.result.value = TranscriptionResult(small, xml, Profile.BRASS_BAND, onDevice = true, compositionJson = container.core.encodeComposition(small))
+            vm.navigate(Screen.SCORE)
+        }
+        rule.waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
+        rule.waitForIdle()
+        Thread.sleep(800)
+    }
+
+    private fun check(label: String, fontScale: String) {
+        shell("settings put system font_scale $fontScale")
+        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale.toString().startsWith(fontScale.take(3)) }
+        openSmallBand()
+        val placed = { tag: String -> rule.onAllNodesWithTag(tag).fetchSemanticsNodes().any { it.layoutInfo.isPlaced } }
+        assertTrue("$label: the mapping banner shows", placed("mapped-notice"))
+        assertTrue("$label: the source pill shows", rule.onAllNodesWithTag("source-recording").fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithTag("source-arranged").fetchSemanticsNodes().isNotEmpty())
+
+        var available = 0
+        rule.runOnUiThread {
+            val decor = rule.activity.window.decorView
+            val bars = ViewCompat.getRootWindowInsets(decor)!!.getInsets(WindowInsetsCompat.Type.systemBars())
+            available = decor.height - bars.top - bars.bottom
+        }
+        val density = rule.activity.resources.displayMetrics.density
+        val score = rule.onNodeWithTag("score-view").getBoundsInRoot()
+        val share = (score.bottom - score.top).value * density / available
+        val dir = File(rule.activity.getExternalFilesDir(null), "score-portrait").apply { mkdirs() }
+        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        assertTrue("$label: the score has ${"%.0f".format(share * 100)} % of $available px", share >= 0.55f)
+        val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
+        assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)})", ink >= 0.005)
+    }
+
+    private fun inkShare(bmp: Bitmap): Double {
+        fun lum(p: Int) = (android.graphics.Color.red(p) * 299 + android.graphics.Color.green(p) * 587 + android.graphics.Color.blue(p) * 114) / 1000
+        val base = lum(bmp.getPixel(1, 1))
+        var ink = 0
+        var n = 0
+        for (y in 0 until bmp.height step 2) for (x in 0 until bmp.width step 2) {
+            n++
+            if (kotlin.math.abs(lum(bmp.getPixel(x, y)) - base) > 80) ink++
+        }
+        return ink.toDouble() / n
+    }
+
+    @Test
+    fun portraitAt100PercentText() = check("portrait-100", "1.0")
+
+    @Test
+    fun portraitAt200PercentText() = check("portrait-200", "2.0")
+
+    @Test
+    fun theBannerStaysClosedForTheScore() {
+        openSmallBand()
+        rule.onNodeWithTag("mapped-close").performScrollTo().performClick()
+        rule.waitForIdle()
+        assertTrue(vm.mappedNoticeSeen.value)
+        assertFalse(rule.onAllNodesWithTag("mapped-notice").fetchSemanticsNodes().any { it.layoutInfo.isPlaced })
+    }
+}

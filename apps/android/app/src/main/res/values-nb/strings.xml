@@ -594,7 +594,6 @@
     <string name="settings_reads_bass">F-nøkkel, klingende</string>
     <string name="settings_seat_caption">Nye partiturer åpner på stemmen din. Partiturer du har fra før, beholder stemmen du valgte.</string>
     <string name="my_part_make">Gjør til min stemme</string>
-    <string name="my_part_is">Stemmen din</string>
     <string name="my_part_made">%1$s er stemmen din i dette partituret.</string>
     <string name="who_played">Hvem spilte?</string>
     <string name="who_plays_tune">Hvem spiller melodien?</string>
@@ -626,4 +625,10 @@
     <string name="lineup_your_part">%1$s · stemmen din: %2$s</string>
     <string name="engine_too_old_seat">Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
     <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet.</string>
+    <string name="mapped_short_minimal">Det lille bandet har ingen %1$s — viser %2$s</string>
+    <string name="mapped_short_quartet">Kvartetten har ingen %1$s — viser %2$s</string>
+    <string name="mapped_short_none_minimal">Det lille bandet har ingen slagverkstemme — viser alle stemmene</string>
+    <string name="mapped_short_none_quartet">Kvartetten har ingen slagverkstemme — viser alle stemmene</string>
+    <string name="mapped_close">Lukk meldingen</string>
+    <string name="written_tip_full">%1$s: det du leser i stemmen din. Klingende: slik det låter på et piano.</string>
 </resources>
