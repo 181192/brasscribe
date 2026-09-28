@@ -142,6 +142,7 @@ public sealed partial class MainViewModel : ObservableObject
                 ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
                 : null;
             Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
+            if (Score.Original is { } original) _ = RecordingLevel.ApplyAsync(original, r.Source.WavPath);
             Score.Evidence = r.Evidence;
             Score.Load(r.MusicXml, r.Composition);
             _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,

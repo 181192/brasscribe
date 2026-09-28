@@ -72,6 +72,7 @@ internal sealed class ScriptedOriginal : IOriginalPlayer
     public bool IsPlaying { get; private set; }
     public bool IsMuted { get; set; }
     public double Rate { get; set; } = 1;
+    public double Volume { get; set; } = 1;
     public TimeSpan Position { get; set; }
     public event EventHandler? RangeEnded;
 

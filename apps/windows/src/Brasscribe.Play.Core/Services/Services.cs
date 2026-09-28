@@ -73,6 +73,11 @@ public interface IOriginalPlayer
     bool IsMuted { get; set; }
     /// <summary>Playback rate, 1 = normal.</summary>
     double Rate { get; set; }
+    /// <summary>
+    /// Linear volume, 0–1: the level-matching gain (<see cref="Playback.RecordingLevel"/>), which
+    /// brings the recording to the band's loudness. Players that cannot change it ignore it.
+    /// </summary>
+    double Volume { get => 1; set { } }
     TimeSpan Position { get; set; }
 
     /// <summary>A range played without looping reached its end (raised on the UI thread).</summary>

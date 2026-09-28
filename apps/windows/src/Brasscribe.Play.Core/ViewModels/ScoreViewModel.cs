@@ -446,6 +446,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         int bar = _nav.Bar.Number;
         if (Original is { HasMedia: true } && BarSeconds(_nav.PartIndex, _nav.BarIndex) is { } span)
         {
+            Original.IsMuted = false; // the video follower may have left it muted
             Original.PlayRange(TimeSpan.FromSeconds(span.Start), TimeSpan.FromSeconds(span.End), loop: false);
             _listeningOriginal = true;
             _announcer.Announce(_s.Format("Score_ListeningOriginal", bar));
