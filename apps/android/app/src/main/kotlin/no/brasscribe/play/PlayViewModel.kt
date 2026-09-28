@@ -508,6 +508,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         currentSavedScoreId = null
         result.value = null
         checked.value = emptyMap()
+        reviewChanges.value = emptyMap()
         renderedScoreAudio = null
         mappedNoticeSeen.value = false
         myPartOverride.value = null
@@ -544,6 +545,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
                 val ignored = seatIgnored(r)
+                reviewChanges.value = emptyMap()
                 result.value = r
                 saveCurrentScore(r)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
@@ -772,6 +774,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 myPartOverride.value = null
                 mappedNoticeSeen.value = false
                 checked.value = emptyMap()
+                reviewChanges.value = emptyMap()
                 result.value = r
                 saveCurrentScore(r, entry.title)
                 backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
@@ -813,6 +816,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         myPartOverride.value = saved.part
         mappedNoticeSeen.value = saved.noticeSeen
         source.value = Source(saved.title, SourceKind.SCORE, 0.0)
+        reviewChanges.value = emptyMap()
         result.value = TranscriptionResult(
             composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
             musicXml = saved.musicXml,
@@ -911,6 +915,39 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         return r.copy(composition = composition, musicXml = xml, compositionJson = container.core.encodeComposition(composition))
     }
 
+    /**
+     * Notes changed in Review ("Change note…" → Save), by [changeKey]: the pitch Brasscribe wrote. A
+     * changed note stays open until it is kept, so it can be listened to, changed again or undone.
+     */
+    val reviewChanges = MutableStateFlow<Map<String, Int>>(emptyMap())
+
+    fun changeKey(voiceId: String, start: Int) = "$voiceId@$start"
+
+    /**
+     * Review's Save: the note at [start] moves from [pitch] by [semitones], is written to the score
+     * and stays open. Moving it back to what Brasscribe wrote clears the change.
+     */
+    fun changeReviewNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
+        if (semitones == 0) return false
+        val key = changeKey(voiceId, start)
+        val was = reviewChanges.value[key] ?: pitch
+        stopListening(announce = false)
+        if (!correctNote(voiceId, start, pitch, semitones)) return false
+        val now = (pitch + semitones).coerceIn(0, 127)
+        reviewChanges.update { if (now == was) it - key else it + (key to was) }
+        return true
+    }
+
+    /** Review's "Undo change": the note at [start], now [pitch], goes back to what Brasscribe wrote. */
+    fun undoReviewChange(voiceId: String, start: Int, pitch: Int): Boolean {
+        val key = changeKey(voiceId, start)
+        val was = reviewChanges.value[key] ?: return false
+        stopListening(announce = false)
+        if (was != pitch && !correctNote(voiceId, start, pitch, was - pitch)) return false
+        reviewChanges.update { it - key }
+        return true
+    }
+
     /** Keeps several notes at once ("Keep the rest of this bar"). */
     fun markCheckedAll(voiceId: String, indexes: Collection<Int>, remaining: Int) {
         checked.update { it + (voiceId to (it[voiceId].orEmpty() + indexes)) }
@@ -944,6 +981,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun scoreBarAudio(r: TranscriptionResult, map: TickMap, bar: Int): PcmAudio? {
+        // A note changed on the phone is not in the engine's render: the bar is rendered here, with the new note.
+        if (r.changedOnPhone) return withContext(Dispatchers.Default) {
+            runCatching { no.brasscribe.play.score.BarAudio.render(getApplication(), r.musicXml, bar) }
+                .onFailure { android.util.Log.w("BrasscribePlay", "bar $bar not rendered on the phone", it) }.getOrNull()
+        }
         val jobId = r.jobId ?: return null
         val rendered = renderedScoreAudio ?: withContext(Dispatchers.IO) {
             runCatching {
