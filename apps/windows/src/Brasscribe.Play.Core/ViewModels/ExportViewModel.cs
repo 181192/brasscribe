@@ -205,7 +205,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e.Message));
+            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
         }
         finally
         {
@@ -245,7 +245,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e.Message));
+            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
         }
         finally
         {

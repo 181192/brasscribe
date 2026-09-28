@@ -66,6 +66,9 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     [ObservableProperty] public partial string StageText { get; set; } = "";
     [ObservableProperty] public partial string EtaText { get; set; } = "";
     [ObservableProperty] public partial string? ErrorText { get; set; }
+
+    /// <summary>The engine's own words for the failure, for the error screen's technical details only.</summary>
+    public string? ErrorDetail { get; private set; }
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string? DeviceText { get; set; }
 
@@ -163,6 +166,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         var estimator = new ProgressEstimator(_clock);
         IsRunning = true;
         ErrorText = null;
+        ErrorDetail = null;
         Failure = TranscriptionFailure.None;
         IsConfirmingCancel = false;
         ResetSteps(profile, kindLabel);
@@ -204,13 +208,13 @@ public sealed partial class TranscriptionViewModel : ObservableObject
                 }
                 else if (ev.Type == "job" && ev.Status is { } status)
                 {
-                    if (status == JobStatus.Failed) throw new EngineException(ev.Error ?? _s["Transcribe_Failed"]);
+                    if (status == JobStatus.Failed) throw new EngineException(ev.Error ?? "job failed", code: EngineException.JobFailed);
                     if (status == JobStatus.Cancelled) throw new OperationCanceledException();
                 }
             }
 
             job = await engine.GetJobAsync(job.Id, ct);
-            if (job.Status != JobStatus.Succeeded) throw new EngineException(job.Error ?? _s["Transcribe_Failed"]);
+            if (job.Status != JobStatus.Succeeded) throw new EngineException(job.Error ?? "job failed", code: EngineException.JobFailed);
             var composition = await engine.GetCompositionAsync(job.Id, ct);
             string xml;
             await using (var s = await engine.DownloadAsync(job.Id, JobDownload.MusicXml, ct))
@@ -227,32 +231,44 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
             Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence));
         }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
+        {
+            // Not the player's Cancel: a request timed out (HttpClient throws a cancellation for that).
+            Fail(new EngineException("the request timed out", null, e, EngineException.Timeout));
+        }
         catch (OperationCanceledException)
         {
             StageText = _s["Transcribe_Cancelled"];
             _announcer.Announce(StageText, AnnouncementKind.Important);
         }
-        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && Lineups.Parse(options.Lineup) == Lineup.Quartet)
+        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && e.Code is null
+                                        && Lineups.Parse(options.Lineup) == Lineup.Quartet)
         {
-            // The engine refuses a quartet for a solo take; say why in the app's own words, never its detail.
-            ErrorText = _s["Output_QuartetNeedsGroup"];
-            Failure = TranscriptionFailure.Failed;
-            _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
-            FailedWith?.Invoke(this, Failure);
+            // An engine without codes refuses a quartet for a solo take with a bare 422.
+            Fail(new EngineException(e.Message, e.Status, e, "quartet_needs_group"));
         }
         catch (EngineException e)
         {
-            ErrorText = e.Message;
-            // No HTTP status means the request never got an answer: the computer is off, asleep or elsewhere.
-            Failure = e.Status is null ? TranscriptionFailure.ComputerUnreachable : TranscriptionFailure.Failed;
-            _announcer.Announce(_s.Format("Transcribe_Error", e.Message), AnnouncementKind.Important);
-            FailedWith?.Invoke(this, Failure);
+            Fail(e);
         }
         finally
         {
             IsRunning = false;
             _jobId = null;
         }
+    }
+
+    /// <summary>
+    /// Says what went wrong in the app's own words (EngineErrors), never the engine's English detail.
+    /// No HTTP status and no code means the request never got an answer: the computer is off, asleep or elsewhere.
+    /// </summary>
+    private void Fail(EngineException e)
+    {
+        ErrorText = EngineErrors.Message(e, _s);
+        ErrorDetail = e.Message;
+        Failure = e.Status is null && e.Code is null ? TranscriptionFailure.ComputerUnreachable : TranscriptionFailure.Failed;
+        _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
+        FailedWith?.Invoke(this, Failure);
     }
 
     /// <summary>Cancel asks first: stopping throws away the minutes spent so far (the recording stays).</summary>

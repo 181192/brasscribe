@@ -265,7 +265,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         }
         catch (CoreBridgeException e)
         {
-            StatusText = s.Format("Output_Failed", e.Message);
+            StatusText = EngineErrors.CoreMessage(e.Message, s);
             announcer.Announce(StatusText, AnnouncementKind.Important);
         }
     }
@@ -297,7 +297,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         }
         catch (CoreBridgeException e)
         {
-            StatusText = s.Format("Output_Failed", e.Message);
+            StatusText = EngineErrors.CoreMessage(e.Message, s);
             announcer.Announce(StatusText, AnnouncementKind.Important);
         }
         return true;

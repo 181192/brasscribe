@@ -7,10 +7,40 @@ using Brasscribe.Play.Core.Scores;
 
 namespace Brasscribe.Play.Core.Engine;
 
-public sealed class EngineException(string message, HttpStatusCode? status = null, Exception? inner = null)
+public sealed class EngineException(string message, HttpStatusCode? status = null, Exception? inner = null, string? code = null)
     : Exception(message, inner)
 {
+    /// <summary>The job ran and failed (its own error is English and stays in the log).</summary>
+    public const string JobFailed = "job_failed";
+
+    /// <summary>The request got no answer in time (not the player's Cancel).</summary>
+    public const string Timeout = "timeout";
+
     public HttpStatusCode? Status { get; } = status;
+
+    /// <summary>
+    /// What went wrong, as a machine code: the engine's <c>code</c> on a refused job
+    /// (quartet_needs_group, percussion_solo, seat_no_tune, reads_not_offered, invalid_options),
+    /// or <see cref="JobFailed"/> / <see cref="Timeout"/>; null when there is none.
+    /// </summary>
+    public string? Code { get; } = code;
+
+    /// <summary>The <c>code</c> of an engine error body (<c>{"detail": ..., "code": ...}</c>), when it has one.</summary>
+    public static string? CodeOf(string body)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            return doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                   && doc.RootElement.TryGetProperty("code", out var c) && c.ValueKind == System.Text.Json.JsonValueKind.String
+                ? c.GetString()
+                : null;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
 }
 
 /// <summary>Score downloads the engine serves per job.</summary>
@@ -360,6 +390,7 @@ public sealed class EngineClient : IEngineClient
             HttpStatusCode.NotFound => "The engine does not have that item.",
             _ => $"The engine answered {(int)resp.StatusCode}.",
         };
-        throw new EngineException(detail.Length > 0 && detail.Length < 500 ? $"{message} {detail}" : message, resp.StatusCode);
+        throw new EngineException(detail.Length > 0 && detail.Length < 500 ? $"{message} {detail}" : message, resp.StatusCode,
+            code: detail.Length > 0 ? EngineException.CodeOf(detail) : null);
     }
 }

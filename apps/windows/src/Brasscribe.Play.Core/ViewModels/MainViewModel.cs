@@ -58,7 +58,7 @@ public sealed partial class MainViewModel : ObservableObject
             try { return core.ArrangeMusicXmlWith(composition, Output.Applied); }
             catch (Bridge.CoreBridgeException e)
             {
-                _announcer.Announce(_s.Format("Output_Failed", e.Message), AnnouncementKind.Important);
+                _announcer.Announce(Brasscribe.Play.Core.Engine.EngineErrors.CoreMessage(e.Message, _s), AnnouncementKind.Important);
                 return null;
             }
         };
@@ -107,7 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
         Transcription.FailedWith += (_, failure) =>
         {
             Error.Show(failure == TranscriptionFailure.ComputerUnreachable ? ErrorKind.ComputerUnreachable : ErrorKind.ScoreFailed,
-                Transcription.ErrorText);
+                Transcription.ErrorDetail);
             Screen = Screen.Error;
         };
 
