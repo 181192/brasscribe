@@ -45,6 +45,8 @@ uv run --project sounds python sounds/soundcheck.py render ENGINE -o RUN        
 uv run --project sounds python sounds/checks.py coverage                           # every lineup part -> own real-sample preset (gate)
 uv run --project sounds python sounds/checks.py phrases RUN...                     # clicks, chops, dropouts, clipping, release, balance (gate)
 python3 sounds/partsound.py --check                                                # CI: part -> preset rules and test vectors
+python3 sounds/playback_levels.py --check                                          # CI: output stage vectors match playback-levels.json
+uv run --project sounds python sounds/playback_levels.py --vectors                 # rewrite output-stage-vectors.json
 uv run --project sounds python sounds/timbre_probe.py                              # source/EQ candidates vs real references
 uv run --project sounds python sounds/ab-test/room_baseline.py --baseline B.mp3 --realistic-info R.json -o OUT.mp3
 ```

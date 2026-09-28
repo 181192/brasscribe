@@ -8,7 +8,7 @@
    "ceiling": 0.98
   },
   "band": {
-   "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. A whole arrangement at this setting (the Mikkel golden score) measures about arrangement_lufs.",
+   "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. A whole arrangement at this setting (the Mikkel golden score) measures about arrangement_lufs on Apple, which plays every note at velocity 80; alphaSynth plays the score's dynamics, so a loud score measures louder there (-11.8 LUFS for the golden score on Windows).",
    "phrase_lufs": -12.0,
    "tolerance_lu": 1.0,
    "arrangement_lufs": -16.0,
