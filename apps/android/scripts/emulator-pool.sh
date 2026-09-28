@@ -94,7 +94,14 @@ ensure_pool_avd() {
   local src="$HOME/.android/avd/$AVD.avd" dst="$HOME/.android/avd/$POOL_AVD.avd"
   [ -f "$dst/.pool-ready" ] && return
   [ -f "$src/config.ini" ] || die "AVD $AVD not found in ~/.android/avd"
-  mkdir "$POOL/.init" 2>/dev/null || { log "waiting for the pool AVD to be set up"; until [ -f "$dst/.pool-ready" ]; do sleep 3; done; return; }
+  until mkdir "$POOL/.init" 2>/dev/null; do
+    [ -f "$dst/.pool-ready" ] && return
+    if ! kill -0 "$(cat "$POOL/.init/pid" 2>/dev/null || echo 0)" 2>/dev/null; then
+      log "removing an interrupted setup of the pool AVD"; rm -rf "$POOL/.init"; continue
+    fi
+    log "waiting for the pool AVD to be set up"; sleep 3
+  done
+  echo $$ > "$POOL/.init/pid"
   trap 'rm -rf "$POOL/.init"' EXIT
   rm -rf "$dst"; mkdir -p "$dst"
   cp "$src/config.ini" "$dst/config.ini"

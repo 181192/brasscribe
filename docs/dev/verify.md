@@ -25,7 +25,8 @@ eval "$(scripts/worktree-setup.sh)"      # later shells: source .brasscribe-env
 The script is idempotent. It does four things:
 
 - Links `data/`, `models/` and `apps/apple/Frameworks` (Verovio) from the main checkout. It finds
-  the main checkout through `BRASSCRIBE_REPO` or `git worktree list`.
+  the main checkout through `git worktree list` (`BRASSCRIBE_MAIN` overrides it). `BRASSCRIBE_REPO`
+  is set to the worktree itself, since the tests also look up tracked files through it.
 - Copies in the prebuilt Rust core with `scripts/core-artifacts.sh ensure`:
   - the host library in `core/target/release` and `core/dist/macos`
   - `BrasscribeFFI.xcframework`
@@ -171,7 +172,7 @@ All times are in seconds.
 ¹ Run after tier 1 in the same worktree, so partly warm.
 
 ² Most of it is the first open of the new pixi environment's files. See
-[Cold starts and Defender](#cold-starts-and-defender).
+[Cold starts and on-access scanning](#cold-starts-and-on-access-scanning).
 
 Conformance is tier 2 only. Its time is the Python reference and the extras. The fast tier reuses
 the reference outputs of an earlier run in the same worktree.
@@ -218,9 +219,13 @@ So `cargo test` keeps a target dir per worktree. There are two wins instead:
 `cargo nextest` does not help here. The whole suite runs in about 2 s, and nextest's per-process
 start-up made the warm run slower (7 s against 3.6 s).
 
-### Cold starts and Defender
+### Cold starts and on-access scanning
 
-Microsoft Defender scans every file the first time it is opened. A fresh worktree opens thousands of
-new files: the pixi environment, `node_modules`, and build outputs. Collecting the engine tests
-takes 48 s on first open and 2 s after. Excluding `~/.cache/brasscribe` and the worktree root from
-real-time scanning would remove most of the remaining cold cost, but that is an IT policy decision.
+A fresh worktree opens thousands of new files: the pixi environment, `node_modules`, and build
+outputs. The first open of each one appears to be slowed by the endpoint scanner on this Mac.
+
+Collecting the engine tests takes 48 s the first time and 2 s after. Nearly all of the first run is
+spent in `open_code`, about 6 ms per file, while the CPU is almost idle.
+
+Excluding `~/.cache/brasscribe` and the worktree root from on-access scanning would probably remove
+most of the remaining cold cost. That is an IT policy decision.

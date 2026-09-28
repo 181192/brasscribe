@@ -52,6 +52,12 @@ need_node_modules() { [ -d studio/node_modules ] || (cd studio && npm ci --no-au
 
 run_area() {
   local area="$1"
+  # The apps test against the prebuilt core: refresh it first (about a second when nothing changed).
+  case "$area" in
+    windows|core-dotnet) scripts/core-artifacts.sh ensure host || return 1 ;;
+    android) scripts/core-artifacts.sh ensure host android || return 1 ;;
+    apple) scripts/core-artifacts.sh ensure apple || return 1 ;;
+  esac
   case "$tier:$area" in
     fast:engine) pixi run test-fast ;;
     full:engine) pixi run test ;;
@@ -69,7 +75,8 @@ run_area() {
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
-                && make -C apps/apple test-mac-unit ;;
+                && (cd capture && swift test --no-parallel) \
+                && make -C apps/apple build-for-testing-mac test-mac-unit ;;
     fast:android) (cd apps/android && ./gradlew testDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
     full:android) (cd apps/android && ./gradlew testDebugUnitTest lint assembleDebug --console=plain) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;

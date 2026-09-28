@@ -69,7 +69,7 @@ build-for-testing-mac: project
 	$(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' build-for-testing
 
 test-mac-unit:
-	@test -d $(DERIVED)/Build/Products/Debug || $(MAKE) build-for-testing-mac
+	@ls $(DERIVED)/Build/Products/BrasscribePlay-macOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-mac
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' \
 	  -only-testing:BrasscribePlayTests_macOS test-without-building
 
@@ -77,7 +77,7 @@ build-for-testing-ios: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build-for-testing
 
 test-ios-unit:
-	@test -d $(DERIVED)/Build/Products/Debug-iphonesimulator || $(MAKE) build-for-testing-ios
+	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
 	  -only-testing:BrasscribePlayTests_iOS test-without-building
 

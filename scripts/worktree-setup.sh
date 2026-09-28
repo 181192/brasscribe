@@ -7,7 +7,7 @@
 #   scripts/worktree-setup.sh --core host,apple  only these core components (default: all installed toolchains)
 #
 # 1. Links data/, models/ and apps/apple/Frameworks (Verovio) from the main checkout, found through
-#    BRASSCRIBE_REPO or `git worktree list`. Nothing is linked in the main checkout itself.
+#    `git worktree list` (or BRASSCRIBE_MAIN). Nothing is linked in the main checkout itself.
 # 2. Copies in the prebuilt Rust core (scripts/core-artifacts.sh ensure): the host library, the
 #    Apple xcframework and the Android jniLibs, built once per core change and shared by all worktrees.
 # 3. Prints the environment to export on stdout (progress goes to stderr), and writes it to
@@ -29,18 +29,20 @@ done
 log() { printf 'worktree-setup: %s\n' "$*" >&2; }
 
 main_checkout() {
-  if [ -n "${BRASSCRIBE_REPO:-}" ] && [ -d "$BRASSCRIBE_REPO" ]; then (cd "$BRASSCRIBE_REPO" && pwd); return; fi
-  # The first entry of `git worktree list` is the main working tree.
+  # The first entry of `git worktree list` is the main working tree; BRASSCRIBE_MAIN overrides it.
+  if [ -n "${BRASSCRIBE_MAIN:-}" ] && [ -d "$BRASSCRIBE_MAIN" ]; then (cd "$BRASSCRIBE_MAIN" && pwd); return; fi
   git -C "$ROOT" worktree list --porcelain | sed -n '1s/^worktree //p'
 }
 MAIN="$(main_checkout)"
-[ -n "$MAIN" ] || { log "cannot find the main checkout; set BRASSCRIBE_REPO"; exit 1; }
+[ -n "$MAIN" ] || { log "cannot find the main checkout; set BRASSCRIBE_MAIN"; exit 1; }
 
 ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 env_lines() {
   local path="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin"
   [ -d "$ANDROID_HOME/platform-tools" ] && path="$path:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
-  echo "export BRASSCRIBE_REPO='$MAIN'"
+  # This checkout, not the main one: tests also look up tracked files (sounds/, design/) through
+  # it, and data/ and models/ are linked in.
+  echo "export BRASSCRIBE_REPO='$ROOT'"
   echo "export BRASSCRIBE_FFI_PATH='$ROOT/core/target/release/libbrasscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
   # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
   [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
