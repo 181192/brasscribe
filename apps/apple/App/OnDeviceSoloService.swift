@@ -67,6 +67,10 @@ struct OnDeviceSoloService: TranscriptionService {
         }
         o.difficulty = output.difficulty.rawValue
         o.key = output.keyFifths.map { String($0) }
+        // with a seat the take is written for the player's own instrument, in the octave played
+        o.seat = output.seat
+        o.reads = output.reads
+        o.lead = output.seat == nil ? nil : "seat"
         return try arrangeLayersBand(layers: layers, stems: LayerStems(solo: nil, bass: nil, drums: nil, orchestra: nil),
                                      beatsText: solo.beats.tsv, title: title, options: o)
     }

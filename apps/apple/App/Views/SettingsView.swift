@@ -20,6 +20,22 @@ struct SettingsView: View {
         @Bindable var app = app
         NavigationStack {
             Form {
+                Section {
+                    NavigationLink {
+                        WhatDoYouPlayView(mode: .settings, initial: app.seat) { answer in
+                            if let answer { app.seat = answer }
+                        }
+                        .navigationTitle(Text("What you play"))
+                    } label: {
+                        LabeledContent { Text(app.seat.summary) } label: {
+                            Label { Text("What you play") } icon: { Image(systemName: BrasscribeIcon.parts.systemName) }
+                        }
+                    }
+                    .accessibilityIdentifier("settingWhatYouPlay")
+                } header: { Text("Your instrument") } footer: {
+                    Text("New scores open on your part. Scores you already have keep the part you chose for them.")
+                }
+
                 YourComputerSection()
 
                 Section {

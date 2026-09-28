@@ -87,7 +87,27 @@ final class PracticeModel {
         self.init(piece: piece, score: try piece.loadScore(), composition: piece.loadComposition())
     }
 
-    init(piece: Piece, score parsed: Score, composition: Composition?) {
+    /// Where each part comes from (part id → source), from the core. Empty for a score without a
+    /// composition (an imported MusicXML file).
+    let partSources: [String: PartSourceKind]
+    /// Your part is another part than your seat's, because this lineup has none: the sentence that says
+    /// so ("This small band has no 1st Baritone…"), shown under the part name and announced once.
+    let seatNotice: String?
+    /// The same, as one line ("The small band has no 1st Baritone — showing Euphonium").
+    let seatNoticeShort: String?
+    /// Notes still marked "?" (the score's status line).
+    var toCheck = 0
+    /// The player closed the notice for this score.
+    var seatNoticeDismissed: Bool
+
+    func dismissSeatNotice() {
+        seatNoticeDismissed = true
+        var p = Piece.load(from: piece.metaURL) ?? piece
+        p.seatNoticeDismissed = true
+        try? p.save()
+    }
+
+    init(piece: Piece, score parsed: Score, composition: Composition?, seat: SeatChoice = .stored) {
         self.piece = piece
         score = parsed
         self.composition = composition
@@ -101,11 +121,64 @@ final class PracticeModel {
         loopTo = min(3, score.measures.count - 1)
         video = piece.videoURL.map { AVPlayer(url: $0) }
         video?.isMuted = true
-        // my part: the lineup's lead (the tune), else the first part
-        let lead = (piece.output?.lineup ?? .fullBand).lead.lowercased()
-        myPart = score.parts.first { $0.name.lowercased().contains(lead) }?.id
-            ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id
+        let byName = PartSourceKind.sources(composition: composition, output: piece.output)
+        partSources = Dictionary(parsed.parts.compactMap { p in byName[p.name].map { (p.id, $0) } }, uniquingKeysWith: { a, _ in a })
+        let mine = Self.resolveMyPart(piece: piece, score: parsed, seat: seat)
+        myPart = mine.partID
+        seatNotice = mine.notice
+        seatNoticeShort = mine.short
+        seatNoticeDismissed = piece.seatNoticeDismissed ?? false
     }
+
+    /// Your part in this score, in order: the part picked for it ("Make this my part"); the seat a solo
+    /// take was written for; your seat's part in the lineup (the core's table); with no seat set, the
+    /// lineup's lead as before. "I conduct or listen" has no part.
+    static func resolveMyPart(piece: Piece, score: Score, seat: SeatChoice) -> (partID: String?, notice: String?, short: String?) {
+        func id(named name: String) -> String? { score.parts.first { $0.name == name }?.id }
+        if let name = piece.myPart, let id = id(named: name) { return (id, nil, nil) }
+        if piece.profile == .solo, let s = piece.output?.seat, let part = Seats.part(s, in: .fullBand)?.part, let id = id(named: part) {
+            return (id, nil, nil)
+        }
+        switch seat {
+        case .conductor: return (nil, nil, nil)
+        case .notSet:
+            // my part: the lineup's lead (the tune), else the first part
+            let lead = (piece.output?.lineup ?? .fullBand).lead.lowercased()
+            return (score.parts.first { $0.name.lowercased().contains(lead) }?.id
+                ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id, nil, nil)
+        case .seat(let seatID, let reads):
+            guard let info = Seats.info(seatID) else { return (nil, nil, nil) }
+            // the score's own lineup first; a score from elsewhere is matched by its part names
+            var lineups: [Lineup] = [.fullBand, .minimalBand, .quartet]
+            if let own = piece.output?.lineup { lineups.removeAll { $0 == own }; lineups.insert(own, at: 0) }
+            for (k, lineup) in lineups.enumerated() {
+                guard let sp = Seats.part(seatID, in: lineup) else { continue }
+                if let part = sp.part, let id = id(named: part) {
+                    return (id, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineup, part: sp))
+                }
+                // the score's own lineup has no part for the seat (percussion): every part opens
+                if sp.part == nil, k == 0, piece.output != nil {
+                    return (nil, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineup, part: sp))
+                }
+            }
+            return (nil, nil, nil)
+        }
+    }
+
+    /// "Make this my part": the highlight, the mute target, Review's order and Share's scope follow at
+    /// once, and the score remembers it. Nothing is arranged again.
+    func makeMine(_ id: String?) {
+        guard let id, id != myPart, let part = score.part(id: id) else { return }
+        myPart = id
+        var p = Piece.load(from: piece.metaURL) ?? piece
+        p.myPart = part.name
+        try? p.save()
+    }
+
+    /// The source of your part, when the core knows it.
+    var mySource: PartSourceKind? { myPart.flatMap { partSources[$0] } }
 
     func start() {
         guard engine == nil else { return }

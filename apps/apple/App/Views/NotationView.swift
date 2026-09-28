@@ -10,14 +10,31 @@ struct NotationView: View {
     @Bindable var model: PracticeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var hsize
+    @Environment(AppModel.self) private var app
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
+
+    /// The first page scrolls to the very top, so the part view's header shows with it.
+    private func target(_ page: Int) -> String {
+        page == model.pages.first?.number ? "page-top" : "page-\(page)"
+    }
 
     var body: some View {
         GeometryReader { geo in
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
                     LazyVStack(spacing: BrasscribeDesign.Space.s3) {
+                        // the part view's header scrolls with the music, so it never takes the score's room
+                        VStack(alignment: .leading, spacing: 0) {
+                            if hsize == .compact {
+                                StatusLine(model: model, toCheck: model.toCheck, wide: false) { app.path.append(.review(model.piece)) }
+                            }
+                            PartHeader(model: model)
+                        }
+                        .padding(.top, BrasscribeDesign.Space.s1)
+                        // like the phone's other chrome, it grows to about twice the default size
+                        .dynamicTypeSize(hsize == .compact ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5)
+                        .id("page-top")
                         ForEach(model.pages, id: \.number) { page in
                             PageView(model: model, page: page, rotorNS: rotorNS)
                                 .id("page-\(page.number)")
@@ -32,6 +49,7 @@ struct NotationView: View {
                     .accessibilityLabel(Text("Score pages"))
                 }
                 .background(Color.Brasscribe.bg)
+                .accessibilityIdentifier("scoreArea")
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
@@ -48,21 +66,21 @@ struct NotationView: View {
                 }
                 .onChange(of: model.layoutVersion) { _, _ in
                     // after (re)engraving, show the current bar
-                    DispatchQueue.main.async { proxy.scrollTo("page-\(model.pageNumber(forBar: model.currentBar))", anchor: .top) }
+                    DispatchQueue.main.async { proxy.scrollTo(target(model.pageNumber(forBar: model.currentBar)), anchor: .top) }
                 }
                 .onChange(of: model.pages.count) { _, _ in
                     // pages arrive one by one: once the current bar's page is here, show it
                     let page = model.pageNumber(forBar: model.currentBar)
                     guard page != lastScrolledBar, model.pages.contains(where: { $0.number == page }) else { return }
                     lastScrolledBar = page
-                    DispatchQueue.main.async { proxy.scrollTo("page-\(page)", anchor: .top) }
+                    DispatchQueue.main.async { proxy.scrollTo(target(page), anchor: .top) }
                 }
                 .onChange(of: model.currentBar) { _, bar in
                     let page = model.pageNumber(forBar: bar)
                     guard page != lastScrolledBar else { return }
                     lastScrolledBar = page
                     withAnimation(BrasscribeDesign.Motion.animation(BrasscribeDesign.Motion.slow, reduceMotion: reduceMotion)) {
-                        proxy.scrollTo("page-\(page)", anchor: .top)
+                        proxy.scrollTo(target(page), anchor: .top)
                     }
                 }
             }

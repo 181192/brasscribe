@@ -61,8 +61,11 @@ struct ScoreScreen: View {
         do {
             let loaded = try await PracticeModel.open(piece)
             guard model == nil, !Task.isCancelled else { loaded.stopAll(); return }
-            if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
+            if LaunchOptions.screen?.hasPrefix("part") == true { loaded.shownPart = loaded.myPart }
+            if let id = app.showPartOnOpen { app.showPartOnOpen = nil; loaded.openedOnMyPart = true; loaded.shownPart = id }
             model = loaded
+            // "This small band has no 1st Baritone…": said once, politely, when the score opens
+            if let notice = loaded.seatNotice { AccessibilityNotifier.announce(notice, polite: true) }
             ScreenshotScenes.stage(loaded)
             // "Open on the music stand" from the library
             if let row = app.openOnStand {
@@ -94,6 +97,19 @@ struct PracticeView: View {
     @State private var toCheck = 0
     @FocusState private var focused: Bool
     @Environment(\.horizontalSizeClass) private var hsize
+    @AccessibilityFocusState private var standButtonA11y: Bool
+    /// The screen's height under the navigation bar. The bands above and below the score take at
+    /// most 40 % of it, so the score keeps at least 55 % of the safe area with the navigation bar
+    /// counted in (ScoreHeightUITests).
+    @State private var screenHeight: CGFloat = 0
+    #if os(macOS)
+    // the Mac: the bands scroll only in a short window, so no content makes the window taller than the screen
+    static let headerShare: CGFloat = 0.3
+    static let playerShare: CGFloat = 0.35
+    #else
+    static let headerShare: CGFloat = 0.15
+    static let playerShare: CGFloat = 0.25
+    #endif
 
     private var wide: Bool {
         #if os(macOS)
@@ -105,9 +121,14 @@ struct PracticeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
-                         showTalking: $showTalking, showVideo: $showVideo)
-            StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) }
+            VStack(spacing: 0) {
+                ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
+                             showTalking: $showTalking, showVideo: $showVideo)
+                // phone: the count scrolls with the music (NotationView), so the score keeps the screen
+                if wide { StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) } }
+            }
+            .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
+            .heightShare(Self.headerShare, of: screenHeight)
             Divider().overlay(Color.Brasscribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
@@ -119,7 +140,6 @@ struct PracticeView: View {
                             .shadow(color: .black.opacity(0.15), radius: 4)
                             .accessibilityLabel(Text("Video of the performance, synced to the score"))
                     }
-                    if !wide { ZoomButtons(model: model, vertical: true) }
                 }
                 .padding(Space.s3)
             }
@@ -129,26 +149,52 @@ struct PracticeView: View {
                 if let missing = model.bandSoundsMissing { BandSoundsMissingLine(details: missing.details) }
                 PlayerBar(model: model, wide: wide)
             }
+            // the phone's chrome grows to about twice the default text size; past that the music keeps its room
+            .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
+            .heightShare(Self.playerShare, of: screenHeight)
+            .background(Color.Brasscribe.surface.ignoresSafeArea(edges: .bottom))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("playerArea")
         }
         .inspector(isPresented: Binding(get: { wide && showInspector }, set: { showInspector = $0 })) {
             PartsPanel(model: model)
                 .inspectorColumnWidth(min: 260, ideal: 320, max: 400)
         }
         .toolbar {
+            if !wide {
+                // phone: the music stand sits in the navigation bar, so the part row keeps its room
+                ToolbarItem(placement: .primaryAction) {
+                    Button { model.enterStand(from: .toolbar) } label: {
+                        Label("Music stand", systemImage: "arrow.up.left.and.arrow.down.right")
+                    }
+                    .accessibilityFocused($standButtonA11y)
+                    .accessibilityIdentifier("musicStand")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button { showExport = true } label: { Label("Share or print", systemImage: BrasscribeIcon.export.systemName).labelStyle(.titleAndIcon) }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                     .accessibilityIdentifier("shareOrPrint")
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(model.piece.title))
+        .accessibilityIdentifier("practiceScreen")
         // The score's scroll view takes arrow keys for scrolling, so bar navigation is
         // handled here, on the focused practice screen, before it reaches the scroll view.
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
-        .onAppear { focused = true; refreshToCheck() }
+        .onAppear {
+            focused = true
+            refreshToCheck()
+            // back from the music stand on a phone: focus returns to the navigation bar's button
+            if !wide, model.focusStandButton {
+                model.focusStandButton = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { standButtonA11y = true }
+            }
+        }
         .focusedSceneValue(\.practice, model)
         .onKeyPress(.rightArrow) { model.nextBar(); return .handled }
         .onKeyPress(.leftArrow) { model.previousBar(); return .handled }
@@ -178,6 +224,7 @@ struct PracticeView: View {
         let items = ReviewList.items(score: model.score, composition: model.composition, uncertainty: model.uncertainty)
         let checked = model.piece.loadChecked()
         toCheck = items.filter { !checked.contains($0.id) }.count
+        model.toCheck = toCheck
     }
 }
 
@@ -228,6 +275,8 @@ struct StatusLine: View {
 
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
+    @Environment(AppModel.self) private var app
+    @State private var explainSource: PartSourceKind?
     @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var standButtonA11y: Bool
     @FocusState private var standButtonKeys: Bool
@@ -245,26 +294,49 @@ struct ScoreToolbar: View {
         return k == 0 ? String(localized: "As written") : String(localized: "As written for \(keys[k])")
     }
 
+    /// "Written (B♭)" in the phone's View menu; the full wording is the section's note.
+    private var shortWrittenLabel: String {
+        let keys = ["C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "Written") }
+        let k = ((p.transposeSemitones % 12) + 12) % 12
+        return k == 0 ? String(localized: "Written") : String(localized: "Written (\(keys[k]))")
+    }
+
     var body: some View {
         Group {
-            if typeSize >= .accessibility1 {
+            if !wide && typeSize >= .accessibility1 {
+                // the largest sizes: the part's name keeps the row (cut at its end); the source label
+                // sits above the music, where it can wrap
+                HStack(spacing: Space.s2) { parts.frame(maxWidth: .infinity, alignment: .leading); view }
+            } else if !wide {
+                // phone: one row, the part and where it comes from, then View (pitch, zoom, the stand)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s2) { parts; sourcePill; Spacer(minLength: 0); view }
+                    // a longer part name: View keeps only its icon, so the pill stays on the row
+                    HStack(spacing: Space.s2) { parts; sourcePill; Spacer(minLength: 0); viewMenu(iconOnly: true) }
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        HStack(spacing: Space.s2) { parts; Spacer(minLength: 0); view }
+                        sourcePill
+                    }
+                    VStack(alignment: .leading, spacing: Space.s1) { parts; sourcePill; view }
+                }
+            } else if typeSize >= .accessibility1 {
                 // the largest text sizes: one control per row, nothing squeezed
-                VStack(alignment: .leading, spacing: Space.s2) { parts; pitch; standButton; view; inspectorToggle }
+                VStack(alignment: .leading, spacing: Space.s2) { parts; sourcePill; pitch; standButton; view; inspectorToggle }
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { controls }
                     VStack(alignment: .leading, spacing: Space.s2) {
-                        HStack(spacing: Space.s3) { parts; Spacer(minLength: 0); view; inspectorToggle }
-                        // phone: the pitch row, then the Music stand button
+                        HStack(spacing: Space.s3) { parts; sourcePill; Spacer(minLength: 0); view; inspectorToggle }
                         HStack(spacing: Space.s3) { pitch; standButton }
                     }
                 }
             }
         }
-        .padding(.horizontal, Space.s5).padding(.vertical, Space.s2)
+        .padding(.horizontal, Space.s5).padding(.vertical, wide ? Space.s2 : Space.s1)
         .onAppear {
             // back from the music stand: focus returns to the button that opened it
-            guard model.focusStandButton else { return }
+            guard wide, model.focusStandButton else { return }
             model.focusStandButton = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { standButtonA11y = true; standButtonKeys = true }
         }
@@ -292,8 +364,14 @@ struct ScoreToolbar: View {
         }
     }
 
+    /// Where the part shown comes from: a small outline pill that explains itself.
+    @ViewBuilder private var sourcePill: some View {
+        if let id = model.shownPart, let kind = model.partSources[id] { SourceLabel(kind: kind, compact: true) }
+    }
+
     @ViewBuilder private var controls: some View {
         parts
+        sourcePill
         pitch
         if wide { ZoomButtons(model: model, vertical: false) }
         Spacer(minLength: Space.s2)
@@ -302,17 +380,47 @@ struct ScoreToolbar: View {
         inspectorToggle
     }
 
-    private var parts: some View {
+    @ViewBuilder private var parts: some View {
+        if !wide {
+            // phone: a menu whose label wraps at large text sizes instead of running off the screen
+            Menu {
+                partChoices.pickerStyle(.inline)
+            } label: {
+                HStack(spacing: Space.s1) {
+                    Text(shownTitle).lineLimit(1).truncationMode(.tail)
+                    Image(systemName: "chevron.up.chevron.down").font(.footnote.weight(.semibold)).accessibilityHidden(true)
+                }
+                .font(Font.Brasscribe.body)
+                .foregroundStyle(Color.Brasscribe.text)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel(Text("Parts"))
+            .accessibilityValue(Text(shownTitle))
+            .accessibilityIdentifier("partPicker")
+        } else {
+            partChoices
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .menuTint()
+                .accessibilityIdentifier("partPicker")
+                .frame(minHeight: 44)
+                .fixedSize()
+        }
+    }
+
+    private var partChoices: some View {
         Picker(selection: $model.shownPart) {
             Text("All parts").tag(String?.none)
-            ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
+            ForEach(model.score.parts) { p in
+                Text(p.id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName).tag(String?.some(p.id))
+            }
         } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
-        .pickerStyle(.menu)
-        .labelsHidden()
-        .menuTint()
-        .accessibilityIdentifier("partPicker")
-        .frame(minHeight: 44)
-        .fixedSize()
+    }
+
+    private var shownTitle: String {
+        guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "All parts") }
+        return id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName
     }
 
     private var pitch: some View {
@@ -323,26 +431,63 @@ struct ScoreToolbar: View {
         .help(Text("Written is what you read on your part. Concert is how it sounds on a piano."))
     }
 
-    private var view: some View {
+    private var view: some View { viewMenu(iconOnly: false) }
+
+    private func viewMenu(iconOnly: Bool) -> some View {
         Menu {
+            if !wide, typeSize >= .accessibility1, let id = model.shownPart, let kind = model.partSources[id] {
+                // the largest sizes: where the part comes from, whole, with its explanation
+                Section {
+                    Button { explainSource = kind } label: { Label(kind.title, systemImage: kind.icon.systemName) }
+                        .accessibilityIdentifier("sourceLabel")
+                }
+            }
+            if !wide {
+                // phone: the pitch and the zoom live here, so the music keeps the screen
+                Section {
+                    Picker(selection: $model.pitchMode) {
+                        Text(shortWrittenLabel).tag(PitchMode.written)
+                        Text("Concert").tag(PitchMode.concert)
+                    } label: { Text("Pitch") }
+                    .pickerStyle(.inline)
+                } header: { Text("Written is what you read on your part. Concert is how it sounds on a piano.") }
+                Section {
+                    Button { model.zoom = min(4, model.zoom + 0.25) } label: { Label("Zoom in", systemImage: BrasscribeIcon.zoomIn.systemName) }
+                    Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Label("Zoom out", systemImage: BrasscribeIcon.zoomOut.systemName) }
+                }
+            }
             Button { model.enterStand(from: .toolbar) } label: { Label("Music stand", systemImage: "arrow.up.left.and.arrow.down.right") }
             Button { showTalking = true } label: { Label("Read aloud", systemImage: BrasscribeIcon.talkingScore.systemName) }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             if model.video != nil {
                 Toggle(isOn: $showVideo) { Label("Show video", systemImage: BrasscribeIcon.video.systemName) }
             }
+            if model.piece.profile == .solo {
+                // a friend played it: Choose output's "Who played this?"
+                Button { model.stopAll(); app.path.append(.output(model.piece)) } label: {
+                    Label("Write for another instrument…", systemImage: BrasscribeIcon.parts.systemName)
+                }
+                .accessibilityIdentifier("writeForAnother")
+            }
             if !wide {
                 Button { showParts = true } label: { Label("Parts and sound", systemImage: BrasscribeIcon.parts.systemName) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
             }
         } label: {
-            Label("View", systemImage: BrasscribeIcon.more.systemName)
+            if iconOnly || (!wide && typeSize >= .accessibility1) {
+                Label("View", systemImage: BrasscribeIcon.more.systemName).labelStyle(.iconOnly).frame(minWidth: 44)
+            } else {
+                Label("View", systemImage: BrasscribeIcon.more.systemName)
+            }
         }
         .menuStyle(.button)
         .tint(Color.Brasscribe.text)
         .frame(minHeight: 44)
         .fixedSize()
         .accessibilityIdentifier("viewMenu")
+        .alert(explainSource?.title ?? "", isPresented: Binding(get: { explainSource != nil }, set: { if !$0 { explainSource = nil } })) {
+            Button("OK") {}
+        } message: { Text(explainSource?.explanation ?? "") }
     }
 }
 
@@ -388,30 +533,54 @@ struct ZoomButtons: View {
 /// they were looked for under the tech-person details.
 struct BandSoundsMissingLine: View {
     let details: String
+    @State private var showing = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.s1) {
-            Label("The band sounds are missing. Reinstall Brasscribe Play to hear the band.",
-                  systemImage: BrasscribeIcon.info.systemName)
-                .font(Font.Brasscribe.callout)
-                .foregroundStyle(Color.Brasscribe.text)
-            if !details.isEmpty {
-                DisclosureGroup {
-                    Text(details).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
-                } label: { Text("Details for the band's tech person").font(Font.Brasscribe.callout) }
-                .tint(Color.Brasscribe.text)
+        Button { showing = true } label: {
+            HStack(spacing: Space.s2) {
+                Image(systemName: BrasscribeIcon.info.systemName).accessibilityHidden(true)
+                Text("The band sounds are missing.").lineLimit(1)
+                Spacer(minLength: Space.s2)
+                Text("Details").underline()
             }
+            .font(Font.Brasscribe.callout)
+            .foregroundStyle(Color.Brasscribe.text)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.horizontal, Space.s4)
+            .background(Color.Brasscribe.surface)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Space.s4)
-        .padding(.vertical, Space.s2)
-        .background(Color.Brasscribe.surface)
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("The band sounds are missing. Details"))
+        .accessibilityIdentifier("bandSoundsMissing")
+        .sheet(isPresented: $showing) {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Space.s4) {
+                        Text("The band sounds are missing. Reinstall Brasscribe Play to hear the band.")
+                            .font(Font.Brasscribe.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if !details.isEmpty {
+                            SectionLabel(String(localized: "Details for the band's tech person"))
+                            Text(details).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
+                        }
+                    }
+                    .padding(Space.s5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .pageBackground()
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showing = false } } }
+            }
+            .presentationDetents([.medium, .large])
+            .appAppearance()
+        }
     }
 }
 
 struct PlayerBar: View {
     @Bindable var model: PracticeModel
     let wide: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editRepeat = false
 
     var body: some View {
@@ -429,15 +598,33 @@ struct PlayerBar: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.Brasscribe.surface)
                 .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
-            } else {
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: Space.s2)], spacing: Space.s2) { chipsPhone }
+            } else if typeSize >= .accessibility1 {
+                // the largest text sizes: the transport, the bar, and one menu with the practice controls
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    HStack(spacing: Space.s3) {
+                        transport
+                        Text("Bar \(model.currentBar + 1)").font(Font.Brasscribe.headline).monospacedDigit().lineLimit(1)
+                            .accessibilityLabel(Text(model.positionDescription))
+                            .accessibilityIdentifier("position")
+                        Spacer(minLength: 0)
+                    }
+                    practiceMenuAll
                 }
-                .card(padding: Space.s4)
-                .padding(.horizontal, Space.s5)
-                .padding(.vertical, Space.s2)
-                .background(Color.Brasscribe.bg)
+                .padding(.horizontal, Space.s4)
+                .padding(.vertical, Space.s1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.Brasscribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+            } else {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
+                    chipsPhone
+                }
+                .padding(.horizontal, Space.s4)
+                .padding(.vertical, Space.s1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.Brasscribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
             }
         }
         .labelStyle(.titleAndIcon)
@@ -455,7 +642,7 @@ struct PlayerBar: View {
                 Image(systemName: model.isPlaying ? BrasscribeIcon.pause.systemName : BrasscribeIcon.play.systemName)
                     .font(.title2.weight(.bold))
                     .foregroundStyle(Color.Brasscribe.onPrimary)
-                    .frame(width: 56, height: 56)
+                    .frame(width: wide ? 56 : 48, height: wide ? 56 : 48)
                     .background(Color.Brasscribe.primary, in: Circle())
                     .contentShape(Circle())
             }
@@ -526,7 +713,7 @@ struct PlayerBar: View {
                 .help(Text("One bar of clicks before the music starts."))
             Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }
                 .toggleStyle(.chip).fixedSize().padShortcut("m")
-            muteMyPart.fixedSize()
+            if model.myPart != nil { muteMyPart.fixedSize() }
         }
     }
 
@@ -585,7 +772,20 @@ struct PlayerBar: View {
 
     // MARK: practice, phone
 
+    /// Two rows that fit a phone at the default text size: Speed and Repeat, then Mute my part and
+    /// Practice (count-in, metronome, the recording). At large text sizes they stack.
     @ViewBuilder private var chipsPhone: some View {
+        ViewThatFits(in: .horizontal) {
+            VStack(spacing: Space.s2) {
+                HStack(spacing: Space.s2) { speedChip; repeatChip }
+                HStack(spacing: Space.s2) { if model.myPart != nil { muteMyPart }; practiceMenu.fixedSize(horizontal: model.myPart != nil, vertical: false) }
+            }
+            .lineLimit(1)
+            VStack(alignment: .leading, spacing: Space.s2) { speedChip; repeatChip; if model.myPart != nil { muteMyPart }; practiceMenu }
+        }
+    }
+
+    @ViewBuilder private var speedChip: some View {
         Menu {
             ForEach([50.0, 60, 70, 75, 80, 90, 100, 110, 125], id: \.self) { s in
                 Button { model.speedPercent = s } label: {
@@ -601,6 +801,9 @@ struct PlayerBar: View {
         .accessibilityValue(Text(percentText(model.speedPercent)))
         .accessibilityAdjustableAction { d in model.changeSpeed(by: d == .increment ? 5 : -5) }
 
+    }
+
+    @ViewBuilder private var repeatChip: some View {
         Menu {
             Button { model.loopFrom = model.currentBar; model.loopTo = model.currentBar; model.setLoop(true) } label: {
                 Text("Repeat this bar")
@@ -615,15 +818,59 @@ struct PlayerBar: View {
         .accessibilityValue(model.looping ? Text("Bars \(min(model.loopFrom, model.loopTo) + 1) to \(max(model.loopFrom, model.loopTo) + 1)") : Text("Off"))
         .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
 
-        Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
-        Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")
-        muteMyPart
-        if model.hasOriginal {
-            // "Hear the recording": the words say it plays, never that it records
-            Toggle(isOn: $model.hearOriginal) { Label("Hear the recording", systemImage: BrasscribeIcon.listenBar.systemName) }
-                .toggleStyle(.chip)
-                .accessibilityHint(Text("Plays the recording instead of the band, at the same place."))
-                .accessibilityIdentifier("originalToggle")
+    }
+
+    /// Every practice control in one menu, for the largest text sizes.
+    private var practiceMenuAll: some View {
+        Menu {
+            Picker(selection: $model.speedPercent) {
+                ForEach([50.0, 60, 70, 75, 80, 90, 100, 110, 125], id: \.self) { s in Text(percentText(s)).tag(s) }
+            } label: { Label("Speed \(percentText(model.speedPercent))", systemImage: BrasscribeIcon.speed.systemName) }
+            .pickerStyle(.menu)
+            Button { model.loopFrom = model.currentBar; model.loopTo = model.currentBar; model.setLoop(true) } label: {
+                Label("Repeat this bar", systemImage: BrasscribeIcon.loop.systemName)
+            }
+            Button { editRepeat = true } label: { Text("Repeat bars \(model.loopFrom + 1) to \(model.loopTo + 1)…") }
+            if model.looping { Button(role: .destructive) { model.setLoop(false) } label: { Text("Stop repeating") } }
+            if model.myPart != nil {
+                Toggle(isOn: $model.playAlong) { Label("Mute my part", systemImage: BrasscribeIcon.playAlong.systemName) }
+                    .accessibilityIdentifier("muteMyPart")
+            }
+            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }
+            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }
+            if model.hasOriginal {
+                Toggle(isOn: $model.hearOriginal) { Label("Hear the recording", systemImage: BrasscribeIcon.listenBar.systemName) }
+            }
+        } label: {
+            ChipLabel(title: String(localized: "Practice"), systemImage: BrasscribeIcon.more.systemName,
+                      active: model.playAlong || model.looping || model.speedPercent != 100 || model.countIn || model.metronome || model.hearOriginal)
+                .lineLimit(1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("practiceMenu")
+        .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
+    }
+
+    /// The practice switches used less often, in one menu.
+    private var practiceMenu: some View {
+        Menu {
+            Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }
+            Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }
+            if model.hasOriginal {
+                // "Hear the recording": the words say it plays, never that it records
+                Toggle(isOn: $model.hearOriginal) { Label("Hear the recording", systemImage: BrasscribeIcon.listenBar.systemName) }
+                    .accessibilityIdentifier("originalToggle")
+            }
+        } label: {
+            ChipLabel(title: String(localized: "Practice"), systemImage: BrasscribeIcon.more.systemName,
+                      active: model.countIn || model.metronome || model.hearOriginal)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("practiceMenu")
+        // plain C and M still switch them on iPad
+        .background {
+            Button("") { model.countIn.toggle() }.padShortcut("c").hidden().accessibilityHidden(true)
+            Button("") { model.metronome.toggle() }.padShortcut("m").hidden().accessibilityHidden(true)
         }
     }
 }
@@ -689,7 +936,8 @@ struct PartsPanel: View {
 
                 SectionLabel(String(localized: "Sound"))
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    Picker(selection: $model.myPart) {
+                    Picker(selection: Binding(get: { model.myPart }, set: { model.makeMine($0) })) {
+                        if model.myPart == nil { Text("None").tag(String?.none) }
                         ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
                     } label: { Text("My part") }
                     .pickerStyle(.menu)
@@ -716,8 +964,9 @@ struct PartsPanel: View {
         return HStack(spacing: Space.s2) {
             Rectangle().fill(mine ? Color.Brasscribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
-                Text(p.displayName).font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
-                if mine { Text("your part").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted) }
+                Text(mine ? String(localized: "\(p.displayName) (you)") : p.displayName)
+                    .font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                if let kind = model.partSources[p.id] { SourceCaption(kind: kind) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Toggle(isOn: Binding(get: { model.isMuted(p.id) }, set: { model.setMuted(p.id, $0) })) {

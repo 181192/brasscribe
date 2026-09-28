@@ -44,6 +44,10 @@ enum ScreenshotScenes {
             if let p = openScore() { app.path = [.output(p)] }
         case "score", "part", "export", "stand", "stand-hidden", "stand-hint", "stand-locked", "stand-all":
             _ = openScore()   // ScoreScreen reads the scene name for the part view and the export sheet
+        case "part-small":
+            // the small band: a seat without its own part there gets the notice
+            guard let p = openScore(), let comp = p.loadComposition() else { return }
+            _ = try? app.rearrange(p, composition: comp, output: OutputChoice(lineup: .minimalBand))
         case "error":
             app.show(.silence)
         case "settings":

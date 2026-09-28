@@ -18,4 +18,15 @@ enum WindowFit {
         let y = h <= v.height ? min(max(f.minY, v.minY), v.maxY - h) : v.maxY - h
         return CGRect(x: x, y: y, width: w, height: h)
     }
+
+    /// Zoom's "standard" frame (a double-click on the title bar, or the green button with Option):
+    /// the screen's visible frame, clear of the Dock and the menu bar, never below `minSize`.
+    static func standardFrame(visible v: CGRect, minSize: CGSize = .zero) -> CGRect {
+        clamp(v, into: v, minSize: minSize)
+    }
+
+    /// The frame reaches past the visible frame (under the Dock or the menu bar, or off the screen).
+    static func overflows(_ f: CGRect, _ v: CGRect) -> Bool {
+        f.minX < v.minX - 0.5 || f.minY < v.minY - 0.5 || f.maxX > v.maxX + 0.5 || f.maxY > v.maxY + 0.5
+    }
 }

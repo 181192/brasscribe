@@ -1,32 +1,32 @@
+import BrasscribeCore
 import Foundation
 import ScoreKit
 
-/// Part names in the musician's language. Norwegian bands say "Solokornett", "Sopran",
-/// "2. kornett"; one convention everywhere the part appears (score, pickers, review, files).
+/// Part names in the musician's language, from the core's one table (`part_name_nb`): «Solokornett»,
+/// «Solo althorn», «2. kornett». The same names on every platform, in the score, the pickers, review
+/// and files. The app keeps no table of its own.
 enum PartNames {
-    static let norwegian: [String: String] = [
-        "Soprano Cornet": "Sopran", "Solo Cornet": "Solokornett", "Repiano Cornet": "Repiano",
-        "1st Cornet": "1. kornett", "Tenor Horn": "Althorn",
-        "2nd Cornet": "2. kornett", "3rd Cornet": "3. kornett", "Flugelhorn": "Flygelhorn",
-        "Solo Horn": "Solohorn", "1st Horn": "1. horn", "2nd Horn": "2. horn",
-        "1st Baritone": "1. baryton", "2nd Baritone": "2. baryton",
-        "1st Trombone": "1. trombone", "2nd Trombone": "2. trombone", "Bass Trombone": "Basstrombone",
-        "Euphonium": "Eufonium", "E♭ Bass": "Ess-bass", "B♭ Bass": "B-bass", "Percussion": "Slagverk",
-        "Solo": "Solo", "Piano": "Piano", "Drums": "Trommer", "Bass": "Bass", "Strings": "Strykere",
-    ]
-
-    static func display(_ name: String) -> String {
-        guard ScoreLanguage.current == .norwegian else { return name }
-        return norwegian[name] ?? name
+    /// "Solo Horn" → «Solo althorn» in Norwegian; unchanged in English and for names the core doesn't know.
+    static func display(_ name: String, language: ScoreLanguage = .current) -> String {
+        language == .norwegian ? partNameNb(name: name) : name
     }
 
     /// The MusicXML with its part names in the musician's language, for engraving.
     static func localized(_ xml: String) -> String {
         guard ScoreLanguage.current == .norwegian else { return xml }
         var out = xml
-        for (en, nb) in norwegian where en != nb {
-            out = out.replacingOccurrences(of: "<part-name>\(en)</part-name>", with: "<part-name>\(nb)</part-name>")
-            out = out.replacingOccurrences(of: "<part-abbreviation>\(en)</part-abbreviation>", with: "<part-abbreviation>\(nb)</part-abbreviation>")
+        for tag in ["part-name", "part-abbreviation"] {
+            let open = "<\(tag)>", close = "</\(tag)>"
+            var names = Set<String>()
+            var rest = out[...]
+            while let a = rest.range(of: open), let b = rest.range(of: close, range: a.upperBound..<rest.endIndex) {
+                names.insert(String(rest[a.upperBound..<b.lowerBound]))
+                rest = rest[b.upperBound...]
+            }
+            for en in names {
+                let nb = partNameNb(name: en)
+                if nb != en { out = out.replacingOccurrences(of: open + en + close, with: open + nb + close) }
+            }
         }
         return out
     }

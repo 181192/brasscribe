@@ -26,10 +26,12 @@ struct RustCoreBridge: CoreBridge {
 
     /// Arranged by the core for the lineup and difficulty, in the target key (fifths) when one
     /// is given. A whole-band take has no layers for the full band and gets the small band.
-    func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data? {
+    /// The seat, reading and lead go along every time: the call rewrites the whole arrangement.
+    func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?, seat: SeatOptions) throws -> Data? {
         let json = String(decoding: try JSONEncoder().encode(composition), as: UTF8.self)
         let options = ArrangeOptions(lineup: lineup.coreValue, difficulty: difficulty.rawValue,
-                                     key: keyFifths.map { String($0) }, transpose: nil)
+                                     key: keyFifths.map { String($0) }, transpose: nil,
+                                     seat: seat.seat, reads: seat.reads, lead: seat.lead)
         return Data(try arrangeMusicxmlWith(compositionJson: json, options: options).utf8)
     }
 }

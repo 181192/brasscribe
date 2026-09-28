@@ -33,6 +33,8 @@ final class AppModel {
     private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
     private var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
     var openingScore: String?
+    /// The part the next score opens on ("Show my part" in Review).
+    var showPartOnOpen: String?
     var renameTarget: ScoreEntry?
     var deleteTarget: ScoreEntry?
     var path: [Route] = []
@@ -145,6 +147,11 @@ final class AppModel {
     var soloOnDevice: Bool = UserDefaults.standard.object(forKey: "soloOnDevice") as? Bool ?? true {
         didSet { UserDefaults.standard.set(soloOnDevice, forKey: "soloOnDevice") }
     }
+    /// What the player plays (Settings › Your instrument, and the first run's second step).
+    var seat: SeatChoice = .stored {
+        didSet { if seat != oldValue { seat.save() } }
+    }
+
     var modelDownloadURL: String = UserDefaults.standard.string(forKey: "modelDownloadURL") ?? "" {
         didSet { UserDefaults.standard.set(modelDownloadURL, forKey: "modelDownloadURL"); ModelStore.shared.remoteBase = URL(string: modelDownloadURL) }
     }
@@ -333,7 +340,14 @@ final class AppModel {
 
     // MARK: transcription
 
-    func startTranscription(_ src: PendingSource, profile: SourceProfile, output: OutputChoice) {
+    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice) {
+        // the player's seat goes along; a solo take is then written for their instrument
+        var output = chosen
+        if output.seat == nil, let id = seat.id {
+            output.seat = id
+            output.reads = seat.reads
+            if profile == .solo { output.lead = "seat" }
+        }
         let job = TranscriptionJob(source: src, profile: profile, output: output, service: service(for: profile))
         // a 401 from the computer turns the connection row into "pair again"
         job.onUnauthorized = { [weak self] in self?.connection.poke() }
@@ -370,7 +384,8 @@ final class AppModel {
     /// The engine's PDF and braille no longer match, so those are made on this device too.
     @discardableResult
     func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws -> Piece {
-        guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths) else {
+        guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths,
+                                         seat: output.seatOptions) else {
             throw TranscriptionError.artifactUnavailable(.musicXML)
         }
         try xml.write(to: piece.scoreURL)

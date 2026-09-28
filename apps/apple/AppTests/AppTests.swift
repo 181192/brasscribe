@@ -42,7 +42,7 @@ func fixtureDir() -> URL? {
     let p = try Piece.create(title: "Test", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: dir)
     defer { p.delete() }
     #expect(Piece.loadAll().contains { $0.id == p.id })
-    let m = try PracticeModel(piece: p)
+    let m = PracticeModel(piece: p, score: try p.loadScore(), composition: p.loadComposition(), seat: .notSet)
     #expect(m.score.parts.count == 18)
     #expect(m.describe(partID: m.score.parts[1].id, bar: 0).contains("Solo Cornet"))
     #expect(m.uncertainCount(bar: 1) > 0)
@@ -113,8 +113,8 @@ func testVideo() -> URL? {
 }
 
 @Test func quartetPartsHaveNorwegianNames() {
-    #expect(PartNames.norwegian["1st Cornet"] == "1. kornett")
-    #expect(PartNames.norwegian["Tenor Horn"] == "Althorn")
+    #expect(PartNames.display("1st Cornet", language: .norwegian) == "1. kornett")
+    #expect(PartNames.display("Tenor Horn", language: .norwegian) == "Althorn")
 }
 
 /// A solo take has nothing for the other three parts: no quartet.
@@ -219,4 +219,19 @@ func testVideo() -> URL? {
     #expect(AppearanceSetting.scheme(stored: "something else") == nil)
     #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark"])
     #expect(AppearanceSetting.allCases.map(\.title).allSatisfy { !$0.isEmpty })
+}
+
+/// Zoom (a double-click on the title bar) fills the visible frame, clear of the Dock, and never goes
+/// below the content's minimum; a frame under the Dock is seen as reaching past it.
+@Test func zoomFillsTheVisibleFrameNotTheScreen() {
+    // a MacBook screen with the Dock at the bottom (70 pt) and the menu bar (33 pt)
+    let visible = CGRect(x: 0, y: 70, width: 1512, height: 879)
+    #expect(WindowFit.standardFrame(visible: visible, minSize: CGSize(width: 520, height: 640)) == visible)
+    // a screen smaller than the content's minimum: the top-left stays in view
+    let tiny = CGRect(x: 0, y: 50, width: 800, height: 500)
+    #expect(WindowFit.standardFrame(visible: tiny, minSize: CGSize(width: 520, height: 640)) == CGRect(x: 0, y: -90, width: 800, height: 640))
+    let underDock = CGRect(x: 0, y: 0, width: 1512, height: 949)
+    #expect(WindowFit.overflows(underDock, visible))
+    #expect(!WindowFit.overflows(visible, visible))
+    #expect(WindowFit.clamp(underDock, into: visible) == visible)
 }

@@ -214,12 +214,35 @@ struct WayInCard: View {
     }
 }
 
-/// First run: three points and Get started. Permissions are asked when first needed.
+/// First run: three points and Get started, then the one question it leads to: "What do you play?".
+/// Permissions are asked when first needed.
 struct FirstRunView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @State private var asking = LaunchOptions.screen?.hasPrefix("what-do-you-play") == true
 
     var body: some View {
+        NavigationStack {
+            points
+                .navigationDestination(isPresented: $asking) {
+                    WhatDoYouPlayView(mode: .firstRun) { answer in
+                        // "Not now" leaves it unset, as before; Brasscribe doesn't ask again
+                        if let answer { app.seat = answer }
+                        UserDefaults.standard.set(true, forKey: "firstRunDone")
+                        dismiss()
+                    }
+                }
+                #if os(iOS)
+                .toolbar(.hidden, for: .navigationBar)
+                #endif
+        }
+        .interactiveDismissDisabled()
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 640)
+        #endif
+    }
+
+    private var points: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: Space.s6) {
@@ -248,19 +271,12 @@ struct FirstRunView: View {
         }
         .pageBackground()
         .safeAreaInset(edge: .bottom) {
-            Button {
-                UserDefaults.standard.set(true, forKey: "firstRunDone")
-                dismiss()
-            } label: { Text("Get started") }
+            Button { asking = true } label: { Text("Get started") }
             .buttonStyle(.primaryWide)
             .padding(Space.s5)
             .frame(maxWidth: BrasscribeDesign.Size.contentMaxWidth)
             .accessibilityIdentifier("getStarted")
         }
-        .interactiveDismissDisabled()
-        #if os(macOS)
-        .frame(minWidth: 520, minHeight: 640)
-        #endif
     }
 
     private func point(icon: some View, title: String, text: String) -> some View {

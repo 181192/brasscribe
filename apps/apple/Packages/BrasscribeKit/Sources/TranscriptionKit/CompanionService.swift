@@ -280,6 +280,11 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         field("lineup", req.output.lineup.engineValue)
         field("difficulty", req.output.difficulty.rawValue)
         if let k = req.output.keyFifths { field("key", String(k)) }
+        // The player's seat, reading and who plays the tune: only when set, so a job without a seat
+        // is the same job as before.
+        if let s = req.output.seat { field("seat", s) }
+        if let r = req.output.reads { field("reads", r) }
+        if let l = req.output.lead { field("lead", l) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
         h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)
