@@ -191,7 +191,8 @@ class AdapterRegistry:
         t0 = time.time()
 
         def call():
-            proc = subprocess.run(cmd, env=full_env, capture_output=True, text=True)
+            # the engine's own stdin may be a closed terminal; Python children abort on a dead fd 0
+            proc = subprocess.run(cmd, env=full_env, stdin=subprocess.DEVNULL, capture_output=True, text=True)
             if proc.returncode != 0:
                 raise AdapterError(f"{name} failed ({proc.returncode}): {(proc.stderr or proc.stdout)[-2000:]}")
 

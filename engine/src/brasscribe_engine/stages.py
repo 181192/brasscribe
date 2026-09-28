@@ -30,7 +30,8 @@ SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS, THIS.with_name("compare.py")) + ((PA
 
 
 def _python(ctx: StageContext, module: str, *args: str) -> None:
-    proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, *args], capture_output=True, text=True)
+    proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, *args], stdin=subprocess.DEVNULL,
+                          capture_output=True, text=True)
     if proc.stdout.strip():
         for line in proc.stdout.strip().splitlines()[-20:]:
             ctx.log(line)
@@ -99,7 +100,8 @@ _HELP: dict[str, str] = {}
 def _supported(module: str) -> str:
     """The module's --help text (cached): which arrangement flags this arranger accepts."""
     if module not in _HELP:
-        proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, "--help"], capture_output=True, text=True)
+        proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, "--help"], stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True)
         _HELP[module] = proc.stdout
     return _HELP[module]
 

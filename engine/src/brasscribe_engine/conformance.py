@@ -57,7 +57,8 @@ class ConformanceRunner:
     def _run(self, log: Path) -> None:
         try:
             with log.open("w") as f:
-                code = subprocess.run(self.state.command, cwd=self.project, stdout=f, stderr=subprocess.STDOUT).returncode
+                code = subprocess.run(self.state.command, cwd=self.project, stdin=subprocess.DEVNULL, stdout=f,
+                                      stderr=subprocess.STDOUT).returncode
         except OSError as e:
             log.write_text(f"could not start: {e}\n")
             code = -1
