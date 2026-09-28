@@ -22,8 +22,13 @@ import alphaTab.model.Track
 import alphaTab.synth.PlaybackRange
 import alphaTab.synth.PlayerState
 import android.content.Context
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import no.brasscribe.play.audio.RealisticSynth
 
 /** The part of the score the player sees and hears, in plain values for Compose. */
@@ -225,23 +230,48 @@ class ScoreController(
     /** Shows the stand's window from [y] view pixels down. */
     fun scrollStandTo(y: Int) { innerScroll?.scrollTo(0, y.coerceAtLeast(0)) }
 
-    /** Parses MusicXML (or any format alphaTab reads) and renders the given tracks (default: the first). */
-    fun load(bytes: ByteArray, pick: (List<String>) -> Set<Int> = { setOf(0) }) {
+    /** A parsed score and its playback plan, built off the main thread and applied on it. */
+    private class Parsed(
+        val score: Score, val names: List<String>, val shown: Set<Int>, val percussion: List<Boolean>,
+        val channels: IntArray, val sounds: List<TrackSound?>, val gains: DoubleArray, val band: Boolean,
+    )
+
+    /** The thread the last parse ran on, for the test that it is never the main thread. */
+    @androidx.annotation.VisibleForTesting
+    @Volatile internal var parsedOn: Thread? = null
+
+    /**
+     * Parses MusicXML (or any format alphaTab reads) and renders the given tracks (default: the first).
+     * The parse and the playback plan run on [Dispatchers.Default] (a band score's MusicXML is about
+     * 2 MB); the result is applied and rendered on the main thread. Cancelling the caller (the screen
+     * left while the score loads) leaves the controller unloaded, with no error and no render.
+     */
+    suspend fun load(bytes: ByteArray, pick: (List<String>) -> Set<Int> = { setOf(0) }) {
+        val settings = view.settings
+        val context = view.context
+        val p = try {
+            withContext(Dispatchers.Default) { parse(bytes, pick, settings, context) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName)
+            return
+        }
+        if (released) return
         try {
-            val s = ScoreLoader.loadScoreFromBytes(Uint8Array(markVeryUncertain(bytes).asUByteArray()), view.settings)
+            val s = p.score
             score = s
             collectMarks(s)
             colourUncertainty(s)
             s.tracks.forEach { t -> writtenTransposition[t.index.toInt()] = t.staves[0].displayTranspositionPitch }
-            // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
-            val names = (0 until s.tracks.length.toInt()).map { i ->
-                s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace(' ', ' ').trim()
-            }
-            val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
-            prepareSound(s, names)
+            percussion = p.percussion
+            channels = p.channels
+            sounds = p.sounds
+            gains = p.gains
             _state.value = _state.value.copy(
-                loaded = true, error = null, title = s.title, parts = names,
-                shown = shown, totalBars = s.masterBars.length.toInt(),
+                loaded = true, error = null, title = s.title, parts = p.names, shown = p.shown,
+                totalBars = s.masterBars.length.toInt(), channels = p.channels.toList(), basicTier = !p.band,
+                bandSoundsExpected = if (p.band) "" else "assets/${BandSoundFontFile.ASSET}; ${context.getExternalFilesDir(null)?.resolve("sounds")}",
             )
             render()
         } catch (e: Throwable) {
@@ -249,21 +279,34 @@ class ScoreController(
         }
     }
 
+    private suspend fun parse(bytes: ByteArray, pick: (List<String>) -> Set<Int>, settings: alphaTab.Settings, context: Context): Parsed {
+        parsedOn = Thread.currentThread()
+        val marked = markVeryUncertain(bytes)
+        currentCoroutineContext().ensureActive()
+        val s = ScoreLoader.loadScoreFromBytes(Uint8Array(marked.asUByteArray()), settings)
+        currentCoroutineContext().ensureActive()
+        // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
+        val names = (0 until s.tracks.length.toInt()).map { i ->
+            s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace(' ', ' ').trim()
+        }
+        val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
+        // Banks only exist in the band SoundFont; alphaTab's General MIDI one has bank 0 alone, and a
+        // pitched channel on a missing bank is silent, so the basic tier keeps bank 0.
+        val band = bandSoundFont?.isFile == true || BandSoundFontFile.available(context)
+        return prepareSound(s, names, shown, band)
+    }
+
     /**
      * One MIDI channel per part (drums on channel 10), the band SoundFont preset (program, bank) per
      * part, and its balance as channel gain. The MusicXML importer turns <midi-instrument> into
      * per-beat instrument and bank changes that would override the preset, so those are removed.
+     * Touches only the new score, which nothing else holds yet, so it is safe off the main thread.
      */
-    private fun prepareSound(s: Score, names: List<String>) {
-        percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
-        channels = ChannelPlan.forPlayback(percussion)
-        gains = DoubleArray(names.size) { 1.0 }
-        // Banks only exist in the band SoundFont; alphaTab's General MIDI one has bank 0 alone, and a
-        // pitched channel on a missing bank is silent, so the basic tier keeps bank 0.
-        val band = bandSoundFont?.isFile == true || BandSoundFontFile.available(view.context)
-        _state.value = _state.value.copy(basicTier = !band, bandSoundsExpected = if (band) "" else
-            "assets/${BandSoundFontFile.ASSET}; ${view.context.getExternalFilesDir(null)?.resolve("sounds")}")
-        sounds = names.indices.map { i ->
+    private fun prepareSound(s: Score, names: List<String>, shown: Set<Int>, band: Boolean): Parsed {
+        val percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
+        val channels = ChannelPlan.forPlayback(percussion)
+        val gains = DoubleArray(names.size) { 1.0 }
+        val sounds = names.indices.map { i ->
             val t = s.tracks[i]
             soundMap?.resolve(names[i], null, t.playbackInfo.program.toInt().takeIf { it in 0..127 })
                 ?.let { if (percussion[i] && !it.percussion) it.copy(percussion = true) else it }
@@ -287,7 +330,7 @@ class ScoreController(
                 if (keep.size != beat.automations.length.toInt()) beat.automations = alphaTab.collections.List(*keep.toTypedArray())
             }
         }
-        _state.value = _state.value.copy(channels = channels.toList())
+        return Parsed(s, names, shown, percussion, channels, sounds, gains, band)
     }
 
     private var soundFontRequested = false
@@ -699,7 +742,7 @@ class ScoreController(
         return ScoreMidi(s, view.settings, _state.value.shown)
     }
 
-    /** Set once the screen let go of the controller: nothing waiting for the SoundFont plays after it. */
+    /** Set once the screen let go of the controller: a parse that ends later is dropped, and nothing waiting for the SoundFont plays. */
     private var released = false
 
     fun release() {
