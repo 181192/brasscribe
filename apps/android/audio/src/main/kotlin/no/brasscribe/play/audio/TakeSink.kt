@@ -29,17 +29,23 @@ class TakeSink(
     @Volatile var samples = 0L
         private set
 
-    /** The take reached [maxSamples]; later samples are dropped. */
-    val full: Boolean get() = samples >= maxSamples
+    /** Writing the WAV failed (the disk is full): the take ends with what was written. */
+    @Volatile var failed = false
+        private set
+
+    /** The take reached [maxSamples], or the disk took no more; later samples are dropped. */
+    val full: Boolean get() = failed || samples >= maxSamples
 
     /** The samples are still held in memory (the take is under [maxInMemory]). */
     val inMemory: Boolean get() = pcm != null
 
     /** Takes the first [n] samples of [buf]; returns how many were kept (fewer once [full]). */
     fun add(buf: FloatArray, n: Int): Int {
+        if (failed) return 0
         val keep = minOf(n.toLong(), maxSamples - samples).toInt().coerceAtLeast(0)
         if (keep == 0) return 0
-        for (i in 0 until keep) wav.write(buf[i])
+        // A full disk ends the take (the recorder stops as at the length limit) instead of crashing the service.
+        try { for (i in 0 until keep) wav.write(buf[i]) } catch (e: java.io.IOException) { failed = true; return 0 }
         pcm?.let { if (it.size + keep > maxInMemory) pcm = null else it.addAll(buf, keep) }
         samples += keep
         return keep
@@ -47,7 +53,7 @@ class TakeSink(
 
     /** Closes the WAV (its header gets the sizes) and hands the take over. */
     fun finish(): CapturedTake {
-        wav.close()
+        runCatching { wav.close() }.onFailure { failed = true }
         val audio = pcm?.let { PcmAudio(it.toArray(), sampleRate) }
         pcm = null
         return CapturedTake(file, sampleRate, samples, audio)
