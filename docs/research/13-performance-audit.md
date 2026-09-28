@@ -27,6 +27,9 @@
 | 4152f83 perf(ffi): move the stems into the band arrangement instead of cloning them | Rust FFI (Windows Play) | `bc_arrange_layers_band` cloned the six MIDI files and four WAV stems inside an `FnOnce` closure. They are moved now. | C ABI only process: 1.10 → 0.92 GB (**M**) | `brasscribe-ffi/tests/layers_band_c_api.rs`: C ABI = UniFFI output on Mikkel; `--ignored c_abi_alone` for the measurement |
 | a2ff100 perf(windows): read the band SoundFont in the background | Windows Play | `BandSoundFont.Load` did `File.ReadAllBytes` of the 195 MB SoundFont on the UI thread in `OnLaunched`, before `_window.Activate()` (`App.xaml.cs:79,130,245`). Load keeps the path; `ApplyTo` reads inside its `Task.Run`. The object no longer holds the bytes. | 195 MB read moved off the first frame (**C**; not timed on Windows) | `Load_leaves_reading_the_soundfont_to_ApplyTo` (file locked during Load) |
 | 5d3805a feat(engine): Cache-Control on Studio files and band sounds | Engine / Studio | No `Cache-Control`, so browsers guessed a lifetime from Last-Modified. Studio's static files: `no-cache` (revalidate, 304 in ~1 ms). This includes the SoundFont Studio's build bundles in its own `assets/band/`. The `BRASSCRIBE_BAND_SOUNDS_DIR` mount (Bandroom): `public, max-age=86400`. | No change for the SoundFont (see M2). The gain is that an unhashed `studio.js` can no longer run stale after an update. | `test_static_files_say_how_long_to_cache` |
+| 3335aa6 perf(engine): list jobs from cached manifest summaries | Engine | `GET /v1/jobs` parsed every manifest, read every `events.jsonl` and walked every `outputs/` per call. Finished runs are kept per run, keyed by the manifest's mtime and size, with their output list; the list never reads events. | 49 runs, warm: 52 → 3.3 ms; first call after start 91 → 66 ms (**M**) | `engine/tests/test_job_list.py`: a second list parses nothing, a changed manifest is parsed again |
+| ec3875a feat(engine): record GPU queue wait apart from stage run time | Engine / Studio | Stage seconds included the wait for the GPU mutex. Manifests, stage events and job stage states now carry `queue_wait_s` and `run_s` beside `seconds` (still the wall clock). "waiting for GPU mutex" is logged only when the mutex is held; it is polled every 1 s instead of 5 s. Studio shows "ran … · waited …" in the stage graph, stage details and manifest table. | A stage behind a held mutex: 0.8 s wait recorded as `queue_wait_s`, not run time (**M**, test) | `engine/tests/test_gpu_wait.py`, `studio/tests/stagetime.test.ts` |
+| 3a1ac5b feat(engine): optional bounded stage parallelism | Engine | `BRASSCRIBE_STAGE_PARALLELISM` (default 1: unchanged) runs up to that many stages whose inputs are done; at most one GPU stage per job at a time, and the GPU mutex still orders jobs. Events are serialised, the manifest keeps pipeline order, and the file-hash index now saves under a lock (two stages saving at once raced on its temporary file). | 30 s solo take, all stages forced: 22.3 → 19.2 s (−14 %); brass band on Mikkel: 95.6 → 92.2 s (−4 %) (**M**) | `engine/tests/test_stage_parallelism.py`: CPU and GPU stages overlap with 2, GPU stages never do, nothing overlaps with 1 |
 | ad1bdc2 fix(studio): piano roll and beat summary without argument spreading | Studio | `Math.max(...list)` over every note or beat; V8 throws RangeError at about 110,000 arguments. | Precaution. Mikkel has 20,758 MIDI events. (**M**: limit measured) | `studio/tests/extent.test.ts` |
 
 `main` fixed the same Studio stack overflow on open (c3dc2ad, alphaTab's self-referencing `loadedMidiInfo`). This audit found it independently: the Studio e2e "the Mikkel run" failed before that commit.
@@ -71,9 +74,9 @@ Crash or out of memory first, then jank, slow, waste. Size: S (hours), M (a day 
 | # | Platform | Where | Evidence | Proposed fix | Size |
 |---|---|---|---|---|---|
 | 21 | Studio | Band SoundFont over the network | **M**: a 195 MB file is never taken from Chrome's disk cache, with or without `Cache-Control` (over the per-entry limit). It is downloaded again for every score opened, and twice for Compare. A 77 MB file is cached with or without the header. **C**: every shipped surface serves the 77 MB file (`studio/build.mjs:34`, `apps/bandroom/macos/scripts/stage-band-sounds.sh:11`, `Brasscribe.Bandroom.csproj:89-90`); only a dev engine with `BRASSCRIBE_BAND_SOUNDS_DIR=data/sounds/band` serves the 293 MB 24-bit file. | Keep serving the 77 MB file to Studio. Finding #1's fix (one fetch per page) also removes the re-downloads. For persistence across visits over LAN http, IndexedDB (the Cache API needs a secure context). | — (with #1) |
-| 22 | Engine | `dag.py:188` stages run one after another; each adapter is a new process (`adapters.py:197`) | **M**: fixed cost per adapter call, warm: MuScriptor 2.1 s, Basic Pitch 2.2 s, SwiftF0 0.3 s; cold (first call after idle) 8.6–10.8 s. Per job this is a few seconds against stems (72 s) and MuScriptor on a mix (31–91 s). | Run CPU stages (SwiftF0, Basic Pitch on CoreML) beside GPU stages; keep a warm worker per adapter only if many short jobs matter. | M–L |
-| 23 | Engine | `adapters.py:203` logs "waiting for GPU mutex" before every heavy stage, whether or not it waits; `:165` polls every 5 s; stage seconds include the wait | **M**: a solo run shows `beats` 375.9 s on a 7 s input (`20260926-005002-solo-8a82c3`), almost certainly queueing. **C** for the unconditional log line. | Log only when the lock is held; record wait and run time separately in the manifest. | S |
-| 24 | Engine | `jobs.py:112-117` `list()` parses every manifest and `events.jsonl` on disk per call | **M**: `GET /v1/jobs` 50 ms warm (262 ms cold) for 49 runs, linear in runs. | Keep a summary index; skip events for the list. | S–M |
+| 22 | Engine | `dag.py` stages ran one after another; each adapter is a new process (`adapters.py`) | **M**: fixed cost per adapter call, warm: MuScriptor 2.1 s, Basic Pitch 2.2 s, SwiftF0 0.3 s; cold (first call after idle) 8.6–10.8 s. Stage parallelism is done (3a1ac5b, off by default): a 30 s solo take 22.3 → 19.2 s, a brass-band run 95.6 → 92.2 s (M5). Warm adapter workers would save at most 30 % of a solo take run in order and about 20 % with parallelism on, and 6 % of a band run (M6), for 1–2 GB held per idle GPU worker: not built, design in M6. | Turn parallelism on by default after a week of use; warm workers only if short solo takes become the main load. | — (parallelism done) / M (workers) |
+| 23 | Engine | `adapters.py` logged "waiting for GPU mutex" before every heavy stage, whether or not it waited; polled every 5 s; stage seconds included the wait | **M**: a solo run shows `beats` 375.9 s on a 3 s input (`20260926-005002-solo-8a82c3`, from before the split), almost certainly queueing. Fixed (ec3875a): `queue_wait_s` and `run_s` per stage in manifests and events, shown in Studio as waited and ran; logged only when blocked; polled every 1 s. Five fresh runs here recorded 0.0 s waits. | Done. | S |
+| 24 | Engine | `jobs.py` `list()` parsed every manifest and `events.jsonl` on disk per call, and `api.py` walked every `outputs/` | **M**: `GET /v1/jobs` 52 ms warm for 49 runs, linear in runs; two thirds of it was the `outputs/` walk. Fixed (3335aa6): 3.3 ms warm, only a `stat` per run while nothing changes. | Done. | S |
 | 25 | Rust core | `arranger.rs:80` phrase end recomputed per note (O(n²)); `harmony.rs:21` every note per beat (O(beats × notes)) | **M**: the whole Mikkel arrangement takes 0.35–0.5 s, so not hot today. **C** for the loops. | Running maximum; sweep line. Keep output byte-identical (conformance). | S / M |
 | 26 | Engine | Upload | **M**: streamed and hashed in 1 MB chunks; engine RSS +19.5 MB while receiving 71 MB at 20 MB/s. **R**: written twice (Starlette spools, then `store_upload` copies). | Acceptable. Optionally stream the multipart body straight to the upload file. | S |
 | 26a | Apple Play | `TranscriptionKit/CompanionService.swift:272-288` builds the multipart body in a temp file with `FileHandle.write(_:)`, sends it with `upload(for:fromFile:)` (`:294`); progress stays at `fraction: 0` (`:308`) | **C**: streamed from a file (good), but a full extra copy on disk, no upload progress and no retry. **R**: `FileHandle.write(_:)` raises an Objective-C exception, not a Swift error, when the disk is full, which crashes the app. | `write(contentsOf:)` (throws); progress from the task delegate's `didSendBodyData`; one retry on network errors. | S |
@@ -193,6 +196,22 @@ pixi run python qa/perf/run_stages.py data/runs
 
 A re-run with all model stages cached takes 13–45 s, all of it arrange and export. Full pop-rock runs: 168–174 s.
 
+`run_stages.py` also prints the median and largest `queue_wait_s` for manifests that record it (from ec3875a on), so queueing is no longer mistaken for a slow stage.
+
+**Stage parallelism (3a1ac5b).** Two typical jobs in a fresh data directory (models from the main checkout), every stage forced with `--cold all`, alternating the setting:
+
+```sh
+BRASSCRIBE_STAGE_PARALLELISM=1 pixi run brasscribe run --profile solo --cold all take30.wav   # then =3
+BRASSCRIBE_STAGE_PARALLELISM=1 pixi run brasscribe run --profile brass-band --cold all data/mikkel/mikkel.wav
+```
+
+| Job | Parallelism 1 | Parallelism 3 |
+|---|---|---|
+| Solo take, 30 s of Mikkel (beats, SwiftF0, Basic Pitch, MuScriptor, contour, arrange, export) | 23.2, 21.4 s | 19.8, 18.7 s |
+| Brass band, all of Mikkel (247 s; beats, MuScriptor, Basic Pitch, arrange, export) | 95.6 s | 92.2 s |
+
+The first run of each profile, with a cold file cache and nothing cached, took 44.2 s (solo) and 107.6 s (band). The gain is small because the two GPU stages still run one after the other and arrange and export wait for all of them; in the band job MuScriptor alone is 75 s. No GPU waits were recorded in these runs. The setting stays off by default: parallel stages add their peak memory together (MuScriptor and Basic Pitch on a long mix).
+
 ### M6. Adapter start-up cost
 
 ```sh
@@ -204,6 +223,14 @@ PYTHON="pixi run python" qa/perf/adapter_overhead.sh data/mikkel/mikkel.wav swif
 | swift-f0 | 1.0 s | 0.3 s | 0.3 s |
 | basic-pitch (CoreML) | 10.8 s | 2.2 s | 1.8 s |
 | muscriptor (MPS) | 8.6 s | 2.1 s | 15.1 s |
+
+**Warm adapter workers: the ceiling, and why they are not built.** In the solo job above, the five adapter calls took beats 1.8 s, SwiftF0 0.3 s, Basic Pitch 2.5 s, MuScriptor 9.1 s and contour 0.3 s. Counting all of beats and the warm fixed costs of the others as start-up (0.3 + 2.2 + 2.1 + 0.3 s) gives at most 6.7 s of 22.3 s, 30 %, with stages in order; with parallelism on, SwiftF0, Basic Pitch and the contour already run beside the GPU stages, so at most beats and MuScriptor's 3.9 s of 19.2 s, 20 %. The band job has three calls: at most 6 s of 95 s, 6 %. The first job after the machine has been idle pays 9–11 s per adapter, which a worker would save only if it had stayed alive through the idle time. Below the 30 % bar on a typical job, so this is the design, not code:
+
+- **Protocol.** `run_adapter.py --serve <adapter>` in the adapter's own environment (uv project or pixi environment, as today) loads the model once, then reads one JSON request per line on stdin (`{"id", "src", "dst", "params"}`) and answers one line on stdout (`{"id", "ok", "error", "seconds"}`); logs go to stderr. One request at a time per worker. Each adapter's entry point splits into `load()` and `run(src, dst, params)`.
+- **Per-request settings.** Today some settings are environment variables of the call (`BEAT_THIS_MODEL=small0` for the solo profile). They become request parameters; a setting that changes the loaded model keys the worker, so (adapter, model) has its own worker.
+- **Lifecycle.** Started on the first call, stopped after an idle timeout (`BRASSCRIBE_WARM_ADAPTERS=<seconds>`, 0 = off, the default), killed with the engine (own process group). A worker that exits or times out during a request is replaced, and the request is retried once as a one-shot process, as now. The GPU mutex is still taken per request, not per worker.
+- **Memory.** An idle worker keeps its model resident: about 1–2 GB for MuScriptor medium on MPS and a few hundred MB for Beat This and Basic Pitch (**R**, not measured). The MPS allocation stays with the process while it is idle, which competes with other GPU users (Bandroom, a second engine), so heavy workers need a short timeout.
+- **Invalidation.** A worker is keyed by the adapter fingerprint the cache already uses (`adapters.py` `fingerprint`: scripts, `run_adapter.py`, environment) plus the model file hashes; when any changes, the old worker is stopped and the next call starts a new one.
 
 ### M7. Rust core per conformance case, and the band arrangement's memory
 
@@ -221,7 +248,7 @@ cd core && cargo test -p brasscribe-ffi --release --test layers_band_c_api -- --
 ### M8. Engine requests
 
 - Upload: `curl --limit-rate 20M -F file=@data/mikkel/mikkel.wav .../v1/audio`, sampling `ps -o rss=` every 0.1 s: 51.6 → 71.0 MB while receiving 71 MB.
-- `GET /v1/jobs` with 49 runs on disk: 262 ms cold, 50 ms warm.
+- `GET /v1/jobs` with 49 runs on disk: 262 ms cold, 50 ms warm (audit). Re-measured on the same 49 runs with `curl -w "%{time_total}"`, 12 calls against a fresh `brasscribe serve`: before 3335aa6 first call 91 ms, then median 52 ms; after, first call 66 ms, then median 3.3 ms. In process (TestClient, 15 calls, 3 starts each): warm median 50–52 → 2.2–2.6 ms.
 
 ### M9. V8 argument limit
 
