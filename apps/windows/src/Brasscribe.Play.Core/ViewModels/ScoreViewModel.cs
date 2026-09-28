@@ -359,9 +359,13 @@ public sealed partial class ScoreViewModel : ObservableObject
         var result = YourPartResolver?.Invoke(parts) ?? new Seats.YourPartResult(parts.Count == 0 ? -1 : Seats.YourPart.Legacy(parts));
         SetMine(result.Index >= 0 && result.Index < parts.Count ? parts[result.Index].Name : null);
         YourPartNotice = YourPartNoticeText?.Invoke(parts, result) ?? "";
-        // Said once, politely, when the score opens (WCAG 4.1.3).
-        if (YourPartNotice.Length > 0) _announcer.Announce(YourPartNotice);
+        // Said once, politely, when the score opens (WCAG 4.1.3): not again when the same score is loaded after an edit.
+        var said = (Title, YourPartNotice);
+        if (YourPartNotice.Length > 0 && said != _noticeSaid) _announcer.Announce(YourPartNotice);
+        _noticeSaid = said;
     }
+
+    private (string Title, string Notice) _noticeSaid;
 
     /// <summary>"Make this my part": only the highlight, the mute target, the review order and the share scope change, at once.</summary>
     public void MakeMine(int index)
@@ -376,11 +380,19 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     private void SetMine(string? name)
     {
-        // Mute my part follows the part: the old one sounds again, the new one is muted if it was on.
-        bool muted = Player.MuteMyPart;
-        if (muted) Player.MuteMyPart = false;
-        Player.PlayAlongPart = name is null ? null : Player.Parts.FirstOrDefault(m => m.Name == name);
-        if (muted && Player.PlayAlongPart is not null) Player.MuteMyPart = true;
+        // Mute my part follows the part, quietly: the old one sounds again, the new one is muted if it was on.
+        var old = Player.PlayAlongPart;
+        var next = name is null ? null : Player.Parts.FirstOrDefault(m => m.Name == name);
+        if (Player.MuteMyPart)
+        {
+            if (next is null) Player.MuteMyPart = false;
+            else
+            {
+                if (old is not null && !ReferenceEquals(old, next) && Player.Parts.Contains(old)) old.IsMuted = false;
+                next.IsMuted = true;
+            }
+        }
+        Player.PlayAlongPart = next;
         OnPropertyChanged(nameof(MyPartIndex));
         OnPropertyChanged(nameof(HasMyPart));
         OnPropertyChanged(nameof(MyPartLabel));

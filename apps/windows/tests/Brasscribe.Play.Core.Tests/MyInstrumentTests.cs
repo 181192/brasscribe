@@ -229,6 +229,34 @@ public class MyInstrumentTests
     }
 
     [Fact]
+    public void The_notice_is_said_once_and_moving_your_part_keeps_it_muted_quietly()
+    {
+        var (main, said, _) = Build(setup: s => s.Set("Seat", "1st-baritone"));
+        var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"));
+        // A small band's Euphonium stands in for the baritone.
+        var small = xml.Replace("<part-name>Solo Horn</part-name>", "<part-name>Euphonium</part-name>");
+        main.Output.ShowingSaved(Lineup.MinimalBand, null);
+        main.Score.Load(small, new Composition { Title = "Test tune" });
+        main.Score.Load(small, main.Score.Composition); // as after a changed note
+        Assert.Single(said.Items, t => t.StartsWith("This small band has no 1st Baritone."));
+        Assert.Equal(1, main.Score.MyPartIndex);
+
+        main.Score.Player.MuteMyPart = true;
+        said.Items.Clear();
+        main.Score.MakeMine(0);
+        Assert.True(main.Score.Player.Parts[0].IsMuted);
+        Assert.False(main.Score.Player.Parts[1].IsMuted);
+        Assert.True(main.Score.Player.MuteMyPart);
+        Assert.Equal(["Solo Cornet is your part in this score."], said.Items);
+
+        // Settings: one change, told once.
+        int changes = 0;
+        main.Settings.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(SettingsViewModel.SeatChoice)) changes++; };
+        main.Settings.SeatChoice = new SeatChoice("euphonium", "bass");
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
     public void Percussion_in_the_quartet_opens_every_part()
     {
         var s = Strings();
@@ -568,7 +596,7 @@ public class MyInstrumentTests
 
         // The picker's instruments, from the core: the four with parts get the app's word, the rest their seat's name.
         var catalog = new SeatCatalog(core, Strings());
-        Assert.Equal(["Soprano Cornet", "Cornet", "Flugelhorn", "Tenor horn", "Baritone", "Trombone", "Bass Trombone", "Euphonium", "E♭ Bass", "B♭ Bass", "Percussion"],
+        Assert.Equal(["Soprano Cornet", "Cornet", "Flugelhorn", "Tenor Horn", "Baritone", "Trombone", "Bass Trombone", "Euphonium", "E♭ Bass", "B♭ Bass", "Percussion"],
             catalog.Tiles.Select(t => t.Label));
     }
 }

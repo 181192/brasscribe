@@ -33,6 +33,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     public ScoreScreen()
     {
         InitializeComponent();
+        // The part menu is built as it opens, never while one of its own items is being invoked.
+        PartMenu.Opening += (_, _) => FillPartMenu();
         Notation.LeaveRequested += (_, _) => PlayButton.Focus(FocusState.Keyboard);
         Notation.MarkInvoked += (_, _) => Main?.CheckNotesCommand.Execute(null);
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
@@ -189,11 +191,9 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 AttachVideo();
                 break;
             case nameof(ScoreViewModel.SelectedPartIndex):
-                FillPartPicker();
+                ApplyPageLayout();
+                UpdatePartPickerLabel();
                 QueueRender();
-                break;
-            case nameof(ScoreViewModel.MyPartIndex):
-                if (ViewModel.IsLoaded) FillPartPicker();
                 break;
             case nameof(ScoreViewModel.ZoomPercent) or nameof(ScoreViewModel.ConcertPitch):
                 SyncChoices();
@@ -208,11 +208,18 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         }
     }
 
+    /// <summary>The part picker's label and the page layout for the part shown.</summary>
+    private void FillPartPicker()
+    {
+        UpdatePartPickerLabel();
+        ApplyPageLayout();
+    }
+
     /// <summary>
     /// "All parts" and each part as radio items (the player's marked "(you)"); choosing one opens the part view.
     /// In the part view of another part, "Make this my part" follows.
     /// </summary>
-    private void FillPartPicker()
+    private void FillPartMenu()
     {
         PartMenu.Items.Clear();
         void Add(string name, int index)
@@ -231,8 +238,6 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             mine.Click += (_, _) => ViewModel.MakeMine(ViewModel.SelectedPartIndex);
             PartMenu.Items.Add(mine);
         }
-        UpdatePartPickerLabel();
-        ApplyPageLayout();
     }
 
     private void UpdatePartPickerLabel()

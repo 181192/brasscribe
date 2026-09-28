@@ -68,24 +68,38 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnFirstRunDoneChanged(bool value) => _store.Set(nameof(FirstRunDone), value);
 
     /// <summary>What the player plays: a core seat id, "none" (I conduct or listen), or null (not set).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SeatChoice))]
-    public partial string? Seat { get; set; }
-    partial void OnSeatChanged(string? value) => _store.Set(nameof(Seat), value);
+    [ObservableProperty] public partial string? Seat { get; set; }
+    partial void OnSeatChanged(string? value)
+    {
+        _store.Set(nameof(Seat), value);
+        if (!_settingChoice) OnPropertyChanged(nameof(SeatChoice));
+    }
 
     /// <summary>The clef the player reads their part in ("treble", "bass"); null for the band's own.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SeatChoice))]
-    public partial string? Reads { get; set; }
-    partial void OnReadsChanged(string? value) => _store.Set(nameof(Reads), value);
+    [ObservableProperty] public partial string? Reads { get; set; }
+    partial void OnReadsChanged(string? value)
+    {
+        _store.Set(nameof(Reads), value);
+        if (!_settingChoice) OnPropertyChanged(nameof(SeatChoice));
+    }
 
+    private bool _settingChoice;
+
+    /// <summary>The answer as one value; setting it tells listeners once, with the seat and its reading together.</summary>
     public Seats.SeatChoice SeatChoice
     {
         get => new(Seat, Reads);
         set
         {
-            Reads = value.Reads;
-            Seat = value.Seat;
+            if (value == SeatChoice) return;
+            _settingChoice = true;
+            try
+            {
+                Reads = value.Reads;
+                Seat = value.Seat;
+            }
+            finally { _settingChoice = false; }
+            OnPropertyChanged(nameof(SeatChoice));
         }
     }
 

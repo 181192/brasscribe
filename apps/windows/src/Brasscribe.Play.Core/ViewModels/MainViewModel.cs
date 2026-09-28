@@ -100,6 +100,9 @@ public sealed partial class MainViewModel : ObservableObject
         Output.ShowScoreRequested += (_, _) => Screen = Screen.Score;
         Review.ShowMyPartRequested += (_, _) =>
         {
+            // Like finishing the review, but straight to the player's part.
+            _chooseOutputNext = false;
+            UpdateLibraryCount();
             Screen = Screen.Score;
             if (Score.MyPartIndex >= 0) Score.SelectedPartIndex = Score.MyPartIndex;
         };
@@ -160,7 +163,8 @@ public sealed partial class MainViewModel : ObservableObject
             if (!rearranged) _myPartOverride = null;
             // An engine from before seats ignores them: say so once, rather than a silent Solo Cornet part.
             Output.StatusText = null;
-            if (r.Options?.Seat is not null && Lineups.RecordedSeat(r.Composition) is null)
+            // Only where the seat changes the notes (a solo take, or the tune on the seat): on a band take it changes none.
+            if (r.Options is { Seat: not null, Lead: "seat" } && Lineups.RecordedSeat(r.Composition) is null)
             {
                 Output.StatusText = _s["Output_OldComputer"];
                 _announcer.Announce(Output.StatusText, AnnouncementKind.Important);

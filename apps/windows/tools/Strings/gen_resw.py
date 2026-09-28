@@ -709,7 +709,7 @@ text_button("SeatSkipButton", "Not now", "Ikke nå", "Go to Home without choosin
 add("Seat_ContinueHint", "Choose your instrument, or “I conduct or listen”.", "Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».")
 add("Seat_ContinueHintPart", "Choose which part you play.", "Velg hvilken stemme du spiller.")
 add("Seat_Group_Cornet", "Cornet", "Kornett")
-add("Seat_Group_TenorHorn", "Tenor horn", "Althorn")
+add("Seat_Group_TenorHorn", "Tenor Horn", "Althorn")
 add("Seat_Group_Baritone", "Baritone", "Baryton")
 add("Seat_Group_Trombone", "Trombone", "Trombone")
 add("Seat_ReadsTrebleBb", "Treble clef in B♭", "G-nøkkel i B")
