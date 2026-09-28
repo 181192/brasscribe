@@ -12,10 +12,10 @@ use brasscribe_ffi::{arrange_layers_band, LayerMidi, LayerStems, LayersSongOptio
 const MIDI: [&str; 6] = ["solo-sw.mid", "solo-mus.mid", "solo-bp.mid", "bass-mus.mid", "orchestra-mus.mid", "drums-mus.mid"];
 const WAV: [&str; 4] = ["solo.wav", "bass.wav", "drums.wav", "orchestra.wav"];
 
-fn repro() -> Option<PathBuf> {
-    let root = std::env::var_os("BRASSCRIBE_REPO").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
-    let d = root.join("data/mikkel/repro");
-    (d.join("layers/solo.wav").exists() && d.join("mix.beats").exists()).then_some(d)
+mod common;
+
+fn repro(test: &str) -> Option<PathBuf> {
+    common::repro(test, &["layers/solo.wav", "mix.beats"])
 }
 
 struct Inputs {
@@ -107,14 +107,14 @@ fn sanitized(c: &[Vec<f64>; 4]) -> SoloContour {
 
 #[test]
 fn c_abi_with_stems_matches_uniffi() {
-    let Some(d) = repro() else { return };
+    let Some(d) = repro("c_abi_with_stems_matches_uniffi") else { return };
     let i = inputs(&d);
     assert_same(&c_abi(&i), &uniffi(&i, LayersSongOptions::default()));
 }
 
 #[test]
 fn c_abi_contour_arrays_match_uniffi_and_json() {
-    let Some(d) = repro() else { return };
+    let Some(d) = repro("c_abi_contour_arrays_match_uniffi_and_json") else { return };
     let i = inputs(&d);
     let contour = synthetic_contour();
     let want = uniffi(&i, LayersSongOptions { solo_contour: Some(sanitized(&contour)), ..Default::default() });
@@ -165,7 +165,7 @@ fn c_abi_rejects_null_and_empty_inputs() {
 #[test]
 #[ignore]
 fn c_abi_alone() {
-    let Some(d) = repro() else { return };
+    let Some(d) = repro("c_abi_alone") else { return };
     let c = c_abi(&inputs(&d));
     assert!(c["musicxml"].as_str().unwrap().contains("<score-partwise"));
 }
@@ -213,7 +213,7 @@ mod heap {
 #[ignore]
 fn c_abi_heap_peak() {
     use std::sync::atomic::Ordering::Relaxed;
-    let Some(d) = repro() else { return };
+    let Some(d) = repro("c_abi_heap_peak") else { return };
     let i = inputs(&d);
     let held = heap::LIVE.load(Relaxed);
     heap::PEAK.store(held, Relaxed);

@@ -1,19 +1,13 @@
 //! The source footer on printed parts, in en and nb, on Mikkel's layers. Skips when
 //! data/mikkel/repro is not in the checkout.
 
-use std::path::{Path, PathBuf};
-
 use brasscribe_ffi::{arrange_layers_band, part_sources, LayerMidi, LayerStems, LayersSongOptions};
 
-fn repro() -> Option<PathBuf> {
-    let root = std::env::var_os("BRASSCRIBE_REPO").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
-    let d = root.join("data/mikkel/repro");
-    d.join("mix.beats").exists().then_some(d)
-}
+mod common;
 
 #[test]
 fn arranged_parts_say_so_in_the_chosen_language() {
-    let Some(d) = repro() else { return };
+    let Some(d) = common::repro("arranged_parts_say_so_in_the_chosen_language", &["mix.beats"]) else { return };
     let m = |n: &str| std::fs::read(d.join("layers").join(n)).unwrap();
     let layers = || LayerMidi {
         solo_swiftf0: m("solo-sw.mid"),

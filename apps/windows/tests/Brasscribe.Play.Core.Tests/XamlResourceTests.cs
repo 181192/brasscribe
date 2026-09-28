@@ -29,10 +29,10 @@ public partial class XamlResourceTests
         return files.SelectMany(f => KeyRegex().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)).ToHashSet();
     }
 
-    [Fact]
+    [SkippableFact]
     public void Every_resource_key_the_app_uses_is_defined()
     {
-        if (TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml") is null) return;
+        Skip.If(TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml") is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
         var defined = Defined();
         var used = new Dictionary<string, string>();
         foreach (var file in Directory.EnumerateFiles(App, "*.xaml", SearchOption.AllDirectories))

@@ -7,6 +7,8 @@ import subprocess
 import sys
 import textwrap
 
+import pytest
+
 from brasscribe_engine.hashing import HashIndex
 
 WRITER = textwrap.dedent("""
@@ -23,6 +25,7 @@ WRITER = textwrap.dedent("""
 """)
 
 
+@pytest.mark.slow
 def test_two_processes_save_one_index(tmp_path):
     index = tmp_path / "cache" / "file-hashes.json"
     dirs = []

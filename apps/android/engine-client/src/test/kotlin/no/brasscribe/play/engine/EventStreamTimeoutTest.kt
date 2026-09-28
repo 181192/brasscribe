@@ -10,6 +10,8 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
+import no.brasscribe.play.test.Slow
+import org.junit.experimental.categories.Category
 
 /**
  * The engine writes a keepalive comment every 15 s while a stage runs (HEARTBEAT_S in the engine's
@@ -17,6 +19,7 @@ import kotlin.concurrent.thread
  * without a longer socket timeout every quiet stretch broke the stream and cost a reconnect; six in a
  * row ended the transcription with "event stream lost".
  */
+@Category(Slow::class)
 class EventStreamTimeoutTest {
     private val server = ServerSocket(0)
     private val eventConnections = AtomicInteger()

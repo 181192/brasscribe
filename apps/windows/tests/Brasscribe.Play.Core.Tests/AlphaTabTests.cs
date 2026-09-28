@@ -107,11 +107,12 @@ public class AlphaTabTests(ITestOutputHelper log)
         }
     }
 
-    [Fact]
+    [SkippableFact]
+    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)
     public void Golden_brass_band_score_imports_and_renders()
     {
         var path = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (path is null) return; // data/ is not present in CI
+        Skip.If(path is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         var sw = Stopwatch.StartNew();
         using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
         player.LoadScore(File.ReadAllBytes(path));
@@ -149,11 +150,11 @@ public class AlphaTabTests(ITestOutputHelper log)
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void Synth_plays_through_the_buffered_output()
     {
         var sf = TestPaths.RepoFile(Environment.GetEnvironmentVariable("BRASSCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2");
-        if (sf is null) return; // SoundFonts are downloads or build outputs, not in the repo
+        Skip.If(sf is null, TestPaths.Missing(Environment.GetEnvironmentVariable("BRASSCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2"));
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
         player.LoadSoundFont(File.ReadAllBytes(sf));
@@ -177,11 +178,11 @@ public class AlphaTabTests(ITestOutputHelper log)
         Assert.True(player.Position.BarIndex >= 0);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Synth_survives_ui_calls_while_the_audio_thread_renders()
     {
         var sf = TestPaths.RepoFile("data/sounds/built/cornet-b/cornet-b.sf2");
-        if (sf is null) return; // SoundFonts are build outputs, not in the repo
+        Skip.If(sf is null, TestPaths.Missing("data/sounds/built/cornet-b/cornet-b.sf2"));
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
         player.LoadSoundFont(File.ReadAllBytes(sf));
@@ -224,14 +225,15 @@ public class AlphaTabTests(ITestOutputHelper log)
         log.WriteLine($"rendered {frames} frames on the audio thread during 200 UI calls");
     }
 
-    [Fact]
+    [SkippableFact]
     public void Golden_score_sounds_with_the_built_brass_soundfonts()
     {
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var dir = TestPaths.RepoRoot is { } root ? Path.Combine(root, "data", "sounds", "built") : null;
-        if (golden is null || dir is null || !Directory.Exists(dir)) return;
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(dir is null || !Directory.Exists(dir), TestPaths.Missing("data/sounds/built"));
         var set = BrassSoundSet.Load(dir, TestPaths.RepoFile("sounds/mapping.json"));
-        if (set.Files.Count == 0) return;
+        Skip.If(set.Files.Count == 0, "data/sounds/built has no SoundFonts: they are build outputs (scripts/worktree-setup.sh links data/ from a checkout that has them)");
 
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);

@@ -13,6 +13,8 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sin
+import no.brasscribe.play.test.Slow
+import org.junit.experimental.categories.Category
 
 /** The signals of src/test/python/make_beat_this_reference.py, computed the same way (double, then float). */
 object BeatSignals {
@@ -107,6 +109,7 @@ internal fun eventF1(ref: DoubleArray, est: DoubleArray, window: Double = 0.05):
     return 2.0 * hits / (ref.size + est.size)
 }
 
+@Category(Slow::class)
 class BeatThisParityTest {
     @Serializable data class LogMelRef(val frames: Int, val mels: Int, val logmel: List<List<Double>>)
     @Serializable data class BeatsRef(val beats: List<Double>, val downbeats: List<Double>)

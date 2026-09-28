@@ -122,10 +122,10 @@ public class LineupTests
         Assert.DoesNotContain("Lite korps", resw);
     }
 
-    [Fact]
+    [SkippableFact]
     public void The_core_arranges_a_quartet_with_one_player_on_each_part()
     {
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return;
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
         var bridge = NativeCoreBridge.TryCreate();
         Assert.NotNull(bridge);
         string json = CompositionJson.Serialize(Chorale());

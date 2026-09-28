@@ -143,7 +143,7 @@ func capturedRecording() -> URL? {
 }
 
 /// The original recording plays at the band's loudness, whatever level it was recorded at.
-@Suite(.serialized, .enabled(if: goldenDir() != nil && capturedRecording() != nil))
+@Suite(.serialized, .tags(.slow), .enabled(if: goldenDir() != nil && capturedRecording() != nil))
 struct RecordingLevelTests {
     let score: Score
     let composition: Composition

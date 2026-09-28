@@ -178,3 +178,11 @@ C: `bindings/c/brasscribe.h`. Strings are NUL-terminated UTF-8; every call
 returns 0 or an error code (1 invalid input, 2 failure, 3 null argument,
 4 internal error) and writes the result to `*out` or a message to `*err`;
 free returned strings with `bc_string_free`.
+
+## Test tiers
+
+| Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
+| --- | --- | --- |
+| `cargo test --profile fast` | `cargo test --release`, the full conformance run | none |
+
+See [docs/dev/verify.md](../docs/dev/verify.md).

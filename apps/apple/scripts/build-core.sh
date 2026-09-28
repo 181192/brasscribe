@@ -4,6 +4,9 @@
 # does, without the Android and Windows targets. Output is gitignored by core/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+# Locally, the shared artifact cache builds once per core change and copies the result in
+# (scripts/core-artifacts.sh). CI, or BRASSCRIBE_NO_ARTIFACT_CACHE=1, builds in core/target below.
+if [ -z "${CI:-}" ] && [ -z "${BRASSCRIBE_NO_ARTIFACT_CACHE:-}" ]; then exec "$ROOT/scripts/core-artifacts.sh" ensure apple; fi
 cd "$ROOT/core"
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"

@@ -108,3 +108,11 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 - **On-device arranging.** The Rust core (`RustCoreBridge`) arranges a Composition for full or small
   band without a computer. It is used by Review → "Arrange again on this device" and by importing a
   `composition.json`.
+
+## Test tiers
+
+| Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
+| --- | --- | --- |
+| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit` | `make test-ios-unit` (headless simulator); `make test-mac-ui` only in the macOS VM |
+
+See [docs/dev/verify.md](../../docs/dev/verify.md).

@@ -15,12 +15,15 @@ import java.io.File
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import kotlin.math.abs
+import no.brasscribe.play.test.Slow
+import org.junit.experimental.categories.Category
 
 /**
  * The phone's offline solo path on the JVM (the same ONNX models and the host build of the core) on
  * the first 30 s of the URMP March trumpet, compared with the engine's solo profile on the same clip
  * when -Pbrasscribe.engineSolo=<dir with composition.json> is given.
  */
+@Category(Slow::class)
 class OnDeviceSoloTest {
     private val models = File(System.getProperty("brasscribe.models") ?: "missing")
     private val clip = File(System.getProperty("brasscribe.data") ?: "missing", "urmp/Dataset/10_March_tpt_sax/AuSep_1_tpt_10_March.wav")

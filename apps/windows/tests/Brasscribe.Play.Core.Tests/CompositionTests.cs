@@ -63,11 +63,11 @@ public class CompositionTests
     public void Certainty_thresholds(double confidence, Certainty expected) =>
         Assert.Equal(expected, Note.CertaintyOf(confidence));
 
-    [Fact]
+    [SkippableFact]
     public void Golden_composition_loads()
     {
         var path = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (path is null) return; // data/ is not present in CI
+        Skip.If(path is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var c = CompositionJson.Parse(File.ReadAllText(path));
         // The golden output is re-saved when the engine improves, so check its shape, not exact counts.
         Assert.Equal(["solo", "bass", "strings", "brass", "drums"], c.Voices.Select(v => v.Id));

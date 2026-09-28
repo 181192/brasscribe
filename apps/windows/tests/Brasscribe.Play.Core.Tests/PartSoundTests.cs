@@ -20,10 +20,11 @@ public class PartSoundTests(ITestOutputHelper log)
     private static string? Vectors => TestPaths.RepoFile("sounds/partsound-vectors.json");
     private const string BandSf2 = "data/sounds/band/brasscribe-band.sf2";
 
-    [Fact]
+    [SkippableFact]
     public void Resolver_matches_every_shared_vector()
     {
-        if (Mapping is null || Vectors is null) return;
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/partsound-vectors.json"));
         var resolver = PartSoundResolver.Load(Mapping);
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         int n = 0;
@@ -51,10 +52,10 @@ public class PartSoundTests(ITestOutputHelper log)
         Assert.True(n > 20);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Every_lineup_part_resolves_by_its_own_name()
     {
-        if (Mapping is null) return;
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
         var resolver = PartSoundResolver.Load(Mapping);
         using var doc = JsonDocument.Parse(File.ReadAllText(Mapping));
         foreach (var lineup in doc.RootElement.GetProperty("lineups").EnumerateObject())
@@ -65,12 +66,14 @@ public class PartSoundTests(ITestOutputHelper log)
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void Golden_score_with_other_writers_part_names_plays_every_part_from_the_band_soundfont()
     {
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (Mapping is null || sf2 is null || golden is null) return;
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
+        Skip.If(sf2 is null, TestPaths.Missing(BandSf2));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         var names = new Dictionary<string, string>
         {
             ["Soprano Cornet"] = "Soprano", ["Solo Cornet"] = "1st Cornet", ["Repiano Cornet"] = "Cornet", ["2nd Cornet"] = "Cornet 2",
@@ -224,13 +227,16 @@ public class PartSoundTests(ITestOutputHelper log)
         return (worst, at);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Sound_check_renders_the_test_phrases_through_alphaSynth()
     {
         var outDir = Environment.GetEnvironmentVariable("BRASSCRIBE_SOUNDCHECK_OUT");
         var sf2Path = Environment.GetEnvironmentVariable("BRASSCRIBE_SOUNDCHECK_SF2") is { Length: > 0 } p ? p : TestPaths.RepoFile(BandSf2);
         var phrases = TestPaths.RepoFile("data/sounds/phrases/phrases.json");
-        if (string.IsNullOrEmpty(outDir) || sf2Path is null || phrases is null || Mapping is null) return;
+        Skip.If(string.IsNullOrEmpty(outDir), "opt-in sound check: set BRASSCRIBE_SOUNDCHECK_OUT to a folder for the rendered phrases");
+        Skip.If(sf2Path is null, TestPaths.Missing(BandSf2));
+        Skip.If(phrases is null, TestPaths.Missing("data/sounds/phrases/phrases.json"));
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
         Directory.CreateDirectory(outDir);
         var sf2 = File.ReadAllBytes(sf2Path);
         var band = BandSoundFont.Load(Mapping);

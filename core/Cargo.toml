@@ -16,3 +16,11 @@ serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
 opt-level = 3
 lto = "thin"
 codegen-units = 1
+
+# Inner-loop tests (docs/dev/verify.md): release optimisation without LTO, parallel and incremental
+# codegen, in target/fast. `cargo test --profile fast`; the release profile stays what ships.
+[profile.fast]
+inherits = "release"
+lto = false
+codegen-units = 16
+incremental = true

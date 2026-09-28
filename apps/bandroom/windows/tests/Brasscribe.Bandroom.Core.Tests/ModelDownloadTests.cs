@@ -493,16 +493,18 @@ public sealed class ModelCheckTests : IDisposable
     }
 
     /// <summary>The same files, URLs, sizes and checksums as Bandroom for macOS: read from its ModelCatalog.swift.</summary>
-    [Fact]
+    [SkippableFact]
     public void The_catalogue_is_the_macOS_catalogue()
     {
-        string swift;
+        const string Relative = "apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift";
+        string? swift = null;
         try
         {
             swift = Path.Combine(TestPaths.RepoRoot, "apps", "bandroom", "macos", "Packages", "BandroomKit", "Sources", "BandroomKit", "ModelCatalog.swift");
         }
-        catch (DirectoryNotFoundException) { return; }
-        if (!File.Exists(swift)) return; // a checkout without the macOS app
+        catch (DirectoryNotFoundException) { }
+        Skip.If(swift is null, $"{Relative} not found: the tests run outside a checkout");
+        Skip.If(!File.Exists(swift), $"{Relative} not found: this checkout has no macOS app");
         string source = File.ReadAllText(swift);
 
         var constants = Regex.Matches(source, @"static let (\w+) = ""([^""]*)""").ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value);

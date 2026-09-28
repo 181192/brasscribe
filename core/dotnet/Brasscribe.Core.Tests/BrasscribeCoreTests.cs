@@ -85,10 +85,12 @@ public class BrasscribeCoreTests
         Assert.Equal(1, e.Code);
     }
 
-    [Fact]
+    [SkippableFact]
     public void ArrangesMikkelLayersWhenDataIsPresent()
     {
-        if (MikkelRepro() is not { } dir) return; // data/ is not in the repository
+        var repro = MikkelRepro();
+        Skip.If(repro is null, NoMikkelRepro);
+        string dir = repro;
         byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
         var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
         var (comp, xml) = BrasscribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
@@ -106,16 +108,21 @@ public class BrasscribeCoreTests
     }
 
     /// <summary>data/mikkel/repro in this checkout, or in the one BRASSCRIBE_REPO names; null when neither has it.</summary>
+    private const string NoMikkelRepro =
+        "data/mikkel/repro not found: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set BRASSCRIBE_REPO to a checkout that has it)";
+
     private static string? MikkelRepro() =>
         new[] { Path.Combine(AppContext.BaseDirectory, "../../../../../.."), Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") }
             .Where(r => r is { Length: > 0 }).Select(r => Path.Combine(r!, "data/mikkel/repro"))
             .FirstOrDefault(d => File.Exists(Path.Combine(d, "layers/solo.wav")));
 
     /// <summary>The stems and the contour go to the core as borrowed arrays; a NaN reads as the JSON form has it.</summary>
-    [Fact]
+    [SkippableFact]
     public void ArrangesMikkelWithStemsAndAContourAsArrays()
     {
-        if (MikkelRepro() is not { } dir) return; // data/ is not in the repository
+        var repro = MikkelRepro();
+        Skip.If(repro is null, NoMikkelRepro);
+        string dir = repro;
         byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
         var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
         var stems = new LayerStems(F("solo.wav"), F("bass.wav"), F("drums.wav"), F("orchestra.wav"));
@@ -152,11 +159,11 @@ public class BrasscribeCoreTests
     }
 
     /// <summary>Every talking-score conformance vector, both languages, through the C ABI.</summary>
-    [Fact]
+    [SkippableFact]
     public void PassesEveryTalkingScoreVector()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "../../../../../../docs/accessibility/talking-score-vectors.json");
-        if (!File.Exists(path)) return;
+        Skip.If(!File.Exists(path), "docs/accessibility/talking-score-vectors.json not found next to the build output: run the tests from a checkout");
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
         int n = 0;
         foreach (var c in doc.RootElement.GetProperty("cases").EnumerateArray())

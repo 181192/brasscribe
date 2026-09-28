@@ -39,6 +39,14 @@ Per component, only when you build that component:
 
 Audio decoding outside the container needs `ffmpeg` (`brew install ffmpeg`).
 
+## Verifying a change
+
+New worktree: `eval "$(scripts/worktree-setup.sh)"` (links data/, models/ and Verovio, copies in the prebuilt core). Then [docs/dev/verify.md](docs/dev/verify.md):
+
+| Tier 1: after every edit | Tier 2: before handoff | Tier 3: devices and UI |
+| --- | --- | --- |
+| `make check-fast` | `make check` | `apps/android/scripts/emulator-pool.sh acquire`, the iOS simulator, the macOS VM |
+
 ## End-to-end verification
 
 Run these in order. Each step stands on its own; the app builds all talk to the engine from step 1.

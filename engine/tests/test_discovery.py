@@ -1,6 +1,9 @@
+import pytest
+
 from brasscribe_engine import __version__, discovery
 
 
+@pytest.mark.slow
 def test_service_info_advertises_port_addresses_and_pairing_hint():
     info = discovery.service_info(8765, ["192.168.1.20", "10.0.0.5"], hostname="studio-mac.local")
     assert info.type == "_brasscribe._tcp.local."

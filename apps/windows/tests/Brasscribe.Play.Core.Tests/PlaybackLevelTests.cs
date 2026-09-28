@@ -15,6 +15,7 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     private static string? Mapping => TestPaths.RepoFile("sounds/mapping.json");
     private static string? Vectors => TestPaths.RepoFile("sounds/output-stage-vectors.json");
     private const string BandSf2 = "data/sounds/band/brasscribe-band-16bit.sf2"; // what the app bundles
+    private static string NoGoldenPlayer => TestPaths.Missing($"{BandSf2}, {TestPaths.GoldenMusicXml} or sounds/mapping.json");
 
     private static double Db(double x) => 20 * Math.Log10(Math.Max(x, 1e-9));
 
@@ -45,10 +46,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         return PartSoundTests.Render(File.ReadAllBytes(sf2Path), PartSoundTests.Phrase(rows), rows.Max(r => PartSoundTests.End(r.Item4)) + 2.0, gains);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Constants_match_playback_levels()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         var levels = doc.RootElement.GetProperty("levels");
         Assert.Equal(OutputStage.Threshold, levels.GetProperty("limiter").GetProperty("threshold").GetDouble(), 6);
@@ -75,10 +76,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
 
     private static double? NullableDouble(JsonElement e) => e.ValueKind == JsonValueKind.Null ? null : e.GetDouble();
 
-    [Fact]
+    [SkippableFact]
     public void Band_estimate_and_recording_target_match_the_shared_rule()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         int n = 0;
         foreach (var c in doc.RootElement.GetProperty("band_estimate").EnumerateArray())
@@ -101,10 +102,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>alphaTab's own notes of each vector score (and of the golden, when present) give the shared estimate.</summary>
-    [Fact]
+    [SkippableFact]
     public void Band_estimate_from_alphaTabs_notes_matches_the_shared_scores()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         var wrong = new List<string>();
         foreach (var c in doc.RootElement.GetProperty("band_estimate_scores").EnumerateArray())
@@ -167,10 +168,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         finally { RecordingLevel.SetArrangement(null); dir.Delete(true); }
     }
 
-    [Fact]
+    [SkippableFact]
     public void Limiter_matches_the_shared_curve()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         int n = 0;
         foreach (var v in doc.RootElement.GetProperty("limiter").EnumerateArray())
@@ -185,10 +186,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         for (int i = 0; i <= 400; i++) { float y = OutputStage.Limit(i / 100f); Assert.True(y >= last); last = y; }
     }
 
-    [Fact]
+    [SkippableFact]
     public void Recording_gain_matches_the_shared_rule()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         foreach (var v in doc.RootElement.GetProperty("recording_gain").EnumerateArray())
         {
@@ -200,10 +201,10 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         Assert.Equal(Math.Pow(10, -6.0 / 20), PlaybackLevels.RecordingVolume(-10), 6);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Meter_matches_pyloudnorm()
     {
-        if (Vectors is null) return;
+        Skip.If(Vectors is null, TestPaths.Missing("sounds/output-stage-vectors.json"));
         using var doc = JsonDocument.Parse(File.ReadAllText(Vectors));
         foreach (var c in doc.RootElement.GetProperty("loudness").EnumerateArray())
         {
@@ -293,11 +294,11 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>The full band lands on the shared phrase target and never clips.</summary>
-    [Fact]
+    [SkippableFact]
     public void Full_band_phrase_lands_on_the_shared_target()
     {
         var mix = RenderBandPhrase();
-        if (mix is null) return;
+        Skip.If(mix is null, TestPaths.Missing($"{BandSf2}, data/sounds/phrases/phrases.json or sounds/mapping.json"));
         double lufs = LoudnessMeter.Integrated(mix, 44100, 2);
         float peak = Peak(mix);
         log.WriteLine($"LEVELS windows phrase peak {Db(peak):0.00} dBFS, {lufs:0.00} LUFS at {PlaybackLevels.BandGainDb} dB");
@@ -334,10 +335,13 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     /// The golden arrangement from the band lands where its band estimate says, and the recording's
     /// target is that estimate: the recording plays at the band's loudness for this score (§11).
     /// </summary>
-    [Fact]
+    [SkippableFact]
+    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)
     public void Golden_arrangement_plays_at_the_recording_target()
     {
-        if (GoldenPlayer() is not { } g) return;
+        var golden = GoldenPlayer();
+        Skip.If(golden is null, NoGoldenPlayer);
+        var g = golden.Value;
         using var player = g.Player;
         try
         {
@@ -355,10 +359,12 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>The metronome click peaks at the shared level after the stage.</summary>
-    [Fact]
+    [SkippableFact]
     public void Metronome_clicks_at_the_shared_level()
     {
-        if (GoldenPlayer() is not { } g) return;
+        var golden = GoldenPlayer();
+        Skip.If(golden is null, NoGoldenPlayer);
+        var g = golden.Value;
         using var player = g.Player;
         foreach (var t in player.Tracks) player.SetMute(t.Index, true);
         player.Metronome = true;
@@ -371,10 +377,12 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>Below the knee the stage is a plain gain: soloing a part keeps its level in the mix.</summary>
-    [Fact]
+    [SkippableFact]
     public void Solo_keeps_its_level_below_the_knee()
     {
-        if (GoldenPlayer() is not { } g) return;
+        var golden = GoldenPlayer();
+        Skip.If(golden is null, NoGoldenPlayer);
+        var g = golden.Value;
         using var player = g.Player;
         var cornet = player.Tracks.First(t => t.Name.Contains("Solo Cornet", StringComparison.OrdinalIgnoreCase));
         player.SetSolo(cornet.Index, true);
@@ -388,10 +396,12 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>Stop fades what is already rendered to silence: no step at the start, silence after 80 ms.</summary>
-    [Fact]
+    [SkippableFact]
     public void Stop_fades_without_a_click()
     {
-        if (GoldenPlayer() is not { } g) return;
+        var golden = GoldenPlayer();
+        Skip.If(golden is null, NoGoldenPlayer);
+        var g = golden.Value;
         using var player = g.Player;
         player.SeekToBar(4);
         player.Play();

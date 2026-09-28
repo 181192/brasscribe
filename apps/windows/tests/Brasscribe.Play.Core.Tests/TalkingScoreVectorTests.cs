@@ -40,11 +40,11 @@ public class TalkingScoreVectorTests
     }
 
     /// <summary>The same vectors through the Rust core, when BRASSCRIBE_FFI_PATH points at a built brasscribe_ffi.</summary>
-    [Theory]
+    [SkippableTheory]
     [MemberData(nameof(All))]
     public void Native_core_matches_vector(string id, string lang)
     {
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return;
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
         var core = Bridge.NativeCoreBridge.TryCreate();
         Assert.NotNull(core);
         var v = Vector(id, lang);
