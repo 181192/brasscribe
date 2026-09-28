@@ -83,11 +83,14 @@ final class PracticeModel {
     private var timer: Timer?
     private var announcedBar = -1
 
-    init(piece: Piece) throws {
+    convenience init(piece: Piece) throws {
+        self.init(piece: piece, score: try piece.loadScore(), composition: piece.loadComposition())
+    }
+
+    init(piece: Piece, score parsed: Score, composition: Composition?) {
         self.piece = piece
-        let parsed = try piece.loadScore()
         score = parsed
-        composition = piece.loadComposition()
+        self.composition = composition
         uncertainty = composition.map(UncertaintyIndex.init) ?? .empty
         let q = Double(Score.ticksPerQuarter)
         freeTimeBars = (composition?.freeTimeBeats ?? []).map { r in
@@ -107,11 +110,43 @@ final class PracticeModel {
     func start() {
         guard engine == nil else { return }
         MediaTools.configureSession(recording: false)
-        do {
-            engine = try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL,
-                                        soundBank: .locate())
-        } catch {
-            loadError = error.localizedDescription
+        adopt(Result { try Self.makeEngine(piece: piece, score: score, composition: composition) })
+    }
+
+    /// Opens a piece without holding the main thread: the MusicXML parse, the composition decode
+    /// and the playback engine (one SoundFont preset load per part) run on a background task, and
+    /// the model is made on the main actor once they are ready. `start()` is then already done.
+    static func open(_ piece: Piece) async throws -> PracticeModel {
+        MediaTools.configureSession(recording: false)
+        let opened = try await Task.detached(priority: .userInitiated) { try Opened(piece: piece) }.value
+        let m = PracticeModel(piece: piece, score: opened.score, composition: opened.composition)
+        m.adopt(opened.engine)
+        return m
+    }
+
+    /// What `open` prepares off the main actor. The engine is made there and handed over once,
+    /// before anything else touches it; from then on only the main actor uses it.
+    private struct Opened: @unchecked Sendable {
+        let score: Score
+        let composition: Composition?
+        let engine: Result<PlaybackEngine, Error>
+
+        init(piece: Piece) throws {
+            score = try piece.loadScore()
+            composition = piece.loadComposition()
+            let (score, composition) = (score, composition)
+            engine = Result { try PracticeModel.makeEngine(piece: piece, score: score, composition: composition) }
+        }
+    }
+
+    nonisolated private static func makeEngine(piece: Piece, score: Score, composition: Composition?) throws -> PlaybackEngine {
+        try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+    }
+
+    private func adopt(_ made: Result<PlaybackEngine, Error>) {
+        switch made {
+        case .success(let e): engine = e
+        case .failure(let error): loadError = error.localizedDescription
         }
         startTimer()
     }
