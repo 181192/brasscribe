@@ -7,8 +7,8 @@
 #   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
 #   make package-test-fast  package tests without the slow audio-rendering suites
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
-#   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only when
-#                    nobody is using the Mac (or in CI)
+#   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
+#                    macOS VM (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
@@ -54,9 +54,11 @@ test: project package-test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
-# only on a Mac nobody is using, or in CI.
+# only in the macOS VM (scripts/mac-vm.sh test-ui) or in CI. TEST_ARGS adds xcodebuild arguments
+# (-resultBundlePath, -only-testing:…).
+TEST_ARGS ?=
 test-mac-ui: project
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' test
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' $(TEST_ARGS) test
 
 # Ad-hoc signatures carry no Team ID, so under the hardened runtime dyld rejects the embedded
 # Verovio.framework; the runtime only matters for notarised Developer ID builds.

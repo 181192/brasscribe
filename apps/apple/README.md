@@ -15,12 +15,14 @@ pixi run fetch-sounds   # (repo root) the band SoundFonts into data/sounds/band:
 make project        # BrasscribePlay.xcodeproj from project.yml (not committed); stages the band sounds
 make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, macOS app unit tests, then app unit and UI tests on the iPhone simulator
-make test-mac-ui    # macOS UI tests: they take over the mouse and keyboard, so only on an idle Mac or in CI
+../../scripts/mac-vm.sh test-ui   # macOS UI tests (make test-mac-ui), only in the macOS VM or in CI
 make size           # Release build for iOS devices, prints the .app size
 scripts/run-fixture-mac.sh                                        # open the Old Hundredth fixture score on the Mac
 scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot
 scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/screenshots, from the same fixture
 ```
+
+The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/dev/macos-vm.md](../../docs/dev/macos-vm.md).
 
 UI tests, the app unit tests and the screenshots open `apps/fixtures/old-hundredth` (a public-domain
 hymn arranged by the core, with review marks; regenerate with `apps/fixtures/make-old-hundredth.py`),
