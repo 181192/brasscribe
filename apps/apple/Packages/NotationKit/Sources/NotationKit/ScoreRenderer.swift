@@ -54,19 +54,40 @@ public final class ScoreRenderer: @unchecked Sendable {
     }
 
     public let musicXML: String
-    public private(set) var layout = Layout()
-    public private(set) var pageCount = 0
-    public private(set) var timemap: [TimemapEntry] = []
-    /// Measure ids in score order; index = 0-based bar index.
-    public private(set) var measureIDs: [String] = []
-    /// Notes the arranger flagged as uncertain (document colour), by id, with their level.
-    public private(set) var uncertainLevels: [String: UncertaintyLevel] = [:]
+    /// What one engraving published: replaced whole when `apply` finishes, so a reader on any
+    /// thread sees either the previous layout or the new one, never half of each.
+    public struct Engraving: Sendable {
+        public var layout = Layout()
+        public var pageCount = 0
+        public var timemap: [TimemapEntry] = []
+        /// Measure ids in score order; index = 0-based bar index.
+        public var measureIDs: [String] = []
+        /// Bar index by measure id.
+        public var measureIndex: [String: Int] = [:]
+        public var lastLoadSeconds: Double = 0
+    }
+
+    /// The current engraving, read on any thread (the cursor reads it at 20 Hz on the main
+    /// thread while `apply` engraves on a background task).
+    public var engraving: Engraving { stateLock.withLock { published } }
+    public var layout: Layout { engraving.layout }
+    public var pageCount: Int { engraving.pageCount }
+    public var timemap: [TimemapEntry] { engraving.timemap }
+    public var measureIDs: [String] { engraving.measureIDs }
+    public var lastLoadSeconds: Double { engraving.lastLoadSeconds }
+    /// Notes the arranger flagged as uncertain (document colour), by id, with their level;
+    /// filled in as pages are drawn.
+    public var uncertainLevels: [String: UncertaintyLevel] { stateLock.withLock { uncertain } }
     public var uncertainNoteIDs: Set<String> { Set(uncertainLevels.keys) }
-    public private(set) var lastLoadSeconds: Double = 0
 
     private let toolkit: VerovioToolkit
     private var pages: [Int: Page] = [:]
+    /// Serialises Verovio (not thread-safe) and the page cache; held for a whole engraving.
     private let lock = NSLock()
+    /// Guards `published` and `uncertain`, only ever for a copy, so readers never wait for Verovio.
+    private let stateLock = NSLock()
+    private var published = Engraving()
+    private var uncertain: [String: UncertaintyLevel] = [:]
 
     /// Very uncertain notes are written in this colour (confidence below 0.4); any other
     /// note colour means uncertain (0.4–0.7, and the older single-level red).
@@ -111,7 +132,6 @@ public final class ScoreRenderer: @unchecked Sendable {
     public func apply(_ l: Layout) -> Bool {
         lock.lock(); defer { lock.unlock() }
         let t0 = Date()
-        layout = l
         pages = [:]
         let scale = max(10, min(160, Int(40 * l.zoom)))
         // Verovio page units are tenths of a mm at scale 100; the SVG comes out at
@@ -136,13 +156,12 @@ public final class ScoreRenderer: @unchecked Sendable {
             }
         }
         guard toolkit.loadData(xml) else { return false }
-        pageCount = toolkit.pageCount
-        timemap = toolkit.timemap()
-        measureIDs = timemap.compactMap(\.measureOn)
+        var e = Engraving(layout: l, pageCount: toolkit.pageCount, timemap: toolkit.timemap())
         var seen = Set<String>()
-        measureIDs = measureIDs.filter { seen.insert($0).inserted }
-        uncertainLevels = [:]
-        lastLoadSeconds = Date().timeIntervalSince(t0)
+        e.measureIDs = e.timemap.compactMap(\.measureOn).filter { seen.insert($0).inserted }
+        e.measureIndex = Dictionary(uniqueKeysWithValues: e.measureIDs.enumerated().map { ($1, $0) })
+        e.lastLoadSeconds = Date().timeIntervalSince(t0)
+        stateLock.withLock { published = e; uncertain = [:] }
         return true
     }
 
@@ -168,11 +187,12 @@ public final class ScoreRenderer: @unchecked Sendable {
     public func page(_ n: Int) -> Page? {
         lock.lock(); defer { lock.unlock() }
         if let p = pages[n] { return p }
-        guard n >= 1, n <= pageCount, let doc = try? SVGDocument(svg: toolkit.renderToSVG(page: n)) else { return nil }
+        guard n >= 1, n <= engraving.pageCount, let doc = try? SVGDocument(svg: toolkit.renderToSVG(page: n)) else { return nil }
         var staves: [String: [String]] = [:]
         var notes: [String: [String]] = [:]
         var seenStaff = Set<String>(), seenNote = Set<String>()
         var lines: [String: CGRect] = [:]
+        var levels: [String: UncertaintyLevel] = [:]
         for op in doc.ops {
             if let last = op.owners.last, let path = op.path {
                 let id = doc.ids[Int(last)]
@@ -186,7 +206,7 @@ public final class ScoreRenderer: @unchecked Sendable {
                 case "staff": staff = id
                 case "note":
                     if let staff, seenNote.insert(id).inserted { notes[staff, default: []].append(id) }
-                    if let c = op.color, uncertainLevels[id] == nil { uncertainLevels[id] = Self.level(of: c) }
+                    if let c = op.color, levels[id] == nil { levels[id] = Self.level(of: c) }
                 default: break
                 }
             }
@@ -195,6 +215,7 @@ public final class ScoreRenderer: @unchecked Sendable {
         var p = Page(number: n, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes, staffLines: lines)
         p.systems = Self.systems(in: doc, measureIDs: p.measureIDs)
         pages[n] = p
+        stateLock.withLock { uncertain.merge(levels) { old, _ in old } }
         return p
     }
 
@@ -250,6 +271,11 @@ public final class ScoreRenderer: @unchecked Sendable {
 
     /// Note ids starting at the latest onset at or before `beat`, and that onset's measure.
     public func sounding(atBeat beat: Double) -> (notes: [String], measureIndex: Int) {
+        Self.sounding(atBeat: beat, in: engraving)
+    }
+
+    static func sounding(atBeat beat: Double, in e: Engraving) -> (notes: [String], measureIndex: Int) {
+        let timemap = e.timemap
         var lo = 0, hi = timemap.count - 1, best = -1
         while lo <= hi {
             let mid = (lo + hi) / 2
@@ -267,7 +293,7 @@ public final class ScoreRenderer: @unchecked Sendable {
         }
         var measure = 0
         for j in stride(from: best, through: 0, by: -1) {
-            if let m = timemap[j].measureOn, let idx = measureIDs.firstIndex(of: m) { measure = idx; break }
+            if let m = timemap[j].measureOn, let idx = e.measureIndex[m] { measure = idx; break }
         }
         return (notes, measure)
     }
