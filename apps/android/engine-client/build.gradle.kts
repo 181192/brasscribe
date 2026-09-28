@@ -23,6 +23,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.ktor.client.okhttp)
     testImplementation(libs.kotlinx.coroutines.test)
 }
 

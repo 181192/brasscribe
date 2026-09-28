@@ -4,9 +4,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.onUpload
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.ChannelProvider
 import io.ktor.client.request.delete
@@ -52,6 +54,8 @@ class KtorEngineApi(
     private val http = HttpClient(engine) {
         expectSuccess = false
         install(ContentNegotiation) { json(BrasscribeJson) }
+        // No timeouts of its own: requests keep the engine's (OkHttp: 10 s); the event stream sets a longer one.
+        install(HttpTimeout)
         defaultRequest { url(baseUrl.trimEnd('/') + "/") }
         configure()
     }
@@ -137,6 +141,8 @@ class KtorEngineApi(
                     auth()
                     parameter("after", last)
                     header(HttpHeaders.Accept, "text/event-stream")
+                    // The engine only sends a keepalive every 15 s while a stage runs.
+                    timeout { socketTimeoutMillis = EVENTS_SOCKET_TIMEOUT_MS }
                     if (last >= 0) header("Last-Event-ID", last.toString())
                 }.execute { response ->
                     response.ok()
@@ -209,6 +215,7 @@ class KtorEngineApi(
         val TERMINAL = setOf("succeeded", "failed", "cancelled")
         const val MAX_RECONNECTS = 5
         const val RECONNECT_MS = 1000L
+        const val EVENTS_SOCKET_TIMEOUT_MS = 60_000L
     }
 }
 
