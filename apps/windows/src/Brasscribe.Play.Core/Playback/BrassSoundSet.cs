@@ -8,6 +8,8 @@ namespace Brasscribe.Play.Core.Playback;
 /// &lt;instrument&gt;/&lt;instrument&gt;.sf2, each with a sustain preset on program 0 and a staccato
 /// preset on program 1). Loaded together they would all answer program 0, so each file's presets
 /// are moved to their own program pair in memory, and every part is pointed at its instrument.
+/// <see cref="Load"/> only lists the files; <see cref="ApplyTo"/> reads them one at a time, patches
+/// each in place, hands it to the synth and lets it go.
 /// </summary>
 public sealed class BrassSoundSet
 {
@@ -31,13 +33,14 @@ public sealed class BrassSoundSet
 
     private readonly Dictionary<string, int> _programs = new(StringComparer.OrdinalIgnoreCase);
     private PartSoundResolver? _resolver;
-    private readonly List<byte[]> _fonts = [];
+    private readonly List<(string Path, int Program)> _files = [];
 
     public IReadOnlyDictionary<string, int> Programs => _programs;
-    public IReadOnlyList<byte[]> Fonts => _fonts;
+    /// <summary>The SoundFonts in load order; none is read before <see cref="ApplyTo"/>.</summary>
+    public IReadOnlyList<string> Files => _files.Select(f => f.Path).ToList();
 
     /// <summary>
-    /// Reads every &lt;dir&gt;/*/*.sf2 (or *.sf2) and moves instrument i to programs 2i and 2i+1.
+    /// Lists every &lt;dir&gt;/*/*.sf2 (or *.sf2); instrument i moves to programs 2i and 2i+1.
     /// With mapping.json, parts are routed by the shared resolver (the part's first player's target);
     /// without it, by <see cref="PartMap"/>.
     /// </summary>
@@ -50,7 +53,7 @@ public sealed class BrassSoundSet
             int program = set._programs.Count * 2;
             if (program > 126) break;
             set._programs[Path.GetFileNameWithoutExtension(file)] = program;
-            set._fonts.Add(MovePresets(File.ReadAllBytes(file), program));
+            set._files.Add((file, program));
         }
         return set;
     }
@@ -66,20 +69,36 @@ public sealed class BrassSoundSet
         return null;
     }
 
-    /// <summary>Loads the fonts into a player and routes its parts; call before <see cref="AlphaTabScorePlayer.LoadScore"/>.</summary>
-    public void ApplyTo(AlphaTabScorePlayer player)
+    /// <summary>
+    /// Routes the player's parts at once, then reads each SoundFont, moves its presets and loads it;
+    /// only one file is held at a time. <paramref name="inBackground"/> does the reading off the
+    /// calling thread (a dev build's set is about 270 MB). Call before <see cref="AlphaTabScorePlayer.LoadScore"/>.
+    /// </summary>
+    public Task ApplyTo(AlphaTabScorePlayer player, bool inBackground = false)
     {
-        for (int i = 0; i < _fonts.Count; i++) player.LoadSoundFont(_fonts[i], append: i > 0);
         player.ProgramMap = ProgramFor;
+        var files = _files.ToList();
+        void Read()
+        {
+            for (int i = 0; i < files.Count; i++)
+                player.LoadSoundFont(MovePresets(File.ReadAllBytes(files[i].Path), files[i].Program), append: i > 0);
+        }
+        if (!inBackground)
+        {
+            Read();
+            return Task.CompletedTask;
+        }
+        return Task.Run(Read);
     }
 
     /// <summary>
     /// Adds <paramref name="offset"/> to the program number of every preset header (PHDR) in a
-    /// SoundFont2, leaving the terminal "EOP" record alone. Bank numbers are unchanged.
+    /// SoundFont2, leaving the terminal "EOP" record alone. Bank numbers are unchanged. Patches
+    /// <paramref name="sf2"/> in place and returns it (no copy of the file).
     /// </summary>
     public static byte[] MovePresets(byte[] sf2, int offset)
     {
-        var data = (byte[])sf2.Clone();
+        var data = sf2;
         int phdr = FindChunk(data, "phdr");
         if (phdr < 0) throw new InvalidDataException("SoundFont has no preset headers");
         int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(phdr + 4));
