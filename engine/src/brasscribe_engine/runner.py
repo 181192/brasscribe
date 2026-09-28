@@ -110,7 +110,8 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         manifest["previous_run_id"] = previous_run_id
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
     on_event({"type": "job", "status": "running", "profile": profile, "stages": [s.name for s in pipeline.stages]})
-    ex = Executor(cache, adapters, on_event, reuse_dir=reuse, allow_heavy=allow_heavy, cold=cold, cancel=cancel)
+    ex = Executor(cache, adapters, on_event, reuse_dir=reuse, allow_heavy=allow_heavy, cold=cold, cancel=cancel,
+                  parallelism=settings.stage_parallelism)
     t0 = time.time()
     results = {}
     try:
