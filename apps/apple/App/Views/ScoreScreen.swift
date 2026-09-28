@@ -15,7 +15,7 @@ struct ScoreScreen: View {
         screenContent
             .navigationTitle(currentTitle)
             .toolbar { editToolbar }
-            .task { loadModel() }
+            .task { await loadModel() }
             .onDisappear { model?.stopAll() }
     }
 
@@ -55,12 +55,13 @@ struct ScoreScreen: View {
         }
     }
 
-    private func loadModel() {
+    /// The score opens off the main thread (`PracticeModel.open`); the spinner shows meanwhile.
+    private func loadModel() async {
         guard model == nil else { return }
         do {
-            let loaded = try PracticeModel(piece: piece)
+            let loaded = try await PracticeModel.open(piece)
+            guard model == nil, !Task.isCancelled else { loaded.stopAll(); return }
             if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
-            loaded.start()
             model = loaded
             ScreenshotScenes.stage(loaded)
             // "Open on the music stand" from the library

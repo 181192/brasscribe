@@ -12,6 +12,20 @@ import TranscriptionKit
     return try Piece.create(title: title, profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: nil)
 }
 
+/// Opening a score builds everything off the main actor and hands over a started model: the same
+/// score and a playing engine as the synchronous path.
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func openBuildsTheModelOffTheMainActor() async throws {
+    let piece = try fixturePiece("Open")
+    defer { piece.delete() }
+    let m = try await PracticeModel.open(piece)
+    defer { m.stopAll() }
+    #expect(m.score == (try piece.loadScore()))
+    #expect(m.composition != nil)
+    try #require(m.engine != nil, "no audio engine here: \(m.loadError ?? "")")
+    m.togglePlay()
+    #expect(m.isPlaying)
+}
+
 /// "Listen to this bar" is a toggle: the same button stops it, and it puts back the user's repeat.
 @Test(.enabled(if: fixtureDir() != nil)) @MainActor func listenToggleStopsAndRestores() throws {
     let piece = try fixturePiece("Listen")
