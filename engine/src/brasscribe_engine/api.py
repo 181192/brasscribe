@@ -43,6 +43,11 @@ from .config import Settings
 from .jobs import TERMINAL, Job, JobManager
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+# Studio's own files keep their names across releases, so the browser revalidates them on every load
+# (a 304 via the ETag) instead of guessing a freshness lifetime and running an old studio.js after an
+# update. The band SoundFont is large and changes only with a new sound build: a day before revalidating.
+STUDIO_CACHE = "no-cache"
+BAND_SOUNDS_CACHE = "public, max-age=86400"
 STATIC = Path(__file__).resolve().parent / "static"
 BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from BRASSCRIBE_BAND_SOUNDS_DIR
 HEARTBEAT_S = 15.0
@@ -64,6 +69,19 @@ SUFFIX_MEDIA = {".json": "application/json", ".musicxml": MEDIA["brass-band.musi
 
 def media_type(name: str) -> str:
     return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
+
+
+class CachedStaticFiles(StaticFiles):
+    """StaticFiles with a Cache-Control header on every file, 200 and 304 alike."""
+
+    def __init__(self, *args, cache_control: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache_control = cache_control
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = self.cache_control
+        return response
 
 
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
@@ -856,10 +874,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     if band is not None:
         # Before "/": the first matching mount wins.
         if all((band / f).is_file() for f in BAND_SOUND_FILES):
-            app.mount("/assets/band", StaticFiles(directory=band), name="band-sounds")
+            app.mount("/assets/band", CachedStaticFiles(directory=band, cache_control=BAND_SOUNDS_CACHE),
+                      name="band-sounds")
         else:
             print(f"band sounds: {band} has no {' and '.join(BAND_SOUND_FILES)}; Studio plays General MIDI sounds",
                   file=sys.stderr, flush=True)
     if STATIC.is_dir():
-        app.mount("/", StaticFiles(directory=STATIC, html=True), name="studio")
+        app.mount("/", CachedStaticFiles(directory=STATIC, html=True, cache_control=STUDIO_CACHE), name="studio")
     return app

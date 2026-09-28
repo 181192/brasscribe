@@ -188,6 +188,26 @@ def test_band_sounds_dir_is_served_to_studio(settings, tmp_path):
         assert c.get("/v1/health").status_code == 200  # the API still answers beside the static mounts
 
 
+def test_static_files_say_how_long_to_cache(settings, tmp_path):
+    from brasscribe_engine.api import BAND_SOUNDS_CACHE, STATIC, STUDIO_CACHE
+
+    band = tmp_path / "band"
+    band.mkdir()
+    (band / "brasscribe-band.sf2").write_bytes(b"RIFF-fake-sf2")
+    (band / "mapping.json").write_text('{"parts": {}}')
+    settings.band_sounds_dir = band
+    with TestClient(create_app(settings)) as c:
+        r = c.get("/assets/band/brasscribe-band.sf2")
+        assert r.headers["cache-control"] == BAND_SOUNDS_CACHE and r.headers["etag"]
+        again = c.get("/assets/band/brasscribe-band.sf2", headers={"If-None-Match": r.headers["etag"]})
+        assert again.status_code == 304 and again.content == b""
+        assert again.headers["cache-control"] == BAND_SOUNDS_CACHE
+        if (STATIC / "index.html").is_file():
+            page = c.get("/")
+            assert page.status_code == 200 and page.headers["cache-control"] == STUDIO_CACHE
+        assert "cache-control" not in c.get("/v1/health").headers  # the API is not affected
+
+
 def test_band_sounds_dir_without_the_soundfont_is_skipped(settings, tmp_path, capsys):
     from brasscribe_engine.api import STATIC
 
