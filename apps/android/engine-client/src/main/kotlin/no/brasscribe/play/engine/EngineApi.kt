@@ -24,9 +24,11 @@ interface EngineApi {
     suspend fun pollPairingRequest(requestId: String): PairRequestResult
     suspend fun profiles(): List<ProfileInfo>
 
-    suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef
+    /** Streams [source] to the engine; [onProgress] reports bytes sent. */
+    suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress = { _, _ -> }): AudioRef
     suspend fun createJob(request: JobCreate): Job
-    suspend fun createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean = true): Job
+    suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean = true,
+                                    onProgress: UploadProgress = { _, _ -> }): Job
     suspend fun job(jobId: String): Job
     suspend fun jobs(): List<Job>
     suspend fun cancel(jobId: String): Job

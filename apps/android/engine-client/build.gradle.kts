@@ -28,7 +28,22 @@ dependencies {
 
 val repoRoot = rootProject.extra["repoRoot"] as File
 
+/**
+ * The streaming upload test runs alone with a heap smaller than the file it sends, so an upload that
+ * buffers the file fails with OutOfMemoryError instead of passing on a roomy heap.
+ */
+val streamingUploadTest = tasks.register<Test>("streamingUploadTest") {
+    description = "Uploads a file larger than the heap through the engine client."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("no.brasscribe.play.engine.StreamingUploadTest") }
+    maxHeapSize = "128m"
+}
+
 tasks.test {
+    filter { excludeTestsMatching("no.brasscribe.play.engine.StreamingUploadTest") }
+    dependsOn(streamingUploadTest)
     systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
     systemProperty("brasscribe.openapi", file("openapi.json").absolutePath)
     inputs.file("openapi.json").withPropertyName("openapi")

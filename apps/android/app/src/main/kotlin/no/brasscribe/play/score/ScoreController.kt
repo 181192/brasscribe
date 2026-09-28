@@ -282,6 +282,12 @@ class ScoreController(
 
     private var soundFontRequested = false
 
+    companion object {
+        /** The last band SoundFont read, weakly: a test checks nothing keeps it once alphaTab has it. */
+        @androidx.annotation.VisibleForTesting
+        @Volatile internal var lastSoundFontBytes: java.lang.ref.WeakReference<ByteArray>? = null
+    }
+
     /** Replaces alphaTab's built-in SoundFont with the band SoundFont (found and read off the UI thread). */
     private fun loadBandSoundFont() {
         if (soundFontRequested) return
@@ -291,23 +297,33 @@ class ScoreController(
             val t0 = System.nanoTime()
             val sf = BandSoundFontFile.resolve(context, bandSoundFont?.takeIf { it.isFile } ?: BandSoundFontFile.sideloaded(context))
                 ?: return@Thread
-            val bytes = runCatching { sf.readBytes() }.getOrElse {
+            // One copy only, handed over and then dropped: alphaTab copies the sample chunk into its own
+            // buffer while it loads, so nothing here may keep this array (or the handler below) alive.
+            var bytes: ByteArray? = runCatching { sf.readBytes() }.getOrElse {
                 android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it); return@Thread
             }
+            val megabytes = bytes!!.size shr 20
+            lastSoundFontBytes = java.lang.ref.WeakReference(bytes)
+            var listening = false
             fun attempt(tries: Int) {
                 // api.loadSoundFont(ByteArray) returns false on Android (AndroidUiFacade's `when` compares the
                 // value, not the type), so the synth gets the bytes directly.
                 val player = view.api.player
+                val data = bytes ?: return
                 val ok = player != null && runCatching {
-                    player.soundFontLoaded.on {
-                        _state.value = _state.value.copy(bandSoundFont = true)
-                        android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB) loaded by alphaTab in %d ms"
-                            .format(sf.name, bytes.size shr 20, (System.nanoTime() - t0) / 1_000_000))
+                    if (!listening) {
+                        listening = true
+                        player.soundFontLoaded.on {
+                            _state.value = _state.value.copy(bandSoundFont = true)
+                            android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB) loaded by alphaTab in %d ms"
+                                .format(sf.name, megabytes, (System.nanoTime() - t0) / 1_000_000))
+                        }
                     }
-                    player.loadSoundFont(Uint8Array(bytes.asUByteArray()), false); true
+                    player.loadSoundFont(Uint8Array(data.asUByteArray()), false); true
                 }.getOrDefault(false)
-                if (!ok) if (tries > 0) view.postDelayed({ attempt(tries - 1) }, 200)
-                else android.util.Log.w("BrasscribePlay", "alphaTab player not ready for the band SoundFont")
+                if (ok) bytes = null
+                else if (tries > 0) view.postDelayed({ attempt(tries - 1) }, 200)
+                else { bytes = null; android.util.Log.w("BrasscribePlay", "alphaTab player not ready for the band SoundFont") }
             }
             view.post { attempt(50) }
         }, "band-soundfont").start()

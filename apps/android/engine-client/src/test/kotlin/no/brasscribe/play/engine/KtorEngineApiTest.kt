@@ -6,7 +6,6 @@ import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -87,11 +86,11 @@ class KtorEngineApiTest {
 
     @Test
     fun uploadsMultipartWithProfile() = runTest {
-        var body: MultiPartFormDataContent? = null
+        var body: io.ktor.http.content.OutgoingContent? = null
         val engine = MockEngine { req ->
             assertEquals(HttpMethod.Post, req.method)
             assertEquals("/v1/jobs/upload", req.url.encodedPath)
-            body = req.body as MultiPartFormDataContent
+            body = req.body
             respond(job, HttpStatusCode.Accepted, json)
         }
         val api = KtorEngineApi("http://host:8765/", engine)

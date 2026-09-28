@@ -70,6 +70,7 @@
     <string name="imported">Åpnet %1$s, %2$s</string>
     <string name="imported_video">Åpnet %1$s, %2$s. Lyden brukes.</string>
     <string name="reading_file">Åpner %1$s</string>
+    <string name="extracting_sound">Henter lyden ut av %1$s</string>
 
     <plurals name="duration_minutes">
         <item quantity="one">%d minutt</item>
@@ -345,6 +346,9 @@
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
+    <string name="problem_too_large_title">Denne filen er for stor for telefonen</string>
+    <string name="problem_too_large_body">Telefonen fikk ikke nok minne til å arbeide med den.</string>
+    <string name="problem_too_large_reason">Prøv et kortere opptak, eller del opp videoen.</string>
     <string name="problem_import_instead">Åpne en fil i stedet</string>
     <string name="problem_choose_another">Velg en annen fil</string>
     <string name="problem_record_instead">Spill inn i stedet</string>

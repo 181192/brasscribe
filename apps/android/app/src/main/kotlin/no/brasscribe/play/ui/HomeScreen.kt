@@ -180,7 +180,11 @@ fun HomeScreen(vm: PlayViewModel) {
             Lead(stringResource(R.string.home_tagline))
             ConnectionStatusRow(vm)
             StatusLine(status)
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+            val importProgress by vm.importProgress.collectAsState()
+            if (busy) importProgress.let { p ->
+                if (p != null && p > 0f) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border, drawStopIndicator = {})
+                else LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+            }
             PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = R.drawable.ic_bc_import_file)
             RowGroup {
                 ListRow(stringResource(R.string.home_record_mic), recorder.startMicrophone, icon = R.drawable.ic_bc_record_mic,

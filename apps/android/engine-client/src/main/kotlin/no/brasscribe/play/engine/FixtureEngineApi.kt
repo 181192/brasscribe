@@ -49,9 +49,22 @@ class FixtureEngineApi(
         ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
     }
 
-    override suspend fun uploadAudio(filename: String, bytes: ByteArray): AudioRef {
-        val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-        return AudioRef(sha.take(16), sha, filename, bytes.size.toLong()).also { uploads[it.audioId] = it }
+    // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
+    override suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress): AudioRef {
+        val digest = MessageDigest.getInstance("SHA-256")
+        var size = 0L
+        source.open().use { input ->
+            val buf = ByteArray(1 shl 16)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                digest.update(buf, 0, n)
+                size += n
+                onProgress(size, source.size)
+            }
+        }
+        val sha = digest.digest().joinToString("") { "%02x".format(it) }
+        return AudioRef(sha.take(16), sha, source.filename, size).also { uploads[it.audioId] = it }
     }
 
     override suspend fun createJob(request: JobCreate): Job {
@@ -63,8 +76,8 @@ class FixtureEngineApi(
         return job
     }
 
-    override suspend fun createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean): Job =
-        createJob(JobCreate(uploadAudio(filename, bytes).audioId, profile.id, renderAudio, title = title))
+    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress): Job =
+        createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title))
 
     override suspend fun job(jobId: String): Job = jobs[jobId] ?: throw EngineException(404, "no job $jobId")
     override suspend fun jobs(): List<Job> = jobs.values.sortedBy { it.created }

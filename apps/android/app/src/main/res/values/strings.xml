@@ -72,6 +72,7 @@
     <string name="imported">Opened %1$s, %2$s</string>
     <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
     <string name="reading_file">Opening %1$s</string>
+    <string name="extracting_sound">Taking the sound out of %1$s</string>
 
     <plurals name="duration_minutes">
         <item quantity="one">%d minute</item>
@@ -347,6 +348,9 @@
     <string name="problem_score_title">The score couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
+    <string name="problem_too_large_title">This file is too big for the phone</string>
+    <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
+    <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>
     <string name="problem_import_instead">Open a file instead</string>
     <string name="problem_choose_another">Choose another file</string>
     <string name="problem_record_instead">Record instead</string>

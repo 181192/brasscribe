@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import no.brasscribe.play.audio.AudioDecoder
+import no.brasscribe.play.audio.MediaImport
 import no.brasscribe.play.audio.PcmAudio
 import no.brasscribe.play.audio.UnsupportedMediaException
 import no.brasscribe.play.audio.WavFile
@@ -25,6 +26,7 @@ import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.JobStatus
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.ProgressTracker
+import no.brasscribe.play.engine.UploadSource
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.MusicXmlTitleEditor
@@ -54,11 +56,14 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE }
 
 enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
-/** What the user brought in. [file] holds the bytes sent to the engine; [audio] is decoded mono PCM. */
+/**
+ * What the user brought in. [file] holds the bytes sent to the engine (for a video, only its sound);
+ * [audio] is decoded mono PCM, null when it is too long to hold in memory (the engine can still take it).
+ */
 data class Source(
     val name: String,
     val kind: SourceKind,
@@ -189,6 +194,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     val output = MutableStateFlow(OutputOptions())
     val status = MutableStateFlow<Status?>(null)
     val busy = MutableStateFlow(false)
+
+    /** How far an import has got (0..1) while it runs; null when there is nothing to measure. */
+    val importProgress = MutableStateFlow<Float?>(null)
     val companionState = MutableStateFlow<String?>(null)
     private val clips = ClipPlayer()
     /** "Listen to this bar": [clipPlaying] is the bar playing now; the button shows Stop while it is. */
@@ -286,24 +294,35 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val name = displayName(uri, "recording")
         if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return }
         busy.value = true
+        importProgress.value = 0f
         say(R.string.reading_file, name)
         viewModelScope.launch {
             try {
-                val (decoded, file) = withContext(Dispatchers.IO) {
-                    val copy = File(ctx.cacheDir, "takes").apply { mkdirs() }.resolve(name.replace('/', '_'))
-                    ctx.contentResolver.openInputStream(uri)!!.use { input -> copy.outputStream().use { input.copyTo(it) } }
-                    AudioDecoder.decode(ctx, Uri.fromFile(copy)) to copy
+                // Never the whole file in memory: a video's sound is taken out on disk, the PCM decoded a buffer at a time.
+                val imported = withContext(Dispatchers.IO) {
+                    var extracting = false
+                    MediaImport.import(ctx, uri, name, File(ctx.cacheDir, "takes")) { phase, f ->
+                        if (phase == MediaImport.Phase.EXTRACT && !extracting) {
+                            extracting = true
+                            sayQuietly(R.string.extracting_sound, name)
+                        }
+                        // Copying and taking the sound out are the long part; decoding the result is quick.
+                        importProgress.value = (if (phase == MediaImport.Phase.DECODE) 0.8 + 0.2 * f else 0.8 * f).toFloat()
+                    }
                 }
-                val kind = if (decoded.hasVideo) SourceKind.VIDEO else SourceKind.FILE
-                setSource(Source(name, kind, decoded.durationS, decoded.audio, file))
-                say(if (decoded.hasVideo) R.string.imported_video else R.string.imported, name, durationText(decoded.durationS))
+                val kind = if (imported.hasVideo) SourceKind.VIDEO else SourceKind.FILE
+                setSource(Source(name, kind, imported.durationS, imported.audio, imported.file))
+                say(if (imported.hasVideo) R.string.imported_video else R.string.imported, name, durationText(imported.durationS))
                 navigate(Screen.PROFILE)
             } catch (e: UnsupportedMediaException) {
                 showProblem(Problem.NO_SOUND_TRACK)
+            } catch (e: OutOfMemoryError) {
+                showProblem(Problem.TOO_LARGE, e.toString())
             } catch (e: Exception) {
-                showProblem(Problem.FILE_UNREADABLE, e.message)
+                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.FILE_UNREADABLE, e.message ?: e.toString())
             } finally {
                 busy.value = false
+                importProgress.value = null
             }
         }
     }
@@ -327,8 +346,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val xml = withContext(Dispatchers.IO) {
-                    val bytes = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
-                    if (name.endsWith(".mxl", ignoreCase = true)) unzipScore(bytes) else bytes.decodeToString()
+                    ctx.contentResolver.openInputStream(uri)!!.use { input ->
+                        if (name.endsWith(".mxl", ignoreCase = true)) unzipScore(input)
+                        else String(readLimited(input, MAX_SCORE_BYTES), Charsets.UTF_8)
+                    }
                 }
                 require(xml.contains("score-partwise") || xml.contains("score-timewise")) { "not MusicXML" }
                 setSource(Source(name, SourceKind.SCORE, 0.0))
@@ -337,21 +358,30 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 saveCurrentScore(opened, name.substringBeforeLast('.'))
                 say(R.string.opened_score, name)
                 navigate(Screen.SCORE)
+            } catch (e: OutOfMemoryError) {
+                showProblem(Problem.TOO_LARGE, e.toString())
             } catch (e: Exception) {
-                showProblem(Problem.FILE_UNREADABLE, e.message)
+                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.FILE_UNREADABLE, e.message ?: e.toString())
             } finally {
                 busy.value = false
             }
         }
     }
 
-    /** The root score of a compressed MusicXML container, or the first .xml that is not the container. */
-    private fun unzipScore(bytes: ByteArray): String {
+    /**
+     * The root score of a compressed MusicXML container, or the first .xml that is not the container.
+     * Read from the stream entry by entry; only the container and .xml entries are kept, each capped.
+     */
+    private fun unzipScore(input: java.io.InputStream): String {
         val entries = HashMap<String, ByteArray>()
-        ZipInputStream(bytes.inputStream()).use { zip ->
+        var kept = 0L
+        ZipInputStream(input.buffered()).use { zip ->
             while (true) {
                 val e = zip.nextEntry ?: break
-                if (!e.isDirectory) entries[e.name] = zip.readBytes()
+                if (e.isDirectory || !(e.name.endsWith(".xml", true) || e.name.endsWith(".musicxml", true))) continue
+                val bytes = readLimited(zip, MAX_SCORE_BYTES - kept)
+                kept += bytes.size
+                entries[e.name] = bytes
             }
         }
         val root = entries["META-INF/container.xml"]?.decodeToString()
@@ -417,9 +447,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 replaceTop(Screen.REVIEW)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
+            } catch (e: OutOfMemoryError) {
+                transcribe.update { it.copy(running = false, error = e.toString()) }
+                showProblem(Problem.TOO_LARGE, e.toString())
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
-                showProblem(Problem.SCORE_FAILED, e.message)
+                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString())
             }
         }
     }
@@ -436,7 +469,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 0, steps.size, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device), steps = steps)
         val title = ScoreTitles.withoutExtension(s.name)
         return withContext(Dispatchers.Default) {
-            val wav = s.file?.takeIf { it.extension.equals("wav", true) }?.readBytes()
+            // The core takes the WAV as bytes and the take keeps them for re-arranging, so only a take that fits.
+            val wav = s.file?.takeIf { it.extension.equals("wav", true) && it.length() <= MAX_CORE_WAV_BYTES }?.readBytes()
             container.openSoloPipeline().use { pipeline ->
                 val (take, stats) = pipeline.pipeline.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
                     val step = steps[stage.ordinal.coerceAtMost(steps.size - 1)]
@@ -544,8 +578,14 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, container.engineLabel()))
-        val bytes = withContext(Dispatchers.IO) { s.file?.readBytes() ?: ByteArray(0) }
-        val audio = engine.uploadAudio(s.file?.name ?: s.name, bytes)
+        val file = s.file ?: error(res.getString(R.string.problem_file_body))
+        // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
+        val audio = withContext(Dispatchers.IO) {
+            engine.uploadAudio(UploadSource.of(file)) { sent, total ->
+                if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) }
+            }
+        }
+        transcribe.update { it.copy(fraction = 0.0) }
         val created = engine.createJob(
             JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                 title = ScoreTitles.withoutExtension(s.name)),
@@ -1019,6 +1059,41 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val TAG = "BrasscribePlay"
+
+        /** A MusicXML score larger than this is not a score. */
+        const val MAX_SCORE_BYTES = 64L shl 20
+
+        /** A recorded WAV up to this size (about 9 minutes of mono 44.1 kHz) also goes to the core as bytes. */
+        const val MAX_CORE_WAV_BYTES = 48L shl 20
+
+        /**
+         * True when [e] is, or was caused by, running out of memory. HTTP clients report a failure
+         * while writing the body as an IOException with the real error as its cause or suppressed.
+         */
+        fun isTooLarge(e: Throwable): Boolean {
+            val seen = HashSet<Throwable>()
+            fun walk(t: Throwable?): Boolean {
+                if (t == null || !seen.add(t)) return false
+                if (t is OutOfMemoryError) return true
+                val m = t.message.orEmpty()
+                if ("OutOfMemoryError" in m || ("Failed to allocate" in m && "until OOM" in m)) return true
+                return walk(t.cause) || t.suppressed.any { walk(it) }
+            }
+            return walk(e)
+        }
+
+        /** Reads at most [limit] bytes; more is an error, not a truncated file. */
+        fun readLimited(input: java.io.InputStream, limit: Long): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(1 shl 16)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                out.write(buf, 0, n)
+                require(out.size() <= limit) { "file larger than ${limit shr 20} MB" }
+            }
+            return out.toByteArray()
+        }
         const val ASK_POLL_MS = 2_000L
         /** The engine forgets a pairing request after two minutes. */
         const val ASK_TIMEOUT_MS = 125_000L
