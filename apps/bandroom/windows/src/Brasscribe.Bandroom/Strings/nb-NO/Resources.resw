@@ -486,7 +486,7 @@
     <value>Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face</value>
   </data>
   <data name="Setup_3_NoKey_Why" xml:space="preserve">
-    <value>Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den.</value>
+    <value>Legg til nøkkelen, og prøv igjen. Instrumentskillerne lastes ned uten den.</value>
   </data>
   <data name="Setup_3_NoKey_Fix" xml:space="preserve">
     <value>Legg til en tilgangsnøkkel</value>
@@ -591,7 +591,7 @@
     <value>{0} er ikke lastet ned ennå.</value>
   </data>
   <data name="Download_Why_Tools" xml:space="preserve">
-    <value>Brasscribes egne verktøy er ikke installert ennå.</value>
+    <value>Verktøyene til Brasscribe er ikke installert ennå.</value>
   </data>
   <data name="Model_Soloist" xml:space="preserve">
     <value>solistskilleren</value>

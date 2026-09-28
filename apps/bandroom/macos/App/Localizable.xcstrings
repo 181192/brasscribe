@@ -241,12 +241,12 @@
         }
       }
     },
-    "Add the key, then try again. The separators download without it.": {
+    "Add the key, then try again. The instrument separators download without it.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den."
+            "value": "Legg til nøkkelen, og prøv igjen. Instrumentskillerne lastes ned uten den."
           }
         }
       }
@@ -486,7 +486,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brasscribes egne verktøy er ikke installert ennå."
+            "value": "Verktøyene til Brasscribe er ikke installert ennå."
           }
         }
       }

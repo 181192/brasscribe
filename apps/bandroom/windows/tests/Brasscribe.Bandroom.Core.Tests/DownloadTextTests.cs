@@ -29,7 +29,7 @@ public sealed class DownloadTextTests
         Assert.Equal("Solistskilleren og bandskriveren er ikke lastet ned ennå.", DownloadText.NotDownloaded(Strings.Nb, [Soloist, Writer]));
         Assert.Equal("Solistskilleren, instrumentskilleren og bandskriveren er ikke lastet ned ennå.",
             DownloadText.NotDownloaded(Strings.Nb, [Soloist, Instrument, Writer]));
-        Assert.Equal("Brasscribes egne verktøy er ikke installert ennå.", DownloadText.NotDownloaded(Strings.Nb, []));
+        Assert.Equal("Verktøyene til Brasscribe er ikke installert ennå.", DownloadText.NotDownloaded(Strings.Nb, []));
     }
 
     [Fact]

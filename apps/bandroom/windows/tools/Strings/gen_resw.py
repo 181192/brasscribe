@@ -174,7 +174,7 @@ ROWS = [
     ("Setup_3_Amount", "{0} of {1} GB", "{0} av {1} GB"),  # (+) before the time left is known
     ("Setup_3_Paused", "Paused · {0} of {1} GB", "På pause · {0} av {1} GB"),
     ("Setup_3_NoKey_Title", "The band writer needs your Hugging Face access key", "Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face"),
-    ("Setup_3_NoKey_Why", "Add the key, then try again. The separators download without it.", "Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den."),
+    ("Setup_3_NoKey_Why", "Add the key, then try again. The instrument separators download without it.", "Legg til nøkkelen, og prøv igjen. Instrumentskillerne lastes ned uten den."),
     ("Setup_3_NoKey_Fix", "Add an access key", "Legg til en tilgangsnøkkel"),
     ("Setup_3_Licence_Title", "Accept the licence on Hugging Face, then try again", "Godta lisensen på Hugging Face, og prøv igjen"),
     ("Setup_3_Licence_Why", "Signed in, but the licence isn't accepted yet. Choose Agree on the MuScriptor page.", "Du er logget inn, men lisensen er ikke godtatt ennå. Velg Agree på MuScriptor-siden."),
@@ -210,7 +210,7 @@ ROWS = [
     ("Download_Why_Soloist", "The soloist separator isn't downloaded yet.", "Solistskilleren er ikke lastet ned ennå."),
     ("Download_Why_Instrument", "The instrument separator isn't downloaded yet.", "Instrumentskilleren er ikke lastet ned ennå."),
     ("Download_Why_Many", "{0} aren't downloaded yet.", "{0} er ikke lastet ned ennå."),
-    ("Download_Why_Tools", "Brasscribe's own tools aren't installed yet.", "Brasscribes egne verktøy er ikke installert ennå."),
+    ("Download_Why_Tools", "Brasscribe's own tools aren't installed yet.", "Verktøyene til Brasscribe er ikke installert ennå."),
     ("Model_Soloist", "the soloist separator", "solistskilleren"),  # (+) download.why's list
     ("Model_Instrument", "the instrument separator", "instrumentskilleren"),  # (+)
     ("Model_BandWriter", "the band writer", "bandskriveren"),  # (+)

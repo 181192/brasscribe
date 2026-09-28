@@ -486,7 +486,7 @@
     <value>The band writer needs your Hugging Face access key</value>
   </data>
   <data name="Setup_3_NoKey_Why" xml:space="preserve">
-    <value>Add the key, then try again. The separators download without it.</value>
+    <value>Add the key, then try again. The instrument separators download without it.</value>
   </data>
   <data name="Setup_3_NoKey_Fix" xml:space="preserve">
     <value>Add an access key</value>

@@ -284,7 +284,7 @@ struct SetupView: View {
         switch e {
         case .keyMissing:
             ProblemCard(title: String(localized: "The band writer needs your Hugging Face access key"),
-                        why: String(localized: "Add the key, then try again. The separators download without it."),
+                        why: String(localized: "Add the key, then try again. The instrument separators download without it."),
                         symbol: "key", tint: warn)
             Button { step = 1 } label: { Text("Add an access key") }.buttonStyle(.brOutline)
         case .keyRefused:

@@ -35,8 +35,8 @@ NB = {
     "Accept the licence on Hugging Face, then try again": "Godta lisensen på Hugging Face, og prøv igjen",
     "Access key from Hugging Face": "Tilgangsnøkkel fra Hugging Face",
     "Add an access key": "Legg til en tilgangsnøkkel",
-    "Add the key, then try again. The separators download without it.":
-        "Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den.",
+    "Add the key, then try again. The instrument separators download without it.":
+        "Legg til nøkkelen, og prøv igjen. Instrumentskillerne lastes ned uten den.",
     "Address": "Adresse",
     "Allow": "Godkjenn",
     "Allow %@?": "Godkjenne %@?",
@@ -63,7 +63,7 @@ NB = {
     "Brasscribe stopped unexpectedly": "Brasscribe stoppet uventet",
     "Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.":
         "Brasscribe bruker nøkkelen bare til å laste ned bandskriveren fra Hugging Face, og oppbevarer den i nøkkelringen din.",
-    "Brasscribe's own tools aren't installed yet.": "Brasscribes egne verktøy er ikke installert ennå.",
+    "Brasscribe's own tools aren't installed yet.": "Verktøyene til Brasscribe er ikke installert ennå.",
     "Brasscribe: making a score, %lld%%": "Brasscribe: lager partitur, %lld %%",
     "Brasscribe: running · %lld phones connected": "Brasscribe: kjører · %lld telefoner tilkoblet",
     "Brasscribe: running · 1 phone connected": "Brasscribe: kjører · 1 telefon tilkoblet",
