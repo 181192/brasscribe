@@ -746,7 +746,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             ?: res.getString(R.string.score_title)
         val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
             jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value)
+            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value, changedOnPhone = r.changedOnPhone)
         currentSavedScoreId = saved.id
         savedScores.value = scoreLibrary.list()
     }
@@ -827,6 +827,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             evidence = saved.evidenceJson?.let {
                 runCatching { no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Evidence.serializer(), it) }.getOrNull()
             },
+            changedOnPhone = saved.changedOnPhone,
         )
         checked.value = saved.checked.mapNotNull { key ->
             key.substringAfterLast(':').toIntOrNull()?.let { key.substringBeforeLast(':') to it }
@@ -842,7 +843,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
             val compositionJson = composition?.let(container.core::encodeComposition)
             val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
-            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone)
             savedScores.value = scoreLibrary.list()
             saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
             if (currentSavedScoreId == id) {

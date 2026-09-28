@@ -220,6 +220,73 @@ public class ListenStopTests
         Assert.False(original.IsPlaying);
     }
 
+    /// <summary>
+    /// "Change note…" → Save stays on the note and Listen plays the score, so the new note is heard
+    /// (the recording has the old one); Undo goes back to the recording; Keep moves on.
+    /// </summary>
+    [Fact]
+    public void A_changed_note_stays_and_listens_from_the_score()
+    {
+        var original = new ScriptedOriginal();
+        var strings = ConnectionMonitorTests.Strings();
+        var said = new Said();
+        var player = new ScriptedPlayer();
+        var score = new ScoreViewModel(new ManagedCoreBridge(), new PlayerViewModel(player, said, strings, new Inline()), said, strings, original);
+        // The uncertain note comes from the Composition, so it is still uncertain after the score is reloaded.
+        score.Load(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), Scores.CompositionJson.Parse("""
+            {"title":"Tune","ticks_per_beat":480,"meters":[{"tick":0,"beats":4}],"keys":[{"tick":0,"fifths":0}],
+             "voices":[{"id":"melody","role":"melody","notes":[{"pitch":68,"start":480,"dur":240,"confidence":0.3,"onset_s":0.44}]}]}
+            """));
+        var review = new ReviewViewModel(score, said, strings);
+        review.Load();
+        void Timed()
+        {
+            foreach (var part in score.Document!.Parts)
+                for (int b = 0; b < part.Bars.Count; b++)
+                    if (part.Bars[b].Events.FirstOrDefault() is { } first) first.TimeS = b * 2.0;
+        }
+        var item = review.Current!;
+        (int Part, int Bar, int Event) at = (item.Part, item.BarIndex, item.EventIndex);
+        string was = review.ChangedText;
+        Assert.Equal("", was);
+
+        Assert.True(review.ChangeNote(2));
+        Assert.Equal(at, (review.Current!.Part, review.Current.BarIndex, review.Current.EventIndex));
+        Assert.False(review.Current.IsKept);
+        Assert.True(review.IsChanged);
+        Assert.Matches(@"^Changed to \S+\d \(was \S+\d\)$", review.ChangedText);
+        Assert.Equal(review.ChangedText, said.Items[^1]);
+        Timed();
+        player.Calls.Clear();
+        original.Calls.Clear();
+        review.ListenCommand.Execute(null);
+        Assert.Contains("play", player.Calls);
+        Assert.Empty(original.Calls);
+        review.ListenCommand.Execute(null);
+
+        // Change again: "was" stays what Brasscribe wrote.
+        string first = review.ChangedText;
+        Assert.True(review.ChangeNote(1));
+        Assert.Equal(first[first.IndexOf("(was ")..], review.ChangedText[review.ChangedText.IndexOf("(was ")..]);
+
+        // Undo: the recording again, still this note.
+        review.UndoChangeCommand.Execute(null);
+        Assert.False(review.IsChanged);
+        Assert.StartsWith("Back to ", said.Items[^1]);
+        Assert.Equal(at, (review.Current!.Part, review.Current.BarIndex, review.Current.EventIndex));
+        Timed();
+        original.Calls.Clear();
+        review.ListenCommand.Execute(null);
+        Assert.Contains("loop=False", Assert.Single(original.Calls));
+        review.ListenCommand.Execute(null);
+
+        // Keep checks it and moves on: this score has one note to check, so the review is done.
+        Assert.True(review.ChangeNote(1));
+        review.KeepCommand.Execute(null);
+        Assert.Null(review.Current);
+        Assert.Equal(0, review.Left);
+    }
+
     [Fact]
     public void Not_ready_says_so_and_does_not_show_stop()
     {
