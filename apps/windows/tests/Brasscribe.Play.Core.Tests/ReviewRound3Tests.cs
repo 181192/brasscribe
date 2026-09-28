@@ -115,6 +115,42 @@ public class ReviewRound3Tests(ITestOutputHelper log)
         Assert.Equal(g.Composition.Review!.Count, g.Review.AllItems.Count);
     }
 
+    /// <summary>
+    /// The tune printed an octave down (the cornet's limit) lands on a pitch the harmony plays at the same time.
+    /// The coloured note is the tune's uncertain note, not the harmony's certain one, so its review group keeps it.
+    /// </summary>
+    [Fact]
+    public void A_marked_note_an_octave_down_stays_with_the_uncertain_tune()
+    {
+        const string xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <score-partwise version="4.0">
+              <part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+              <part id="P1"><measure number="1">
+                <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+                <note color="#B45309"><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note>
+              </measure></part>
+            </score-partwise>
+            """;
+        var composition = CompositionJson.Parse("""
+            {"title":"t","ticks_per_beat":12,
+             "voices":[
+               {"id":"strings","layer":"strings","notes":[{"start":0,"duration":48,"pitch":62,"confidence":1.0}]},
+               {"id":"solo","layer":"solo","notes":[{"start":0,"duration":48,"pitch":74,"confidence":0.4}]}],
+             "review":[{"voice":"solo","start":0,"end":48,"notes":1}]}
+            """);
+        var doc = MusicXmlTalkingScoreBuilder.Build(xml, composition);
+        ReviewGroups.Attach(doc, composition);
+        var ev = doc.Parts[0].Bars[0].Events.Single(e => e.Kind != EventKind.Rest);
+        Assert.Equal("solo", ev.CompositionVoiceId);
+        Assert.True(ev.ReviewLead);
+        Assert.Equal(0, ev.ReviewGroup);
+
+        // An unmarked note keeps the plain rule: the exact pitch.
+        var plain = MusicXmlTalkingScoreBuilder.Build(xml.Replace(" color=\"#B45309\"", ""), composition);
+        Assert.Equal("strings", plain.Parts[0].Bars[0].Events.Single(e => e.Kind != EventKind.Rest).CompositionVoiceId);
+    }
+
     [Fact]
     public void Keep_the_rest_of_this_bar_keeps_the_other_marks_in_it()
     {
