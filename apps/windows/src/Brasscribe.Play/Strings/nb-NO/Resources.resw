@@ -1312,7 +1312,7 @@
     <value>Notert</value>
   </data>
   <data name="Score_AsWrittenBassClef" xml:space="preserve">
-    <value>Som skrevet (F-nøkkel)</value>
+    <value>Notert (F-nøkkel)</value>
   </data>
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>Notert for {0}</value>

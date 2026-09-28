@@ -789,7 +789,7 @@ add("Output_TuneSeat", "You: {0}", "Deg: {0}")
 add("Output_YourPart", "your part: {0}", "stemmen din: {0}")
 add("Output_YourPartNone", "You conduct or listen: every part opens.", "Du dirigerer eller lytter: alle stemmene åpnes.")
 add("Output_KeyAsItSounds", "{0}, as it sounds", "{0}, klingende")
-add("Score_AsWrittenBassClef", "As written (bass clef)", "Som skrevet (F-nøkkel)")
+add("Score_AsWrittenBassClef", "As written (bass clef)", "Notert (F-nøkkel)")
 add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
 add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
     "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")
