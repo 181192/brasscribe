@@ -57,7 +57,10 @@ data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean)
 
 /** Where a part comes from, as the core derives it from the arrangement. */
 enum class PartSource(val id: String) {
-    YOUR_RECORDING("your-recording"), RECORDING("recording"), ARRANGED("arranged");
+    YOUR_RECORDING("your-recording"), RECORDING("recording"), ARRANGED("arranged"),
+
+    /** Nothing to play in this arrangement (Percussion without drums, the Soprano Cornet with no climax). */
+    EMPTY("empty");
 
     companion object {
         fun of(id: String): PartSource? = entries.firstOrNull { it.id == id }

@@ -249,7 +249,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                         else -> pluralStringResource(R.plurals.review_title, todo.size, todo.size)
                     })
                     val own = mine.voice ?: melodyVoice.takeIf { !mine.arranged }
-                    if (mine.arranged && mine.part != null) ArrangedNotice(mine.part,
+                    if (mine.arranged && mine.part != null) ArrangedNotice(mine.part, empty = mine.source == no.brasscribe.play.model.PartSource.EMPTY,
                         checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.navigate(Screen.OUTPUT) },
                         showMine = { vm.navigate(Screen.SCORE) })
                     if (voiceId == own && mine.source != null) {

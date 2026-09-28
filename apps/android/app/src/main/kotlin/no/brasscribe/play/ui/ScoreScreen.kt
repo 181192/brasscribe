@@ -908,12 +908,13 @@ private fun PartsSheet(
 private fun SourceLine(source: no.brasscribe.play.model.PartSource) {
     val c = BrasscribeTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
+        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED || source == no.brasscribe.play.model.PartSource.EMPTY) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
             Modifier.size(16.dp), tint = c.textMuted)
         Text(stringResource(when (source) {
             no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
             no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
             no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+            no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
         }), style = MaterialTheme.typography.bodySmall, color = c.textMuted)
     }
 }
@@ -923,6 +924,7 @@ fun sourceWords(source: no.brasscribe.play.model.PartSource): Int = when (source
     no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
     no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
     no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+    no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
 }
 
 /** A one-line notice that opens its details and can be closed; both targets 48 dp. */

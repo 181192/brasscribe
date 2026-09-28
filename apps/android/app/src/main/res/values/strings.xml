@@ -606,8 +606,12 @@
     <string name="source_yours">From your recording</string>
     <string name="source_recording">From the recording</string>
     <string name="source_arranged">Arranged from the band\'s harmony</string>
+    <string name="source_empty">Nothing to play in this arrangement</string>
     <string name="explain_recording">Brasscribe wrote down the notes it heard for this part.</string>
+    <string name="explain_empty">Nothing in the recording gave this part any notes, so it is left empty.</string>
     <string name="explain_arranged">Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.</string>
+    <string name="review_empty_title">Your part is empty</string>
+    <string name="review_empty_body">Nothing in the recording gave the %1$s part any notes, so there is nothing of yours to check.</string>
     <string name="review_arranged_title">Your part is arranged</string>
     <string name="review_arranged_body">Nobody played the %1$s part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.</string>
     <string name="review_check_others">Check the other parts</string>

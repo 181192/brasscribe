@@ -604,8 +604,12 @@
     <string name="source_yours">Fra opptaket ditt</string>
     <string name="source_recording">Fra opptaket</string>
     <string name="source_arranged">Arrangert ut fra harmoniene i bandet</string>
+    <string name="source_empty">Tom i dette arrangementet</string>
     <string name="explain_recording">Brasscribe skrev ned tonene den hørte for denne stemmen.</string>
+    <string name="explain_empty">Ingenting i opptaket ga denne stemmen noen toner, så den står tom.</string>
     <string name="explain_arranged">Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.</string>
+    <string name="review_empty_title">Stemmen din er tom</string>
+    <string name="review_empty_body">Ingenting i opptaket ga %1$s noen toner, så det er ingenting av ditt å sjekke.</string>
     <string name="review_arranged_title">Stemmen din er arrangert</string>
     <string name="review_arranged_body">Ingen spilte %1$s alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.</string>
     <string name="review_check_others">Sjekk de andre stemmene</string>

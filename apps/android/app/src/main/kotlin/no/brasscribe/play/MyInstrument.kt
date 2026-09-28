@@ -132,7 +132,7 @@ object YourParts {
      * part that follows no layer of its own.
      */
     fun voiceOf(part: String, lead: String?, source: PartSource?, composition: Composition): String? {
-        if (source == PartSource.ARRANGED) return null
+        if (source == PartSource.ARRANGED || source == PartSource.EMPTY) return null
         val sounding = composition.voices.filter { it.notes.isNotEmpty() }
         fun layer(id: String) = sounding.firstOrNull { it.id == id || it.layer == id }?.id
         val name = clean(part)
