@@ -360,7 +360,7 @@ The plan is in `sounds/recording-plan.md`:
 | Stop fade | Sampler volumes, before the stage | alphaTab master volume, before the stage; sfizz fades after its limiter | On the output, after the stage |
 | Recording | Its own `OutputStageAU` after the time-pitch unit. Measured off the main thread when loaded; the gain is applied at the next start, never mid-play. The mixer spreads mono equal-power, so +3 dB is made up. Stop fades it over 80 ms. | `LevelMatch` measures the recording and the engine's rendered score once each, and plays every "Listen to this bar" slice with that gain and the limiter | `RecordingLevel` measures the decoded WAV off the UI thread and sets `MediaPlayer.Volume`. Stop fades it over 80 ms. |
 | Metronome | Bypasses the stage, at its own level | Through the stage, volume 1 | Through the stage, volume 1 |
-| Tests | `LoudnessTests`, `OutputStageTests` (`swift test --no-parallel`) | `OutputStageTest`, `LevelMatchTest` (JVM); `PlaybackLevelTest` (emulator: phrase through alphaTab and the stage, metronome, C++ curve against Kotlin) | `PlaybackLevelTests` (`tools/check-macos.sh`) |
+| Tests | `LoudnessTests`, `OutputStageTests` (`swift test --no-parallel`) | `OutputStageTest`, `LevelMatchTest` (JVM); `PlaybackLevelTest` (emulator: phrase through alphaTab and the stage, metronome, C++ curve against Kotlin); `OutputStageInstallTest` (emulator: the app's own player is staged after opening a score, playing and stopping) | `PlaybackLevelTests` (`tools/check-macos.sh`) |
 
 **Measured, before → after.** Peak dBFS / integrated LUFS.
 
@@ -380,7 +380,7 @@ Apple test variants of the recording: −8 dB gives −28.2 LUFS in the file and
   - So with the same phrase calibration, the golden arrangement measures −16 LUFS on Apple but −11.8 on Windows, where its peaks sit on the limiter's ceiling.
   - For that score, the recording target sits about 4 LU under the band on Android and Windows. Fixing it means Apple playing dynamics, or velocity remapping (§9).
 - **Windows cannot boost.** `MediaPlayer.Volume` stops at 1, so a recording quieter than −16 LUFS keeps its own level; only a louder one is turned down. Boosting would need the recording on its own audio path, not the media player.
-- **Android's two streams add up unchecked.** With sfizz on, alphaTab (kit and metronome) and sfizz are limited separately and summed by the system mixer, so neither limiter bounds the sum. The sfizz gain is set by design and was not measured: there is no sfizz build or SFZ pack here.
+- **Android's two streams add up unchecked.** With sfizz on, alphaTab (kit and metronome) and sfizz are limited separately and summed by the system mixer, so neither limiter bounds the sum. The sfizz gain is set by design and was not measured: there is no SFZ pack here, and `sfizz_player.cpp` was only syntax-checked against the sfizz and Oboe headers, not built or run.
 - **Android mono playback** is assumed to reach both speakers at full level (dual mono). This was not measured on a device.
 - **Android's clip player** fades over about 15 ms on stop, not 80 ms. The fade blocks its caller.
 - **Not run here:** the WinUI app (the `MediaPlayer` volume and fade are type-checked only), the Apple app target, and any physical phone.

@@ -168,6 +168,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     private TimeSpan? _loopStart, _loopEnd, _stopAt;
     private double _volume = 1;
     private int _fade;
+    private bool _fading;
 
     public MediaPlayerOriginal(DispatcherQueue? queue = null)
     {
@@ -229,14 +230,24 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     /// <summary>Ramps the volume down over the band's stop fade (80 ms), then pauses, so stopping never clicks.</summary>
     private async void FadeThenPause()
     {
+        if (_fading) return; // a fade under way finishes; asking again (the video follower does) must not restart it
+        if (_player.IsMuted)
+        {
+            _fade++;
+            _player.Pause(); // nothing to hear, nothing to fade
+            _player.Volume = _volume;
+            return;
+        }
+        _fading = true;
         int fade = ++_fade;
         const int steps = 8;
         for (int i = 1; i <= steps; i++)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(Brasscribe.Play.Core.Playback.BufferedSynthOutput.StopFadeMs / steps));
-            if (fade != _fade) return; // played again meanwhile
+            if (fade != _fade) return; // played again meanwhile (CancelFade cleared _fading)
             _player.Volume = _volume * (1 - (double)i / steps);
         }
+        _fading = false;
         _player.Pause();
         _player.Volume = _volume;
     }
@@ -244,6 +255,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     private void CancelFade()
     {
         _fade++;
+        _fading = false;
         _player.Volume = _volume;
     }
 

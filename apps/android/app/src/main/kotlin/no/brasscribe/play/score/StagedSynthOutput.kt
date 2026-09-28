@@ -29,18 +29,27 @@ class StagedSynthOutput(private val inner: ISynthOutput, @Volatile var gain: Flo
          * player is not there yet or its shape is not the one this knows.
          */
         fun install(api: AlphaTabApiBase<*>): Boolean = runCatching {
-            // both classes are internal to alphaTab: reached by name (kept by proguard-rules.pro)
-            val wrapper = api.player ?: return false
-            if (wrapper.javaClass.name != "alphaTab.synth.AlphaSynthWrapper") return false
-            val worker = wrapper.javaClass.getMethod("getInstance").invoke(wrapper) ?: return false
-            if (worker.javaClass.name != "alphaTab.platform.worker.AlphaSynthWebWorkerApi") return false
-            val field = worker.javaClass.getDeclaredField("_output").apply { isAccessible = true }
+            val (worker, field) = outputField(api) ?: return false
             val current = field.get(worker) as ISynthOutput
             if (current !is StagedSynthOutput) field.set(worker, StagedSynthOutput(current))
             true
         }.getOrElse {
             android.util.Log.w("BrasscribePlay", "output stage not installed on alphaTab's synth", it)
             false
+        }
+
+        /** Whether the view's synth plays through the stage now. */
+        @androidx.annotation.VisibleForTesting
+        fun isInstalled(api: AlphaTabApiBase<*>): Boolean =
+            runCatching { outputField(api)?.let { (w, f) -> f.get(w) is StagedSynthOutput } == true }.getOrDefault(false)
+
+        /** The worker API and its output field; both classes are internal to alphaTab, so reached by name (kept by proguard-rules.pro). */
+        private fun outputField(api: AlphaTabApiBase<*>): Pair<Any, java.lang.reflect.Field>? {
+            val wrapper = api.player ?: return null
+            if (wrapper.javaClass.name != "alphaTab.synth.AlphaSynthWrapper") return null
+            val worker = wrapper.javaClass.getMethod("getInstance").invoke(wrapper) ?: return null
+            if (worker.javaClass.name != "alphaTab.platform.worker.AlphaSynthWebWorkerApi") return null
+            return worker to worker.javaClass.getDeclaredField("_output").apply { isAccessible = true }
         }
     }
 }
