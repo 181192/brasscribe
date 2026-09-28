@@ -578,10 +578,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, container.engineLabel()))
-        val file = s.file ?: error(res.getString(R.string.problem_file_body))
         // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
+        // A source with no file (tests) sends an empty upload, as before.
+        val upload = s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
         val audio = withContext(Dispatchers.IO) {
-            engine.uploadAudio(UploadSource.of(file)) { sent, total ->
+            engine.uploadAudio(upload) { sent, total ->
                 if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) }
             }
         }

@@ -282,11 +282,9 @@ class ScoreController(
 
     private var soundFontRequested = false
 
-    companion object {
-        /** The last band SoundFont read, weakly: a test checks nothing keeps it once alphaTab has it. */
-        @androidx.annotation.VisibleForTesting
-        @Volatile internal var lastSoundFontBytes: java.lang.ref.WeakReference<ByteArray>? = null
-    }
+    /** The band SoundFont this score read, weakly: a test checks nothing keeps it once alphaTab has it. */
+    @androidx.annotation.VisibleForTesting
+    @Volatile internal var soundFontBytes: java.lang.ref.WeakReference<ByteArray>? = null
 
     /** Replaces alphaTab's built-in SoundFont with the band SoundFont (found and read off the UI thread). */
     private fun loadBandSoundFont() {
@@ -303,7 +301,7 @@ class ScoreController(
                 android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it); return@Thread
             }
             val megabytes = bytes!!.size shr 20
-            lastSoundFontBytes = java.lang.ref.WeakReference(bytes)
+            soundFontBytes = java.lang.ref.WeakReference(bytes)
             var listening = false
             fun attempt(tries: Int) {
                 // api.loadSoundFont(ByteArray) returns false on Android (AndroidUiFacade's `when` compares the

@@ -7,7 +7,6 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.score.BandSoundFontFile
-import no.brasscribe.play.score.ScoreController
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -56,15 +55,15 @@ class SoundFontMemoryTest {
             assertTrue("band SoundFont loaded in time", SystemClock.uptimeMillis() < end)
             Thread.sleep(100)
         }
-        assertTrue("the load was seen", ScoreController.lastSoundFontBytes != null)
+        assertTrue("the load was seen", vm.scoreController!!.soundFontBytes != null)
         Thread.sleep(300)
         gc()
         val heapAfter = used()
         val nativeAfter = Debug.getNativeHeapAllocatedSize()
         android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB): Java heap %d -> %d MB (file bytes %s); native %d -> %d MB"
             .format(sf!!.name, sf.length() shr 20, heapBefore shr 20, heapAfter shr 20,
-                if (ScoreController.lastSoundFontBytes?.get() != null) "still reachable" else "released", nativeBefore shr 20, nativeAfter shr 20))
-        assertNull("Play keeps no copy of the SoundFont's bytes", ScoreController.lastSoundFontBytes?.get())
+                if (vm.scoreController!!.soundFontBytes?.get() != null) "still reachable" else "released", nativeBefore shr 20, nativeAfter shr 20))
+        assertNull("Play keeps no copy of the SoundFont's bytes", vm.scoreController!!.soundFontBytes?.get())
         // What stays is alphaTab's own: its copy of the sample chunk (the file's size) and the samples
         // as floats (twice that), about three times the file. A copy of ours would make it four.
         assertTrue("alphaTab's share only (${(heapAfter - heapBefore) shr 20} MB for a ${sf.length() shr 20} MB file)",
