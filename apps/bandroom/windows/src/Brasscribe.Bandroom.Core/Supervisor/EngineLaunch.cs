@@ -19,6 +19,8 @@ public sealed record BandroomPaths(string DataDir)
     public string SetupMarkers => Path.Combine(State, "setup");
     /// <summary>The Appearance choice: this PC only, never roamed (design/system.md §10).</summary>
     public string AppearanceFile => Path.Combine(State, "appearance");
+    /// <summary>The name shown to phones, when one is set in Settings.</summary>
+    public string ComputerNameFile => Path.Combine(State, "computer-name");
     public string StatusFile => Path.Combine(DataDir, "engine.json");
 
     public static BandroomPaths ForCurrentUser() =>
@@ -37,6 +39,12 @@ public sealed record EngineLaunchConfig(
     bool UseCuda,
     string? BandSoundsDir = null)
 {
+    /// <summary>The user's Hugging Face key (HF_TOKEN), read at each start so a key saved in Settings reaches the next one.</summary>
+    public Func<string?>? HuggingFaceToken { get; init; }
+
+    /// <summary>This process's environment variables (PATH, HF_HOME, HF_HUB_CACHE, HF_TOKEN), read at each start.</summary>
+    public Func<string, string?> Variable { get; init; } = Environment.GetEnvironmentVariable;
+
     /// <summary>The bundled band sounds folder under <paramref name="appDir"/>, if the SoundFont and its part map are there.</summary>
     public static string? FindBandSounds(string appDir)
     {
@@ -63,10 +71,14 @@ public sealed record EngineLaunchConfig(
             ["PYTHONUTF8"] = "1",
             // run_adapter.py calls "pixi" by name.
             ["PATH"] = Path.GetDirectoryName(PixiExe) is { Length: > 0 } dir
-                ? dir + Path.PathSeparator + (Environment.GetEnvironmentVariable("PATH") ?? "")
-                : Environment.GetEnvironmentVariable("PATH") ?? "",
+                ? dir + Path.PathSeparator + (Variable("PATH") ?? "")
+                : Variable("PATH") ?? "",
         };
         if (UseCuda) env["BRASSCRIBE_CUDA"] = "1";
+        // The muscriptor adapter finds the band writer in the hub cache Bandroom downloaded it to, with the same key.
+        foreach (var name in (string[])["HF_HOME", "HF_HUB_CACHE"])
+            if (Variable(name) is { Length: > 0 } value) env[name] = value;
+        if ((Variable("HF_TOKEN") is { Length: > 0 } t ? t : HuggingFaceToken?.Invoke()) is { Length: > 0 } token) env["HF_TOKEN"] = token;
         // Studio (served by the engine) plays the band SoundFont from here.
         if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
         return new ProcessSpec(

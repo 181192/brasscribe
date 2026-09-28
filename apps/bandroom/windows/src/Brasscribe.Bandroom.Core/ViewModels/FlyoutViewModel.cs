@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Brasscribe.Bandroom.Core.Engine;
 using Brasscribe.Bandroom.Core.Health;
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.State;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -188,7 +189,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
             MemoryWord = _s[HealthWords.MemoryKey(h.Memory)];
             DiskText = _s.Format("Health_Disk_Value", HealthWords.GigabytesText(h.FreeBytes, _s.Culture));
             IsReady = h.ModelsReady;
-            ReadyWord = h.ModelsReady ? _s["Health_Ready_Yes"] : _s["Health_Ready_Missing"];
+            ReadyWord = snap.DownloadProgress ?? DownloadText.ReadyWord(_s, h.MissingModels.Count);
         }
         else HasHealth = false;
         SpeedCaption = _s[snap.SpeedKey];

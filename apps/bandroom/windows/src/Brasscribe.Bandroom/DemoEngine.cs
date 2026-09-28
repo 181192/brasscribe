@@ -1,6 +1,7 @@
 using Brasscribe.Bandroom.Core;
 using Brasscribe.Bandroom.Core.Engine;
 using Brasscribe.Bandroom.Core.Health;
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.State;
 using Brasscribe.Bandroom.Core.Supervisor;
 using Brasscribe.Bandroom.Core.ViewModels;
@@ -86,7 +87,7 @@ internal sealed class DemoEngine : IEngineApi
             s.Format("Header", "Kalli's PC"),
             running ? new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kalli's PC", "0.9.4", 2, 3, false, job is null ? 0 : 1, job is null ? 0 : 1) : null,
             job,
-            new HealthSnapshot(job is null ? 18 : 91, 0.2, state == "attention" ? 2_100_000_000 : 86_400_000_000, setup),
+            new HealthSnapshot(job is null ? 18 : 91, 0.2, state == "attention" ? 2_100_000_000 : 86_400_000_000, setup ? [] : [ModelComponent.BandWriter]),
             "Health_Speed_Nvidia",
             new TechDetails(running ? ["192.168.1.20:8765", "10.0.0.4:8765"] : [], running ? 8765 : null, "0.9.4",
                 "CUDA 12 · NVIDIA GeForce RTX 4070", "3f9c2a7e5d1b", @"C:\Users\Kalli\AppData\Local\Brasscribe"));

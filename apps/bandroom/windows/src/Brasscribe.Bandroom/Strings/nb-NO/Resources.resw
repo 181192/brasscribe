@@ -182,6 +182,9 @@
   <data name="Health_Ready_Missing" xml:space="preserve">
     <value>Mangler én nedlasting</value>
   </data>
+  <data name="Health_Ready_MissingMany" xml:space="preserve">
+    <value>Mangler {0} nedlastinger</value>
+  </data>
   <data name="Health_Speed_Gpu" xml:space="preserve">
     <value>Bruker grafikkbrikken</value>
   </data>
@@ -233,6 +236,30 @@
   <data name="Settings_Login" xml:space="preserve">
     <value>Start når jeg logger på</value>
   </data>
+  <data name="Settings_Name" xml:space="preserve">
+    <value>Navnet telefonene ser</value>
+  </data>
+  <data name="Settings_Name_Note" xml:space="preserve">
+    <value>Telefonene viser denne PC-en som «Brasscribe på {0}».</value>
+  </data>
+  <data name="Settings_Name_Use" xml:space="preserve">
+    <value>Bruk dette navnet</value>
+  </data>
+  <data name="Settings_Hf" xml:space="preserve">
+    <value>Tilgang til Hugging Face</value>
+  </data>
+  <data name="Settings_Hf_Note" xml:space="preserve">
+    <value>Brasscribe bruker nøkkelen bare til å laste ned bandskriveren fra Hugging Face, og oppbevarer den i Legitimasjonsbehandling i Windows.</value>
+  </data>
+  <data name="Settings_Hf_Saved" xml:space="preserve">
+    <value>Nøkkelen er lagret i Legitimasjonsbehandling.</value>
+  </data>
+  <data name="Settings_Hf_FromEnvironment" xml:space="preserve">
+    <value>Brasscribe bruker HF_TOKEN-nøkkelen som er satt på denne PC-en.</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
   <data name="Appearance_Title" xml:space="preserve">
     <value>Utseende</value>
   </data>
@@ -250,6 +277,12 @@
   </data>
   <data name="Tray_Open" xml:space="preserve">
     <value>Åpne</value>
+  </data>
+  <data name="Tray_PauseDownloads" xml:space="preserve">
+    <value>Sett nedlastingene på pause</value>
+  </data>
+  <data name="Tray_ResumeDownloads" xml:space="preserve">
+    <value>Fortsett nedlastingene</value>
   </data>
   <data name="Tech_Summary" xml:space="preserve">
     <value>Detaljer for den tekniske i bandet</value>
@@ -440,8 +473,62 @@
   <data name="Setup_Step" xml:space="preserve">
     <value>{0} av {1}</value>
   </data>
+  <data name="Setup_3_Progress" xml:space="preserve">
+    <value>{0} av {1} GB · omtrent {2} min igjen</value>
+  </data>
+  <data name="Setup_3_Amount" xml:space="preserve">
+    <value>{0} av {1} GB</value>
+  </data>
+  <data name="Setup_3_Paused" xml:space="preserve">
+    <value>På pause · {0} av {1} GB</value>
+  </data>
+  <data name="Setup_3_NoKey_Title" xml:space="preserve">
+    <value>Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face</value>
+  </data>
+  <data name="Setup_3_NoKey_Why" xml:space="preserve">
+    <value>Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den.</value>
+  </data>
+  <data name="Setup_3_NoKey_Fix" xml:space="preserve">
+    <value>Legg til en tilgangsnøkkel</value>
+  </data>
+  <data name="Setup_3_Licence_Title" xml:space="preserve">
+    <value>Godta lisensen på Hugging Face, og prøv igjen</value>
+  </data>
+  <data name="Setup_3_Licence_Why" xml:space="preserve">
+    <value>Du er logget inn, men lisensen er ikke godtatt ennå. Velg Agree på MuScriptor-siden.</value>
+  </data>
+  <data name="Setup_3_Licence_Fix" xml:space="preserve">
+    <value>Åpne MuScriptor-siden</value>
+  </data>
+  <data name="Setup_3_Space_Title" xml:space="preserve">
+    <value>Ikke nok plass</value>
+  </data>
+  <data name="Setup_3_Space_Why" xml:space="preserve">
+    <value>Nedlastingene trenger omtrent {0} GB, og {1} GB er ledig.</value>
+  </data>
+  <data name="Setup_3_Damaged_Title" xml:space="preserve">
+    <value>En nedlasting kom fram skadet</value>
+  </data>
+  <data name="Setup_3_Damaged_Why" xml:space="preserve">
+    <value>Brasscribe har slettet den. Prøv igjen for å hente den på nytt.</value>
+  </data>
+  <data name="Setup_3_Network_Title" xml:space="preserve">
+    <value>Nedlastingen stoppet</value>
+  </data>
+  <data name="Setup_3_Network_Why" xml:space="preserve">
+    <value>Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet.</value>
+  </data>
+  <data name="Setup_3_Disk_Title" xml:space="preserve">
+    <value>Brasscribe fikk ikke lagret nedlastingen</value>
+  </data>
+  <data name="Setup_2_Key_Label" xml:space="preserve">
+    <value>Tilgangsnøkkel fra Hugging Face</value>
+  </data>
   <data name="Setup_Item_Listening" xml:space="preserve">
     <value>Lytteverktøy</value>
+  </data>
+  <data name="Setup_Item_Soloist" xml:space="preserve">
+    <value>Solistskiller</value>
   </data>
   <data name="Setup_Item_BandWriter" xml:space="preserve">
     <value>Bandskriver (MuScriptor)</value>
@@ -493,6 +580,39 @@
   </data>
   <data name="Download_Why" xml:space="preserve">
     <value>Bandskriveren er ikke lastet ned ennå.</value>
+  </data>
+  <data name="Download_Why_Soloist" xml:space="preserve">
+    <value>Solistskilleren er ikke lastet ned ennå.</value>
+  </data>
+  <data name="Download_Why_Instrument" xml:space="preserve">
+    <value>Instrumentskilleren er ikke lastet ned ennå.</value>
+  </data>
+  <data name="Download_Why_Many" xml:space="preserve">
+    <value>{0} er ikke lastet ned ennå.</value>
+  </data>
+  <data name="Download_Why_Tools" xml:space="preserve">
+    <value>Brasscribes egne verktøy er ikke installert ennå.</value>
+  </data>
+  <data name="Model_Soloist" xml:space="preserve">
+    <value>solistskilleren</value>
+  </data>
+  <data name="Model_Instrument" xml:space="preserve">
+    <value>instrumentskilleren</value>
+  </data>
+  <data name="Model_BandWriter" xml:space="preserve">
+    <value>bandskriveren</value>
+  </data>
+  <data name="List_And" xml:space="preserve">
+    <value>{0} og {1}</value>
+  </data>
+  <data name="Key_Title" xml:space="preserve">
+    <value>Hugging Face godtok ikke tilgangsnøkkelen</value>
+  </data>
+  <data name="Key_Why" xml:space="preserve">
+    <value>Nøkkelen kan være slettet eller utløpt.</value>
+  </data>
+  <data name="Key_Paste" xml:space="preserve">
+    <value>Lim inn en ny nøkkel</value>
   </data>
   <data name="Port_Title" xml:space="preserve">
     <value>Brasscribe kan ikke starte</value>

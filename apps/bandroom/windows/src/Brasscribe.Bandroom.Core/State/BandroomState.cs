@@ -1,3 +1,4 @@
+using Brasscribe.Bandroom.Core.Downloads;
 using Brasscribe.Bandroom.Core.Supervisor;
 
 namespace Brasscribe.Bandroom.Core.State;
@@ -142,7 +143,96 @@ public static class Problems
         new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.GigabytesText(freeBytes, s.Culture)), s["Disk_Fix"],
             $"{dataDir}: {freeBytes / 1_000_000} MB free");
 
-    public static Problem MissingDownload(IStrings s) =>
-        new(ProblemKind.MissingDownload, s["Download_Title"], s["Download_Why"], s["Primary_FinishSetup"],
-            "MuScriptor model missing under the models folder.");
+    /// <summary>
+    /// Full-band scores need one more step: says which components are missing ("The soloist separator and the
+    /// band writer aren't downloaded yet."); none named means Brasscribe's own tools. The details list the files.
+    /// </summary>
+    public static Problem MissingDownload(IStrings s, IReadOnlyList<ModelComponent> missing, IReadOnlyList<string>? files = null) =>
+        new(ProblemKind.MissingDownload, s["Download_Title"], DownloadText.NotDownloaded(s, missing), s["Primary_FinishSetup"],
+            files is { Count: > 0 } ? "Missing: " + string.Join(", ", files)
+            : missing.Count > 0 ? "Missing: " + string.Join(", ", missing)
+            : "The tool environments aren't installed.");
+
+    /// <summary>The model download stopped: the macOS setup window's words for the reason, and its fix.</summary>
+    public static Problem DownloadStopped(IStrings s, DownloadError error)
+    {
+        var (kind, prefix, fix) = error switch
+        {
+            DownloadError.KeyMissing => (ProblemKind.MissingDownload, "Setup_3_NoKey", s["Setup_3_NoKey_Fix"]),
+            DownloadError.KeyRefused => (ProblemKind.KeyRefused, "Key", s["Key_Paste"]),
+            DownloadError.LicenceNotAccepted => (ProblemKind.MissingDownload, "Setup_3_Licence", s["Setup_3_Licence_Fix"]),
+            DownloadError.NotEnoughSpace => (ProblemKind.MissingDownload, "Setup_3_Space", s["Disk_Fix"]),
+            DownloadError.ChecksumMismatch => (ProblemKind.MissingDownload, "Setup_3_Damaged", s["Primary_TryAgain"]),
+            DownloadError.Disk => (ProblemKind.MissingDownload, "Setup_3_Disk", s["Primary_TryAgain"]),
+            _ => (ProblemKind.MissingDownload, "Setup_3_Network", s["Primary_TryAgain"]),
+        };
+        string why = error switch
+        {
+            DownloadError.NotEnoughSpace n => s.Format("Setup_3_Space_Why", DownloadText.Gigabytes(n.NeededBytes, s.Culture), DownloadText.Gigabytes(n.FreeBytes, s.Culture)),
+            DownloadError.Disk d => d.Message,
+            _ => s[prefix + "_Why"],
+        };
+        return new(kind, s[prefix + "_Title"], why, fix, error.ToString());
+    }
+}
+
+/// <summary>The words for the model downloads (design/server-app.md §10, download.why and setup.3).</summary>
+public static class DownloadText
+{
+    /// <summary>"the soloist separator": the component inside a sentence.</summary>
+    public static string ComponentName(IStrings s, ModelComponent c) => s[c switch
+    {
+        ModelComponent.SoloistSeparator => "Model_Soloist",
+        ModelComponent.InstrumentSeparator => "Model_Instrument",
+        _ => "Model_BandWriter",
+    }];
+
+    /// <summary>The setup list's item: "Band writer (MuScriptor)" is the one place the model is named (§3.2.1).</summary>
+    public static string ComponentItem(IStrings s, ModelComponent c) => s[c switch
+    {
+        ModelComponent.SoloistSeparator => "Setup_Item_Soloist",
+        ModelComponent.InstrumentSeparator => "Setup_Item_Separator",
+        _ => "Setup_Item_BandWriter",
+    }];
+
+    /// <summary>"The band writer isn't downloaded yet." · "The soloist separator and the band writer aren't downloaded yet."</summary>
+    public static string NotDownloaded(IStrings s, IReadOnlyList<ModelComponent> missing)
+    {
+        switch (missing.Count)
+        {
+            case 0: return s["Download_Why_Tools"];
+            case 1:
+                return s[missing[0] switch
+                {
+                    ModelComponent.SoloistSeparator => "Download_Why_Soloist",
+                    ModelComponent.InstrumentSeparator => "Download_Why_Instrument",
+                    _ => "Download_Why",
+                }];
+            default:
+                var names = missing.Order().Select(c => ComponentName(s, c)).ToList();
+                string list = s.Format("List_And", string.Join(", ", names.Take(names.Count - 1)), names[^1]);
+                string sentence = s.Format("Download_Why_Many", list);
+                return char.ToUpper(sentence[0], s.Culture) + sentence[1..];
+        }
+    }
+
+    /// <summary>"Ready" · "Missing one download" · "Missing 2 downloads".</summary>
+    public static string ReadyWord(IStrings s, int missing) => missing switch
+    {
+        0 => s["Health_Ready_Yes"],
+        1 => s["Health_Ready_Missing"],
+        _ => s.Format("Health_Ready_MissingMany", missing),
+    };
+
+    /// <summary>"3.1 of 9.8 GB · about 12 min left" while downloading, "Paused · 3.1 of 9.8 GB" when paused.</summary>
+    public static string Progress(IStrings s, long done, long total, int? minutesLeft, bool paused)
+    {
+        string a = Gigabytes(done, s.Culture), b = Gigabytes(total, s.Culture);
+        if (paused) return s.Format("Setup_3_Paused", a, b);
+        return minutesLeft is { } m ? s.Format("Setup_3_Progress", a, b, m) : s.Format("Setup_3_Amount", a, b);
+    }
+
+    /// <summary>"1.4" (nb "1,4"): gigabytes with one decimal.</summary>
+    public static string Gigabytes(long bytes, System.Globalization.CultureInfo culture) =>
+        (bytes / 1_000_000_000.0).ToString("0.0", culture);
 }
