@@ -2,6 +2,9 @@
 # Run before generating the Xcode project: the Verovio framework is built locally.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+if [ ! -d "$HERE/../../core/swift/BrasscribeCore/BrasscribeFFI.xcframework" ] && [ -z "${CI:-}" ]; then
+  "$HERE/../../scripts/core-artifacts.sh" ensure apple || true
+fi
 if [ ! -d "$HERE/Frameworks/Verovio.xcframework" ] || [ ! -d "$HERE/Frameworks/VerovioResources" ]; then
   echo "error: Verovio.xcframework missing. Run apps/apple/scripts/build-verovio.sh first." >&2
   exit 1

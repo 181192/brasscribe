@@ -9,3 +9,9 @@ data/
 
 # GitHub Pages build output (site/build.sh)
 site/_site/
+
+# Worktrees link these from the main checkout (scripts/worktree-setup.sh); a link is not a directory.
+/data
+/models
+.brasscribe-env
+.testmondata
