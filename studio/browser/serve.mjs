@@ -26,6 +26,13 @@ createServer((req, res) => {
     res.writeHead(404, { "content-type": "text/plain" }).end("not found");
     return;
   }
-  res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" });
+  // A validator as a static file server sends one, so a kept SoundFont is revalidated (304).
+  const st = statSync(file);
+  const etag = `"${st.mtimeMs.toString(16)}-${st.size.toString(16)}"`;
+  if (req.headers["if-none-match"] === etag) {
+    res.writeHead(304, { etag }).end();
+    return;
+  }
+  res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream", etag, "last-modified": st.mtime.toUTCString() });
   createReadStream(file).pipe(res);
 }).listen(port, "127.0.0.1", () => console.log(`studio static on http://127.0.0.1:${port}/`));

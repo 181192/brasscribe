@@ -11,6 +11,7 @@ import { runTitle } from "./runs";
 import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../lib/beats";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
+import { stageTime } from "../lib/stagetime";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
@@ -135,7 +136,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       h("h3", {}, stageLabel(name), " ", h("span", { class: "mono muted" }, name)),
       h("dl", { class: "kv" },
         h("dt", {}, t("run.kv.status")), h("dd", {}, pill(status)),
-        h("dt", {}, t("run.kv.time")), h("dd", {}, fmt.seconds(s?.seconds ?? files?.seconds)),
+        h("dt", {}, t("run.kv.time")), h("dd", {}, stageTime(s?.seconds != null ? s : files)),
         h("dt", {}, t("run.kv.device")), h("dd", {}, s?.device ?? files?.device ?? "–")),
       status === "failed" && view?.error ? errorSummary(view.error) : null,
       files ? more(t("run.filesKey"), [
@@ -584,7 +585,7 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
       kv(t("manifest.kv.devices"), m.devices?.join(", ")))),
     more(t("manifest.stages"), table(t("manifest.stages"), [t("manifest.col.stage"), t("manifest.col.status"), t("manifest.col.time"), t("manifest.col.adapter"), t("manifest.col.device"), t("manifest.col.models"), t("manifest.col.key"), t("manifest.col.provenance")],
       (m.stages ?? []).map((s) => [
-        h("span", { class: "mono" }, s.stage), pill(s.status), fmt.seconds(s.seconds),
+        h("span", { class: "mono" }, s.stage), pill(s.status), stageTime(s),
         s.adapter ? `${s.adapter.name} ${s.adapter.version ?? ""}` : "–", s.adapter?.device ?? "–",
         s.adapter?.models?.length ? h("ul", { style: "margin:0;padding-left:1rem" }, s.adapter.models.map((x) => h("li", {}, `${x.name} `, h("span", { class: "mono" }, fmt.hash(x.sha256))))) : "–",
         h("span", { class: "mono" }, fmt.hash(s.key)),

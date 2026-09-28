@@ -36,6 +36,7 @@ class HashIndex:
     def __init__(self, index_file: Path | None = None):
         self.index_file = index_file
         self._lock = threading.Lock()
+        self._save_lock = threading.Lock()  # stages running side by side save the index too
         self._memo: dict[str, list] = {}
         if index_file and index_file.exists():
             try:
@@ -65,12 +66,13 @@ class HashIndex:
     def save(self) -> None:
         if not self.index_file:
             return
-        with self._lock:
-            data = json.dumps(self._memo)
         self.index_file.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.index_file.with_suffix(".tmp")
-        tmp.write_text(data)
-        tmp.replace(self.index_file)
+        with self._save_lock:
+            with self._lock:
+                data = json.dumps(self._memo)
+            tmp = self.index_file.with_suffix(".tmp")
+            tmp.write_text(data)
+            tmp.replace(self.index_file)
 
 
 def digest_of_files(files: dict[str, str]) -> str:

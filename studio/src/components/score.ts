@@ -6,6 +6,8 @@ import { lang, t } from "../i18n";
 import { patchAlphaTab } from "../lib/alphatabfix";
 import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
+import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
+import { soundFontBytes } from "../lib/soundfontstore";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
@@ -48,6 +50,14 @@ function loadBandSounds(): Promise<PartSoundResolver | null> {
     });
   return bandSounds;
 }
+
+/**
+ * The page's one synthesizer with the SoundFont loaded once (lib/sharedsynth.ts). Opening another
+ * score reuses it; in Compare the score that plays has it.
+ */
+const synth = new SharedSynth((url) => soundFontBytes(url));
+/** The score that has the synth, if any. */
+let holder: ScoreElement | null = null;
 
 /**
  * A design token as a concrete colour. Tokens can be system colours (forced
@@ -118,6 +128,14 @@ export class ScoreElement extends HTMLElement {
   private themeWatch: (() => void) | null = null;
   private barPlay: number | null = null; // bar index while "play bar" runs
   private barPending: number | null = null; // set by playBar until the player reports playing
+  /** The page's synthesizer, shared by every score (for tests and the performance probe). */
+  static readonly synth = synth;
+  /** Whether this score has the page's synthesizer now. */
+  ownsPlayer = false;
+  private soundFontUrl = "";
+  private loadSeq = 0;
+  /** What Play or Play bar asked for while the synth was moving here. */
+  private pendingPlay: (() => void) | null = null;
 
   connectedCallback(): void {
     if (this.view) return;
@@ -191,8 +209,8 @@ export class ScoreElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    this.api?.destroy();
-    this.api = null;
+    this.loadSeq++;
+    this.dropApi();
     this.themeWatch?.();
     this.themeWatch = null;
   }
@@ -241,7 +259,8 @@ export class ScoreElement extends HTMLElement {
     }
     this.nav = this.talking ? new Navigator(this.talking, { verbosity: this.verbSel.value as Verbosity, pitch_mode: this.pitchSel.value as PitchMode }, lang()) : null;
     this.view.setAttribute("aria-label", t("score.label", { title: this.xml?.title || label }));
-    this.api?.destroy();
+    const seq = ++this.loadSeq;
+    this.dropApi();
     clear(this.view);
     this.ready = false;
     this.rendered = false;
@@ -252,13 +271,15 @@ export class ScoreElement extends HTMLElement {
     this.view.append(this.bands, h("div", { class: "score-surface" }, surface), this.marks);
     this.watchTheme();
     const band = await loadBandSounds();
+    // Left the page, or a newer load started, while the band sounds were loading.
+    if (seq !== this.loadSeq || !this.isConnected) return;
     this.band = band;
     const settings: AT.json.SettingsJson = {
       core: { fontDirectory: `${ASSETS}font/`, logLevel: "warning", includeNoteBounds: true, enableLazyLoading: false },
       display: { layoutMode: "page", scale: this.scale, staveProfile: "score", resources: this.resources() },
       player: {
-        playerMode: "enabledSynthesizer",
-        soundFont: band ? `${BAND}brasscribe-band.sf2` : `${ASSETS}soundfont/sonivox.sf2`,
+        // No synth of its own: the page's shared one is attached below (claimPlayer).
+        playerMode: "disabled",
         scrollElement: this.view,
         enableCursor: true,
         enableAnimatedBeatCursor: !prefersReducedMotion(),
@@ -285,9 +306,16 @@ export class ScoreElement extends HTMLElement {
       this.onScore(score);
     });
     api.midiLoad.on((midi: AT.midi.MidiFile) => addReleaseTail(midi));
-    api.midiLoaded.on(() => this.applyTrackGains());
-    api.playerReady.on(() => {
+    api.midiLoaded.on((e: { endTime: number }) => {
+      // The length from this score's MIDI: a position event the shared synth sent for the score
+      // that had it before can arrive after the move.
+      this.position = { tick: 0, time: 0, endTime: e.endTime };
       this.applyTrackGains();
+    });
+    api.playerReady.on(() => {
+      if (!this.ownsPlayer) return;
+      this.applyTrackGains();
+      this.restorePlayerState();
       this.ready = true;
       this.dispatchEvent(new CustomEvent("playerready"));
       this.updateStatus();
@@ -318,6 +346,10 @@ export class ScoreElement extends HTMLElement {
       if (!e.isSeek && this.playing) this.nav?.syncToTick(e.currentTick);
       this.updateStatus();
     });
+    this.soundFontUrl = band ? `${BAND}brasscribe-band.sf2` : `${ASSETS}soundfont/sonivox.sf2`;
+    // The first score on the page takes the synth; in Compare the other one takes it on Play.
+    if (!holder || !holder.isConnected || holder === this) this.claimPlayer();
+    else this.updateStatus();
     const indexes = this.tracks ?? (this.xml ? this.xml.parts.map((_, i) => i) : undefined);
     api.load(bytes, indexes);
     await rendered;
@@ -547,10 +579,75 @@ export class ScoreElement extends HTMLElement {
     (cur ?? this.talkPanel.querySelector("summary"))?.focus();
   }
 
+  /** Take the page's synthesizer (from the other score in Compare). Ready again once the MIDI is loaded. */
+  claimPlayer(): void {
+    if (!this.api || this.ownsPlayer) return;
+    holder = this;
+    this.ownsPlayer = true;
+    this.ready = false;
+    synth.attach(this.api as unknown as ApiLike, this.soundFontUrl, () => this.playerLost());
+    this.updateStatus();
+  }
+
+  /** Another score took the synthesizer. */
+  private playerLost(): void {
+    this.ownsPlayer = false;
+    this.ready = false;
+    this.playing = false;
+    this.barPlay = null;
+    this.barPending = null;
+    this.pendingPlay = null;
+    if (holder === this) holder = null;
+    this.playBtn.replaceChildren(...labelled("play", t("score.play")));
+    this.updateStatus();
+  }
+
+  /** Give the synthesizer back and destroy the alphaTab api (renderer workers included). */
+  private dropApi(): void {
+    const api = this.api;
+    if (!api) return;
+    synth.release(api as unknown as ApiLike);
+    if (holder === this) holder = null;
+    this.ownsPlayer = false;
+    this.ready = false;
+    this.playing = false;
+    this.pendingPlay = null;
+    api.destroy();
+    this.api = null;
+  }
+
+  /** After the synth came (back) here: mute, solo and loop as the controls show them, then a Play that waited. */
+  private restorePlayerState(): void {
+    const api = this.api;
+    const tracks = api?.score?.tracks;
+    if (!api || !tracks) return;
+    this.mixer.querySelectorAll<HTMLButtonElement>("button[aria-pressed=true]").forEach((b) => {
+      const tr = tracks[Number(b.closest<HTMLElement>("[data-track]")?.dataset.track)];
+      if (!tr) return;
+      if (b.dataset.kind === "mute") api.changeTrackMute([tr], true);
+      else api.changeTrackSolo([tr], true);
+    });
+    if (this.loop) api.playbackRange = { startTick: this.bars[this.loop.from].start, endTick: this.bars[this.loop.to].end } as AT.synth.PlaybackRange;
+    const go = this.pendingPlay;
+    this.pendingPlay = null;
+    if (go) setTimeout(go, 0);
+  }
+
+  /** Not ready to play: move the synth here if the other score has it, and play once it is. */
+  private notReady(go: () => void): void {
+    if (!this.ownsPlayer) {
+      this.claimPlayer();
+      this.pendingPlay = go;
+      announce(t("score.movingPlayer"));
+      return;
+    }
+    announce(t("score.loadingPlayer"));
+  }
+
   togglePlay(): void {
     if (!this.api) return;
     if (!this.ready) {
-      announce(t("score.loadingPlayer"));
+      this.notReady(() => this.togglePlay());
       return;
     }
     this.api.playPause();
@@ -607,7 +704,7 @@ export class ScoreElement extends HTMLElement {
   playBar(index = this.current): void {
     if (!this.api || !this.bars.length) return;
     if (!this.ready) {
-      announce(t("score.loadingPlayer"));
+      this.notReady(() => this.playBar(index));
       return;
     }
     const b = this.bars[Math.max(0, Math.min(this.bars.length - 1, index))];
@@ -833,7 +930,8 @@ export class ScoreElement extends HTMLElement {
     const parts = [
       t("score.status.bar", { n: this.current + 1, total: this.bars.length || "–" }),
       `${mmss(this.position.time)} / ${mmss(this.position.endTime)}`,
-      this.playing ? t("score.status.playing") : this.ready ? t("score.status.stopped") : t("score.status.loadingPlayer"),
+      this.playing ? t("score.status.playing") : this.ready ? t("score.status.stopped")
+        : this.api && !this.ownsPlayer ? t("score.status.playerElsewhere") : t("score.status.loadingPlayer"),
       this.api && this.band === null ? t("score.status.basicSounds") : "",
       t("score.status.speed", { v: this.speedOut?.textContent ?? "100%" }),
       this.loop ? t("score.loopRange", { a: this.loop.from + 1, b: this.loop.to + 1 }) : "",

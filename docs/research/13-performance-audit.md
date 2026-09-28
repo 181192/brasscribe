@@ -3,7 +3,7 @@
 **Why.** An Android video upload read the whole file into memory, copied it again, and crashed at the 512 MB heap (fixed in 0c8b98b by streaming the upload and extracting the audio on the device). This audit looks for the same class of problem everywhere else: the engine (`engine/`, `music/`, `ml/adapters`), the Rust core, Studio, Play on Apple, Android and Windows, and Bandroom on macOS and Windows. Date: 2026-09-28, on `main` at a485bef.
 
 **Short answer.**
-- **Worst measured problem: Studio's band sound.** alphaTab holds about **7× the SoundFont** in the browser. Opening one score costs +0.54 GB with the 77 MB SoundFont that every shipped build serves, and +1.3 GB with the 195 MB one. Compare opens two players (3.9 GB for the browser with the 195 MB file). Opening another score builds a new synth. With files over Chrome's cache-entry limit, it also downloads the SoundFont again.
+- **Worst measured problem (fixed): Studio's band sound.** alphaTab held about **7× the SoundFont** per player in the browser. Opening one score cost +0.52 GB with the 77 MB SoundFont that every shipped build serves, and +1.3 GB with the 195 MB one. Compare opened two players (3.9 GB for the browser with the 195 MB file), and files over Chrome's cache-entry limit were downloaded again for every score. Fixed (2a9c9e4, 8103324): one synth per page, the SoundFont loaded once and kept in IndexedDB. One score now costs +0.31 GB (77 MB) and +0.80 GB (195 MB) over General MIDI; Compare with the 195 MB file 3,871 → 2,012 MB; a revisit is one 304.
 - **Worst engine problem (fixed): event streams starved the API.** Forty open job event streams took every thread of the engine's request pool. `GET /v1/health` then waited 13 s, or timed out. Fixed: 120 streams, 6 ms.
 - **Worst Android problem (fixed): the event stream broke every 10 s.** OkHttp's 10 s read timeout is shorter than the engine's 15 s keepalive, so every quiet stretch cost a reconnect (measured). By the reconnect logic, six in a row end the job with "event stream lost", which a stage silent for about a minute would do (read from the code, not seen running).
 - **Worst core problem (partly fixed): the band arrangement with stems peaked at 1.10 GB** for Mikkel's four 43.5 MB stems through the C ABI Windows Play uses. Two copies are removed: the CLI goes from 750 to 575 MB, and the C ABI from 1.10 to 0.92 GB, with byte-identical output. What remains is decoding every stem to float32 when only an envelope is needed.
@@ -27,6 +27,11 @@
 | 4152f83 perf(ffi): move the stems into the band arrangement instead of cloning them | Rust FFI (Windows Play) | `bc_arrange_layers_band` cloned the six MIDI files and four WAV stems inside an `FnOnce` closure. They are moved now. | C ABI only process: 1.10 → 0.92 GB (**M**) | `brasscribe-ffi/tests/layers_band_c_api.rs`: C ABI = UniFFI output on Mikkel; `--ignored c_abi_alone` for the measurement |
 | a2ff100 perf(windows): read the band SoundFont in the background | Windows Play | `BandSoundFont.Load` did `File.ReadAllBytes` of the 195 MB SoundFont on the UI thread in `OnLaunched`, before `_window.Activate()` (`App.xaml.cs:79,130,245`). Load keeps the path; `ApplyTo` reads inside its `Task.Run`. The object no longer holds the bytes. | 195 MB read moved off the first frame (**C**; not timed on Windows) | `Load_leaves_reading_the_soundfont_to_ApplyTo` (file locked during Load) |
 | 5d3805a feat(engine): Cache-Control on Studio files and band sounds | Engine / Studio | No `Cache-Control`, so browsers guessed a lifetime from Last-Modified. Studio's static files: `no-cache` (revalidate, 304 in ~1 ms). This includes the SoundFont Studio's build bundles in its own `assets/band/`. The `BRASSCRIBE_BAND_SOUNDS_DIR` mount (Bandroom): `public, max-age=86400`. | No change for the SoundFont (see M2). The gain is that an unhashed `studio.js` can no longer run stale after an update. | `test_static_files_say_how_long_to_cache` |
+| 2a9c9e4 perf(studio): one synthesizer and SoundFont per page | Studio | Every opened score built its own alphaTab synth worker and loaded the SoundFont into it; Compare ran two. The page now keeps one worker synth (`lib/sharedsynth.ts`) with the SoundFont loaded once, handed to the score that plays (Compare: the one whose Play is pressed). The bytes are fetched once per page and transferred to the worker, not copied. Leaving a score gives the synth back and destroys its api; a load that finishes after the element left builds nothing. | Mikkel, median of 3, browser RSS: 77 MB file, one score 1,656 → 1,445 MB, Compare 2,497 → 1,858 MB; 195 MB file 2,444 → 1,932 and 3,871 → 2,012 MB. Synths per session 5 → 1. Moving the player in Compare: ready in 15 ms (**M**, M1) | `tests/sharedsynth.test.ts`; `browser/soundfont.spec.ts` (one synth and one download across re-open, navigation and two scores; the moved synth plays the other score's MIDI) |
+| 8103324 perf(studio): keep the band SoundFont across visits | Studio | Chromium never disk-caches the 195 MB file. Studio keeps the SoundFont in IndexedDB (works over LAN http, unlike the Cache API) and revalidates it with the ETag; offline, the kept copy plays. `build.mjs` copies the SoundFont with its own mtime, so ETag and Last-Modified survive rebuilds. | 195 MB file: downloads per session 5 × 195 MB → 1; after a reload, one 304 with no body (**M**) | `tests/soundfontstore.test.ts`; `browser/soundfont.spec.ts` (reload → 304) |
+| 81d05e9 perf(engine): list jobs from cached manifest summaries | Engine | `GET /v1/jobs` parsed every manifest, read every `events.jsonl` and walked every `outputs/` per call. Finished runs are kept per run, keyed by the manifest's mtime and size, with their output list; the list never reads events. | 49 runs, warm: 52 → 3.3 ms; first call after start 91 → 66 ms (**M**) | `engine/tests/test_job_list.py`: a second list parses nothing, a changed manifest is parsed again |
+| 091217a feat(engine): record GPU queue wait apart from stage run time | Engine / Studio | Stage seconds included the wait for the GPU mutex. Manifests, stage events and job stage states now carry `queue_wait_s` and `run_s` beside `seconds` (still the wall clock). "waiting for GPU mutex" is logged only when the mutex is held; it is polled every 1 s instead of 5 s. Studio shows "ran … · waited …" in the stage graph, stage details and manifest table. | A stage behind a held mutex: 0.8 s wait recorded as `queue_wait_s`, not run time (**M**, test) | `engine/tests/test_gpu_wait.py`, `studio/tests/stagetime.test.ts` |
+| 8745559 feat(engine): optional bounded stage parallelism | Engine | `BRASSCRIBE_STAGE_PARALLELISM` (default 1: unchanged) runs up to that many stages whose inputs are done; at most one GPU stage per job at a time, and the GPU mutex still orders jobs. Events are serialised, the manifest keeps pipeline order, and the file-hash index now saves under a lock (two stages saving at once raced on its temporary file). | 30 s solo take, all stages forced: 22.3 → 19.2 s (−14 %); brass band on Mikkel: 95.6 → 92.2 s (−4 %) (**M**) | `engine/tests/test_stage_parallelism.py`: CPU and GPU stages overlap with 2, GPU stages never do, nothing overlaps with 1 |
 | ad1bdc2 fix(studio): piano roll and beat summary without argument spreading | Studio | `Math.max(...list)` over every note or beat; V8 throws RangeError at about 110,000 arguments. | Precaution. Mikkel has 20,758 MIDI events. (**M**: limit measured) | `studio/tests/extent.test.ts` |
 
 `main` fixed the same Studio stack overflow on open (c3dc2ad, alphaTab's self-referencing `loadedMidiInfo`). This audit found it independently: the Studio e2e "the Mikkel run" failed before that commit.
@@ -39,7 +44,7 @@ Crash or out of memory first, then jank, slow, waste. Size: S (hours), M (a day 
 
 | # | Platform | Where | Evidence | Proposed fix | Size |
 |---|---|---|---|---|---|
-| 1 | Studio | `studio/src/components/score.ts:244` `this.api?.destroy()` then `:271` `new alphaTab.AlphaTabApi(...)` with `soundFont` URL `:261`; Compare `views/compare.ts:194-195` two `bs-score`, `:228` both loaded | **M**: browser RSS after one score is 1,125 MB with General MIDI, 1,661 MB with the 77 MB SoundFont and 2,448 MB with the 195 MB one. Compare after that: 1,614, 2,497 and 3,891 MB. alphaTab costs about 7× the file per player. | One SoundFont per page: fetch the bytes once and give each player `api.loadSoundFont(bytes)`, or keep one player and swap scores. Start the synth on first Play (`playerMode` off until then). Compare: one player. | M |
+| 1 | Studio | `studio/src/components/score.ts:244` `this.api?.destroy()` then `:271` `new alphaTab.AlphaTabApi(...)` with `soundFont` URL `:261`; Compare `views/compare.ts:194-195` two `bs-score`, `:228` both loaded | **M**: browser RSS after one score was 1,125 MB with General MIDI, 1,661 MB with the 77 MB SoundFont and 2,448 MB with the 195 MB one. Compare after that: 1,614, 2,497 and 3,891 MB. alphaTab cost about 7× the file per player. **Fixed** (2a9c9e4, 8103324): 1,445 and 1,932 MB after one score, 1,858 and 2,012 MB in Compare. What is left is alphaTab's own copy: the sample chunk plus the decoded samples, 228 MB for the 77 MB file (M1). | Done: one synth per page, handed between scores. Not done: start the synth on first Play. | — |
 | 2 | Rust core / Windows Play | `core/brasscribe-ffi/src/c_api.rs:308` `from_raw_parts(...).to_vec()` of each stem; `energy.rs:52-59` decodes each stem to f32; `LayerInputs.cs:50` `File.ReadAllBytes` of each stem | **M**: C ABI call on Mikkel 0.92 GB peak after the two fixes above, for 174 MB of WAV. The stems are only used for envelopes and the separation check. | Borrow the caller's buffers instead of `to_vec` (S–M). Decode straight to a mono envelope in blocks, never a full f32 stem (M). Windows: pass file paths, or memory-map (M–L). | M |
 | 3 | Android | `AndroidManifest.xml:24` `android:largeHeap="true"`; `ScoreController.kt:310` `sf.readBytes()` | **M**: emulator heap growth limit is 192 MB normally and 576 MB with `largeHeap`. **C/M**: 0c8b98b measured about 220 MB of heap for the SoundFont (the steady state is about 3× the file). The app does not work without `largeHeap`, and a device with a smaller large-heap limit has little room left. | Short term: keep `largeHeap` and budget the other buffers (#5). Long term: stream samples from disk (sfizz already does), or a smaller mobile SoundFont. | L |
 | 4 | Apple Play | `NotationKit/ScoreRenderer.swift:252` `sounding(atBeat:)` reads `timemap` without the lock; `:140-143` `apply()` rewrites `timemap` and `measureIDs` under the lock from `Task.detached` (`PracticeModel.swift:158`); called at 20 Hz from `PracticeModel.swift:324` | **C**: an unsynchronised read and write of a Swift Array during playback can crash. | Build the arrays in locals and publish them under the lock; read under the lock or from a snapshot. | S |
@@ -70,10 +75,10 @@ Crash or out of memory first, then jank, slow, waste. Size: S (hours), M (a day 
 
 | # | Platform | Where | Evidence | Proposed fix | Size |
 |---|---|---|---|---|---|
-| 21 | Studio | Band SoundFont over the network | **M**: a 195 MB file is never taken from Chrome's disk cache, with or without `Cache-Control` (over the per-entry limit). It is downloaded again for every score opened, and twice for Compare. A 77 MB file is cached with or without the header. **C**: every shipped surface serves the 77 MB file (`studio/build.mjs:34`, `apps/bandroom/macos/scripts/stage-band-sounds.sh:11`, `Brasscribe.Bandroom.csproj:89-90`); only a dev engine with `BRASSCRIBE_BAND_SOUNDS_DIR=data/sounds/band` serves the 293 MB 24-bit file. | Keep serving the 77 MB file to Studio. Finding #1's fix (one fetch per page) also removes the re-downloads. For persistence across visits over LAN http, IndexedDB (the Cache API needs a secure context). | — (with #1) |
-| 22 | Engine | `dag.py:188` stages run one after another; each adapter is a new process (`adapters.py:197`) | **M**: fixed cost per adapter call, warm: MuScriptor 2.1 s, Basic Pitch 2.2 s, SwiftF0 0.3 s; cold (first call after idle) 8.6–10.8 s. Per job this is a few seconds against stems (72 s) and MuScriptor on a mix (31–91 s). | Run CPU stages (SwiftF0, Basic Pitch on CoreML) beside GPU stages; keep a warm worker per adapter only if many short jobs matter. | M–L |
-| 23 | Engine | `adapters.py:203` logs "waiting for GPU mutex" before every heavy stage, whether or not it waits; `:165` polls every 5 s; stage seconds include the wait | **M**: a solo run shows `beats` 375.9 s on a 7 s input (`20260926-005002-solo-8a82c3`), almost certainly queueing. **C** for the unconditional log line. | Log only when the lock is held; record wait and run time separately in the manifest. | S |
-| 24 | Engine | `jobs.py:112-117` `list()` parses every manifest and `events.jsonl` on disk per call | **M**: `GET /v1/jobs` 50 ms warm (262 ms cold) for 49 runs, linear in runs. | Keep a summary index; skip events for the list. | S–M |
+| 21 | Studio | Band SoundFont over the network | **M**: a 195 MB file is never taken from Chrome's disk cache, with or without `Cache-Control` (over the per-entry limit). It is downloaded again for every score opened, and twice for Compare. A 77 MB file is cached with or without the header. **C**: every shipped surface serves the 77 MB file (`studio/build.mjs:34`, `apps/bandroom/macos/scripts/stage-band-sounds.sh:11`, `Brasscribe.Bandroom.csproj:89-90`); only a dev engine with `BRASSCRIBE_BAND_SOUNDS_DIR=data/sounds/band` serves the 293 MB 24-bit file. | Keep serving the 77 MB file to Studio. **Fixed** (2a9c9e4: one fetch per page; 8103324: kept in IndexedDB, revalidated with the ETag, a revisit is a 304 with no body). | — |
+| 22 | Engine | `dag.py` stages ran one after another; each adapter is a new process (`adapters.py`) | **M**: fixed cost per adapter call, warm: MuScriptor 2.1 s, Basic Pitch 2.2 s, SwiftF0 0.3 s; cold (first call after idle) 8.6–10.8 s. Stage parallelism is done (8745559, off by default): a 30 s solo take 22.3 → 19.2 s, a brass-band run 95.6 → 92.2 s (M5). Warm adapter workers would save at most 30 % of a solo take run in order and about 20 % with parallelism on, and 6 % of a band run (M6), for 1–2 GB held per idle GPU worker: not built, design in M6. | Turn parallelism on by default after a week of use; warm workers only if short solo takes become the main load. | — (parallelism done) / M (workers) |
+| 23 | Engine | `adapters.py` logged "waiting for GPU mutex" before every heavy stage, whether or not it waited; polled every 5 s; stage seconds included the wait | **M**: a solo run shows `beats` 375.9 s on a 3 s input (`20260926-005002-solo-8a82c3`, from before the split), almost certainly queueing. Fixed (091217a): `queue_wait_s` and `run_s` per stage in manifests and events, shown in Studio as waited and ran; logged only when blocked; polled every 1 s. Five fresh runs here recorded 0.0 s waits. | Done. | S |
+| 24 | Engine | `jobs.py` `list()` parsed every manifest and `events.jsonl` on disk per call, and `api.py` walked every `outputs/` | **M**: `GET /v1/jobs` 52 ms warm for 49 runs, linear in runs; two thirds of it was the `outputs/` walk. Fixed (81d05e9): 3.3 ms warm, only a `stat` per run while nothing changes. | Done. | S |
 | 25 | Rust core | `arranger.rs:80` phrase end recomputed per note (O(n²)); `harmony.rs:21` every note per beat (O(beats × notes)) | **M**: the whole Mikkel arrangement takes 0.35–0.5 s, so not hot today. **C** for the loops. | Running maximum; sweep line. Keep output byte-identical (conformance). | S / M |
 | 26 | Engine | Upload | **M**: streamed and hashed in 1 MB chunks; engine RSS +19.5 MB while receiving 71 MB at 20 MB/s. **R**: written twice (Starlette spools, then `store_upload` copies). | Acceptable. Optionally stream the multipart body straight to the upload file. | S |
 | 26a | Apple Play | `TranscriptionKit/CompanionService.swift:272-288` builds the multipart body in a temp file with `FileHandle.write(_:)`, sends it with `upload(for:fromFile:)` (`:294`); progress stays at `fraction: 0` (`:308`) | **C**: streamed from a file (good), but a full extra copy on disk, no upload progress and no retry. **R**: `FileHandle.write(_:)` raises an Objective-C exception, not a Swift error, when the disk is full, which crashes the app. | `write(contentsOf:)` (throws); progress from the task delegate's `didSendBodyData`; one retry on network errors. | S |
@@ -123,7 +128,7 @@ Ranked by user impact for their size. Three are done on this branch.
 
 Next in line, all S: Android `Performance` once per score (#14), Bandroom macOS hash verification off the main actor (#18), Windows layer cache hit off the UI thread (#11), Android start-up library read once (#15). Also done, smaller: Windows SoundFont read off the first frame (a2ff100), `Cache-Control` (5d3805a).
 
-The biggest remaining item is not a quick win: **Studio's one-SoundFont-per-page (#1, M)**. It is the largest measured memory cost in the project.
+Studio's one-SoundFont-per-page (#1), the largest measured memory cost in the project, is done (2a9c9e4, 8103324).
 
 ## 4. Measurements
 
@@ -134,23 +139,42 @@ Scripts are in `qa/perf/` and `studio/perf/`. Machine: Apple M-series Mac, macOS
 ```sh
 pixi run studio --no-browser --port 8799        # or any engine serving Studio
 cd studio && STUDIO_URL=http://127.0.0.1:8799/ RUNS=<run-a>,<run-b> node perf/soundfont-probe.mjs
+cd studio && STUDIO_URL=http://127.0.0.1:8799/ RUN=<run-a> node perf/worker-heap.mjs   # what the synth worker keeps
 ```
 
-Each run starts from an empty profile, opens run A, run B and run A again (hash change, as the Runs view does), then Compare with both. "Browser RSS" sums the browser process and all its children. Runs: Mikkel (orchestra-with-soloist, 18 parts, 132 bars) and a brass-band run.
+Each run starts from an empty profile, opens run A, run B and run A again (hash change, as the Runs view does), then Compare with both, then moves the player to Compare's second score, then reloads the page and opens run A. "Browser RSS" sums the browser process and all its children. Runs: Mikkel (`20260927-224906-orchestra-with-soloist-b03895`, 18 parts, 132 bars) and a brass-band run (`20260926-190056-brass-band-9c0e22`).
 
-| SoundFont served at `/assets/band/` | Studio open | 1st score | 2nd score | 1st again | Compare | SoundFont requests |
-|---|---|---|---|---|---|---|
-| none (sonivox, 1.35 MB) | 415 MB | 1,125 MB | 1,160 MB | 1,463 MB | 1,614 MB | — |
-| mobile, 77 MB | 416 MB | 1,661 MB | 1,837 MB | 1,854 MB | 2,497 MB | network once, then disk cache |
-| 16-bit, 195 MB | 414 MB | 2,448 MB | 2,563 MB | 2,248 MB | 3,891 MB | **network every time** (5 × 195 MB) |
+Median of 3 runs, MB. Before: the audit's run plus two on a485bef + 81de8c3; after: on 8103324.
 
-Time to a ready player on loopback: 0.8–1.9 s. Over Wi-Fi (an estimate at 30 MB/s), a 195 MB download adds about 6.5 s per score.
+| SoundFont served at `/assets/band/` | | Studio open | 1st score | 2nd score | 1st again | Compare | Player to B | Reload, 1st | SoundFont requests |
+|---|---|---|---|---|---|---|---|---|---|
+| none (sonivox, 1.35 MB) | before | 415 | 1,131 | 1,165 | 1,463 | 1,614 | — | — | — |
+| | after | 415 | 1,133 | 1,167 | 1,373 | 1,502 | 1,504 | 1,483 | 1, then 304 |
+| mobile, 77 MB | before | 416 | 1,656 | 1,823 | 1,854 | 2,497 | — | — | network once, then disk cache |
+| | after | 414 | **1,445** | 1,513 | 1,745 | **1,858** | 1,859 | 1,925 | 1 per page; reload: 304, 0 bytes |
+| 16-bit, 195 MB | before | 414 | 2,444 | 2,560 | 2,248 | 3,871 | — | — | **network every time** (5 × 195 MB) |
+| | after | 414 | **1,932** | 1,995 | 1,902 | **2,012** | 2,016 | 2,201 | 1 per page; reload: 304, 0 bytes |
 
-To vary the file, point `BRASSCRIBE_BAND_SOUNDS_DIR` at a folder with `mapping.json` and the SoundFont as `brasscribe-band.sf2`. A symlinked file is refused by `StaticFiles`; use a copy or `cp -c`.
+Synths created per session: 5 before (one per score, two in Compare), 1 after. Time to a ready player: 0.9–1.3 s for the first score, 0.2–0.6 s for later ones (MIDI only), 15 ms to move the player in Compare. Over Wi-Fi (an estimate at 30 MB/s), the 195 MB download used to add about 6.5 s per score; now once per page, and not again on a revisit.
+
+**What alphaTab keeps.** `perf/worker-heap.mjs` forces a GC in every worker and reads its ArrayBuffer backing stores: the synth worker holds **228 MB** for the 77 MB file and **576 MB** for the 195 MB one (the sample chunk plus the decoded float32 samples; Mikkel uses almost every preset). That is the floor while alphaTab decodes whole samples.
+
+**Target: RSS within about 1.3× of idle plus one SoundFont's decoded size**, with "idle" the General MIDI run at the same step (rendering Mikkel alone costs about 700 MB) and "decoded" the worker's 228 / 576 MB:
+
+| | One score | Compare |
+|---|---|---|
+| 77 MB, before | 1,656 / (1,131 + 228) = 1.22 | 2,497 / (1,614 + 228) = 1.36 |
+| 77 MB, after | 1,445 / (1,133 + 228) = **1.06** | 1,858 / (1,502 + 228) = **1.07** |
+| 195 MB, before | 2,444 / (1,131 + 576) = 1.43 | 3,871 / (1,614 + 576) = 1.77 |
+| 195 MB, after | 1,932 / (1,133 + 576) = **1.13** | 2,012 / (1,502 + 576) = **0.97** |
+
+All four pass. Counting only what the SoundFont adds over General MIDI, the stricter reading: one score 312 MB for the 77 MB file (1.37× decoded, was 2.3×) and 799 MB for the 195 MB file (1.39×, was 2.3×); Compare 356 MB (1.56×, was 3.9×) and 510 MB (0.89×, was 3.9×). The rest above "decoded" is the transferred download not yet returned to the OS and run-to-run spread (±150 MB on Compare).
+
+To vary the file, point `BRASSCRIBE_BAND_SOUNDS_DIR` at a folder with `mapping.json` and the SoundFont as `brasscribe-band.sf2`. A symlinked file is refused by `StaticFiles`; use a copy or `cp -c`. For "none", move `static/assets/band` aside.
 
 ### M2. Cache-Control A/B
 
-Same probe, engine with and without the header. The 195 MB file was downloaded on every open either way. The 77 MB file came from the disk cache on the second open either way (heuristic freshness from Last-Modified). Conditional requests work without the header: `curl -H 'If-None-Match: <etag>'` → 304, 0 bytes, 1 ms. The header is kept for Studio's own files (see section 1).
+Same probe, engine with and without the header. The 195 MB file was downloaded on every open either way. The 77 MB file came from the disk cache on the second open either way (heuristic freshness from Last-Modified). Conditional requests work without the header: `curl -H 'If-None-Match: <etag>'` → 304, 0 bytes, 1 ms. The header is kept for Studio's own files (see section 1). Since 8103324 Studio keeps the SoundFont itself (IndexedDB) and sends `If-None-Match` with `cache: no-store`; the build keeps the file's mtime, so the ETag no longer changes with every `build.mjs` run.
 
 ### M3. Event streams against the request pool
 
@@ -193,6 +217,22 @@ pixi run python qa/perf/run_stages.py data/runs
 
 A re-run with all model stages cached takes 13–45 s, all of it arrange and export. Full pop-rock runs: 168–174 s.
 
+`run_stages.py` also prints the median and largest `queue_wait_s` for manifests that record it (from 091217a on), so queueing is no longer mistaken for a slow stage.
+
+**Stage parallelism (8745559).** Two typical jobs in a fresh data directory (models from the main checkout), every stage forced with `--cold all`, alternating the setting:
+
+```sh
+BRASSCRIBE_STAGE_PARALLELISM=1 pixi run brasscribe run --profile solo --cold all take30.wav   # then =3
+BRASSCRIBE_STAGE_PARALLELISM=1 pixi run brasscribe run --profile brass-band --cold all data/mikkel/mikkel.wav
+```
+
+| Job | Parallelism 1 | Parallelism 3 |
+|---|---|---|
+| Solo take, 30 s of Mikkel (beats, SwiftF0, Basic Pitch, MuScriptor, contour, arrange, export) | 23.2, 21.4 s | 19.8, 18.7 s |
+| Brass band, all of Mikkel (247 s; beats, MuScriptor, Basic Pitch, arrange, export) | 95.6 s | 92.2 s |
+
+The first run of each profile, with a cold file cache and nothing cached, took 44.2 s (solo) and 107.6 s (band). The gain is small because the two GPU stages still run one after the other and arrange and export wait for all of them; in the band job MuScriptor alone is 75 s. No GPU waits were recorded in these runs. The setting stays off by default: parallel stages add their peak memory together (MuScriptor and Basic Pitch on a long mix).
+
 ### M6. Adapter start-up cost
 
 ```sh
@@ -204,6 +244,14 @@ PYTHON="pixi run python" qa/perf/adapter_overhead.sh data/mikkel/mikkel.wav swif
 | swift-f0 | 1.0 s | 0.3 s | 0.3 s |
 | basic-pitch (CoreML) | 10.8 s | 2.2 s | 1.8 s |
 | muscriptor (MPS) | 8.6 s | 2.1 s | 15.1 s |
+
+**Warm adapter workers: the ceiling, and why they are not built.** In the solo job above, the five adapter calls took beats 1.8 s, SwiftF0 0.3 s, Basic Pitch 2.5 s, MuScriptor 9.1 s and contour 0.3 s. Counting all of beats and the warm fixed costs of the others as start-up (0.3 + 2.2 + 2.1 + 0.3 s) gives at most 6.7 s of 22.3 s, 30 %, with stages in order; with parallelism on, SwiftF0, Basic Pitch and the contour already run beside the GPU stages, so at most beats and MuScriptor's 3.9 s of 19.2 s, 20 %. The band job has three calls: at most 6 s of 95 s, 6 %. The first job after the machine has been idle pays 9–11 s per adapter, which a worker would save only if it had stayed alive through the idle time. Below the 30 % bar on a typical job, so this is the design, not code:
+
+- **Protocol.** `run_adapter.py --serve <adapter>` in the adapter's own environment (uv project or pixi environment, as today) loads the model once, then reads one JSON request per line on stdin (`{"id", "src", "dst", "params"}`) and answers one line on stdout (`{"id", "ok", "error", "seconds"}`); logs go to stderr. One request at a time per worker. Each adapter's entry point splits into `load()` and `run(src, dst, params)`.
+- **Per-request settings.** Today some settings are environment variables of the call (`BEAT_THIS_MODEL=small0` for the solo profile). They become request parameters; a setting that changes the loaded model keys the worker, so (adapter, model) has its own worker.
+- **Lifecycle.** Started on the first call, stopped after an idle timeout (`BRASSCRIBE_WARM_ADAPTERS=<seconds>`, 0 = off, the default), killed with the engine (own process group). A worker that exits or times out during a request is replaced, and the request is retried once as a one-shot process, as now. The GPU mutex is still taken per request, not per worker.
+- **Memory.** An idle worker keeps its model resident: about 1–2 GB for MuScriptor medium on MPS and a few hundred MB for Beat This and Basic Pitch (**R**, not measured). The MPS allocation stays with the process while it is idle, which competes with other GPU users (Bandroom, a second engine), so heavy workers need a short timeout.
+- **Invalidation.** A worker is keyed by the adapter fingerprint the cache already uses (`adapters.py` `fingerprint`: scripts, `run_adapter.py`, environment) plus the model file hashes; when any changes, the old worker is stopped and the next call starts a new one.
 
 ### M7. Rust core per conformance case, and the band arrangement's memory
 
@@ -221,7 +269,7 @@ cd core && cargo test -p brasscribe-ffi --release --test layers_band_c_api -- --
 ### M8. Engine requests
 
 - Upload: `curl --limit-rate 20M -F file=@data/mikkel/mikkel.wav .../v1/audio`, sampling `ps -o rss=` every 0.1 s: 51.6 → 71.0 MB while receiving 71 MB.
-- `GET /v1/jobs` with 49 runs on disk: 262 ms cold, 50 ms warm.
+- `GET /v1/jobs` with 49 runs on disk: 262 ms cold, 50 ms warm (audit). Re-measured on the same 49 runs with `curl -w "%{time_total}"`, 12 calls against a fresh `brasscribe serve`: before 81d05e9 first call 91 ms, then median 52 ms; after, first call 66 ms, then median 3.3 ms. In process (TestClient, 15 calls, 3 starts each): warm median 50–52 → 2.2–2.6 ms.
 
 ### M9. V8 argument limit
 

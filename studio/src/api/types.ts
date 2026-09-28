@@ -65,6 +65,9 @@ export interface JobEvent {
   stage?: string;
   kind?: string;
   seconds?: number;
+  /** Of `seconds`: waiting for the GPU mutex, and running. */
+  queue_wait_s?: number;
+  run_s?: number;
   device?: string;
   fraction?: number;
   message?: string;
@@ -95,6 +98,9 @@ export interface ManifestStage {
   status: string;
   key?: string;
   seconds?: number;
+  /** Of `seconds`: waiting for the GPU mutex, and running (manifests from before these were kept have neither). */
+  queue_wait_s?: number;
+  run_s?: number;
   outputs?: Record<string, string>;
   adapter?: { name: string; version?: string; device?: string; heavy?: boolean; models?: { name: string; sha256: string }[] } | null;
   provenance?: Record<string, unknown>;

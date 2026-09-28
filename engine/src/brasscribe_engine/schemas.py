@@ -189,7 +189,9 @@ class StageState(BaseModel):
     name: str
     kind: str | None = None
     status: StageStatus
-    seconds: float | None = None
+    seconds: float | None = Field(None, description="wall clock, including any wait for the GPU mutex")
+    queue_wait_s: float | None = Field(None, description="of `seconds`, time spent waiting for the machine-wide GPU mutex")
+    run_s: float | None = Field(None, description="of `seconds`, time the stage itself took (seconds - queue_wait_s)")
     device: str | None = None
 
 
@@ -230,6 +232,8 @@ class JobEvent(BaseModel):
     stage: str | None = None
     kind: str | None = None
     seconds: float | None = None
+    queue_wait_s: float | None = Field(None, description="of `seconds`, time spent waiting for the machine-wide GPU mutex")
+    run_s: float | None = Field(None, description="of `seconds`, time the stage itself took (seconds - queue_wait_s)")
     device: str | None = None
     fraction: float | None = Field(None, description="share of the job's stages done (stage events)")
     message: str | None = None
@@ -365,6 +369,8 @@ class StageArtifacts(BaseModel):
     status: str
     key: str | None = None
     seconds: float | None = None
+    queue_wait_s: float | None = Field(None, description="of `seconds`, time spent waiting for the machine-wide GPU mutex")
+    run_s: float | None = Field(None, description="of `seconds`, time the stage itself took (seconds - queue_wait_s)")
     device: str | None = None
     files: list[FileRef]
 

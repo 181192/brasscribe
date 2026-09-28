@@ -36,7 +36,8 @@ const bandSf2 = ["brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "bra
   .find((f) => existsSync(f));
 if (bandSf2) {
   mkdirSync(join(assets, "band"), { recursive: true });
-  cpSync(bandSf2, join(assets, "band", "brasscribe-band.sf2"));
+  // The file's own time, so its ETag and Last-Modified stay the same across rebuilds and cached copies stay valid.
+  cpSync(bandSf2, join(assets, "band", "brasscribe-band.sf2"), { preserveTimestamps: true });
   cpSync(join(here, "..", "sounds", "mapping.json"), join(assets, "band", "mapping.json"));
   // every band SoundFont build keeps both layers of the cornet presets (apps/android/scripts/mobile_soundfont.py)
   writeFileSync(join(assets, "band", "band.json"), JSON.stringify({ singleVoice: false }) + "\n");
