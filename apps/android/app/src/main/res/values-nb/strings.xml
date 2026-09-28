@@ -26,7 +26,7 @@
     <string name="first_run_2_title">Sjekk de merkede tonene</string>
     <string name="first_run_2_text">Toner Brasscribe er usikker på, får et «?». Du bestemmer.</string>
     <string name="first_run_3_title">Øv sammen med bandet</string>
-    <string name="first_run_3_text">Skru av lyden på stemmen din, sett ned tempoet, gjenta de vanskelige taktene.</string>
+    <string name="first_run_3_text">Demp stemmen din, sett ned tempoet, gjenta de vanskelige taktene.</string>
     <string name="first_run_privacy">Opptakene blir på telefonen og på din egen datamaskin.</string>
     <string name="first_run_start">Kom i gang</string>
 
@@ -284,10 +284,10 @@
     <string name="loop_invalid">Skriv takter mellom 1 og %1$d, den første først.</string>
     <string name="count_in">Inntelling</string>
     <string name="metronome">Metronom</string>
-    <string name="mute_my_part">Lyd av min stemme</string>
-    <string name="mute">Lyd av</string>
+    <string name="mute_my_part">Demp stemmen min</string>
+    <string name="mute">Demp</string>
     <string name="only_this">Bare denne</string>
-    <string name="mute_part">Lyd av %1$s</string>
+    <string name="mute_part">Demp %1$s</string>
     <string name="solo_part">Bare %1$s</string>
     <string name="parts">Stemmer</string>
     <string name="zoom_in">Zoom inn</string>
@@ -475,7 +475,7 @@
     <string name="help_2_title">«?»-merkene</string>
     <string name="help_2_text">Et «?» over en tone betyr at Brasscribe var usikker. «?» i en boks betyr svært usikker. Lytt til takten, og behold eller endre tonen.</string>
     <string name="help_3_title">Øv</string>
-    <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og skru av lyden på stemmen din for å spille med bandet.</string>
+    <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og demp stemmen din for å spille med bandet.</string>
     <string name="help_4_title">Del eller skriv ut</string>
     <string name="help_4_text">Skriv ut din egen stemme, alle stemmene til bandet, eller dirigentpartituret.</string>
     <string name="help_5_title">Et helt band trenger datamaskinen</string>
@@ -559,7 +559,7 @@
     <string name="band_sounds_missing">Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</string>
     <!-- Hva spiller du? (docs/plan/my-instrument.md §3.8) -->
     <string name="seat_title">Hva spiller du?</string>
-    <string name="seat_body">Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger.</string>
+    <string name="seat_body">Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger.</string>
     <string name="seat_instrument">Instrument</string>
     <string name="seat_which_part">Hvilken stemme?</string>
     <string name="seat_reads">Du leser</string>
