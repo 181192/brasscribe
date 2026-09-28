@@ -43,6 +43,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.model.Lang
+import no.brasscribe.play.model.reading
 
 /** Tonic names by pitch class, flats first as brass bands read them; nb has B for B♭ and H for B. */
 private val TONIC_EN = listOf("C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B")
@@ -182,7 +183,7 @@ fun OutputScreen(vm: PlayViewModel) {
                 val part = if (onePart) seat?.name else yourPartIn(options.lineup)
                 val chromatic = part?.let { no.brasscribe.play.YourParts.chromatic(it, seats) }
                 when {
-                    seat != null && options.reads == "bass" -> Text(stringResource(R.string.key_as_it_sounds, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.bodyLarge)
+                    seat != null && seat.reading(options.reads) == "bass" -> Text(stringResource(R.string.key_as_it_sounds, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.bodyLarge)
                     chromatic != null && chromatic != 0 -> Text(stringResource(R.string.key_on_your_part, keyName(key.fifths, minor, options.keyShift - chromatic, lang)), style = MaterialTheme.typography.bodyLarge)
                     seat == null -> Text(stringResource(R.string.key_for_bflat, keyName(key.fifths, minor, options.keyShift + 2, lang)), style = MaterialTheme.typography.bodyLarge)
                 }

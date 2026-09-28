@@ -263,7 +263,8 @@ struct OutputView: View {
         func wrap(_ x: Int) -> Int { var v = x; while v > 6 { v -= 12 }; while v < -6 { v += 12 }; return v }
         if let part = yourPart(isSolo ? .fullBand : lineup) {
             let shift = Seats.partWrittenShift(part)
-            if reads == "bass" || shift == 0 { return String(localized: "\(KeyNames.name(fifths: f)), as it sounds") }
+            // with nothing chosen the seat's own first clef: the bass trombone reads bass clef, as it sounds
+            if Seats.reading(reads, seat: seat) == "bass" || shift == 0 { return String(localized: "\(KeyNames.name(fifths: f)), as it sounds") }
             return String(localized: "\(KeyNames.name(fifths: wrap(f + shift))) on your part")
         }
         return String(localized: "\(KeyNames.name(fifths: wrap(f + 2))) for B♭ · \(KeyNames.name(fifths: wrap(f + 3))) for E♭ instruments")

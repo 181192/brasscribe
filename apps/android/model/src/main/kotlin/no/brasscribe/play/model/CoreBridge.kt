@@ -52,6 +52,12 @@ data class Seat(
     val tune: Boolean,
 )
 
+/**
+ * The clef the player reads: [reads] when they chose one, else the seat's own first, as the core writes
+ * it (with_reading). The bass trombone reads bass clef at concert pitch with nothing stored.
+ */
+fun Seat.reading(reads: String?): String? = reads ?: this.reads.firstOrNull()
+
 /** The player's part in a lineup for their seat: [part] null when the lineup has none. */
 data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean)
 

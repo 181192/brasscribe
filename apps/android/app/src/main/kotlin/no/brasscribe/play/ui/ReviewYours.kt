@@ -31,6 +31,7 @@ import no.brasscribe.play.arrangementString
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.MusicXmlParts
 import no.brasscribe.play.model.PartSource
+import no.brasscribe.play.model.reading
 
 /**
  * Review's "Yours": the player's part, where it came from, and the recording layer it follows. [voice]
@@ -55,7 +56,7 @@ fun yoursInReview(vm: PlayViewModel, r: TranscriptionResult, composition: Compos
     // "Written for Euphonium in B♭, treble clef": a take written for the player's own seat.
     val seat = composition.arrangementString("seat")?.let { id -> vm.container.seats.firstOrNull { it.id == id } }
     val written = if (source == PartSource.YOUR_RECORDING && seat != null) {
-        if (composition.arrangementString("reads") == "bass") stringResource(R.string.written_for_bass, PartNames.display(seat.name))
+        if (seat.reading(composition.arrangementString("reads")) == "bass") stringResource(R.string.written_for_bass, PartNames.display(seat.name))
         else stringResource(R.string.written_for_treble, PartNames.display(seat.name), stringResource(keyOf(seat.chromatic)))
     } else null
     return ReviewYours(part, source, voice, source == PartSource.ARRANGED || source == PartSource.EMPTY, written)

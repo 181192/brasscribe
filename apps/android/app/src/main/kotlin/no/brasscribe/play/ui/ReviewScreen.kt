@@ -88,6 +88,7 @@ import kotlin.math.roundToInt
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.Lang
+import no.brasscribe.play.model.reading
 import no.brasscribe.play.model.PartEvent
 import no.brasscribe.play.model.PartView
 import no.brasscribe.play.model.TsContext
@@ -115,7 +116,7 @@ fun melodyPart(c: Composition, core: no.brasscribe.play.model.CoreBridge): Pair<
     if (seat == null || c.arrangementString("lead") != "seat") return no.brasscribe.play.PlayViewModel.SOLO_PART_NAME to Instrument.CORNET
     val soloTake = c.voices.count { it.notes.isNotEmpty() } <= 1
     val part = if (soloTake) seat.name else core.seatPart((Lineup.recorded(c) ?: Lineup.FULL.madeFor(c.fullBandMade)).core, seat.id)?.part ?: seat.name
-    val chromatic = if (c.arrangementString("reads") == "bass") 0 else no.brasscribe.play.YourParts.chromatic(part, core.seats()) ?: seat.chromatic
+    val chromatic = if (seat.reading(c.arrangementString("reads")) == "bass") 0 else no.brasscribe.play.YourParts.chromatic(part, core.seats()) ?: seat.chromatic
     val instrument = if (chromatic == 0) Instrument.CONCERT else Instrument.entries.firstOrNull { it.chromatic == chromatic } ?: Instrument.CORNET
     return part to instrument
 }

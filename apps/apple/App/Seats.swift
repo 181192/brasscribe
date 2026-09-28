@@ -236,6 +236,10 @@ enum Seats {
         }
     }
 
+    /// The clef the player reads: `reads` when they chose one, else the seat's own first, as the core
+    /// writes it. The bass trombone reads bass clef at concert pitch with nothing stored.
+    static func reading(_ reads: String?, seat: SeatInfo?) -> String? { reads ?? seat?.reads.first }
+
     /// The seat is percussion (no clef to read): a solo take can't be written for it, since the pitch
     /// trackers' notes from a drummer's take are no drum part.
     static func isPercussion(_ choice: SeatChoice) -> Bool { choice.id.flatMap { info($0) }?.reads.isEmpty == true }
