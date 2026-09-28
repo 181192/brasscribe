@@ -53,7 +53,7 @@ prop("FirstRunPoint2Title", "Text", "Check the marked notes", "Sjekk de merkede 
 prop("FirstRunPoint2Body", "Text", "Notes Brasscribe isn't sure about get a “?”. A boxed “?” means very unsure. You decide.",
      "Toner Brasscribe er usikker på, får et «?». Et «?» i en boks betyr svært usikker. Du bestemmer.")
 prop("FirstRunPoint3Title", "Text", "Practise with the band", "Øv med bandet")
-prop("FirstRunPoint3Body", "Text", "Mute your part, slow it down, repeat the hard bars.", "Slå av lyden på stemmen din, spill saktere, gjenta de vanskelige taktene.")
+prop("FirstRunPoint3Body", "Text", "Mute your part, slow it down, repeat the hard bars.", "Demp stemmen din, spill saktere, gjenta de vanskelige taktene.")
 prop("FirstRunPrivacy", "Text", "Recordings stay on this PC and your own computer.", "Opptakene blir på denne PC-en og din egen datamaskin.")
 text_button("GetStartedButton", "Get started", "Kom i gang", "Go to Home", "Gå til startsiden")
 
@@ -180,12 +180,12 @@ prop("LoopStartItem", "Text", "Repeat from here", "Gjenta herfra")
 prop("LoopEndItem", "Text", "Repeat to here", "Gjenta hit")
 name("TalkingList", "Read aloud", "Les opp")
 prop("MixerHeading", "Text", "PARTS", "STEMMER")
-name("Mixer", "Parts: mute or hear alone", "Stemmer: lyd av eller hør alene")
+name("Mixer", "Parts: mute or hear alone", "Stemmer: demp eller hør alene")
 prop("MixerYourPart", "Text", "your part", "stemmen din")
-prop("MixerMuteLabel", "Text", "Mute", "Lyd av")
+prop("MixerMuteLabel", "Text", "Mute", "Demp")
 prop("MixerSoloLabel", "Text", "Only this", "Bare denne")
 prop("MixerNote", "Text", "Your part is muted so you can play along. “Only this” plays one part alone.",
-     "Stemmen din er uten lyd, så du kan spille med. «Bare denne» spiller én stemme alene.")
+     "Stemmen din er dempet, så du kan spille med. «Bare denne» spiller én stemme alene.")
 prop("AdLibNotice", "Text", "Some bars have no steady beat (ad lib.). Their rhythms are approximate.",
      "Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.")
 name("VideoView", "Original video", "Originalvideo")
@@ -203,8 +203,8 @@ name("CountInToggle", "Count-in", "Inntelling"); tip("CountInToggle", "One bar o
 prop("CountInLabel", "Text", "Count-in", "Inntelling")
 name("MetronomeToggle", "Metronome", "Metronom"); tip("MetronomeToggle", "A click on every beat.", "Et klikk på hvert slag.")
 prop("MetronomeLabel", "Text", "Metronome", "Metronom")
-name("MuteMyPartToggle", "Mute my part", "Lyd av min stemme"); tip("MuteMyPartToggle", "Your part is silent so you can play it.", "Stemmen din er stille, så du kan spille den selv.")
-prop("MuteMyPartLabel", "Text", "Mute my part", "Lyd av min stemme")
+name("MuteMyPartToggle", "Mute my part", "Demp stemmen min"); tip("MuteMyPartToggle", "Your part is silent so you can play it.", "Stemmen din er stille, så du kan spille den selv.")
+prop("MuteMyPartLabel", "Text", "Mute my part", "Demp stemmen min")
 prop("RepeatBarsLabel", "Text", "Repeat bars", "Gjenta takt")
 name("LoopStartBox", "Repeat from bar", "Gjenta fra takt")
 prop("RepeatToLabel", "Text", "to", "til")
@@ -453,10 +453,10 @@ code = {
     "Player_LoopSet": ("Repeating bars {0} to {1}", "Gjentar takt {0} til {1}"),
     "Player_LoopStartAt": ("Repeat starts at bar {0}", "Gjentakelsen starter i takt {0}"),
     "Player_NotReady": ("The sound isn't ready yet: no instrument sounds are loaded.", "Lyden er ikke klar ennå: ingen instrumentlyder er lastet."),
-    "Player_PlayAlongOn": ("{0} muted so you can play along", "{0} er uten lyd, så du kan spille med"),
+    "Player_PlayAlongOn": ("{0} muted so you can play along", "{0} er dempet, så du kan spille med"),
     "Player_PlayAlongOff": ("Your part plays again", "Stemmen din spiller igjen"),
     "Player_Speed": ("Speed {0} percent", "Tempo {0} prosent"),
-    "Player_Muted": ("{0} muted", "{0} uten lyd"),
+    "Player_Muted": ("{0} muted", "{0} dempet"),
     "Player_Unmuted": ("{0} on", "{0} på"),
     "Player_Soloed": ("Only {0}", "Bare {0}"),
     "Player_Unsoloed": ("All parts again", "Alle stemmer igjen"),
@@ -466,7 +466,7 @@ code = {
     "Player_MetronomeOff": ("Metronome off", "Metronom av"),
     "Player_SoundsMissing": ("The band sounds are missing. Reinstall Brasscribe Play to hear the band.", "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."),
     "Player_SoundsMissing_Details": ("Expected at {0}", "Ventet i {0}"),
-    "Mixer_Mute": ("Mute {0}", "Lyd av {0}"),
+    "Mixer_Mute": ("Mute {0}", "Demp {0}"),
     "Mixer_Solo": ("Only this: {0}", "Bare denne: {0}"),
     "Export_Format_MusicXmlScore": ("MusicXML, conductor's score", "MusicXML, dirigentpartitur"),
     "Export_Format_MusicXmlPart": ("MusicXML, one part", "MusicXML, én stemme"),
@@ -544,7 +544,7 @@ code = {
     "Shortcut_WhereAmI": ("Where am I (everything)", "Hvor er jeg (alt)"),
     "Shortcut_Loop": ("Repeat from, repeat to, repeat on or off", "Gjenta fra, gjenta til, gjenta av eller på"),
     "Shortcut_Speed": ("Slower, faster, normal speed", "Saktere, raskere, normalt tempo"),
-    "Shortcut_MuteSolo": ("Mute the part, or only this part", "Lyd av stemmen, eller bare denne stemmen"),
+    "Shortcut_MuteSolo": ("Mute the part, or only this part", "Demp stemmen, eller bare denne stemmen"),
     "Shortcut_CountInMetronome": ("Count-in, metronome", "Inntelling, metronom"),
     "Shortcut_Zoom": ("Zoom out, zoom in, reset zoom", "Zoom ut, zoom inn, tilbakestill zoom"),
     "Shortcut_Leave": ("Leave the score", "Gå ut av partituret"),
