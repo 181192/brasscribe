@@ -542,6 +542,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     fun startTranscription() {
         val p = profile.value ?: return
         val s = source.value ?: return
+        // A drummer's solo take is no drum part: refused before anything is transcribed (the screen says so too).
+        if (p == Profile.SOLO && percussionSeat(container.seat, container.seats)) { say(R.string.percussion_solo_refused); return }
         navigate(Screen.TRANSCRIBE)
         job?.cancel()
         job = viewModelScope.launch {

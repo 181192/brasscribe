@@ -26,6 +26,14 @@ class MyInstrumentTest {
         Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14, tune = true),
     )
 
+    @org.junit.Test
+    fun aDrummersSoloTakeIsRefused() {
+        org.junit.Assert.assertTrue(percussionSeat(SeatChoice.Player("percussion"), seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.Player("euphonium"), seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.Conductor, seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.NotSet, seats))
+    }
+
     /** A few rows of the core's table (instruments.rs SEAT_PARTS). */
     private val table = mapOf(
         ("minimal" to "1st-baritone") to SeatPart("Euphonium", false, true),

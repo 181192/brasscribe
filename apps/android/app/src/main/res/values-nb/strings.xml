@@ -231,6 +231,9 @@
     <string name="lineup_solo_desc">Bare melodien, til én musiker.</string>
     <string name="lineup_quartet">Kvartett</string>
     <string name="lineup_quartet_desc">4 musikere, én på hver stemme</string>
+    <string name="profile_solo_percussion">Ikke for slagverk ennå</string>
+    <string name="percussion_solo_refused">Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer.</string>
+    <string name="change_what_i_play">Endre hva jeg spiller</string>
     <string name="lineup_full_not_yet">Kommer senere for opptak av hele bandet</string>
     <string name="lineup_quartet_needs_group">Trenger et opptak av hele gruppen</string>
     <string name="difficulty">Hvor vanskelig?</string>

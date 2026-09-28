@@ -129,7 +129,10 @@ fun ProfileScreen(vm: PlayViewModel) {
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
     val deviceOk = vm.canTranscribeOnDevice()
     val companionOk = vm.container.engine() != null
-    val ready = profile != null && ((where == Where.DEVICE && deviceOk) || (where == Where.COMPANION && companionOk))
+    // A drummer's solo take is no drum part: One instrument is refused for the percussion seat, with why and what to do.
+    val drummer = no.brasscribe.play.percussionSeat(vm.container.seat, vm.container.seats)
+    val ready = profile != null && !(drummer && profile == Profile.SOLO) &&
+        ((where == Where.DEVICE && deviceOk) || (where == Where.COMPANION && companionOk))
 
     PlayScaffold(
         title = source?.let { s -> if (s.durationS > 0) "${s.name} · ${clock(s.durationS)}" else s.name },
@@ -144,8 +147,14 @@ fun ProfileScreen(vm: PlayViewModel) {
         Lead(stringResource(R.string.profile_hint))
         ChoiceGroup(CHOICES.size) {
             CHOICES.forEachIndexed { i, c ->
-                ChoiceCard(stringResource(c.title), stringResource(c.desc), profile == c.profile, true, i) { vm.chooseProfile(c.profile) }
+                val refused = drummer && c.profile == Profile.SOLO
+                ChoiceCard(stringResource(c.title), stringResource(c.desc), profile == c.profile, true, i,
+                    stringResource(R.string.profile_solo_percussion).takeIf { refused }) { vm.chooseProfile(c.profile) }
             }
+        }
+        if (drummer) {
+            InfoNote(stringResource(R.string.percussion_solo_refused), Modifier.semantics { testTag = "percussion-solo" })
+            OutlineButton(stringResource(R.string.change_what_i_play), { vm.openSeatPicker(no.brasscribe.play.SeatPickerMode.SETTINGS) })
         }
         Text(stringResource(R.string.profile_not_sure), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
         if (profile != null) {

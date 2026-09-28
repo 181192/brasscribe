@@ -233,6 +233,9 @@
     <string name="lineup_solo_desc">Just the tune, for one player.</string>
     <string name="lineup_quartet">Quartet</string>
     <string name="lineup_quartet_desc">4 players, one on each part</string>
+    <string name="profile_solo_percussion">Not for percussion yet</string>
+    <string name="percussion_solo_refused">Brasscribe can\'t write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.</string>
+    <string name="change_what_i_play">Change what I play</string>
     <string name="lineup_full_not_yet">Not yet for whole-band recordings</string>
     <string name="lineup_quartet_needs_group">Needs a recording of the whole group</string>
     <string name="difficulty">How hard?</string>
