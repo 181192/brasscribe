@@ -544,7 +544,7 @@
         "trumpet.today_f1": 0.952,
         "trumpet.today_recall": 0.931,
         "trumpet.cornet_moved": {
-          "value": 0.005,
+          "value": 0.053,
           "higher_is_better": false
         },
         "trumpet.seat_f1": 0.955,

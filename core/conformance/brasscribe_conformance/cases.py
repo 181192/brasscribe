@@ -30,6 +30,8 @@ MIKKEL_VARIANTS = [
     ("layers-minimal-easier", ["--lineup", "minimal", "--difficulty", "easier"]),
     ("layers-key-bb", ["--key", "Bb"]),
     ("layers-transpose-down-3", ["--transpose", "-3"]),
+    # Up 3: the soloist lead reaches 87, above the cornet's solo range; its phrases keep their contour.
+    ("layers-transpose-up-3", ["--transpose", "3"]),
     ("layers-quartet", ["--lineup", "quartet"]),
     ("layers-quartet-easier", ["--lineup", "quartet", "--difficulty", "easier"]),
     # A seat changes no notes of a band take; reading bass clef rewrites only the seat's part.

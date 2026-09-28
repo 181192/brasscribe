@@ -253,6 +253,8 @@ pub fn place_as_played(notes: &[Note], part: &Part, warnings: &mut Vec<String>) 
 
 /// Share of a line inside the soloist's range for [`place_soloist`].
 pub const SOLOIST_SHARE: f64 = 0.95;
+/// A note outside the solo range at least this far from both neighbours is a lone outlier.
+pub const OUTLIER_JUMP: i32 = 7;
 
 /// The line lies in the soloist's register: at least [`SOLOIST_SHARE`] of its notes inside `range`.
 pub fn in_register(notes: &[Note], range: (i32, i32)) -> bool {
@@ -267,36 +269,39 @@ fn fewest_octaves(pitch: i32, range: (i32, i32)) -> Option<i32> {
 
 /// The soloist's own line on the band's lead, in faithful mode: written as played.
 ///
-/// Phrase by phrase (as `place_line`), inside the instrument's solo range: a phrase with at least
-/// half its notes inside keeps its octave, and a note outside moves by the fewest octaves into the
-/// range (a warning each), so one tracker outlier moves alone and the notes around it stay. A phrase
-/// mostly outside takes the octave shift that puts the most notes inside (ties: fewest octaves,
-/// then nearest the previous note), and its notes still outside are fitted the same way.
+/// Phrase by phrase (as `place_line`), inside the instrument's solo range:
+/// - a lone outlier (a note outside the range whose neighbours are inside, each [`OUTLIER_JUMP`] or
+///   more semitones away: almost always a tracker octave error) moves alone by the fewest octaves,
+///   with a warning;
+/// - a phrase that then fits is written as played;
+/// - a phrase that still doesn't fit moves as a whole by the fewest octaves that fit it (ties: nearest
+///   the previous note), so its contour is kept;
+/// - a phrase no octave fits is placed as a non-soloist lead is (`place_phrase`: split at its leaps).
 pub fn place_soloist(notes: &[Note], part: &Part, warnings: &mut Vec<String>) -> Vec<Note> {
-    let range = part.instrument.solo_range();
-    let inside = |ph: &[Note], k: i32| ph.iter().filter(|n| range.0 <= n.pitch + 12 * k && n.pitch + 12 * k <= range.1).count();
+    let (lo, hi) = part.instrument.solo_range();
+    let fits = |p: i32| lo <= p && p <= hi;
     let mut placed: Vec<Note> = Vec::new();
-    for phrase in phrases(notes) {
-        let shift = if 2 * inside(&phrase, 0) >= phrase.len() {
-            0
-        } else {
-            let prev = placed.last().map(|n| n.pitch);
-            (-4..=4)
-                .min_by_key(|&k: &i32| (std::cmp::Reverse(inside(&phrase, k)), k.abs(), prev.map(|q| (phrase[0].pitch + 12 * k - q).abs()).unwrap_or(0)))
-                .unwrap_or(0)
-        };
-        for n in &phrase {
-            let p = n.pitch + 12 * shift;
-            if range.0 <= p && p <= range.1 {
-                placed.push(renote(n, p));
+    for mut phrase in phrases(notes) {
+        let orig: Vec<i32> = phrase.iter().map(|n| n.pitch).collect();
+        for i in 0..phrase.len() {
+            let p = orig[i];
+            let nb: Vec<i32> = [i.checked_sub(1), Some(i + 1)].into_iter().flatten().filter_map(|j| orig.get(j).copied()).collect();
+            if fits(p) || nb.is_empty() || !nb.iter().all(|&q| fits(q) && (p - q).abs() >= OUTLIER_JUMP) {
                 continue;
             }
-            match fewest_octaves(n.pitch, range) {
-                None => warnings.push(format!("{}: dropped {} at tick {} (no playable octave)", part.name, n.pitch, n.start)),
-                Some(q) => {
-                    warnings.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, n.pitch, q, n.start));
-                    placed.push(renote(n, q));
-                }
+            if let Some(q) = fewest_octaves(p, (lo, hi)) {
+                warnings.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, p, q, phrase[i].start));
+                phrase[i].pitch = q;
+            }
+        }
+        let prev = placed.last().map(|n| n.pitch);
+        let shift = (-4..=4i32)
+            .filter(|k| phrase.iter().all(|n| fits(n.pitch + 12 * k)))
+            .min_by_key(|k| (k.abs(), prev.map(|q| (phrase[0].pitch + 12 * k - q).abs()).unwrap_or(0)));
+        match shift {
+            Some(k) => placed.extend(phrase.iter().map(|n| renote(n, n.pitch + 12 * k))),
+            None => {
+                place_phrase(&phrase, part, warnings, 0, false, false, &mut placed, false, None);
             }
         }
     }

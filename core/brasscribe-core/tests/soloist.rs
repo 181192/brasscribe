@@ -85,3 +85,22 @@ fn not_a_soloist_lead_quartet_solo_take_or_moved_tune() {
     let own = lead_lineup(brass_band(), "solo-cornet").unwrap();
     assert!(!own.lead_moved && own.soloist_lead());
 }
+
+fn direction(ps: &[i32]) -> Vec<i32> {
+    ps.windows(2).map(|w| (w[1] - w[0]).signum()).collect()
+}
+
+#[test]
+fn a_phrase_past_the_solo_range_keeps_its_direction() {
+    let lead = brass_band().lead_part().clone();
+    let (lo, hi) = lead.instrument.solo_range();
+    for ps in [
+        vec![76, 79, 81, 84, 86, 88, 86, 84, 81, 79], // an arch that peaks two tones above the range
+        vec![72, 74, 76, 77, 79, 81, 83, 84, 86, 87], // a run that ends above it
+        vec![84, 86, 84, 86, 84, 86, 84],             // a trill across the top
+    ] {
+        let placed = pitches(&place_soloist(&line(&ps), &lead, &mut Vec::new()));
+        assert!(placed.iter().all(|&p| lo <= p && p <= hi), "{placed:?}");
+        assert_eq!(direction(&placed), direction(&ps), "{ps:?} -> {placed:?}");
+    }
+}

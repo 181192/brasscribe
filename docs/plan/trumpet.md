@@ -196,12 +196,11 @@ else
 - **`in_register`.** At least `SOLOIST_SHARE` = 0.95 of the solo layer's notes lie inside `solo_range()`.
   - A recording in another register keeps today's placement. That includes a euphonium played on the phone with no seat set.
 - **`place_soloist`.** It goes phrase by phrase, over the same phrases as today (`phrases()`):
-  - **At least half of the phrase inside the range.** Every note inside is written as played. A note outside moves by the fewest octaves into the range, with the warning `"{part}: moved {p} to {q} at tick {t} (outside the range)"`. That is `place_as_played`'s format, so `inspection.py:97` `_MOVED` reads it.
-  - **Otherwise.** The phrase takes the octave shift that puts the most notes inside. Ties go to the fewest octaves, then to the shift nearest the previous note. Notes still outside are fitted as above.
-  - **Why the fewest octaves, not "nearest the previous note".** A per-note fit toward the previous note is the rule `743c04d` removed, because it flips leaps. A +12 outlier moved back by one octave keeps the run's direction, and a unit test on both sides checks this (critic P3).
-  - **Why half the phrase, not 95 %.** A short phrase with one outlier (5 of 6 inside) would otherwise be shifted as a whole.
+  - **A lone outlier moves alone.** A note outside the range whose neighbours in the phrase are inside, each 7 or more semitones away (`OUTLIER_JUMP`), is almost always a tracker octave error. It moves by the fewest octaves into the range, with the warning `"{part}: moved {p} to {q} at tick {t} (outside the range)"`. That is `place_as_played`'s format, so `inspection.py:97` `_MOVED` reads it.
+  - **Then the phrase as a whole.** A phrase that fits is written as played. One that doesn't moves as a whole by the fewest octaves that fit it, with ties going to the shift nearest the previous note, so its contour is kept. A phrase that no octave fits is placed the way a non-soloist lead is (`place_phrase`: split at its largest leaps).
+  - **Why not fold every outside note.** A phrase that peaks above the range (an arch to 88, a trill 84/86) would lose its peak one note at a time and flip direction. That is the bug `743c04d` removed (critic P1-4). Unit tests on both sides pin the arch, the run and the trill, and conformance has `layers-transpose-up-3`, where the lead reaches 87.
   - Then `hold_small_gaps`, as today.
-- **Why note by note inside a phrase.** A single tracker outlier, such as a harmonic an octave up, must not move the whole phrase. §2.5 measures this: moving a whole phrase leaves trumpet stems 10.5 % moved, and moving only the outliers leaves 0 %.
+- **Why lone outliers first.** A single tracker outlier, such as a harmonic an octave up, must not move the whole phrase. §2.5 measures this: moving a whole phrase leaves trumpet stems 10.5 % moved, and moving only the outliers leaves 0 %.
 - **Unchanged:** standard and easier (placement by the reading range, limit 82, then `fold`), the quartet, `lead=seat` for a band part, solo takes (`place_as_played` keeps `pro`), and the non-layered arrangers.
 
 ### 2.3 The range check
@@ -271,6 +270,8 @@ Two inputs are used:
 | Tuba | played / tracked | 0 of 10 | 100 % / 100 % | 100 % / 100 % | 100 % / 100 % |
 
 "Phrase-shift variant" moves a whole phrase when any of its notes is outside. It is the rule this plan does not take.
+
+After the step 1 review (P1-4), the rule as built moves a note alone only when it is a lone outlier, and otherwise shifts the whole phrase. Its numbers now fall between the two columns. On this table trumpet and flugelhorn stay at 0 %, and horn goes to 9.8 % / 11.0 % (phrases that dip below E3 move up whole). In the solo-instruments benchmark, which is the full solo-take path, `trumpet.cornet_moved` is 5.3 % (23.2 % today). The rest are unchanged. The contour is kept in every case.
 
 **What it says:**
 
@@ -565,6 +566,8 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
 | P2-2: 19th part against swapping | Swap in place, with the reasons in §3.3. |
 | P2-3: nb copy | «Fullt brassband …», «ingen stemme for trompet» (no template compound), «Deg: Trompet» is not shown (the tune is already on the part), and "A trumpet soloist" is dropped along with the soloist option (§3.4). |
 | P2-4: `PartMap` | Kept, and gets a Trumpet row (§3.3, §5.1). |
+| Step 1 review, P1-4: a phrase past the solo range lost its peak note by note | Fixed: only a lone outlier moves alone, otherwise the whole phrase shifts (§2.2). The critic's `test_soloist_edges.py` is taken in with Rust twins, and so is the ported `test_range_invariants.py`. |
+| Step 1 review, P3-4: the fast conformance tier reuses stale Python references | Fixed in `scripts/check.sh`: the references are reused only while a hash of the Python sources matches. |
 | P2-5: CI per push | One push per step group (§6). |
 | P3: `mikkel.md:14`; the resolver keyword goes with (d); §6.4 goes with (c) | The soloist is recorded as unresolved (§1). The keyword stays until (d), and the data-only test is in (c). |
 | Advisor: soprano doubling via `tune_on_top` would turn on for a flugelhorn `lead=seat` | Not changed to `tune_on_top`. `BAND_LEADS` (`arranger.rs:617`) gains "Trumpet". A Trumpet part only ever exists as the lead it took, so the Soprano doubles it in standard and easier exactly as it doubles the Solo Cornet. Flugelhorn `lead=seat` is unchanged. |

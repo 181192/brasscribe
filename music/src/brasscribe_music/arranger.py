@@ -183,6 +183,8 @@ def place_as_played(notes: list[Note], part: Part, warnings: list[str]) -> list[
 
 # Share of a line inside the soloist's range for place_soloist.
 SOLOIST_SHARE = 0.95
+# A note outside the solo range at least this far from both neighbours is a lone outlier.
+OUTLIER_JUMP = 7
 
 
 def in_register(notes: list[Note], rng: tuple[int, int]) -> bool:
@@ -202,36 +204,39 @@ def _fewest_octaves(pitch: int, rng: tuple[int, int]) -> int | None:
 def place_soloist(notes: list[Note], part: Part, warnings: list[str]) -> list[Note]:
     """The soloist's own line on the band's lead, in faithful mode: written as played.
 
-    Phrase by phrase (as _place_line), inside the instrument's solo range: a phrase with at least
-    half its notes inside keeps its octave, and a note outside moves by the fewest octaves into the
-    range (a warning each), so one tracker outlier moves alone and the notes around it stay. A phrase
-    mostly outside takes the octave shift that puts the most notes inside (ties: fewest octaves, then
-    nearest the previous note), and its notes still outside are fitted the same way.
+    Phrase by phrase (as _place_line), inside the instrument's solo range:
+    - a lone outlier (a note outside the range whose neighbours are inside, each OUTLIER_JUMP or more
+      semitones away: almost always a tracker octave error) moves alone by the fewest octaves, with a
+      warning;
+    - a phrase that then fits is written as played;
+    - a phrase that still doesn't fit moves as a whole by the fewest octaves that fit it (ties: nearest
+      the previous note), so its contour is kept;
+    - a phrase no octave fits is placed as a non-soloist lead is (_place_phrase: split at its leaps).
     """
     lo, hi = rng = part.instrument.solo_range
 
-    def inside(ph: list[Note], k: int) -> int:
-        return sum(lo <= n.pitch + 12 * k <= hi for n in ph)
+    def fits(p: int) -> bool:
+        return lo <= p <= hi
 
     placed: list[Note] = []
     for phrase in _phrases(notes):
-        if 2 * inside(phrase, 0) >= len(phrase):
-            shift = 0
+        orig = [n.pitch for n in phrase]
+        phrase = list(phrase)
+        for i, p in enumerate(orig):
+            nb = [orig[j] for j in (i - 1, i + 1) if 0 <= j < len(orig)]
+            if fits(p) or not nb or not all(fits(q) and abs(p - q) >= OUTLIER_JUMP for q in nb):
+                continue
+            q = _fewest_octaves(p, rng)
+            if q is not None:
+                warnings.append(f"{part.name}: moved {p} to {q} at tick {phrase[i].start} (outside the range)")
+                phrase[i] = _moved(phrase[i], q)
+        prev = placed[-1].pitch if placed else None
+        ks = [k for k in range(-4, 5) if all(fits(n.pitch + 12 * k) for n in phrase)]
+        if ks:
+            k = min(ks, key=lambda k: (abs(k), abs(phrase[0].pitch + 12 * k - prev) if prev is not None else 0))
+            placed.extend(_moved(n, n.pitch + 12 * k) for n in phrase)
         else:
-            prev = placed[-1].pitch if placed else None
-            shift = min(range(-4, 5), key=lambda k: (-inside(phrase, k), abs(k),
-                                                     abs(phrase[0].pitch + 12 * k - prev) if prev is not None else 0))
-        for n in phrase:
-            p = n.pitch + 12 * shift
-            if lo <= p <= hi:
-                placed.append(_moved(n, p))
-                continue
-            q = _fewest_octaves(n.pitch, rng)
-            if q is None:
-                warnings.append(f"{part.name}: dropped {n.pitch} at tick {n.start} (no playable octave)")
-                continue
-            warnings.append(f"{part.name}: moved {n.pitch} to {q} at tick {n.start} (outside the range)")
-            placed.append(_moved(n, q))
+            _place_phrase(phrase, part, warnings, 0, False, False, placed)
     return _hold_small_gaps(placed)
 
 
