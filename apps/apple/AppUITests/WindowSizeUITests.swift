@@ -56,8 +56,11 @@ final class WindowSizeUITests: XCTestCase {
         titleBar.doubleClick()
         assertInsideVisibleFrame("title bar double-click, again")
         // Option and the green button: zoom instead of full screen
-        let zoom = window.buttons[XCUIIdentifierZoomWindow]
-        XCTAssertTrue(zoom.waitForExistence(timeout: 5), "the window has a zoom button")
+        // macOS 26 exposes the green button as the full-screen button; with Option it zooms
+        var zoom = window.buttons[XCUIIdentifierZoomWindow]
+        if !zoom.waitForExistence(timeout: 3) { zoom = window.buttons[XCUIIdentifierFullScreenWindow] }
+        XCTAssertTrue(zoom.waitForExistence(timeout: 3),
+                      "the window has a zoom button; its buttons: \(window.buttons.allElementsBoundByIndex.prefix(12).map { "\($0.identifier)/\($0.label)" })")
         if zoom.exists, app.ensureFrontmost() {
             XCUIElement.perform(withKeyModifiers: .option) { zoom.click() }
             assertInsideVisibleFrame("Option-click on the green button")
@@ -73,6 +76,72 @@ final class WindowSizeUITests: XCTestCase {
             guard windowMenu(item) else { continue }
             assertInsideVisibleFrame("Window › \(item)")
         }
+    }
+
+    // MARK: - The score across the sidebar's line, and the window's minimum
+
+    /// The sidebar steps aside below 1000 pt. Across that line, in both directions and after a
+    /// title-bar zoom, the score's column lays out at once: it starts at the window's edge with the
+    /// sidebar gone and after the sidebar with it shown, never where the other state left it.
+    func testScoreRelayoutsAcrossTheSidebarLine() throws {
+        app.launchArguments += ["-open-fixture-score"]
+        launch()
+        // the score's column, by its first control: on macOS 26 the column's own frame runs under
+        // the floating sidebar, so its controls tell where it is laid out
+        let detail = app.descendants(matching: .any)["partPicker"].firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 30), "the score opens")
+        guard detail.exists else { return }
+        let v = visibleFrame
+        func width(_ w: CGFloat, _ what: String) {
+            dragCorner(to: CGPoint(x: min(window.frame.minX + w, v.maxX - 4), y: window.frame.maxY - 2))
+            assertInsideVisibleFrame(what)
+            assertDetailLaidOut(detail, what)
+        }
+        width(1250, "1250 pt wide")
+        width(920, "920 pt wide, below the sidebar's line")
+        width(1250, "back to 1250 pt")
+        width(930, "930 pt again")
+        titleBar.doubleClick()
+        settle()
+        assertInsideVisibleFrame("title bar zoom from 930 pt")
+        assertDetailLaidOut(detail, "title bar zoom from 930 pt")
+        titleBar.doubleClick()
+        settle()
+        assertInsideVisibleFrame("title bar zoom back")
+        assertDetailLaidOut(detail, "title bar zoom back")
+    }
+
+    /// The window goes down to 900 × 600 and no further, on the score, on the stand and with each
+    /// part shown: no part's content raises the minimum (the parts column once grew the window to 1291 × 855).
+    func testMinimumWindowOnTheScoreAndEveryPart() throws {
+        app.launchArguments += ["-open-fixture-score"]
+        launch()
+        let picker = app.popUpButtons["partPicker"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 30), "the score opens with the part picker")
+        assertMinimum("the full score")
+        guard picker.exists, app.ensureFrontmost() else { return }
+        picker.click()
+        let count = picker.menuItems.count
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertGreaterThanOrEqual(count, 19, "All parts and the 18 parts of the band")
+        for i in 1..<count {
+            guard app.ensureFrontmost() else { return }
+            picker.click()
+            let item = picker.menuItems.element(boundBy: i)
+            guard item.waitForExistence(timeout: 2) else { XCTFail("part \(i) is not in the menu"); continue }
+            let title = item.title
+            item.click()
+            settle()
+            assertInsideVisibleFrame("part \(title)")
+            assertMinimum("part \(title)")
+        }
+    }
+
+    func testMinimumWindowOnTheStand() throws {
+        app.launchArguments += ["-screen", "stand"]
+        launch()
+        XCTAssertTrue(app.descendants(matching: .any)["standScore"].firstMatch.waitForExistence(timeout: 30), "the stand opens")
+        assertMinimum("the stand")
     }
 
     // MARK: - Forms keep their size in a taller window
@@ -103,9 +172,11 @@ final class WindowSizeUITests: XCTestCase {
         let sheet = app.sheets.firstMatch
         XCTAssertTrue(sheet.waitForExistence(timeout: 20), "Settings shows as a sheet")
         guard sheet.exists else { return }
+        // the window's corner, beside the sheet: smallest, then down to the visible frame's bottom
+        dragCorner(to: CGPoint(x: window.frame.maxX, y: window.frame.minY + 100))
         let short = window.frame, shortSheet = sheet.frame
         attach("settings-short")
-        _ = windowMenu("Fill") || windowMenu("Zoom")
+        dragCorner(to: CGPoint(x: window.frame.maxX, y: visibleFrame.maxY - 4))
         let tall = window.frame, tallSheet = sheet.frame
         attach("settings-tall")
         assertInsideVisibleFrame("settings, tall")
@@ -189,6 +260,36 @@ final class WindowSizeUITests: XCTestCase {
         item.click()
         settle()
         return true
+    }
+
+    /// Dragged as small as it goes, the window is 900 × 600 (a larger minimum means some content raised it).
+    func assertMinimum(_ what: String, file: StaticString = #filePath, line: UInt = #line) {
+        dragCorner(to: CGPoint(x: window.frame.minX + 300, y: window.frame.minY + 200))
+        let f = window.frame
+        let ok = abs(f.width - 900) <= 2 && abs(f.height - 600) <= 2
+        XCTAssertTrue(ok, "\(what): the smallest window is \(f.width) × \(f.height), not 900 × 600", file: file, line: line)
+        assertInsideVisibleFrame("\(what), smallest", file: file, line: line)
+        if !ok { attach("minimum-\(what)") }
+    }
+
+    /// The score's column matches the sidebar: its first control (`detail`) sits near the window's
+    /// left edge when the sidebar is gone, right of the sidebar when it shows, and inside the window.
+    func assertDetailLaidOut(_ detail: XCUIElement, _ what: String, file: StaticString = #filePath, line: UInt = #line) {
+        let w = window.frame, d = detail.frame
+        let side = app.descendants(matching: .any)["sidebarHome"].firstMatch
+        let sidebarShown = side.exists && !side.frame.isEmpty && side.isHittable && w.contains(CGPoint(x: side.frame.midX, y: side.frame.midY))
+        var ok = d.maxX <= w.maxX + 1 && d.minX >= w.minX - 1
+        if sidebarShown {
+            let s = side.frame
+            ok = ok && d.minX >= s.maxX - 1
+            XCTAssertGreaterThanOrEqual(d.minX, s.maxX - 1, "\(what): the score's column \(d) runs under the sidebar (\(s))", file: file, line: line)
+        } else {
+            // the back button and the margin come first; a sidebar's width (240 pt or more) is stale
+            ok = ok && d.minX <= w.minX + 160
+            XCTAssertLessThanOrEqual(d.minX, w.minX + 160, "\(what): the sidebar is gone but the score's column still starts \(d.minX - w.minX) pt into the window \(w)", file: file, line: line)
+        }
+        XCTAssertLessThanOrEqual(d.maxX, w.maxX + 1, "\(what): the score's column \(d) reaches past the window \(w)", file: file, line: line)
+        if !ok { attach("stale-\(what)") }
     }
 
     func assertInsideVisibleFrame(_ what: String, file: StaticString = #filePath, line: UInt = #line) {

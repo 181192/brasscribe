@@ -45,14 +45,21 @@ Two VMs, both local to Tart (`~/.tart/vms`):
 | `brasscribe-ui-base` | `ghcr.io/cirruslabs/macos-tahoe-base:latest` plus the host's Xcode, set up once by `provision` (runs on the first `up`) |
 | `brasscribe-ui` | an APFS clone of the base. The tests run here. `down --reset` throws it away, and the next `up` reclones it in seconds |
 
-Provisioning:
+Provisioning is idempotent: `provision` picks up where a failed run stopped, and
+`~/.tart/brasscribe-ui-base.provisioned` marks it finished. It:
 
-- boots the base with the host's `/Applications/Xcode.app` shared read-only, and copies it in with
-  `ditto --hfsCompression` so it stays as small as on the host
-- runs `xcodebuild -license accept`, `-runFirstLaunch`, `DevToolsSecurity -enable` and
-  `automationmodetool enable-automationmode-without-authentication` (XCUITest needs no password prompt)
-- turns off sleep and the screensaver, installs `xcodegen`, grows the disk to 72 GB
 - replaces the image's admin/admin SSH login with a key, `~/.tart/brasscribe-ui_ed25519`
+- grows the disk to 72 GB
+- streams the host's `/Applications/Xcode.app` in over SSH (`ditto -c … | ssh … ditto -x --hfsCompression`),
+  which keeps it compressed as on the host (about 4 GB, about 10 minutes). A Tart shared folder
+  (`--dir`) is slower and breaks the frameworks' symlinks
+- copies the host's `xcodegen` in: the image's network cannot always reach ghcr.io for Homebrew,
+  and this keeps the same version on both sides
+- runs `xcodebuild -license accept`, `-runFirstLaunch`, `DevToolsSecurity -enable` and
+  `automationmodetool enable-automationmode-without-authentication` (XCUITest then needs no password prompt)
+- turns off sleep and the screensaver
+- (on every `up`) switches the display to the configured size with `scripts/mac-vm-display.swift`. Without this
+  every boot comes back in the image's saved 1024 × 768 mode, whatever `tart set --display` says
 
 The image is `macos-tahoe-base`, not `macos-tahoe-xcode`, because of disk space. The Xcode 27
 image is 62 GB compressed and about 76 GB on disk. On a Mac with about 90 GB free, that leaves
@@ -63,19 +70,24 @@ another Xcode.
 
 Settings, all overridable in the environment: `MAC_VM_CPUS` (6), `MAC_VM_MEMORY_MB` (10240),
 `MAC_VM_DISPLAY` (1440x900), `MAC_VM_DISK_GB` (72), `MAC_VM_IMAGE`, `MAC_VM_NAME`, `MAC_VM_BASE`.
-A change to the CPUs, memory or display needs `provision` (or `tart set brasscribe-ui …` while
-the VM is stopped).
+To change the CPUs or memory, run `tart set brasscribe-ui --cpu … --memory …` while the VM is
+stopped (and on `brasscribe-ui-base`, for later clones). The display size applies on the next `up`.
+The 1024 × 768 of the image's default mode is worth one run too: `MAC_VM_DISPLAY=1024x768 scripts/mac-vm.sh test-ui`.
 
 ## Disk and memory
 
-<!-- measured numbers are filled in below -->
+Measured on the first setup (September 2026):
 
 | | |
 |---|---|
-| Image cache (`~/.tart/cache/OCIs`) | about 35 GB. `tart prune --entries caches` frees it once the base exists. The base does not depend on it |
-| `brasscribe-ui-base` | about 40 GB (the image plus Xcode) |
-| `brasscribe-ui` | a clone: only what diverges from the base (the synced repo, band sounds, DerivedData), a few GB |
-| RAM while running | 10 GB for the VM, returned to the host at `down` |
+| Download | 27 GB (the base image, about 25 minutes) |
+| `brasscribe-ui-base` | 38 GB on the host's disk: 33 GB of image, 4 GB of Xcode, and the rest |
+| Image cache (`~/.tart/cache/OCIs`) | shares its blocks with the base (APFS clone), so deleting it frees almost nothing. Delete it anyway with `tart delete ghcr.io/cirruslabs/macos-tahoe-base:latest`, so it doesn't grow on the next pull. A later `provision` of a missing base pulls again |
+| `brasscribe-ui` | a clone: only what diverges from the base. That is the synced repo, the band sounds (0.5 GB) and DerivedData (about 2 GB). `down --reset` returns it |
+| RAM while running | 10 GB for the VM (6 CPUs), returned to the host at `down` |
+
+`up`, `test-ui` and `provision` refuse to start when the host has less than 15 GB free
+(`MAC_VM_MIN_FREE_GB`). The guest's disk can grow into the host's.
 
 A stopped VM uses no RAM or CPU. When the tests are done, run `scripts/mac-vm.sh down`.
 
@@ -95,9 +107,13 @@ A stopped VM uses no RAM or CPU. When the tests are done, run `scripts/mac-vm.sh
    (worktrees), `node_modules`, `build/`, DerivedData, `core/target`, `data/` and `*.xcodeproj`, then
    adds the items above.
 4. Runs `make test-mac-ui TEST_ARGS='-resultBundlePath …'` in `apps/apple` over SSH.
-5. Copies the `.xcresult` back to `build/mac-vm/play-<time>/`. It exports the screenshots, including
-   XCTest's automatic failure screenshots, into `attachments/` (see `manifest.json` there), writes
-   `summary.json` and `tests.json`, and prints the failures. The full log is `build/mac-vm/play-<time>.log`.
+5. Copies the `.xcresult` back to `build/mac-vm/play-<time>/`. It then:
+   - exports the attachments into `attachments/`. `manifest.json` there maps them to tests. Xcode 27
+     keeps a screen recording of each failing test instead of a screenshot, and the script saves
+     each recording's last frame as `<id>-last.png` (with ffmpeg)
+   - writes `summary.json` and `tests.json`, and prints the failures
+
+   The full log is `build/mac-vm/play-<time>.log`.
 
 It exits non-zero when a test fails.
 
@@ -109,6 +125,11 @@ The window size tests (`AppUITests/WindowSizeUITests.swift`):
 - after each, check that the window lies inside the screen's visible frame
 - check that home, "What is this?", "How should the score be?" and the Settings sheet keep their
   controls together in a taller window, rather than spreading them to full height
+- resize the score back and forth across the sidebar's 1000 pt line, and zoom it with the title
+  bar. After each, the score's column has to be laid out at once for the sidebar's state, with no
+  stale column
+- check that the window's minimum is 900 × 600 on the score, on the stand and with each of the
+  18 parts shown
 
 They skip themselves outside a virtual machine (`kern.hv_vmm_present`).
 

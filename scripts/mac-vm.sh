@@ -143,8 +143,6 @@ xcodebuild -version | head -1
 sw_vers -productVersion
 df -h / | tail -1
 EOF
-  # the image keeps its own saved 1024 x 768 mode; switch to the configured size
-  vssh "$ip" "cat > /tmp/mac-vm-display.swift && swift /tmp/mac-vm-display.swift ${DISPLAY_SIZE%pt}" <"$ROOT/scripts/mac-vm-display.swift"
   log "stopping $BASE; clones of it start ready"
   "$TART" stop "$BASE"
   trap - EXIT
@@ -161,6 +159,10 @@ up() {
   fi
   start "$VM"
   local ip; ip="$(wait_ssh "$VM")"
+  # every boot comes back in the image's saved 1024 x 768 mode, whatever tart's --display is;
+  # switch to the configured size (a no-op when it already is)
+  vssh "$ip" "cat > /tmp/mac-vm-display.swift && swift /tmp/mac-vm-display.swift ${DISPLAY_SIZE%pt}" \
+    <"$ROOT/scripts/mac-vm-display.swift" >&2
   log "$VM is up at $ip"
   echo "$ip"
 }
@@ -234,6 +236,15 @@ fetch_results() {
   local bundle="$dest/$(basename "$remote")"
   xcrun xcresulttool export attachments --path "$bundle" --output-path "$dest/attachments" >/dev/null 2>&1 \
     || log "could not export attachments from $bundle"
+  # a failing test gets a screen recording; its last frame is the screen at the failure
+  if command -v ffmpeg >/dev/null; then
+    local m d
+    for m in "$dest"/attachments/*.mp4; do
+      [ -f "$m" ] || continue
+      d="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$m" 2>/dev/null || echo 0)"
+      ffmpeg -y -loglevel error -ss "$(python3 -c "print(max(0, float('${d:-0}') - 0.3))")" -i "$m" -frames:v 1 "${m%.mp4}-last.png" || true
+    done
+  fi
   xcrun xcresulttool get test-results summary --path "$bundle" --compact >"$dest/summary.json" 2>/dev/null || true
   xcrun xcresulttool get test-results tests --path "$bundle" --compact >"$dest/tests.json" 2>/dev/null || true
   python3 - "$dest" <<'EOF' || true
