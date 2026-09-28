@@ -56,7 +56,7 @@ public sealed partial class ChooseOutputPage : Page, IScreenPage
     private void OnLineupChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_selecting || ViewModel is null || LineupAt(LineupChoices.SelectedIndex) is not { } chosen) return;
-        // The quartet on a solo take is refused (and the reason said); the selection goes back.
+        // The quartet on a solo take, and the full band on a band take, are refused (and the reason said); the selection goes back.
         if (!ViewModel.TryChooseLineup(chosen)) Select(ViewModel.Lineup);
     }
 

@@ -672,9 +672,6 @@
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hvilket band?</value>
   </data>
-  <data name="LineupFullBody.Text" xml:space="preserve">
-    <value>Rundt 25 musikere</value>
-  </data>
   <data name="LineupFullChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Fullt brassband</value>
   </data>
@@ -809,6 +806,12 @@
   </data>
   <data name="Output_Failed" xml:space="preserve">
     <value>Kunne ikke arrangere: {0}</value>
+  </data>
+  <data name="Output_FullBody" xml:space="preserve">
+    <value>Rundt 25 musikere</value>
+  </data>
+  <data name="Output_FullNotYet" xml:space="preserve">
+    <value>Kommer senere for opptak av hele bandet</value>
   </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>Som i opptaket · klingende</value>

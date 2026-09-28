@@ -97,6 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (_lastChoice is { } choice)
             {
                 Output.IsSoloTake = Lineups.IsSoloTake(null, choice.Kind.Profile);
+                Output.IsBandTake = Lineups.IsBandTake(null, choice.Kind.Profile);
                 Screen = Screen.Transcribing;
                 await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
             }
@@ -125,6 +126,7 @@ public sealed partial class MainViewModel : ObservableObject
             _result = null;
             // A solo take has no harmony for a quartet; a quartet chosen for an earlier take goes back to the band.
             Output.IsSoloTake = Lineups.IsSoloTake(null, choice.Kind.Profile);
+            Output.IsBandTake = Lineups.IsBandTake(null, choice.Kind.Profile);
             Screen = Screen.Transcribing;
             await Transcription.RunAsync(choice.Source, choice.Kind, Output.Options);
             if (!Transcription.IsRunning && _result is null && Screen == Screen.Transcribing && Transcription.ErrorText is null)
@@ -135,6 +137,7 @@ public sealed partial class MainViewModel : ObservableObject
             bool rearranged = _result is not null && r.AudioId is not null && r.AudioId == _result.AudioId;
             _result = r;
             Output.IsSoloTake = Lineups.IsSoloTake(r.Composition, r.Profile);
+            Output.IsBandTake = Lineups.IsBandTake(r.Composition, r.Profile);
             Output.HasEngineJob = r.AudioId is not null;
             Output.Applied = r.Options ?? ArrangementOptions.Default;
             Output.Title = r.Composition.Title;
@@ -256,6 +259,7 @@ public sealed partial class MainViewModel : ObservableObject
             Output.HasEngineJob = false;
             Output.LayerSource = null;
             Output.IsSoloTake = Lineups.IsSoloTake(composition);
+            Output.IsBandTake = Lineups.IsBandTake(composition);
             Output.ShowingSaved(Lineups.Parse(entry.Lineup) ?? Lineups.Recorded(composition), Lineups.RecordedDifficulty(composition));
             Score.Evidence = Library.LoadEvidence(entry);
             Score.Load(xml, composition);
@@ -345,6 +349,7 @@ public sealed partial class MainViewModel : ObservableObject
                 Output.HasEngineJob = false;
                 Output.LayerSource = null;
                 Output.IsSoloTake = Lineups.IsSoloTake(composition, job.Profile);
+                Output.IsBandTake = Lineups.IsBandTake(composition, job.Profile);
                 Output.ShowingSaved(Lineups.Recorded(composition), Lineups.RecordedDifficulty(composition));
                 Score.Evidence = evidence;
                 Score.Load(xml, composition);
@@ -524,6 +529,7 @@ public sealed partial class MainViewModel : ObservableObject
             Output.HasEngineJob = false;
             Output.LayerSource = null;
             Output.IsSoloTake = false;
+            Output.IsBandTake = false;
             Score.Evidence = null;
             Score.Load(xml, null);
             _libraryId = Library?.AddOpened(path, Score.Title is { Length: > 0 } t ? t : Path.GetFileNameWithoutExtension(path),

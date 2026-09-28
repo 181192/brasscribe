@@ -672,9 +672,6 @@
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Which band?</value>
   </data>
-  <data name="LineupFullBody.Text" xml:space="preserve">
-    <value>About 25 players</value>
-  </data>
   <data name="LineupFullChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Full brass band</value>
   </data>
@@ -809,6 +806,12 @@
   </data>
   <data name="Output_Failed" xml:space="preserve">
     <value>Couldn't arrange it: {0}</value>
+  </data>
+  <data name="Output_FullBody" xml:space="preserve">
+    <value>About 25 players</value>
+  </data>
+  <data name="Output_FullNotYet" xml:space="preserve">
+    <value>Not yet for whole-band recordings</value>
   </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>As recorded · concert pitch</value>

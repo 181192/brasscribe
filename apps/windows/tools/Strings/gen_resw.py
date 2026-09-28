@@ -134,7 +134,6 @@ prop("OutputBandHeading", "Text", "Which band?", "Hvilket band?")
 name("LineupChoices", "Which band?", "Hvilket band?")
 name("LineupFullChoice", "Full brass band", "Fullt brassband")
 prop("LineupFullTitle", "Text", "Full brass band", "Fullt brassband")
-prop("LineupFullBody", "Text", "About 25 players", "Rundt 25 musikere")
 name("LineupSmallChoice", "Small band", "Lite band")
 prop("LineupSmallTitle", "Text", "Small band", "Lite band")
 prop("LineupSmallBody", "Text", "10–15 players, parts doubled up", "10–15 musikere, stemmene slått sammen")
@@ -514,6 +513,8 @@ code = {
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Output_Failed": ("Couldn't arrange it: {0}", "Kunne ikke arrangere: {0}"),
     "Output_QuartetBody": ("4 players, one on each part", "4 musikere, én på hver stemme"),
+    "Output_FullBody": ("About 25 players", "Rundt 25 musikere"),
+    "Output_FullNotYet": ("Not yet for whole-band recordings", "Kommer senere for opptak av hele bandet"),
     "Output_QuartetNeedsGroup": ("Needs a recording of the whole group", "Trenger et opptak av hele gruppen"),
     "Settings_Engine_NeedsCode": ("Your computer asks for a code. Type the six digits it shows, or ask on the computer instead.", "Datamaskinen ber om en kode. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet."),
     "Settings_Engine_Connected": ("Connected to Brasscribe on {0}.", "Koblet til Brasscribe på {0}."),
