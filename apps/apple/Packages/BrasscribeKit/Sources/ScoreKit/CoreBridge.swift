@@ -14,7 +14,28 @@ public protocol CoreBridge: Sendable {
     func talkingScore(for score: Score, composition: Composition?, language: ScoreLanguage, pitchMode: PitchMode) -> String
     /// Arrange a Composition for a lineup. Nil when this bridge cannot arrange on device
     /// (the companion engine does it instead).
-    func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data?
+    func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?, seat: SeatOptions) throws -> Data?
+}
+
+extension CoreBridge {
+    /// Arranged with no seat: today's output, byte for byte.
+    public func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data? {
+        try arrange(composition, lineup: lineup, difficulty: difficulty, keyFifths: keyFifths, seat: SeatOptions())
+    }
+}
+
+/// The player's seat, reading and who plays the tune, as the core's arrangement options take them
+/// (`seat`, `reads`, `lead`). All nil: no seat, and the output is what it was before seats.
+public struct SeatOptions: Sendable, Equatable, Codable {
+    /// A core seat id (`seats()`), e.g. "euphonium".
+    public var seat: String?
+    /// "treble" or "bass"; nil: the brass-band part's own clef.
+    public var reads: String?
+    /// "lineup" or "seat"; nil: the lineup's lead (a solo take with a seat always writes the seat).
+    public var lead: String?
+    public init(seat: String? = nil, reads: String? = nil, lead: String? = nil) {
+        self.seat = seat; self.reads = reads; self.lead = lead
+    }
 }
 
 /// Which ensemble the score is arranged for. Raw values are what a saved piece records.
@@ -77,5 +98,5 @@ public struct SwiftCoreBridge: CoreBridge {
                      uncertainty: composition.map(UncertaintyIndex.init) ?? .empty).text()
     }
 
-    public func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?) throws -> Data? { nil }
+    public func arrange(_ composition: Composition, lineup: Lineup, difficulty: Difficulty, keyFifths: Int?, seat: SeatOptions) throws -> Data? { nil }
 }

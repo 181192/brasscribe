@@ -17,9 +17,19 @@ public struct OutputChoice: Sendable, Equatable, Codable {
     public var difficulty: Difficulty
     /// Target key in fifths (nil = keep the detected key).
     public var keyFifths: Int?
-    public init(lineup: Lineup = .fullBand, difficulty: Difficulty = .faithful, keyFifths: Int? = nil) {
+    /// The player's seat (a core seat id), the clef they read ("treble"/"bass") and who plays the
+    /// tune ("lineup"/"seat"). Nil: no seat, and the score is what it was before seats.
+    public var seat: String?
+    public var reads: String?
+    public var lead: String?
+    public init(lineup: Lineup = .fullBand, difficulty: Difficulty = .faithful, keyFifths: Int? = nil,
+                seat: String? = nil, reads: String? = nil, lead: String? = nil) {
         self.lineup = lineup; self.difficulty = difficulty; self.keyFifths = keyFifths
+        self.seat = seat; self.reads = reads; self.lead = lead
     }
+
+    /// The seat options as the core's arrangers take them.
+    public var seatOptions: SeatOptions { SeatOptions(seat: seat, reads: reads, lead: lead) }
 }
 
 public struct TranscriptionRequest: Sendable {

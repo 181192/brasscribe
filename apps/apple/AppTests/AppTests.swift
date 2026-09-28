@@ -42,7 +42,7 @@ func fixtureDir() -> URL? {
     let p = try Piece.create(title: "Test", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: dir)
     defer { p.delete() }
     #expect(Piece.loadAll().contains { $0.id == p.id })
-    let m = try PracticeModel(piece: p)
+    let m = PracticeModel(piece: p, score: try p.loadScore(), composition: p.loadComposition(), seat: .notSet)
     #expect(m.score.parts.count == 18)
     #expect(m.describe(partID: m.score.parts[1].id, bar: 0).contains("Solo Cornet"))
     #expect(m.uncertainCount(bar: 1) > 0)
@@ -113,8 +113,8 @@ func testVideo() -> URL? {
 }
 
 @Test func quartetPartsHaveNorwegianNames() {
-    #expect(PartNames.norwegian["1st Cornet"] == "1. kornett")
-    #expect(PartNames.norwegian["Tenor Horn"] == "Althorn")
+    #expect(PartNames.display("1st Cornet", language: .norwegian) == "1. kornett")
+    #expect(PartNames.display("Tenor Horn", language: .norwegian) == "Althorn")
 }
 
 /// A solo take has nothing for the other three parts: no quartet.

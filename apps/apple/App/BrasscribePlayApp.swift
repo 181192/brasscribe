@@ -238,7 +238,8 @@ struct RootView: View {
         .task {
             // after the split view's navigation stack is in place, or the first path is dropped
             try? await Task.sleep(for: .milliseconds(100))
-            if !UserDefaults.standard.bool(forKey: "firstRunDone") || LaunchOptions.screen == "first-run" { app.showFirstRun = true }
+            if !UserDefaults.standard.bool(forKey: "firstRunDone") || LaunchOptions.screen == "first-run"
+                || LaunchOptions.screen?.hasPrefix("what-do-you-play") == true { app.showFirstRun = true }
             if LaunchOptions.args.contains("-open-fixture-score") { openFixtureScore() }
             // UI tests: start from a recording as if it had just been imported
             if let a = ProcessInfo.processInfo.environment["BRASSCRIBE_OPEN_AUDIO"], FileManager.default.fileExists(atPath: a) {
@@ -378,7 +379,7 @@ struct PlaybackCommands: Commands {
                 Divider()
                 Button("Count-in") { model?.countIn.toggle() }.keyboardShortcut(key("c"))
                 Button("Metronome") { model?.metronome.toggle() }.keyboardShortcut(key("m"))
-                Button("Mute my part") { model?.playAlong.toggle() }.keyboardShortcut(key("a"))
+                Button("Mute my part") { model?.playAlong.toggle() }.keyboardShortcut(key("a")).disabled(model?.myPart == nil)
                 Button("Band or recording") { model?.hearOriginal.toggle() }.keyboardShortcut(key("o"))
             }
             .disabled(model == nil)

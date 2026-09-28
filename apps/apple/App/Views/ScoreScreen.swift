@@ -62,7 +62,10 @@ struct ScoreScreen: View {
             let loaded = try await PracticeModel.open(piece)
             guard model == nil, !Task.isCancelled else { loaded.stopAll(); return }
             if LaunchOptions.screen == "part" { loaded.shownPart = loaded.myPart }
+            if let id = app.showPartOnOpen { app.showPartOnOpen = nil; loaded.openedOnMyPart = true; loaded.shownPart = id }
             model = loaded
+            // "This small band has no 1st Baritone…": said once, politely, when the score opens
+            if let notice = loaded.seatNotice { AccessibilityNotifier.announce(notice, polite: true) }
             ScreenshotScenes.stage(loaded)
             // "Open on the music stand" from the library
             if let row = app.openOnStand {
@@ -108,6 +111,7 @@ struct PracticeView: View {
             ScoreToolbar(model: model, wide: wide, showParts: $showParts, showInspector: $showInspector,
                          showTalking: $showTalking, showVideo: $showVideo)
             StatusLine(model: model, toCheck: toCheck, wide: wide) { app.path.append(.review(model.piece)) }
+            PartHeader(model: model)
             Divider().overlay(Color.Brasscribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
@@ -228,6 +232,7 @@ struct StatusLine: View {
 
 struct ScoreToolbar: View {
     @Bindable var model: PracticeModel
+    @Environment(AppModel.self) private var app
     @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var standButtonA11y: Bool
     @FocusState private var standButtonKeys: Bool
@@ -302,17 +307,36 @@ struct ScoreToolbar: View {
         inspectorToggle
     }
 
+    /// "All parts ▾": the part to show, and "Make this my part" for the part shown.
     private var parts: some View {
-        Picker(selection: $model.shownPart) {
-            Text("All parts").tag(String?.none)
-            ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
-        } label: { Label("Parts", systemImage: BrasscribeIcon.parts.systemName) }
-        .pickerStyle(.menu)
-        .labelsHidden()
+        Menu {
+            Picker(selection: $model.shownPart) {
+                Text("All parts").tag(String?.none)
+                ForEach(model.score.parts) { p in
+                    Text(p.id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName).tag(String?.some(p.id))
+                }
+            } label: { Text("Show") }
+            .pickerStyle(.inline)
+            if let id = model.shownPart, id != model.myPart {
+                Divider()
+                Button { model.makeMine(id) } label: { Label("Make this my part", systemImage: BrasscribeIcon.playAlong.systemName) }
+                    .accessibilityIdentifier("makeMine")
+            }
+        } label: {
+            Label(shownTitle, systemImage: BrasscribeIcon.parts.systemName).labelStyle(.titleOnly)
+        }
+        .menuStyle(.button)
         .menuTint()
+        .accessibilityLabel(Text("Parts"))
+        .accessibilityValue(Text(shownTitle))
         .accessibilityIdentifier("partPicker")
         .frame(minHeight: 44)
         .fixedSize()
+    }
+
+    private var shownTitle: String {
+        guard let id = model.shownPart, let p = model.score.part(id: id) else { return String(localized: "All parts") }
+        return id == model.myPart ? String(localized: "\(p.displayName) (you)") : p.displayName
     }
 
     private var pitch: some View {
@@ -330,6 +354,13 @@ struct ScoreToolbar: View {
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             if model.video != nil {
                 Toggle(isOn: $showVideo) { Label("Show video", systemImage: BrasscribeIcon.video.systemName) }
+            }
+            if model.piece.profile == .solo {
+                // a friend played it: Choose output's "Who played this?"
+                Button { model.stopAll(); app.path.append(.output(model.piece)) } label: {
+                    Label("Write for another instrument…", systemImage: BrasscribeIcon.parts.systemName)
+                }
+                .accessibilityIdentifier("writeForAnother")
             }
             if !wide {
                 Button { showParts = true } label: { Label("Parts and sound", systemImage: BrasscribeIcon.parts.systemName) }
@@ -526,7 +557,7 @@ struct PlayerBar: View {
                 .help(Text("One bar of clicks before the music starts."))
             Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }
                 .toggleStyle(.chip).fixedSize().padShortcut("m")
-            muteMyPart.fixedSize()
+            if model.myPart != nil { muteMyPart.fixedSize() }
         }
     }
 
@@ -617,7 +648,8 @@ struct PlayerBar: View {
 
         Toggle(isOn: $model.countIn) { Label("Count-in", systemImage: BrasscribeIcon.countIn.systemName) }.toggleStyle(.chip).padShortcut("c")
         Toggle(isOn: $model.metronome) { Label("Metronome", systemImage: BrasscribeIcon.metronome.systemName) }.toggleStyle(.chip).padShortcut("m")
-        muteMyPart
+        // "I conduct or listen": no part is yours, so there is nothing to mute
+        if model.myPart != nil { muteMyPart }
         if model.hasOriginal {
             // "Hear the recording": the words say it plays, never that it records
             Toggle(isOn: $model.hearOriginal) { Label("Hear the recording", systemImage: BrasscribeIcon.listenBar.systemName) }
@@ -689,7 +721,8 @@ struct PartsPanel: View {
 
                 SectionLabel(String(localized: "Sound"))
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    Picker(selection: $model.myPart) {
+                    Picker(selection: Binding(get: { model.myPart }, set: { model.makeMine($0) })) {
+                        if model.myPart == nil { Text("None").tag(String?.none) }
                         ForEach(model.score.parts) { p in Text(p.displayName).tag(String?.some(p.id)) }
                     } label: { Text("My part") }
                     .pickerStyle(.menu)
@@ -716,8 +749,9 @@ struct PartsPanel: View {
         return HStack(spacing: Space.s2) {
             Rectangle().fill(mine ? Color.Brasscribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
-                Text(p.displayName).font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
-                if mine { Text("your part").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted) }
+                Text(mine ? String(localized: "\(p.displayName) (you)") : p.displayName)
+                    .font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                if let kind = model.partSources[p.id] { SourceCaption(kind: kind) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Toggle(isOn: Binding(get: { model.isMuted(p.id) }, set: { model.setMuted(p.id, $0) })) {

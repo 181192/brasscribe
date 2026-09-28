@@ -18,6 +18,8 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var fixtureDirectory: String?
     /// The band, difficulty and key the score is arranged for.
     var output: OutputChoice?
+    /// "Make this my part": the part name the player chose for this score, over their seat's.
+    var myPart: String?
     /// Summary for the library: number of bars, and uncertain notes still to check.
     var bars: Int?
     var toCheck: Int?

@@ -36,12 +36,16 @@ struct ReviewView: View {
     /// Every note still to check, in every part.
     private var allOpen: [ReviewItem] { items.filter { !checked.contains($0.id) } }
     private var myPartID: String? { model?.myPart }
+    /// Your part was arranged from the band's harmony: it has no notes of yours to check, and Review
+    /// says so instead of showing an empty list.
+    private var myPartArranged: Bool { model?.mySource == .arranged }
+    private var mine: [ReviewItem] { myPartArranged ? [] : allOpen.filter { $0.partID == myPartID } }
 
     /// The notes still to check under the chosen filter; in your part the very unsure come first.
     private var open: [ReviewItem] {
         switch filter {
         case .mine:
-            return allOpen.filter { $0.partID == myPartID }
+            return mine
                 .sorted { ($0.level == .veryUncertain ? 0 : 1, $0.bar, $0.tick) < ($1.level == .veryUncertain ? 0 : 1, $1.bar, $1.tick) }
         case .others: return Self.veryUnsureFirst(allOpen.filter { $0.partID != myPartID })
         case .all: return Self.veryUnsureFirst(allOpen)
@@ -58,7 +62,7 @@ struct ReviewView: View {
 
     private func count(_ f: Filter) -> Int {
         switch f {
-        case .mine: return allOpen.filter { $0.partID == myPartID }.count
+        case .mine: return mine.count
         case .others: return allOpen.filter { $0.partID != myPartID }.count
         case .all: return allOpen.count
         }
@@ -184,7 +188,15 @@ struct ReviewView: View {
     // MARK: the note
 
     @ViewBuilder private var detail: some View {
-        if let it = item, let model {
+        if item == nil, filter == .mine, myPartArranged, let model, let id = myPartID, let part = model.score.part(id: id) {
+            VStack(alignment: .leading, spacing: wide ? Space.s4 : Space.s3) {
+                triage
+                ArrangedNotice(part: part.displayName) { filter = .others } show: {
+                    model.stopAll()
+                    finishToScore(showing: id)
+                }
+            }
+        } else if let it = item, let model {
             let index = (open.firstIndex { $0.id == it.id } ?? 0) + 1
             VStack(alignment: .leading, spacing: wide ? Space.s4 : Space.s3) {
                 triage
@@ -367,6 +379,18 @@ struct ReviewView: View {
         current = after.first { !checked.contains($0.id) && $0.id != it.id }?.id
     }
 
+    /// "Show my part": the score, on your part.
+    private func finishToScore(showing id: String) {
+        piece.saveChecked(checked, remaining: allOpen.count)
+        app.refresh()
+        app.showPartOnOpen = id
+        if app.path.count >= 2, case .score = app.path[app.path.count - 2] {
+            app.path.removeLast()
+        } else {
+            app.open(piece)
+        }
+    }
+
     /// Back to the score if Review was opened from it, otherwise on to "How should the score be?".
     private func finish() {
         model?.stopAll()
@@ -394,7 +418,11 @@ struct ReviewView: View {
             evidence = piece.loadEvidence()
             checked = piece.loadChecked()
             items = ReviewList.items(score: m.score, composition: m.composition, uncertainty: m.uncertainty)
-            if count(.mine) == 0 { filter = .all }
+            // an arranged part keeps "Yours" chosen, so its notice shows (and is said) once
+            if count(.mine) == 0, m.mySource != .arranged { filter = .all }
+            if m.mySource == .arranged, let id = m.myPart, let part = m.score.part(id: id) {
+                AccessibilityNotifier.announce(String(localized: "Your part is arranged. \(ArrangedNotice.body(part.displayName))"), polite: true)
+            }
             piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
             // screenshots: the button as it looks while the bar plays
@@ -624,4 +652,42 @@ enum ReviewWords {
 
 private extension Collection {
     subscript(safe index: Index) -> Element? { indices.contains(index) ? self[index] : nil }
+}
+
+/// "Your part is arranged": in place of an empty Yours list. Nobody played the part on its own, so
+/// there is nothing of the player's to check.
+struct ArrangedNotice: View {
+    let part: String
+    let others: () -> Void
+    let show: () -> Void
+
+    static func body(_ part: String) -> String {
+        String(localized: "Nobody played the \(part) part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s4) {
+            DisplayTitle(text: String(localized: "Your part is arranged"), size: 34)
+            SourceLabel(kind: .arranged, part: part)
+            Text(Self.body(part))
+                .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.s3) { othersButton; showButton }
+                VStack(alignment: .leading, spacing: Space.s3) { othersButton; showButton }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("arrangedNotice")
+    }
+
+    private var othersButton: some View {
+        Button(action: others) { Text("Check the other parts") }.buttonStyle(.primary)
+            .accessibilityIdentifier("checkOthers")
+    }
+
+    private var showButton: some View {
+        Button(action: show) { Text("Show my part") }.buttonStyle(.tonal)
+            .accessibilityIdentifier("showMyPart")
+    }
 }
