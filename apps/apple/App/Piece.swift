@@ -25,6 +25,9 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// Summary for the library: number of bars, and uncertain notes still to check.
     var bars: Int?
     var toCheck: Int?
+    /// The player's seat for this score (`SeatChoice.encoded`), kept from the first time it was
+    /// opened: a new answer in Settings leaves the scores you already have on the part you chose.
+    var seat: String? = nil
 
     static var libraryURL: URL {
         // unit tests keep their scores out of the user's library

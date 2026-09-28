@@ -123,7 +123,13 @@ final class PracticeModel {
         video?.isMuted = true
         let byName = PartSourceKind.sources(composition: composition, output: piece.output)
         partSources = Dictionary(parsed.parts.compactMap { p in byName[p.name].map { (p.id, $0) } }, uniquingKeysWith: { a, _ in a })
-        let mine = Self.resolveMyPart(piece: piece, score: parsed, composition: composition, seat: seat)
+        // The score keeps the seat it was first opened with, so a new answer in Settings leaves it be.
+        let own = piece.seat.map(SeatChoice.parse) ?? seat
+        if piece.seat == nil, var p = Piece.load(from: piece.metaURL) {
+            p.seat = own.encoded
+            try? p.save()
+        }
+        let mine = Self.resolveMyPart(piece: piece, score: parsed, composition: composition, seat: own)
         myPart = mine.partID
         seatNotice = mine.notice
         seatNoticeShort = mine.short

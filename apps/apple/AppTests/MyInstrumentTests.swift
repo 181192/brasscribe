@@ -171,3 +171,18 @@ import TranscriptionKit
     #expect(p.madeLineup(band) == .minimalBand && p.madeLineup(layered) == .fullBand)
     #expect(!p.fullBandPossible(nil))
 }
+
+/// A score keeps the seat it was first opened with: a new answer in Settings doesn't re-point "(you)".
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func aScoreKeepsItsSeat() throws {
+    let p = try fixturePiece(output: OutputChoice())
+    defer { p.delete() }
+    let first = PracticeModel(piece: p, score: try p.loadScore(), composition: p.loadComposition(), seat: .seat("euphonium", reads: nil))
+    #expect(first.myPart.flatMap { first.score.part(id: $0)?.name } == "Euphonium")
+    let reloaded = try #require(Piece.load(from: p.metaURL))
+    #expect(reloaded.seat == "euphonium")
+    let later = PracticeModel(piece: reloaded, score: try reloaded.loadScore(), composition: reloaded.loadComposition(), seat: .seat("solo-cornet", reads: nil))
+    #expect(later.myPart.flatMap { later.score.part(id: $0)?.name } == "Euphonium")
+    #expect(SeatChoice.parse(SeatChoice.seat("1st-baritone", reads: "bass").encoded) == .seat("1st-baritone", reads: "bass"))
+    #expect(SeatChoice.parse(SeatChoice.conductor.encoded) == .conductor)
+    #expect(SeatChoice.parse(SeatChoice.notSet.encoded) == .notSet)
+}

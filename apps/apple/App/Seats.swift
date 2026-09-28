@@ -17,6 +17,15 @@ enum SeatChoice: Equatable, Sendable {
 
     static let seatKey = "seat", readsKey = "seatReads"
 
+    /// One string for a piece to keep (`parse` reads it back): "" not set, "none" conductor, "id[:reads]".
+    var encoded: String {
+        switch self {
+        case .notSet: return ""
+        case .conductor: return "none"
+        case .seat(let id, let reads): return reads.map { "\(id):\($0)" } ?? id
+        }
+    }
+
     /// The saved answer. `-seat <id>[:bass]` and `-seat none` set it for tests and screenshots.
     static var stored: SeatChoice {
         if let i = LaunchOptions.args.firstIndex(of: "-seat"), i + 1 < LaunchOptions.args.count {
