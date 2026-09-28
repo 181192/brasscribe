@@ -8,6 +8,8 @@
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+use brasscribe_core::durations::Contour;
+
 use crate::CoreError;
 
 pub const BC_OK: i32 = 0;
@@ -138,36 +140,19 @@ pub unsafe extern "C" fn bc_arrange_layers_song(
     err: *mut *mut c_char,
 ) -> i32 {
     let options = from_c(options_json);
-    if midi.is_null() || midi_len.is_null() {
-        return BC_NULL;
-    }
+    let Some(midi) = midi_slices(midi, midi_len) else { return BC_NULL };
     let Some(beats) = from_c(beats_text) else { return BC_NULL };
     let title = from_c(title).unwrap_or_else(|| "Draft".into());
-    let mut files: Vec<Vec<u8>> = Vec::with_capacity(6);
-    for i in 0..6 {
-        let p = *midi.add(i);
-        let n = *midi_len.add(i);
-        if p.is_null() {
-            return BC_NULL;
-        }
-        files.push(std::slice::from_raw_parts(p, n).to_vec());
-    }
     let mut xml = String::new();
     let code = run(out_composition, err, || {
-        let layers = crate::LayerMidi {
-            solo_swiftf0: files[0].clone(),
-            solo_muscriptor: files[1].clone(),
-            solo_basic_pitch: files[2].clone(),
-            bass: files[3].clone(),
-            orchestra: files[4].clone(),
-            drums: files[5].clone(),
-        };
         let opts: serde_json::Value = match &options {
             Some(s) if !s.trim().is_empty() => serde_json::from_str(s).map_err(|e| (BC_INVALID, format!("options: {e}")))?,
             _ => serde_json::Value::Null,
         };
-        let o = options_of(&opts);
-        let r = crate::band_impl(&layers, &crate::LayerStems::default(), &beats, &title, o).map_err(map_err)?;
+        let mut o = options_of(&opts);
+        let contour = json_contour(&mut o);
+        let b = crate::LayerBytes { midi, stems: [None; 4] };
+        let r = crate::band_bytes(&b, &beats, &title, o, contour).map_err(map_err)?;
         xml = r.musicxml;
         Ok(r.composition_json)
     });
@@ -283,6 +268,9 @@ unsafe fn options_json(p: *const c_char) -> Result<serde_json::Value, (i32, Stri
 /// given). Writes one JSON object to `*out`:
 /// `{"composition": "<composition.json text>", "musicxml": "...",
 ///   "parts": [{"file_name": "...", "musicxml": "..."}], "separation_check": "<json text>" | null}`.
+///
+/// Every buffer is borrowed for the duration of the call and never copied: the
+/// stems are read in place while they are decoded.
 #[no_mangle]
 pub unsafe extern "C" fn bc_arrange_layers_band(
     midi: *const *const u8,
@@ -295,40 +283,93 @@ pub unsafe extern "C" fn bc_arrange_layers_band(
     out: *mut *mut c_char,
     err: *mut *mut c_char,
 ) -> i32 {
-    if midi.is_null() || midi_len.is_null() {
-        return BC_NULL;
-    }
+    bc_arrange_layers_band_contour(midi, midi_len, wav, wav_len, std::ptr::null(), 0, beats_text, title, options, out, err)
+}
+
+/// [`bc_arrange_layers_band`] with the solo contour as arrays instead of JSON:
+/// `contour` holds four pointers to `contour_len` doubles each (times in
+/// seconds, pitch in Hz, loudness in dB, SwiftF0 confidence; a null confidence
+/// = none), borrowed for the call like the stems. Non-finite values are read
+/// as the JSON form has them: time 0, pitch 0 Hz (no pitch), loudness −140 dB,
+/// confidence 0. A null `contour` falls back to `solo_contour` in `options`;
+/// `contour_len` 0 is an empty contour.
+#[no_mangle]
+pub unsafe extern "C" fn bc_arrange_layers_band_contour(
+    midi: *const *const u8,
+    midi_len: *const usize,
+    wav: *const *const u8,
+    wav_len: *const usize,
+    contour: *const *const f64,
+    contour_len: usize,
+    beats_text: *const c_char,
+    title: *const c_char,
+    options: *const c_char,
+    out: *mut *mut c_char,
+    err: *mut *mut c_char,
+) -> i32 {
+    let Some(midi) = midi_slices(midi, midi_len) else { return BC_NULL };
     let Some(beats) = from_c(beats_text) else { return BC_NULL };
     let title = from_c(title).unwrap_or_else(|| "Draft".into());
-    let mut files: Vec<Vec<u8>> = Vec::with_capacity(6);
-    for i in 0..6 {
-        let p = *midi.add(i);
-        if p.is_null() {
-            return BC_NULL;
-        }
-        files.push(std::slice::from_raw_parts(p, *midi_len.add(i)).to_vec());
-    }
-    let mut stems: [Option<Vec<u8>>; 4] = [None, None, None, None];
+    let mut stems: [Option<&[u8]>; 4] = [None; 4];
     if !wav.is_null() && !wav_len.is_null() {
         for (i, slot) in stems.iter_mut().enumerate() {
-            let p = *wav.add(i);
-            if !p.is_null() {
-                *slot = Some(std::slice::from_raw_parts(p, *wav_len.add(i)).to_vec());
-            }
+            *slot = bytes(*wav.add(i), *wav_len.add(i));
         }
     }
-    // Moved, not cloned, into the call: the stems are whole WAV files (tens of MB each).
+    let arrays = if contour.is_null() { None } else { Some([0, 1, 2, 3].map(|i| *contour.add(i))) };
+    if matches!(arrays, Some(a) if contour_len > 0 && a[..3].iter().any(|p| p.is_null())) {
+        return BC_NULL;
+    }
     run(out, err, move || {
         let opts = options_json(options)?;
-        let [solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums]: [Vec<u8>; 6] =
-            files.try_into().map_err(|_| (BC_INVALID, "six MIDI files".to_string()))?;
-        let layers = crate::LayerMidi { solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums };
-        let [solo, bass, drums, orchestra] = stems;
-        let st = crate::LayerStems { solo, bass, drums, orchestra };
-        let r = crate::band_impl(&layers, &st, &beats, &title, options_of(&opts)).map_err(map_err)?;
+        let mut o = options_of(&opts);
+        let c = match arrays {
+            Some([t, hz, db, conf]) => {
+                let read = |p: *const f64, bad: f64| -> Vec<f64> {
+                    if p.is_null() || contour_len == 0 {
+                        return Vec::new();
+                    }
+                    std::slice::from_raw_parts(p, contour_len).iter().map(|&x| if x.is_finite() { x } else { bad }).collect()
+                };
+                let hz = read(hz, 0.0);
+                let conf = (!conf.is_null()).then(|| read(conf, 0.0));
+                Some(Contour::from_hz(read(t, 0.0), &hz, read(db, -140.0)).with_confidence(conf))
+            }
+            None => json_contour(&mut o),
+        };
+        let b = crate::LayerBytes { midi, stems };
+        let r = crate::band_bytes(&b, &beats, &title, o, c).map_err(map_err)?;
         let parts: Vec<serde_json::Value> = r.parts.iter().map(|p| serde_json::json!({"file_name": p.file_name, "musicxml": p.musicxml})).collect();
         Ok(serde_json::json!({"composition": r.composition_json, "musicxml": r.musicxml, "parts": parts, "separation_check": r.separation_check_json}).to_string())
     })
+}
+
+/// A borrowed view of `len` bytes at `p`; None for a null pointer. A zero length is an empty slice.
+unsafe fn bytes<'a>(p: *const u8, len: usize) -> Option<&'a [u8]> {
+    if p.is_null() {
+        None
+    } else if len == 0 {
+        Some(&[])
+    } else {
+        Some(std::slice::from_raw_parts(p, len))
+    }
+}
+
+/// The six MIDI files as borrowed slices; None when an array or a file pointer is null.
+unsafe fn midi_slices<'a>(midi: *const *const u8, midi_len: *const usize) -> Option<[&'a [u8]; 6]> {
+    if midi.is_null() || midi_len.is_null() {
+        return None;
+    }
+    let mut out: [&[u8]; 6] = [&[]; 6];
+    for (i, slot) in out.iter_mut().enumerate() {
+        *slot = bytes(*midi.add(i), *midi_len.add(i))?;
+    }
+    Some(out)
+}
+
+/// The solo contour of the options JSON, built as the pipeline reads it.
+fn json_contour(o: &mut crate::LayersSongOptions) -> Option<Contour> {
+    o.solo_contour.take().map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence))
 }
 
 /// Humanize one player's notes. `request` is JSON

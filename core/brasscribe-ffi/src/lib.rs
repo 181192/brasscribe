@@ -331,26 +331,54 @@ pub struct BandOutput {
     pub separation_check_json: Option<String>,
 }
 
-fn stem(b: &Option<Vec<u8>>) -> Result<Option<Audio>, CoreError> {
-    b.as_ref().map(|b| Audio::from_wav(b).map_err(invalid)).transpose()
+fn stem(b: Option<&[u8]>) -> Result<Option<Audio>, CoreError> {
+    b.map(|b| Audio::from_wav(b).map_err(invalid)).transpose()
 }
 
-pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str, title: &str, o: LayersSongOptions) -> Result<BandOutput, CoreError> {
+/// The layer inputs as borrowed bytes: six MIDI files (solo SwiftF0, solo MuScriptor, solo Basic
+/// Pitch, bass, orchestra, drums) and four optional WAV stems (solo, bass, drums, orchestra). The
+/// C ABI builds this straight from the caller's buffers, so no stem is copied before it is decoded.
+pub(crate) struct LayerBytes<'a> {
+    pub midi: [&'a [u8]; 6],
+    pub stems: [Option<&'a [u8]>; 4],
+}
+
+impl LayerMidi {
+    fn bytes(&self) -> [&[u8]; 6] {
+        [&self.solo_swiftf0, &self.solo_muscriptor, &self.solo_basic_pitch, &self.bass, &self.orchestra, &self.drums]
+    }
+}
+
+impl LayerStems {
+    fn bytes(&self) -> [Option<&[u8]>; 4] {
+        [self.solo.as_deref(), self.bass.as_deref(), self.drums.as_deref(), self.orchestra.as_deref()]
+    }
+}
+
+pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str, title: &str, mut o: LayersSongOptions) -> Result<BandOutput, CoreError> {
+    let contour = o.solo_contour.take().map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence));
+    band_bytes(&LayerBytes { midi: layers.bytes(), stems: stems.bytes() }, beats_text, title, o, contour)
+}
+
+/// [`band_impl`] on borrowed inputs, with the solo contour already built (`o.solo_contour` is not read).
+pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: LayersSongOptions, contour: Option<Contour>) -> Result<BandOutput, CoreError> {
+    let [solo_sw, solo_mus, solo_bp, bass, orchestra, drums] = b.midi;
+    let [solo_audio, bass_audio, drums_audio, orchestra_audio] = b.stems;
     let l = Layers {
-        solo_sw: midi(&layers.solo_swiftf0)?,
-        solo_mus: midi(&layers.solo_muscriptor)?,
-        solo_bp: midi(&layers.solo_basic_pitch)?,
-        bass: midi(&layers.bass)?,
-        orchestra: midi(&layers.orchestra)?,
-        drums: midi(&layers.drums)?,
-        solo_audio: stem(&stems.solo)?,
-        bass_audio: stem(&stems.bass)?,
-        drums_audio: stem(&stems.drums)?,
-        orchestra_audio: stem(&stems.orchestra)?,
+        solo_sw: midi(solo_sw)?,
+        solo_mus: midi(solo_mus)?,
+        solo_bp: midi(solo_bp)?,
+        bass: midi(bass)?,
+        orchestra: midi(orchestra)?,
+        drums: midi(drums)?,
+        solo_audio: stem(solo_audio)?,
+        bass_audio: stem(bass_audio)?,
+        drums_audio: stem(drums_audio)?,
+        orchestra_audio: stem(orchestra_audio)?,
     };
     let beats = Beats::parse(beats_text).map_err(invalid)?;
     let opts = LayersOptions {
-        solo_contour: o.solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence)),
+        solo_contour: contour,
         no_free_time: !o.free_time,
         free_tempo: o.free_tempo,
         no_gate: !o.gate,
