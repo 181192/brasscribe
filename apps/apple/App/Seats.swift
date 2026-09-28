@@ -190,6 +190,23 @@ enum Seats {
         }
     }
 
+    /// The notice as one line, for the banner above the part: "The small band has no 1st Baritone —
+    /// showing Euphonium". The whole sentence opens from it.
+    static func mappingShort(seat s: SeatInfo, lineup: Lineup, part: SeatPart) -> String? {
+        guard !part.exact else { return nil }
+        let seatName = name(s)
+        guard let partName = part.part.map({ PartNames.display($0) }) else {
+            switch lineup {
+            case .quartet: return String(localized: "The quartet has no percussion part — showing every part")
+            default: return String(localized: "The small band has no percussion part — showing every part")
+            }
+        }
+        switch lineup {
+        case .quartet: return String(localized: "The quartet has no \(seatName) — showing \(partName)")
+        default: return String(localized: "The small band has no \(seatName) — showing \(partName)")
+        }
+    }
+
     /// The key a lineup part is written in: a band seat's instrument, or the quartet's own parts.
     static func partKeyName(_ part: String) -> String? {
         if let s = info(part: part) { return keyName(instrument: s.instrument) }

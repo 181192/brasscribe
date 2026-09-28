@@ -257,10 +257,10 @@ struct ReviewView: View {
             }
             Segmented(label: String(localized: "Which notes"), selection: $filter,
                       options: wide
-                        ? [(Filter.mine, String(localized: "Your part (\(count(.mine)))")),
+                        ? [(Filter.mine, myPartArranged ? String(localized: "Your part (arranged)") : String(localized: "Your part (\(count(.mine)))")),
                            (Filter.others, String(localized: "Other parts (\(count(.others)))")),
                            (Filter.all, String(localized: "All parts (\(count(.all)))"))]
-                        : [(Filter.mine, String(localized: "Yours (\(count(.mine)))")),
+                        : [(Filter.mine, myPartArranged ? String(localized: "Yours (arranged)") : String(localized: "Yours (\(count(.mine)))")),
                            (Filter.others, String(localized: "Others (\(count(.others)))")),
                            (Filter.all, String(localized: "All (\(count(.all)))"))])
             .accessibilityIdentifier("reviewFilter")
@@ -668,7 +668,7 @@ struct ArrangedNotice: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
             DisplayTitle(text: String(localized: "Your part is arranged"), size: 34)
-            SourceLabel(kind: .arranged, part: part)
+            SourceLabel(kind: .arranged)
             Text(Self.body(part))
                 .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
                 .fixedSize(horizontal: false, vertical: true)

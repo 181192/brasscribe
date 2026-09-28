@@ -93,6 +93,19 @@ final class PracticeModel {
     /// Your part is another part than your seat's, because this lineup has none: the sentence that says
     /// so ("This small band has no 1st Baritone…"), shown under the part name and announced once.
     let seatNotice: String?
+    /// The same, as one line ("The small band has no 1st Baritone — showing Euphonium").
+    let seatNoticeShort: String?
+    /// Notes still marked "?" (the score's status line).
+    var toCheck = 0
+    /// The player closed the notice for this score.
+    var seatNoticeDismissed: Bool
+
+    func dismissSeatNotice() {
+        seatNoticeDismissed = true
+        var p = Piece.load(from: piece.metaURL) ?? piece
+        p.seatNoticeDismissed = true
+        try? p.save()
+    }
 
     init(piece: Piece, score parsed: Score, composition: Composition?, seat: SeatChoice = .stored) {
         self.piece = piece
@@ -113,40 +126,44 @@ final class PracticeModel {
         let mine = Self.resolveMyPart(piece: piece, score: parsed, seat: seat)
         myPart = mine.partID
         seatNotice = mine.notice
+        seatNoticeShort = mine.short
+        seatNoticeDismissed = piece.seatNoticeDismissed ?? false
     }
 
     /// Your part in this score, in order: the part picked for it ("Make this my part"); the seat a solo
     /// take was written for; your seat's part in the lineup (the core's table); with no seat set, the
     /// lineup's lead as before. "I conduct or listen" has no part.
-    static func resolveMyPart(piece: Piece, score: Score, seat: SeatChoice) -> (partID: String?, notice: String?) {
+    static func resolveMyPart(piece: Piece, score: Score, seat: SeatChoice) -> (partID: String?, notice: String?, short: String?) {
         func id(named name: String) -> String? { score.parts.first { $0.name == name }?.id }
-        if let name = piece.myPart, let id = id(named: name) { return (id, nil) }
+        if let name = piece.myPart, let id = id(named: name) { return (id, nil, nil) }
         if piece.profile == .solo, let s = piece.output?.seat, let part = Seats.part(s, in: .fullBand)?.part, let id = id(named: part) {
-            return (id, nil)
+            return (id, nil, nil)
         }
         switch seat {
-        case .conductor: return (nil, nil)
+        case .conductor: return (nil, nil, nil)
         case .notSet:
             // my part: the lineup's lead (the tune), else the first part
             let lead = (piece.output?.lineup ?? .fullBand).lead.lowercased()
             return (score.parts.first { $0.name.lowercased().contains(lead) }?.id
-                ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id, nil)
+                ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id, nil, nil)
         case .seat(let seatID, let reads):
-            guard let info = Seats.info(seatID) else { return (nil, nil) }
+            guard let info = Seats.info(seatID) else { return (nil, nil, nil) }
             // the score's own lineup first; a score from elsewhere is matched by its part names
             var lineups: [Lineup] = [.fullBand, .minimalBand, .quartet]
             if let own = piece.output?.lineup { lineups.removeAll { $0 == own }; lineups.insert(own, at: 0) }
             for (k, lineup) in lineups.enumerated() {
                 guard let sp = Seats.part(seatID, in: lineup) else { continue }
                 if let part = sp.part, let id = id(named: part) {
-                    return (id, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads))
+                    return (id, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineup, part: sp))
                 }
                 // the score's own lineup has no part for the seat (percussion): every part opens
                 if sp.part == nil, k == 0, piece.output != nil {
-                    return (nil, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads))
+                    return (nil, Seats.mappingNotice(seat: info, lineup: lineup, part: sp, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineup, part: sp))
                 }
             }
-            return (nil, nil)
+            return (nil, nil, nil)
         }
     }
 

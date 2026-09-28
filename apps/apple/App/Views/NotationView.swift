@@ -10,6 +10,7 @@ struct NotationView: View {
     @Bindable var model: PracticeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var hsize
+    @Environment(AppModel.self) private var app
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
 
@@ -24,7 +25,14 @@ struct NotationView: View {
                 ScrollView(.vertical) {
                     LazyVStack(spacing: BrasscribeDesign.Space.s3) {
                         // the part view's header scrolls with the music, so it never takes the score's room
-                        PartHeader(model: model).padding(.top, BrasscribeDesign.Space.s2).id("page-top")
+                        VStack(alignment: .leading, spacing: 0) {
+                            if hsize == .compact {
+                                StatusLine(model: model, toCheck: model.toCheck, wide: false) { app.path.append(.review(model.piece)) }
+                            }
+                            PartHeader(model: model)
+                        }
+                        .padding(.top, BrasscribeDesign.Space.s1)
+                        .id("page-top")
                         ForEach(model.pages, id: \.number) { page in
                             PageView(model: model, page: page, rotorNS: rotorNS)
                                 .id("page-\(page.number)")
@@ -39,6 +47,7 @@ struct NotationView: View {
                     .accessibilityLabel(Text("Score pages"))
                 }
                 .background(Color.Brasscribe.bg)
+                .accessibilityIdentifier("scoreArea")
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
