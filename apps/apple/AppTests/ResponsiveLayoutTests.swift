@@ -178,7 +178,7 @@ import TranscriptionKit
         let items = ReviewList.items(score: exportModel.score, composition: exportModel.composition, uncertainty: exportModel.uncertainty)
         if let target = items.first {
             let xml = (try? String(contentsOf: piece.scoreURL, encoding: .utf8)) ?? ""
-            reports.append(await sheet("change-note", app: full) { ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: nil) {} })
+            reports.append(await sheet("change-note", app: full) { ChangeNoteSheet(piece: piece, target: target, xml: xml, evidence: nil) { _, _ in } })
         }
         exportModel.stopAll()
         reports.append(await sheet("first-run", app: full) { FirstRunView() })

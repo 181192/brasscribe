@@ -156,8 +156,9 @@ func testVideo() -> URL? {
     #expect(ReviewList.items(score: score, composition: plain, uncertainty: UncertaintyIndex(composition: plain)).count > items.count)
 }
 
-/// Review edits go to the Composition: Change note is arranged again by the Rust core, and a kept
-/// group is certain, so it leaves Review after arranging again.
+/// Review edits go to the Composition: Change note is arranged again by the Rust core and the note
+/// stays open until kept (undo puts it back); a kept group is certain, so it leaves Review after
+/// arranging again.
 @Test(.enabled(if: fixtureDir() != nil)) @MainActor func reviewEditsGoThroughTheCore() throws {
     let dir = try #require(fixtureDir())
     let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
@@ -179,6 +180,18 @@ func testVideo() -> URL? {
     let again = try arranged.loadScore()
     let part = try #require(again.part(id: first.partID))
     #expect(part.notes.contains { $0.startTick == lead.startTick && $0.midiPitch == pitch + 2 })
+    // a changed note stays open (Review stays on it) until it is kept
+    let changed = ReviewList.items(score: again, composition: edited, uncertainty: UncertaintyIndex(composition: edited))
+    #expect(changed.map(\.id) == items.map(\.id))
+    let v = try #require(edited.voices.firstIndex { $0.id == change.voice })
+    let n = try #require(edited.voices[v].notes.firstIndex { $0.start == change.start })
+    #expect(edited.voices[v].notes[n].sources.contains("player"))
+    #expect(edited.voices[v].notes[n].confidence == comp.voices[v].notes[n].confidence)
+
+    // undo puts back what Brasscribe wrote, and it is not the player's any more
+    var undone = edited
+    #expect(CompositionEdit.change(&undone, scoreTick: lead.startTick, concertPitch: pitch + 2, by: -2, undo: true) != nil)
+    #expect(undone == comp)
 
     CompositionEdit.keep(&edited, item: first, lead: lead)
     let after = ReviewList.items(score: again, composition: edited, uncertainty: UncertaintyIndex(composition: edited))

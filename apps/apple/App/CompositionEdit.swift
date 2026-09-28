@@ -3,8 +3,8 @@ import ScoreKit
 import TranscriptionKit
 
 /// Edits the musician makes in Review, written to the Composition (the transcription itself),
-/// so they survive arranging the score again: a changed note gets the new pitch, confidence 1
-/// and the source "player"; a kept note or group gets confidence 1.
+/// so they survive arranging the score again: a changed note gets the new pitch and the source
+/// "player" (it keeps its "?" until it is kept); a kept note or group gets confidence 1.
 enum CompositionEdit {
     /// The Composition note behind an arranged note: same onset, same pitch class; the least
     /// certain one when several voices match.
@@ -22,13 +22,14 @@ enum CompositionEdit {
 
     struct Change: Equatable { let voice: String; let start: Int; let from: Int; let to: Int }
 
-    /// "Change note…": the note moves by `semitones`, and the player's pitch is certain.
-    static func change(_ comp: inout Composition, scoreTick: Int, concertPitch: Int, by semitones: Int) -> Change? {
+    /// "Change note…": the note moves by `semitones` and is the player's. It stays open until Keep, so
+    /// the player can listen to it, change it again or undo; `undo` puts back what Brasscribe wrote.
+    static func change(_ comp: inout Composition, scoreTick: Int, concertPitch: Int, by semitones: Int, undo: Bool = false) -> Change? {
         guard let (v, i) = noteIndex(in: comp, scoreTick: scoreTick, concertPitch: concertPitch) else { return nil }
         let old = comp.voices[v].notes[i].pitch
         comp.voices[v].notes[i].pitch = max(0, min(127, old + semitones))
-        comp.voices[v].notes[i].confidence = 1
-        if !comp.voices[v].notes[i].sources.contains("player") { comp.voices[v].notes[i].sources.append("player") }
+        if undo { comp.voices[v].notes[i].sources.removeAll { $0 == "player" } }
+        else if !comp.voices[v].notes[i].sources.contains("player") { comp.voices[v].notes[i].sources.append("player") }
         return Change(voice: comp.voices[v].id, start: comp.voices[v].notes[i].start, from: old, to: comp.voices[v].notes[i].pitch)
     }
 
