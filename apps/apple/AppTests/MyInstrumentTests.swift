@@ -149,6 +149,14 @@ import TranscriptionKit
     #expect(PartSourceKind.sources(composition: comp, output: choice)["1st Baritone"] == .yourRecording)
 }
 
+/// With no clef chosen, the seat's own: the bass trombone's mapped part is at concert pitch.
+@Test func theReadingDefaultsToTheSeatsOwn() {
+    #expect(Seats.reading(nil, seat: Seats.info("bass-trombone")) == "bass")
+    #expect(Seats.reading(nil, seat: Seats.info("euphonium")) == "treble")
+    #expect(Seats.reading("bass", seat: Seats.info("euphonium")) == "bass")
+    #expect(Seats.reading(nil, seat: Seats.info("percussion")) == nil)
+}
+
 /// A drummer's solo take is no drum part: One instrument is refused for the percussion seat only.
 @Test func percussionHasNoSoloTake() {
     #expect(Seats.isPercussion(.seat("percussion", reads: nil)))
@@ -182,6 +190,11 @@ import TranscriptionKit
     #expect(reloaded.seat == "euphonium")
     let later = PracticeModel(piece: reloaded, score: try reloaded.loadScore(), composition: reloaded.loadComposition(), seat: .seat("solo-cornet", reads: nil))
     #expect(later.myPart.flatMap { later.score.part(id: $0)?.name } == "Euphonium")
+    // a score made for a seat keeps it, though Settings changed before it was first opened
+    let made = try fixturePiece(output: OutputChoice(seat: "euphonium"))
+    defer { made.delete() }
+    let opened = PracticeModel(piece: made, score: try made.loadScore(), composition: made.loadComposition(), seat: .seat("solo-cornet", reads: nil))
+    #expect(opened.myPart.flatMap { opened.score.part(id: $0)?.name } == "Euphonium")
     #expect(SeatChoice.parse(SeatChoice.seat("1st-baritone", reads: "bass").encoded) == .seat("1st-baritone", reads: "bass"))
     #expect(SeatChoice.parse(SeatChoice.conductor.encoded) == .conductor)
     #expect(SeatChoice.parse(SeatChoice.notSet.encoded) == .notSet)

@@ -124,7 +124,9 @@ final class PracticeModel {
         let byName = PartSourceKind.sources(composition: composition, output: piece.output)
         partSources = Dictionary(parsed.parts.compactMap { p in byName[p.name].map { (p.id, $0) } }, uniquingKeysWith: { a, _ in a })
         // The score keeps the seat it was first opened with, so a new answer in Settings leaves it be.
-        let own = piece.seat.map(SeatChoice.parse) ?? seat
+        // Before it has one, the seat it was made for (a take records it), else the current one.
+        let made = piece.output?.seat.flatMap { id in Seats.info(id).map { _ in SeatChoice.seat(id, reads: piece.output?.reads) } }
+        let own = piece.seat.map(SeatChoice.parse) ?? made ?? seat
         if piece.seat == nil, var p = Piece.load(from: piece.metaURL) {
             p.seat = own.encoded
             try? p.save()
