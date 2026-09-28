@@ -210,8 +210,8 @@ enum Seats {
         }
     }
 
-    /// Can the seat carry the tune ("Who plays the tune?")? Percussion can't.
-    static func canCarryTune(_ s: SeatInfo) -> Bool { !s.reads.isEmpty }
+    /// Can the seat carry the tune ("Who plays the tune?")? The core says (melody or solo roles).
+    static func canCarryTune(_ s: SeatInfo) -> Bool { s.tune }
 }
 
 /// Where a part comes from, as the core derives it (`part_sources`). The words are the same on every

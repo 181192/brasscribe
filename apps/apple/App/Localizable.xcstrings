@@ -3841,16 +3841,6 @@
         }
       }
     },
-    "Tenor horn": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Althorn"
-          }
-        }
-      }
-    },
     "Text a screen reader can read aloud": {
       "localizations": {
         "nb": {
@@ -5256,7 +5246,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "din stemme: %@"
+            "value": "stemmen din: %@"
           }
         }
       }
