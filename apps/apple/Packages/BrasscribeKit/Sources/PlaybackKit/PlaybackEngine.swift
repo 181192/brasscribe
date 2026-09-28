@@ -204,7 +204,10 @@ public final class PlaybackEngine {
     }
 
     private func loadSequence() throws {
-        let midi = MIDIWriter.data(for: score, options: .init(includeMetronome: true))
+        // the score's dynamics, on AVAudioUnitSampler's velocity curve
+        let midi = MIDIWriter.data(for: score, options: .init(includeMetronome: true, velocityMap: { v, percussion in
+            PlaybackLevels.samplerVelocity(v, percussion: percussion)
+        }))
         try sequencer.load(from: midi, options: [])
         // The file's conductor track (title, tempo, meter) may or may not be folded into
         // `tempoTrack`; the last track is always the metronome, preceded by one per part.

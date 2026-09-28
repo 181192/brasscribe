@@ -287,7 +287,7 @@ struct Reference: Decodable {
     let s = try MusicXMLParser.parse(Data(xml.utf8))
     let n = s.parts[0].playbackNotes
     #expect(n.count == 3)
-    #expect(n[0] == PlaybackNote(pitch: 72, startTick: 0, durTicks: 1920, velocity: 80))
+    #expect(n[0] == PlaybackNote(pitch: 72, startTick: 0, durTicks: 1920, velocity: 79)) // mf
     #expect(n[1].startTick == 960 && n[1].pitch == 76)
     #expect(n[2].startTick == 1920 && n[2].pitch == 74)
     #expect(s.measures[1].startTick == 1920)

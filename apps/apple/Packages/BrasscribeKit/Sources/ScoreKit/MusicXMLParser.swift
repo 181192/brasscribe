@@ -17,7 +17,8 @@ public enum MusicXMLError: Error, Equatable, CustomStringConvertible {
 /// Covers what the brasscribe arranger writes and common exports: multiple parts,
 /// `<chord>`, `<backup>`/`<forward>`, ties, transposing instruments
 /// (`<chromatic>` + `<octave-change>`), unpitched percussion, per-part `<divisions>`
-/// and `<sound tempo>`. Grace notes and cue notes are skipped.
+/// and `<sound tempo>`. Grace notes and cue notes are skipped. Dynamic marks, hairpins and accents
+/// give each note its velocity (`Dynamics`).
 public enum MusicXMLParser {
     public static func parse(_ data: Data) throws -> Score {
         let d = Delegate()
@@ -66,6 +67,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         var unpitched = false, displayStep = "", displayOctave = 4, notehead = "normal"
         var duration = 0, type: String?, dots = 0, tieStart = false, tieStop = false
         var hasPitch = false
+        var accent = 0
     }
     struct RawMeasure { var number = "", start = 0, maxPos = 0, beats = 4, beatType = 4, fifths = 0 }
 
@@ -77,6 +79,9 @@ private final class Delegate: NSObject, XMLParserDelegate {
     var tempos: [Int: Double] = [:]
     var directions: [Score.Direction] = []
     var partDynamics: [String: [Int: String]] = [:]
+    var partWedges: [String: [Wedge]] = [:]
+    var openWedges: [String: (Wedge.Kind, Int)] = [:] // wedge number -> kind, start tick (current part)
+    var mark = Dynamics.defaultMark // the dynamic in effect, in document order
     var firstPart: String?
     var currentTick: Int { partTick + toTicks(pos) }
 
@@ -119,6 +124,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             partNotes[id] = []
             divisions = 1; beats = 4; beatType = 4; fifths = 0; chromatic = 0; octaveChange = 0
             measureIndex = -1; partTick = 0
+            mark = Dynamics.defaultMark; openWedges = [:]
         case "measure":
             measureIndex += 1
             measure = RawMeasure(number: a["number"] ?? "\(measureIndex + 1)", start: partTick)
@@ -143,8 +149,25 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "transpose": inTranspose = true; chromatic = 0; octaveChange = 0
         case "sound":
             if let t = a["tempo"], let v = Double(t), v > 0, tempos[currentTick] == nil { tempos[currentTick] = v }
-        case "p", "pp", "ppp", "f", "ff", "fff", "mp", "mf", "sf", "sfz", "fp", "sfp", "rf", "fz":
-            if stack.dropLast().last == "dynamics", let part = curPart { partDynamics[part, default: [:]][currentTick] = name }
+        case _ where Dynamics.isMark(name) && stack.dropLast().last == "dynamics":
+            if let part = curPart {
+                partDynamics[part, default: [:]][note == nil ? currentTick : partTick + toTicks(note!.isChord ? lastNoteStart : pos)] = name
+                mark = name
+            }
+        case "accent", "strong-accent":
+            if stack.dropLast().last == "articulations", let n = note { note?.accent = max(n.accent, Dynamics.accentSteps[name] ?? 0) }
+        case "wedge":
+            guard let part = curPart else { break }
+            let number = a["number"] ?? "1"
+            switch a["type"] {
+            case "crescendo": openWedges[number] = (.crescendo, currentTick)
+            case "diminuendo": openWedges[number] = (.diminuendo, currentTick)
+            case "stop":
+                if let (kind, start) = openWedges.removeValue(forKey: number), currentTick > start {
+                    partWedges[part, default: []].append(Wedge(kind: kind, startTick: start, stopTick: currentTick))
+                }
+            default: break
+            }
         default: break
         }
     }
@@ -248,7 +271,38 @@ private final class Delegate: NSObject, XMLParserDelegate {
         partNotes[p, default: []].append(ScoreNote(
             kind: kind, measureIndex: measureIndex, startTick: partTick + toTicks(start),
             durTicks: toTicks(n.duration), type: n.type, dots: n.dots, isChordTone: n.isChord,
-            tieStart: n.tieStart, tieStop: n.tieStop, midiPitch: midi))
+            tieStart: n.tieStart, tieStop: n.tieStop, midiPitch: midi, dynamic: mark, accent: n.accent))
+    }
+
+    /// Each note's velocity: its mark, moved by any hairpin it starts in, plus its accent.
+    static func withVelocities(_ notes: [ScoreNote], wedges: [Wedge], marks: [Int: String]) -> [ScoreNote] {
+        var out = notes
+        let order = out.indices.sorted { out[$0].startTick < out[$1].startTick }
+        for i in order {
+            let t = out[i].startTick
+            var v = Double(Dynamics.velocity(mark: out[i].dynamic))
+            for w in wedges where t >= w.startTick {
+                let by = Double(w.kind == .crescendo ? Dynamics.step : -Dynamics.step)
+                let end = target(of: w, marks: marks)
+                if t >= w.stopTick {
+                    // with no mark at its end, the music stays a step louder or softer until the next mark
+                    let next = marks.keys.filter { $0 >= w.stopTick }.min() ?? .max
+                    if end == nil, t < next { v += by }
+                    continue
+                }
+                let startMark = order.first { out[$0].startTick >= w.startTick }.map { out[$0].dynamic } ?? out[i].dynamic
+                let v0 = Double(Dynamics.velocity(mark: startMark))
+                let v1 = end.map { Double(Dynamics.velocity(mark: $0)) } ?? v0 + by
+                v = v0 + (v1 - v0) * Double(t - w.startTick) / Double(w.stopTick - w.startTick)
+            }
+            out[i].velocity = Dynamics.clamp(Int(v.rounded()) + out[i].accent * Dynamics.step)
+        }
+        return out
+    }
+
+    /// The first mark at or up to a bar after a hairpin's end.
+    static func target(of w: Wedge, marks: [Int: String]) -> String? {
+        marks.filter { $0.key >= w.stopTick && $0.key <= w.stopTick + 4 * Score.ticksPerQuarter }.min { $0.key < $1.key }?.value
     }
 
     func build() throws -> Score {
@@ -265,6 +319,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
            lastEnd > last.startTick + last.lengthTicks {
             measures[measures.count - 1].lengthTicks = lastEnd - last.startTick
         }
+        for id in ids { partNotes[id] = Self.withVelocities(partNotes[id] ?? [], wedges: partWedges[id] ?? [], marks: partDynamics[id] ?? [:]) }
         let parts = ids.map { id -> Part in
             let info = partInfos[id] ?? PartInfo(id: id, name: id)
             let perc = partPercussion[id] ?? false || info.instrumentSound.hasPrefix("drum") || info.midiChannel == 10
@@ -272,7 +327,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
                         instrumentSound: info.instrumentSound, midiProgram: perc ? nil : info.midiProgram,
                         midiChannel: info.midiChannel, transposeSemitones: partTranspose[id] ?? 0,
                         isPercussion: perc, writtenFifths: partFifths[id] ?? 0, notes: partNotes[id] ?? [],
-                        dynamics: partDynamics[id] ?? [:], measureFifths: partMeasures[id]?.map(\.fifths) ?? [],
+                        dynamics: partDynamics[id] ?? [:], wedges: partWedges[id] ?? [], measureFifths: partMeasures[id]?.map(\.fifths) ?? [],
                         hasMarks: partMarked.contains(id))
         }
         var tempoList = tempos.sorted { $0.key < $1.key }.map { Score.Tempo(tick: $0.key, bpm: $0.value) }

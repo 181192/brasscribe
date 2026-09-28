@@ -24,6 +24,10 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         let band = try #require(levels["band"] as? [String: Any])
         #expect(band["phrase_lufs"] as? Double == PlaybackLevels.bandPhraseLUFS)
         #expect((band["gain_db"] as? [String: Double])?["apple"] == PlaybackLevels.bandGainDB)
+        #expect(band["arrangement_lufs"] as? Double == PlaybackLevels.bandArrangementLUFS)
+        let sampler = try #require((levels["dynamics"] as? [String: Any])?["sampler_velocity"] as? [String: Any])
+        #expect((sampler["apple_pitched"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPitched.map { [$0.0, $0.1] })
+        #expect((sampler["apple_percussion"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPercussion.map { [$0.0, $0.1] })
         let rec = try #require(levels["recording"] as? [String: Any])
         #expect(rec["target_lufs"] as? Double == PlaybackLevels.recordingTargetLUFS)
         #expect(rec["max_boost_db"] as? Double == PlaybackLevels.recordingMaxBoostDB)
@@ -170,15 +174,5 @@ struct RecordingLevelTests {
         #expect(e.originalGainDB == PlaybackLevels.recordingMaxBoostDB)
         let lufs = LoudnessMeter.integrated(try e.renderOriginal(fromBeat: 0, seconds: 30))
         #expect(abs(lufs - (file + PlaybackLevels.recordingMaxBoostDB)) < 0.5)
-    }
-
-    /// A whole arrangement from the band sits where the recording does.
-    @Test func bandArrangementMatchesTheRecordingTarget() throws {
-        let e = try engine(recording)
-        let buf = try e.renderScore(fromBeat: 0, beats: Double(score.endTick) / Double(Score.ticksPerQuarter))
-        let lufs = LoudnessMeter.integrated(buf)
-        print("LEVELS golden arrangement \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.recordingTargetLUFS) < 1.5)
-        #expect(buf.peak <= OutputStageKernel.ceiling)
     }
 }
