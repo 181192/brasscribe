@@ -13,7 +13,9 @@ public static class EngineLayerSource
     {
         string dir = Path.Combine(cacheRoot, string.Concat(jobId.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)));
         string complete = Path.Combine(dir, ".complete");
-        if (File.Exists(complete) && LayerInputs.FromDirectory(dir) is { } cached) return cached;
+        // Reading the stems takes a while (about 42 MB per minute of audio); the caller may be the UI thread.
+        if (await Task.Run(() => File.Exists(complete) ? LayerInputs.FromDirectory(dir) : null, ct).ConfigureAwait(false) is { } cached)
+            return cached;
 
         var stages = await engine.ListStagesAsync(jobId, ct).ConfigureAwait(false);
         var where = new Dictionary<string, string>();
@@ -33,6 +35,6 @@ public static class EngineLayerSource
             File.Move(partial, target, overwrite: true);
         }
         await File.WriteAllTextAsync(complete, "", ct).ConfigureAwait(false);
-        return LayerInputs.FromDirectory(dir);
+        return await Task.Run(() => LayerInputs.FromDirectory(dir), ct).ConfigureAwait(false);
     }
 }
