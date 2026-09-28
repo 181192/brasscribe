@@ -604,6 +604,7 @@
     <string name="tune_lineup">%1$s (som vanlig)</string>
     <string name="tune_seat">Deg: %1$s</string>
     <string name="solo_one_part">Et soloopptak gir én stemme: din.</string>
+    <string name="change_output">Band, vanskelighet og toneart …</string>
     <string name="write_for_another">Skriv for et annet instrument …</string>
     <string name="source_yours">Fra opptaket ditt</string>
     <string name="source_recording">Fra opptaket</string>

@@ -601,7 +601,9 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     when (sheet) {
         Sheet.PARTS -> PartsSheet(st, controller, your.index, sources, onMakeMine = { vm.makeMyPart(st.parts[it].replace('\u00A0', ' ').trim()) },
-            onWriteForAnother = if (r.isSoloTake && vm.container.seats.isNotEmpty()) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null) { sheet = null }
+            // How should the score be? again, from the score: what "You can change this later" promises.
+            onWriteForAnother = if (r.composition != null) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null,
+            outputLabel = if (r.isSoloTake && vm.container.seats.isNotEmpty()) R.string.write_for_another else R.string.change_output) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
             LoopControl(st.totalBars, st.loop, onSet = { a, b ->
@@ -840,7 +842,7 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
 @Composable
 private fun PartsSheet(
     st: ScoreUiState, controller: ScoreController, yours: Int?, sources: Map<String, no.brasscribe.play.model.PartSource>,
-    onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, onDismiss: () -> Unit,
+    onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, outputLabel: Int = R.string.write_for_another, onDismiss: () -> Unit,
 ) {
     val c = BrasscribeTheme.colors
     val large = largeText()
@@ -898,8 +900,8 @@ private fun PartsSheet(
                 }
             }
         }
-        // A solo take: another player's instrument is chosen on How should the score be? (it re-arranges).
-        if (onWriteForAnother != null) OutlineButton(stringResource(R.string.write_for_another), onWriteForAnother)
+        // How should the score be? (it re-arranges): the band, difficulty and key, and for a solo take another player's instrument.
+        if (onWriteForAnother != null) OutlineButton(stringResource(outputLabel), onWriteForAnother, Modifier.semantics { testTag = "change-output" })
     }
 }
 
