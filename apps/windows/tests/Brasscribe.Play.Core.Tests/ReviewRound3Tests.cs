@@ -69,11 +69,15 @@ public class ReviewRound3Tests(ITestOutputHelper log)
         return (score, new ReviewViewModel(score, new Quiet(), strings), composition);
     }
 
-    [Fact]
+    private const string NoGolden =
+        "data/golden/mikkel-arranged-band not found or its composition has no review groups: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set BRASSCRIBE_REPO)";
+
+    [SkippableFact]
     public void The_golden_is_reviewed_by_group()
     {
-        if (Golden(new ManagedCoreBridge()) is not { } g) return;
-        var (score, review, composition) = g;
+        var g = Golden(new ManagedCoreBridge());
+        Skip.If(g is null, NoGolden);
+        var (score, review, composition) = g.Value;
         review.Load(ReviewScope.AllParts);
         int groups = composition.Review!.Count;
         log.WriteLine($"{groups} review groups; {review.AllItems.Count} review items; {score.UncertainLeft} marks on the score");
@@ -106,11 +110,15 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     }
 
     /// <summary>The same with the native core's talking score (the links come from the managed reading).</summary>
-    [Fact]
+    [SkippableFact]
     public void The_golden_is_reviewed_by_group_with_the_native_core()
     {
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 } || NativeCoreBridge.TryCreate() is not { } native) return;
-        if (Golden(native) is not { } g) return;
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
+        var native = NativeCoreBridge.TryCreate();
+        Skip.If(native is null, "BRASSCRIBE_FFI_PATH is set but brasscribe_ffi did not load from it");
+        var golden = Golden(native);
+        Skip.If(golden is null, NoGolden);
+        var g = golden.Value;
         g.Review.Load(ReviewScope.AllParts);
         Assert.Equal(g.Composition.Review!.Count, g.Review.AllItems.Count);
     }
@@ -151,11 +159,12 @@ public class ReviewRound3Tests(ITestOutputHelper log)
         Assert.Equal("strings", plain.Parts[0].Bars[0].Events.Single(e => e.Kind != EventKind.Rest).CompositionVoiceId);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Keep_the_rest_of_this_bar_keeps_the_other_marks_in_it()
     {
-        if (Golden(new ManagedCoreBridge()) is not { } g) return;
-        var (score, review, _) = g;
+        var g = Golden(new ManagedCoreBridge());
+        Skip.If(g is null, NoGolden);
+        var (score, review, _) = g.Value;
         review.Load(ReviewScope.AllParts);
         var bar = review.AllItems.GroupBy(i => (i.Part, i.BarIndex)).FirstOrDefault(b => b.Count() > 1);
         if (bar is null) return;

@@ -29,13 +29,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         return bridge;
     }
 
-    [Fact]
+    [SkippableFact]
     public void Normalizes_and_arranges_the_golden_composition()
     {
         var bridge = Bridge();
         var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (bridge is null || json is null || golden is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
 
         log.WriteLine($"native core {bridge.Version}");
         Assert.True(bridge.IsNative);
@@ -52,13 +54,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.Equal(GoldenNotes, mine.Parts.Sum(Notes));
     }
 
-    [Fact]
+    [SkippableFact]
     public void Arranges_the_golden_from_its_layer_inputs()
     {
         var bridge = Bridge();
         var layers = TestPaths.RepoFile("data/mikkel/repro/layers/solo-sw.mid");
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (bridge is null || layers is null || golden is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(layers is null, TestPaths.Missing("data/mikkel/repro/layers/solo-sw.mid"));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
 
         var inputs = LayerInputs.FromDirectory(Path.GetDirectoryName(layers)!, contourPath: MikkelContour());
         Assert.NotNull(inputs);
@@ -80,13 +84,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.True(MusicXmlTalkingScoreBuilder.Build(minimal.MusicXml).Parts.Count < reference.Parts.Count);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Contour_as_borrowed_arrays_gives_the_score_the_json_contour_gives()
     {
         var bridge = Bridge();
         var layers = TestPaths.RepoFile("data/mikkel/repro/layers/solo-sw.mid");
         var contourPath = MikkelContour();
-        if (bridge is null || layers is null || contourPath is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(layers is null, TestPaths.Missing("data/mikkel/repro/layers/solo-sw.mid"));
+        Skip.If(contourPath is null, TestPaths.Missing("data/mikkel/repro/layers/solo-sw.contour.npz"));
 
         var inputs = LayerInputs.FromDirectory(Path.GetDirectoryName(layers)!, contourPath: contourPath)!;
         Assert.NotNull(inputs.Contour);
@@ -101,13 +107,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.NotEqual(arrays.MusicXml, none.MusicXml);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Talking_score_from_the_core_matches_the_managed_builder_on_the_golden()
     {
         var bridge = Bridge();
         var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (bridge is null || xmlPath is null || json is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
 
         string xml = File.ReadAllText(xmlPath);
         var composition = bridge.ParseComposition(File.ReadAllText(json));
@@ -146,13 +154,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
             }
     }
 
-    [Fact]
+    [SkippableFact]
     public void Humanized_golden_keeps_every_note_sorted_and_close_to_the_score()
     {
         var bridge = Bridge();
         var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (bridge is null || xmlPath is null || json is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var xml = File.ReadAllBytes(xmlPath);
 
         using var plain = new AlphaTabScorePlayer(new BufferedSynthOutput());
@@ -181,13 +191,15 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
     }
 
     /// <summary>"Change note…" on the golden: the change goes into the Composition and the whole score is arranged again.</summary>
-    [Fact]
+    [SkippableFact]
     public void A_changed_note_is_arranged_again_with_its_new_pitch()
     {
         var bridge = Bridge();
         var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (bridge is null || xmlPath is null || json is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
+        Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var strings = new Services.ReswStrings(Services.ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
             Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
         var quiet = new QuietAnnouncer();
@@ -230,20 +242,20 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         public void Post(Action action) => action();
     }
 
-    [Fact]
+    [SkippableFact]
     public void Invalid_json_raises_a_core_error()
     {
         var bridge = Bridge();
-        if (bridge is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
         var e = Assert.Throws<CoreBridgeException>(() => bridge.ParseComposition("{\"title\": 3}"));
         Assert.NotEqual(0, e.Status);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Default_bridge_is_native_when_the_library_loads()
     {
         var bridge = Bridge();
-        if (bridge is null) return;
+        Skip.If(bridge is null, TestPaths.NoNativeCore);
         Assert.True(CoreBridge.Create().IsNative);
     }
 
@@ -260,11 +272,11 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Assert.Equal("minimal", System.Text.Json.Nodes.JsonNode.Parse(NativeCoreBridge.LayersOptions(null, new ArrangementOptions("minimal")))!["lineup"]!.GetValue<string>());
     }
 
-    [Fact]
+    [SkippableFact]
     public void Contour_npz_reads_back()
     {
         var path = MikkelContour();
-        if (path is null) return;
+        Skip.If(path is null, TestPaths.Missing("data/mikkel/repro/layers/solo-sw.contour.npz"));
         var c = LayerInputs.ReadContour(File.ReadAllBytes(path));
         Assert.Equal(c.Times.Length, c.PitchHz.Length);
         Assert.Equal(c.Times.Length, c.LoudnessDb.Length);

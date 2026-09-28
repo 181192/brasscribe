@@ -50,12 +50,13 @@ public class BandSoundFontTests(ITestOutputHelper log)
     private void Report(string label, (string Track, double Rms, bool HasNotes, bool Percussion)[] levels) =>
         log.WriteLine($"{label}: " + string.Join("; ", levels.Select(l => $"{l.Track} {l.Rms:0.0000}")));
 
-    [Fact]
+    [SkippableFact]
     public void Golden_score_plays_every_part_and_the_drums_from_the_band_soundfont()
     {
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (sf2 is null || golden is null) return;
+        Skip.If(sf2 is null, TestPaths.Missing(BandSf2));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         var levels = SoloLevels(File.ReadAllBytes(sf2), File.ReadAllBytes(golden));
         Report("programs only", levels);
         Assert.Empty(levels.Where(l => l.HasNotes && l.Rms < 1e-4).Select(l => l.Track));
@@ -95,7 +96,7 @@ public class BandSoundFontTests(ITestOutputHelper log)
         return Math.Sqrt(d / Math.Max(r, 1e-20));
     }
 
-    [Fact]
+    [SkippableFact]
     public void Midi_bank_selects_the_part_preset_within_a_program()
     {
         // Without a part map (BandSoundFont.ApplyTo), the player plays the score's own
@@ -103,7 +104,8 @@ public class BandSoundFontTests(ITestOutputHelper log)
         // no longer tells bank 5 (flugel) from bank 0 (cornets); the waveform does.
         var sf2 = TestPaths.RepoFile(BandSf2);
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (sf2 is null || golden is null) return;
+        Skip.If(sf2 is null, TestPaths.Missing(BandSf2));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         var xml = File.ReadAllText(golden);
         if (!xml.Contains("<midi-bank>", StringComparison.Ordinal)) return; // score written before banks
         var bytes = File.ReadAllBytes(sf2);
@@ -142,11 +144,11 @@ public class BandSoundFontTests(ITestOutputHelper log)
         </score-partwise>
         """;
 
-    [Fact]
+    [SkippableFact]
     public void Drum_kit_on_bank_128_sounds_for_unpitched_notes_with_midi_unpitched()
     {
         var sf2 = TestPaths.RepoFile(BandSf2);
-        if (sf2 is null) return;
+        Skip.If(sf2 is null, TestPaths.Missing(BandSf2));
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
         player.LoadSoundFont(File.ReadAllBytes(sf2));
@@ -172,12 +174,13 @@ public class BandSoundFontTests(ITestOutputHelper log)
     /// The app loads the map before its first frame; the SoundFont (195 MB) must not be read then,
     /// only by ApplyTo's background task.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public async Task Load_leaves_reading_the_soundfont_to_ApplyTo()
     {
         var mapping = TestPaths.RepoFile("sounds/mapping.json");
         var small = TestPaths.RepoFile("engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2");
-        if (mapping is null || small is null) return;
+        Skip.If(mapping is null, TestPaths.Missing("sounds/mapping.json"));
+        Skip.If(small is null, TestPaths.Missing("engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2"));
         var path = Path.Combine(Path.GetTempPath(), $"band-{Guid.NewGuid():N}.sf2");
         File.Copy(small, path);
         try

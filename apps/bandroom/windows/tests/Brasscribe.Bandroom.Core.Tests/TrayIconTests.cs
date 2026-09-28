@@ -41,10 +41,11 @@ public sealed class TrayIconTests
     }
 
     /// <summary>Writes a contact sheet of every state (BANDROOM_ICON_SHEET=path.png) for a visual check.</summary>
-    [Fact]
+    [SkippableFact]
     public void Contact_sheet()
     {
-        if (Environment.GetEnvironmentVariable("BANDROOM_ICON_SHEET") is not { Length: > 0 } path) return;
+        var path = Environment.GetEnvironmentVariable("BANDROOM_ICON_SHEET");
+        Skip.If(string.IsNullOrEmpty(path), "opt-in visual check: set BANDROOM_ICON_SHEET to a .png path to write the contact sheet");
         var badges = Enum.GetValues<TrayBadge>();
         int[] sizes = [16, 20, 24, 32];
         int zoom = 6, cell = 32 * zoom + 8;

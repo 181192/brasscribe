@@ -92,11 +92,11 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Assert.Contains(items, i => i.Kind == OverlayKind.CursorLine);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Score_colours_match_the_generated_theme()
     {
         var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
-        if (theme is null) return;
+        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
         string xaml = File.ReadAllText(theme);
         foreach (var (key, palette) in new[] { ("Light", UncertaintyPalette.Light), ("Dark", UncertaintyPalette.Dark) })
         {
@@ -133,12 +133,13 @@ public class ScoreOverlayTests(ITestOutputHelper log)
     }
 
     /// <summary>Full score (bars 9–16 with a loop and the cursor), the solo part and a review snippet, light and dark.</summary>
-    [Fact]
+    [SkippableFact]
     public void Golden_previews()
     {
         var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var compPath = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (xmlPath is null || compPath is null) return;
+        Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(compPath is null, TestPaths.Missing(TestPaths.GoldenComposition));
         string dir = Environment.GetEnvironmentVariable("BRASSCRIBE_PREVIEW_DIR") is { Length: > 0 } d ? d : TestPaths.Output("previews");
         Directory.CreateDirectory(dir);
         ScorePreview.UseDisplayFont(TestPaths.RepoFile("design/brand/fonts/InstrumentSerif-Italic.ttf") is { } f ? File.ReadAllBytes(f) : null);

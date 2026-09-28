@@ -41,7 +41,7 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
     private static string Sha(byte[] b) => Convert.ToHexStringLower(SHA256.HashData(b));
 
     /// <summary>SHA-256 of MovePresets' output from before it patched in place (it cloned then), per offset.</summary>
-    [Theory]
+    [SkippableTheory]
     [InlineData(0, "032f22e0f58c379876dd1cac6920392e050b0957ddfbaed269ef406dfc271832", "4978cf37e7164206f2d22dc4fdf4020ffe040787210bf781e31bdc79961f59ef")]
     [InlineData(2, "59fc93ee9249ed73ccee201b691d30ef56355221edb2e8bc4a5ed0e57b81bbec", "51422ef01524a236c561b448a672d6c4f07043ea71e3abe09d7a769b3ba489f3")]
     [InlineData(20, "67f1609fc139aab594c8a75c595b46626995624f720896b4a0771a1df0e95aeb", "5472e8edcbb7e809610df629cdc285d48319e43de2ca7620b3e71b287e33732b")]
@@ -56,7 +56,7 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
         Assert.Equal((ushort)Math.Min(127, 1 + offset), BinaryPrimitives.ReadUInt16LittleEndian(moved.AsSpan(moved.Length - 2 * 38 + 20)));
 
         var path = TestPaths.RepoFile(Sonivox);
-        if (path is null) return;
+        Skip.If(path is null, TestPaths.Missing(Sonivox));
         Assert.Equal(sonivox, Sha(BrassSoundSet.MovePresets(File.ReadAllBytes(path), offset)));
     }
 
@@ -66,11 +66,11 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
     /// The app lists the set before its first frame; the files (about 283 MB in a dev build) must not be
     /// read then, only by ApplyTo, one at a time.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public async Task Load_only_lists_the_files_and_ApplyTo_reads_them_in_the_background()
     {
         var small = TestPaths.RepoFile(Sonivox);
-        if (small is null) return;
+        Skip.If(small is null, TestPaths.Missing(Sonivox));
         var dir = Directory.CreateTempSubdirectory("brass-set").FullName;
         try
         {
@@ -108,11 +108,11 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
     /// Opt-in measurement with a real dev set (BRASSCRIBE_BUILT_SOUNDS=&lt;checkout&gt;/data/sounds/built):
     /// managed bytes allocated and still held after Load, and the managed heap after ApplyTo.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void Measure_the_dev_set()
     {
         var dir = Environment.GetEnvironmentVariable("BRASSCRIBE_BUILT_SOUNDS");
-        if (dir is null || !Directory.Exists(dir)) return;
+        Skip.If(dir is null || !Directory.Exists(dir), "opt-in measurement: set BRASSCRIBE_BUILT_SOUNDS to a built sound set (<checkout>/data/sounds/built)");
         long before = GC.GetTotalMemory(true), allocated = GC.GetTotalAllocatedBytes(true);
         var set = BrassSoundSet.Load(dir);
         long loadAlloc = GC.GetTotalAllocatedBytes(true) - allocated;

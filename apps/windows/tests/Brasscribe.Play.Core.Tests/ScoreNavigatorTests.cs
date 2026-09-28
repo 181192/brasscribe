@@ -115,12 +115,13 @@ public class ScoreNavigatorTests
         Assert.Equal("beat 2: B-flat 4, eighth note, very uncertain", nav.NextNote().Text);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Golden_score_builds_with_confidence_from_the_composition()
     {
         var xml = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
         var json = TestPaths.RepoFile(TestPaths.GoldenComposition);
-        if (xml is null || json is null) return; // data/ is not present in CI
+        Skip.If(xml is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
+        Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var doc = MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(xml), CompositionJson.Parse(File.ReadAllText(json)));
         Assert.Equal(18, doc.Parts.Count);
         Assert.True(doc.TotalBars > 100);

@@ -26,10 +26,10 @@ public sealed class LayerInputsTests : IDisposable
     /// reading must happen after LoadAsync has returned. The solo stem is a FIFO here: reading it waits
     /// until the test writes, so a LoadAsync that reads before returning never returns.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public async Task A_cache_hit_reads_the_stems_after_returning_to_the_caller()
     {
-        if (OperatingSystem.IsWindows()) return; // no mkfifo
+        Skip.If(OperatingSystem.IsWindows(), "needs mkfifo, which Windows does not have");
         var dir = CachedJob("job-1");
         var solo = Path.Combine(dir, "solo.wav");
         using (var mk = Process.Start(new ProcessStartInfo("mkfifo", [solo]) { UseShellExecute = false })!)

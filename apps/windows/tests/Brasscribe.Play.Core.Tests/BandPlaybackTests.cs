@@ -43,10 +43,10 @@ public class BandPlaybackTests(ITestOutputHelper log)
             Assert.Single(g.Select(x => parts[x.i].Program).Distinct());
     }
 
-    [Fact]
+    [SkippableFact]
     public void Mapping_covers_the_arranger_part_names()
     {
-        if (Mapping is null) return;
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
         var band = BandSoundFont.Load(Mapping);
         foreach (var name in new[] { "Soprano Cornet", "Solo Cornet", "Flugelhorn", "Solo Horn", "1st Baritone", "Bass Trombone", "Euphonium", "E♭ Bass", "B♭ Bass" })
             Assert.NotNull(band.For(name));
@@ -54,12 +54,14 @@ public class BandPlaybackTests(ITestOutputHelper log)
         Assert.True(band.For("Percussion")!.Percussion);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Golden_score_plays_every_part_including_drums_with_the_band_soundfont()
     {
         var sf2 = TestPaths.RepoFile("data/sounds/band/brasscribe-band.sf2");
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (Mapping is null || sf2 is null || golden is null) return;
+        Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));
+        Skip.If(sf2 is null, TestPaths.Missing("data/sounds/band/brasscribe-band.sf2"));
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
 
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);

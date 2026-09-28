@@ -11,14 +11,14 @@ public class SwiftF0Tests(ITestOutputHelper log)
         Enumerable.Range(0, (int)(seconds * SwiftF0Detector.SampleRate))
             .Select(i => (float)(amp * Math.Sin(2 * Math.PI * hz * i / SwiftF0Detector.SampleRate))).ToArray();
 
-    [Theory]
+    [SkippableTheory]
     [InlineData("models/converted/swift-f0/swift-f0-stream.onnx", 440.0)]
     [InlineData("models/converted/swift-f0/swift-f0-stream.onnx", 233.08)] // B-flat 3
     [InlineData("models/converted/swift-f0/swift-f0-window.onnx", 440.0)]
     public void Detects_a_sine(string model, double hz)
     {
         var path = TestPaths.RepoFile(model);
-        if (path is null) return; // models/ is not present in CI
+        Skip.If(path is null, TestPaths.Missing(model));
         using var det = new SwiftF0Detector(path, preferGpu: false);
         Assert.Equal(ExecutionTarget.Cpu, det.Target);
 
@@ -37,11 +37,11 @@ public class SwiftF0Tests(ITestOutputHelper log)
         Assert.InRange(median, -20, 20);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Silence_is_unvoiced()
     {
         var path = TestPaths.RepoFile(TestPaths.SwiftF0Stream);
-        if (path is null) return;
+        Skip.If(path is null, TestPaths.Missing(TestPaths.SwiftF0Stream));
         using var det = new SwiftF0Detector(path, preferGpu: false);
         var frames = det.Detect(new float[SwiftF0Detector.SampleRate]);
         Assert.All(frames, f => Assert.False(f.Voiced));

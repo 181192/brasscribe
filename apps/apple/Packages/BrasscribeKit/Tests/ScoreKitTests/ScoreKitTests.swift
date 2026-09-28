@@ -51,8 +51,8 @@ struct Reference: Decodable {
         #expect(notes[0].midiPitch == SpelledPitch(step: "D", alter: 0, octave: 4).midi)
     }
 
-    @Test func retainsTheRealScoreDoctypeAndParsesAfterPitchEdit() throws {
-        guard let dir = goldenDir() else { return }
+    @Test(.enabled(if: goldenDir() != nil, "golden Mikkel fixture not found")) func retainsTheRealScoreDoctypeAndParsesAfterPitchEdit() throws {
+        let dir = try #require(goldenDir())
         let xml = try String(contentsOf: dir.appending(path: "brass-band.musicxml"), encoding: .utf8)
         let score = try MusicXMLParser.parse(Data(xml.utf8))
         let part = try #require(score.parts.first { candidate in

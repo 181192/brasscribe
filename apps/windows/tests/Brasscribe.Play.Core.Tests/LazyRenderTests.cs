@@ -30,11 +30,11 @@ public class LazyRenderTests(ITestOutputHelper log)
         Assert.NotNull(await renderer.RenderPageAsync(newer.Generation, newer.Pages[0].Id));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Golden_full_score_at_200_percent_keeps_every_caller_step_short()
     {
         var golden = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
-        if (golden is null) return;
+        Skip.If(golden is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
         player.LoadScore(File.ReadAllBytes(golden));
         using var renderer = new LazyScoreRenderer();
