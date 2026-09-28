@@ -16,7 +16,7 @@ use crate::beats::clean_beats_gated;
 use crate::consensus::{cluster, consensus, Sources};
 use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
 use crate::dynamics::{layer_dynamics, Bar};
-use crate::energy::{gate, Audio, Envelope, GATE_DB};
+use crate::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
 use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
 use crate::harmony::{harmony_slots, slots_to_notes};
 use crate::keys::{key_plan, CHANGE_PENALTY};
@@ -219,14 +219,27 @@ fn separation(l: &Layers) -> Option<String> {
     if all.iter().any(|a| a.channels != ch) {
         return None;
     }
-    let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
-    let mut mix = take(s);
-    for a in [b, d, o] {
-        for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
-            *m += *v;
-        }
-    }
-    let c = check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB);
+    // Mono solo and mono mix straight from the stems, without a full-length copy of the solo or of
+    // the interleaved mix (each as large as a decoded stem). The sums run in the same order as
+    // mixing first and then down-mixing, so the result is the same to the bit.
+    let n = n_min * ch;
+    let solo = mono_of(&s.samples[..n], ch);
+    let c = ch.max(1);
+    let mut frame = vec![0f32; c];
+    let mix: Vec<f32> = (0..n / c)
+        .map(|k| {
+            for (j, f) in frame.iter_mut().enumerate() {
+                let i = k * c + j;
+                let mut m = s.samples[i];
+                m += b.samples[i];
+                m += d.samples[i];
+                m += o.samples[i];
+                *f = m;
+            }
+            if c == 1 { frame[0] } else { py::pairwise_sum_f32(&frame) / c as f32 }
+        })
+        .collect();
+    let c = check_stem(&solo, &mix, s.sample_rate, SEPARATION_FAIL_DB);
     Some(c.to_json_string())
 }
 
@@ -806,4 +819,60 @@ pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
         })
         .collect();
     quantize(&raw, &beats.times, false, true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Deterministic pseudo-random samples in [-0.5, 0.5).
+    fn noise(seed: u64, n: usize) -> Vec<f32> {
+        let mut x = seed;
+        (0..n)
+            .map(|_| {
+                x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                ((x >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+            })
+            .collect()
+    }
+
+    fn layers(channels: usize, frames: [usize; 4]) -> Layers {
+        let midi = || MidiFile { resolution: 480, instruments: Vec::new() };
+        let audio = |seed: u64, f: usize| Some(Audio { samples: noise(seed, f * channels), channels, sample_rate: 8000 });
+        Layers {
+            solo_sw: midi(),
+            solo_mus: midi(),
+            solo_bp: midi(),
+            bass: midi(),
+            orchestra: midi(),
+            drums: midi(),
+            solo_audio: audio(1, frames[0]),
+            bass_audio: audio(2, frames[1]),
+            drums_audio: audio(3, frames[2]),
+            orchestra_audio: audio(4, frames[3]),
+        }
+    }
+
+    /// The check as first written: mix the stems, then down-mix solo and mix to mono.
+    fn separation_by_mixing(l: &Layers) -> String {
+        let all = [&l.solo_audio, &l.bass_audio, &l.drums_audio, &l.orchestra_audio].map(|a| a.as_ref().unwrap());
+        let n_min = all.iter().map(|a| a.frames()).min().unwrap();
+        let (s, ch) = (all[0], all[0].channels);
+        let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
+        let mut mix = take(s);
+        for a in &all[1..] {
+            for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
+                *m += *v;
+            }
+        }
+        check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB).to_json_string()
+    }
+
+    #[test]
+    fn separation_without_copies_matches_mixing_first() {
+        for ch in [1, 2, 3] {
+            let l = layers(ch, [20_011, 20_000, 19_993, 20_005]);
+            assert_eq!(separation(&l).unwrap(), separation_by_mixing(&l), "{ch} channels");
+        }
+    }
 }
