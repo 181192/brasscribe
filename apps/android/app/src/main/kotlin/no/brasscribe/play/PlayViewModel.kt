@@ -170,6 +170,10 @@ enum class SeatPickerMode { FIRST_RUN, SETTINGS, WHO_PLAYED }
 /** A take with no harmony to arrange (a solo, or anything transcribed on the phone): no quartet for it. */
 val TranscriptionResult.isSoloTake: Boolean get() = profile == Profile.SOLO
 
+/** The full band can be written for this take: it has layers (see [fullBandMade]); by profile before the composition is known. */
+val TranscriptionResult.fullBandMade: Boolean
+    get() = composition?.fullBandMade ?: (profile != Profile.BRASS_BAND && profile != Profile.POP_ROCK)
+
 /** The lineup this result was arranged for, when it was recorded. */
 val TranscriptionResult.lineup: Lineup? get() = Lineup.recorded(composition)
 
@@ -278,7 +282,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 val seat = r.composition?.arrangementString("seat")
                 val synced = output.value.let { o ->
                     o.copy(
-                        lineup = recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup,
+                        lineup = (recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup).madeFor(r.fullBandMade),
                         difficulty = if (recorded != null && difficulty != null) difficulty else o.difficulty,
                         seat = if (recorded != null) seat else o.seat,
                         reads = if (recorded != null) r.composition?.arrangementString("reads") else o.reads,
@@ -668,7 +672,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
         val job = try {
             engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
-                allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.engine,
+                allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.madeFor(r.fullBandMade).engine,
                 difficulty = core.difficulty, transpose = core.transpose, seat = core.seat, reads = core.reads, lead = core.lead))
         } catch (e: EngineException) {
             // The engine's own words stay out of the app: a refused quartet gets the card's reason.
@@ -899,10 +903,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun arrangeComposition(composition: Composition, options: OutputOptions, soloTake: Boolean): Pair<Composition, String>? {
         val transposed = (composition.arrangement?.get("transpose_semitones") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
-        val xml = container.core.arrangeMusicXmlWith(composition,
-            options.toCore().copy(transpose = transposed)) ?: return null
-        val core = options.toCore()
-        return composition.arrangedFor(options.lineup, options.difficulty.id, core.seat, core.reads, core.lead, soloTake) to xml
+        val lineup = options.lineup.madeFor(composition.fullBandMade)
+        val core = options.toCore().copy(lineup = lineup.core)
+        val xml = container.core.arrangeMusicXmlWith(composition, core.copy(transpose = transposed)) ?: return null
+        return composition.arrangedFor(lineup, options.difficulty.id, core.seat, core.reads, core.lead, soloTake) to xml
     }
 
     /** A score arranged on the phone, re-arranged from its Composition (the rest of a key shift stays display-only). */

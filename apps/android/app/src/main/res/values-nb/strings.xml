@@ -231,6 +231,7 @@
     <string name="lineup_solo_desc">Bare melodien, til én musiker.</string>
     <string name="lineup_quartet">Kvartett</string>
     <string name="lineup_quartet_desc">4 musikere, én på hver stemme</string>
+    <string name="lineup_full_not_yet">Kommer senere for opptak av hele bandet</string>
     <string name="lineup_quartet_needs_group">Trenger et opptak av hele gruppen</string>
     <string name="difficulty">Hvor vanskelig?</string>
     <string name="difficulty_faithful">Som spilt</string>

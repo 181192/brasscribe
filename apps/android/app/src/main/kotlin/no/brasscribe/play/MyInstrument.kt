@@ -120,7 +120,7 @@ object YourParts {
         val seat = composition?.arrangementString("seat")
         if (seat != null && composition.arrangementString("lead") == "seat") {
             if (parts.size == 1) return clean(parts[0])
-            seatPart((lineup ?: Lineup.FULL).core, seat)?.part?.let { return it }
+            seatPart((lineup ?: Lineup.FULL.madeFor(composition.fullBandMade)).core, seat)?.part?.let { return it }
         }
         val i = leadPartIndex(parts, lineup)
         return parts.getOrNull(i)?.let(::clean)?.takeIf { p -> Lineup.LEADS.any { it.equals(p, true) } }

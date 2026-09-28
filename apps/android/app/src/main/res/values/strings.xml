@@ -233,6 +233,7 @@
     <string name="lineup_solo_desc">Just the tune, for one player.</string>
     <string name="lineup_quartet">Quartet</string>
     <string name="lineup_quartet_desc">4 players, one on each part</string>
+    <string name="lineup_full_not_yet">Not yet for whole-band recordings</string>
     <string name="lineup_quartet_needs_group">Needs a recording of the whole group</string>
     <string name="difficulty">How hard?</string>
     <string name="difficulty_faithful">As played</string>
