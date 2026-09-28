@@ -128,6 +128,8 @@ class ScoreController(
         }
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
+        // The engraving's size comes with the render; the surface is only measured to it on a later layout pass.
+        view.api.renderFinished.on { e -> engravedWidth = e.totalWidth }
         view.api.postRenderFinished.on {
             applyVolumes(); overlays().forEach { it.refresh() }
             hideCredit()
@@ -193,9 +195,15 @@ class ScoreController(
         }
     }
 
+    /** Width of the last finished engraving in alphaTab's layout units. */
+    private var engravedWidth = 0.0
+
     /**
      * alphaTab signs every engraving with "rendered by alphaTab" under the last system. The score is the
      * music alone (alphaTab is credited in About, as with BarSnippet), so the surface is cut off there.
+     * The clip is taken from the engraving, never from the surface's current size: when a render finishes
+     * before the surface has been laid out to it (the first render of a freshly opened score, often), the
+     * surface is still 0 wide and a clip from that width hides the whole score.
      */
     private fun hideCredit() {
         val surface = view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface) ?: return
@@ -203,9 +211,8 @@ class ScoreController(
         if (systems == null || systems.length.toInt() == 0) { surface.clipBounds = null; return }
         // The system's real bounds take in the credit line; its visual bounds end with the music.
         val b = systems[systems.length.toInt() - 1].visualBounds
-        val d = view.resources.displayMetrics.density
-        val bottom = kotlin.math.ceil((b.y + b.h) * d).toInt()
-        surface.clipBounds = android.graphics.Rect(0, 0, maxOf(surface.width, 1) * 4, bottom)
+        val (right, bottom) = creditClip(engravedWidth, b.y + b.h, view.resources.displayMetrics.density)
+        surface.clipBounds = android.graphics.Rect(0, 0, right, bottom)
     }
 
     /** Height of the engraving in view pixels. */
@@ -668,3 +675,15 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
 )
 
 private const val STOP_FADE_MS = 80L
+
+/**
+ * The surface's clip that cuts off alphaTab's credit line: the engraving's full width ([engravedWidth],
+ * alphaTab units) and down to the end of the last system's music ([musicBottom], alphaTab units), in view
+ * pixels at [density]. Returned as (right, bottom); the clip's left and top are 0.
+ */
+internal fun creditClip(engravedWidth: Double, musicBottom: Double, density: Float): Pair<Int, Int> {
+    val right = kotlin.math.ceil(engravedWidth * density).toInt()
+    val bottom = kotlin.math.ceil(musicBottom * density).toInt()
+    // Without a width from the render (none reported), leave the sides open rather than hide the score.
+    return (if (right > 0) right else Int.MAX_VALUE / 2) to bottom
+}
