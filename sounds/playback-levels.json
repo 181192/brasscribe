@@ -1,0 +1,36 @@
+{
+  "about": "One loudness target for every Play app (docs/research/12-band-sound.md §11). The band goes through make-up gain and then the soft limiter; the original recording (and any rendered clip played as the band) is measured once, as a whole, and gained to recording.target_lufs; the metronome click peaks at metronome.click_peak_dbfs. sounds/playback_levels.py --vectors writes sounds/output-stage-vectors.json from this file.",
+  "limiter": {
+    "about": "Memoryless soft limiter: y = x for |x| <= threshold, else sign(x) * (threshold + (ceiling - threshold) * tanh((|x| - threshold) / (ceiling - threshold))). No attack or release, so it cannot pump, and below the threshold every part keeps its level.",
+    "threshold": 0.8,
+    "ceiling": 0.98
+  },
+  "band": {
+    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. A whole arrangement at this setting (the Mikkel golden score) measures about arrangement_lufs on Apple, which plays every note at velocity 80; alphaSynth plays the score's dynamics, so a loud score measures louder there (-11.8 LUFS for the golden score on Windows).",
+    "phrase_lufs": -12.0,
+    "tolerance_lu": 1.0,
+    "arrangement_lufs": -16.0,
+    "gain_db": {
+      "apple": 26.0,
+      "android_alphatab": 4.0,
+      "android_sfizz": 4.0,
+      "windows": 4.0
+    }
+  },
+  "recording": {
+    "about": "The original recording is played at target_lufs integrated (EBU R128, whole file, a mono file measured as dual mono because it plays from both speakers), the level of a whole arrangement from the band. gain = clamp(target_lufs - measured, -max_cut_db, max_boost_db); 0 when the file is silent. The limiter follows the gain, so a boost cannot clip.",
+    "target_lufs": -16.0,
+    "max_boost_db": 12.0,
+    "max_cut_db": 30.0
+  },
+  "metronome": {
+    "about": "The click's peak after the output, whatever path it takes: about 9 dB under the full band's peak, below the limiter's threshold. gain_db is each path's click volume, measured: Apple's click bypasses the band stage, Android's and Windows' go through it.",
+    "click_peak_dbfs": -10.0,
+    "tolerance_db": 1.5,
+    "gain_db": {
+      "apple": 0.0,
+      "android_alphatab": 0.0,
+      "windows": 0.0
+    }
+  }
+}

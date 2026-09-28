@@ -2,9 +2,10 @@ import AudioToolbox
 import AVFoundation
 import Foundation
 
-/// The band's output stage: a master gain, then a memoryless soft limiter, the same shape as the
-/// Windows player (docs/research/12-band-sound.md §4). The band presets are level-matched to a
-/// quiet reference (−24 LUFS body level), so the band needs make-up gain to play at a normal level.
+/// The output stage: a gain, then a memoryless soft limiter, the same curve on every Play app
+/// (sounds/playback-levels.json, docs/research/12-band-sound.md §11). The band presets are
+/// level-matched to a quiet reference (−24 LUFS body level), so the band needs make-up gain to play
+/// at a normal level; the original recording gets its own stage, gained to the same loudness.
 ///
 /// The limiter is linear up to `threshold` and bends above it with tanh towards `ceiling`, which is
 /// below full scale, so nothing ever clips. It has no attack or release: it cannot pump when the
@@ -55,9 +56,9 @@ public final class OutputStageAU: AUAudioUnit {
 /// Gain and limiter curve; read on the render thread, set from anywhere (single floats).
 public final class OutputStageKernel: @unchecked Sendable {
     /// Where the limiter starts to bend (−1.9 dBFS).
-    public static let threshold: Float = 0.8
+    public static let threshold = Float(PlaybackLevels.limiterThreshold)
     /// What the limiter never reaches (−0.18 dBFS).
-    public static let ceiling: Float = 0.98
+    public static let ceiling = Float(PlaybackLevels.limiterCeiling)
 
     public var gain: Float = 1
 

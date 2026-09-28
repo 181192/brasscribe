@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
+val repoRoot = rootProject.extra["repoRoot"] as File
+
 /** sfizz checkout for the realistic playback tier; see gradle.properties. */
 val sfizzDir: String? = (findProperty("brasscribe.sfizzDir") as String?)
     ?: rootDir.resolve("third_party/sfizz").takeIf { it.resolve("CMakeLists.txt").isFile }?.absolutePath
@@ -33,6 +35,13 @@ android {
         }
     }
 
+    testOptions {
+        unitTests.all {
+            // The shared output-stage vectors (sounds/output-stage-vectors.json).
+            it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -48,6 +57,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.serialization.json)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
 }

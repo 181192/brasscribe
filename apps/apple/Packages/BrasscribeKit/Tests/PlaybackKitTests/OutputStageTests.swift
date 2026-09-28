@@ -136,7 +136,9 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         let e = try engine(file: file)
         let buf = try phrase.render(e, score: score)
         let peak = buf.peak
-        print("OUTPUT \(file) full band peak \(dB(peak)) dBFS at \(e.outputGainDB) dB")
+        let lufs = LoudnessMeter.integrated(buf)
+        print("OUTPUT \(file) full band peak \(dB(peak)) dBFS, \(lufs) LUFS at \(e.outputGainDB) dB")
+        #expect(abs(lufs - PlaybackLevels.bandPhraseLUFS) < 1, "the shared phrase target")
         #expect(peak < 1, "clipped")
         #expect(peak <= OutputStageKernel.ceiling)
         #expect(dB(peak) > -3 && dB(peak) < -0.5, "full band peak \(dB(peak)) dBFS")
@@ -156,9 +158,10 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         #expect(abs(lift - PlaybackEngine.defaultOutputGainDB) < 0.5, "a solo part stays below the limiter")
     }
 
-    /// The metronome bypasses the stage: its click is loud enough beside the band and never clips.
-    @Test func metronomeStaysUnderTheCeiling() throws {
-        let e = try engine()
+    /// The metronome bypasses the stage and clicks at the shared level, 9 dB under the band's peak.
+    @Test(arguments: ["brasscribe-band-16bit.sf2", "brasscribe-band-mobile.sf2"])
+    func metronomeClicksAtTheSharedLevel(file: String) throws {
+        let e = try engine(file: file)
         let fmt = e.engine.manualRenderingFormat
         let buf = try #require(AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: 4096))
         e.metronome.startNote(UInt8(MIDIWriter.metronomeHigh), withVelocity: 110, onChannel: 9)
@@ -167,8 +170,7 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
             #expect(try e.engine.renderOffline(4096, to: buf) == .success)
             peak = max(peak, buf.peak)
         }
-        print("OUTPUT metronome \(dB(peak)) dBFS")
-        #expect(peak < 1)
-        #expect(dB(peak) > -30, "the click is audible")
+        print("OUTPUT \(file) metronome \(dB(peak)) dBFS")
+        #expect(abs(dB(peak) - PlaybackLevels.metronomeClickPeakDBFS) < 1.5)
     }
 }

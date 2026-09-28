@@ -133,7 +133,7 @@ public class PartSoundTests(ITestOutputHelper log)
 
     private const double TicksPerSecond = 1920; // 960 per beat at 120 bpm
 
-    private static MidiFile Phrase(IEnumerable<(int Channel, int Program, int Bank, JsonElement Notes)> parts)
+    internal static MidiFile Phrase(IEnumerable<(int Channel, int Program, int Bank, JsonElement Notes)> parts)
     {
         var midi = new MidiFile { Division = 960 };
         midi.AddEvent(new TempoChangeEvent(0, 500000));
@@ -159,7 +159,7 @@ public class PartSoundTests(ITestOutputHelper log)
     }
 
     /// <summary>Renders a MIDI file through alphaSynth as the app does (BufferedSynthOutput), stereo interleaved.</summary>
-    private static float[] Render(byte[] sf2, MidiFile midi, double seconds, IReadOnlyDictionary<int, double>? channelGain = null)
+    internal static float[] Render(byte[] sf2, MidiFile midi, double seconds, IReadOnlyDictionary<int, double>? channelGain = null)
     {
         var output = new BufferedSynthOutput();
         var synth = new AlphaSynth(output, 500) { MetronomeVolume = 0, CountInVolume = 0, MasterVolume = AlphaTabScorePlayer.MasterVolume };
@@ -204,7 +204,7 @@ public class PartSoundTests(ITestOutputHelper log)
 
     private static string Slug(string name) => name.Replace("♭", "b").Replace(' ', '-').ToLowerInvariant();
 
-    private static double End(JsonElement notes) => notes.EnumerateArray().Max(n => n[1].GetDouble());
+    internal static double End(JsonElement notes) => notes.EnumerateArray().Max(n => n[1].GetDouble());
 
     /// <summary>Largest difference between a one-synth mix and the sum of the same parts rendered alone, in dB below the mix, per 50 ms.</summary>
     private static (double WorstDb, double AtS) MixResidual(float[] mix, IEnumerable<float[]> solos)

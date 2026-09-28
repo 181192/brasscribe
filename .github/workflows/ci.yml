@@ -49,6 +49,9 @@ jobs:
       - name: Band sound coverage (every lineup part has its own real-sample preset)
         run: python3 sounds/partsound.py --check
 
+      - name: Playback levels (output stage vectors match sounds/playback-levels.json)
+        run: python3 sounds/playback_levels.py --check
+
       # ChoraleBricks annotations (CC-BY 4.0) read from the Zenodo archive with range
       # requests and checked against eval/fixtures/choralebricks-pins.json, plus our own
       # committed model outputs from eval/fixtures. No dataset audio is downloaded.

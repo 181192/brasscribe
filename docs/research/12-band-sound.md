@@ -149,7 +149,7 @@ Three more problems made the sound unconvincing, though they are not chops:
 ### Windows
 - **Resolver.** `PartSoundResolver.cs` implements the shared rules. `SoundMap(name, gmProgram)` means an unknown name still gets a brass preset.
 - **Release tail.** A no-op event is scheduled 1.5 s after the last note, so alphaTab plays out the last release. This fixes cause 3.
-- **Headroom.** Master volume 0.5, with a tanh soft limiter above 0.8. The full band peaks at 0.49.
+- **Headroom.** Superseded by the shared output stage (§11): unity master volume, +4 dB make-up gain and the tanh limiter shared with Apple and Android.
 - **Stop and pause** fade out over 80 ms.
 - **MIDI export** keeps shared unisons: it drops a note-off while another note-on of the same key is still open.
 - **Missing sounds.** `Player_SoundsMissing` and `…_Details` in en and nb.
@@ -340,3 +340,47 @@ The plan is in `sounds/recording-plan.md`:
 - A target's `source` then points at it, and the `extend` entries stay as the fallback for any notes the player could not play.
 - `checks.py coverage` and `checks.py phrases` are the acceptance gates.
 - `timbre_probe.py` should be re-fit against the recordings, which also finally gives real cornet, tenor horn and euphonium references.
+
+## 11. Playback loudness: one target on every app
+
+**Problem.** The Play apps played the band at different levels, and the original recording at whatever level it was recorded. Apple's band went through +26 dB of make-up gain and a soft limiter, but the recording and the metronome bypassed it. Windows' band ran at master 0.5, about 10 dB under Apple's. Android's had no stage at all. So switching Hear: Band ↔ Recording, or pressing "Listen to this bar", jumped in level.
+
+**The target** lives in `sounds/playback-levels.json`. `sounds/playback_levels.py --vectors` writes `sounds/output-stage-vectors.json` from it, and `--check` (stdlib, in CI) fails when the two drift apart.
+- **Band stage.** Make-up gain, then a memoryless soft limiter: `y = x` up to 0.8 (−1.9 dBFS), `sign(x)·(0.8 + 0.18·tanh((|x| − 0.8)/0.18))` above it, approaching a ceiling of 0.98 (−0.18 dBFS). It has no attack or release, so it cannot pump, and below 0.8 every part keeps its level, so mute and solo keep the balance.
+- **Band calibration.** The full-band test phrase (`phrases.json` "band") lands at **−12 LUFS integrated (±1 LU)**, peaking at or under the ceiling. Each band path has its own measured make-up gain: Apple +26 dB (environment node, parts metres away), alphaSynth on Android and Windows +4 dB at unity master volume, sfizz +4 dB (its parts are balanced to the SoundFont's).
+- **Recording.** The original recording is measured once, as a whole (EBU R128 integrated), when it loads, and plays at **−16 LUFS**. That is what a whole arrangement from the band measures on Apple (the Mikkel golden score: −15.95 LUFS). Gain = clamp(−16 − measured, −30, +12) dB, and the limiter follows the gain, so a boost cannot clip. A mono file is measured as dual mono (+3 dB), because it plays from both speakers. It is never normalised per bar, so a soft bar stays softer than a loud one.
+- **Metronome.** The click peaks at **−10 dBFS (±1.5 dB)** after the output, about 9 dB under the full band's peak and below the limiter's threshold.
+- **Loudness meter.** Each app has its own BS.1770 meter, with K-weighting, 400 ms blocks at 75 % overlap, and the −70 LUFS absolute and −10 LU relative gates. The meters use pyloudnorm's filters and are held to the pyloudnorm vectors within 0.1 LU.
+
+**Per app**
+
+| | Apple (`PlaybackKit`) | Android | Windows (`Brasscribe.Play.Core`) |
+|---|---|---|---|
+| Band stage | `OutputStageAU` on the band bus | `StagedSynthOutput` wraps alphaTab's synth output (a reflection swap of the worker API's private `_output`, since alphaTab 1.8.4 builds its Android output inside the view with no hook); sfizz runs the same curve in C++ (`cpp/output_stage.h`) on its mix | `BufferedSynthOutput` applies `OutputStage` to every sample as it arrives |
+| Stop fade | Sampler volumes, before the stage | alphaTab master volume, before the stage; sfizz fades after its limiter | On the output, after the stage |
+| Recording | Its own `OutputStageAU` after the time-pitch unit. Measured off the main thread when loaded; the gain is applied at the next start, never mid-play. The mixer spreads mono equal-power, so +3 dB is made up. Stop fades it over 80 ms. | `LevelMatch` measures the recording and the engine's rendered score once each, and plays every "Listen to this bar" slice with that gain and the limiter | `RecordingLevel` measures the decoded WAV off the UI thread and sets `MediaPlayer.Volume`. Stop fades it over 80 ms. |
+| Metronome | Bypasses the stage, at its own level | Through the stage, volume 1 | Through the stage, volume 1 |
+| Tests | `LoudnessTests`, `OutputStageTests` (`swift test --no-parallel`) | `OutputStageTest`, `LevelMatchTest` (JVM); `PlaybackLevelTest` (emulator: phrase through alphaTab and the stage, metronome, C++ curve against Kotlin); `OutputStageInstallTest` (emulator: the app's own player is staged after opening a score, playing and stopping) | `PlaybackLevelTests` (`tools/check-macos.sh`) |
+
+**Measured, before → after.** Peak dBFS / integrated LUFS.
+
+| | Apple | Android (alphaTab, emulator) | Windows (alphaSynth, macOS) |
+|---|---|---|---|
+| Full-band phrase | −1.1 / −11.7 → unchanged | −4.35 / −16.2 (no limiter) → −0.65 / −12.2 | −10.2 / −22.2 → −0.57 / −12.2 |
+| Golden arrangement (Mikkel) | −2.8 / −15.95 → unchanged | not rendered | −6.7 / −21.9 → −0.18 / −11.8 |
+| Metronome click | −9.8 (phone SF2 −10.7) → unchanged | −15.1 → −11.1 | −19.4 → −9.4 |
+| Recording (`captured.wav`, stereo, −14.9 LUFS) | −14.9 (file level) → −16.0, peak −4.4 | file level → −16 | file level → −16 (turned down) |
+| Engine's rendered score (Listen to this bar) | — | about −4.6 LUFS → −16 | — |
+
+Apple test variants of the recording: −8 dB gives −28.2 LUFS in the file and −16.3 played, +8 dB gives −12.3 and −16.0, mono −6 dB gives −26.2 and −16.1, mono +6 dB gives −14.3 and −16.0. A −20 dB copy stops at the +12 dB cap. Before this change, a mono recording played 3 dB under its measured level, because of the equal-power spread. The meter reads the 4.5-minute `captured.wav` in 1.7 s in a debug build.
+
+**Gaps**
+- **Score dynamics differ by engine, so a whole arrangement does not match across apps.**
+  - Apple's MIDI writer plays every note at velocity 80. alphaSynth plays the score's dynamics, and the golden score is mostly f and ff.
+  - So with the same phrase calibration, the golden arrangement measures −16 LUFS on Apple but −11.8 on Windows, where its peaks sit on the limiter's ceiling.
+  - For that score, the recording target sits about 4 LU under the band on Android and Windows. Fixing it means Apple playing dynamics, or velocity remapping (§9).
+- **Windows cannot boost.** `MediaPlayer.Volume` stops at 1, so a recording quieter than −16 LUFS keeps its own level; only a louder one is turned down. Boosting would need the recording on its own audio path, not the media player.
+- **Android's two streams add up unchecked.** With sfizz on, alphaTab (kit and metronome) and sfizz are limited separately and summed by the system mixer, so neither limiter bounds the sum. The sfizz gain is set by design and was not measured: there is no SFZ pack here, and `sfizz_player.cpp` was only syntax-checked against the sfizz and Oboe headers, not built or run.
+- **Android mono playback** is assumed to reach both speakers at full level (dual mono). This was not measured on a device.
+- **Android's clip player** fades over about 15 ms on stop, not 80 ms. The fade blocks its caller.
+- **Not run here:** the WinUI app (the `MediaPlayer` volume and fade are type-checked only), the Apple app target, and any physical phone.

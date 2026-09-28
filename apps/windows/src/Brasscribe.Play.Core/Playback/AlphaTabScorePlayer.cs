@@ -16,8 +16,8 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 {
     public const double MinSpeed = 0.25, MaxSpeed = 1.5;
 
-    /// <summary>Synth master gain (−6 dB); the output's soft limiter catches what is left.</summary>
-    public const double MasterVolume = 0.5;
+    /// <summary>Synth master gain: unity; the output stage (<see cref="OutputStage"/>) sets the level.</summary>
+    public const double MasterVolume = 1.0;
 
     private readonly AlphaSynth _synth;
     private readonly Settings _settings = new();
@@ -38,8 +38,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         // audio thread takes when it asks the synth for samples.
         _synth.MetronomeVolume = 0;
         _synth.CountInVolume = 0;
-        // Headroom for the full band: at unity the band SoundFont's tutti peaks above full scale in
-        // alphaSynth (measured +1.8 dBFS on a mf chord with the cornets on top).
+        // The band's level is the output stage's make-up gain; its soft limiter catches the tutti peaks.
         _synth.MasterVolume = MasterVolume;
         _synth.PositionChanged.On((PositionChangedEventArgs e) =>
         {

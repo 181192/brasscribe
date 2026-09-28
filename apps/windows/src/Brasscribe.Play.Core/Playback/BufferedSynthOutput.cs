@@ -7,7 +7,8 @@ namespace Brasscribe.Play.Core.Playback;
 /// <summary>
 /// alphaTab synth output that buffers interleaved stereo float samples and lets an audio device
 /// (WASAPI on Windows, a test loop elsewhere) pull them with <see cref="Read"/>. The synth renders
-/// on the pulling thread when the buffer runs low, as alphaTab's own NAudio output does.
+/// on the pulling thread when the buffer runs low, as alphaTab's own NAudio output does. Every
+/// sample goes through the shared output stage (make-up gain, then the soft limiter) on its way in.
 /// </summary>
 public sealed class BufferedSynthOutput : ISynthOutput
 {
@@ -88,26 +89,21 @@ public sealed class BufferedSynthOutput : ISynthOutput
             int n = (int)f.Length;
             if (_count + n > _ring.Length) Grow(_count + n);
             int write = (_read + _count) % _ring.Length;
+            float g = Gain;
             for (int i = 0; i < n; i++)
             {
-                _ring[write] = Limit((float)f[i]);
+                _ring[write] = OutputStage.Limit((float)f[i] * g);
                 if (++write == _ring.Length) write = 0;
             }
             _count += n;
         }
     }
 
-    /// <summary>Knee above which peaks are softly compressed so a loud tutti never clips the device.</summary>
-    public const float LimiterKnee = 0.8f;
-
-    /// <summary>Transparent below the knee; above it, a tanh curve that approaches but never reaches full scale.</summary>
-    public static float Limit(float x)
-    {
-        float a = Math.Abs(x);
-        if (a <= LimiterKnee) return x;
-        float room = 1 - LimiterKnee;
-        return MathF.CopySign(LimiterKnee + room * MathF.Tanh((a - LimiterKnee) / room), x);
-    }
+    /// <summary>
+    /// Make-up gain before the soft limiter (<see cref="OutputStage"/>): the band's, from
+    /// sounds/playback-levels.json. Applied as samples arrive, so the stop fade runs on the output.
+    /// </summary>
+    public float Gain { get; set; } = OutputStage.BandGain;
 
     public void ResetSamples()
     {
