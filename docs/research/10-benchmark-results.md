@@ -381,7 +381,7 @@ Transcription costs about 0.25 of alto recall and 0.37 of tenor recall on top of
 | standard | 15.4 / 0.5% | 0 | 0.691 | 0.79 | 0.78 | 0.93 |
 | easier | 8.6 / 0% | 0 | 0.699 | 0.74 | 0.73 | 0.94 |
 
-Faithful keeps every transcribed note, so it keeps the solo's uncomfortable notes; none is impossible, since the passages that reached above the cornet's playable 82 are written an octave lower (the band's Solo Cornet the same) and 8 low Euphonium notes. No crossings in any mode; spacing faults only in the 61–86 slots that fell back to the band voicer (warned); parallels 2.2–3.0 per 100 changes.
+Faithful keeps every transcribed note, so it keeps the solo's uncomfortable notes; none is impossible, since the passages that reached above the cornet's playable 82 are written an octave lower, and 8 low Euphonium notes. The band's Solo Cornet is the soloist lead instead: in faithful it writes those passages as played, up to the cornet's solo range of 84 (`docs/plan/trumpet.md` §2). No crossings in any mode; spacing faults only in the 61–86 slots that fell back to the band voicer (warned); parallels 2.2–3.0 per 100 changes.
 
 ## Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)
 

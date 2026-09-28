@@ -48,6 +48,10 @@ class Suite:
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
 
 
+# The Mikkel golden output (data/golden). The soloist-range golden sits next to the current one
+# until it is promoted at merge (docs/plan/trumpet.md §2.6).
+MIKKEL_GOLDEN = "golden/mikkel-arranged-band.soloist"
+
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""
     cmd = [str(ADAPTERS / tool / "run.sh"), str(src), str(dst)]
@@ -315,7 +319,7 @@ def _mikkel_arrangement(data: Path, out: Path) -> Path:
     """
     import sys
 
-    _need(data, "mikkel/repro/layers", "mikkel/repro/mix.beats", "golden/mikkel-arranged-band")
+    _need(data, "mikkel/repro/layers", "mikkel/repro/mix.beats", MIKKEL_GOLDEN)
     layers = data / "mikkel/repro/layers"
     view = out / "layers"
     view.mkdir(parents=True)
@@ -331,7 +335,7 @@ def _mikkel_arrangement(data: Path, out: Path) -> Path:
         if not script.exists():
             raise SkipSuite(f"no cached solo contour and no {script}")
         subprocess.run([str(script), str(layers / "solo.wav"), str(view / contour.name)], check=True, capture_output=True)
-    title = json.loads((data / "golden/mikkel-arranged-band/composition.json").read_text())["title"]
+    title = json.loads((data / f"{MIKKEL_GOLDEN}/composition.json").read_text())["title"]
     subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
                     "--layers", str(view), "--beats", str(data / "mikkel/repro/mix.beats"),
                     "--out", str(out / "score"), "--title", title, "--no-render"], check=True, capture_output=True)
@@ -344,7 +348,7 @@ def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
 
     with tempfile.TemporaryDirectory() as tmp:
         xml = _mikkel_arrangement(data, Path(tmp))
-        c = compare(xml.parent, data / "golden/mikkel-arranged-band")
+        c = compare(xml.parent, data / MIKKEL_GOLDEN)
     return {"composition_identical": float(c.composition_identical), "musicxml_identical": float(c.musicxml_identical),
             "parts_identical": float(c.parts_identical), "parts_total": float(len(c.parts)),
             "notes_identical": float(c.notes_identical), "notes_total": float(c.to_dict()["notes_total"]),
@@ -538,9 +542,9 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("quartet-audio", "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
           _quartet_audio, ("eval/choralebricks-brass4",), ci=True),
     Suite("mikkel-golden", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
-          ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
+          ("mikkel/repro/layers", MIKKEL_GOLDEN)),
     Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
-          _readability, ("mikkel/repro/layers", "golden/mikkel-arranged-band")),
+          _readability, ("mikkel/repro/layers", MIKKEL_GOLDEN)),
     Suite("solo-instruments", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
           _solo_instruments, (), ci=True),
     Suite("seat-voices", "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
@@ -552,7 +556,7 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
           _solo_ondevice, ("runs/apple/entertainer-ref", "runs/apple/entertainer-tpt1-30s.wav")),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
-          _musescore, ("mikkel/repro/layers", "golden/mikkel-arranged-band"), tools=("mscore",)),
+          _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}
 
 GROUPS = {

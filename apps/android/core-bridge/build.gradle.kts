@@ -38,7 +38,7 @@ android {
         unitTests.all {
             // JVM tests load the host build of the core (cargo build --release -p brasscribe-ffi).
             it.systemProperty("jna.library.path", File(coreRoot, "target/release").absolutePath)
-            it.systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
+            it.systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band.soloist").absolutePath)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED")
             it.systemProperty("brasscribe.models", File(repoRoot, "models/converted").absolutePath)
             it.systemProperty("brasscribe.data", File(repoRoot, "data").absolutePath)

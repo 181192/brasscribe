@@ -489,14 +489,14 @@
       }
     },
     "solo-instruments": {
-      "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's",
+      "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's; cornet_moved since the faithful soloist placement: docs/plan/trumpet.md §2.5",
       "metrics": {
         "baritone.sw_f1": 0.972,
         "baritone.bp_f1": 0.869,
         "baritone.today_f1": 0.776,
         "baritone.today_recall": 0.693,
         "baritone.cornet_moved": {
-          "value": 0.917,
+          "value": 0.0,
           "higher_is_better": false
         },
         "baritone.seat_f1": 0.97,
@@ -520,7 +520,7 @@
         "flugelhorn.today_f1": 0.947,
         "flugelhorn.today_recall": 0.92,
         "flugelhorn.cornet_moved": {
-          "value": 0.117,
+          "value": 0.004,
           "higher_is_better": false
         },
         "flugelhorn.seat_f1": 0.95,
@@ -544,7 +544,7 @@
         "trumpet.today_f1": 0.952,
         "trumpet.today_recall": 0.931,
         "trumpet.cornet_moved": {
-          "value": 0.232,
+          "value": 0.005,
           "higher_is_better": false
         },
         "trumpet.seat_f1": 0.955,
@@ -588,7 +588,7 @@
         "horn.today_f1": 0.9,
         "horn.today_recall": 0.83,
         "horn.cornet_moved": {
-          "value": 0.558,
+          "value": 0.0,
           "higher_is_better": false
         },
         "horn.seat_f1": 0.901,
@@ -612,7 +612,7 @@
         "trombone.today_f1": 0.555,
         "trombone.today_recall": 0.436,
         "trombone.cornet_moved": {
-          "value": 1.0,
+          "value": 0.0,
           "higher_is_better": false
         },
         "trombone.seat_f1": 0.967,

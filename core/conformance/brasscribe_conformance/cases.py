@@ -16,6 +16,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
+# The soloist-range golden sits next to the current one until it is promoted at merge
+# (docs/plan/trumpet.md §2.6).
+MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band.soloist"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 # SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
@@ -105,7 +108,7 @@ def synth_layers(song: Path, out: Path) -> Path:
 def all_cases(work: Path, only: str | None = None) -> list[Case]:
     mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
               **({"contour": c} if (c := mikkel_contour()) else {})}
-    cases = [Case("mikkel/layers", "layers", mikkel, golden=DATA / "golden/mikkel-arranged-band")]
+    cases = [Case("mikkel/layers", "layers", mikkel, golden=MIKKEL_GOLDEN)]
     # Arrangement options (lineup, difficulty, key) against the Python reference.
     for stage, options in MIKKEL_VARIANTS:
         cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}))
