@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import ARRANGED, RECORDING, YOUR_RECORDING, part_sources
+from brasscribe_music.arranger import ARRANGED, EMPTY, RECORDING, YOUR_RECORDING, part_sources
 from brasscribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS, SEATS, check_reads, lead_lineup,
                                           part_banks, seat_by_id, seat_part)
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
@@ -162,7 +162,24 @@ def test_part_sources_mikkel():
     heard = {"Solo Cornet", "E♭ Bass", "B♭ Bass", "Euphonium", "Bass Trombone", "Percussion"}
     assert list(src) == [p.name for p in BRASS_BAND.parts]
     assert {k for k, v in src.items() if v == RECORDING} == heard
-    assert all(v == ARRANGED for k, v in src.items() if k not in heard)
+    # Faithful: the Soprano Cornet doubles nothing, so it is empty, not arranged.
+    assert src["Soprano Cornet"] == EMPTY
+    assert all(v == ARRANGED for k, v in src.items() if k not in heard | {"Soprano Cornet"})
+
+
+@pytest.mark.skipif(not GOLDEN.exists(), reason="no Mikkel golden output")
+@pytest.mark.parametrize("difficulty", ["faithful", "standard", "easier"])
+@pytest.mark.parametrize("drums", [True, False])
+def test_empty_iff_the_arranged_part_has_no_notes(difficulty, drums):
+    from brasscribe_music.arranger import arrange_composition
+
+    comp = Composition.from_json(GOLDEN)
+    if not drums:
+        comp.voices = [v if v.layer != "drums" else Voice(v.id, v.role, [], v.instrument_hint, v.layer) for v in comp.voices]
+    comp.arrangement = {"lineup": "band", "difficulty": difficulty, "transpose_semitones": 0}
+    arr = arrange_composition(comp)
+    for part, source in part_sources(comp).items():
+        assert (source == EMPTY) == (not arr.parts[part]), (part, source)
 
 
 def test_part_sources_band_job():
@@ -181,7 +198,7 @@ def test_part_sources_layers():
     quartet = part_sources(_comp(full, {"lineup": "quartet", "difficulty": "faithful", "transpose_semitones": 0}))
     assert quartet == {"1st Cornet": RECORDING, "2nd Cornet": ARRANGED, "Tenor Horn": ARRANGED, "Euphonium": RECORDING}
     no_strings = part_sources(_comp({**full, "strings": False, "drums": False}))
-    assert no_strings["Euphonium"] == ARRANGED and no_strings["Percussion"] == ARRANGED
+    assert no_strings["Euphonium"] == ARRANGED and no_strings["Percussion"] == EMPTY
     assert no_strings["Solo Cornet"] == RECORDING
 
 
