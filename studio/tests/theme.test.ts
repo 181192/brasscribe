@@ -51,10 +51,10 @@ describe("appearance", () => {
     expect(th.choice()).toBe("dark");
   });
 
-  it("lets a system contrast setting win over the choice, and keeps the choice", async () => {
+  it("lets forced colours win over the choice, and keeps the choice", async () => {
     const th = await fresh();
     expect(th.resolveTheme("dark", "forced")).toBeNull();
-    expect(th.resolveTheme("light", "more")).toBeNull();
+    expect(th.resolveTheme("light", "forced")).toBeNull();
     expect(th.resolveTheme("dark", null)).toBe("dark");
     expect(th.resolveTheme("system", null)).toBeNull();
 
@@ -65,11 +65,25 @@ describe("appearance", () => {
     expect(th.choice()).toBe("dark");
     expect(localStorage.getItem(th.THEME_STORE)).toBe("dark");
 
-    stubMedia(["(prefers-contrast: more)"]);
-    expect(th.contrast()).toBe("more");
     stubMedia([]);
     th.apply();
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+  });
+
+  it("keeps Light or Dark under more contrast, so the matching high-contrast palette applies", async () => {
+    const th = await fresh();
+    expect(th.resolveTheme("light", "more")).toBe("light");
+    expect(th.resolveTheme("dark", "more")).toBe("dark");
+    expect(th.resolveTheme("system", "more")).toBeNull();
+
+    stubMedia(["(prefers-contrast: more)"]);
+    expect(th.contrast()).toBe("more");
+    th.setChoice("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    th.setChoice("dark");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    th.setChoice("system");
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
 
   it("notifies listeners when the choice changes", async () => {

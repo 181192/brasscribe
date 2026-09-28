@@ -1,8 +1,9 @@
 /** Appearance (design/system.md §10): Match system, Light or Dark, stored per browser.
- *  The choice becomes data-theme on <html>; brasscribe.css reads it. A system contrast
- *  setting (forced colours, or prefers-contrast: more) always wins, so while one is on
- *  the attribute is removed and the system decides. index.html repeats `apply` inline so
- *  the first paint already has the right theme. */
+ *  The choice becomes data-theme on <html>; brasscribe.css reads it. With more contrast
+ *  (prefers-contrast: more) the choice stays and brasscribe.css swaps in the light or dark
+ *  high-contrast palette for it. Forced colours (Windows contrast themes) always win: the
+ *  attribute is removed and the system decides. index.html repeats `apply` inline so the
+ *  first paint already has the right theme. */
 
 export type ThemeChoice = "system" | "light" | "dark";
 export type Contrast = "forced" | "more" | null;
@@ -39,9 +40,9 @@ export function contrast(): Contrast {
   return null;
 }
 
-/** The data-theme value for a choice; null means "let the system decide". */
+/** The data-theme value for a choice; null means "let the system decide". Only forced colours override the choice. */
 export function resolveTheme(choice: ThemeChoice, c: Contrast): "light" | "dark" | null {
-  if (c || choice === "system") return null;
+  if (c === "forced" || choice === "system") return null;
   return choice;
 }
 
