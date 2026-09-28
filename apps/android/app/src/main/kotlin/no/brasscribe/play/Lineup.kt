@@ -49,13 +49,25 @@ fun TranscriptionResult.arrangementText(key: String): String? =
     (composition?.arrangement?.get(key) as? JsonPrimitive)?.contentOrNull
 
 /**
- * This Composition with the lineup and difficulty it was just arranged with recorded, as the core records
- * them. A take without layers gets the small band for the full band (only the layered arranger writes it).
+ * This Composition with the lineup, difficulty and seat it was just arranged with recorded, as the core
+ * records them. A take without layers gets the small band for the full band (only the layered arranger
+ * writes it). The seat's options are kept so where each part came from stays known after an edit;
+ * [soloTake] records the tune on the seat, as a solo take with a seat always has it.
  */
-fun Composition.arrangedFor(lineup: Lineup, difficulty: String): Composition {
+fun Composition.arrangedFor(
+    lineup: Lineup, difficulty: String, seat: String? = null, reads: String? = null, lead: String? = null, soloTake: Boolean = false,
+): Composition {
     val layered = voices.any { it.layer != null }
     val made = if (!layered && lineup == Lineup.FULL) Lineup.MINIMAL else lineup
-    return copy(arrangement = JsonObject(arrangement.orEmpty() + mapOf("lineup" to JsonPrimitive(made.core), "difficulty" to JsonPrimitive(difficulty))))
+    val base = arrangement.orEmpty() - listOf("seat", "reads", "lead")
+    val seatOptions = buildMap {
+        if (seat != null) {
+            put("seat", JsonPrimitive(seat))
+            if (reads != null) put("reads", JsonPrimitive(reads))
+            if (soloTake || lead == "seat") put("lead", JsonPrimitive("seat"))
+        }
+    }
+    return copy(arrangement = JsonObject(base + mapOf("lineup" to JsonPrimitive(made.core), "difficulty" to JsonPrimitive(difficulty)) + seatOptions))
 }
 
 /** Index of the part a player most likely wants first: the lineup's lead, else any known lead, else the first part. */

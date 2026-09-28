@@ -25,7 +25,44 @@ data class ArrangeOptions(
      * is already transposed by that much (its `arrangement.transpose_semitones`) is not moved again.
      */
     val transpose: Int? = null,
+    /** The player's seat ([Seat.id]): a solo take is written for it (one part, in the octave played); null: none. */
+    val seat: String? = null,
+    /** "treble" or "bass": the clef the seat's part is written in; null: the band part's own. */
+    val reads: String? = null,
+    /** "lineup" or "seat": who plays the tune (band lineups); null: the lineup's lead. */
+    val lead: String? = null,
 )
+
+/** One seat of the contest band ("What do you play?"), from the core's table. */
+data class Seat(
+    val id: String,
+    /** The part's English name, as the band score prints it ("2nd Cornet"). */
+    val name: String,
+    /** The part's Norwegian name («2. kornett»). */
+    val nbName: String,
+    /** Instrument id ("cornet", "tenor-horn", ...). */
+    val instrument: String,
+    /** The part's own clef: "treble", "bass" or "percussion". */
+    val clef: String,
+    /** Clefs the player may read it in, the part's own first; empty for percussion. */
+    val reads: List<String>,
+    /** Sounding minus written, semitones, of the part's instrument. */
+    val chromatic: Int,
+    /** The seat can carry the tune ("Who plays the tune?" offers it). */
+    val tune: Boolean = reads.isNotEmpty(),
+)
+
+/** The player's part in a lineup for their seat: [part] null when the lineup has none. */
+data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean)
+
+/** Where a part comes from, as the core derives it from the arrangement. */
+enum class PartSource(val id: String) {
+    YOUR_RECORDING("your-recording"), RECORDING("recording"), ARRANGED("arranged");
+
+    companion object {
+        fun of(id: String): PartSource? = entries.firstOrNull { it.id == id }
+    }
+}
 
 /** SwiftF0 frames of a solo take: where sustained notes really end (the core's written durations). */
 data class Contour(val timesS: List<Double>, val pitchHz: List<Double>, val loudnessDb: List<Double>)
@@ -105,6 +142,18 @@ interface CoreBridge {
 
     /** Humanized playback of one part (realistic tier), player index = desk position. */
     fun humanize(notes: List<ScoreNote>, part: String, player: Int, compositionJson: String?): List<PlayedNote>? = null
+
+    /** The contest band's 18 seats in score order; empty without the core. */
+    fun seats(): List<Seat> = emptyList()
+
+    /** Which part of [lineup] ("band", "minimal", "quartet") is the player's for [seat]; null without the core. */
+    fun seatPart(lineup: String, seat: String): SeatPart? = null
+
+    /** Where each part of the Composition's arrangement comes from, by part name; empty without the core. */
+    fun partSources(compositionJson: String): Map<String, PartSource> = emptyMap()
+
+    /** A part's Norwegian name from the core's one table; the name itself when unknown or without the core. */
+    fun partNameNb(name: String): String = name
 }
 
 object KotlinCoreBridge : CoreBridge {

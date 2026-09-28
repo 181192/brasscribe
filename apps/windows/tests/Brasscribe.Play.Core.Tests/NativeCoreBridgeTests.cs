@@ -81,6 +81,27 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
     }
 
     [Fact]
+    public void Contour_as_borrowed_arrays_gives_the_score_the_json_contour_gives()
+    {
+        var bridge = Bridge();
+        var layers = TestPaths.RepoFile("data/mikkel/repro/layers/solo-sw.mid");
+        var contourPath = MikkelContour();
+        if (bridge is null || layers is null || contourPath is null) return;
+
+        var inputs = LayerInputs.FromDirectory(Path.GetDirectoryName(layers)!, contourPath: contourPath)!;
+        Assert.NotNull(inputs.Contour);
+        var arrays = bridge.ArrangeLayersBand(inputs, MikkelTitle, ArrangementOptions.Default, contourAsJson: false)!;
+        var json = bridge.ArrangeLayersBand(inputs, MikkelTitle, ArrangementOptions.Default, contourAsJson: true)!;
+        Assert.Equal(json.MusicXml, arrays.MusicXml);
+        Assert.Equal(json.CompositionJson, arrays.CompositionJson);
+        Assert.Equal(json.SeparationCheck, arrays.SeparationCheck);
+        Assert.Equal(json.Parts, arrays.Parts);
+        // Not vacuous: without the contour the score differs.
+        var none = bridge.ArrangeLayersBand(inputs with { Contour = null }, MikkelTitle, ArrangementOptions.Default)!;
+        Assert.NotEqual(arrays.MusicXml, none.MusicXml);
+    }
+
+    [Fact]
     public void Talking_score_from_the_core_matches_the_managed_builder_on_the_golden()
     {
         var bridge = Bridge();

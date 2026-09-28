@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -155,6 +156,15 @@ fun HomeScreen(vm: PlayViewModel) {
         runCatching { rowFocus.requestFocus() }
         vm.focusEntry.value = null
     }
+    // After the first run's question, focus starts on the title (my-instrument §3.9).
+    val focusTitle by vm.focusHomeTitle.collectAsState()
+    val titleFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(focusTitle) {
+        if (!focusTitle) return@LaunchedEffect
+        kotlinx.coroutines.delay(100)
+        runCatching { titleFocus.requestFocus() }
+        vm.focusHomeTitle.value = false
+    }
 
     Scaffold(containerColor = c.bg) { padding ->
         Column(
@@ -176,7 +186,7 @@ fun HomeScreen(vm: PlayViewModel) {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brassText)) { append(stringResource(R.string.home_hero_end)) }
                 },
                 style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier.padding(top = BrasscribeSpace.s4).semantics { heading() },
+                modifier = Modifier.padding(top = BrasscribeSpace.s4).focusRequester(titleFocus).focusable().semantics { heading() },
             )
             Lead(stringResource(R.string.home_tagline))
             ConnectionStatusRow(vm)

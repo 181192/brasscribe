@@ -24,7 +24,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>Every export this bridge calls; an older library without them is not used.</summary>
     internal static readonly string[] RequiredExports =
     [
-        "bc_version", "bc_string_free", "bc_composition_normalize", "bc_arrange_musicxml", "bc_arrange_with", "bc_arrange_layers_band",
+        "bc_version", "bc_string_free", "bc_composition_normalize", "bc_arrange_musicxml", "bc_arrange_with", "bc_arrange_layers_band_contour",
         "bc_humanize_json", "bc_talking_score_new", "bc_talking_score_free", "bc_talking_score_json", "bc_talking_announce_json",
     ];
 
@@ -151,16 +151,24 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         return o.ToJsonString();
     }
 
-    public BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options)
+    public BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options) =>
+        ArrangeLayersBand(inputs, title, options, contourAsJson: false);
+
+    /// <summary>
+    /// The core borrows every buffer for the call: the MIDI files, the stems and the contour arrays
+    /// are pinned where they are, never copied. <paramref name="contourAsJson"/> sends the contour
+    /// in the options JSON instead (the older form, kept to test that both give the same score).
+    /// </summary>
+    internal BandArrangement? ArrangeLayersBand(LayerInputs inputs, string title, ArrangementOptions options, bool contourAsJson)
     {
         if (inputs.Midi.Length != 6 || inputs.Wav.Length != 4) throw new ArgumentException("six MIDI layers and four stems expected", nameof(inputs));
         var pins = new List<GCHandle>();
         try
         {
-            nint Pin(byte[]? bytes)
+            nint Pin(Array? a)
             {
-                if (bytes is null) return 0;
-                var h = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                if (a is null) return 0;
+                var h = GCHandle.Alloc(a, GCHandleType.Pinned);
                 pins.Add(h);
                 return h.AddrOfPinnedObject();
             }
@@ -168,8 +176,15 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             var midiLen = inputs.Midi.Select(b => (nuint)b.Length).ToArray();
             var wav = inputs.Wav.Select(Pin).ToArray();
             var wavLen = inputs.Wav.Select(b => (nuint)(b?.Length ?? 0)).ToArray();
-            Check(bc_arrange_layers_band(midi, midiLen, wav, wavLen, inputs.Beats, title, LayersOptions(inputs.Contour, options), out var json, out var err), err);
-            var o = JsonNode.Parse(Take(json))!.AsObject();
+            var c = contourAsJson ? null : inputs.Contour;
+            if (c is not null && (c.PitchHz.Length != c.Times.Length || c.LoudnessDb.Length != c.Times.Length))
+                throw new ArgumentException("contour arrays differ in length", nameof(inputs));
+            // Times, pitch, loudness, no confidence. Non-finite values are read as the JSON form has them.
+            nint[]? contour = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), 0];
+            var json = LayersOptions(contourAsJson ? inputs.Contour : null, options);
+            Check(bc_arrange_layers_band_contour(midi, midiLen, wav, wavLen, contour, (nuint)(c?.Times.Length ?? 0), inputs.Beats, title, json,
+                out var result, out var err), err);
+            var o = JsonNode.Parse(Take(result))!.AsObject();
             var parts = o["parts"]?.AsArray().Select(p => (p!["file_name"]!.GetValue<string>(), p["musicxml"]!.GetValue<string>())).ToList() ?? [];
             return new BandArrangement(o["composition"]!.GetValue<string>(), o["musicxml"]!.GetValue<string>(), parts,
                 o["separation_check"] is JsonValue sc && sc.TryGetValue(out string? check) ? check : null);
@@ -180,7 +195,10 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         }
     }
 
-    /// <summary>The options JSON of bc_arrange_layers_band. The core calls the full lineup "band".</summary>
+    /// <summary>
+    /// The options JSON of bc_arrange_layers_band(_contour). The core calls the full lineup "band". A contour
+    /// given here goes into the JSON; <see cref="ArrangeLayersBand(LayerInputs, string, ArrangementOptions)"/> passes it as arrays instead.
+    /// </summary>
     internal static string LayersOptions(SoloContour? contour, ArrangementOptions options)
     {
         static JsonArray Floats(IEnumerable<double> v, double nanAs) => new(v.Select(x => (JsonNode?)JsonValue.Create(double.IsFinite(x) ? x : nanAs)).ToArray());
@@ -260,8 +278,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     private static partial int bc_arrange_with(string compositionJson, string options, out nint xml, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
-    private static partial int bc_arrange_layers_band(nint[] midi, nuint[] midiLen, nint[] wav, nuint[] wavLen,
-        string beatsText, string title, string options, out nint json, out nint err);
+    private static partial int bc_arrange_layers_band_contour(nint[] midi, nuint[] midiLen, nint[] wav, nuint[] wavLen,
+        nint[]? contour, nuint contourLen, string beatsText, string title, string options, out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     private static partial int bc_humanize_json(string request, out nint json, out nint err);

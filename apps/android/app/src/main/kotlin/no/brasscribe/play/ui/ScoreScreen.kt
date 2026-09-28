@@ -92,6 +92,8 @@ import no.brasscribe.play.Screen
 import no.brasscribe.play.audio.RealisticSynth
 import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.lineup
+import no.brasscribe.play.isSoloTake
+import androidx.compose.ui.semantics.heading
 import no.brasscribe.play.model.Uncertainty
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScorePalette
@@ -100,7 +102,7 @@ import no.brasscribe.play.score.ScoreUiState
 /** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
 fun defaultPart(parts: List<String>, lineup: no.brasscribe.play.Lineup? = null): Int = no.brasscribe.play.leadPartIndex(parts, lineup)
 
-private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE }
+private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, MAPPED, SOURCE }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -135,7 +137,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
     LaunchedEffect(controller) {
         // One part first (the full score is one tap away in Parts); a key shift re-renders once.
-        controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names, r.lineup)) }
+        // Your part first (the seat's, or this score's pick); every part for a conductor or a seat the lineup lacks.
+        controller.load(r.musicXml.toByteArray()) { names -> vm.yourPart(names, r).index?.let { setOf(it) } ?: names.indices.toSet() }
         (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) {
@@ -152,7 +155,11 @@ fun ScoreScreen(vm: PlayViewModel) {
     val single = st.shown.size == 1
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
     val shownText = if (single) PartNames.display(partName) else stringResource(R.string.show_all_parts)
-    val myPart = st.shown.minOrNull()?.takeIf { single } ?: defaultPart(st.parts, r.lineup)
+    val override by vm.myPartOverride.collectAsState()
+    val your = remember(st.parts, r, override, vm.container.seat) { vm.yourPart(st.parts, r) }
+    // Mute my part mutes your part; with no part of your own ("I conduct or listen") it is not offered.
+    val myPart = your.index
+    val sources = remember(r) { vm.partSources(r) }
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
     val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
     val nextBar = stringResource(R.string.action_next_bar)
@@ -162,6 +169,18 @@ fun ScoreScreen(vm: PlayViewModel) {
     val playBar = stringResource(R.string.action_play_bar)
     val toCheck = remember(r, checkedMap) { r.composition?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0 }
     val grouped = r.composition?.review?.isNotEmpty() == true
+    // The part on screen: where it came from, and when it is yours in a lineup without your seat, which part it is.
+    val shownIndex = st.shown.singleOrNull()
+    val shownSource = shownIndex?.let { st.parts.getOrNull(it) }?.let { sources[it.replace('\u00A0', ' ').trim()] }
+    val mappedLine = your.mapped?.let { mappedText(it, vm.container.seat.readsOrNull, vm.container.seats) }
+    // Said once, politely, when the score opens (4.1.3); it stays on screen above the music.
+    val noticeSeen by vm.mappedNoticeSeen.collectAsState()
+    val mappedShortLine = your.mapped?.let { mappedShort(it) }
+    val mine = shownIndex != null && shownIndex == your.index
+    val showMapped = mappedShortLine != null && !noticeSeen && (mine || your.index == null)
+    LaunchedEffect(st.loaded, mappedLine) { if (st.loaded && mappedLine != null && !noticeSeen) vm.status.value = no.brasscribe.play.Status(mappedLine, quiet = true) }
+    val writtenTipText = stringResource(R.string.written_tip_full,
+        controller.writtenKey()?.let { stringResource(R.string.written_pitch_for, it) } ?: stringResource(R.string.written_pitch))
 
     fun movePart(delta: Int) {
         if (st.parts.isEmpty()) return
@@ -187,7 +206,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val follow = remember(ms.open) { container.standFollow }
     val standButton = remember { FocusRequester() }
     val scoreFocus = remember { FocusRequester() }
-    val yours = MusicStandRules.yourPart(st.parts, r.lineup)
+    // With no answer yet, the stand names a part only when the score has a known lead (not in a pop score).
+    val yours = if (vm.container.seat == no.brasscribe.play.SeatChoice.NotSet && override == null) MusicStandRules.yourPart(st.parts, r.lineup) else your.index
     val onlyMineOffered = MusicStandRules.offersOnlyMine(st.parts, yours)
     var libraryEntry by rememberSaveable { mutableStateOf<String?>(null) }
     var focusOpener by remember { mutableStateOf(false) }
@@ -370,7 +390,9 @@ fun ScoreScreen(vm: PlayViewModel) {
       val twoSystems = remember(renders) { controller.standSystems().maxOfOrNull { it.bottom - it.top }?.let { with(density) { (it * 2).toDp() } } ?: 0.dp }
       androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(if (performance) PaddingValues(0.dp) else padding)) {
         val controlsMax = ScoreSplit.controlsMax(
-            available = (maxHeight + padding.calculateTopPadding() - statusBar).value, content = maxHeight.value, twoSystems = twoSystems.value).dp
+            available = (maxHeight + padding.calculateTopPadding() - statusBar).value, content = maxHeight.value,
+            // On its side two systems if they fit; upright 55 % is plenty, and the controls keep the rest.
+            twoSystems = if (compact) twoSystems.value else 0f).dp
         Column(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             val n = e.nativeKeyEvent
             when {
@@ -382,18 +404,37 @@ fun ScoreScreen(vm: PlayViewModel) {
             }
         }) {
             if (performance) MusicStandBand(position, shape, ms, onlyMineOffered, { ms.onlyMine = !ms.onlyMine }, ::toggleLock, ::leaveStand)
-            // The score toolbar: part picker, written or concert pitch, zoom, and the music stand.
-            if (!performance && !compact) FlowRow(
+            // Upright, the score keeps at least 55 % of the height as it does on its side (ScoreSplit): what is
+            // above and below it shares the rest, and scrolls inside its share when it needs more.
+            val topMax = controlsMax * 0.4f
+            val bottomMax = controlsMax - topMax
+            if (!performance && !compact) Column(
+                Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(rememberScrollState()).semantics { testTag = "score-top" },
+                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            ) {
+            // The score toolbar: the part picker with where the part came from, then zoom, written or concert
+            // pitch, and the music stand.
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
                 horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
             ) {
-                PracticeChip(shownText, false, { sheet = Sheet.PARTS }, icon = R.drawable.ic_bc_parts, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+                PracticeChip(if (mine) stringResource(R.string.stand_part_yours, shownText) else shownText, false, { sheet = Sheet.PARTS },
+                    Modifier.semantics { testTag = "part-picker" }, icon = R.drawable.ic_bc_parts, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+                shownSource?.let { SourceLabel(it, compact = true, onExplain = { sheet = Sheet.SOURCE }) }
+            }
+            // Your part in a lineup without your seat: one line, closed once and then not shown for this score.
+            if (showMapped) MappedBanner(mappedShortLine!!, { sheet = Sheet.MAPPED }, { vm.closeMappedNotice() },
+                Modifier.padding(horizontal = ScreenMargin))
+            FlowRow(
+                Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
+                horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            ) {
                 Row(Modifier.background(c.secondary, MaterialTheme.shapes.medium)) {
                     IconButton({ controller.setZoom(st.zoom - 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out)) }
                     IconButton({ controller.setZoom(st.zoom + 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in)) }
                 }
-                // "As written for B♭" names the key the part is written in; large text gets two chips, not segments.
-                val writtenLabel = controller.writtenKey()?.let { stringResource(R.string.written_pitch_for, it) } ?: stringResource(R.string.written_pitch)
+                // The phone form, "As written" / "Concert pitch"; the ⓘ names the key the part is written in.
+                val writtenLabel = stringResource(R.string.written_pitch)
                 if (largeText()) {
                     PracticeChip(writtenLabel, !st.concertPitch, { controller.setConcertPitch(false) }, role = Role.RadioButton)
                     PracticeChip(stringResource(R.string.concert_pitch), st.concertPitch, { controller.setConcertPitch(true) }, role = Role.RadioButton)
@@ -401,21 +442,22 @@ fun ScoreScreen(vm: PlayViewModel) {
                     MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
                 } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
                     SegmentedButton(selected = !st.concertPitch, onClick = { controller.setConcertPitch(false) }, shape = SegmentedButtonDefaults.itemShape(0, 2),
-                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(writtenLabel, maxLines = 2) }
+                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(writtenLabel, maxLines = 1) }
                     SegmentedButton(selected = st.concertPitch, onClick = { controller.setConcertPitch(true) }, shape = SegmentedButtonDefaults.itemShape(1, 2),
-                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.concert_pitch), maxLines = 2) }
+                        colors = segmentColors(), icon = {}, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.concert_pitch), maxLines = 1) }
                 }
                     IconButton({ writtenTip = !writtenTip }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_info, stringResource(R.string.written_tip_label)) }
                     Spacer(Modifier.size(BrasscribeSpace.s2))
                     MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
                 }
             }
-            if (writtenTip && !performance && !compact) InfoNote(stringResource(R.string.written_tip), Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
-            if (toCheck > 0 && !performance && !compact) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
+            if (writtenTip) InfoNote(writtenTipText, Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s1))
+            if (toCheck > 0) Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
                 UncertainMark(false)
                 Text(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
                     color = c.textMuted, modifier = Modifier.weight(1f))
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
+            }
             }
             Box(Modifier.weight(1f).fillMaxWidth()
                 .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
@@ -458,8 +500,11 @@ fun ScoreScreen(vm: PlayViewModel) {
                         Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                 }
             }
-            if (!performance && !compact && st.basicTier) BandSoundsMissing(st.bandSoundsExpected)
-            if (!performance && !compact) PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
+            if (!performance && !compact) Column(Modifier.fillMaxWidth().heightIn(max = bottomMax).verticalScroll(rememberScrollState())) {
+                // Not urgent: one line, the details in a sheet.
+                if (st.basicTier) NoticeLine(stringResource(R.string.band_sounds_missing), { sheet = Sheet.NOTICE }, Modifier.padding(horizontal = ScreenMargin))
+                PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
+            }
             // On its side: one row (Play, bars, position, then Parts, Practice, View and the stand), wrapping
             // and scrolling inside its share at large text; notices fold to one line, details in a sheet.
             if (compact) Column(
@@ -498,7 +543,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     }
 
     when (sheet) {
-        Sheet.PARTS -> PartsSheet(st, controller, r.lineup) { sheet = null }
+        Sheet.PARTS -> PartsSheet(st, controller, your.index, sources, onMakeMine = { vm.makeMyPart(st.parts[it].replace('\u00A0', ' ').trim()) },
+            onWriteForAnother = if (r.isSoloTake && vm.container.seats.isNotEmpty()) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
             LoopControl(st.totalBars, st.loop, onSet = { a, b ->
@@ -508,6 +554,10 @@ fun ScoreScreen(vm: PlayViewModel) {
         Sheet.PRACTICE -> BottomSheet({ sheet = null }) {
             SubHeading(stringResource(R.string.practice))
             PracticeChips(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP })
+        }
+        Sheet.MAPPED -> BottomSheet({ sheet = null }) { mappedLine?.let { InfoNote(it, boxed = false) } }
+        Sheet.SOURCE -> BottomSheet({ sheet = null }) {
+            shownSource?.let { SubHeading(stringResource(sourceWords(it))); Text(stringResource(explainOf(it)), style = MaterialTheme.typography.bodyLarge) }
         }
         Sheet.NOTICE -> BottomSheet({ sheet = null }) {
             InfoNote(stringResource(R.string.band_sounds_missing), boxed = false)
@@ -584,7 +634,7 @@ private fun BottomSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) 
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int, onSpeed: () -> Unit, onLoop: () -> Unit, onBar: (Int) -> Unit) {
+private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int?, onSpeed: () -> Unit, onLoop: () -> Unit, onBar: (Int) -> Unit) {
     val c = BrasscribeTheme.colors
     Surface(
         Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2).navigationBarsPadding(),
@@ -623,14 +673,14 @@ private fun Transport(controller: ScoreController, st: ScoreUiState, onBar: (Int
 /** Speed, Loop, Count-in, Metronome and Mute my part; they wrap and never clip. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PracticeChips(controller: ScoreController, st: ScoreUiState, myPart: Int, onSpeed: () -> Unit, onLoop: () -> Unit) {
+private fun PracticeChips(controller: ScoreController, st: ScoreUiState, myPart: Int?, onSpeed: () -> Unit, onLoop: () -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
         PracticeChip(stringResource(R.string.speed_chip, st.speed), st.speed != 100, onSpeed, icon = R.drawable.ic_bc_speed, role = Role.Button)
         PracticeChip(st.loop?.let { stringResource(R.string.loop_chip_on, it.first, it.last) } ?: stringResource(R.string.loop),
             st.loop != null, onLoop, icon = R.drawable.ic_bc_loop, role = Role.Button)
         PracticeChip(stringResource(R.string.count_in), st.countIn, { controller.setCountIn(!st.countIn) }, icon = R.drawable.ic_bc_count_in)
         PracticeChip(stringResource(R.string.metronome), st.metronome, { controller.setMetronome(!st.metronome) }, icon = R.drawable.ic_bc_metronome)
-        PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) }, icon = R.drawable.ic_bc_play_along)
+        if (myPart != null) PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) }, icon = R.drawable.ic_bc_play_along)
     }
 }
 
@@ -715,17 +765,21 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PartsSheet(st: ScoreUiState, controller: ScoreController, lineup: no.brasscribe.play.Lineup?, onDismiss: () -> Unit) {
+private fun PartsSheet(
+    st: ScoreUiState, controller: ScoreController, yours: Int?, sources: Map<String, no.brasscribe.play.model.PartSource>,
+    onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, onDismiss: () -> Unit,
+) {
     val c = BrasscribeTheme.colors
     val large = largeText()
     BottomSheet(onDismiss) {
         SubHeading(stringResource(R.string.parts))
         val all = st.shown.size > 1
-        val mine = st.shown == setOf(defaultPart(st.parts, lineup))
+        val mine = yours != null && st.shown == setOf(yours)
         Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
             PracticeChip(stringResource(R.string.show_all_parts), all, { controller.showParts(st.parts.indices.toSet()); onDismiss() },
                 Modifier.weight(1f), role = Role.RadioButton)
-            PracticeChip(stringResource(R.string.show_one_part), mine, { controller.showParts(setOf(defaultPart(st.parts, lineup))); onDismiss() },
+            // "Show one part" is your part; with none of your own there is no such choice.
+            if (yours != null) PracticeChip(stringResource(R.string.show_one_part), mine, { controller.showParts(setOf(yours)); onDismiss() },
                 Modifier.weight(1f), role = Role.RadioButton)
         }
         RowGroup {
@@ -733,6 +787,7 @@ private fun PartsSheet(st: ScoreUiState, controller: ScoreController, lineup: no
                 if (i > 0) RowDivider()
                 val name = PartNames.display(english)
                 val shown = i in st.shown
+                val source = sources[english.replace('\u00A0', ' ').trim()]
                 // One row per part (about 64 dp): the name, then Mute and Only this at the right.
                 val toggles = @Composable {
                     PracticeChip(stringResource(R.string.mute), i in st.muted, { controller.setMuted(i, i !in st.muted) }, icon = R.drawable.ic_bc_mute,
@@ -745,19 +800,70 @@ private fun PartsSheet(st: ScoreUiState, controller: ScoreController, lineup: no
                         verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.width(4.dp).heightIn(min = 24.dp).background(if (shown) c.text else c.surfaceRaised))
                         Spacer(Modifier.size(BrasscribeSpace.s2))
-                        Text(name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (shown) FontWeight.Bold else FontWeight.Normal))
+                        Column {
+                            Text(if (i == yours) stringResource(R.string.stand_part_yours, name) else name,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (shown) FontWeight.Bold else FontWeight.Normal))
+                            // Where it came from, in words with its icon (never a colour): the pill above the score explains it.
+                            if (source != null) SourceLine(source)
+                        }
                     }
                 }
+                val makeMine = @Composable { if (i != yours) PlainButton(stringResource(R.string.my_part_make), { onMakeMine(i) },
+                    Modifier.padding(start = BrasscribeSpace.s3).semantics { testTag = "make-mine-$i" }) }
                 if (large) Column(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
                     verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
                     label(Modifier.fillMaxWidth())
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) { toggles() }
-                } else Row(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-                    label(Modifier.weight(1f))
-                    toggles()
+                    makeMine()
+                } else Column(Modifier.fillMaxWidth().padding(vertical = BrasscribeSpace.s2)) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                        label(Modifier.weight(1f))
+                        toggles()
+                    }
+                    makeMine()
                 }
             }
         }
+        // A solo take: another player's instrument is chosen on How should the score be? (it re-arranges).
+        if (onWriteForAnother != null) OutlineButton(stringResource(R.string.write_for_another), onWriteForAnother)
+    }
+}
+
+/** A part's source in the mixer: its icon and words, small, under the part name. */
+@Composable
+private fun SourceLine(source: no.brasscribe.play.model.PartSource) {
+    val c = BrasscribeTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
+            Modifier.size(16.dp), tint = c.textMuted)
+        Text(stringResource(when (source) {
+            no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
+            no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
+            no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+        }), style = MaterialTheme.typography.bodySmall, color = c.textMuted)
+    }
+}
+
+/** The words of a source pill. */
+fun sourceWords(source: no.brasscribe.play.model.PartSource): Int = when (source) {
+    no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
+    no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
+    no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+}
+
+/** A one-line notice that opens its details and can be closed; both targets 48 dp. */
+@Composable
+private fun MappedBanner(text: String, onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val c = BrasscribeTheme.colors
+    Row(modifier.fillMaxWidth().background(c.surface, MaterialTheme.shapes.medium).border(1.dp, c.border, MaterialTheme.shapes.medium)
+        .semantics { testTag = "mapped-notice" }, verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onOpen).padding(start = BrasscribeSpace.s3),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            BcIcon(R.drawable.ic_bc_info, null, tint = c.text)
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = c.text, maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+        IconButton(onClose, Modifier.size(48.dp).semantics { testTag = "mapped-close" }) { BcIcon(R.drawable.ic_bc_close, stringResource(R.string.mapped_close)) }
     }
 }

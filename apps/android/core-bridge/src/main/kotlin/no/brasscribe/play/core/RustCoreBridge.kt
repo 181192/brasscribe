@@ -41,6 +41,14 @@ import uniffi.brasscribe_ffi.layersSongDefaults
 import uniffi.brasscribe_ffi.normalizeComposition
 import uniffi.brasscribe_ffi.spellPitches
 import uniffi.brasscribe_ffi.talkingAnnounceJson
+import uniffi.brasscribe_ffi.instruments
+import uniffi.brasscribe_ffi.partNameNb as corePartNameNb
+import uniffi.brasscribe_ffi.partSources as corePartSources
+import uniffi.brasscribe_ffi.seatPart as coreSeatPart
+import uniffi.brasscribe_ffi.seats as coreSeats
+import no.brasscribe.play.model.PartSource
+import no.brasscribe.play.model.Seat
+import no.brasscribe.play.model.SeatPart
 import uniffi.brasscribe_ffi.ArrangeOptions as CoreArrangeOptions
 import uniffi.brasscribe_ffi.ScoreNote as CoreScoreNote
 import uniffi.brasscribe_ffi.TalkingScore as CoreTalkingScore
@@ -75,6 +83,9 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
             difficulty = options.difficulty
             key = options.key
             transpose = options.transpose
+            seat = options.seat
+            reads = options.reads
+            lead = options.lead
         }
         val out = arrangeLayersBand(layers, LayerStems(solo = take.wav), take.beatsText, take.title, opts)
         return Arranged(CompositionJson.decode(out.compositionJson), out.compositionJson, out.musicxml, out.parts.map { it.fileName to it.musicxml })
@@ -93,7 +104,25 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
 
     override fun arrangeMusicXmlWith(composition: Composition, options: ArrangeOptions): String =
         arrangeMusicxmlWith(CompositionJson.encode(composition),
-            CoreArrangeOptions(coreLineup(options.lineup), options.difficulty, options.key, options.transpose))
+            CoreArrangeOptions(coreLineup(options.lineup), options.difficulty, options.key, options.transpose,
+                options.seat, options.reads, options.lead))
+
+    override fun seats(): List<Seat> = seatList
+
+    private val seatList: List<Seat> by lazy {
+        val chromatic = instruments().associate { it.id to it.chromatic }
+        coreSeats().map { Seat(it.id, it.name, it.nbName, it.instrument, it.clef, it.reads, chromatic[it.instrument] ?: 0) }
+    }
+
+    override fun seatPart(lineup: String, seat: String): SeatPart? = runCatching {
+        coreSeatPart(coreLineup(lineup), seat).let { SeatPart(it.part, it.exact, it.sameKey) }
+    }.getOrNull()
+
+    override fun partSources(compositionJson: String): Map<String, PartSource> = runCatching {
+        corePartSources(compositionJson).mapNotNull { s -> PartSource.of(s.source)?.let { s.part to it } }.toMap()
+    }.getOrDefault(emptyMap())
+
+    override fun partNameNb(name: String): String = corePartNameNb(name)
 
     /** The core's announcer, fed the same event JSON as docs/accessibility/talking-score-vectors.json. */
     override fun announce(stop: TsStop, context: TsContext, settings: TsSettings, lang: Lang): String {

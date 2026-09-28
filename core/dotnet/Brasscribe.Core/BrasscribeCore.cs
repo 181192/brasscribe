@@ -34,9 +34,10 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// part in the octave played; a band take's notes do not change. Null: no seat.</param>
 /// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
 /// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
+/// <param name="Lang">Language of the footer on the arranged parts: "en" (null) or "nb".</param>
 public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
     bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
-    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null);
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null);
 
 /// <summary>The player's part in a lineup for their seat.</summary>
 /// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
@@ -54,7 +55,8 @@ public readonly record struct PartSource(string Part, string Source);
 /// <param name="Instrument">Instrument id.</param>
 /// <param name="Clef">The part's own clef: "treble", "bass" or "percussion".</param>
 /// <param name="Reads">Clefs the player may read it in, the part's own first; empty for percussion.</param>
-public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads);
+/// <param name="Tune">The part can carry the tune (the seats offered "Who plays the tune?").</param>
+public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads, bool Tune);
 
 /// <summary>Everything the band arrangement writes.</summary>
 public sealed record BandOutput(string CompositionJson, string MusicXml, IReadOnlyList<(string FileName, string MusicXml)> Parts,
@@ -208,13 +210,19 @@ public static class BrasscribeCore
         }
     }
 
-    /// <summary>Solo-with-band arrangement with the stems' audio: the score, every part, the Composition and the separation check.</summary>
+    /// <summary>
+    /// Solo-with-band arrangement with the stems' audio: the score, every part, the Composition and the separation check.
+    /// The core borrows the MIDI files, the stems and the contour arrays for the call: they are pinned, never copied.
+    /// </summary>
     public static BandOutput ArrangeLayersBand(LayerMidi layers, LayerStems? stems, string beatsText, string title, LayersSongOptions? options = null)
     {
         var o = options ?? new LayersSongOptions();
+        var c = o.SoloContour;
+        if (c is not null && (c.PitchHz.Length != c.Times.Length || c.LoudnessDb.Length != c.Times.Length
+                              || (c.Confidence is { } conf && conf.Length != c.Times.Length)))
+            throw new ArgumentException("contour arrays differ in length", nameof(options));
         var optionsJson = JsonSerializer.Serialize(new
         {
-            solo_contour = o.SoloContour is null ? null : new { times = o.SoloContour.Times, pitch_hz = o.SoloContour.PitchHz, loudness_db = o.SoloContour.LoudnessDb, confidence = o.SoloContour.Confidence },
             free_time = o.FreeTime,
             free_tempo = o.FreeTempo,
             gate = o.Gate,
@@ -227,18 +235,28 @@ public static class BrasscribeCore
             seat = o.Seat,
             reads = o.Reads,
             lead = o.Lead,
+            lang = o.Lang,
         });
-        byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
-        byte[]?[] wavs = [stems?.Solo, stems?.Bass, stems?.Drums, stems?.Orchestra];
-        var handles = files.Select(f => GCHandle.Alloc(f, GCHandleType.Pinned)).ToList();
-        var wavHandles = wavs.Select(w => w is null ? (GCHandle?)null : GCHandle.Alloc(w, GCHandleType.Pinned)).ToList();
+        var pins = new List<GCHandle>();
+        IntPtr Pin(Array? a)
+        {
+            if (a is null) return IntPtr.Zero;
+            var h = GCHandle.Alloc(a, GCHandleType.Pinned);
+            pins.Add(h);
+            return h.AddrOfPinnedObject();
+        }
         try
         {
-            var ptrs = handles.Select(h => h.AddrOfPinnedObject()).ToArray();
+            byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
+            byte[]?[] wavs = [stems?.Solo, stems?.Bass, stems?.Drums, stems?.Orchestra];
+            var ptrs = files.Select(Pin).ToArray();
             var lens = files.Select(f => (nuint)f.Length).ToArray();
-            var wptrs = wavHandles.Select(h => h?.AddrOfPinnedObject() ?? IntPtr.Zero).ToArray();
+            var wptrs = wavs.Select(Pin).ToArray();
             var wlens = wavs.Select(w => (nuint)(w?.Length ?? 0)).ToArray();
-            var json = Call((out IntPtr r, out IntPtr e) => Native.bc_arrange_layers_band(ptrs, lens, wptrs, wlens, beatsText, title, optionsJson, out r, out e));
+            IntPtr[]? cptrs = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), Pin(c.Confidence)];
+            var clen = (nuint)(c?.Times.Length ?? 0);
+            var json = Call((out IntPtr r, out IntPtr e) =>
+                Native.bc_arrange_layers_band_contour(ptrs, lens, wptrs, wlens, cptrs, clen, beatsText, title, optionsJson, out r, out e));
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var parts = root.GetProperty("parts").EnumerateArray()
@@ -249,8 +267,7 @@ public static class BrasscribeCore
         }
         finally
         {
-            foreach (var h in handles) h.Free();
-            foreach (var h in wavHandles) h?.Free();
+            foreach (var h in pins) h.Free();
         }
     }
 
@@ -340,7 +357,7 @@ public static class BrasscribeCore
         return doc.RootElement.EnumerateArray()
             .Select(x => new SeatInfo(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!,
                 x.GetProperty("nb_name").GetString()!, x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
-                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList()))
+                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList(), x.GetProperty("tune").GetBoolean()))
             .ToList();
     }
 
@@ -408,8 +425,8 @@ public static class BrasscribeCore
         public static extern int bc_spell_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
-        public static extern int bc_arrange_layers_band(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
+        public static extern int bc_arrange_layers_band_contour(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
+            IntPtr[]? contour, nuint contourLen, [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]

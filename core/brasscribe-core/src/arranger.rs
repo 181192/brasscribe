@@ -964,6 +964,24 @@ pub fn is_solo_take(comp: &Composition) -> bool {
         && !comp.voices.iter().any(|v| !v.notes.is_empty() && v.layer.as_deref() != Some("solo"))
 }
 
+/// Languages of the source footer on printed parts.
+pub const FOOTER_LANGS: [&str; 2] = ["en", "nb"];
+
+/// The footer printed on a part from `source` ([`part_sources`]), in `lang` ("en" or "nb"; empty = en):
+/// an arranged part says so; a part from the recording has none.
+pub fn source_footer(source: &str, lang: &str) -> Option<&'static str> {
+    match (source, lang) {
+        (ARRANGED, "nb") => Some("Arrangert av Brasscribe ut fra harmoniene i bandet."),
+        (ARRANGED, _) => Some("Arranged by Brasscribe from the band's harmony."),
+        _ => None,
+    }
+}
+
+/// (part name, footer) for every part of the Composition's arrangement that has one.
+pub fn part_footers(comp: &Composition, lang: &str) -> Vec<(String, String)> {
+    part_sources(comp).into_iter().filter_map(|(p, s)| source_footer(s, lang).map(|f| (p, f.to_string()))).collect()
+}
+
 /// Where each part of the Composition's arrangement comes from, in score order.
 ///
 /// Derived, not stored: from the lineup's roles, the arranger that made it (layered or not) and

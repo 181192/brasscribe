@@ -16,6 +16,10 @@ data class SavedScore(
     val evidenceJson: String? = null,
     /** Review events the musician kept, as "voice:index". */
     val checked: Set<String> = emptySet(),
+    /** "Make this my part": the part picked for this score (its English name), or null for the seat's. */
+    val part: String? = null,
+    /** The one-line "this lineup has no part of your seat" notice was closed for this score. */
+    val noticeSeen: Boolean = false,
 )
 
 /** App-owned score copies: MusicXML is the editable score, with its transcription beside it. */
@@ -25,7 +29,7 @@ class SavedScoreLibrary(private val root: File) {
 
     fun save(
         id: String?, title: String, profile: String, musicXml: String, compositionJson: String?,
-        jobId: String? = null, evidenceJson: String? = null, checked: Set<String> = emptySet(),
+        jobId: String? = null, evidenceJson: String? = null, checked: Set<String> = emptySet(), part: String? = null, noticeSeen: Boolean = false,
     ): SavedScore {
         val key = id ?: UUID.randomUUID().toString()
         val folder = File(root, key).apply { mkdirs() }
@@ -41,16 +45,18 @@ class SavedScoreLibrary(private val root: File) {
             setProperty("updated", updated.toString())
             jobId?.let { setProperty("job", it) }
             if (checked.isNotEmpty()) setProperty("checked", checked.sorted().joinToString(","))
+            part?.let { setProperty("part", it) }
+            if (noticeSeen) setProperty("notice_seen", "true")
         }
         val temporary = File(folder, "score.properties.tmp")
         temporary.outputStream().use { metadata.store(it, null) }
         check(temporary.renameTo(File(folder, "score.properties"))) { "couldn't save score details" }
-        return SavedScore(key, title, profile, musicXml, compositionJson, updated, jobId, evidenceJson, checked)
+        return SavedScore(key, title, profile, musicXml, compositionJson, updated, jobId, evidenceJson, checked, part, noticeSeen)
     }
 
     fun rename(id: String, title: String): SavedScore? {
         val current = list().firstOrNull { it.id == id } ?: return null
-        return save(id, title, current.profile, current.musicXml, current.compositionJson, current.jobId, current.evidenceJson, current.checked)
+        return save(id, title, current.profile, current.musicXml, current.compositionJson, current.jobId, current.evidenceJson, current.checked, current.part, current.noticeSeen)
     }
 
     fun delete(id: String) {
@@ -69,6 +75,8 @@ class SavedScoreLibrary(private val root: File) {
             jobId = metadata.getProperty("job"),
             evidenceJson = File(folder, "evidence.json").takeIf(File::isFile)?.readText(),
             checked = metadata.getProperty("checked")?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty(),
+            part = metadata.getProperty("part"),
+            noticeSeen = metadata.getProperty("notice_seen") == "true",
         )
     }.getOrNull()
 

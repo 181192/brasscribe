@@ -70,3 +70,25 @@ fn clef_readings() {
     assert!(check_reads(Some("bass-trombone"), Some("treble")).is_err());
     assert!(check_reads(None, Some("bass")).is_err());
 }
+
+/// The seats whose part can carry the tune: Role Melody or Solo in instruments.rs, not the bass line.
+#[test]
+fn tune_follows_the_roles() {
+    use brasscribe_core::instruments::{lead_lineup, Role};
+    let tune: Vec<&str> = SEATS.iter().filter(|s| s.tune()).map(|s| s.id).collect();
+    assert_eq!(
+        tune,
+        [
+            "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn", "1st-horn",
+            "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium",
+        ]
+    );
+    let band = brass_band();
+    for s in &SEATS {
+        let roles = band.by_name(s.part).instrument.roles;
+        let melodic = roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo));
+        assert_eq!(s.tune(), melodic && s.part != band.bass && Some(s.part) != band.second_bass, "{}", s.id);
+        // the same seats lead_lineup takes the tune for
+        assert_eq!(s.tune(), lead_lineup(brass_band(), s.id).is_ok(), "{}", s.id);
+    }
+}

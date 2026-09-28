@@ -122,6 +122,7 @@ fun PlayRoot(vm: PlayViewModel) {
     BackHandler(enabled = stack.size > 1) { vm.back() }
     when (stack.last()) {
         Screen.FIRST_RUN -> FirstRunScreen(vm)
+        Screen.WHAT_DO_YOU_PLAY -> no.brasscribe.play.ui.WhatDoYouPlayScreen(vm)
         Screen.HOME -> HomeScreen(vm)
         Screen.RECORD -> RecordScreen(vm)
         Screen.PROFILE -> ProfileScreen(vm)

@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 import soundfile as sf
-from brasscribe_music.arranger import Arrangement, arrange_layers, composition_lineup
+from brasscribe_music.arranger import FOOTER_LANGS, Arrangement, arrange_layers, composition_lineup, part_footers
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
@@ -108,6 +108,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--reads", choices=CLEF_READINGS, help="the clef the seat's part is written in (bass: at concert pitch)")
     ap.add_argument("--lead", choices=LEADS, default="lineup",
                     help="who plays the tune: the lineup's lead, or the seat's part (a solo take always the seat)")
+    ap.add_argument("--lang", choices=FOOTER_LANGS, default="en", help="language of the footer on the arranged parts")
     tr = ap.add_mutually_exclusive_group()
     tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
     tr.add_argument("--transpose", type=int, help="transpose the whole arrangement by N semitones")
@@ -331,7 +332,7 @@ def main(argv: list[str] | None = None) -> None:
     if not args.no_render:
         musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
     # Individual parts (mscore -P crashes): one MusicXML per part, all rendered in one MuseScore launch.
-    parts = split_parts(xml, args.out / "parts")
+    parts = split_parts(xml, args.out / "parts", part_footers(comp, args.lang))
     for pdf in [] if args.no_render else musescore.convert_many([(f, f.with_suffix(".pdf")) for f in parts], style=PART_STYLE):
         print(f"(no pdf for {pdf.name})")
     print(xml, "pdf" if xml.with_suffix(".pdf").exists() else "(no pdf)", "mp3" if xml.with_suffix(".mp3").exists() else "(no mp3)")

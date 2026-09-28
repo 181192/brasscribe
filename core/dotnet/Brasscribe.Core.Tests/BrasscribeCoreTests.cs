@@ -45,6 +45,9 @@ public class BrasscribeCoreTests
         Assert.Equal("Eufonium", euph.NbName);
         Assert.Equal(new[] { "treble", "bass" }, euph.Reads);
         Assert.Equal("Solo althorn", seats.Single(s => s.Id == "solo-horn").NbName);
+        // Tune: Role Melody or Solo, not the bass line.
+        Assert.Equal(new[] { "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn",
+            "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium" }, seats.Where(s => s.Tune).Select(s => s.Id));
         // Three spot checks of the seat -> part table.
         Assert.Equal(new SeatPart("Euphonium", false, true), BrasscribeCore.SeatPart("minimal", "1st-baritone"));
         Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));
@@ -85,14 +88,58 @@ public class BrasscribeCoreTests
     [Fact]
     public void ArrangesMikkelLayersWhenDataIsPresent()
     {
-        var dir = Path.Combine(AppContext.BaseDirectory, "../../../../../../data/mikkel/repro");
-        if (!Directory.Exists(dir)) return; // data/ is not in the repository
+        if (MikkelRepro() is not { } dir) return; // data/ is not in the repository
         byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
         var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
         var (comp, xml) = BrasscribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
         Assert.Contains("\"free_regions\": [", comp);
         Assert.Equal(18, xml.Split("<score-part ").Length - 1);
         Assert.Contains("<words>ad lib.</words>", xml);
+
+        // The arranged parts carry the source footer, in the language asked for.
+        var band = BrasscribeCore.ArrangeLayersBand(layers, null, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel",
+            new LayersSongOptions(Lang: "nb"));
+        var sources = BrasscribeCore.PartSources(band.CompositionJson);
+        Assert.Equal(sources.Count, band.Parts.Count);
+        for (int i = 0; i < sources.Count; i++)
+            Assert.Equal(sources[i].Source == "arranged", band.Parts[i].MusicXml.Contains("Arrangert av Brasscribe ut fra harmoniene i bandet."));
+    }
+
+    /// <summary>data/mikkel/repro in this checkout, or in the one BRASSCRIBE_REPO names; null when neither has it.</summary>
+    private static string? MikkelRepro() =>
+        new[] { Path.Combine(AppContext.BaseDirectory, "../../../../../.."), Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") }
+            .Where(r => r is { Length: > 0 }).Select(r => Path.Combine(r!, "data/mikkel/repro"))
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "layers/solo.wav")));
+
+    /// <summary>The stems and the contour go to the core as borrowed arrays; a NaN reads as the JSON form has it.</summary>
+    [Fact]
+    public void ArrangesMikkelWithStemsAndAContourAsArrays()
+    {
+        if (MikkelRepro() is not { } dir) return; // data/ is not in the repository
+        byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
+        var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
+        var stems = new LayerStems(F("solo.wav"), F("bass.wav"), F("drums.wav"), F("orchestra.wav"));
+        var beats = File.ReadAllText(Path.Combine(dir, "mix.beats"));
+
+        // Bb4 in 2 s phrases with 0.5 s breaths over the first minute; one NaN pitch and one NaN loudness per breath.
+        const int n = 6000;
+        bool Voiced(int k) => k % 250 < 200;
+        var t = Enumerable.Range(0, n).Select(k => k * 0.01).ToArray();
+        var hz = Enumerable.Range(0, n).Select(k => Voiced(k) ? 466.16 : k % 250 == 210 ? double.NaN : 0).ToArray();
+        var db = Enumerable.Range(0, n).Select(k => Voiced(k) ? -18.0 : k % 250 == 220 ? double.NaN : -70).ToArray();
+        var conf = Enumerable.Range(0, n).Select(k => Voiced(k) ? 0.9 : 0.1).ToArray();
+        var withNaN = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(new SoloContour(t, hz, db, conf)));
+        var clean = new SoloContour(t, hz.Select(x => double.IsFinite(x) ? x : 0).ToArray(), db.Select(x => double.IsFinite(x) ? x : -140).ToArray(), conf);
+        var sanitized = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(clean));
+        var none = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel");
+
+        Assert.Equal(sanitized.MusicXml, withNaN.MusicXml);
+        Assert.Equal(sanitized.CompositionJson, withNaN.CompositionJson);
+        Assert.NotEqual(none.MusicXml, withNaN.MusicXml);
+        Assert.NotNull(withNaN.SeparationCheckJson);
+        Assert.Equal(18, withNaN.MusicXml.Split("<score-part ").Length - 1);
+        Assert.Throws<ArgumentException>(() => BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel",
+            new LayersSongOptions(new SoloContour(t, hz[..10], db, conf))));
     }
 
     [Fact]

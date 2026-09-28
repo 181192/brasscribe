@@ -292,6 +292,10 @@ pub struct LayersSongOptions {
     /// lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
     #[uniffi(default = None)]
     pub lead: Option<String>,
+    /// Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+    /// harmony."): "en" (None) or "nb".
+    #[uniffi(default = None)]
+    pub lang: Option<String>,
 }
 
 impl Default for LayersSongOptions {
@@ -310,6 +314,7 @@ impl Default for LayersSongOptions {
             seat: None,
             reads: None,
             lead: None,
+            lang: None,
         }
     }
 }
@@ -331,26 +336,54 @@ pub struct BandOutput {
     pub separation_check_json: Option<String>,
 }
 
-fn stem(b: &Option<Vec<u8>>) -> Result<Option<Audio>, CoreError> {
-    b.as_ref().map(|b| Audio::from_wav(b).map_err(invalid)).transpose()
+fn stem(b: Option<&[u8]>) -> Result<Option<Audio>, CoreError> {
+    b.map(|b| Audio::from_wav(b).map_err(invalid)).transpose()
 }
 
-pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str, title: &str, o: LayersSongOptions) -> Result<BandOutput, CoreError> {
+/// The layer inputs as borrowed bytes: six MIDI files (solo SwiftF0, solo MuScriptor, solo Basic
+/// Pitch, bass, orchestra, drums) and four optional WAV stems (solo, bass, drums, orchestra). The
+/// C ABI builds this straight from the caller's buffers, so no stem is copied before it is decoded.
+pub(crate) struct LayerBytes<'a> {
+    pub midi: [&'a [u8]; 6],
+    pub stems: [Option<&'a [u8]>; 4],
+}
+
+impl LayerMidi {
+    fn bytes(&self) -> [&[u8]; 6] {
+        [&self.solo_swiftf0, &self.solo_muscriptor, &self.solo_basic_pitch, &self.bass, &self.orchestra, &self.drums]
+    }
+}
+
+impl LayerStems {
+    fn bytes(&self) -> [Option<&[u8]>; 4] {
+        [self.solo.as_deref(), self.bass.as_deref(), self.drums.as_deref(), self.orchestra.as_deref()]
+    }
+}
+
+pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str, title: &str, mut o: LayersSongOptions) -> Result<BandOutput, CoreError> {
+    let contour = o.solo_contour.take().map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence));
+    band_bytes(&LayerBytes { midi: layers.bytes(), stems: stems.bytes() }, beats_text, title, o, contour)
+}
+
+/// [`band_impl`] on borrowed inputs, with the solo contour already built (`o.solo_contour` is not read).
+pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: LayersSongOptions, contour: Option<Contour>) -> Result<BandOutput, CoreError> {
+    let [solo_sw, solo_mus, solo_bp, bass, orchestra, drums] = b.midi;
+    let [solo_audio, bass_audio, drums_audio, orchestra_audio] = b.stems;
     let l = Layers {
-        solo_sw: midi(&layers.solo_swiftf0)?,
-        solo_mus: midi(&layers.solo_muscriptor)?,
-        solo_bp: midi(&layers.solo_basic_pitch)?,
-        bass: midi(&layers.bass)?,
-        orchestra: midi(&layers.orchestra)?,
-        drums: midi(&layers.drums)?,
-        solo_audio: stem(&stems.solo)?,
-        bass_audio: stem(&stems.bass)?,
-        drums_audio: stem(&stems.drums)?,
-        orchestra_audio: stem(&stems.orchestra)?,
+        solo_sw: midi(solo_sw)?,
+        solo_mus: midi(solo_mus)?,
+        solo_bp: midi(solo_bp)?,
+        bass: midi(bass)?,
+        orchestra: midi(orchestra)?,
+        drums: midi(drums)?,
+        solo_audio: stem(solo_audio)?,
+        bass_audio: stem(bass_audio)?,
+        drums_audio: stem(drums_audio)?,
+        orchestra_audio: stem(orchestra_audio)?,
     };
     let beats = Beats::parse(beats_text).map_err(invalid)?;
     let opts = LayersOptions {
-        solo_contour: o.solo_contour.map(|c| Contour::from_hz(c.times, &c.pitch_hz, c.loudness_db).with_confidence(c.confidence)),
+        solo_contour: contour,
         no_free_time: !o.free_time,
         free_tempo: o.free_tempo,
         no_gate: !o.gate,
@@ -363,6 +396,7 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
         seat: o.seat,
         reads: o.reads,
         lead: o.lead.unwrap_or_default(),
+        lang: o.lang.unwrap_or_default(),
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {
@@ -592,6 +626,9 @@ pub struct SeatInfo {
     pub clef: String,
     /// Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
     pub reads: Vec<String>,
+    /// The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+    /// "Who plays the tune?" (the `lead` option "seat").
+    pub tune: bool,
 }
 
 /// The 18 seats of the contest band, in score order.
@@ -608,6 +645,7 @@ pub fn seats() -> Vec<SeatInfo> {
                 instrument: inst.id.into(),
                 clef: inst.clef.as_str().into(),
                 reads: s.reads.iter().map(|r| r.to_string()).collect(),
+                tune: s.tune(),
             }
         })
         .collect()

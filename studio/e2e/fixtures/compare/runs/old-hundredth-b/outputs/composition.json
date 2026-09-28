@@ -1,0 +1,1816 @@
+{
+ "title": "Old Hundredth",
+ "voices": [
+  {
+   "id": "solo",
+   "role": "melody",
+   "notes": [
+    {
+     "pitch": 67,
+     "start": 0,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 0.4999998,
+     "offset_s": 2.156,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 48,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 2.1666658,
+     "offset_s": 2.986,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 72,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 2.9999987999999997,
+     "offset_s": 3.816,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 96,
+     "dur": 24,
+     "confidence": 0.558,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 3.8333318,
+     "offset_s": 4.656,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 120,
+     "dur": 24,
+     "confidence": 0.881,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 4.6666647999999995,
+     "offset_s": 5.486,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 144,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 5.4999978,
+     "offset_s": 6.316,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 168,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 6.3333308,
+     "offset_s": 7.156,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 192,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 7.166663799999999,
+     "offset_s": 8.816,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 288,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 10.499995799999999,
+     "offset_s": 12.156,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 336,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 12.1666618,
+     "offset_s": 12.986,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 360,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 12.9999948,
+     "offset_s": 13.816,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 384,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 13.8333278,
+     "offset_s": 14.656,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 408,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 14.666660799999999,
+     "offset_s": 15.486,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 72,
+     "start": 432,
+     "dur": 24,
+     "confidence": 0.558,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 15.499993799999999,
+     "offset_s": 16.316,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 456,
+     "dur": 24,
+     "confidence": 0.558,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 16.3333268,
+     "offset_s": 17.156,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 480,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 17.166659799999998,
+     "offset_s": 18.816,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 576,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 20.4999918,
+     "offset_s": 22.156,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 624,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 22.1666578,
+     "offset_s": 22.985999999999997,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 648,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 22.9999908,
+     "offset_s": 23.816,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 672,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 23.8333238,
+     "offset_s": 24.656,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 696,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 24.6666568,
+     "offset_s": 25.485999999999997,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 720,
+     "dur": 24,
+     "confidence": 0.558,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 25.499989799999998,
+     "offset_s": 26.316,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 744,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 26.333322799999998,
+     "offset_s": 27.156,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 768,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 27.166655799999997,
+     "offset_s": 28.816,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 74,
+     "start": 864,
+     "dur": 48,
+     "confidence": 0.623,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 30.4999878,
+     "offset_s": 32.156,
+     "performed_dur": 48,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 912,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 32.1666538,
+     "offset_s": 32.986,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 936,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 32.999986799999995,
+     "offset_s": 33.815999999999995,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 960,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 33.8333198,
+     "offset_s": 34.656,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 72,
+     "start": 984,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 34.6666528,
+     "offset_s": 35.486,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 1008,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 35.4999858,
+     "offset_s": 36.315999999999995,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 1032,
+     "dur": 24,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 36.3333188,
+     "offset_s": 37.156,
+     "performed_dur": 24,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 1056,
+     "dur": 48,
+     "confidence": 0.997,
+     "sources": [
+      "solo"
+     ],
+     "onset_s": 37.1666518,
+     "offset_s": 38.815999999999995,
+     "performed_dur": 48,
+     "articulations": []
+    }
+   ],
+   "instrument_hint": "trumpet/cornet",
+   "layer": "solo"
+  },
+  {
+   "id": "bass",
+   "role": "bass",
+   "notes": [
+    {
+     "pitch": 43,
+     "start": 0,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 0.4999998,
+     "offset_s": 2.1458324749999997,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 48,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 2.1666658,
+     "offset_s": 2.979165475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 72,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 2.9999987999999997,
+     "offset_s": 3.812498475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 48,
+     "start": 96,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 3.8333318,
+     "offset_s": 4.645831475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 120,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 4.6666647999999995,
+     "offset_s": 5.479164475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 48,
+     "start": 144,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 5.4999978,
+     "offset_s": 6.312497475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 168,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 6.3333308,
+     "offset_s": 7.1458304749999995,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 192,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 7.166663799999999,
+     "offset_s": 8.812496475,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 288,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 10.499995799999999,
+     "offset_s": 12.145828475,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 52,
+     "start": 336,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 12.1666618,
+     "offset_s": 12.979161475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 360,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 12.9999948,
+     "offset_s": 13.812494475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 384,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 13.8333278,
+     "offset_s": 14.645827474999999,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 52,
+     "start": 408,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 14.666660799999999,
+     "offset_s": 15.479160474999999,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 48,
+     "start": 432,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 15.499993799999999,
+     "offset_s": 16.312493475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 456,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 16.3333268,
+     "offset_s": 17.145826475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 480,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 17.166659799999998,
+     "offset_s": 18.812492475,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 576,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 20.4999918,
+     "offset_s": 22.145824474999998,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 624,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 22.1666578,
+     "offset_s": 22.979157474999997,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 648,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 22.9999908,
+     "offset_s": 23.812490474999997,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 672,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 23.8333238,
+     "offset_s": 24.645823475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 48,
+     "start": 696,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 24.6666568,
+     "offset_s": 25.479156475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 45,
+     "start": 720,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 25.499989799999998,
+     "offset_s": 26.312489475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 744,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 26.333322799999998,
+     "offset_s": 27.145822475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 768,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 27.166655799999997,
+     "offset_s": 28.812488475,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 864,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 30.4999878,
+     "offset_s": 32.145820475,
+     "performed_dur": 47,
+     "articulations": []
+    },
+    {
+     "pitch": 52,
+     "start": 912,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 32.1666538,
+     "offset_s": 32.979153475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 48,
+     "start": 936,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 32.999986799999995,
+     "offset_s": 33.812486475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 960,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 33.8333198,
+     "offset_s": 34.645819474999996,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 45,
+     "start": 984,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 34.6666528,
+     "offset_s": 35.479152475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 1008,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 35.4999858,
+     "offset_s": 36.312485474999995,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 50,
+     "start": 1032,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 36.3333188,
+     "offset_s": 37.145818475,
+     "performed_dur": 23,
+     "articulations": []
+    },
+    {
+     "pitch": 43,
+     "start": 1056,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "bass"
+     ],
+     "onset_s": 37.1666518,
+     "offset_s": 38.812484475,
+     "performed_dur": 47,
+     "articulations": []
+    }
+   ],
+   "instrument_hint": "electric bass",
+   "layer": "bass"
+  },
+  {
+   "id": "strings",
+   "role": "harmony",
+   "notes": [
+    {
+     "pitch": 62,
+     "start": 0,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 0.4999998,
+     "offset_s": 2.1458324749999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 0,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 0.4999998,
+     "offset_s": 2.1458324749999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 48,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 2.1666658,
+     "offset_s": 2.979165475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 48,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 2.1666658,
+     "offset_s": 2.979165475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 72,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 2.9999987999999997,
+     "offset_s": 3.812498475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 57,
+     "start": 72,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 2.9999987999999997,
+     "offset_s": 3.812498475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 60,
+     "start": 96,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 3.8333318,
+     "offset_s": 4.645831475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 55,
+     "start": 96,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 3.8333318,
+     "offset_s": 4.645831475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 120,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 4.6666647999999995,
+     "offset_s": 5.479164475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 55,
+     "start": 120,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 4.6666647999999995,
+     "offset_s": 5.479164475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 144,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 5.4999978,
+     "offset_s": 6.312497475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 60,
+     "start": 144,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 5.4999978,
+     "offset_s": 6.312497475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 168,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 6.3333308,
+     "offset_s": 7.1458304749999995,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 168,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 6.3333308,
+     "offset_s": 7.1458304749999995,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 192,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 7.166663799999999,
+     "offset_s": 8.812496475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 192,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 7.166663799999999,
+     "offset_s": 8.812496475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 288,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 10.499995799999999,
+     "offset_s": 12.145828475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 288,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 10.499995799999999,
+     "offset_s": 12.145828475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 336,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 12.1666618,
+     "offset_s": 12.979161475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 336,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 12.1666618,
+     "offset_s": 12.979161475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 360,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 12.9999948,
+     "offset_s": 13.812494475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 360,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 12.9999948,
+     "offset_s": 13.812494475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 384,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 13.8333278,
+     "offset_s": 14.645827474999999,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 384,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 13.8333278,
+     "offset_s": 14.645827474999999,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 408,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 14.666660799999999,
+     "offset_s": 15.479160474999999,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 408,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 14.666660799999999,
+     "offset_s": 15.479160474999999,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 432,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 15.499993799999999,
+     "offset_s": 16.312493475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 432,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 15.499993799999999,
+     "offset_s": 16.312493475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 456,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 16.3333268,
+     "offset_s": 17.145826475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 456,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 16.3333268,
+     "offset_s": 17.145826475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 480,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 17.166659799999998,
+     "offset_s": 18.812492475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 480,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 17.166659799999998,
+     "offset_s": 18.812492475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 576,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 20.4999918,
+     "offset_s": 22.145824474999998,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 576,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 20.4999918,
+     "offset_s": 22.145824474999998,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 624,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 22.1666578,
+     "offset_s": 22.979157474999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 624,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 22.1666578,
+     "offset_s": 22.979157474999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 648,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 22.9999908,
+     "offset_s": 23.812490474999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 648,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 22.9999908,
+     "offset_s": 23.812490474999997,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 672,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 23.8333238,
+     "offset_s": 24.645823475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 672,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 23.8333238,
+     "offset_s": 24.645823475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 696,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 24.6666568,
+     "offset_s": 25.479156475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 60,
+     "start": 696,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 24.6666568,
+     "offset_s": 25.479156475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 60,
+     "start": 720,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 25.499989799999998,
+     "offset_s": 26.312489475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 57,
+     "start": 720,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 25.499989799999998,
+     "offset_s": 26.312489475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 744,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 26.333322799999998,
+     "offset_s": 27.145822475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 57,
+     "start": 744,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 26.333322799999998,
+     "offset_s": 27.145822475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 768,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 27.166655799999997,
+     "offset_s": 28.812488475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 768,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 27.166655799999997,
+     "offset_s": 28.812488475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 71,
+     "start": 864,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 30.4999878,
+     "offset_s": 32.145820475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 864,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 30.4999878,
+     "offset_s": 32.145820475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 912,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 32.1666538,
+     "offset_s": 32.979153475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 912,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 32.1666538,
+     "offset_s": 32.979153475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 936,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 32.999986799999995,
+     "offset_s": 33.812486475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 60,
+     "start": 936,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 32.999986799999995,
+     "offset_s": 33.812486475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 960,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 33.8333198,
+     "offset_s": 34.645819474999996,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 960,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 33.8333198,
+     "offset_s": 34.645819474999996,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 69,
+     "start": 984,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 34.6666528,
+     "offset_s": 35.479152475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 64,
+     "start": 984,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 34.6666528,
+     "offset_s": 35.479152475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 67,
+     "start": 1008,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 35.4999858,
+     "offset_s": 36.312485474999995,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 1008,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 35.4999858,
+     "offset_s": 36.312485474999995,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 66,
+     "start": 1032,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 36.3333188,
+     "offset_s": 37.145818475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 1032,
+     "dur": 24,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 36.3333188,
+     "offset_s": 37.145818475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 62,
+     "start": 1056,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 37.1666518,
+     "offset_s": 38.812484475,
+     "performed_dur": null,
+     "articulations": []
+    },
+    {
+     "pitch": 59,
+     "start": 1056,
+     "dur": 48,
+     "confidence": 1.0,
+     "sources": [
+      "orchestra"
+     ],
+     "onset_s": 37.1666518,
+     "offset_s": 38.812484475,
+     "performed_dur": null,
+     "articulations": []
+    }
+   ],
+   "instrument_hint": "orchestra",
+   "layer": "strings"
+  },
+  {
+   "id": "brass",
+   "role": "harmony",
+   "notes": [],
+   "instrument_hint": "orchestra hits",
+   "layer": "brass"
+  },
+  {
+   "id": "drums",
+   "role": "rhythm",
+   "notes": [],
+   "instrument_hint": "drum kit",
+   "layer": "drums"
+  }
+ ],
+ "meters": [
+  {
+   "tick": 0,
+   "beats": 4,
+   "beat_unit": 4
+  }
+ ],
+ "keys": [
+  {
+   "tick": 0,
+   "fifths": 1,
+   "mode": "major"
+  }
+ ],
+ "beat_times": [
+  0.5,
+  1.3333,
+  2.1667,
+  3.0,
+  3.8333,
+  4.6667,
+  5.5,
+  6.3333,
+  7.1667,
+  8.0,
+  8.8333,
+  9.6667,
+  10.5,
+  11.3333,
+  12.1667,
+  13.0,
+  13.8333,
+  14.6667,
+  15.5,
+  16.3333,
+  17.1667,
+  18.0,
+  18.8333,
+  19.6667,
+  20.5,
+  21.3333,
+  22.1667,
+  23.0,
+  23.8333,
+  24.6667,
+  25.5,
+  26.3333,
+  27.1667,
+  28.0,
+  28.8333,
+  29.6667,
+  30.5,
+  31.3333,
+  32.1667,
+  33.0,
+  33.8333,
+  34.6667,
+  35.5,
+  36.3333,
+  37.1667,
+  38.0,
+  38.8333,
+  39.6667,
+  40.5,
+  41.3333,
+  42.1667,
+  43.0
+ ],
+ "first_downbeat": 0,
+ "ticks_per_beat": 24,
+ "free_regions": [],
+ "dynamics": [
+  {
+   "tick": 0,
+   "layer": "drums",
+   "mark": "ff"
+  }
+ ],
+ "sections": [],
+ "review": [
+  {
+   "voice": "solo",
+   "start": 96,
+   "end": 120,
+   "notes": 1,
+   "very": false
+  },
+  {
+   "voice": "solo",
+   "start": 432,
+   "end": 480,
+   "notes": 2,
+   "very": false
+  },
+  {
+   "voice": "solo",
+   "start": 720,
+   "end": 744,
+   "notes": 1,
+   "very": false
+  },
+  {
+   "voice": "solo",
+   "start": 864,
+   "end": 912,
+   "notes": 1,
+   "very": false
+  }
+ ]
+}
