@@ -17,9 +17,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import no.brasscribe.play.audio.AudioDecoder
 import no.brasscribe.play.audio.MediaImport
+import no.brasscribe.play.audio.CapturedTake
 import no.brasscribe.play.audio.PcmAudio
 import no.brasscribe.play.audio.UnsupportedMediaException
-import no.brasscribe.play.audio.WavFile
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.engine.FixtureEngineApi
 import no.brasscribe.play.engine.JobCreate
@@ -397,16 +397,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         return requireNotNull(chosen) { "no score in the container" }.decodeToString()
     }
 
-    fun recorded(audio: PcmAudio, kind: SourceKind) {
-        val ctx = getApplication<Application>()
-        val file = File(ctx.cacheDir, "takes").apply { mkdirs() }.resolve("take-${System.currentTimeMillis()}.wav")
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) { WavFile.write(file, audio) }
-            // A recording is named by when it was made, never by its file's timestamp (review 3).
-            setSource(Source(ScoreTitles.recording(System.currentTimeMillis()), kind, audio.seconds, audio, file))
-            say(R.string.record_stopped, durationText(audio.seconds))
-            replaceTop(Screen.PROFILE)
-        }
+    /** A finished take, already on disk; its samples are null when it was too long to keep in memory. */
+    fun recorded(take: CapturedTake, kind: SourceKind) {
+        // A recording is named by when it was made, never by its file's timestamp (review 3).
+        setSource(Source(ScoreTitles.recording(System.currentTimeMillis()), kind, take.seconds, take.audio, take.file))
+        say(R.string.record_stopped, durationText(take.seconds))
+        replaceTop(Screen.PROFILE)
     }
 
     /** Internal so instrumented tests can open a source without a file picker. */
