@@ -1316,6 +1316,11 @@ export interface components {
              */
             auth_required: boolean;
             /**
+             * Build
+             * @description which build is running: the commit and workspace stamp of an installed engine, the commit of a checkout; null when unknown
+             */
+            build?: string | null;
+            /**
              * Device
              * @description accelerator torch adapters use on this host: cuda, mps or cpu
              */

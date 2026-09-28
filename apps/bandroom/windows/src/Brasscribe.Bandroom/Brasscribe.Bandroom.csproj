@@ -80,6 +80,20 @@
     <Copy SourceFiles="@(_WsMusic)" DestinationFiles="@(_WsMusic->'$(_Ws)music\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\brasscribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsAdapters)" DestinationFiles="@(_WsAdapters->'$(_Ws)ml\adapters\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <!--
+      The build's half of the workspace stamp (.brasscribe-workspace.json): the commit and version. Bandroom hashes
+      the files itself at launch and replaces the copy in the data folder when the hash differs (spec §3.8).
+    -->
+    <Exec Command="git -C &quot;$(RepoRoot).&quot; rev-parse --short HEAD 2&gt;nul" ConsoleToMSBuild="true" IgnoreExitCode="true"
+          StandardOutputImportance="low" ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_WsCommit" />
+      <Output TaskParameter="ExitCode" PropertyName="_WsGitExit" />
+    </Exec>
+    <PropertyGroup>
+      <_WsCommit Condition="'$(_WsGitExit)' != '0'"></_WsCommit>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_Ws).brasscribe-workspace.json" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="{&quot;commit&quot;: &quot;$(_WsCommit.Trim())&quot;, &quot;version&quot;: &quot;$(Version)&quot;}" />
   </Target>
   <!--
     The band sounds Studio plays (the engine serves them through BRASSCRIBE_BAND_SOUNDS_DIR): the phone band

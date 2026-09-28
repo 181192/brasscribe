@@ -63,6 +63,10 @@ public sealed class BandroomController
     /// <summary>The computer's name and hardware; the name changes when one is set in Settings.</summary>
     public MachineInfo Machine { get; set; }
     public bool Updating { get; set; }
+    /// <summary>Why the last engine update failed; the previous engine runs meanwhile.</summary>
+    public string? UpdateFailure { get; set; }
+    /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
+    public string? WorkspaceStamp { get; set; }
 
     public event Action<BandroomSnapshot>? SnapshotReady;
     public event Action<IReadOnlyList<DeviceInfo>>? DevicesChanged;
@@ -166,6 +170,7 @@ public sealed class BandroomController
     {
         var problems = new List<Problem>();
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
+        if (UpdateFailure is { } failure && !Updating) problems.Add(Problems.UpdateFailed(_s, failure));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })
@@ -188,7 +193,9 @@ public sealed class BandroomController
             _status?.Version ?? _sup.Health?.Version ?? "–",
             Machine.RunsOn,
             _status?.ServerId ?? _sup.Health?.ServerId,
-            _paths.DataDir);
+            _paths.DataDir,
+            _sup.Health?.Build,
+            WorkspaceStamp);
         return new BandroomSnapshot(inputs, header, _status, _job, _health, Machine.SpeedKey, tech, downloading);
     }
 

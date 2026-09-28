@@ -203,12 +203,60 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     private async Task RunAsync()
     {
-        // Hashes pixi.lock and walks the bundled workspace: off the UI thread, before the first snapshot.
-        bool complete = await _bootstrap!.IsCompleteAsync(_cuda);
-        _controller!.SetupComplete = complete;
+        // Hashes pixi.lock and the bundled workspace: off the UI thread, before the first snapshot.
+        var bootstrap = _bootstrap!;
+        await Task.Run(bootstrap.RecoverInterruptedUpdate);
+        bool complete = await bootstrap.IsCompleteAsync(_cuda);
+        _controller!.WorkspaceStamp = await Task.Run(() => bootstrap.BundleStamp.Short);
+        // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
+        bool update = !complete && bootstrap.IsUpdate;
+        _controller.SetupComplete = complete || update;
         _ = _controller.RunAsync(_quit.Token);
-        if (!complete) await SetupAsync();
+        if (update) await UpdateAsync();
+        else if (!complete) await SetupAsync();
         else await _supervisor!.StartAsync();
+    }
+
+    /// <summary>
+    /// After an app update: stop the engine, replace the workspace (pixi install only for a new lockfile), start it
+    /// again. A failure keeps the previous engine, which starts, with a Needs-attention problem and Try again.
+    /// </summary>
+    private async Task UpdateAsync()
+    {
+        if (_controller is not { } controller || _supervisor is not { } supervisor || _bootstrap is not { } bootstrap) return;
+        controller.Updating = true;
+        controller.UpdateFailure = null;
+        controller.SetupFraction = 0;
+        controller.Publish();
+        await supervisor.StopAsync();
+        var progress = new Progress<BootstrapProgress>(p =>
+        {
+            controller.SetupFraction = p.Fraction;
+            // The engine environment is in: start it while the adapters update.
+            if (p.Environment != "default" && p.Environment != "workspace" && bootstrap.EngineReady && bootstrap.WorkspaceCurrent
+                && supervisor.State == EngineState.Stopped)
+            {
+                controller.Updating = false;
+                _ = supervisor.StartAsync();
+            }
+            controller.Publish();
+        });
+        try
+        {
+            await Task.Run(() => bootstrap.RunAsync(_cuda, progress, _quit.Token));
+            _log?.Write("bandroom: engine workspace updated to " + controller.WorkspaceStamp);
+        }
+        catch (Exception e) when (e is BootstrapException or IOException or UnauthorizedAccessException
+                                      or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
+        {
+            _log?.Write("bandroom: update stopped: " + e.Message);
+            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
+            if (!bootstrap.WorkspaceCurrent) controller.UpdateFailure = e.Message;
+        }
+        catch (OperationCanceledException) { return; }
+        finally { controller.Updating = false; }
+        if (bootstrap.EngineReady) await supervisor.StartAsync();
+        controller.Publish();
     }
 
     /// <summary>First run: the engine environment first, then start it, then the adapters in the background.</summary>
@@ -456,8 +504,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     private async Task FinishSetupAsync(Bootstrapper bootstrap)
     {
-        if (!await bootstrap.IsCompleteAsync(_cuda)) await SetupAsync();
-        else StartMissingDownloads();
+        if (await bootstrap.IsCompleteAsync(_cuda)) StartMissingDownloads();
+        else if (bootstrap.IsUpdate) await UpdateAsync();
+        else await SetupAsync();
     }
 
     /// <summary>
@@ -491,7 +540,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         };
         if (uri is not null) _ = Windows.System.Launcher.LaunchUriAsync(new Uri(uri));
         else if (problem == ProblemKind.KeyRefused || (problem == ProblemKind.MissingDownload && _downloads?.Error is DownloadError.KeyMissing)) OpenSettings();
-        else if (problem == ProblemKind.MissingDownload) FinishSetup();
+        else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed) FinishSetup();
     }
 
     public async Task RemoveDeviceAsync(string deviceId)

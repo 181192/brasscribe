@@ -39,6 +39,11 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
 - **Data** in `%LOCALAPPDATA%\Brasscribe` (§5.2): `envs` (the pixi workspace, copied from the app's
   `workspace\` on first run), `cache\pixi`, `models`, `logs\engine.log` (rolls at 5 MB), `bandroom\` (admin
   credential, setup markers) and `engine.json` (port, pid, server id, version: for Play on the same PC).
+- **After an app update** the copy's stamp (`envs\.brasscribe-workspace.json`: a hash of the files, and the
+  commit) differs from the app's. Bandroom shows Updating, stops the engine, swaps the code folders in (staged
+  in `envs\.bandroom-update`, stamp last) and reinstalls environments only when `pixi.lock` changed. `.pixi`,
+  models, runs and paired devices stay. If the engine environment won't install, the old copy goes back, its
+  engine starts, and a Needs-attention problem offers Try again.
 - **First run** installs, in order, `default` (the engine, so it can start early), `swift-f0`,
   `basic-pitch`, then the torch adapters. With an NVIDIA card (DXGI vendor 0x10DE) and a driver of 525 or
   newer they are the `-cuda` builds and the engine gets `BRASSCRIBE_CUDA=1`; otherwise the CPU builds.

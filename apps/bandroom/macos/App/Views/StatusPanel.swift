@@ -98,7 +98,11 @@ struct StatusPanel: View {
         case .stopped:
             Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
         case .updating:
-            Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Updating Brasscribe…").brFont(.bodyStrong)
+                BrassProgress(fraction: Double(app.updater.percent) / 100)
+                Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+            }
         case .starting:
             EmptyView()
         case .settingUp(let n):
@@ -149,6 +153,7 @@ struct StatusPanel: View {
         case .lowDisk: app.openStorageSettings()
         case .missingDownload: app.openWindow("setup")
         case .noFreePort: app.tryAgain()
+        case .updateFailed: app.retryUpdate()
         }
     }
 
@@ -235,6 +240,8 @@ struct StatusPanel: View {
                     techRow("Address", app.addresses.joined(separator: "\n"))
                     techRow("Port", app.supervisor.port.map(String.init) ?? "–")
                     techRow("Version", "\(Bundle.main.shortVersion) (engine \(app.monitor.status?.version ?? "–"))")
+                    techRow("Engine build", app.monitor.health?.build ?? "–")
+                    techRow("Workspace", app.bundledStamp?.short ?? "–")
                     techRow("Runs on", Strings.runsOn(app.monitor.health?.device))
                     techRow("Server", app.monitor.status.map { String($0.serverId.prefix(8)) + "…" } ?? "–")
                     techRow("Data folder", app.paths.data.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))

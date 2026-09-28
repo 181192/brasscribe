@@ -39,6 +39,7 @@ def sse(text: str) -> list[dict]:
 def test_health_and_profiles(client):
     h = client.get("/v1/health").json()
     assert h["status"] == "ok" and h["auth_required"] is False
+    assert "build" in h  # the commit of this checkout, or null outside one
     names = {p["name"]: p for p in client.get("/v1/profiles").json()}
     assert {"solo", "brass-band", "pop-rock", "orchestra-with-soloist"} <= set(names)
     assert names["orchestra-with-soloist"]["validated"] is True

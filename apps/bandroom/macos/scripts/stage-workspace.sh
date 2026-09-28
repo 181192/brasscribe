@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Copies the engine workspace into the app bundle: pixi.toml, pixi.lock and the Python packages the
 # engine environment installs from (engine, music, the benchmark package), plus the adapters.
-# The first run copies it to ~/Library/Application Support/Brasscribe/envs and runs `pixi install`.
+# The first run copies it to ~/Library/Application Support/Brasscribe/envs and runs `pixi install`; a launch after an
+# app update replaces that copy when its stamp (.brasscribe-workspace.json, written last) differs from this one.
 #   scripts/stage-workspace.sh <destination>
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
@@ -31,3 +32,15 @@ if [ ! -f "$CACHE/inference.py" ]; then
 fi
 mkdir -p "$DEST/ml/adapters/mega53/msst"
 rsync -a --delete --exclude '.git' --exclude 'tests' --exclude 'docs' "$CACHE/" "$DEST/ml/adapters/mega53/msst/"
+
+# The workspace stamp: a hash of every staged file's path and content (never dates), so Bandroom can tell at launch
+# that the copy in the data folder comes from another build. pixi.lock gets its own hash: only a new lockfile needs
+# `pixi install` again.
+STAMP_FILE=.brasscribe-workspace.json
+rm -f "$DEST/$STAMP_FILE"
+STAMP="$(cd "$DEST" && find . -type f ! -name '.DS_Store' -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256 \
+  | shasum -a 256 | cut -d' ' -f1)"
+LOCK="$(shasum -a 256 "$DEST/pixi.lock" | cut -d' ' -f1)"
+COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)"
+printf '{"stamp": "%s", "lock": "%s", "commit": "%s", "version": "%s", "build": "%s"}\n' \
+  "$STAMP" "$LOCK" "$COMMIT" "${MARKETING_VERSION:-}" "${CURRENT_PROJECT_VERSION:-}" > "$DEST/$STAMP_FILE"

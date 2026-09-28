@@ -37,6 +37,7 @@ enum Strings {
         case .lowDisk: String(localized: "Space is running low")
         case .missingDownload: String(localized: "Full-band scores need one more step")
         case .noFreePort: String(localized: "Brasscribe can't start")
+        case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
         }
     }
 
@@ -46,6 +47,7 @@ enum Strings {
         case .lowDisk: String(localized: "space is running low")
         case .missingDownload: String(localized: "full-band scores need one more step")
         case .noFreePort: String(localized: "Brasscribe can't start")
+        case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
         }
     }
 
@@ -54,6 +56,7 @@ enum Strings {
         case .lowDisk(let gb): String(localized: "\(gb) GB free. Brasscribe needs 3 GB to make a score.")
         case .missingDownload(let missing): notDownloaded(missing)
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
+        case .updateFailed: String(localized: "The previous version is still running, so phones can keep sending recordings.")
         }
     }
 
@@ -62,6 +65,7 @@ enum Strings {
         case .lowDisk: String(localized: "Free up space…")
         case .missingDownload: String(localized: "Finish setting up")
         case .noFreePort: String(localized: "Restart")
+        case .updateFailed: String(localized: "Try again")
         }
     }
 

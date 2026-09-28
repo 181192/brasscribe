@@ -76,8 +76,10 @@ public final class StatusMonitor {
     @ObservationIgnored public var onJobsChanged: ((Int) -> Void)?
 
     @ObservationIgnored public var client: (any EngineAPI)? {
-        didSet { if client == nil { clear() } else { refreshDue = true; requestsDue = true } }
+        didSet { if client == nil { clear() } else { refreshDue = true; requestsDue = true; healthDue = true } }
     }
+    /// A new engine process (a restart, an update) may be another build: ask for its health again.
+    @ObservationIgnored private var healthDue = false
 
     @ObservationIgnored private var refreshDue = true
     @ObservationIgnored private var requestsDue = true
@@ -142,7 +144,9 @@ public final class StatusMonitor {
             status = s
             reachable = true
             lastUpdate = now()
-            if health == nil || health?.serverId != s.serverId { health = try? await client.health() }
+            if health == nil || health?.serverId != s.serverId || healthDue {
+                if let h = try? await client.health() { health = h; healthDue = false }
+            }
             devices = Self.ordered((try? await client.devices()) ?? devices, now: now())
             if s.jobsRunning > 0 || s.jobsQueued > 0 {
                 job = JobSummary.current(from: (try? await client.jobs()) ?? [], now: now())

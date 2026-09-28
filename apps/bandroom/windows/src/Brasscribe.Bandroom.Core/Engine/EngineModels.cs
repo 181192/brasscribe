@@ -15,7 +15,9 @@ public sealed record StatusInfo(
     int JobsQueued);
 
 /// <summary>GET /v1/health.</summary>
-public sealed record HealthInfo(string Status, string Version, string Device, bool AuthRequired, string? ServerId, string? ServerName);
+/// <summary>GET /v1/health. <see cref="Build"/> (commit and workspace stamp) is null from engines that don't report it.</summary>
+public sealed record HealthInfo(string Status, string Version, string Device, bool AuthRequired, string? ServerId, string? ServerName,
+    string? Build = null);
 
 /// <summary>GET /v1/devices row. <see cref="Online"/> is null on engines that don't report presence yet.</summary>
 public sealed record DeviceInfo(

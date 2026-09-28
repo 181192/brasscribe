@@ -15,6 +15,14 @@ final class AppModel {
     let monitor = StatusMonitor()
     let pairing = PairingModel()
     let bootstrapper = Bootstrapper()
+    /// Replaces the engine workspace in the data folder after the app itself was updated (design/server-app.md §3.8).
+    let updater = Bootstrapper()
+    /// Why the last engine update failed; the previous engine runs meanwhile, and Try again tries once more.
+    private(set) var updateFailure: String?
+    /// The workspace this build of the app ships, and its stamp.
+    let bundledWorkspace: URL? = Bundle.main.resourceURL.map { $0.appending(path: "workspace") }
+        .flatMap { FileManager.default.fileExists(atPath: $0.appending(path: "pixi.toml").path) ? $0 : nil }
+    private(set) var bundledStamp: WorkspaceStamp?
     /// The three model downloads (docs/plan/apps-plan.md §7), from their makers' own release URLs.
     let downloader: ModelDownloader
     /// Window requests wait here until SwiftUI's openWindow is available (a reopen event can come first).
@@ -148,7 +156,7 @@ final class AppModel {
         #endif
         supervisor.reapStrayEngine()
         if setupComplete {
-            supervisor.start()
+            updateThenStart()
         } else {
             openWindow("setup")
         }
@@ -159,6 +167,64 @@ final class AppModel {
         monitor.stop()
         supervisor.shutdown()
         releaseSleep()
+    }
+
+    // MARK: engine update
+
+    /// Brings the engine workspace up to this build of the app, then starts the engine: the new one, or the
+    /// previous one when the update failed.
+    private func updateThenStart() {
+        Task { [weak self] in
+            guard let self else { return }
+            await self.updateWorkspaceIfNeeded()
+            if !self.isRunning { self.supervisor.start() }
+        }
+    }
+
+    /// Compares the installed workspace's stamp with the app's and replaces it when they differ. Stops the engine
+    /// first; `pixi install` runs again only when the lockfile changed.
+    func updateWorkspaceIfNeeded() async {
+        guard case .installed(let workspace, _) = supervisor.configuration.source, let bundled = bundledWorkspace else { return }
+        let (check, stamp) = await Task.detached {
+            (WorkspaceCheck.atLaunch(bundled: bundled, installed: workspace), WorkspaceStamp.of(bundle: bundled))
+        }.value
+        bundledStamp = stamp
+        guard case .update(let lockChanged) = check else {
+            if check == .upToDate { updateFailure = nil }
+            return
+        }
+        let from = WorkspaceStamp.read(in: workspace)?.short ?? "no stamp"
+        logger.write("engine workspace \(from) is not this app's (\(stamp?.short ?? "?")): updating\(lockChanged ? ", lockfile changed" : "")")
+        await stopEngine()
+        let ok = await updater.update(configuration: supervisor.configuration, bundledWorkspace: bundled, lockChanged: lockChanged)
+        if ok {
+            updateFailure = nil
+            logger.write("engine workspace updated to \(stamp?.short ?? "?")")
+        } else {
+            let why = if case .failed(let e) = updater.phase { e } else { "unknown" }
+            updateFailure = why
+            logger.write("engine update failed, the previous engine stays: \(why)")
+        }
+    }
+
+    /// Try again after a failed update.
+    func retryUpdate() {
+        updateFailure = nil
+        updateThenStart()
+    }
+
+    private func stopEngine() async {
+        switch supervisor.phase {
+        case .idle, .stopped, .failed: return
+        default: break
+        }
+        monitor.client = nil
+        pairing.client = nil
+        supervisor.stop()
+        for _ in 0..<150 {
+            if case .stopped = supervisor.phase { return }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
     }
 
     private func engineAnswered(_ client: any EngineAPI) {
@@ -202,6 +268,7 @@ final class AppModel {
     var problems: [Problem] {
         var list: [Problem] = []
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
+        if updateFailure != nil, !updater.isUpdating { list.append(.updateFailed) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
         return list
     }
@@ -215,7 +282,7 @@ final class AppModel {
 
     var displayState: DisplayState {
         let jobPercent: Int? = (monitor.status?.jobsRunning ?? 0) > 0 ? (monitor.job?.percent ?? 0) : nil
-        return DisplayState.resolve(setupPercent: setupPercent, phase: phase, updating: false,
+        return DisplayState.resolve(setupPercent: setupPercent, phase: phase, updating: updater.isUpdating,
                                     problems: problems, jobPercent: jobPercent)
     }
 
@@ -294,6 +361,8 @@ final class AppModel {
             lines += ["Server: \(s.serverName) (\(s.serverId))", "Engine version: \(s.version)",
                       "Phones: \(s.onlineDevices) connected, \(s.pairedDevices) paired", "Jobs: \(s.jobsRunning) running, \(s.jobsQueued) waiting"]
         }
+        lines.append("Engine build: \(monitor.health?.build ?? "–"); this app's workspace: \(bundledStamp?.short ?? "–")")
+        if let updateFailure { lines.append("Engine update failed: \(updateFailure)") }
         if let port = supervisor.port { lines.append("Port: \(port)") }
         lines.append("Addresses: \(addresses.joined(separator: ", "))")
         if let h = monitor.health { lines.append("Runs on: \(h.device)") }

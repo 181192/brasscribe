@@ -21,6 +21,8 @@ StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed
 class Health(BaseModel):
     status: Literal["ok"] = "ok"
     version: str
+    build: str | None = Field(None, description="which build is running: the commit and workspace stamp of an "
+                                                "installed engine, the commit of a checkout; null when unknown")
     device: str = Field(description="accelerator torch adapters use on this host: cuda, mps or cpu")
     auth_required: bool = Field(description="whether this client must send a bearer token")
     server_id: str = Field(description="stable id of this engine: kept across restarts and address or port changes, "
