@@ -65,7 +65,14 @@ class KtorEngineApi(
     }
 
     private suspend fun HttpResponse.ok(): HttpResponse {
-        if (!status.isSuccess()) throw EngineException(status.value, "${call.request.url.encodedPath}: ${status.value} ${bodyAsText().take(300)}")
+        if (!status.isSuccess()) {
+            val text = bodyAsText()
+            val code = runCatching {
+                (BrasscribeJson.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject)?.get("code")
+                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+            }.getOrNull()
+            throw EngineException(status.value, "${call.request.url.encodedPath}: ${status.value} ${text.take(300)}", code)
+        }
         return this
     }
 

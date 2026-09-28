@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import no.brasscribe.play.model.Composition
 
 /** Thrown for any non-success response; [status] is the HTTP status (0 when there was no response). */
-class EngineException(val status: Int, message: String) : Exception(message)
+/** [code]: the engine's code for a refused option (a 422's `code`: quartet_needs_group, seat_no_tune, ...), when it gave one. */
+class EngineException(val status: Int, message: String, val code: String? = null) : Exception(message)
 
 /**
  * The engine companion API as Play uses it. [KtorEngineApi] talks to a real engine on the LAN;

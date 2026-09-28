@@ -236,6 +236,13 @@
     <string name="profile_solo_percussion">Not for percussion yet</string>
     <string name="percussion_solo_refused">Brasscribe can\'t write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.</string>
     <string name="change_what_i_play">Change what I play</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
+    <string name="error_unreachable">Can\'t reach Brasscribe on your computer. Check that it is running and on the same network.</string>
+    <string name="error_pair_again">Your computer no longer knows this phone. Connect them again in Settings.</string>
+    <string name="error_timeout">Your computer took too long to answer. Try again.</string>
+    <string name="error_engine_failed">Brasscribe on your computer couldn\'t finish the score. Try again.</string>
+    <string name="error_reads_not_offered">Your instrument isn\'t written in that clef. Choose again under What you play.</string>
+    <string name="error_invalid_options">Brasscribe on your computer didn\'t accept these choices. It may need an update.</string>
     <string name="lineup_full_not_yet">Not yet for whole-band recordings</string>
     <string name="lineup_quartet_needs_group">Needs a recording of the whole group</string>
     <string name="difficulty">How hard?</string>
