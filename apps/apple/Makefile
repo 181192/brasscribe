@@ -78,7 +78,7 @@ build-for-testing-ios: project
 
 test-ios-unit:
 	@test -d $(DERIVED)/Build/Products/Debug-iphonesimulator || $(MAKE) build-for-testing-ios
-	SIMCTL_CHILD_BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
 	  -only-testing:BrasscribePlayTests_iOS test-without-building
 
 # Package tests without the slow audio-rendering suites (tier 1). --no-parallel as in package-test:
