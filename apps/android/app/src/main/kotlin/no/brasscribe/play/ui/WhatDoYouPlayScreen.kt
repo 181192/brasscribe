@@ -256,6 +256,7 @@ fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier 
         no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours to R.drawable.ic_bc_record_mic
         no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording to R.drawable.ic_bc_record_mic
         no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged to R.drawable.ic_bc_parts
+        no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty to R.drawable.ic_bc_parts
     }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
         Row(
@@ -271,7 +272,7 @@ fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier 
             Text(stringResource(text), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, color = c.text)
         }
         if (open) Text(
-            stringResource(if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.string.explain_arranged else R.string.explain_recording),
+            stringResource(explainOf(source)),
             style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
             modifier = Modifier.semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite },
         )
@@ -304,5 +305,8 @@ fun mappedShort(m: no.brasscribe.play.MappedSeat): String {
 
 /** Where a part came from, in one sentence: what the source pill opens. */
 @StringRes
-fun explainOf(source: no.brasscribe.play.model.PartSource): Int =
-    if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.string.explain_arranged else R.string.explain_recording
+fun explainOf(source: no.brasscribe.play.model.PartSource): Int = when (source) {
+    no.brasscribe.play.model.PartSource.ARRANGED -> R.string.explain_arranged
+    no.brasscribe.play.model.PartSource.EMPTY -> R.string.explain_empty
+    else -> R.string.explain_recording
+}

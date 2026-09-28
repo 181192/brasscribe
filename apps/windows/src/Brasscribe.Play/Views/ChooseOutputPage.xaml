@@ -25,11 +25,15 @@
                 <StackPanel Spacing="12">
                     <TextBlock x:Uid="OutputBandHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
                     <RadioButtons x:Name="LineupChoices" x:Uid="LineupChoices" SelectionChanged="OnLineupChanged">
+                        <!-- A whole-band recording is only made for the small band or the quartet: the full-band card is
+                             dimmed and says why, like the quartet on a solo take. -->
                         <RadioButton x:Name="FullBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"
-                                     x:Uid="LineupFullChoice">
+                                     x:Uid="LineupFullChoice"
+                                     AutomationProperties.HelpText="{x:Bind ViewModel.FullHelpText, Mode=OneWay}">
                             <StackPanel Spacing="2">
-                                <TextBlock x:Uid="LineupFullTitle" Style="{StaticResource LabelStyle}" FontSize="16" />
-                                <TextBlock x:Uid="LineupFullBody" Style="{StaticResource MutedStyle}" />
+                                <TextBlock x:Uid="LineupFullTitle" Style="{StaticResource LabelStyle}" FontSize="16"
+                                           Opacity="{x:Bind views:Shown.Dimmed(ViewModel.FullAvailable), Mode=OneWay}" />
+                                <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.FullDescription, Mode=OneWay}" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="SmallBandChoice" Style="{StaticResource ChoiceCardStyle}" MinHeight="72" Padding="16,12" Margin="0,0,0,8"

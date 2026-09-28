@@ -127,6 +127,14 @@ class RustCoreBridgeTest {
     }
 
     @Test
+    fun seatsCarryTheCoresTune() {
+        val tune = core().seats().associate { it.id to it.tune }
+        // "Who plays the tune?" is offered only where the core lets the tune move.
+        for (id in listOf("1st-baritone", "2nd-baritone", "bass-trombone", "eb-bass", "bb-bass", "percussion")) assertEquals(id, false, tune[id])
+        for (id in listOf("solo-cornet", "flugelhorn", "solo-horn", "1st-trombone", "euphonium")) assertEquals(id, true, tune[id])
+    }
+
+    @Test
     fun humanizesAPart() {
         val c = core()
         val notes = (0 until 8).map { ScoreNote(it * 24L, 24, it * 0.5, it * 0.5 + 0.5, 72, 80) }

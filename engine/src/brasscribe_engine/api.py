@@ -424,7 +424,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
-            raise HTTPException(422, str(e)) from e
+            # The apps show their own words for the code; the message is for logs and Studio.
+            return JSONResponse({"code": profiles.option_error_code(e), "detail": str(e)}, status_code=422)
         device = getattr(request.state, "device", None)
         job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
                           allow_heavy=body.allow_heavy, device_name=device.name if device else None)

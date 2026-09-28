@@ -182,9 +182,10 @@ class JobCreate(BaseModel):
 class PartSources(BaseModel):
     """Where each part of the job's score comes from, in score order (derived from the Composition)."""
 
-    parts: dict[str, Literal["your-recording", "recording", "arranged"]] = Field(
+    parts: dict[str, Literal["your-recording", "recording", "arranged", "empty"]] = Field(
         description="your-recording: a solo take's own line; recording: a line heard in the recording (the tune, the "
-                    "bass line, the countermelody, the drums); arranged: voiced from the band's harmony")
+                    "bass line, the countermelody, the drums); arranged: voiced from the band's harmony; empty: "
+                    "nothing to play in this arrangement (no drums in the recording, no climax for the soprano)")
 
 
 class StageState(BaseModel):

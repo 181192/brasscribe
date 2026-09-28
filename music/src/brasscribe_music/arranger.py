@@ -460,7 +460,7 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
             # Anything but a known lineup arranges for the band, as before lineups carried their roles.
             lineup = BRASS_BAND
     if seat:
-        lineup = with_reading(lineup, seat_part(lineup_key(lineup), seat).part, reads)
+        lineup = with_reading(lineup, seat, seat_part(lineup_key(lineup), seat).part, reads)
         if opts.get("lead") == "seat":
             try:
                 lineup = lead_lineup(lineup, seat)
@@ -473,6 +473,25 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
 YOUR_RECORDING = "your-recording"  # a solo take: the part carries the player's own line
 RECORDING = "recording"  # the part follows a line heard in a band recording
 ARRANGED = "arranged"  # voiced from the harmony, or doubling the tune
+# Nothing to play in this arrangement: the Percussion part of a recording without drums, the Soprano
+# Cornet when it has no climax to double (always in faithful mode). No footer.
+EMPTY = "empty"
+
+
+def _empty_parts(comp: Composition, lineup) -> set[str]:
+    """The parts of a layered band arrangement that the arranger leaves without notes (see EMPTY)."""
+    if lineup.satb or lineup.as_played:
+        return set()
+    out = set()
+    if lineup.has("Percussion") and not _has_notes(comp, "drums"):
+        out.add("Percussion")
+    difficulty = (comp.arrangement or {}).get("difficulty") or "faithful"
+    spans = _climax_spans(comp)
+    doubles = difficulty != "faithful" and lineup.lead in BAND_LEADS \
+        and any(a <= n.start < b for n in _layer(comp, "solo") for a, b in spans)
+    if lineup.has("Soprano Cornet") and not doubles:
+        out.add("Soprano Cornet")
+    return out
 
 
 # Languages of the source footer on printed parts.
@@ -510,7 +529,8 @@ def part_sources(comp: Composition) -> dict[str, str]:
     and which layers have notes. `your-recording`: a solo take's line; `recording`: a line
     heard in the recording (the tune, the bass line and its doublings, the countermelody from
     the strings' top line, the drums); `arranged`: everything voiced from the harmony, and the
-    Soprano Cornet's doubling of the tune.
+    Soprano Cornet's doubling of the tune; `empty`: a part left without notes (no drums, no
+    climax to double).
     """
     lineup, layered = composition_lineup(comp)
     heard: set[str] = set()
@@ -529,7 +549,8 @@ def part_sources(comp: Composition) -> dict[str, str]:
             heard.add(counter_part(lineup))
         if not lineup.satb and _has_notes(comp, "drums") and lineup.has("Percussion"):
             heard.add("Percussion")
-    return {p.name: RECORDING if p.name in heard else ARRANGED for p in lineup.parts}
+    empty = _empty_parts(comp, lineup) if layered else set()
+    return {p.name: RECORDING if p.name in heard else EMPTY if p.name in empty else ARRANGED for p in lineup.parts}
 
 
 # ---------------------------------------------------------------------------

@@ -36,11 +36,14 @@ import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.Difficulty
 import no.brasscribe.play.Lineup
+import no.brasscribe.play.fullBandMade
 import no.brasscribe.play.isSoloTake
+import no.brasscribe.play.madeFor
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.model.Lang
+import no.brasscribe.play.model.reading
 
 /** Tonic names by pitch class, flats first as brass bands read them; nb has B for B♭ and H for B. */
 private val TONIC_EN = listOf("C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B")
@@ -78,6 +81,9 @@ fun OutputScreen(vm: PlayViewModel) {
     // A solo take has no harmony for four parts: the quartet card says so and stays reachable.
     val soloTake = r?.isSoloTake == true
     val needsGroup = stringResource(R.string.lineup_quartet_needs_group)
+    // A Brass band or Pop or rock take is made for the small band: Full brass band says so and can't be picked.
+    val fullBand = r?.fullBandMade != false
+    val notYet = stringResource(R.string.lineup_full_not_yet)
     val key = r?.composition?.keys?.firstOrNull()
     // Who the score is for: the take's player (pre-filled from Settings), and their part in each lineup.
     val seats = vm.container.seats
@@ -112,10 +118,11 @@ fun OutputScreen(vm: PlayViewModel) {
             SubHeading(stringResource(R.string.lineup))
             ChoiceGroup(lineups.size) {
                 lineups.forEachIndexed { i, l ->
-                    val reason = needsGroup.takeIf { l == Lineup.QUARTET && soloTake }
-                    // "Small band · 8 players · your part: Euphonium": known before Show the score.
-                    val desc = yourPartIn(l)?.let { stringResource(R.string.lineup_your_part, stringResource(l.desc), PartNames.display(it)) } ?: stringResource(l.desc)
-                    ChoiceCard(stringResource(l.label), desc, options.lineup == l, canArrange || l == Lineup.FULL, i, reason) {
+                    val unavailable = l == Lineup.FULL && !fullBand
+                    val reason = needsGroup.takeIf { l == Lineup.QUARTET && soloTake } ?: notYet.takeIf { unavailable }
+                    // "Small band · 8 players · your part: Euphonium": known before Show the score, for a lineup that is made.
+                    val desc = yourPartIn(l)?.takeIf { !unavailable }?.let { stringResource(R.string.lineup_your_part, stringResource(l.desc), PartNames.display(it)) } ?: stringResource(l.desc)
+                    ChoiceCard(stringResource(l.label), desc, options.lineup == l, !unavailable && (canArrange || l == Lineup.FULL.madeFor(fullBand)), i, reason) {
                         vm.output.update { it.copy(lineup = l, lead = it.lead.takeIf { l != Lineup.QUARTET }) }
                     }
                 }
@@ -176,7 +183,7 @@ fun OutputScreen(vm: PlayViewModel) {
                 val part = if (onePart) seat?.name else yourPartIn(options.lineup)
                 val chromatic = part?.let { no.brasscribe.play.YourParts.chromatic(it, seats) }
                 when {
-                    seat != null && options.reads == "bass" -> Text(stringResource(R.string.key_as_it_sounds, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.bodyLarge)
+                    seat != null && seat.reading(options.reads) == "bass" -> Text(stringResource(R.string.key_as_it_sounds, keyName(key.fifths, minor, options.keyShift, lang)), style = MaterialTheme.typography.bodyLarge)
                     chromatic != null && chromatic != 0 -> Text(stringResource(R.string.key_on_your_part, keyName(key.fifths, minor, options.keyShift - chromatic, lang)), style = MaterialTheme.typography.bodyLarge)
                     seat == null -> Text(stringResource(R.string.key_for_bflat, keyName(key.fifths, minor, options.keyShift + 2, lang)), style = MaterialTheme.typography.bodyLarge)
                 }

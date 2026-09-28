@@ -167,6 +167,9 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     a.insert("transpose_semitones".into(), (before + shift).into());
     let solo_take = brasscribe_core::arranger::is_solo_take(&comp);
     if let Some(s) = &o.seat {
+        if solo_take && seat_by_id(s).map_err(invalid)?.reads.is_empty() {
+            return Err(invalid(brasscribe_core::instruments::PERCUSSION_SOLO));
+        }
         a.insert("seat".into(), s.as_str().into());
         if let Some(r) = &o.reads {
             a.insert("reads".into(), r.as_str().into());

@@ -237,6 +237,9 @@
   <data name="ErrorSteps.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hva du kan gjøre</value>
   </data>
+  <data name="Error_Arrange" xml:space="preserve">
+    <value>Kunne ikke arrangere med disse valgene. Prøv et annet band eller en annen vanskegrad.</value>
+  </data>
   <data name="Error_ChooseAnother" xml:space="preserve">
     <value>Velg et annet opptak</value>
   </data>
@@ -261,6 +264,24 @@
   <data name="Error_DetailsHeading" xml:space="preserve">
     <value>Detaljer for den tekniske i bandet</value>
   </data>
+  <data name="Error_Engine" xml:space="preserve">
+    <value>Brasscribe på datamaskinen fikk et problem. Prøv igjen.</value>
+  </data>
+  <data name="Error_NeedsPairing" xml:space="preserve">
+    <value>Datamaskinen må kobles til på nytt. Skriv inn koden den viser, i Innstillinger.</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+    <value>Brasscribe på datamaskinen har ikke dette opptaket lenger. Åpne det på nytt.</value>
+  </data>
+  <data name="Error_Options" xml:space="preserve">
+    <value>Brasscribe på datamaskinen kunne ikke bruke disse valgene. Prøv andre valg, eller oppdater Brasscribe på datamaskinen.</value>
+  </data>
+  <data name="Error_PercussionSolo" xml:space="preserve">
+    <value>Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet: et opptak med trommer får en slagverkstemme.</value>
+  </data>
+  <data name="Error_ReadsNotOffered" xml:space="preserve">
+    <value>Stemmen din skrives ikke med den nøkkelen. Velg nøkkel på nytt i Innstillinger, Hva du spiller.</value>
+  </data>
   <data name="Error_ScoreFailed_Reason" xml:space="preserve">
     <value>Opptaket ditt er trygt. Noe stoppet Brasscribe på datamaskinen mens den arbeidet.</value>
   </data>
@@ -273,8 +294,20 @@
   <data name="Error_ScoreFailed_Title" xml:space="preserve">
     <value>Partituret kunne ikke lages</value>
   </data>
+  <data name="Error_SeatNoTune" xml:space="preserve">
+    <value>Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>Datamaskinen brukte for lang tid på å svare. Sjekk at den er på og våken, og prøv igjen.</value>
+  </data>
+  <data name="Error_TooLarge" xml:space="preserve">
+    <value>Opptaket er for stort til å sendes. Prøv et kortere opptak.</value>
+  </data>
   <data name="Error_TryAgain" xml:space="preserve">
     <value>Prøv igjen</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>Får ikke kontakt med Brasscribe på datamaskinen. Sjekk at den er på og på samme nettverk.</value>
   </data>
   <data name="ExportAsHeading.Text" xml:space="preserve">
     <value>SOM</value>
@@ -451,7 +484,7 @@
     <value>Sjekk de merkede tonene</value>
   </data>
   <data name="FirstRunPoint3Body.Text" xml:space="preserve">
-    <value>Slå av lyden på stemmen din, spill saktere, gjenta de vanskelige taktene.</value>
+    <value>Demp stemmen din, spill saktere, gjenta de vanskelige taktene.</value>
   </data>
   <data name="FirstRunPoint3Title.Text" xml:space="preserve">
     <value>Øv med bandet</value>
@@ -672,9 +705,6 @@
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Hvilket band?</value>
   </data>
-  <data name="LineupFullBody.Text" xml:space="preserve">
-    <value>Rundt 25 musikere</value>
-  </data>
   <data name="LineupFullChoice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Fullt brassband</value>
   </data>
@@ -730,16 +760,16 @@
     <value>Et klikk på hvert slag.</value>
   </data>
   <data name="Mixer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Stemmer: lyd av eller hør alene</value>
+    <value>Stemmer: demp eller hør alene</value>
   </data>
   <data name="MixerHeading.Text" xml:space="preserve">
     <value>STEMMER</value>
   </data>
   <data name="MixerMuteLabel.Text" xml:space="preserve">
-    <value>Lyd av</value>
+    <value>Demp</value>
   </data>
   <data name="MixerNote.Text" xml:space="preserve">
-    <value>Stemmen din er uten lyd, så du kan spille med. «Bare denne» spiller én stemme alene.</value>
+    <value>Stemmen din er dempet, så du kan spille med. «Bare denne» spiller én stemme alene.</value>
   </data>
   <data name="MixerSoloLabel.Text" xml:space="preserve">
     <value>Bare denne</value>
@@ -748,16 +778,16 @@
     <value>stemmen din</value>
   </data>
   <data name="Mixer_Mute" xml:space="preserve">
-    <value>Lyd av {0}</value>
+    <value>Demp {0}</value>
   </data>
   <data name="Mixer_Solo" xml:space="preserve">
     <value>Bare denne: {0}</value>
   </data>
   <data name="MuteMyPartLabel.Text" xml:space="preserve">
-    <value>Lyd av min stemme</value>
+    <value>Demp stemmen min</value>
   </data>
   <data name="MuteMyPartToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Lyd av min stemme</value>
+    <value>Demp stemmen min</value>
   </data>
   <data name="MuteMyPartToggle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Stemmen din er stille, så du kan spille den selv.</value>
@@ -807,8 +837,11 @@
   <data name="OutputOverline.Text" xml:space="preserve">
     <value>SISTE STEG</value>
   </data>
-  <data name="Output_Failed" xml:space="preserve">
-    <value>Kunne ikke arrangere: {0}</value>
+  <data name="Output_FullBody" xml:space="preserve">
+    <value>Rundt 25 musikere</value>
+  </data>
+  <data name="Output_FullNotYet" xml:space="preserve">
+    <value>Kommer senere for opptak av hele bandet</value>
   </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>Som i opptaket · klingende</value>
@@ -904,7 +937,7 @@
     <value>Metronom på</value>
   </data>
   <data name="Player_Muted" xml:space="preserve">
-    <value>{0} uten lyd</value>
+    <value>{0} dempet</value>
   </data>
   <data name="Player_NotReady" xml:space="preserve">
     <value>Lyden er ikke klar ennå: ingen instrumentlyder er lastet.</value>
@@ -916,7 +949,7 @@
     <value>Stemmen din spiller igjen</value>
   </data>
   <data name="Player_PlayAlongOn" xml:space="preserve">
-    <value>{0} er uten lyd, så du kan spille med</value>
+    <value>{0} er dempet, så du kan spille med</value>
   </data>
   <data name="Player_Position" xml:space="preserve">
     <value>Takt {0} av {1}</value>
@@ -1465,7 +1498,7 @@
     <value>Gjenta fra, gjenta til, gjenta av eller på</value>
   </data>
   <data name="Shortcut_MuteSolo" xml:space="preserve">
-    <value>Lyd av stemmen, eller bare denne stemmen</value>
+    <value>Demp stemmen, eller bare denne stemmen</value>
   </data>
   <data name="Shortcut_Note" xml:space="preserve">
     <value>Neste eller forrige tone</value>

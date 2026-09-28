@@ -8,6 +8,7 @@ import no.brasscribe.play.model.KeySig
 import no.brasscribe.play.model.Meter
 import no.brasscribe.play.model.Note
 import no.brasscribe.play.model.PartSource
+import no.brasscribe.play.model.reading
 import no.brasscribe.play.model.Seat
 import no.brasscribe.play.model.SeatPart
 import no.brasscribe.play.model.Voice
@@ -19,12 +20,37 @@ import org.junit.Test
 /** "What do you play?": the stored answer, and "your part" in each lineup (the core's table injected). */
 class MyInstrumentTest {
     private val seats = listOf(
-        Seat("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", listOf("treble"), -2),
-        Seat("1st-baritone", "1st Baritone", "1. baryton", "baritone", "treble", listOf("treble", "bass"), -14),
-        Seat("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", listOf("treble", "bass"), -21),
-        Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0),
-        Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14),
+        Seat("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", listOf("treble"), -2, tune = true),
+        Seat("1st-baritone", "1st Baritone", "1. baryton", "baritone", "treble", listOf("treble", "bass"), -14, tune = false),
+        Seat("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", listOf("treble", "bass"), -21, tune = false),
+        Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0, tune = false),
+        Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14, tune = true),
     )
+
+    @org.junit.Test
+    fun anEmptyPartIsNotArranged() {
+        assertEquals(PartSource.EMPTY, PartSource.of("empty"))
+        assertEquals(R.string.source_empty, no.brasscribe.play.ui.sourceWords(PartSource.EMPTY))
+        assertEquals(R.string.explain_empty, no.brasscribe.play.ui.explainOf(PartSource.EMPTY))
+        assertEquals(R.string.explain_arranged, no.brasscribe.play.ui.explainOf(PartSource.ARRANGED))
+    }
+
+    @org.junit.Test
+    fun theReadingDefaultsToTheSeatsOwn() {
+        val bassTrombone = Seat("bass-trombone", "Bass Trombone", "Bassbasun", "bass-trombone", "bass", listOf("bass"), 0, tune = false)
+        assertEquals("bass", bassTrombone.reading(null))
+        assertEquals("treble", seats[1].reading(null))
+        assertEquals("bass", seats[1].reading("bass"))
+        assertNull(seats[3].reading(null))
+    }
+
+    @org.junit.Test
+    fun aDrummersSoloTakeIsRefused() {
+        org.junit.Assert.assertTrue(percussionSeat(SeatChoice.Player("percussion"), seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.Player("euphonium"), seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.Conductor, seats))
+        org.junit.Assert.assertFalse(percussionSeat(SeatChoice.NotSet, seats))
+    }
 
     /** A few rows of the core's table (instruments.rs SEAT_PARTS). */
     private val table = mapOf(

@@ -731,6 +731,16 @@
         }
       }
     },
+    "Band, difficulty and key…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band, vanskelighet og toneart …"
+          }
+        }
+      }
+    },
     "Bar %lld": {
       "localizations": {
         "nb": {
@@ -871,6 +881,16 @@
         }
       }
     },
+    "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer."
+          }
+        }
+      }
+    },
     "Brasscribe couldn't make brass-band parts from this score.": {
       "localizations": {
         "nb": {
@@ -901,6 +921,26 @@
         }
       }
     },
+    "Brasscribe on your computer couldn't finish the score. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på datamaskinen klarte ikke å gjøre ferdig partituret. Prøv igjen."
+          }
+        }
+      }
+    },
+    "Brasscribe on your computer didn't accept these choices. It may need an update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering."
+          }
+        }
+      }
+    },
     "Brasscribe opens MusicXML scores and its own score files.": {
       "localizations": {
         "nb": {
@@ -916,7 +956,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger."
+            "value": "Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger."
           }
         }
       }
@@ -961,6 +1001,16 @@
         }
       }
     },
+    "Can't reach Brasscribe on your computer. Check that it is running and on the same network.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med Brasscribe på datamaskinen. Sjekk at den kjører og er på samme nettverk."
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "nb": {
@@ -997,6 +1047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Endre tone …"
+          }
+        }
+      }
+    },
+    "Change what I play": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endre hva jeg spiller"
           }
         }
       }
@@ -2226,7 +2286,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av"
+            "value": "Demp"
           }
         }
       }
@@ -2236,7 +2296,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av for %@"
+            "value": "Demp %@"
           }
         }
       }
@@ -2246,7 +2306,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lyd av min stemme"
+            "value": "Demp stemmen min"
           }
         }
       }
@@ -2256,7 +2316,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skru av stemmen din, sett ned tempoet, gjenta de vanskelige taktene."
+            "value": "Demp stemmen din, sett ned tempoet, gjenta de vanskelige taktene."
           }
         }
       }
@@ -2411,6 +2471,16 @@
         }
       }
     },
+    "Not for percussion yet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke for slagverk ennå"
+          }
+        }
+      }
+    },
     "Not now": {
       "localizations": {
         "nb": {
@@ -2441,6 +2511,16 @@
         }
       }
     },
+    "Not yet for whole-band recordings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommer senere for opptak av hele bandet"
+          }
+        }
+      }
+    },
     "Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.": {
       "localizations": {
         "nb": {
@@ -2467,6 +2547,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Toner Brasscribe er usikker på, har et «?» over seg. Et «?» i ramme betyr svært usikker."
+          }
+        }
+      }
+    },
+    "Nothing in the recording gave the %@ part any notes, so there is nothing of yours to check.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting i opptaket ga %@ noen toner, så det er ingenting av ditt å sjekke."
+          }
+        }
+      }
+    },
+    "Nothing in the recording gave this part any notes, so it is left empty.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting i opptaket ga denne stemmen noen toner, så den står tom."
+          }
+        }
+      }
+    },
+    "Nothing to play in this arrangement": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tom i dette arrangementet"
           }
         }
       }
@@ -3631,6 +3741,16 @@
         }
       }
     },
+    "Something went wrong. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noe gikk galt. Prøv igjen."
+          }
+        }
+      }
+    },
     "Soprano": {
       "localizations": {
         "nb": {
@@ -4281,6 +4401,16 @@
         }
       }
     },
+    "The tune can't go on your part in this band. Under Who plays the tune?, choose the band's usual part.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?"
+          }
+        }
+      }
+    },
     "These files couldn't be made. Try fewer formats, or try again.": {
       "localizations": {
         "nb": {
@@ -4921,12 +5051,42 @@
         }
       }
     },
+    "Your computer no longer knows this device. Connect them again in Settings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne enheten lenger. Koble dem sammen på nytt i Innstillinger."
+          }
+        }
+      }
+    },
+    "Your computer took too long to answer. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen brukte for lang tid på å svare. Prøv igjen."
+          }
+        }
+      }
+    },
     "Your instrument": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Instrumentet ditt"
+          }
+        }
+      }
+    },
+    "Your instrument isn't written in that clef. Choose again under What you play.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller."
           }
         }
       }
@@ -4991,12 +5151,32 @@
         }
       }
     },
+    "Your part is empty": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din er tom"
+          }
+        }
+      }
+    },
+    "Your part is empty. %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemmen din er tom. %@"
+          }
+        }
+      }
+    },
     "Your part is muted with “Mute my part”, so you can play along. “Only this” plays one part alone.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stemmen din skrus av med «Lyd av min stemme», så du kan spille med. «Bare denne» spiller én stemme alene."
+            "value": "Stemmen din dempes med «Demp stemmen min», så du kan spille med. «Bare denne» spiller én stemme alene."
           }
         }
       }

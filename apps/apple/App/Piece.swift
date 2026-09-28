@@ -25,6 +25,9 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// Summary for the library: number of bars, and uncertain notes still to check.
     var bars: Int?
     var toCheck: Int?
+    /// The player's seat for this score (`SeatChoice.encoded`), kept from the first time it was
+    /// opened: a new answer in Settings leaves the scores you already have on the part you chose.
+    var seat: String? = nil
 
     static var libraryURL: URL {
         // unit tests keep their scores out of the user's library
@@ -133,6 +136,19 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try? p.save()
     }
 
+    /// Only the layered arranger writes the full band: a take without layers (a Brass band or Pop or
+    /// rock recording) is always arranged for the small band or the quartet, so Full brass band is not
+    /// offered for it. Without the composition, the profile says.
+    func fullBandPossible(_ comp: Composition?) -> Bool {
+        comp.map { $0.voices.contains { $0.layer != nil } } ?? (profile != .brassBand && profile != .popRock)
+    }
+
+    /// The lineup the score is made for: the chosen one, the full band made as the small band where
+    /// it can't be written.
+    func madeLineup(_ comp: Composition?) -> Lineup? {
+        output.map { $0.lineup == .fullBand && !fullBandPossible(comp) ? .minimalBand : $0.lineup }
+    }
+
     /// A quartet needs harmony to arrange: not a solo take, and the composition has more than
     /// the tune (a bass or harmony voice with notes).
     func canArrangeQuartet(_ comp: Composition?) -> Bool {
@@ -146,7 +162,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// "Brass band · 64 bars · Today · 3 notes to check"
     var summary: String {
         var bits: [String] = []
-        if let output { bits.append(output.lineup.shortTitle) }
+        if let lineup = madeLineup(nil) { bits.append(lineup.shortTitle) }
         else if let profile { bits.append(profile.shortTitle) }
         if let bars { bits.append(String(localized: "\(bars) bars")) }
         bits.append(ScoreTitles.day(created))

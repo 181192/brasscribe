@@ -95,6 +95,7 @@ fun ProblemScreen(vm: PlayViewModel) {
             }
         }
         copy.note?.let { InfoNote(stringResource(it)) }
+        vm.problemWhy?.let { InfoNote(stringResource(it), Modifier.semantics { testTag = "problem-why" }) }
         val detail = vm.problemDetail
         if (!detail.isNullOrBlank()) {
             PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })

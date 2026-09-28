@@ -65,6 +65,19 @@ public static class Lineups
     public static bool IsQuartet(IEnumerable<string> partNames) => partNames.SequenceEqual(QuartetParts);
 
     /// <summary>
+    /// A whole-band recording arranged without layers (the brass-band and pop-rock profiles, or a
+    /// Composition whose voices carry no layer): only the small band or the quartet is made for it,
+    /// the full band needs the layered arranger.
+    /// </summary>
+    public static bool IsBandTake(Composition? composition, string? profile = null)
+    {
+        if (profile is "brass-band" or "pop-rock") return true;
+        if (profile is not null || composition is null) return false;
+        var sounding = composition.Voices.Where(v => v.Notes.Count > 0).ToList();
+        return sounding.Count > 1 && sounding.All(v => v.Layer is null);
+    }
+
+    /// <summary>
     /// A take of one line, with nothing for the other quartet parts to play: the solo profile, a
     /// Composition whose notes are all in the solo (or drums) layer, or a single voice.
     /// </summary>

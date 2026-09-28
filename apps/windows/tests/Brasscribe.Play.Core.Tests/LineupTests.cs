@@ -107,6 +107,59 @@ public class LineupTests
     }
 
     [Fact]
+    public void A_band_take_is_arranged_without_layers()
+    {
+        Assert.True(Lineups.IsBandTake(null, "brass-band"));
+        Assert.True(Lineups.IsBandTake(null, "pop-rock"));
+        Assert.False(Lineups.IsBandTake(null, "orchestra-with-soloist"));
+        Assert.False(Lineups.IsBandTake(null, "solo"));
+        Assert.True(Lineups.IsBandTake(Chorale()));
+        Assert.False(Lineups.IsBandTake(Chorale(melodyOnly: true)));
+        var layered = Chorale();
+        foreach (var v in layered.Voices) v.Layer = "solo";
+        layered.Voices[^1].Layer = "bass";
+        Assert.False(Lineups.IsBandTake(layered));
+    }
+
+    [Fact]
+    public void The_full_band_card_says_why_it_cannot_be_chosen_for_a_band_take()
+    {
+        var said = new Announcements();
+        var vm = new OutputOptionsViewModel(new ManagedCoreBridge(), said, Strings());
+        Assert.True(vm.FullAvailable);
+        Assert.Equal("About 25 players", vm.FullDescription);
+        Assert.Equal("", vm.FullHelpText);
+        Assert.Equal(Lineup.FullBand, vm.Lineup);
+
+        // A brass-band or pop take is made for the small band: the default follows, Full is refused aloud.
+        vm.IsBandTake = true;
+        Assert.Equal(Lineup.MinimalBand, vm.Lineup);
+        Assert.Equal("minimal", vm.Options.Lineup);
+        Assert.False(vm.FullAvailable);
+        Assert.Equal("Not yet for whole-band recordings", vm.FullDescription);
+        Assert.Equal("Not yet for whole-band recordings", vm.FullHelpText);
+        Assert.False(vm.TryChooseLineup(Lineup.FullBand));
+        Assert.Equal(Lineup.MinimalBand, vm.Lineup);
+        Assert.Equal(("Not yet for whole-band recordings", AnnouncementKind.Important), said.Items[^1]);
+        Assert.True(vm.TryChooseLineup(Lineup.Quartet));
+
+        // What was made is what the score is labelled with, also for an old job recorded as "full".
+        vm.Applied = ArrangementOptions.Default;
+        Assert.Equal(Lineup.MinimalBand, vm.AppliedLineup);
+        vm.ShowingSaved(Lineup.FullBand, null);
+        Assert.Equal(Lineup.MinimalBand, vm.Lineup);
+
+        // The next take (a soloist with orchestra) gets the full band back, as it was never chosen away.
+        vm.IsBandTake = false;
+        Assert.Equal(Lineup.FullBand, vm.Lineup);
+
+        var nb = new OutputOptionsViewModel(new ManagedCoreBridge(), said, Strings("nb-NO")) { IsBandTake = true };
+        Assert.Equal("Kommer senere for opptak av hele bandet", nb.FullDescription);
+        nb.IsBandTake = false;
+        Assert.Equal("Rundt 25 musikere", nb.FullDescription);
+    }
+
+    [Fact]
     public void Picker_and_share_strings_in_both_languages()
     {
         var en = Strings();

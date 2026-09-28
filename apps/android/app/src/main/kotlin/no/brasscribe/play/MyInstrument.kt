@@ -63,6 +63,13 @@ data class YourPart(val index: Int?, val mapped: MappedSeat? = null)
 /** "This small band has no 1st Baritone. Your part here is Euphonium…": [part] null when there is none. */
 data class MappedSeat(val lineup: Lineup, val seat: Seat, val part: String?, val sameKey: Boolean)
 
+/**
+ * The player's seat is percussion (a seat with no clef to read): a solo take can't be written for it,
+ * since the pitch trackers' notes from a drummer's take are no drum part.
+ */
+fun percussionSeat(choice: SeatChoice, seats: List<Seat>): Boolean =
+    choice.seatId?.let { id -> seats.firstOrNull { it.id == id } }?.reads?.isEmpty() == true
+
 /** One way to find the player's part for every screen: the score, the stand, Share and Review. */
 object YourParts {
     private fun clean(s: String) = s.replace('\u00A0', ' ').trim()
@@ -120,7 +127,7 @@ object YourParts {
         val seat = composition?.arrangementString("seat")
         if (seat != null && composition.arrangementString("lead") == "seat") {
             if (parts.size == 1) return clean(parts[0])
-            seatPart((lineup ?: Lineup.FULL).core, seat)?.part?.let { return it }
+            seatPart((lineup ?: Lineup.FULL.madeFor(composition.fullBandMade)).core, seat)?.part?.let { return it }
         }
         val i = leadPartIndex(parts, lineup)
         return parts.getOrNull(i)?.let(::clean)?.takeIf { p -> Lineup.LEADS.any { it.equals(p, true) } }
@@ -132,7 +139,7 @@ object YourParts {
      * part that follows no layer of its own.
      */
     fun voiceOf(part: String, lead: String?, source: PartSource?, composition: Composition): String? {
-        if (source == PartSource.ARRANGED) return null
+        if (source == PartSource.ARRANGED || source == PartSource.EMPTY) return null
         val sounding = composition.voices.filter { it.notes.isNotEmpty() }
         fun layer(id: String) = sounding.firstOrNull { it.id == id || it.layer == id }?.id
         val name = clean(part)

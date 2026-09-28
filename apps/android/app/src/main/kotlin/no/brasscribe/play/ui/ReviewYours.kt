@@ -31,6 +31,7 @@ import no.brasscribe.play.arrangementString
 import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.MusicXmlParts
 import no.brasscribe.play.model.PartSource
+import no.brasscribe.play.model.reading
 
 /**
  * Review's "Yours": the player's part, where it came from, and the recording layer it follows. [voice]
@@ -55,26 +56,26 @@ fun yoursInReview(vm: PlayViewModel, r: TranscriptionResult, composition: Compos
     // "Written for Euphonium in B♭, treble clef": a take written for the player's own seat.
     val seat = composition.arrangementString("seat")?.let { id -> vm.container.seats.firstOrNull { it.id == id } }
     val written = if (source == PartSource.YOUR_RECORDING && seat != null) {
-        if (composition.arrangementString("reads") == "bass") stringResource(R.string.written_for_bass, PartNames.display(seat.name))
+        if (seat.reading(composition.arrangementString("reads")) == "bass") stringResource(R.string.written_for_bass, PartNames.display(seat.name))
         else stringResource(R.string.written_for_treble, PartNames.display(seat.name), stringResource(keyOf(seat.chromatic)))
     } else null
-    return ReviewYours(part, source, voice, source == PartSource.ARRANGED, written)
+    return ReviewYours(part, source, voice, source == PartSource.ARRANGED || source == PartSource.EMPTY, written)
 }
 
 /** In place of an empty Yours list: why there is nothing of yours to check, and where to go (§3.6). */
 @Composable
-fun ArrangedNotice(part: String, checkOthers: () -> Unit, showMine: () -> Unit) {
+fun ArrangedNotice(part: String, checkOthers: () -> Unit, showMine: () -> Unit, empty: Boolean = false) {
     val c = BrasscribeTheme.colors
     Column(
         Modifier.fillMaxWidth().background(c.surface, MaterialTheme.shapes.medium).border(1.dp, c.border, MaterialTheme.shapes.medium)
             .padding(BrasscribeSpace.s4).semantics { testTag = "review-arranged" },
         verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
     ) {
-        SourceLabel(PartSource.ARRANGED)
+        SourceLabel(if (empty) PartSource.EMPTY else PartSource.ARRANGED)
         // Announced once, politely, when Review opens (4.1.3); nothing is drawn over the controls.
         Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
-            Text(stringResource(R.string.review_arranged_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-            Text(stringResource(R.string.review_arranged_body, PartNames.display(part)), style = MaterialTheme.typography.bodyMedium, color = c.text)
+            Text(stringResource(if (empty) R.string.review_empty_title else R.string.review_arranged_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+            Text(stringResource(if (empty) R.string.review_empty_body else R.string.review_arranged_body, PartNames.display(part)), style = MaterialTheme.typography.bodyMedium, color = c.text)
         }
         // The review below keeps the screen's one primary (Keep, go to next): these two are quieter.
         SecondaryButton(stringResource(R.string.review_check_others), checkOthers)

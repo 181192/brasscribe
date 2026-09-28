@@ -170,6 +170,10 @@ enum class SeatPickerMode { FIRST_RUN, SETTINGS, WHO_PLAYED }
 /** A take with no harmony to arrange (a solo, or anything transcribed on the phone): no quartet for it. */
 val TranscriptionResult.isSoloTake: Boolean get() = profile == Profile.SOLO
 
+/** The full band can be written for this take: it has layers (see [fullBandMade]); by profile before the composition is known. */
+val TranscriptionResult.fullBandMade: Boolean
+    get() = composition?.fullBandMade ?: (profile != Profile.BRASS_BAND && profile != Profile.POP_ROCK)
+
 /** The lineup this result was arranged for, when it was recorded. */
 val TranscriptionResult.lineup: Lineup? get() = Lineup.recorded(composition)
 
@@ -245,6 +249,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     /** The detail of the last problem (an engine message), shown under the reasons. */
     var problemDetail: String? = null
         private set
+    /** What went wrong in the player's words, when it is known (ErrorWords): shown above the details. */
+    var problemWhy: Int? = null
+        private set
 
     /** Set while the score screen is open: MIDI export and "Play this bar" go through it. */
     var scoreController: no.brasscribe.play.score.ScoreController? = null
@@ -278,7 +285,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 val seat = r.composition?.arrangementString("seat")
                 val synced = output.value.let { o ->
                     o.copy(
-                        lineup = recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup,
+                        lineup = (recorded ?: if (r.isSoloTake && o.lineup == Lineup.QUARTET) Lineup.FULL else o.lineup).madeFor(r.fullBandMade),
                         difficulty = if (recorded != null && difficulty != null) difficulty else o.difficulty,
                         seat = if (recorded != null) seat else o.seat,
                         reads = if (recorded != null) r.composition?.arrangementString("reads") else o.reads,
@@ -380,9 +387,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         r.compositionJsonFor(container.core)?.let { runCatching { container.core.partSources(it) }.getOrNull() }.orEmpty()
 
     /** Shows [p] full screen, replacing the step that failed (the recording is kept). */
-    fun showProblem(p: Problem, detail: String? = null) {
+    fun showProblem(p: Problem, detail: String? = null, @androidx.annotation.StringRes why: Int? = null) {
         problem.value = p
         problemDetail = detail
+        problemWhy = why
         backStack.update { (if (it.last() in setOf(Screen.TRANSCRIBE, Screen.RECORD)) it.dropLast(1) else it) + Screen.PROBLEM }
     }
 
@@ -538,6 +546,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     fun startTranscription() {
         val p = profile.value ?: return
         val s = source.value ?: return
+        // A drummer's solo take is no drum part: refused before anything is transcribed (the screen says so too).
+        if (p == Profile.SOLO && percussionSeat(container.seat, container.seats)) { say(R.string.percussion_solo_refused); return }
         navigate(Screen.TRANSCRIBE)
         job?.cancel()
         job = viewModelScope.launch {
@@ -558,7 +568,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 showProblem(Problem.TOO_LARGE, e.toString())
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
-                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString())
+                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
+                    ErrorWords.of(e).takeIf { it != R.string.error_generic })
             }
         }
     }
@@ -644,12 +655,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 if (updated != null) { lastApplied = opts; result.value = updated; saveCurrentScore(updated) }
                 say(R.string.arrangement_ready)
                 then()
-            } catch (e: QuartetNeedsGroupException) {
-                say(R.string.lineup_quartet_needs_group)
-            } catch (e: LeadSeatRefusedException) {
-                say(R.string.lead_seat_refused)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                say(R.string.transcribe_failed, e.message ?: e.javaClass.simpleName)
+                // In the player's words; the engine's or the core's own text goes to the log only.
+                android.util.Log.w(TAG, "re-arrangement failed", e)
+                say(ErrorWords.of(e))
             } finally {
                 busy.value = false
             }
@@ -663,22 +674,22 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         !r.onDevice && output.value.seat != null && r.composition != null && r.composition.arrangementString("seat") == null
 
     private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
-        val engine = container.engine() ?: error(res.getString(R.string.where_companion_missing))
+        val engine = container.engine() ?: throw NoCompanionException()
         val core = opts.toCore()
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
         val job = try {
             engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
-                allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.engine,
+                allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.madeFor(r.fullBandMade).engine,
                 difficulty = core.difficulty, transpose = core.transpose, seat = core.seat, reads = core.reads, lead = core.lead))
         } catch (e: EngineException) {
             // The engine's own words stay out of the app: a refused quartet gets the card's reason.
-            if (e.status == 422 && opts.lineup == Lineup.QUARTET) throw QuartetNeedsGroupException()
-            if (e.status == 422 && core.lead == "seat") throw LeadSeatRefusedException()
+            if (e.status == 422 && e.code == null && opts.lineup == Lineup.QUARTET) throw QuartetNeedsGroupException()
+            if (e.status == 422 && e.code == null && core.lead == "seat") throw LeadSeatRefusedException()
             throw e
         }
         engine.events(job.id).collect { }
         val final = engine.job(job.id)
-        if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
+        if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         return r.copy(composition = engine.composition(job.id), musicXml = engine.musicXml(job.id), jobId = job.id,
             engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift,
             evidence = runCatching { engine.evidence(job.id) }.getOrNull())
@@ -687,7 +698,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
 
     private suspend fun transcribeWithEngine(s: Source, p: Profile): TranscriptionResult {
-        val engine: EngineApi = container.engine() ?: error(res.getString(R.string.where_companion_missing))
+        val engine: EngineApi = container.engine() ?: throw NoCompanionException()
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, container.engineLabel()))
@@ -716,7 +727,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         val final = engine.job(created.id)
-        if (final.status != JobStatus.SUCCEEDED) error(final.error ?: final.status.name.lowercase())
+        if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
         return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audio.audioId,
@@ -776,7 +787,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 saveCurrentScore(r, entry.title)
                 backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
             } catch (e: Exception) {
-                showProblem(Problem.FILE_UNREADABLE, e.message)
+                // A connection or engine failure is no unreadable file: its own words, not "try an MP3".
+                val why = ErrorWords.of(e).takeIf { it != R.string.error_generic }
+                showProblem(if (why != null) Problem.SCORE_FAILED else Problem.FILE_UNREADABLE, e.message, why)
             } finally {
                 openingScore.value = null
             }
@@ -899,10 +912,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun arrangeComposition(composition: Composition, options: OutputOptions, soloTake: Boolean): Pair<Composition, String>? {
         val transposed = (composition.arrangement?.get("transpose_semitones") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
-        val xml = container.core.arrangeMusicXmlWith(composition,
-            options.toCore().copy(transpose = transposed)) ?: return null
-        val core = options.toCore()
-        return composition.arrangedFor(options.lineup, options.difficulty.id, core.seat, core.reads, core.lead, soloTake) to xml
+        val lineup = options.lineup.madeFor(composition.fullBandMade)
+        val core = options.toCore().copy(lineup = lineup.core)
+        val xml = container.core.arrangeMusicXmlWith(composition, core.copy(transpose = transposed)) ?: return null
+        return composition.arrangedFor(lineup, options.difficulty.id, core.seat, core.reads, core.lead, soloTake) to xml
     }
 
     /** A score arranged on the phone, re-arranged from its Composition (the rest of a key shift stays display-only). */

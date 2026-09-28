@@ -12,8 +12,10 @@ import no.brasscribe.play.model.Voice
 import no.brasscribe.play.model.VoiceRole
 import no.brasscribe.play.ui.PartNames
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LineupTest {
@@ -48,9 +50,20 @@ class LineupTest {
         assertNull(Lineup.recorded(composition(null)))
         // The arrangement survives a round trip through the app's model.
         assertEquals(c.arrangement, CompositionJson.decode(CompositionJson.encode(c)).arrangement)
-        // A take without layers is arranged for the small band when the full band is asked for.
-        assertEquals(Lineup.MINIMAL, Lineup.recorded(composition(null).arrangedFor(Lineup.FULL, "faithful")))
+        // The lineup recorded is the one given: the Output screen gives the one that is made.
+        assertEquals(Lineup.MINIMAL, Lineup.recorded(composition(null).arrangedFor(Lineup.MINIMAL, "faithful")))
         assertEquals(Lineup.QUARTET, Lineup.recorded(composition(null).arrangedFor(Lineup.QUARTET, "faithful")))
+    }
+
+    @Test
+    fun aTakeWithoutLayersIsMadeForTheSmallBand() {
+        val band = composition(null)
+        assertFalse(band.fullBandMade)
+        assertEquals(Lineup.MINIMAL, Lineup.FULL.madeFor(band.fullBandMade))
+        assertEquals(Lineup.QUARTET, Lineup.QUARTET.madeFor(false))
+        val layered = band.copy(voices = band.voices.map { it.copy(layer = "solo") })
+        assertTrue(layered.fullBandMade)
+        assertEquals(Lineup.FULL, Lineup.FULL.madeFor(layered.fullBandMade))
     }
 
     @Test

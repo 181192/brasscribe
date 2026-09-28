@@ -112,6 +112,11 @@ import TranscriptionKit
     #expect(byName["Flugelhorn"] == .arranged)
     #expect(byName["1st Baritone"] == .arranged)
     #expect(byName.count == 18)
+    // faithful: the Soprano Cornet doubles no climax, so it is empty, not arranged
+    #expect(byName["Soprano Cornet"] == .empty)
+    var comp = try #require(p.loadComposition())
+    for i in comp.voices.indices where comp.voices[i].layer == "drums" { comp.voices[i].notes = [] }
+    #expect(PartSourceKind.sources(composition: comp, output: p.output)["Percussion"] == .empty)
 }
 
 /// The small band has no 1st Baritone: your part is Euphonium, and the score says why.
@@ -142,4 +147,55 @@ import TranscriptionKit
     // the take's own seat is its part, whatever Settings says
     #expect(m.myPart == score.parts.first?.id)
     #expect(PartSourceKind.sources(composition: comp, output: choice)["1st Baritone"] == .yourRecording)
+}
+
+/// With no clef chosen, the seat's own: the bass trombone's mapped part is at concert pitch.
+@Test func theReadingDefaultsToTheSeatsOwn() {
+    #expect(Seats.reading(nil, seat: Seats.info("bass-trombone")) == "bass")
+    #expect(Seats.reading(nil, seat: Seats.info("euphonium")) == "treble")
+    #expect(Seats.reading("bass", seat: Seats.info("euphonium")) == "bass")
+    #expect(Seats.reading(nil, seat: Seats.info("percussion")) == nil)
+}
+
+/// A drummer's solo take is no drum part: One instrument is refused for the percussion seat only.
+@Test func percussionHasNoSoloTake() {
+    #expect(Seats.isPercussion(.seat("percussion", reads: nil)))
+    #expect(!Seats.isPercussion(.seat("euphonium", reads: nil)))
+    #expect(!Seats.isPercussion(.conductor))
+    #expect(!Seats.isPercussion(.notSet))
+}
+
+/// A Brass band or Pop or rock take is made for the small band: the full band is not offered for it.
+@Test @MainActor func aWholeBandTakeIsMadeForTheSmallBand() throws {
+    let json = #"{"title": "t", "voices": [{"id": "melody", "role": "melody", "notes": []}], "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0, "mode": "major"}]}"#
+    let band = try Composition.decode(Data(json.utf8))
+    var layered = band
+    layered.voices[0].layer = "solo"
+    let r = TranscriptionResult(jobID: "x", composition: band, musicXML: Data(), available: [])
+    let p = try Piece.create(title: "Band take", profile: .brassBand, result: r, original: nil, video: nil, fixtureDirectory: nil,
+                             output: OutputChoice(lineup: .fullBand))
+    defer { p.delete() }
+    #expect(!p.fullBandPossible(band) && p.fullBandPossible(layered))
+    #expect(p.madeLineup(band) == .minimalBand && p.madeLineup(layered) == .fullBand)
+    #expect(!p.fullBandPossible(nil))
+}
+
+/// A score keeps the seat it was first opened with: a new answer in Settings doesn't re-point "(you)".
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func aScoreKeepsItsSeat() throws {
+    let p = try fixturePiece(output: OutputChoice())
+    defer { p.delete() }
+    let first = PracticeModel(piece: p, score: try p.loadScore(), composition: p.loadComposition(), seat: .seat("euphonium", reads: nil))
+    #expect(first.myPart.flatMap { first.score.part(id: $0)?.name } == "Euphonium")
+    let reloaded = try #require(Piece.load(from: p.metaURL))
+    #expect(reloaded.seat == "euphonium")
+    let later = PracticeModel(piece: reloaded, score: try reloaded.loadScore(), composition: reloaded.loadComposition(), seat: .seat("solo-cornet", reads: nil))
+    #expect(later.myPart.flatMap { later.score.part(id: $0)?.name } == "Euphonium")
+    // a score made for a seat keeps it, though Settings changed before it was first opened
+    let made = try fixturePiece(output: OutputChoice(seat: "euphonium"))
+    defer { made.delete() }
+    let opened = PracticeModel(piece: made, score: try made.loadScore(), composition: made.loadComposition(), seat: .seat("solo-cornet", reads: nil))
+    #expect(opened.myPart.flatMap { opened.score.part(id: $0)?.name } == "Euphonium")
+    #expect(SeatChoice.parse(SeatChoice.seat("1st-baritone", reads: "bass").encoded) == .seat("1st-baritone", reads: "bass"))
+    #expect(SeatChoice.parse(SeatChoice.conductor.encoded) == .conductor)
+    #expect(SeatChoice.parse(SeatChoice.notSet.encoded) == .notSet)
 }

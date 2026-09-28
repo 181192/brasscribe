@@ -364,6 +364,11 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise
     // the solo line is the soloist's, a cornet or trumpet (E3-E6).
     let solo_take = opts.seat.is_some() && bass_raw.is_empty() && orch_raw.is_empty() && drum_raw.is_empty();
+    if let Some(s) = opts.seat.as_deref().filter(|_| solo_take) {
+        if crate::instruments::seat_by_id(s)?.reads.is_empty() {
+            return Err(crate::instruments::PERCUSSION_SOLO.into());
+        }
+    }
     let (lo, hi) = match &opts.seat {
         Some(s) if solo_take => crate::instruments::seat_by_id(s)?.band_part().instrument.pro,
         _ => SOLO_WINDOW,

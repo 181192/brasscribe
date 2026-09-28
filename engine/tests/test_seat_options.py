@@ -33,6 +33,32 @@ def test_seat_options_validated():
         profiles.job_options("orchestra-with-soloist", {"seat": "eb-bass", "lead": "seat"})
 
 
+def test_band_takes_are_made_and_checked_as_the_small_band():
+    # A brass-band or pop recording is arranged for the small band, whatever lineup the app sent.
+    for profile in profiles.BAND_TAKE_PROFILES:
+        assert profiles.made_lineup(profile, "full") == profiles.made_lineup(profile, None) == "minimal"
+        assert profiles.made_lineup(profile, "quartet") == "quartet"
+        # 1st Baritone -> Euphonium in the small band: its tune is allowed, though the full band refuses it.
+        assert profiles.job_options(profile, {"seat": "1st-baritone", "lead": "seat", "lineup": "full"})["lead"] == "seat"
+    assert profiles.made_lineup("orchestra-with-soloist", None) == "full"
+    with pytest.raises(ValueError, match="tune"):
+        profiles.job_options("orchestra-with-soloist", {"seat": "1st-baritone", "lead": "seat", "lineup": "full"})
+
+
+def test_percussion_solo_take_is_refused():
+    # The pitch trackers' notes from a drummer's take are no drum part: refused before any transcription.
+    with pytest.raises(profiles.OptionError, match="percussion") as e:
+        profiles.job_options("solo", {"seat": "percussion"})
+    assert e.value.code == "percussion_solo"
+    with pytest.raises(profiles.OptionError) as e:
+        profiles.job_options("solo", {"lineup": "quartet"})
+    assert e.value.code == "quartet_needs_group"
+    with pytest.raises(ValueError, match="percussion"):
+        profiles.build("solo", Path("a.wav"), params={"seat": "percussion"})
+    # A band recording with drums still gets the percussion part.
+    assert profiles.job_options("orchestra-with-soloist", {"seat": "percussion"}) == {"seat": "percussion"}
+
+
 def test_solo_profile_with_a_seat_writes_on_the_seat():
     arrange = profiles.build("solo", Path("a.wav"), params={"seat": "1st-baritone"}).stage("arrange").params
     assert arrange["arrangement"] == {"lineup": "minimal", "seat": "1st-baritone", "lead": "seat"}
@@ -49,6 +75,10 @@ def test_seat_options_over_the_api(settings, audio):
         assert post(reads="bass").status_code == 422
         bad = post(seat="euphonium", lead="seat", lineup="quartet")
         assert bad.status_code == 422 and "quartet" in bad.json()["detail"]
+        # Each refusal carries a code the apps map to their own words.
+        assert bad.json()["code"] == "quartet_needs_group"
+        assert post(seat="eb-bass", lead="seat").json()["code"] == "seat_no_tune"
+        assert post(seat="solo-cornet", reads="bass").json()["code"] == "reads_not_offered"
         job = post(seat="euphonium", reads="bass")
         assert job.status_code == 202
         wait(c, job.json()["id"])

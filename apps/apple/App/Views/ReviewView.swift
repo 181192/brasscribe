@@ -38,7 +38,7 @@ struct ReviewView: View {
     private var myPartID: String? { model?.myPart }
     /// Your part was arranged from the band's harmony: it has no notes of yours to check, and Review
     /// says so instead of showing an empty list.
-    private var myPartArranged: Bool { model?.mySource == .arranged }
+    private var myPartArranged: Bool { model?.mySource == .arranged || model?.mySource == .empty }
     private var mine: [ReviewItem] { myPartArranged ? [] : allOpen.filter { $0.partID == myPartID } }
 
     /// The notes still to check under the chosen filter; in your part the very unsure come first.
@@ -191,7 +191,7 @@ struct ReviewView: View {
         if item == nil, filter == .mine, myPartArranged, let model, let id = myPartID, let part = model.score.part(id: id) {
             VStack(alignment: .leading, spacing: wide ? Space.s4 : Space.s3) {
                 triage
-                ArrangedNotice(part: part.displayName) { filter = .others } show: {
+                ArrangedNotice(part: part.displayName, empty: model.mySource == .empty) { filter = .others } show: {
                     model.stopAll()
                     finishToScore(showing: id)
                 }
@@ -426,9 +426,11 @@ struct ReviewView: View {
             checked = piece.loadChecked()
             items = ReviewList.items(score: m.score, composition: m.composition, uncertainty: m.uncertainty)
             // an arranged part keeps "Yours" chosen, so its notice shows (and is said) once
-            if count(.mine) == 0, m.mySource != .arranged { filter = .all }
-            if m.mySource == .arranged, let id = m.myPart, let part = m.score.part(id: id) {
-                AccessibilityNotifier.announce(String(localized: "Your part is arranged. \(ArrangedNotice.body(part.displayName))"), polite: true)
+            if count(.mine) == 0, !myPartArranged { filter = .all }
+            if myPartArranged, let id = m.myPart, let part = m.score.part(id: id) {
+                let body = ArrangedNotice.body(part.displayName, empty: m.mySource == .empty)
+                AccessibilityNotifier.announce(m.mySource == .empty ? String(localized: "Your part is empty. \(body)")
+                                               : String(localized: "Your part is arranged. \(body)"), polite: true)
             }
             piece.saveChecked(checked, remaining: allOpen.count)
             app.refresh()
@@ -665,18 +667,24 @@ private extension Collection {
 /// there is nothing of the player's to check.
 struct ArrangedNotice: View {
     let part: String
+    var empty = false
     let others: () -> Void
     let show: () -> Void
 
-    static func body(_ part: String) -> String {
-        String(localized: "Nobody played the \(part) part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.")
+    static func title(empty: Bool) -> String {
+        empty ? String(localized: "Your part is empty") : String(localized: "Your part is arranged")
+    }
+
+    static func body(_ part: String, empty: Bool = false) -> String {
+        empty ? String(localized: "Nothing in the recording gave the \(part) part any notes, so there is nothing of yours to check.")
+            : String(localized: "Nobody played the \(part) part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.")
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
-            DisplayTitle(text: String(localized: "Your part is arranged"), size: 34)
-            SourceLabel(kind: .arranged)
-            Text(Self.body(part))
+            DisplayTitle(text: Self.title(empty: empty), size: 34)
+            SourceLabel(kind: empty ? .empty : .arranged)
+            Text(Self.body(part, empty: empty))
                 .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
             ViewThatFits(in: .horizontal) {

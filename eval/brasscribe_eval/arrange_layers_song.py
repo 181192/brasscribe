@@ -29,7 +29,7 @@ from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
 from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
+from brasscribe_music.instruments import CLEF_READINGS, LEADS, PERCUSSION_SOLO, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
@@ -208,6 +208,8 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
     # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
     # solo line is the soloist's, a cornet or trumpet (E3-E6).
     solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
+    if solo_take and not seat_by_id(args.seat).reads:
+        raise SystemExit(PERCUSSION_SOLO)
     if args.lead == "seat" and not solo_take:
         try:
             lead_lineup(lineup_by_name(args.lineup), args.seat)

@@ -494,6 +494,12 @@ struct ScoreToolbar: View {
                     Label("Write for another instrument…", systemImage: BrasscribeIcon.parts.systemName)
                 }
                 .accessibilityIdentifier("writeForAnother")
+            } else if model.composition != nil {
+                // How should the score be? again: what its "You can change this later" promises
+                Button { model.stopAll(); app.path.append(.output(model.piece)) } label: {
+                    Label("Band, difficulty and key…", systemImage: BrasscribeIcon.parts.systemName)
+                }
+                .accessibilityIdentifier("changeOutput")
             }
             if !wide {
                 Button { showParts = true } label: { Label("Parts and sound", systemImage: BrasscribeIcon.parts.systemName) }

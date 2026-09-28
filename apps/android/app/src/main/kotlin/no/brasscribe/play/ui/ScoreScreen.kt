@@ -601,7 +601,9 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     when (sheet) {
         Sheet.PARTS -> PartsSheet(st, controller, your.index, sources, onMakeMine = { vm.makeMyPart(st.parts[it].replace('\u00A0', ' ').trim()) },
-            onWriteForAnother = if (r.isSoloTake && vm.container.seats.isNotEmpty()) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null) { sheet = null }
+            // How should the score be? again, from the score: what "You can change this later" promises.
+            onWriteForAnother = if (r.composition != null) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null,
+            outputLabel = if (r.isSoloTake && vm.container.seats.isNotEmpty()) R.string.write_for_another else R.string.change_output) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
             LoopControl(st.totalBars, st.loop, onSet = { a, b ->
@@ -840,7 +842,7 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
 @Composable
 private fun PartsSheet(
     st: ScoreUiState, controller: ScoreController, yours: Int?, sources: Map<String, no.brasscribe.play.model.PartSource>,
-    onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, onDismiss: () -> Unit,
+    onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, outputLabel: Int = R.string.write_for_another, onDismiss: () -> Unit,
 ) {
     val c = BrasscribeTheme.colors
     val large = largeText()
@@ -898,8 +900,8 @@ private fun PartsSheet(
                 }
             }
         }
-        // A solo take: another player's instrument is chosen on How should the score be? (it re-arranges).
-        if (onWriteForAnother != null) OutlineButton(stringResource(R.string.write_for_another), onWriteForAnother)
+        // How should the score be? (it re-arranges): the band, difficulty and key, and for a solo take another player's instrument.
+        if (onWriteForAnother != null) OutlineButton(stringResource(outputLabel), onWriteForAnother, Modifier.semantics { testTag = "change-output" })
     }
 }
 
@@ -908,12 +910,13 @@ private fun PartsSheet(
 private fun SourceLine(source: no.brasscribe.play.model.PartSource) {
     val c = BrasscribeTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
+        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED || source == no.brasscribe.play.model.PartSource.EMPTY) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
             Modifier.size(16.dp), tint = c.textMuted)
         Text(stringResource(when (source) {
             no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
             no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
             no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+            no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
         }), style = MaterialTheme.typography.bodySmall, color = c.textMuted)
     }
 }
@@ -923,6 +926,7 @@ fun sourceWords(source: no.brasscribe.play.model.PartSource): Int = when (source
     no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
     no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
     no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
+    no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
 }
 
 /** A one-line notice that opens its details and can be closed; both targets 48 dp. */

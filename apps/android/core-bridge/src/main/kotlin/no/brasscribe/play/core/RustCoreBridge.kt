@@ -111,7 +111,7 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
 
     private val seatList: List<Seat> by lazy {
         val chromatic = instruments().associate { it.id to it.chromatic }
-        coreSeats().map { Seat(it.id, it.name, it.nbName, it.instrument, it.clef, it.reads, chromatic[it.instrument] ?: 0) }
+        coreSeats().map { Seat(it.id, it.name, it.nbName, it.instrument, it.clef, it.reads, chromatic[it.instrument] ?: 0, it.tune) }
     }
 
     override fun seatPart(lineup: String, seat: String): SeatPart? = runCatching {

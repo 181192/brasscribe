@@ -88,6 +88,19 @@ public partial class LocalizationTests
         Assert.Equal("Missing_Key", s["Missing_Key"]);
     }
 
+    [Fact]
+    public void Mute_is_one_plain_verb_in_norwegian()
+    {
+        // «Lyd av min stemme» read as "the sound of my part"; «Demp» says what the toggle does.
+        var nb = Load("nb-NO");
+        var en = Load("en-US");
+        Assert.Equal(("Mute my part", "Demp stemmen min"), (en["MuteMyPartLabel.Text"], nb["MuteMyPartLabel.Text"]));
+        Assert.Equal(("Mute", "Demp"), (en["MixerMuteLabel.Text"], nb["MixerMuteLabel.Text"]));
+        Assert.Equal("Demp {0}", nb["Mixer_Mute"]);
+        Assert.DoesNotContain(nb.Values, v => v.Contains("Lyd av", StringComparison.OrdinalIgnoreCase)
+            || v.Contains("uten lyd", StringComparison.OrdinalIgnoreCase) || v.Contains("av lyden", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static List<int> Placeholders(string s) =>
         PlaceholderRegex().Matches(s).Select(m => int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)).Distinct().Order().ToList();
 

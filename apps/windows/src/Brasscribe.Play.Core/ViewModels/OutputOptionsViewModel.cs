@@ -39,6 +39,35 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
 
     public bool QuartetAvailable => !IsSoloTake;
 
+    /// <summary>
+    /// A whole-band recording (brass band, pop or rock): it is arranged for the small band or the
+    /// quartet only, so the full-band card is dimmed with the reason and a full band goes to the small band.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FullAvailable), nameof(FullDescription), nameof(FullHelpText), nameof(AppliedLineup))]
+    public partial bool IsBandTake { get; set; }
+
+    partial void OnIsBandTakeChanged(bool value)
+    {
+        if (value && Lineup == Lineup.FullBand) (Lineup, _fullPutBack) = (Lineup.MinimalBand, true);
+        else if (!value && _fullPutBack && Lineup == Lineup.MinimalBand) Lineup = Lineup.FullBand;
+        if (!value) _fullPutBack = false;
+    }
+
+    /// <summary>The full band was moved to the small band for a band take (not chosen), so the next take gets it back.</summary>
+    private bool _fullPutBack;
+
+    public bool FullAvailable => !IsBandTake;
+
+    /// <summary>The full-band card's second line: what it is, or why it can't be chosen.</summary>
+    public string FullDescription => IsBandTake ? s["Output_FullNotYet"] : s["Output_FullBody"];
+
+    /// <summary>The reason for screen readers when the card can't be chosen; empty otherwise.</summary>
+    public string FullHelpText => IsBandTake ? s["Output_FullNotYet"] : "";
+
+    /// <summary>The lineup the arranger makes for <paramref name="lineup"/>: a band take never gets the full band.</summary>
+    public Lineup Made(Lineup lineup) => IsBandTake && lineup == Lineup.FullBand ? Lineup.MinimalBand : lineup;
+
     /// <summary>The quartet card's second line: what it is, or why it can't be chosen.</summary>
     public string QuartetDescription => IsSoloTake ? s["Output_QuartetNeedsGroup"] : s["Output_QuartetBody"];
 
@@ -56,6 +85,12 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
             announcer.Announce(s["Output_QuartetNeedsGroup"], AnnouncementKind.Important);
             return false;
         }
+        if (lineup == Lineup.FullBand && !FullAvailable)
+        {
+            announcer.Announce(s["Output_FullNotYet"], AnnouncementKind.Important);
+            return false;
+        }
+        _fullPutBack = false;
         Lineup = lineup;
         return true;
     }
@@ -129,7 +164,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     public ArrangementOptions Applied { get; set; } = ArrangementOptions.Default;
 
     /// <summary>The lineup of the score being shown (what <see cref="Applied"/> says).</summary>
-    public Lineup AppliedLineup => Lineups.Parse(Applied.Lineup) ?? Lineup.FullBand;
+    public Lineup AppliedLineup => Made(Lineups.Parse(Applied.Lineup) ?? Lineup.FullBand);
 
     /// <summary>
     /// A score was opened from "Your scores": the choices follow what it was arranged with, so
@@ -139,7 +174,8 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     {
         var chosen = lineup ?? Lineup.FullBand;
         if (chosen == Lineup.Quartet && IsSoloTake) chosen = Lineup.FullBand;
-        Lineup = chosen;
+        Lineup = Made(chosen);
+        _fullPutBack = Lineup != chosen;
         Difficulty = difficulty switch { "standard" => Difficulty.Standard, "easier" => Difficulty.Easier, _ => Difficulty.Faithful };
         KeyIndex = 0;
         Applied = Options;
@@ -229,7 +265,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         }
         catch (CoreBridgeException e)
         {
-            StatusText = s.Format("Output_Failed", e.Message);
+            StatusText = EngineErrors.CoreMessage(e.Message, s);
             announcer.Announce(StatusText, AnnouncementKind.Important);
         }
     }
@@ -261,7 +297,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         }
         catch (CoreBridgeException e)
         {
-            StatusText = s.Format("Output_Failed", e.Message);
+            StatusText = EngineErrors.CoreMessage(e.Message, s);
             announcer.Announce(StatusText, AnnouncementKind.Important);
         }
         return true;

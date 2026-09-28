@@ -14,6 +14,9 @@ struct SourceView: View {
     @State private var duration: String?
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// A drummer's solo take is no drum part: One instrument is refused for the percussion seat.
+    private var drummer: Bool { Seats.isPercussion(app.seat) }
+
     private var wide: Bool {
         #if os(macOS)
         true
@@ -41,6 +44,14 @@ struct SourceView: View {
                 .accessibilityLabel(Text("What is this?"))
                 Text("Not sure? Choose Brass band.")
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                if drummer {
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: Seats.percussionSoloRefused)
+                        Button { app.showSettings = true } label: { Text("Change what I play") }
+                            .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+                    }
+                    .accessibilityIdentifier("percussionSolo")
+                }
 
                 whereItRuns
                 if PageActions.followContent { actionButtons.padding(.top, Space.s2).layoutProbe("pageActions") }
@@ -67,11 +78,12 @@ struct SourceView: View {
 
     private func choice(_ p: SourceProfile) -> some View {
         let on = profile == p
-        return Button { profile = p } label: {
+        let refused = drummer && p == .solo
+        return Button { if !refused { profile = p } } label: {
             HStack(alignment: .top, spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(p.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(p.detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(refused ? String(localized: "Not for percussion yet") : p.detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.s2)
@@ -130,10 +142,10 @@ struct SourceView: View {
 
     private var actionButtons: some View {
         let cont = Button {
-            guard let profile else { return }
+            guard let profile, !(drummer && profile == .solo) else { return }
             app.startTranscription(source, profile: profile, output: output)
         } label: { Text("Continue") }
-            .disabled(profile == nil)
+            .disabled(profile == nil || (drummer && profile == .solo))
             .accessibilityIdentifier("transcribe")
             .accessibilityHint(profile == nil ? Text("Choose one to continue.") : Text(""))
         return VStack(alignment: wide ? .trailing : .center, spacing: Space.s2) {
@@ -331,7 +343,7 @@ struct TranscribeView: View {
     private func failed(_ job: TranscriptionJob, reason: String) -> some View {
         ProblemContent(title: String(localized: "The score couldn't be made"),
                        lead: nil,
-                       reasons: [String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
+                       reasons: [job.failureWords ?? String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
                        hint: nil, detail: reason) {
             let full = !PageActions.followContent
             if PageActions.followContent {

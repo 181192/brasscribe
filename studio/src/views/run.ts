@@ -88,6 +88,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         h("dt", {}, t("runs.profile")), h("dd", {}, job.profile),
         m?.git ? [h("dt", {}, "Git"), h("dd", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7), m.git.dirty ? t("run.dirty") : "")] : null,
         m?.devices?.length ? [h("dt", {}, t("manifest.kv.devices")), h("dd", {}, m.devices.join(", "))] : null,
+        lineupRow(job.profile, m?.params),
         seatRows(m?.params),
         h("dt", {}, t("run.kv.created")), h("dd", {}, fmt.date(job.created)))));
     // Built on demand: the same links also sit in More on narrow screens, and a node lives in one place only.
@@ -271,6 +272,22 @@ export function seatRows(params: Record<string, unknown> | undefined): HTMLEleme
   if (p.reads === "treble" || p.reads === "bass") rows.push(h("dt", {}, t("run.kv.reads")), h("dd", {}, t(`run.reads.${p.reads}`)));
   if (p.lead === "seat") rows.push(h("dt", {}, t("run.kv.lead")), h("dd", {}, t("run.lead.seat")));
   return rows;
+}
+
+/**
+ * The band the job's score is made for, as the engine arranges it: a brass-band or pop recording is
+ * always the small band or the quartet (only the layered arranger writes the full band), a solo take
+ * for a seat is that one part.
+ */
+export function madeLineup(profile: string, params: Record<string, unknown> | undefined): "full" | "minimal" | "quartet" | "one" {
+  const p = params ?? {};
+  if (profile === "brass-band" || profile === "pop-rock") return p.lineup === "quartet" ? "quartet" : "minimal";
+  if (profile === "solo") return typeof p.seat === "string" ? "one" : "minimal";
+  return p.lineup === "minimal" || p.lineup === "quartet" ? p.lineup : "full";
+}
+
+export function lineupRow(profile: string, params: Record<string, unknown> | undefined): HTMLElement[] {
+  return [h("dt", {}, t("run.kv.lineup")), h("dd", {}, t(`run.lineup.${madeLineup(profile, params)}`))];
 }
 
 /** A seat id as its band part name ("1st-baritone" -> "1st Baritone"; "eb-bass" -> "E♭ Bass"). */

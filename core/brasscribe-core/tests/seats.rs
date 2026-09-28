@@ -25,8 +25,9 @@ const TABLE: [(&str, Option<&str>, Option<&str>, Option<&str>); 18] = [
     ("percussion", Some("Percussion"), None, None),
 ];
 
-const OTHER_KEY: [(&str, &str); 5] =
-    [("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("bass-trombone", "minimal"), ("bass-trombone", "quartet"), ("eb-bass", "quartet")];
+/// (seat, lineup) in a different key as the player reads by default. The bass trombone reads bass clef
+/// at concert pitch, and so do its mapped parts.
+const OTHER_KEY: [(&str, &str); 3] = [("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("eb-bass", "quartet")];
 
 #[test]
 fn seats_are_the_contest_band() {
@@ -60,6 +61,45 @@ fn seat_part_table() {
     }
     assert!(seat_part("band", "tuba").is_err());
     assert!(seat_part("orchestra", "euphonium").is_err());
+}
+
+/// With no `reads`, the seat's part in every lineup is written in the seat's own first clef, and a
+/// bass-clef part at concert pitch: the bass trombonist gets E♭ Bass and Euphonium in bass clef.
+#[test]
+fn default_reading_in_every_lineup() {
+    use brasscribe_core::instruments::{seat_by_id, with_reading, Clef};
+    for s in &SEATS {
+        for lineup in ["band", "minimal", "quartet"] {
+            let Some(part) = seat_part(lineup, s.id).unwrap().part else { continue };
+            let l = with_reading(lineup_by_name(lineup).unwrap(), seat_by_id(s.id).unwrap(), Some(part), None);
+            let inst = l.by_name(part).instrument;
+            match s.default_reading() {
+                Some("bass") => assert!(inst.clef == Clef::Bass && inst.chromatic == 0, "{} in {lineup}: {part}", s.id),
+                Some("treble") => assert_eq!(inst.clef, Clef::Treble, "{} in {lineup}: {part}", s.id),
+                other => assert_eq!(other, None, "{}", s.id),
+            }
+            // An explicit reading still wins.
+            if s.reads.contains(&"bass") {
+                let l = with_reading(lineup_by_name(lineup).unwrap(), seat_by_id(s.id).unwrap(), Some(part), Some("bass"));
+                assert_eq!((l.by_name(part).instrument.clef, l.by_name(part).instrument.chromatic), (Clef::Bass, 0));
+            }
+        }
+    }
+    let bt = seat_by_id("bass-trombone").unwrap();
+    for (lineup, part) in [("minimal", "E♭ Bass"), ("quartet", "Euphonium")] {
+        let l = with_reading(lineup_by_name(lineup).unwrap(), bt, Some(part), None);
+        assert_eq!((l.by_name(part).instrument.clef, l.by_name(part).instrument.chromatic), (Clef::Bass, 0), "{lineup}");
+        // The other parts keep their own clef and key.
+        assert_eq!(l.parts.iter().filter(|p| p.name != part).map(|p| p.instrument).collect::<Vec<_>>(),
+                   lineup_by_name(lineup).unwrap().parts.iter().filter(|p| p.name != part).map(|p| p.instrument).collect::<Vec<_>>());
+    }
+}
+
+#[test]
+fn percussion_has_no_solo_take() {
+    use brasscribe_core::instruments::{seat_lineup, PERCUSSION_SOLO};
+    assert_eq!(seat_lineup("percussion", None).unwrap_err(), PERCUSSION_SOLO);
+    assert!(SEATS.iter().filter(|s| !s.reads.is_empty()).all(|s| seat_lineup(s.id, None).is_ok()));
 }
 
 #[test]

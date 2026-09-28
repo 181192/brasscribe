@@ -17,6 +17,15 @@ enum SeatChoice: Equatable, Sendable {
 
     static let seatKey = "seat", readsKey = "seatReads"
 
+    /// One string for a piece to keep (`parse` reads it back): "" not set, "none" conductor, "id[:reads]".
+    var encoded: String {
+        switch self {
+        case .notSet: return ""
+        case .conductor: return "none"
+        case .seat(let id, let reads): return reads.map { "\(id):\($0)" } ?? id
+        }
+    }
+
     /// The saved answer. `-seat <id>[:bass]` and `-seat none` set it for tests and screenshots.
     static var stored: SeatChoice {
         if let i = LaunchOptions.args.firstIndex(of: "-seat"), i + 1 < LaunchOptions.args.count {
@@ -227,6 +236,18 @@ enum Seats {
         }
     }
 
+    /// The clef the player reads: `reads` when they chose one, else the seat's own first, as the core
+    /// writes it. The bass trombone reads bass clef at concert pitch with nothing stored.
+    static func reading(_ reads: String?, seat: SeatInfo?) -> String? { reads ?? seat?.reads.first }
+
+    /// The seat is percussion (no clef to read): a solo take can't be written for it, since the pitch
+    /// trackers' notes from a drummer's take are no drum part.
+    static func isPercussion(_ choice: SeatChoice) -> Bool { choice.id.flatMap { info($0) }?.reads.isEmpty == true }
+
+    static var percussionSoloRefused: String {
+        String(localized: "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.")
+    }
+
     /// Can the seat carry the tune ("Who plays the tune?")? The core says (melody or solo roles).
     static func canCarryTune(_ s: SeatInfo) -> Bool { s.tune }
 }
@@ -237,12 +258,15 @@ enum PartSourceKind: String, Sendable {
     case yourRecording = "your-recording"
     case recording
     case arranged
+    /// Nothing to play in this arrangement (Percussion without drums, the Soprano Cornet with no climax).
+    case empty
 
     var title: String {
         switch self {
         case .yourRecording: return String(localized: "From your recording")
         case .recording: return String(localized: "From the recording")
         case .arranged: return String(localized: "Arranged from the band's harmony")
+        case .empty: return String(localized: "Nothing to play in this arrangement")
         }
     }
 
@@ -251,11 +275,12 @@ enum PartSourceKind: String, Sendable {
         switch self {
         case .yourRecording, .recording: return String(localized: "Brasscribe wrote down the notes it heard for this part.")
         case .arranged: return String(localized: "Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.")
+        case .empty: return String(localized: "Nothing in the recording gave this part any notes, so it is left empty.")
         }
     }
 
     /// Record-mic for what was heard, parts for what was arranged.
-    var icon: BrasscribeIcon { self == .arranged ? .parts : .recordMic }
+    var icon: BrasscribeIcon { self == .arranged || self == .empty ? .parts : .recordMic }
 
     /// Part name → source, for a score's composition. The composition's own record of how it was
     /// arranged is not kept on the device, so the piece's choice (lineup, seat, reading, lead) is

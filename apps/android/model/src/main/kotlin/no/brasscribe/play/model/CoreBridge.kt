@@ -48,16 +48,25 @@ data class Seat(
     val reads: List<String>,
     /** Sounding minus written, semitones, of the part's instrument. */
     val chromatic: Int,
-    /** The seat can carry the tune ("Who plays the tune?" offers it). */
-    val tune: Boolean = reads.isNotEmpty(),
+    /** The seat can carry the tune ("Who plays the tune?" offers it): the core's `tune`. */
+    val tune: Boolean,
 )
+
+/**
+ * The clef the player reads: [reads] when they chose one, else the seat's own first, as the core writes
+ * it (with_reading). The bass trombone reads bass clef at concert pitch with nothing stored.
+ */
+fun Seat.reading(reads: String?): String? = reads ?: this.reads.firstOrNull()
 
 /** The player's part in a lineup for their seat: [part] null when the lineup has none. */
 data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean)
 
 /** Where a part comes from, as the core derives it from the arrangement. */
 enum class PartSource(val id: String) {
-    YOUR_RECORDING("your-recording"), RECORDING("recording"), ARRANGED("arranged");
+    YOUR_RECORDING("your-recording"), RECORDING("recording"), ARRANGED("arranged"),
+
+    /** Nothing to play in this arrangement (Percussion without drums, the Soprano Cornet with no climax). */
+    EMPTY("empty");
 
     companion object {
         fun of(id: String): PartSource? = entries.firstOrNull { it.id == id }

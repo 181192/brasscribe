@@ -912,6 +912,29 @@ pub const YOUR_RECORDING: &str = "your-recording";
 pub const RECORDING: &str = "recording";
 /// Voiced from the harmony, or doubling the tune.
 pub const ARRANGED: &str = "arranged";
+/// Nothing to play in this arrangement: the Percussion part of a recording without drums, the
+/// Soprano Cornet when it has no climax to double (always in faithful mode). No footer.
+pub const EMPTY: &str = "empty";
+
+/// The parts of a layered band arrangement that the arranger leaves without notes (see [`EMPTY`]).
+fn empty_parts(comp: &Composition, lineup: &Lineup) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    if lineup.satb || lineup.as_played {
+        return out;
+    }
+    if lineup.has("Percussion") && !has_notes(comp, &["drums"]) {
+        out.push("Percussion");
+    }
+    let difficulty = arrangement_opt(comp, "difficulty").unwrap_or_else(|| "faithful".into());
+    let spans = climax_spans(comp);
+    let doubles = difficulty != "faithful"
+        && BAND_LEADS.contains(&lineup.lead)
+        && layer(comp, "solo").iter().any(|n| spans.iter().any(|(a, b)| *a <= n.start && n.start < *b));
+    if lineup.has("Soprano Cornet") && !doubles {
+        out.push("Soprano Cornet");
+    }
+    out
+}
 
 fn arrangement_opt(comp: &Composition, key: &str) -> Option<String> {
     comp.arrangement.as_ref().and_then(|a| a.get(key)).and_then(|v| v.as_str()).map(String::from)
@@ -941,8 +964,8 @@ pub fn composition_lineup(comp: &Composition) -> (Lineup, bool) {
             Err(_) => ("band", brass_band()),
         }
     };
-    let l = match seat.as_deref().and_then(|s| crate::instruments::seat_part(key, s).ok()) {
-        Some(sp) => crate::instruments::with_reading(l, sp.part, reads.as_deref()),
+    let l = match seat.as_deref().and_then(|s| Some((crate::instruments::seat_by_id(s).ok()?, crate::instruments::seat_part(key, s).ok()?))) {
+        Some((s, sp)) => crate::instruments::with_reading(l, s, sp.part, reads.as_deref()),
         None => l,
     };
     let l = match seat.as_deref().filter(|_| arrangement_opt(comp, "lead").as_deref() == Some("seat")) {
@@ -988,7 +1011,7 @@ pub fn part_footers(comp: &Composition, lang: &str) -> Vec<(String, String)> {
 /// which layers have notes. `your-recording`: a solo take's line; `recording`: a line heard in the
 /// recording (the tune, the bass line and its doublings, the countermelody from the strings' top
 /// line, the drums); `arranged`: everything voiced from the harmony, and the Soprano Cornet's
-/// doubling of the tune.
+/// doubling of the tune; `empty`: a part left without notes (no drums, no climax to double).
 pub fn part_sources(comp: &Composition) -> Vec<(String, &'static str)> {
     let (lineup, layered) = composition_lineup(comp);
     let mut heard: Vec<&str> = Vec::new();
@@ -1020,5 +1043,19 @@ pub fn part_sources(comp: &Composition) -> Vec<(String, &'static str)> {
             heard.push("Percussion");
         }
     }
-    lineup.parts.iter().map(|p| (p.name.to_string(), if heard.contains(&p.name) { RECORDING } else { ARRANGED })).collect()
+    let empty = if layered { empty_parts(comp, &lineup) } else { Vec::new() };
+    lineup
+        .parts
+        .iter()
+        .map(|p| {
+            let s = if heard.contains(&p.name) {
+                RECORDING
+            } else if empty.contains(&p.name) {
+                EMPTY
+            } else {
+                ARRANGED
+            };
+            (p.name.to_string(), s)
+        })
+        .collect()
 }

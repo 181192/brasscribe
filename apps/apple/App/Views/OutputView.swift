@@ -15,6 +15,8 @@ struct OutputView: View {
     @State private var recordedFifths: Int?
     /// A quartet needs harmony: false for a solo take, which has one line and nothing for the other parts.
     @State private var quartetPossible = true
+    /// The full band is written only for a take with layers: not for a Brass band or Pop or rock recording.
+    @State private var fullBandPossible = true
     @State private var busy = false
     @State private var failure: String?
     /// Who played a solo take (a seat id), or whose part a band take is for: the score's seat, else yours.
@@ -97,12 +99,13 @@ struct OutputView: View {
         #endif
         .task {
             let chosen = piece.output ?? OutputChoice()
-            lineup = chosen.lineup
+            let comp = piece.loadComposition()
+            fullBandPossible = piece.fullBandPossible(comp)
+            lineup = chosen.lineup == .fullBand && !fullBandPossible ? .minimalBand : chosen.lineup
             difficulty = chosen.difficulty
             seatID = chosen.seat ?? app.seat.id
             reads = chosen.seat != nil ? chosen.reads : app.seat.reads
             tuneOnMine = chosen.lead == "seat" && !isSolo
-            let comp = piece.loadComposition()
             hasSoloist = piece.profile == .orchestraWithSoloist
                 || (comp?.voices.contains { $0.layer == "solo" && !$0.notes.isEmpty } == true
                     && comp?.voices.contains { $0.layer != "solo" && !$0.notes.isEmpty } == true)
@@ -136,7 +139,11 @@ struct OutputView: View {
         } else {
             VStack(alignment: .leading, spacing: Space.s3) {
                 Text("Which band?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
-                radio(String(localized: "Full brass band"), withPart(String(localized: "About 25 players"), .fullBand), lineup == .fullBand) { lineup = .fullBand }
+                // Unavailable for a whole-band recording: only the small band or the quartet is made from it.
+                radio(String(localized: "Full brass band"),
+                      fullBandPossible ? withPart(String(localized: "About 25 players"), .fullBand) : String(localized: "Not yet for whole-band recordings"),
+                      lineup == .fullBand, available: fullBandPossible) { if fullBandPossible { lineup = .fullBand } }
+                    .accessibilityIdentifier("lineup-full")
                 radio(String(localized: "Small band"), withPart(String(localized: "10–15 players, parts doubled up"), .minimalBand), lineup == .minimalBand) { lineup = .minimalBand }
                 // Unavailable for a solo take: it stays reachable (VoiceOver reads the reason) and does nothing.
                 radio(String(localized: "Quartet"),
@@ -256,7 +263,8 @@ struct OutputView: View {
         func wrap(_ x: Int) -> Int { var v = x; while v > 6 { v -= 12 }; while v < -6 { v += 12 }; return v }
         if let part = yourPart(isSolo ? .fullBand : lineup) {
             let shift = Seats.partWrittenShift(part)
-            if reads == "bass" || shift == 0 { return String(localized: "\(KeyNames.name(fifths: f)), as it sounds") }
+            // with nothing chosen the seat's own first clef: the bass trombone reads bass clef, as it sounds
+            if Seats.reading(reads, seat: seat) == "bass" || shift == 0 { return String(localized: "\(KeyNames.name(fifths: f)), as it sounds") }
             return String(localized: "\(KeyNames.name(fifths: wrap(f + shift))) on your part")
         }
         return String(localized: "\(KeyNames.name(fifths: wrap(f + 2))) for B♭ · \(KeyNames.name(fifths: wrap(f + 3))) for E♭ instruments")
@@ -338,7 +346,7 @@ struct OutputView: View {
         do {
             try app.rearrange(piece, composition: comp, output: choice)
         } catch {
-            failure = String(localized: "The score couldn't be arranged this way. Try another choice.")
+            failure = ErrorWords.specific(error) ?? String(localized: "The score couldn't be arranged this way. Try another choice.")
         }
     }
 }

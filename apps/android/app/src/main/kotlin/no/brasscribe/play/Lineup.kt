@@ -44,21 +44,28 @@ enum class Lineup(@StringRes val label: Int, @StringRes val desc: Int, val engin
     }
 }
 
+/**
+ * Only the layered arranger writes the full band. A take without layers (a Brass band or Pop or rock
+ * recording) is arranged for the small band or the quartet, so Full brass band is not offered for it.
+ */
+val Composition.fullBandMade: Boolean get() = voices.any { it.layer != null }
+
+/** This lineup as it is made for a take: the full band becomes the small band where it can't be written. */
+fun Lineup.madeFor(fullBand: Boolean): Lineup = if (this == Lineup.FULL && !fullBand) Lineup.MINIMAL else this
+
 /** A text option of the recorded arrangement ("lineup", "difficulty"), or null. */
 fun TranscriptionResult.arrangementText(key: String): String? =
     (composition?.arrangement?.get(key) as? JsonPrimitive)?.contentOrNull
 
 /**
  * This Composition with the lineup, difficulty and seat it was just arranged with recorded, as the core
- * records them. A take without layers gets the small band for the full band (only the layered arranger
- * writes it). The seat's options are kept so where each part came from stays known after an edit;
+ * records them. [lineup] is the one made (see [madeFor]): the Output screen never offers the full band
+ * for a take without layers. The seat's options are kept so where each part came from stays known after an edit;
  * [soloTake] records the tune on the seat, as a solo take with a seat always has it.
  */
 fun Composition.arrangedFor(
     lineup: Lineup, difficulty: String, seat: String? = null, reads: String? = null, lead: String? = null, soloTake: Boolean = false,
 ): Composition {
-    val layered = voices.any { it.layer != null }
-    val made = if (!layered && lineup == Lineup.FULL) Lineup.MINIMAL else lineup
     val base = arrangement.orEmpty() - listOf("seat", "reads", "lead")
     val seatOptions = buildMap {
         if (seat != null) {
@@ -67,7 +74,7 @@ fun Composition.arrangedFor(
             if (soloTake || lead == "seat") put("lead", JsonPrimitive("seat"))
         }
     }
-    return copy(arrangement = JsonObject(base + mapOf("lineup" to JsonPrimitive(made.core), "difficulty" to JsonPrimitive(difficulty)) + seatOptions))
+    return copy(arrangement = JsonObject(base + mapOf("lineup" to JsonPrimitive(lineup.core), "difficulty" to JsonPrimitive(difficulty)) + seatOptions))
 }
 
 /** Index of the part a player most likely wants first: the lineup's lead, else any known lead, else the first part. */

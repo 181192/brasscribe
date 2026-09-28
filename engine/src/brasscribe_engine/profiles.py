@@ -37,8 +37,44 @@ ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None,
                         "seat": None, "reads": None, "lead": "lineup"}
 LINEUPS = ("full", "minimal", "quartet")
 DIFFICULTIES = ("faithful", "standard", "easier")
+# Profiles whose recording is arranged without layers (arrange_song): the small band or the quartet only.
+# "full" (the apps' default) is made as the small band there, so it is checked as the small band too.
+BAND_TAKE_PROFILES = ("brass-band", "pop-rock")
+
+
+def made_lineup(profile: str, lineup: str | None) -> str:
+    """The lineup a job of `profile` asking for `lineup` is actually arranged for."""
+    if profile in BAND_TAKE_PROFILES:
+        return "quartet" if lineup == "quartet" else "minimal"
+    return lineup or ("minimal" if profile == "solo" else "full")
+
+
 # A solo take has one line and nothing for the other three quartet parts to play.
 QUARTET_NEEDS_GROUP = "a quartet needs a recording of the whole group: a solo take has no harmony for the other parts"
+
+
+class OptionError(ValueError):
+    """A job option the engine refuses, with a stable `code` the apps map to their own words (the
+    message is English, for logs and Studio). A 422 carries both: {"code": code, "detail": message},
+    the code first, so a client that reads only the start of the body still has it."""
+
+    def __init__(self, message: str, code: str):
+        super().__init__(message)
+        self.code = code
+
+
+# The codes of OptionError: the refusals a player can meet, and the rest.
+QUARTET_NEEDS_GROUP_CODE = "quartet_needs_group"  # a solo take asked for the quartet
+PERCUSSION_SOLO_CODE = "percussion_solo"  # a solo take for the percussion seat
+SEAT_NO_TUNE_CODE = "seat_no_tune"  # lead=seat where the seat's part cannot carry the tune
+READS_NOT_OFFERED_CODE = "reads_not_offered"  # a clef the seat is not offered in
+INVALID_OPTIONS_CODE = "invalid_options"  # anything else wrong with the options
+OPTION_ERROR_CODES = (QUARTET_NEEDS_GROUP_CODE, PERCUSSION_SOLO_CODE, SEAT_NO_TUNE_CODE, READS_NOT_OFFERED_CODE,
+                      INVALID_OPTIONS_CODE)
+
+
+def option_error_code(e: ValueError) -> str:
+    return getattr(e, "code", INVALID_OPTIONS_CODE)
 
 
 def arrangement_options(params: dict) -> dict:
@@ -67,7 +103,11 @@ def _check_seat(opts: dict) -> None:
     seat = opts.get("seat")
     if seat is not None and seat not in SEAT_IDS:
         raise ValueError(f"seat must be one of {', '.join(SEAT_IDS)}")
-    check_reads(seat, opts.get("reads"))
+    try:
+        check_reads(seat, opts.get("reads"))
+    except ValueError as e:
+        raise OptionError(str(e), READS_NOT_OFFERED_CODE if seat is not None and opts.get("reads") in ("treble", "bass")
+                          else INVALID_OPTIONS_CODE) from e
     if opts.get("lead") not in (None, *LEADS):
         raise ValueError(f"lead must be one of {', '.join(LEADS)}")
     if opts.get("lead") == "seat" and seat is None:
@@ -77,14 +117,19 @@ def _check_seat(opts: dict) -> None:
 def job_options(profile: str, params: dict) -> dict:
     """arrangement_options, plus what the profile cannot do (the solo profile has no quartet; the tune moves to
     the seat's part in the band lineups only)."""
-    from brasscribe_music.instruments import lead_lineup, lineup_by_name
+    from brasscribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
-        raise ValueError(QUARTET_NEEDS_GROUP)
+        raise OptionError(QUARTET_NEEDS_GROUP, QUARTET_NEEDS_GROUP_CODE)
+    if profile == "solo" and opts.get("seat") and not seat_by_id(opts["seat"]).reads:
+        raise OptionError(PERCUSSION_SOLO, PERCUSSION_SOLO_CODE)
     if profile != "solo" and opts.get("lead") == "seat":
-        lineup = params.get("lineup") or ("minimal" if profile in ("brass-band", "pop-rock") else "full")
-        lead_lineup(lineup_by_name(lineup), opts["seat"])
+        lineup = made_lineup(profile, params.get("lineup"))
+        try:
+            lead_lineup(lineup_by_name(lineup), opts["seat"])
+        except ValueError as e:
+            raise OptionError(str(e), QUARTET_NEEDS_GROUP_CODE if lineup == "quartet" else SEAT_NO_TUNE_CODE) from e
     return opts
 
 
@@ -193,6 +238,10 @@ def solo(title: str, params: dict) -> Pipeline:
     """
     if params.get("lineup") == "quartet":
         raise ValueError(QUARTET_NEEDS_GROUP)
+    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_by_id
+
+    if params.get("seat") and not seat_by_id(params["seat"]).reads:
+        raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
     st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
                 outputs=("mix.beats",), reuse_subdir=".")]
