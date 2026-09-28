@@ -624,7 +624,7 @@
     <string name="written_for_bass">Skrevet for %1$s, F-nøkkel, klingende</string>
     <string name="lineup_your_part">%1$s · stemmen din: %2$s</string>
     <string name="engine_too_old_seat">Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
-    <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet.</string>
+    <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?</string>
     <string name="mapped_short_minimal">Det lille bandet har ingen %1$s — viser %2$s</string>
     <string name="mapped_short_quartet">Kvartetten har ingen %1$s — viser %2$s</string>
     <string name="mapped_short_none_minimal">Det lille bandet har ingen slagverkstemme — viser alle stemmene</string>

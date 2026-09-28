@@ -626,7 +626,7 @@
     <string name="written_for_bass">Written for %1$s, bass clef, as it sounds</string>
     <string name="lineup_your_part">%1$s · your part: %2$s</string>
     <string name="engine_too_old_seat">Brasscribe on your computer is too old to write for your instrument. Update it to use this.</string>
-    <string name="lead_seat_refused">The tune can\'t go on your part in this band.</string>
+    <string name="lead_seat_refused">The tune can\'t go on your part in this band. Under Who plays the tune?, choose the band\'s usual part.</string>
     <string name="mapped_short_minimal">The small band has no %1$s — showing %2$s</string>
     <string name="mapped_short_quartet">The quartet has no %1$s — showing %2$s</string>
     <string name="mapped_short_none_minimal">The small band has no percussion part — showing every part</string>

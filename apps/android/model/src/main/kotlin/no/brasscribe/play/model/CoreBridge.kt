@@ -48,8 +48,8 @@ data class Seat(
     val reads: List<String>,
     /** Sounding minus written, semitones, of the part's instrument. */
     val chromatic: Int,
-    /** The seat can carry the tune ("Who plays the tune?" offers it). */
-    val tune: Boolean = reads.isNotEmpty(),
+    /** The seat can carry the tune ("Who plays the tune?" offers it): the core's `tune`. */
+    val tune: Boolean,
 )
 
 /** The player's part in a lineup for their seat: [part] null when the lineup has none. */

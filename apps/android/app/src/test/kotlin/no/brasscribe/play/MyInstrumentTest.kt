@@ -19,11 +19,11 @@ import org.junit.Test
 /** "What do you play?": the stored answer, and "your part" in each lineup (the core's table injected). */
 class MyInstrumentTest {
     private val seats = listOf(
-        Seat("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", listOf("treble"), -2),
-        Seat("1st-baritone", "1st Baritone", "1. baryton", "baritone", "treble", listOf("treble", "bass"), -14),
-        Seat("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", listOf("treble", "bass"), -21),
-        Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0),
-        Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14),
+        Seat("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", listOf("treble"), -2, tune = true),
+        Seat("1st-baritone", "1st Baritone", "1. baryton", "baritone", "treble", listOf("treble", "bass"), -14, tune = false),
+        Seat("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", listOf("treble", "bass"), -21, tune = false),
+        Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0, tune = false),
+        Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14, tune = true),
     )
 
     /** A few rows of the core's table (instruments.rs SEAT_PARTS). */
