@@ -460,7 +460,7 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
             # Anything but a known lineup arranges for the band, as before lineups carried their roles.
             lineup = BRASS_BAND
     if seat:
-        lineup = with_reading(lineup, seat_part(lineup_key(lineup), seat).part, reads)
+        lineup = with_reading(lineup, seat, seat_part(lineup_key(lineup), seat).part, reads)
         if opts.get("lead") == "seat":
             try:
                 lineup = lead_lineup(lineup, seat)

@@ -415,6 +415,11 @@ impl Seat {
 
     /// The seat's part can carry the tune in the band: its instrument has Role::Melody or Solo and it
     /// is not the band's bass line. The seats [`lead_lineup`] accepts for lead "seat".
+    /// The clef the seat's player reads when they have not said: the seat's first; None for percussion.
+    pub fn default_reading(&self) -> Option<&'static str> {
+        self.reads.first().copied()
+    }
+
     pub fn tune(&self) -> bool {
         let band = brass_band();
         self.part != band.bass
@@ -500,8 +505,9 @@ pub fn seat_part(lineup: &str, seat: &str) -> Result<SeatPart, String> {
     Ok(match row[col] {
         None => SeatPart { part: None, exact: false, same_key: false },
         Some(name) => {
-            let mine = s.band_part().instrument;
-            let theirs = lineup_by_name(key)?.by_name(name).instrument;
+            // As the player reads them by default: a bass-clef reader gets the mapped part at concert pitch.
+            let mine = reading_instrument(s.band_part().instrument, s.default_reading());
+            let theirs = reading_instrument(lineup_by_name(key)?.by_name(name).instrument, s.default_reading());
             SeatPart { part: Some(name), exact: name == s.part, same_key: mine.chromatic.rem_euclid(12) == theirs.chromatic.rem_euclid(12) }
         }
     })
@@ -547,8 +553,11 @@ pub fn seat_lineup(seat: &str, reads: Option<&str>) -> Result<Lineup, String> {
     Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true })
 }
 
-/// `lineup` with `part` written the way the player reads (bass clef: at concert pitch).
-pub fn with_reading(mut lineup: Lineup, part: Option<&str>, reads: Option<&str>) -> Lineup {
+/// `lineup` with `part`, the seat's part in it, written the way the player reads (bass clef: at
+/// concert pitch). `reads` None: the seat's own first reading, so a bass trombonist's mapped part is
+/// in bass clef too.
+pub fn with_reading(mut lineup: Lineup, seat: &Seat, part: Option<&str>, reads: Option<&str>) -> Lineup {
+    let reads = reads.or(seat.default_reading());
     if let Some(name) = part {
         for p in lineup.parts.iter_mut().filter(|p| p.name == name) {
             p.instrument = reading_instrument(p.instrument, reads);

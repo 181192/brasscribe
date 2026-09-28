@@ -35,8 +35,8 @@ TABLE = {
     "percussion": ("Percussion", None, None),
 }
 # (seat, lineup) pairs the plan marks as a different key.
-OTHER_KEY = {("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("bass-trombone", "minimal"),
-             ("bass-trombone", "quartet"), ("eb-bass", "quartet")}
+# As the player reads by default: the bass trombone reads bass clef at concert pitch, and so do its mapped parts.
+OTHER_KEY = {("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("eb-bass", "quartet")}
 
 
 def test_seats_are_the_contest_band():
@@ -85,6 +85,38 @@ def test_tune_follows_the_roles():
         except ValueError:
             leads = False
         assert s.tune == leads, s.id
+
+
+@pytest.mark.parametrize("seat", list(TABLE))
+@pytest.mark.parametrize("lineup", ["band", "minimal", "quartet"])
+def test_default_reading_in_every_lineup(seat, lineup):
+    """With no `reads`, the seat's part is written in the seat's own first clef, and a bass-clef part at
+    concert pitch: the bass trombonist gets E♭ Bass and Euphonium in bass clef."""
+    from brasscribe_music.instruments import with_reading
+
+    s, part = seat_by_id(seat), seat_part(lineup, seat).part
+    if part is None or s.default_reading is None:  # percussion: no part, or no clef to read
+        return
+    inst = with_reading(LINEUPS[lineup], seat, part, None).by_name(part).instrument
+    if s.default_reading == "bass":
+        assert (inst.clef, inst.chromatic) == ("bass", 0)
+    else:
+        assert inst.clef == s.default_reading == "treble"
+    if "bass" in s.reads:  # an explicit reading still wins
+        inst = with_reading(LINEUPS[lineup], seat, part, "bass").by_name(part).instrument
+        assert (inst.clef, inst.chromatic) == ("bass", 0)
+
+
+def test_bass_trombone_reads_bass_clef_in_the_small_band_and_quartet():
+    from brasscribe_music.arranger import composition_lineup
+
+    for lineup, part in (("minimal", "E♭ Bass"), ("quartet", "Euphonium")):
+        c = Composition("t", [Voice("melody", VoiceRole.MELODY, [Note(60, 0, 24)])], [Meter(0, 4)], [KeySig(0, 0)])
+        c.arrangement = {"lineup": lineup, "difficulty": "faithful", "transpose_semitones": 0, "seat": "bass-trombone"}
+        lu, _ = composition_lineup(c)
+        inst = lu.by_name(part).instrument
+        assert (inst.clef, inst.chromatic) == ("bass", 0), lineup
+        assert [p for p in lu.parts if p.name != part] == [p for p in LINEUPS[lineup].parts if p.name != part]
 
 
 def test_seat_errors():

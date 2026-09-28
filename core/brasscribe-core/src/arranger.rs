@@ -941,8 +941,8 @@ pub fn composition_lineup(comp: &Composition) -> (Lineup, bool) {
             Err(_) => ("band", brass_band()),
         }
     };
-    let l = match seat.as_deref().and_then(|s| crate::instruments::seat_part(key, s).ok()) {
-        Some(sp) => crate::instruments::with_reading(l, sp.part, reads.as_deref()),
+    let l = match seat.as_deref().and_then(|s| Some((crate::instruments::seat_by_id(s).ok()?, crate::instruments::seat_part(key, s).ok()?))) {
+        Some((s, sp)) => crate::instruments::with_reading(l, s, sp.part, reads.as_deref()),
         None => l,
     };
     let l = match seat.as_deref().filter(|_| arrangement_opt(comp, "lead").as_deref() == Some("seat")) {

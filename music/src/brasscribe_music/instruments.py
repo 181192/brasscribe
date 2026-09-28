@@ -284,6 +284,11 @@ class Seat:
         return BRASS_BAND.by_name(self.part)
 
     @property
+    def default_reading(self) -> str | None:
+        """The clef the seat's player reads when they have not said: the seat's first; None for percussion."""
+        return self.reads[0] if self.reads else None
+
+    @property
     def tune(self) -> bool:
         """The seat's part can carry the tune in the band: its instrument has Role.MELODY or SOLO and it
         is not the band's bass line. The seats `lead_lineup` accepts for lead="seat"."""
@@ -364,7 +369,9 @@ def seat_part(lineup: str | None, seat: str) -> SeatPart:
     name = SEAT_PARTS[s.id][_SEAT_COLUMN[key]]
     if name is None:
         return SeatPart(None, False, False)
-    mine, theirs = s.band_part.instrument, LINEUPS[key].by_name(name).instrument
+    # As the player reads them by default: a bass-clef reader gets the mapped part at concert pitch.
+    mine = reading_instrument(s.band_part.instrument, s.default_reading)
+    theirs = reading_instrument(LINEUPS[key].by_name(name).instrument, s.default_reading)
     return SeatPart(name, name == s.part, mine.chromatic % 12 == theirs.chromatic % 12)
 
 
@@ -396,8 +403,11 @@ def seat_lineup(seat: str, reads: str | None = None) -> Lineup:
     return Lineup(part.name, [part], lead=part.name, bass=part.name, second_bass=None, as_played=True)
 
 
-def with_reading(lineup: Lineup, part: str | None, reads: str | None) -> Lineup:
-    """`lineup` with `part` written the way the player reads (bass clef: at concert pitch)."""
+def with_reading(lineup: Lineup, seat: str, part: str | None, reads: str | None) -> Lineup:
+    """`lineup` with `part`, the seat's part in it, written the way the player reads (bass clef: at
+    concert pitch). `reads` None: the seat's own first reading, so a bass trombonist's mapped part is
+    in bass clef too."""
+    reads = reads or seat_by_id(seat).default_reading
     if part is None or reads is None or not lineup.has(part):
         return lineup
     inst = lineup.by_name(part).instrument
