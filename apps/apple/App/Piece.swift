@@ -27,6 +27,10 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     var toCheck: Int?
 
     static var libraryURL: URL {
+        // unit tests keep their scores out of the user's library
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return FileManager.default.temporaryDirectory.appending(path: "BrasscribeTests/Pieces", directoryHint: .isDirectory)
+        }
         let base = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
             ?? FileManager.default.temporaryDirectory
         return base.appending(path: "Brasscribe/Pieces", directoryHint: .isDirectory)

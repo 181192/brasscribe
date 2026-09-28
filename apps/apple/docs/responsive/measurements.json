@@ -1,0 +1,1593 @@
+[
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          583,
+          16
+        ],
+        "file" : "home-empty-min",
+        "screen" : "home-empty",
+        "size" : "min",
+        "window" : [
+          583,
+          68
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "home-empty-900x600",
+        "screen" : "home-empty",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "home-empty-1024x700",
+        "screen" : "home-empty",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "home-empty-1280x800",
+        "screen" : "home-empty",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "home-empty-1512x900",
+        "screen" : "home-empty",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "home-empty-1920x1080",
+        "screen" : "home-empty",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "home-empty-2560x1400",
+        "screen" : "home-empty",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "home-empty",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        583,
+        16
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          583,
+          16
+        ],
+        "file" : "home-scores-min",
+        "screen" : "home-scores",
+        "size" : "min",
+        "window" : [
+          583,
+          68
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "home-scores-900x600",
+        "screen" : "home-scores",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "home-scores-1024x700",
+        "screen" : "home-scores",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "home-scores-1280x800",
+        "screen" : "home-scores",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "home-scores-1512x900",
+        "screen" : "home-scores",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "home-scores-1920x1080",
+        "screen" : "home-scores",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "home-scores-2560x1400",
+        "screen" : "home-scores",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "home-scores",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        583,
+        16
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          583,
+          16
+        ],
+        "file" : "home-offline-min",
+        "screen" : "home-offline",
+        "size" : "min",
+        "window" : [
+          583,
+          68
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "home-offline-1280x800",
+        "screen" : "home-offline",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      }
+    ],
+    "screen" : "home-offline",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        583,
+        16
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          583,
+          16
+        ],
+        "file" : "home-needs-pairing-min",
+        "screen" : "home-needs-pairing",
+        "size" : "min",
+        "window" : [
+          583,
+          68
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "home-needs-pairing-1280x800",
+        "screen" : "home-needs-pairing",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      }
+    ],
+    "screen" : "home-needs-pairing",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        583,
+        16
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          500,
+          84
+        ],
+        "file" : "source-min",
+        "screen" : "source",
+        "size" : "min",
+        "window" : [
+          500,
+          136
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "source-900x600",
+        "screen" : "source",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "source-1024x700",
+        "screen" : "source",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "source-1280x800",
+        "screen" : "source",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "source-1512x900",
+        "screen" : "source",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "source-1920x1080",
+        "screen" : "source",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "source-2560x1400",
+        "screen" : "source",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "source",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        500,
+        84
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          427,
+          76
+        ],
+        "file" : "transcribing-min",
+        "screen" : "transcribing",
+        "size" : "min",
+        "window" : [
+          427,
+          128
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "transcribing-900x600",
+        "screen" : "transcribing",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "transcribing-1024x700",
+        "screen" : "transcribing",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "transcribing-1280x800",
+        "screen" : "transcribing",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "transcribing-1512x900",
+        "screen" : "transcribing",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "transcribing-1920x1080",
+        "screen" : "transcribing",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "transcribing-2560x1400",
+        "screen" : "transcribing",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "transcribing",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        427,
+        76
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          588,
+          76
+        ],
+        "file" : "output-min",
+        "screen" : "output",
+        "size" : "min",
+        "window" : [
+          588,
+          128
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "output-900x600",
+        "screen" : "output",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "output-1024x700",
+        "screen" : "output",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "output-1280x800",
+        "screen" : "output",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "output-1512x900",
+        "screen" : "output",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "output-1920x1080",
+        "screen" : "output",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "output-2560x1400",
+        "screen" : "output",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "output",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        588,
+        76
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          1291,
+          803
+        ],
+        "file" : "score-all-min",
+        "screen" : "score-all",
+        "size" : "min",
+        "window" : [
+          1291,
+          855
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          803
+        ],
+        "file" : "score-all-900x600",
+        "screen" : "score-all",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          803
+        ],
+        "file" : "score-all-1024x700",
+        "screen" : "score-all",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          803
+        ],
+        "file" : "score-all-1280x800",
+        "screen" : "score-all",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "score-all-1512x900",
+        "screen" : "score-all",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "score-all-1920x1080",
+        "screen" : "score-all",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "score-all-2560x1400",
+        "screen" : "score-all",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "score-all",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        1291,
+        803
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          1291,
+          883
+        ],
+        "file" : "score-part-min",
+        "screen" : "score-part",
+        "size" : "min",
+        "window" : [
+          1291,
+          935
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          883
+        ],
+        "file" : "score-part-900x600",
+        "screen" : "score-part",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          883
+        ],
+        "file" : "score-part-1024x700",
+        "screen" : "score-part",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1291,
+          883
+        ],
+        "file" : "score-part-1280x800",
+        "screen" : "score-part",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          883
+        ],
+        "file" : "score-part-1512x900",
+        "screen" : "score-part",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "score-part-1920x1080",
+        "screen" : "score-part",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "score-part-2560x1400",
+        "screen" : "score-part",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "score-part",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        1291,
+        883
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          151,
+          72
+        ],
+        "file" : "stand-min",
+        "screen" : "stand",
+        "size" : "min",
+        "window" : [
+          151,
+          124
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "stand-900x600",
+        "screen" : "stand",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "stand-1024x700",
+        "screen" : "stand",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "stand-1280x800",
+        "screen" : "stand",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "stand-1512x900",
+        "screen" : "stand",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "stand-1920x1080",
+        "screen" : "stand",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "stand-2560x1400",
+        "screen" : "stand",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "stand",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        151,
+        72
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          688,
+          80
+        ],
+        "file" : "review-min",
+        "screen" : "review",
+        "size" : "min",
+        "window" : [
+          688,
+          132
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "review-900x600",
+        "screen" : "review",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "review-1024x700",
+        "screen" : "review",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "review-1280x800",
+        "screen" : "review",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "review-1512x900",
+        "screen" : "review",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "review-1920x1080",
+        "screen" : "review",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "review-2560x1400",
+        "screen" : "review",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "review",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        688,
+        80
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          399,
+          132
+        ],
+        "file" : "problem-silence-min",
+        "screen" : "problem-silence",
+        "size" : "min",
+        "window" : [
+          399,
+          184
+        ]
+      },
+      {
+        "content" : [
+          900,
+          548
+        ],
+        "file" : "problem-silence-900x600",
+        "screen" : "problem-silence",
+        "size" : "900x600",
+        "window" : [
+          900,
+          600
+        ]
+      },
+      {
+        "content" : [
+          1024,
+          648
+        ],
+        "file" : "problem-silence-1024x700",
+        "screen" : "problem-silence",
+        "size" : "1024x700",
+        "window" : [
+          1024,
+          700
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "problem-silence-1280x800",
+        "screen" : "problem-silence",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      },
+      {
+        "content" : [
+          1512,
+          848
+        ],
+        "file" : "problem-silence-1512x900",
+        "screen" : "problem-silence",
+        "size" : "1512x900",
+        "window" : [
+          1512,
+          900
+        ]
+      },
+      {
+        "content" : [
+          1920,
+          1028
+        ],
+        "file" : "problem-silence-1920x1080",
+        "screen" : "problem-silence",
+        "size" : "1920x1080",
+        "window" : [
+          1920,
+          1080
+        ]
+      },
+      {
+        "content" : [
+          2560,
+          1348
+        ],
+        "file" : "problem-silence-2560x1400",
+        "screen" : "problem-silence",
+        "size" : "2560x1400",
+        "window" : [
+          2560,
+          1400
+        ]
+      }
+    ],
+    "screen" : "problem-silence",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        399,
+        132
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          399,
+          132
+        ],
+        "file" : "problem-copy-protected-min",
+        "screen" : "problem-copy-protected",
+        "size" : "min",
+        "window" : [
+          399,
+          184
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "problem-copy-protected-1280x800",
+        "screen" : "problem-copy-protected",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      }
+    ],
+    "screen" : "problem-copy-protected",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        399,
+        132
+      ]
+    }
+  },
+  {
+    "kind" : "window",
+    "renders" : [
+      {
+        "content" : [
+          391,
+          132
+        ],
+        "file" : "problem-cant-open-min",
+        "screen" : "problem-cant-open",
+        "size" : "min",
+        "window" : [
+          391,
+          184
+        ]
+      },
+      {
+        "content" : [
+          1280,
+          748
+        ],
+        "file" : "problem-cant-open-1280x800",
+        "screen" : "problem-cant-open",
+        "size" : "1280x800",
+        "window" : [
+          1280,
+          800
+        ]
+      }
+    ],
+    "screen" : "problem-cant-open",
+    "sizes" : {
+      "ideal" : [
+        0,
+        0
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        391,
+        132
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          744,
+          1023
+        ],
+        "file" : "sheet-settings",
+        "screen" : "settings",
+        "size" : "ideal",
+        "window" : [
+          744,
+          1023
+        ]
+      }
+    ],
+    "screen" : "settings",
+    "sizes" : {
+      "ideal" : [
+        744,
+        1023
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        480,
+        520
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          744,
+          1194
+        ],
+        "file" : "sheet-settings-pairing",
+        "screen" : "settings-pairing",
+        "size" : "ideal",
+        "window" : [
+          744,
+          1194
+        ]
+      }
+    ],
+    "screen" : "settings-pairing",
+    "sizes" : {
+      "ideal" : [
+        744,
+        1194
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        480,
+        520
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          620,
+          720
+        ],
+        "file" : "sheet-export",
+        "screen" : "export",
+        "size" : "ideal",
+        "window" : [
+          620,
+          720
+        ]
+      }
+    ],
+    "screen" : "export",
+    "sizes" : {
+      "ideal" : [
+        620,
+        720
+      ],
+      "max" : [
+        620,
+        720
+      ],
+      "min" : [
+        620,
+        720
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          480,
+          560
+        ],
+        "file" : "sheet-talking-score",
+        "screen" : "talking-score",
+        "size" : "ideal",
+        "window" : [
+          480,
+          560
+        ]
+      }
+    ],
+    "screen" : "talking-score",
+    "sizes" : {
+      "ideal" : [
+        480,
+        560
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        480,
+        560
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          420,
+          360
+        ],
+        "file" : "sheet-change-note",
+        "screen" : "change-note",
+        "size" : "ideal",
+        "window" : [
+          420,
+          360
+        ]
+      }
+    ],
+    "screen" : "change-note",
+    "sizes" : {
+      "ideal" : [
+        420,
+        360
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        420,
+        360
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          678,
+          640
+        ],
+        "file" : "sheet-first-run",
+        "screen" : "first-run",
+        "size" : "ideal",
+        "window" : [
+          678,
+          640
+        ]
+      }
+    ],
+    "screen" : "first-run",
+    "sizes" : {
+      "ideal" : [
+        678,
+        640
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        520,
+        640
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          420,
+          360
+        ],
+        "file" : "sheet-record-mic",
+        "screen" : "record-mic",
+        "size" : "ideal",
+        "window" : [
+          420,
+          360
+        ]
+      }
+    ],
+    "screen" : "record-mic",
+    "sizes" : {
+      "ideal" : [
+        420,
+        360
+      ],
+      "max" : [
+        420,
+        360
+      ],
+      "min" : [
+        420,
+        360
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          531,
+          360
+        ],
+        "file" : "sheet-record-capture",
+        "screen" : "record-capture",
+        "size" : "ideal",
+        "window" : [
+          531,
+          360
+        ]
+      }
+    ],
+    "screen" : "record-capture",
+    "sizes" : {
+      "ideal" : [
+        531,
+        360
+      ],
+      "max" : [
+        100000,
+        100000
+      ],
+      "min" : [
+        480,
+        360
+      ]
+    }
+  },
+  {
+    "kind" : "sheet",
+    "renders" : [
+      {
+        "content" : [
+          185,
+          116
+        ],
+        "file" : "sheet-match-code",
+        "screen" : "match-code",
+        "size" : "ideal",
+        "window" : [
+          185,
+          116
+        ]
+      }
+    ],
+    "screen" : "match-code",
+    "sizes" : {
+      "ideal" : [
+        185,
+        116
+      ],
+      "max" : [
+        100000,
+        116
+      ],
+      "min" : [
+        40,
+        64
+      ]
+    }
+  }
+]

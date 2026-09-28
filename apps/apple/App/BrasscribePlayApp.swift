@@ -3,7 +3,6 @@ import ScoreKit
 import SwiftUI
 import TranscriptionKit
 
-@main
 struct BrasscribePlayApp: App {
     @State private var app = AppModel()
     #if os(macOS)

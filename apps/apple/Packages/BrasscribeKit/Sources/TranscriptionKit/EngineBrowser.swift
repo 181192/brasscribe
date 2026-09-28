@@ -36,7 +36,8 @@ public final class EngineBrowser {
     public init() {}
 
     public func start() {
-        guard browser == nil else { return }
+        // unit tests render the pairing views; browsing would ask for local network access
+        guard browser == nil, ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         let b = NWBrowser(for: .bonjourWithTXTRecord(type: Self.serviceType, domain: nil), using: .tcp)
         b.browseResultsChangedHandler = { [weak self] results, _ in
             let found = results.map { r -> (NWEndpoint, [String: String]) in
