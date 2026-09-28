@@ -42,6 +42,8 @@ env_lines() {
   [ -d "$ANDROID_HOME/platform-tools" ] && path="$path:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
   echo "export BRASSCRIBE_REPO='$MAIN'"
   echo "export BRASSCRIBE_FFI_PATH='$ROOT/core/target/release/libbrasscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
+  # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
+  [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
   echo "export ANDROID_HOME='$ANDROID_HOME'"
   [ -d "$ANDROID_HOME/ndk/28.2.13676358" ] && echo "export ANDROID_NDK_HOME='$ANDROID_HOME/ndk/28.2.13676358'"
   [ -d /Applications/Xcode.app ] && echo "export DEVELOPER_DIR='${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}'"
@@ -76,6 +78,14 @@ done
 if [ $core = 1 ]; then
   # shellcheck disable=SC2086
   "$ROOT/scripts/core-artifacts.sh" ensure $comps >&2 || log "core artifacts failed; build them with scripts/core-artifacts.sh ensure"
+fi
+
+# Studio's node_modules, cloned from the main checkout when both lock files match (npm ci otherwise)
+if [ "$ROOT" != "$MAIN" ] && [ ! -d "$ROOT/studio/node_modules" ] && [ -d "$MAIN/studio/node_modules" ] \
+   && cmp -s "$ROOT/studio/package-lock.json" "$MAIN/studio/package-lock.json" \
+   && [ "$MAIN/studio/node_modules" -nt "$MAIN/studio/package-lock.json" ]; then
+  cp -cR "$MAIN/studio/node_modules" "$ROOT/studio/node_modules" 2>/dev/null \
+    && log "cloned studio/node_modules from $MAIN" || rm -rf "$ROOT/studio/node_modules"
 fi
 
 # 3. Environment
