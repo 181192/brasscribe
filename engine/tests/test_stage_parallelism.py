@@ -62,6 +62,7 @@ def run(settings, audio, tmp_path, parallelism, fail=False):
     return res, sp, wall, events
 
 
+@pytest.mark.slow
 def test_one_runs_stages_in_order(settings, audio, tmp_path):
     res, sp, wall, _ = run(settings, audio, tmp_path, 1)
     assert list(res) == ["gpu1", "cpu1", "gpu2", "cpu2", "after"]

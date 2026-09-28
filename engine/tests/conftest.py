@@ -87,3 +87,8 @@ def audio(tmp_path: Path) -> Path:
     p = tmp_path / "song.wav"
     p.write_bytes(b"RIFF-fake-audio")
     return p
+
+
+def pytest_configure(config):
+    # `pixi run test-fast` deselects these; `pixi run test` runs everything (docs/dev/verify.md).
+    config.addinivalue_line("markers", "slow: takes seconds; left out of the fast tier (pixi run test-fast)")

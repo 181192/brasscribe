@@ -186,6 +186,7 @@ GOLDEN = braille.Path(__file__).resolve().parents[2] / "data" / "golden" / "mikk
 
 
 @pytest.mark.skipif(not (GOLDEN / "brass-band.musicxml").exists(), reason="golden output not available")
+@pytest.mark.slow
 def test_every_line_of_the_golden_score_and_parts_fits_the_page():
     for xml in [GOLDEN / "brass-band.musicxml", *sorted((GOLDEN / "parts").glob("*.musicxml"))]:
         assert _lines_ok(braille.translate(xml).brf), xml.name
