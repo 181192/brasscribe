@@ -2441,6 +2441,16 @@
         }
       }
     },
+    "Not yet for whole-band recordings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommer senere for opptak av hele bandet"
+          }
+        }
+      }
+    },
     "Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.": {
       "localizations": {
         "nb": {

@@ -123,7 +123,7 @@ final class PracticeModel {
         video?.isMuted = true
         let byName = PartSourceKind.sources(composition: composition, output: piece.output)
         partSources = Dictionary(parsed.parts.compactMap { p in byName[p.name].map { (p.id, $0) } }, uniquingKeysWith: { a, _ in a })
-        let mine = Self.resolveMyPart(piece: piece, score: parsed, seat: seat)
+        let mine = Self.resolveMyPart(piece: piece, score: parsed, composition: composition, seat: seat)
         myPart = mine.partID
         seatNotice = mine.notice
         seatNoticeShort = mine.short
@@ -133,7 +133,7 @@ final class PracticeModel {
     /// Your part in this score, in order: the part picked for it ("Make this my part"); the seat a solo
     /// take was written for; your seat's part in the lineup (the core's table); with no seat set, the
     /// lineup's lead as before. "I conduct or listen" has no part.
-    static func resolveMyPart(piece: Piece, score: Score, seat: SeatChoice) -> (partID: String?, notice: String?, short: String?) {
+    static func resolveMyPart(piece: Piece, score: Score, composition: Composition? = nil, seat: SeatChoice) -> (partID: String?, notice: String?, short: String?) {
         func id(named name: String) -> String? { score.parts.first { $0.name == name }?.id }
         if let name = piece.myPart, let id = id(named: name) { return (id, nil, nil) }
         if piece.profile == .solo, let s = piece.output?.seat, let part = Seats.part(s, in: .fullBand)?.part, let id = id(named: part) {
@@ -143,14 +143,16 @@ final class PracticeModel {
         case .conductor: return (nil, nil, nil)
         case .notSet:
             // my part: the lineup's lead (the tune), else the first part
-            let lead = (piece.output?.lineup ?? .fullBand).lead.lowercased()
+            let lead = (piece.madeLineup(composition) ?? .fullBand).lead.lowercased()
             return (score.parts.first { $0.name.lowercased().contains(lead) }?.id
                 ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id, nil, nil)
         case .seat(let seatID, let reads):
             guard let info = Seats.info(seatID) else { return (nil, nil, nil) }
+            // the seat's own part, when the score has it
+            if let id = id(named: info.name) { return (id, nil, nil) }
             // the score's own lineup first; a score from elsewhere is matched by its part names
             var lineups: [Lineup] = [.fullBand, .minimalBand, .quartet]
-            if let own = piece.output?.lineup { lineups.removeAll { $0 == own }; lineups.insert(own, at: 0) }
+            if let own = piece.madeLineup(composition) { lineups.removeAll { $0 == own }; lineups.insert(own, at: 0) }
             for (k, lineup) in lineups.enumerated() {
                 guard let sp = Seats.part(seatID, in: lineup) else { continue }
                 if let part = sp.part, let id = id(named: part) {

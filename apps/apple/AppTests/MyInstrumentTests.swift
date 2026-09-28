@@ -148,3 +148,18 @@ import TranscriptionKit
     #expect(m.myPart == score.parts.first?.id)
     #expect(PartSourceKind.sources(composition: comp, output: choice)["1st Baritone"] == .yourRecording)
 }
+
+/// A Brass band or Pop or rock take is made for the small band: the full band is not offered for it.
+@Test @MainActor func aWholeBandTakeIsMadeForTheSmallBand() throws {
+    let json = #"{"title": "t", "voices": [{"id": "melody", "role": "melody", "notes": []}], "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0, "mode": "major"}]}"#
+    let band = try Composition.decode(Data(json.utf8))
+    var layered = band
+    layered.voices[0].layer = "solo"
+    let r = TranscriptionResult(jobID: "x", composition: band, musicXML: Data(), available: [])
+    let p = try Piece.create(title: "Band take", profile: .brassBand, result: r, original: nil, video: nil, fixtureDirectory: nil,
+                             output: OutputChoice(lineup: .fullBand))
+    defer { p.delete() }
+    #expect(!p.fullBandPossible(band) && p.fullBandPossible(layered))
+    #expect(p.madeLineup(band) == .minimalBand && p.madeLineup(layered) == .fullBand)
+    #expect(!p.fullBandPossible(nil))
+}
