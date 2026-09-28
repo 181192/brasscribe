@@ -336,6 +336,7 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     /// target is that estimate: the recording plays at the band's loudness for this score (§11).
     /// </summary>
     [SkippableFact]
+    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)
     public void Golden_arrangement_plays_at_the_recording_target()
     {
         var golden = GoldenPlayer();

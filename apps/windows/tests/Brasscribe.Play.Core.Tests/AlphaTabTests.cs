@@ -108,6 +108,7 @@ public class AlphaTabTests(ITestOutputHelper log)
     }
 
     [SkippableFact]
+    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)
     public void Golden_brass_band_score_imports_and_renders()
     {
         var path = TestPaths.RepoFile(TestPaths.GoldenMusicXml);
