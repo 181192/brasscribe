@@ -8,6 +8,7 @@ import no.brasscribe.play.model.KeySig
 import no.brasscribe.play.model.Meter
 import no.brasscribe.play.model.Note
 import no.brasscribe.play.model.PartSource
+import no.brasscribe.play.model.reading
 import no.brasscribe.play.model.Seat
 import no.brasscribe.play.model.SeatPart
 import no.brasscribe.play.model.Voice
@@ -25,6 +26,23 @@ class MyInstrumentTest {
         Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0, tune = false),
         Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14, tune = true),
     )
+
+    @org.junit.Test
+    fun anEmptyPartIsNotArranged() {
+        assertEquals(PartSource.EMPTY, PartSource.of("empty"))
+        assertEquals(R.string.source_empty, no.brasscribe.play.ui.sourceWords(PartSource.EMPTY))
+        assertEquals(R.string.explain_empty, no.brasscribe.play.ui.explainOf(PartSource.EMPTY))
+        assertEquals(R.string.explain_arranged, no.brasscribe.play.ui.explainOf(PartSource.ARRANGED))
+    }
+
+    @org.junit.Test
+    fun theReadingDefaultsToTheSeatsOwn() {
+        val bassTrombone = Seat("bass-trombone", "Bass Trombone", "Bassbasun", "bass-trombone", "bass", listOf("bass"), 0, tune = false)
+        assertEquals("bass", bassTrombone.reading(null))
+        assertEquals("treble", seats[1].reading(null))
+        assertEquals("bass", seats[1].reading("bass"))
+        assertNull(seats[3].reading(null))
+    }
 
     @org.junit.Test
     fun aDrummersSoloTakeIsRefused() {
