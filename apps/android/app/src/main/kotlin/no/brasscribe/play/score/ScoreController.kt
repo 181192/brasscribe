@@ -314,6 +314,9 @@ class ScoreController(
                     if (!listening) {
                         listening = true
                         player.soundFontLoaded.on {
+                            // alphaTab's synth thread keeps the message it last ran, the load with the file's
+                            // bytes, until it takes another: send it a no-op so those bytes can go now.
+                            runCatching { player.masterVolume = player.masterVolume }
                             _state.value = _state.value.copy(bandSoundFont = true)
                             android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB) loaded by alphaTab in %d ms"
                                 .format(sf.name, megabytes, (System.nanoTime() - t0) / 1_000_000))
