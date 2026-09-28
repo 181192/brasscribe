@@ -1847,6 +1847,11 @@ public struct LayersSongOptions: Equatable, Hashable {
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     public var lead: String?
+    /**
+     * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+     * harmony."): "en" (None) or "nb".
+     */
+    public var lang: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1893,7 +1898,11 @@ public struct LayersSongOptions: Equatable, Hashable {
         /**
          * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
          * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
-         */lead: String? = nil) {
+         */lead: String? = nil, 
+        /**
+         * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+         * harmony."): "en" (None) or "nb".
+         */lang: String? = nil) {
         self.soloContour = soloContour
         self.freeTime = freeTime
         self.freeTempo = freeTempo
@@ -1907,6 +1916,7 @@ public struct LayersSongOptions: Equatable, Hashable {
         self.seat = seat
         self.reads = reads
         self.lead = lead
+        self.lang = lang
     }
 
     
@@ -1937,7 +1947,8 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
                 transpose: FfiConverterOptionInt32.read(from: &buf), 
                 seat: FfiConverterOptionString.read(from: &buf), 
                 reads: FfiConverterOptionString.read(from: &buf), 
-                lead: FfiConverterOptionString.read(from: &buf)
+                lead: FfiConverterOptionString.read(from: &buf), 
+                lang: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1955,6 +1966,7 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.seat, into: &buf)
         FfiConverterOptionString.write(value.reads, into: &buf)
         FfiConverterOptionString.write(value.lead, into: &buf)
+        FfiConverterOptionString.write(value.lang, into: &buf)
     }
 }
 

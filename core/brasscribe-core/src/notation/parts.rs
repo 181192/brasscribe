@@ -98,6 +98,22 @@ fn slug(name: &str) -> String {
 
 /// (file name, document) per part, in score order: "<nn>-<part name>.musicxml".
 pub fn split_parts(root: &El) -> Vec<(String, El)> {
+    split_parts_with_footers(root, &[])
+}
+
+/// A page-one footer credit (MusicXML `rights`, which MuseScore prints at the foot of the page),
+/// placed before the part list.
+fn add_footer(doc: &mut El, text: &str) {
+    let credit = El::new("credit")
+        .attr("page", "1")
+        .child(El::text("credit-type", "rights"))
+        .child(El::text("credit-words", text).attr("justify", "center").attr("valign", "bottom").attr("font-size", "8"));
+    let at = doc.children.iter().position(|c| c.name == "part-list").unwrap_or(doc.children.len());
+    doc.children.insert(at, credit);
+}
+
+/// [`split_parts`], with a footer on each part named in `footers` ((part name, text)).
+pub fn split_parts_with_footers(root: &El, footers: &[(String, String)]) -> Vec<(String, El)> {
     let parts: Vec<&El> = root.children.iter().filter(|c| c.name == "part").collect();
     let score_parts: Vec<&El> = find(root, "part-list").map(|pl| pl.children.iter().filter(|c| c.name == "score-part").collect()).unwrap_or_default();
     let id_of = |e: &El| e.attrs.iter().find(|(k, _)| k == "id").map(|(_, v)| v.clone()).unwrap_or_default();
@@ -163,7 +179,41 @@ pub fn split_parts(root: &El) -> Vec<(String, El)> {
             }
         }
         mark_multi_rests(&mut doc.children[mine_idx]);
+        if let Some((_, text)) = footers.iter().find(|(p, _)| *p == name) {
+            add_footer(&mut doc, text);
+        }
         out.push((format!("{k:02}-{}.musicxml", slug(&name)), doc));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn score() -> El {
+        let part = |id: &str| El::new("part").attr("id", id).child(El::new("measure").attr("number", "1"));
+        let sp = |id: &str, name: &str| El::new("score-part").attr("id", id).child(El::text("part-name", name));
+        El::new("score-partwise")
+            .child(El::new("work").child(El::text("work-title", "T")))
+            .child(El::new("part-list").child(sp("P1", "Solo Cornet")).child(sp("P2", "2nd Cornet")))
+            .child(part("P1"))
+            .child(part("P2"))
+    }
+
+    #[test]
+    fn footer_only_on_the_parts_named() {
+        let footers = [("2nd Cornet".to_string(), "Arranged.".to_string())];
+        let parts = split_parts_with_footers(&score(), &footers);
+        let credits = |d: &El| d.children.iter().filter(|c| c.name == "credit").cloned().collect::<Vec<_>>();
+        assert!(credits(&parts[0].1).is_empty());
+        let c = credits(&parts[1].1);
+        assert_eq!(c.len(), 1);
+        assert_eq!(find(&c[0], "credit-type").and_then(|e| e.text.as_deref()), Some("rights"));
+        assert_eq!(find(&c[0], "credit-words").and_then(|e| e.text.as_deref()), Some("Arranged."));
+        let names: Vec<&str> = parts[1].1.children.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["work", "credit", "part-list", "part"]);
+        // no footers: the parts as split_parts writes them
+        assert!(split_parts(&score()).iter().all(|(_, d)| credits(d).is_empty()));
+    }
 }

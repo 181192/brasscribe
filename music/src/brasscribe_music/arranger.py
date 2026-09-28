@@ -475,6 +475,24 @@ RECORDING = "recording"  # the part follows a line heard in a band recording
 ARRANGED = "arranged"  # voiced from the harmony, or doubling the tune
 
 
+# Languages of the source footer on printed parts.
+FOOTER_LANGS = ("en", "nb")
+_FOOTERS = {ARRANGED: {"en": "Arranged by Brasscribe from the band's harmony.",
+                       "nb": "Arrangert av Brasscribe ut fra harmoniene i bandet."}}
+
+
+def source_footer(source: str, lang: str = "en") -> str | None:
+    """The footer printed on a part from `source` (part_sources), in `lang` ("en" or "nb"; "" = en):
+    an arranged part says so; a part from the recording has none."""
+    texts = _FOOTERS.get(source)
+    return None if texts is None else texts["nb" if lang == "nb" else "en"]
+
+
+def part_footers(comp: Composition, lang: str = "en") -> dict[str, str]:
+    """{part name: footer} for every part of the Composition's arrangement that has one."""
+    return {p: f for p, s in part_sources(comp).items() if (f := source_footer(s, lang)) is not None}
+
+
 def _has_notes(comp: Composition, *layers: str) -> bool:
     return any(v.notes for v in comp.voices if v.layer in layers)
 

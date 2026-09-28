@@ -292,6 +292,10 @@ pub struct LayersSongOptions {
     /// lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
     #[uniffi(default = None)]
     pub lead: Option<String>,
+    /// Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+    /// harmony."): "en" (None) or "nb".
+    #[uniffi(default = None)]
+    pub lang: Option<String>,
 }
 
 impl Default for LayersSongOptions {
@@ -310,6 +314,7 @@ impl Default for LayersSongOptions {
             seat: None,
             reads: None,
             lead: None,
+            lang: None,
         }
     }
 }
@@ -391,6 +396,7 @@ pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: Layer
         seat: o.seat,
         reads: o.reads,
         lead: o.lead.unwrap_or_default(),
+        lang: o.lang.unwrap_or_default(),
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {

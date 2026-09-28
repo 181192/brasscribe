@@ -8,6 +8,8 @@ Per part:
   - runs of two or more empty bars marked as one multi-bar rest
     (<measure-style><multiple-rest>)
   - a part with no notes at all is written as a one-line "Tacet" part
+  - a footer where one is given (the source line of an arranged part), as a page-one `rights`
+    credit, which MuseScore prints at the foot of the page
 """
 
 from __future__ import annotations
@@ -70,8 +72,20 @@ def _mark_multi_rests(part: ET.Element) -> int:
     return runs
 
 
-def split_parts(xml: Path, out_dir: Path) -> list[Path]:
-    """Write <out_dir>/<nn>-<part name>.musicxml for every part; returns the paths in score order."""
+def _add_footer(doc: ET.Element, text: str) -> None:
+    """A page-one footer credit, placed before the part list (the Rust core writes the same)."""
+    credit = ET.Element("credit", {"page": "1"})
+    ET.SubElement(credit, "credit-type").text = "rights"
+    ET.SubElement(credit, "credit-words", {"justify": "center", "valign": "bottom", "font-size": "8"}).text = text
+    children = list(doc)
+    at = next((i for i, c in enumerate(children) if c.tag == "part-list"), len(children))
+    doc.insert(at, credit)
+
+
+def split_parts(xml: Path, out_dir: Path, footers: dict[str, str] | None = None) -> list[Path]:
+    """Write <out_dir>/<nn>-<part name>.musicxml for every part; returns the paths in score order.
+
+    `footers`: {part name: text} printed at the foot of that part's first page (arranger.part_footers)."""
     raw = xml.read_text(encoding="utf-8")
     head, _, _ = raw.partition("<score-partwise")
     root = ET.fromstring(raw[len(head):])
@@ -103,6 +117,8 @@ def split_parts(xml: Path, out_dir: Path) -> list[Path]:
             if el is not None:
                 el.text = f"{el.text} — {label}" if el.text else label
         _mark_multi_rests(mine)
+        if footers and name in footers:
+            _add_footer(doc, footers[name])
         slug = re.sub(r"[^A-Za-z0-9]+", "-", name.replace("♭", "b").replace("♯", "#")).strip("-")
         path = out_dir / f"{k:02d}-{slug}.musicxml"
         path.write_text(head + ET.tostring(doc, encoding="unicode"), encoding="utf-8")

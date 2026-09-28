@@ -34,9 +34,10 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// part in the octave played; a band take's notes do not change. Null: no seat.</param>
 /// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
 /// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
+/// <param name="Lang">Language of the footer on the arranged parts: "en" (null) or "nb".</param>
 public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
     bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
-    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null);
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null);
 
 /// <summary>The player's part in a lineup for their seat.</summary>
 /// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
@@ -234,6 +235,7 @@ public static class BrasscribeCore
             seat = o.Seat,
             reads = o.Reads,
             lead = o.Lead,
+            lang = o.Lang,
         });
         var pins = new List<GCHandle>();
         IntPtr Pin(Array? a)

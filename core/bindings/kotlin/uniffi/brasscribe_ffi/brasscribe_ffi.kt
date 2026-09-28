@@ -2827,6 +2827,12 @@ data class LayersSongOptions (
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     var `lead`: kotlin.String? = null 
+    , 
+    /**
+     * Language of the footer on the arranged parts ("Arranged by Brasscribe from the band's
+     * harmony."): "en" (None) or "nb".
+     */
+    var `lang`: kotlin.String? = null 
     
 ){
     
@@ -2856,6 +2862,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -2872,7 +2879,8 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalInt.allocationSize(value.`transpose`) +
             FfiConverterOptionalString.allocationSize(value.`seat`) +
             FfiConverterOptionalString.allocationSize(value.`reads`) +
-            FfiConverterOptionalString.allocationSize(value.`lead`)
+            FfiConverterOptionalString.allocationSize(value.`lead`) +
+            FfiConverterOptionalString.allocationSize(value.`lang`)
     )
 
     override fun write(value: LayersSongOptions, buf: ByteBuffer) {
@@ -2889,6 +2897,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterOptionalString.write(value.`seat`, buf)
             FfiConverterOptionalString.write(value.`reads`, buf)
             FfiConverterOptionalString.write(value.`lead`, buf)
+            FfiConverterOptionalString.write(value.`lang`, buf)
     }
 }
 

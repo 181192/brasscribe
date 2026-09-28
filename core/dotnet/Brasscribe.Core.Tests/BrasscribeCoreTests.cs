@@ -95,6 +95,14 @@ public class BrasscribeCoreTests
         Assert.Contains("\"free_regions\": [", comp);
         Assert.Equal(18, xml.Split("<score-part ").Length - 1);
         Assert.Contains("<words>ad lib.</words>", xml);
+
+        // The arranged parts carry the source footer, in the language asked for.
+        var band = BrasscribeCore.ArrangeLayersBand(layers, null, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel",
+            new LayersSongOptions(Lang: "nb"));
+        var sources = BrasscribeCore.PartSources(band.CompositionJson);
+        Assert.Equal(sources.Count, band.Parts.Count);
+        for (int i = 0; i < sources.Count; i++)
+            Assert.Equal(sources[i].Source == "arranged", band.Parts[i].MusicXml.Contains("Arrangert av Brasscribe ut fra harmoniene i bandet."));
     }
 
     /// <summary>data/mikkel/repro in this checkout, or in the one BRASSCRIBE_REPO names; null when neither has it.</summary>

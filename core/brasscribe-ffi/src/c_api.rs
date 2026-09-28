@@ -122,10 +122,11 @@ pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, option
 ///   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 ///   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
 ///   "transpose": null, "seat": "euphonium" | null, "reads": "treble" | "bass" | null,
-///   "lead": "lineup" | "seat" | null}`: the SwiftF0 contour of the solo stem (where
+///   "lead": "lineup" | "seat" | null, "lang": "en" | "nb" | null}`: the SwiftF0 contour of the solo stem (where
 /// sustained notes end), free-time detection on/off, a fixed BPM for free-time
 /// passages, the energy gate, beat cleanup, key changes, the lineup, the
-/// difficulty and a transposition (to a concert key or by semitones). Without stems the
+/// difficulty, a transposition (to a concert key or by semitones) and the language of the
+/// arranged parts' footer. Without stems the
 /// gate, dynamics and rehearsal marks have nothing to read; see
 /// [`bc_arrange_layers_band`].
 #[no_mangle]
@@ -205,6 +206,7 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
         seat: str_of(opts, "seat"),
         reads: str_of(opts, "reads"),
         lead: str_of(opts, "lead"),
+        lang: str_of(opts, "lang"),
     }
 }
 

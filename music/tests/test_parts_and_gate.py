@@ -46,3 +46,33 @@ def test_parts_have_one_part_multi_rests_tempo_and_tacet(tmp_path):
     horn = next(f for f in files if "Solo-Horn" in f.name).read_text()
     assert "<per-minute>" in horn  # tempo copied from the top part
     assert "(Tacet)" in next(f for f in files if "Soprano" in f.name).read_text()
+
+
+def test_arranged_parts_carry_the_source_footer(tmp_path):
+    from brasscribe_music.arranger import ARRANGED, RECORDING, part_footers, part_sources, source_footer
+    solo = [Note(72, 0, 96), Note(74, 96, 96)]
+    bass = [Note(36, 0, 192)]
+    comp = Composition("t", [Voice("solo", VoiceRole.MELODY, solo, layer="solo"), Voice("bass", VoiceRole.BASS, bass, layer="bass")],
+                       [Meter(0, 4)], [KeySig(0, 0)], [0.5 * i for i in range(20)])
+    arr = arrange_layers(comp)
+    xml = write_musicxml(build_band_score(arr, comp), tmp_path / "band.musicxml", band_sounds(arr))
+    assert source_footer(ARRANGED) == "Arranged by Brasscribe from the band's harmony."
+    assert source_footer(ARRANGED, "nb") == "Arrangert av Brasscribe ut fra harmoniene i bandet."
+    assert source_footer(RECORDING) is None
+    for lang in ("en", "nb"):
+        footers = part_footers(comp, lang)
+        files = split_parts(xml, tmp_path / lang, footers)
+        sources = part_sources(comp)
+        for f, part in zip(files, arr.lineup.parts):
+            root = ET.fromstring(f.read_text().partition("<score-partwise")[1] + f.read_text().partition("<score-partwise")[2])
+            credits = root.findall("credit")
+            if sources[part.name] == ARRANGED:
+                assert [c.findtext("credit-words") for c in credits] == [source_footer(ARRANGED, lang)], part.name
+                assert credits[0].findtext("credit-type") == "rights"
+                tags = [c.tag for c in root]
+                assert tags.index("credit") == tags.index("part-list") - 1  # MusicXML order: credits before the part list
+            else:
+                assert credits == [], part.name
+    assert sources["Solo Cornet"] == RECORDING and sources["2nd Cornet"] == ARRANGED
+    # without footers the parts are as before
+    assert "<credit" not in split_parts(xml, tmp_path / "plain")[3].read_text()

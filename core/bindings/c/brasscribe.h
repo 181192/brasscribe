@@ -57,10 +57,11 @@ int32_t bc_arrange_with(const char *composition_json, const char *options, char 
 //   "key_changes": true, "lineup": "band" | "minimal" | "quartet",
 //   "difficulty": "faithful" | "standard" | "easier", "key": "Bb" | null,
 //   "transpose": null, "seat": "euphonium" | null, "reads": "treble" | "bass" | null,
-//   "lead": "lineup" | "seat" | null}`: the SwiftF0 contour of the solo stem (where
+//   "lead": "lineup" | "seat" | null, "lang": "en" | "nb" | null}`: the SwiftF0 contour of the solo stem (where
 // sustained notes end), free-time detection on/off, a fixed BPM for free-time
 // passages, the energy gate, beat cleanup, key changes, the lineup, the
-// difficulty and a transposition (to a concert key or by semitones). Without stems the
+// difficulty, a transposition (to a concert key or by semitones) and the language of the
+// arranged parts' footer. Without stems the
 // gate, dynamics and rehearsal marks have nothing to read; see
 // [`bc_arrange_layers_band`].
 int32_t bc_arrange_layers_song(const uint8_t *const *midi,
