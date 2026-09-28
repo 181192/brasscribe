@@ -211,6 +211,7 @@ struct ReviewView: View {
                     Spacer()
                     Text("\(index) of \(open.count) · \(it.partName)")
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .accessibilityIdentifier("reviewPosition")
                 }
                 BarSnippet(xml: xml, partID: it.partID, bar: it.bar, lastBar: it.lastBar ?? it.bar, noteTick: it.tick, level: it.level, score: model.score)
                     .card(padding: Space.s2)

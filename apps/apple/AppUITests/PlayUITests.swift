@@ -117,6 +117,53 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 30))
     }
 
+    /// "Change note…" → Save stays on the note: "Changed to … (was …)" with Undo, the same place in the
+    /// queue; change again keeps "was"; Undo takes the line away; only Keep moves on.
+    func testChangeNoteStaysOnTheNote() throws {
+        app.terminate()
+        app.launchArguments = ["-reset", "-fixture-service", "-fast", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-screen", "source"]
+        launchApp()
+        let transcribe = app.descendants(matching: .any)["transcribe"].firstMatch
+        XCTAssertTrue(transcribe.waitForExistence(timeout: 10))
+        app.descendants(matching: .any)["profile-orchestra-with-soloist"].firstMatch.safeTap(app)
+        transcribe.safeTap(app)
+        let position = app.staticTexts["reviewPosition"].firstMatch
+        XCTAssertTrue(position.waitForExistence(timeout: 60), "review should follow the transcription")
+        let before = position.label
+        let changed = app.staticTexts["noteChanged"].firstMatch
+
+        func changeUp() {
+            app.buttons["changeNote"].firstMatch.safeTap(app)
+            let up = app.buttons["Up a semitone"].firstMatch
+            XCTAssertTrue(up.waitForExistence(timeout: 10))
+            up.safeTap(app)
+            app.buttons["Save"].firstMatch.safeTap(app)
+            XCTAssertTrue(changed.waitForExistence(timeout: 20), "the card says what the note was changed to")
+        }
+
+        changeUp()
+        XCTAssertEqual(position.label, before, "Save stays on the same note")
+        XCTAssertTrue(changed.label.hasPrefix("Changed to "), changed.label)
+        let was = String(changed.label[changed.label.range(of: "(was ")!.lowerBound...])
+        XCTAssertTrue(app.buttons["undoChange"].exists)
+
+        changeUp()
+        XCTAssertEqual(position.label, before)
+        XCTAssertTrue(changed.label.hasSuffix(was), "\(changed.label) keeps \(was)")
+
+        app.buttons["undoChange"].firstMatch.safeTap(app)
+        let gone = NSPredicate(format: "exists == false")
+        wait(for: [XCTNSPredicateExpectation(predicate: gone, object: changed)], timeout: 20)
+        XCTAssertEqual(position.label, before)
+
+        changeUp()
+        app.buttons["keepNext"].firstMatch.safeTap(app)
+        let total = { (s: String) in Int(s.split(separator: " ")[2]) ?? 0 }
+        let fewer = NSPredicate { _, _ in !position.exists || total(position.label) == total(before) - 1 }
+        wait(for: [XCTNSPredicateExpectation(predicate: fewer, object: nil)], timeout: 20)
+        XCTAssertFalse(changed.exists, "the next note is not changed")
+    }
+
     /// Show the score sits on its own band: scrolled to the end, the key buttons are fully above it
     /// and can be pressed, so nothing (and no focused control) is hidden behind it (WCAG 2.4.11).
     func testShowScoreBandLeavesKeyButtonsClear() throws {
