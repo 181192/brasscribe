@@ -12,7 +12,7 @@ public enum TrayBadge { None, DownArrow, Dots, Pie, Triangle, Square, CircularAr
 /// <summary>The one primary button of the flyout.</summary>
 public enum PrimaryAction { None, PairPhone, StartEngine, FinishSetup, TryAgain, Fix }
 
-public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused }
+public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed }
 
 /// <summary>A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person.</summary>
 public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details);
@@ -78,7 +78,7 @@ public static class StateRules
     {
         var state = Resolve(i);
         var problem = state == DisplayState.NeedsAttention ? i.Problems[0] : null;
-        double fraction = state == DisplayState.SettingUp ? i.SetupFraction : i.JobFraction ?? 0;
+        double fraction = state is DisplayState.SettingUp or DisplayState.Updating ? i.SetupFraction : i.JobFraction ?? 0;
         int pct = Percent(fraction);
         string tooltip = state switch
         {
@@ -106,7 +106,7 @@ public static class StateRules
         {
             DisplayState.Running => s["Status_Running_Idle"],
             DisplayState.Stopped => s["Status_Stopped_Sub"],
-            DisplayState.Updating => s["Status_Updating_Sub"],
+            DisplayState.Updating => s.Format("Update_Progress", pct) + " " + s["Status_Updating_Sub"],
             DisplayState.Error => s["Error_Why"],
             DisplayState.NeedsAttention => problem!.Why,
             _ => "",
@@ -138,6 +138,10 @@ public static class Problems
 {
     public static Problem NoFreePort(IStrings s) =>
         new(ProblemKind.NoFreePort, s["Port_Title"], s["Port_Why"], s["Action_Restart"], "Ports 8765–8775 in use.");
+
+    /// <summary>The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.</summary>
+    public static Problem UpdateFailed(IStrings s, string details) =>
+        new(ProblemKind.UpdateFailed, s["Update_Failed_Title"], s["Update_Failed_Why"], s["Primary_TryAgain"], details);
 
     public static Problem LowDisk(IStrings s, long freeBytes, string dataDir) =>
         new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.GigabytesText(freeBytes, s.Culture)), s["Disk_Fix"],

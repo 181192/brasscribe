@@ -21,6 +21,10 @@ ROWS = [
     ("Status_Stopped_Sub", "Phones can't send recordings until you start it.", "Telefonene kan ikke sende opptak før du starter den."),
     ("Status_Updating", "Updating", "Oppdaterer"),
     ("Status_Updating_Sub", "Back in about a minute. Phones reconnect by themselves.", "Tilbake om et minutt. Telefonene kobler seg til igjen selv."),
+    ("Update_Progress", "Updating Brasscribe… {0}%.", "Oppdaterer Brasscribe … {0} %."),  # (+) the engine after an app update
+    ("Update_Failed_Title", "Brasscribe couldn't finish updating", "Brasscribe fikk ikke fullført oppdateringen"),  # (+)
+    ("Update_Failed_Why", "The previous version is still running, so phones can keep sending recordings.",
+     "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."),  # (+)
     ("Status_Setup", "Setting up", "Gjøres klar"),
     ("Status_Error", "Stopped unexpectedly", "Stoppet uventet"),
     ("Now_Heading", "Now", "Nå"),
@@ -108,6 +112,8 @@ ROWS = [
     ("Tech_Address", "Address", "Adresse"),
     ("Tech_Port", "Port", "Port"),  # (+)
     ("Tech_Version", "Version", "Versjon"),
+    ("Tech_Build", "Engine build", "Motorbygg"),  # (+)
+    ("Tech_Workspace", "Workspace", "Arbeidsområde"),  # (+)
     ("Tech_Device", "Runs on", "Kjører på"),
     ("Tech_Server", "Server", "Server"),  # (+)
     ("Tech_Data", "Data folder", "Datamappe"),

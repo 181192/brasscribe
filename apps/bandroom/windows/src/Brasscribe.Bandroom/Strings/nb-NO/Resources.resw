@@ -38,6 +38,15 @@
   <data name="Status_Updating_Sub" xml:space="preserve">
     <value>Tilbake om et minutt. Telefonene kobler seg til igjen selv.</value>
   </data>
+  <data name="Update_Progress" xml:space="preserve">
+    <value>Oppdaterer Brasscribe … {0} %.</value>
+  </data>
+  <data name="Update_Failed_Title" xml:space="preserve">
+    <value>Brasscribe fikk ikke fullført oppdateringen</value>
+  </data>
+  <data name="Update_Failed_Why" xml:space="preserve">
+    <value>Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.</value>
+  </data>
   <data name="Status_Setup" xml:space="preserve">
     <value>Gjøres klar</value>
   </data>
@@ -295,6 +304,12 @@
   </data>
   <data name="Tech_Version" xml:space="preserve">
     <value>Versjon</value>
+  </data>
+  <data name="Tech_Build" xml:space="preserve">
+    <value>Motorbygg</value>
+  </data>
+  <data name="Tech_Workspace" xml:space="preserve">
+    <value>Arbeidsområde</value>
   </data>
   <data name="Tech_Device" xml:space="preserve">
     <value>Kjører på</value>

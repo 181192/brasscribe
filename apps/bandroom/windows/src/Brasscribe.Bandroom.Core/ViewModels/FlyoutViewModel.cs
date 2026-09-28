@@ -221,10 +221,14 @@ public sealed partial class FlyoutViewModel : ObservableObject
     {
         var inv = CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
-        string pad(string label) => label.PadRight(10);
+        string[] labels = ["Tech_Address", "Tech_Port", "Tech_Version", "Tech_Build", "Tech_Workspace", "Tech_Device", "Tech_Server", "Tech_Data"];
+        int width = Math.Max(10, labels.Max(k => _s[k].Length) + 1);
+        string pad(string label) => label.PadRight(width);
         sb.Append(pad(_s["Tech_Address"])).AppendLine(t.Addresses.Count > 0 ? string.Join(", ", t.Addresses) : "–");
         sb.Append(pad(_s["Tech_Port"])).AppendLine(t.Port?.ToString(inv) ?? "–");
         sb.Append(pad(_s["Tech_Version"])).AppendLine(t.Version);
+        sb.Append(pad(_s["Tech_Build"])).AppendLine(t.Build ?? "–");
+        sb.Append(pad(_s["Tech_Workspace"])).AppendLine(t.Workspace ?? "–");
         sb.Append(pad(_s["Tech_Device"])).AppendLine(t.RunsOn);
         sb.Append(pad(_s["Tech_Server"])).AppendLine(t.ServerId is { Length: > 0 } id ? id[..Math.Min(8, id.Length)] + "…" : "–");
         sb.Append(pad(_s["Tech_Data"])).Append(t.DataDir);

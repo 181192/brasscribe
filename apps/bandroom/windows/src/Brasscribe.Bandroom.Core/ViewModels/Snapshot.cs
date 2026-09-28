@@ -37,7 +37,9 @@ public sealed record JobView(string? Title, string StepKey, double Fraction, int
 }
 
 /// <summary>For the tech disclosure: addresses, port, version, device, server id, data folder.</summary>
-public sealed record TechDetails(IReadOnlyList<string> Addresses, int? Port, string Version, string RunsOn, string? ServerId, string DataDir);
+/// <summary>The tech-person details; <see cref="Build"/> is the running engine's, <see cref="Workspace"/> the app's own stamp.</summary>
+public sealed record TechDetails(IReadOnlyList<string> Addresses, int? Port, string Version, string RunsOn, string? ServerId, string DataDir,
+    string? Build = null, string? Workspace = null);
 
 /// <summary>
 /// Everything the flyout shows at one moment. DownloadProgress is "3.1 of 9.8 GB · about 12 min left" while the

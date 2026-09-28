@@ -38,6 +38,15 @@
   <data name="Status_Updating_Sub" xml:space="preserve">
     <value>Back in about a minute. Phones reconnect by themselves.</value>
   </data>
+  <data name="Update_Progress" xml:space="preserve">
+    <value>Updating Brasscribe… {0}%.</value>
+  </data>
+  <data name="Update_Failed_Title" xml:space="preserve">
+    <value>Brasscribe couldn't finish updating</value>
+  </data>
+  <data name="Update_Failed_Why" xml:space="preserve">
+    <value>The previous version is still running, so phones can keep sending recordings.</value>
+  </data>
   <data name="Status_Setup" xml:space="preserve">
     <value>Setting up</value>
   </data>
@@ -295,6 +304,12 @@
   </data>
   <data name="Tech_Version" xml:space="preserve">
     <value>Version</value>
+  </data>
+  <data name="Tech_Build" xml:space="preserve">
+    <value>Engine build</value>
+  </data>
+  <data name="Tech_Workspace" xml:space="preserve">
+    <value>Workspace</value>
   </data>
   <data name="Tech_Device" xml:space="preserve">
     <value>Runs on</value>

@@ -145,30 +145,39 @@ public sealed class BootstrapTests : IDisposable
     }
 
     /// <summary>
-    /// Markers an installed Bandroom already has were written with SHA256.HashData(File.ReadAllBytes(pixi.lock))
-    /// and the path-and-size bundle hash. The streamed hash must match them, or an update reinstalls everything.
+    /// An install from before stamps: env markers hold SHA256.HashData(File.ReadAllBytes(pixi.lock)) and the copy has
+    /// no stamp. The streamed hash must match the markers (or an update reinstalls everything), the engine it has can
+    /// start, and only the workspace is replaced.
     /// </summary>
     [Fact]
-    public async Task Markers_from_before_the_streamed_hash_still_count_as_installed()
+    public async Task An_install_from_before_stamps_keeps_its_environments_and_replaces_only_the_workspace()
     {
         var paths = new BandroomPaths(Path.Combine(_dir, "data"));
         var bundle = Bundle();
         File.WriteAllText(Path.Combine(bundle, "pixi.lock"), string.Concat(Enumerable.Repeat("package: x\n", 200_000))); // 2.2 MB, several buffers
         string lockHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(Path.Combine(bundle, "pixi.lock"))));
-        var sb = new StringBuilder(lockHash);
-        foreach (var f in Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
-            sb.Append('\n').Append(Path.GetRelativePath(bundle, f).Replace('\\', '/')).Append(' ').Append(new FileInfo(f).Length);
-        string bundleHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
+        foreach (var f in Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories))
+        {
+            var dst = Path.Combine(paths.Workspace, Path.GetRelativePath(bundle, f));
+            Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
+            File.Copy(f, dst);
+        }
         Directory.CreateDirectory(paths.SetupMarkers);
-        File.WriteAllText(Path.Combine(paths.SetupMarkers, "workspace"), bundleHash);
+        File.WriteAllText(Path.Combine(paths.SetupMarkers, "workspace"), "path-and-size hash");
         foreach (var env in EnvironmentPlan.Environments(cuda: false))
             File.WriteAllText(Path.Combine(paths.SetupMarkers, "env-" + env), lockHash);
 
-        var boot = new Bootstrapper(paths, bundle, "pixi", new FakeLauncher(), new EngineLog(null));
+        var launcher = new FakeLauncher();
+        var boot = new Bootstrapper(paths, bundle, "pixi", launcher, new EngineLog(null));
         Assert.Equal(lockHash, boot.LockHash);
-        Assert.Equal(bundleHash, boot.BundleHash);
-        Assert.True(await boot.IsCompleteAsync(cuda: false));
+        Assert.Equal(["workspace"], boot.Pending(false));
         Assert.True(boot.EngineReady);
+        Assert.True(boot.IsUpdate);
+
+        await boot.RunAsync(false, null, CancellationToken.None);
+        Assert.Empty(launcher.Started);
+        Assert.True(await boot.IsCompleteAsync(cuda: false));
+        Assert.Equal(boot.BundleStamp, WorkspaceStamp.Read(paths.Workspace));
         Assert.False(boot.IsComplete(cuda: true));
     }
 
