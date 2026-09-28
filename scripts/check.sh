@@ -33,7 +33,9 @@ changed_areas() {
   add() { case " $a " in *" $1 "*) ;; *) a="$a $1" ;; esac; }
   while read -r f; do
     case "$f" in
-      engine/*|music/*|eval/*|pixi.toml|pixi.lock) add engine ;;
+      engine/*|pixi.toml|pixi.lock) add engine ;;
+      # music/ and eval/ are also the Python side of conformance.
+      music/*|eval/*) add engine; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
@@ -45,6 +47,15 @@ changed_areas() {
   done <<< "$files"
   echo "$a"
 }
+
+# A hash of the Python reference sources (committed, uncommitted and untracked): the fast
+# conformance tier reuses the Python outputs of an earlier run only while this is unchanged.
+PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/brasscribe_conformance)
+py_ref_stamp() {
+  { git ls-files -s -- "${PY_REF_PATHS[@]}"; git diff HEAD -- "${PY_REF_PATHS[@]}"
+    git ls-files -o --exclude-standard -z -- "${PY_REF_PATHS[@]}" | xargs -0 shasum 2>/dev/null; } | shasum | cut -d' ' -f1
+}
+PY_REF_STAMP=core/target/conformance/.python-reference-stamp
 
 free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])'; }
 
@@ -64,11 +75,16 @@ run_area() {
     fast:core) (cd core && cargo test --profile fast -q) ;;
     full:core) (cd core && cargo test --release) ;;
     # The Python reference and the extras take minutes; the fast tier compares the Rust side of the
-    # Mikkel cases against reference outputs of an earlier run in this worktree (none yet: all of Mikkel).
-    fast:conformance) if [ -d core/target/conformance/mikkel ]; then conf=(--skip-python --no-extras); else conf=(); fi
+    # Mikkel cases against reference outputs of an earlier run in this worktree, as long as the
+    # Python sources are the ones that run used (else, or with none yet, all of Mikkel).
+    fast:conformance) stamp=$(py_ref_stamp)
+                      if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
+                        conf=(--skip-python --no-extras); else conf=(); fi
                       (cd core/conformance && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
-                         --work "$ROOT/core/target/conformance") ;;
-    full:conformance) (cd core/conformance && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") ;;
+                         --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" ;;
+    full:conformance) stamp=$(py_ref_stamp)
+                      (cd core/conformance && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
+                        && echo "$stamp" > "$PY_REF_STAMP" ;;
     fast:studio) need_node_modules && (cd studio && npx vitest run) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
                    && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser) ;;
