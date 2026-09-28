@@ -9,8 +9,11 @@ import ScoreKit
 /// sequencer tracks ─▶ one AVAudioUnitSampler per part ─▶ AVAudioEnvironmentNode (seat + hall) ─▶ band bus
 /// band bus ─▶ output stage (make-up gain + soft limiter) ────────────────────────────────────┐
 /// metronome track  ─▶ metronome sampler ─────────────────────────────────────────────────────├▶ main mixer
-/// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch (speed without pitch change) ─┘
+/// original file    ─▶ AVAudioPlayerNode ─▶ AVAudioUnitTimePitch ─▶ output stage (level match) ─┘
 /// ```
+/// Band and recording play at the same loudness (sounds/playback-levels.json): the band through
+/// its make-up gain and limiter, the recording measured once when loaded and gained to the level of
+/// a whole arrangement from the band.
 /// Positions are in quarter-note beats from the start of bar 1, shared by score and
 /// original; the Composition's tempo map converts to seconds in the recording.
 public final class PlaybackEngine {
@@ -77,14 +80,22 @@ public final class PlaybackEngine {
     /// Make-up gain on the band, before the soft limiter. The presets are level-matched to
     /// −24 LUFS and the parts sit metres away in the environment node, so the full-band test
     /// phrase (sounds/phrases.py) peaks near −27 dBFS at unity; this brings it to about −1 dBFS
-    /// and a solo cornet to about −11. The metronome (about −10 dBFS) and the original
-    /// recording have their own level and bypass the stage.
-    public static let defaultOutputGainDB = 26.0
+    /// (−12 LUFS, the shared phrase target) and a solo cornet to about −11. The metronome clicks
+    /// at about −10 dBFS on its own; the original recording has its own stage.
+    public static let defaultOutputGainDB = PlaybackLevels.bandGainDB
     public var outputGainDB: Double = PlaybackEngine.defaultOutputGainDB {
         didSet { outputStage?.kernel.gain = Float(pow(10, outputGainDB / 20)) }
     }
     let bandBus = AVAudioMixerNode()
+    let recordingBus = AVAudioMixerNode()
     public private(set) var outputStage: OutputStageAU?
+    /// The original recording's stage: its level-matching gain, then the same limiter.
+    public private(set) var recordingStage: OutputStageAU?
+    /// The recording's integrated loudness (whole file), once measured; nil before.
+    public private(set) var originalLUFS: Double?
+    /// The gain the recording plays with (PlaybackLevels.recordingGainDB), 0 until measured.
+    public private(set) var originalGainDB: Double = 0
+    private var measuredGainDB: Double?
 
     public init(score: Score, tempoMap: TempoMap? = nil, originalURL: URL? = nil,
                 soundBank: SoundBank = .locate(), roomIR: URL? = RoomIR.locate(), offlineFormat: AVAudioFormat? = nil) throws {
@@ -157,14 +168,26 @@ public final class PlaybackEngine {
 
         engine.attach(player)
         engine.attach(timePitch)
+        // the recording's own bus converts to the stage's stereo format (a mono file plays from both sides)
+        engine.attach(recordingBus)
+        let recStage = AVAudioUnitEffect(audioComponentDescription: OutputStageAU.componentDescription)
+        engine.attach(recStage)
+        engine.connect(recordingBus, to: recStage, format: stereo)
+        engine.connect(recStage, to: main, format: stereo)
+        recordingStage = recStage.auAudioUnit as? OutputStageAU
         if let originalURL {
             let f = try AVAudioFile(forReading: originalURL)
             originalFile = f
             engine.connect(player, to: timePitch, format: f.processingFormat)
-            engine.connect(timePitch, to: main, format: f.processingFormat)
+            engine.connect(timePitch, to: recordingBus, format: f.processingFormat)
+            if offlineFormat != nil {
+                levelOriginal(url: originalURL)
+            } else {
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.levelOriginal(url: originalURL) }
+            }
         } else {
             engine.connect(player, to: timePitch, format: nil)
-            engine.connect(timePitch, to: main, format: nil)
+            engine.connect(timePitch, to: recordingBus, format: nil)
         }
 
         sequencer = AVAudioSequencer(audioEngine: engine)
@@ -250,6 +273,29 @@ public final class PlaybackEngine {
         return (score.seconds(atTick: Int(b * q)) - score.seconds(atTick: Int(a * q))) / rate
     }
 
+    /// Measure the recording once (whole file, EBU R128 integrated) and pick its gain. Applied the
+    /// next time the recording starts, never while it plays (the stage has no smoothing).
+    private func levelOriginal(url: URL) {
+        let lufs = (try? LoudnessMeter.integrated(url: url, monoAsDualMono: true)) ?? -.infinity
+        let gain = PlaybackLevels.recordingGainDB(forLUFS: lufs)
+        let apply = { [weak self] in
+            guard let self else { return }
+            self.originalLUFS = lufs
+            self.measuredGainDB = gain
+            if !(self.source == .original && self.state == .playing) { self.applyRecordingGain() }
+        }
+        if Thread.isMainThread || engine.isInManualRenderingMode { apply() } else { DispatchQueue.main.async(execute: apply) }
+    }
+
+    private func applyRecordingGain() {
+        guard let g = measuredGainDB else { return }
+        originalGainDB = g
+        // the recording bus spreads a mono file equal-power (−3 dB a side); make it up, so a mono
+        // recording plays from both speakers at the level it was measured at (dual mono)
+        let upmix = originalFile?.processingFormat.channelCount == 1 ? 10 * log10(2.0) : 0
+        recordingStage?.kernel.gain = Float(pow(10, (g + upmix) / 20))
+    }
+
     public func play() throws {
         guard state == .stopped else { return }
         cancelFade()
@@ -267,7 +313,11 @@ public final class PlaybackEngine {
         countInTimer?.cancel(); countInTimer = nil
         pendingStartBeat = nil
         sequencer.stop()
-        player.stop()
+        if source == .original && state == .playing && !engine.isInManualRenderingMode {
+            fadeOutRecording()  // the player keeps going for the fade; play() and seeking stop it at once
+        } else {
+            player.stop()
+        }
         allNotesOff()
         if state != .stopped { fadeOutThenRestore() }  // play() cancels it, so seeking keeps the release
         stoppedBeat = p
@@ -316,6 +366,8 @@ public final class PlaybackEngine {
             guard startFrame < f.length else { return }
             originalStartSeconds = secs
             player.stop()
+            player.volume = 1
+            applyRecordingGain()
             player.scheduleSegment(f, startingFrame: startFrame, frameCount: AVAudioFrameCount(f.length - startFrame), at: nil)
             player.play()
         }
@@ -386,7 +438,34 @@ public final class PlaybackEngine {
         t.resume()
     }
 
+    /// The recording fades over the same 80 ms as the band, then stops.
+    private var recordingFadeTimer: DispatchSourceTimer?
+
+    private func fadeOutRecording() {
+        recordingFadeTimer?.cancel()
+        let steps = 8
+        var i = 0
+        let t = DispatchSource.makeTimerSource(queue: .main)
+        t.schedule(deadline: .now(), repeating: Self.stopFadeSeconds / Double(steps))
+        t.setEventHandler { [weak self] in
+            guard let self else { return }
+            i += 1
+            self.player.volume = Float(max(0, 1 - Double(i) / Double(steps)))
+            if i >= steps + 1 { self.endRecordingFade() }
+        }
+        recordingFadeTimer = t
+        t.resume()
+    }
+
+    private func endRecordingFade() {
+        recordingFadeTimer?.cancel()
+        recordingFadeTimer = nil
+        player.stop()
+        player.volume = 1
+    }
+
     private func cancelFade() {
+        if recordingFadeTimer != nil { endRecordingFade() }
         guard fadeTimer != nil else { return }
         fadeTimer?.cancel()
         fadeTimer = nil
@@ -511,6 +590,30 @@ public final class PlaybackEngine {
             out.frameLength += chunk.frameLength
         }
         pause()
+        return out
+    }
+
+    /// Render the original recording from `fromBeat` for `seconds` into a buffer (offline mode only).
+    public func renderOriginal(fromBeat: Double, seconds: Double) throws -> AVAudioPCMBuffer {
+        guard engine.isInManualRenderingMode else { throw PlaybackError.notOffline }
+        let format = engine.manualRenderingFormat
+        let total = AVAudioFrameCount(seconds * format.sampleRate)
+        guard let out = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: total),
+              let chunk = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: engine.manualRenderingMaximumFrameCount)
+        else { throw PlaybackError.render("buffer") }
+        source = .original
+        stoppedBeat = fromBeat
+        try startNow(at: fromBeat)
+        while out.frameLength < total {
+            let n = min(chunk.frameCapacity, total - out.frameLength)
+            guard try engine.renderOffline(n, to: chunk) == .success else { throw PlaybackError.render("render") }
+            for c in 0..<Int(format.channelCount) {
+                memcpy(out.floatChannelData![c] + Int(out.frameLength), chunk.floatChannelData![c], Int(chunk.frameLength) * 4)
+            }
+            out.frameLength += chunk.frameLength
+        }
+        pause()
+        source = .score
         return out
     }
 
