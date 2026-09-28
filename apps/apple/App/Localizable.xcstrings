@@ -731,6 +731,16 @@
         }
       }
     },
+    "Band, difficulty and key…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band, vanskelighet og toneart …"
+          }
+        }
+      }
+    },
     "Bar %lld": {
       "localizations": {
         "nb": {
