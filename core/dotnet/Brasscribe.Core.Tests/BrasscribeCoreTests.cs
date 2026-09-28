@@ -45,6 +45,9 @@ public class BrasscribeCoreTests
         Assert.Equal("Eufonium", euph.NbName);
         Assert.Equal(new[] { "treble", "bass" }, euph.Reads);
         Assert.Equal("Solo althorn", seats.Single(s => s.Id == "solo-horn").NbName);
+        // Tune: Role Melody or Solo, not the bass line.
+        Assert.Equal(new[] { "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn",
+            "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium" }, seats.Where(s => s.Tune).Select(s => s.Id));
         // Three spot checks of the seat -> part table.
         Assert.Equal(new SeatPart("Euphonium", false, true), BrasscribeCore.SeatPart("minimal", "1st-baritone"));
         Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));

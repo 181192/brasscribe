@@ -40,6 +40,13 @@ fn seats_carry_the_core_names() {
     assert_eq!(s.iter().find(|x| x.id == "bass-trombone").unwrap().reads, vec!["bass"]);
     let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seats(o, e) }).unwrap();
     assert!(json.contains(r#""nb_name":"Sopran-kornett""#));
+    // tune: the core's roles, over UniFFI and the C ABI alike
+    let core = brasscribe_core::instruments::SEATS.iter().map(|x| (x.id.to_string(), x.tune())).collect::<Vec<_>>();
+    assert_eq!(s.iter().map(|x| (x.id.clone(), x.tune)).collect::<Vec<_>>(), core);
+    assert!(horn.tune && !s.iter().find(|x| x.id == "eb-bass").unwrap().tune);
+    let rows: serde_json::Value = serde_json::from_str(&json).unwrap();
+    let c: Vec<(String, bool)> = rows.as_array().unwrap().iter().map(|r| (r["id"].as_str().unwrap().into(), r["tune"].as_bool().unwrap())).collect();
+    assert_eq!(c, core);
 }
 
 #[test]

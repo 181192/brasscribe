@@ -251,13 +251,13 @@ pub unsafe extern "C" fn bc_part_sources(composition_json: *const c_char, out: *
 }
 
 /// The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
-/// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"]}, ...]` to `*out`.
+/// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"], "tune": true}, ...]` to `*out`.
 #[no_mangle]
 pub unsafe extern "C" fn bc_seats(out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     run(out, err, || {
         let rows: Vec<serde_json::Value> = crate::seats()
             .into_iter()
-            .map(|s| serde_json::json!({"id": s.id, "name": s.name, "nb_name": s.nb_name, "instrument": s.instrument, "clef": s.clef, "reads": s.reads}))
+            .map(|s| serde_json::json!({"id": s.id, "name": s.name, "nb_name": s.nb_name, "instrument": s.instrument, "clef": s.clef, "reads": s.reads, "tune": s.tune}))
             .collect();
         Ok(serde_json::Value::Array(rows).to_string())
     })

@@ -91,7 +91,7 @@ int32_t bc_part_sources(const char *composition_json,
                         char **err);
 
 // The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
-// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"]}, ...]` to `*out`.
+// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"], "tune": true}, ...]` to `*out`.
 int32_t bc_seats(char **out,
                  char **err);
 

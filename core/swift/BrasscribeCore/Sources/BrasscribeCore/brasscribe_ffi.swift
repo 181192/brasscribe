@@ -2332,6 +2332,11 @@ public struct SeatInfo: Equatable, Hashable {
      * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
      */
     public var reads: [String]
+    /**
+     * The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+     * "Who plays the tune?" (the `lead` option "seat").
+     */
+    public var tune: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -2353,13 +2358,18 @@ public struct SeatInfo: Equatable, Hashable {
          */clef: String, 
         /**
          * Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
-         */reads: [String]) {
+         */reads: [String], 
+        /**
+         * The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+         * "Who plays the tune?" (the `lead` option "seat").
+         */tune: Bool) {
         self.id = id
         self.name = name
         self.nbName = nbName
         self.instrument = instrument
         self.clef = clef
         self.reads = reads
+        self.tune = tune
     }
 
     
@@ -2383,7 +2393,8 @@ public struct FfiConverterTypeSeatInfo: FfiConverterRustBuffer {
                 nbName: FfiConverterString.read(from: &buf), 
                 instrument: FfiConverterString.read(from: &buf), 
                 clef: FfiConverterString.read(from: &buf), 
-                reads: FfiConverterSequenceString.read(from: &buf)
+                reads: FfiConverterSequenceString.read(from: &buf), 
+                tune: FfiConverterBool.read(from: &buf)
         )
     }
 
@@ -2394,6 +2405,7 @@ public struct FfiConverterTypeSeatInfo: FfiConverterRustBuffer {
         FfiConverterString.write(value.instrument, into: &buf)
         FfiConverterString.write(value.clef, into: &buf)
         FfiConverterSequenceString.write(value.reads, into: &buf)
+        FfiConverterBool.write(value.tune, into: &buf)
     }
 }
 

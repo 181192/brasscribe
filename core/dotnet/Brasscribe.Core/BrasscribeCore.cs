@@ -54,7 +54,8 @@ public readonly record struct PartSource(string Part, string Source);
 /// <param name="Instrument">Instrument id.</param>
 /// <param name="Clef">The part's own clef: "treble", "bass" or "percussion".</param>
 /// <param name="Reads">Clefs the player may read it in, the part's own first; empty for percussion.</param>
-public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads);
+/// <param name="Tune">The part can carry the tune (the seats offered "Who plays the tune?").</param>
+public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads, bool Tune);
 
 /// <summary>Everything the band arrangement writes.</summary>
 public sealed record BandOutput(string CompositionJson, string MusicXml, IReadOnlyList<(string FileName, string MusicXml)> Parts,
@@ -340,7 +341,7 @@ public static class BrasscribeCore
         return doc.RootElement.EnumerateArray()
             .Select(x => new SeatInfo(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!,
                 x.GetProperty("nb_name").GetString()!, x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
-                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList()))
+                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList(), x.GetProperty("tune").GetBoolean()))
             .ToList();
     }
 

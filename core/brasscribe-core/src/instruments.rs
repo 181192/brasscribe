@@ -412,6 +412,15 @@ impl Seat {
     pub fn band_part(&self) -> Part {
         brass_band().by_name(self.part).clone()
     }
+
+    /// The seat's part can carry the tune in the band: its instrument has Role::Melody or Solo and it
+    /// is not the band's bass line. The seats [`lead_lineup`] accepts for lead "seat".
+    pub fn tune(&self) -> bool {
+        let band = brass_band();
+        self.part != band.bass
+            && Some(self.part) != band.second_bass
+            && band.by_name(self.part).instrument.roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo))
+    }
 }
 
 const TREBLE: &[&str] = &["treble"];

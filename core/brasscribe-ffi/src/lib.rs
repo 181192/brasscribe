@@ -592,6 +592,9 @@ pub struct SeatInfo {
     pub clef: String,
     /// Clefs the player may read it in (the `reads` option), the part's own first; empty for percussion.
     pub reads: Vec<String>,
+    /// The part can carry the tune (Role Melody or Solo, not the bass line): the seats offered
+    /// "Who plays the tune?" (the `lead` option "seat").
+    pub tune: bool,
 }
 
 /// The 18 seats of the contest band, in score order.
@@ -608,6 +611,7 @@ pub fn seats() -> Vec<SeatInfo> {
                 instrument: inst.id.into(),
                 clef: inst.clef.as_str().into(),
                 reads: s.reads.iter().map(|r| r.to_string()).collect(),
+                tune: s.tune(),
             }
         })
         .collect()
