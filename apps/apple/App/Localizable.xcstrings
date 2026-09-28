@@ -871,6 +871,16 @@
         }
       }
     },
+    "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer."
+          }
+        }
+      }
+    },
     "Brasscribe couldn't make brass-band parts from this score.": {
       "localizations": {
         "nb": {
@@ -997,6 +1007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Endre tone …"
+          }
+        }
+      }
+    },
+    "Change what I play": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endre hva jeg spiller"
           }
         }
       }
@@ -2407,6 +2427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ikke tilkoblet. Du kan fortsatt lage partitur på denne telefonen."
+          }
+        }
+      }
+    },
+    "Not for percussion yet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke for slagverk ennå"
           }
         }
       }

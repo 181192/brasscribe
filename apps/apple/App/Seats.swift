@@ -227,6 +227,14 @@ enum Seats {
         }
     }
 
+    /// The seat is percussion (no clef to read): a solo take can't be written for it, since the pitch
+    /// trackers' notes from a drummer's take are no drum part.
+    static func isPercussion(_ choice: SeatChoice) -> Bool { choice.id.flatMap { info($0) }?.reads.isEmpty == true }
+
+    static var percussionSoloRefused: String {
+        String(localized: "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.")
+    }
+
     /// Can the seat carry the tune ("Who plays the tune?")? The core says (melody or solo roles).
     static func canCarryTune(_ s: SeatInfo) -> Bool { s.tune }
 }

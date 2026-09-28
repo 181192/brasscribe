@@ -149,6 +149,14 @@ import TranscriptionKit
     #expect(PartSourceKind.sources(composition: comp, output: choice)["1st Baritone"] == .yourRecording)
 }
 
+/// A drummer's solo take is no drum part: One instrument is refused for the percussion seat only.
+@Test func percussionHasNoSoloTake() {
+    #expect(Seats.isPercussion(.seat("percussion", reads: nil)))
+    #expect(!Seats.isPercussion(.seat("euphonium", reads: nil)))
+    #expect(!Seats.isPercussion(.conductor))
+    #expect(!Seats.isPercussion(.notSet))
+}
+
 /// A Brass band or Pop or rock take is made for the small band: the full band is not offered for it.
 @Test @MainActor func aWholeBandTakeIsMadeForTheSmallBand() throws {
     let json = #"{"title": "t", "voices": [{"id": "melody", "role": "melody", "notes": []}], "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0, "mode": "major"}]}"#
