@@ -372,6 +372,44 @@ fun ScoreScreen(vm: PlayViewModel) {
     // The controls the row had no room for: the top bar's ⋯ sheet shows them first (one overflow entry, not two).
     val rowItems = remember { ArrayList<@Composable (Boolean) -> Unit>() }
     val compact = !performance && ScoreSplit.compact(configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE, configuration.screenHeightDp)
+    val phoneUpright = !performance && !compact && configuration.smallestScreenWidthDp < 600
+    var bottomHeight by remember { mutableStateOf(0) }
+    var uprightFirstHidden by remember { mutableStateOf(Int.MAX_VALUE) }
+    // Upright on a phone, in order of need: your part (and the stand), the lineup notice, what to check, the band sounds.
+    val uprightLarge = largeText()
+    val uprightItems = buildList<@Composable (Boolean) -> Unit> {
+        add { inSheet ->
+            if (!inSheet) FlowRow(
+                Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
+                horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            ) {
+                PracticeChip(if (mine) stringResource(R.string.stand_part_yours, shownText) else shownText, false, { sheet = Sheet.PARTS },
+                    Modifier.semantics { testTag = "part-picker" }, icon = R.drawable.ic_bc_parts, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+                if (!uprightLarge) shownSource?.let { SourceLabel(it, compact = true, onExplain = { sheet = Sheet.SOURCE }) }
+            }
+        }
+        // At large text the pill is a line of its own, so the part picker alone is always there.
+        if (uprightLarge && shownSource != null) add { inSheet ->
+            SourceLabel(shownSource, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin), compact = true, onExplain = { sheet = Sheet.SOURCE })
+        }
+        if (showMapped) add { inSheet ->
+            MappedBanner(mappedShortLine!!, { sheet = Sheet.MAPPED }, { vm.closeMappedNotice() }, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin))
+        }
+        if (toCheck > 0) add { inSheet ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = if (inSheet) BrasscribeSpace.s0 else ScreenMargin), verticalAlignment = Alignment.CenterVertically) {
+                UncertainMark(false)
+                Text(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck), style = MaterialTheme.typography.bodyMedium,
+                    color = c.textMuted, modifier = Modifier.weight(1f))
+                PlainButton(stringResource(R.string.check_them), { sheet = null; vm.navigate(Screen.REVIEW) })
+            }
+        }
+        // The stand after what is about this score; without room it is in the ⋯ sheet, which always offers it.
+        add { inSheet -> if (!inSheet) Box(Modifier.padding(horizontal = ScreenMargin)) { MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) } } }
+        if (st.basicTier) add { inSheet ->
+            if (inSheet) BandSoundsMissing(st.bandSoundsExpected)
+            else NoticeLine(stringResource(R.string.band_sounds_missing), { sheet = Sheet.NOTICE }, Modifier.padding(horizontal = ScreenMargin))
+        }
+    }
     Scaffold(
         containerColor = c.bg,
         topBar = {
@@ -408,8 +446,16 @@ fun ScoreScreen(vm: PlayViewModel) {
             // above and below it shares the rest, and scrolls inside its share when it needs more.
             val topMax = controlsMax * 0.4f
             val bottomMax = controlsMax - topMax
-            if (!performance && !compact) Column(
-                Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(rememberScrollState()).semantics { testTag = "score-top" },
+            // A phone upright: the lines above the score show whole or not at all; what has no room goes to the
+            // top bar's ⋯ sheet, as on its side (rule 7: a control is never clipped). Zoom and the pitch are there.
+            if (phoneUpright) FitColumn(
+                (controlsMax - with(density) { bottomHeight.toDp() }).coerceAtLeast(0.dp), BrasscribeSpace.s2,
+                uprightItems.map { item -> @Composable { item(false) } }, { uprightFirstHidden = it },
+                Modifier.fillMaxWidth().semantics { testTag = "score-top" },
+            )
+            val topScroll = rememberScrollState()
+            if (!performance && !compact && !phoneUpright) Box(Modifier.fillMaxWidth()) { Column(
+                Modifier.fillMaxWidth().heightIn(max = topMax).verticalScroll(topScroll).semantics { testTag = "score-top" },
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
             ) {
             // The score toolbar: the part picker with where the part came from, then zoom, written or concert
@@ -459,6 +505,13 @@ fun ScoreScreen(vm: PlayViewModel) {
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
             }
             }
+            // More above the score than its share: it fades out over a hairline, so it reads as scrolling, not cut.
+            if (topScroll.canScrollForward) {
+                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(min = 24.dp, max = 24.dp)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(c.bg.copy(alpha = 0f), c.bg))))
+                androidx.compose.material3.HorizontalDivider(Modifier.align(Alignment.BottomCenter), color = c.border)
+            }
+            }
             Box(Modifier.weight(1f).fillMaxWidth()
                 .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
                     androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal)) else Modifier)
@@ -500,7 +553,11 @@ fun ScoreScreen(vm: PlayViewModel) {
                         Modifier.align(Alignment.BottomCenter).padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2))
                 }
             }
-            if (!performance && !compact) Column(Modifier.fillMaxWidth().heightIn(max = bottomMax).verticalScroll(rememberScrollState())) {
+            if (phoneUpright) Column(Modifier.fillMaxWidth().onSizeChanged { bottomHeight = it.height }) {
+                // Mute my part stays in reach; the other practice chips are one tap away under Practice.
+                PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar,
+                    onPractice = { sheet = Sheet.PRACTICE })
+            } else if (!performance && !compact) Column(Modifier.fillMaxWidth().heightIn(max = bottomMax).verticalScroll(rememberScrollState())) {
                 // Not urgent: one line, the details in a sheet.
                 if (st.basicTier) NoticeLine(stringResource(R.string.band_sounds_missing), { sheet = Sheet.NOTICE }, Modifier.padding(horizontal = ScreenMargin))
                 PlayerBar(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP }, onBar = ::moveBar)
@@ -568,8 +625,13 @@ fun ScoreScreen(vm: PlayViewModel) {
         }
         Sheet.SOUND -> BottomSheet({ sheet = null }) {
             // First, under their own heading, the controls the row under the score had no room for.
-            val hidden = if (compact) rowItems.drop(overflow.firstHidden.coerceAtMost(rowItems.size)) else emptyList()
-            if (hidden.size > if (overflow.firstHidden <= STAND_ITEM) 1 else 0) {
+            val hidden = when {
+                compact -> rowItems.drop(overflow.firstHidden.coerceAtMost(rowItems.size))
+                phoneUpright -> uprightItems.drop(uprightFirstHidden.coerceIn(1, uprightItems.size))
+                else -> emptyList()
+            }
+            val standHidden = phoneUpright && uprightFirstHidden <= uprightItems.size - (if (st.basicTier) 2 else 1)
+            if (hidden.size > if ((compact && overflow.firstHidden <= STAND_ITEM) || standHidden) 1 else 0) {
                 SubHeading(stringResource(R.string.controls_hidden))
                 Column(Modifier.semantics { testTag = "sheet-controls" }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                     for (item in hidden) item(true)
@@ -583,7 +645,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     Modifier.semantics { testTag = "performance" }, icon = R.drawable.ic_stand_music_stand, role = Role.Button)
             }
             // On a phone on its side the zoom and the written or concert pitch live here, not over the score.
-            if (compact) {
+            if (compact || phoneUpright) {
                 Row(Modifier.background(c.secondary, MaterialTheme.shapes.medium)) {
                     IconButton({ controller.setZoom(st.zoom - 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out)) }
                     IconButton({ controller.setZoom(st.zoom + 10) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in)) }
@@ -634,7 +696,8 @@ private fun BottomSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) 
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int?, onSpeed: () -> Unit, onLoop: () -> Unit, onBar: (Int) -> Unit) {
+private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int?, onSpeed: () -> Unit, onLoop: () -> Unit, onBar: (Int) -> Unit,
+                      onPractice: (() -> Unit)? = null) {
     val c = BrasscribeTheme.colors
     Surface(
         Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2).navigationBarsPadding(),
@@ -645,6 +708,16 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
             // At large text the practice chips sit behind one Practice button (system.md §2).
             var practice by rememberSaveable { mutableStateOf(false) }
             val large = largeText()
+            // Upright on a phone: one row, Mute my part and Practice ▾ (Speed, Repeat, Count-in, Metronome in its sheet).
+            if (onPractice != null) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    if (myPart != null) PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) },
+                        icon = R.drawable.ic_bc_play_along)
+                    PracticeChip(stringResource(R.string.practice), st.speed != 100 || st.loop != null || st.countIn || st.metronome, onPractice,
+                        icon = R.drawable.ic_bc_speed, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
+                }
+                return@Column
+            }
             if (large) PracticeChip(stringResource(R.string.practice), practice, { practice = !practice }, icon = R.drawable.ic_bc_speed,
                 role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
             if (!large || practice) PracticeChips(controller, st, myPart, onSpeed, onLoop)
@@ -865,5 +938,33 @@ private fun MappedBanner(text: String, onOpen: () -> Unit, onClose: () -> Unit, 
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
         IconButton(onClose, Modifier.size(48.dp).semantics { testTag = "mapped-close" }) { BcIcon(R.drawable.ic_bc_close, stringResource(R.string.mapped_close)) }
+    }
+}
+
+/**
+ * A column that shows its [items] in order while each fits whole in [maxHeight], and leaves the rest out
+ * (not drawn, not heard); [onFirstHidden] reports the first left out, so the ⋯ sheet can offer it.
+ */
+@Composable
+private fun FitColumn(maxHeight: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp, items: List<@Composable () -> Unit>,
+                      onFirstHidden: (Int) -> Unit, modifier: Modifier = Modifier) {
+    androidx.compose.ui.layout.Layout({ items.forEach { it() } }, modifier) { measurables, constraints ->
+        val limit = maxHeight.roundToPx()
+        val gapPx = gap.roundToPx()
+        val loose = constraints.copy(minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity)
+        val placeables = measurables.map { it.measure(loose) }
+        var used = 0
+        var shown = 0
+        for ((i, p) in placeables.withIndex()) {
+            val need = p.height + if (i > 0) gapPx else 0
+            if (i > 0 && used + need > limit) break
+            used += need
+            shown++
+        }
+        onFirstHidden(shown)
+        layout(constraints.maxWidth, used) {
+            var y = 0
+            for (i in 0 until shown) { placeables[i].placeRelative(0, y); y += placeables[i].height + gapPx }
+        }
     }
 }

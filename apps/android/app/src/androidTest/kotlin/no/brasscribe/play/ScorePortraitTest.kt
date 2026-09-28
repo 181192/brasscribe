@@ -5,6 +5,10 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -79,8 +83,10 @@ class ScorePortraitTest {
         shell("settings put system font_scale $fontScale")
         rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale.toString().startsWith(fontScale.take(3)) }
         openSmallBand()
+        val dir = File(rule.activity.getExternalFilesDir(null), "score-portrait").apply { mkdirs() }
+        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         val placed = { tag: String -> rule.onAllNodesWithTag(tag).fetchSemanticsNodes().any { it.layoutInfo.isPlaced } }
-        assertTrue("$label: the mapping banner shows", placed("mapped-notice"))
+        if (fontScale == "1.0") assertTrue("$label: the mapping banner shows", placed("mapped-notice"))
         assertTrue("$label: the source pill shows", rule.onAllNodesWithTag("source-recording").fetchSemanticsNodes().isNotEmpty() ||
             rule.onAllNodesWithTag("source-arranged").fetchSemanticsNodes().isNotEmpty())
 
@@ -93,11 +99,22 @@ class ScorePortraitTest {
         val density = rule.activity.resources.displayMetrics.density
         val score = rule.onNodeWithTag("score-view").getBoundsInRoot()
         val share = (score.bottom - score.top).value * density / available
-        val dir = File(rule.activity.getExternalFilesDir(null), "score-portrait").apply { mkdirs() }
-        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         assertTrue("$label: the score has ${"%.0f".format(share * 100)} % of $available px", share >= 0.55f)
         val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
         assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)})", ink >= 0.005)
+        // Rule 7: every control shows whole, or not at all. None is cut by its container or runs under the score.
+        val scoreBox = rule.onNodeWithTag("score-view").fetchSemanticsNode().boundsInRoot
+        val controls = rule.onAllNodes(hasClickAction() and !hasAnyAncestor(hasTestTag("score-view"))).fetchSemanticsNodes()
+            .filter { it.layoutInfo.isPlaced }
+        assertTrue("$label: no controls", controls.size >= 4)
+        for (n in controls) {
+            val b = n.boundsInRoot
+            val full = n.layoutInfo.height
+            assertTrue("$label: a control shows ${b.height} of $full px (${n.config})", b.height >= full - 1)
+            assertTrue("$label: a control runs under the score (${n.config})", b.bottom <= scoreBox.top + 1 || b.top >= scoreBox.bottom - 1)
+        }
+        // Mute my part is in reach without scrolling.
+        assertTrue("$label: Mute my part shows", rule.onAllNodesWithText(rule.activity.getString(R.string.mute_my_part)).fetchSemanticsNodes().any { it.layoutInfo.isPlaced })
     }
 
     private fun inkShare(bmp: Bitmap): Double {
@@ -121,7 +138,7 @@ class ScorePortraitTest {
     @Test
     fun theBannerStaysClosedForTheScore() {
         openSmallBand()
-        rule.onNodeWithTag("mapped-close").performScrollTo().performClick()
+        rule.onNodeWithTag("mapped-close").performClick()
         rule.waitForIdle()
         assertTrue(vm.mappedNoticeSeen.value)
         assertFalse(rule.onAllNodesWithTag("mapped-notice").fetchSemanticsNodes().any { it.layoutInfo.isPlaced })
