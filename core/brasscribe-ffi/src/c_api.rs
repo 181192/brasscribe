@@ -309,17 +309,13 @@ pub unsafe extern "C" fn bc_arrange_layers_band(
             }
         }
     }
-    run(out, err, || {
+    // Moved, not cloned, into the call: the stems are whole WAV files (tens of MB each).
+    run(out, err, move || {
         let opts = options_json(options)?;
-        let layers = crate::LayerMidi {
-            solo_swiftf0: files[0].clone(),
-            solo_muscriptor: files[1].clone(),
-            solo_basic_pitch: files[2].clone(),
-            bass: files[3].clone(),
-            orchestra: files[4].clone(),
-            drums: files[5].clone(),
-        };
-        let [solo, bass, drums, orchestra] = stems.clone();
+        let [solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums]: [Vec<u8>; 6] =
+            files.try_into().map_err(|_| (BC_INVALID, "six MIDI files".to_string()))?;
+        let layers = crate::LayerMidi { solo_swiftf0, solo_muscriptor, solo_basic_pitch, bass, orchestra, drums };
+        let [solo, bass, drums, orchestra] = stems;
         let st = crate::LayerStems { solo, bass, drums, orchestra };
         let r = crate::band_impl(&layers, &st, &beats, &title, options_of(&opts)).map_err(map_err)?;
         let parts: Vec<serde_json::Value> = r.parts.iter().map(|p| serde_json::json!({"file_name": p.file_name, "musicxml": p.musicxml})).collect();
