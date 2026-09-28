@@ -100,7 +100,7 @@ import no.brasscribe.play.score.ScoreUiState
 /** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
 fun defaultPart(parts: List<String>, lineup: no.brasscribe.play.Lineup? = null): Int = no.brasscribe.play.leadPartIndex(parts, lineup)
 
-private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, OVERFLOW }
+private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -349,7 +349,8 @@ fun ScoreScreen(vm: PlayViewModel) {
 
     // A phone on its side: the score keeps most of the height and the controls fold under it (ScoreSplit).
     val overflow = remember { OverflowRowState() }
-    var overflowItems by remember { mutableStateOf<List<@Composable (Boolean) -> Unit>>(emptyList()) }
+    // The controls the row had no room for: the top bar's ⋯ sheet shows them first (one overflow entry, not two).
+    val rowItems = remember { ArrayList<@Composable (Boolean) -> Unit>() }
     val compact = !performance && ScoreSplit.compact(configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE, configuration.screenHeightDp)
     Scaffold(
         containerColor = c.bg,
@@ -357,7 +358,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             if (!performance) PlayTopBar(
                 title = PartNames.shortTitle(st.title.ifBlank { r.composition?.title.orEmpty() }), onBack = { vm.back() },
                 actions = {
-                    IconButton({ sheet = Sheet.SOUND }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_more, stringResource(R.string.more)) }
+                    IconButton({ sheet = Sheet.SOUND }, Modifier.size(48.dp).semantics { testTag = "top-more" }) { BcIcon(R.drawable.ic_bc_more, stringResource(R.string.more)) }
                     IconButton({ vm.navigate(Screen.EXPORT) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_export, stringResource(R.string.export)) }
                 },
             )
@@ -471,11 +472,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                     add { _ -> PracticeChip(shownText, false, { sheet = Sheet.PARTS }, icon = R.drawable.ic_bc_parts, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) }
                     add { _ -> PracticeChip(stringResource(R.string.practice), false, { sheet = Sheet.PRACTICE }, icon = R.drawable.ic_bc_speed,
                         role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) }
-                    add { inSheet ->
-                        if (inSheet) PracticeChip(stringResource(R.string.stand_enter), false, { sheet = null; enterStand(StandOrigin.BUTTON) },
-                            icon = R.drawable.ic_stand_music_stand, role = Role.Button)
-                        else MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) }
-                    }
+                    // The ⋯ sheet always offers the music stand, so the stand has no entry of its own there.
+                    add { inSheet -> if (!inSheet) MusicStandButton(standButton) { enterStand(StandOrigin.BUTTON) } }
                     if (toCheck > 0) add { _ ->
                         PracticeChip(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck),
                             false, { sheet = null; vm.navigate(Screen.REVIEW) }, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
@@ -486,12 +484,12 @@ fun ScoreScreen(vm: PlayViewModel) {
                         else NoticeLine(stringResource(R.string.band_sounds_missing), { sheet = Sheet.NOTICE })
                     }
                 }
+                rowItems.clear(); rowItems.addAll(controlItems)
                 OverflowRow(
                     overflow, BrasscribeSpace.s2,
                     lead = { Transport(controller, st, ::moveBar) },
                     items = controlItems,
-                    more = { PracticeChip(stringResource(R.string.more), false, { overflowItems = controlItems; sheet = Sheet.OVERFLOW },
-                        Modifier.semantics { testTag = "controls-more" }, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose) },
+                    more = null,
                     flexibleMin = if (st.basicTier) 160.dp else null,
                 )
             }
@@ -511,10 +509,6 @@ fun ScoreScreen(vm: PlayViewModel) {
             SubHeading(stringResource(R.string.practice))
             PracticeChips(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP })
         }
-        Sheet.OVERFLOW -> BottomSheet({ sheet = null }) {
-            SubHeading(stringResource(R.string.more))
-            for (item in overflowItems.drop(overflow.firstHidden.coerceAtMost(overflowItems.size))) item(true)
-        }
         Sheet.NOTICE -> BottomSheet({ sheet = null }) {
             InfoNote(stringResource(R.string.band_sounds_missing), boxed = false)
             if (st.bandSoundsExpected.isNotBlank()) {
@@ -523,6 +517,14 @@ fun ScoreScreen(vm: PlayViewModel) {
             }
         }
         Sheet.SOUND -> BottomSheet({ sheet = null }) {
+            // First, under their own heading, the controls the row under the score had no room for.
+            val hidden = if (compact) rowItems.drop(overflow.firstHidden.coerceAtMost(rowItems.size)) else emptyList()
+            if (hidden.size > if (overflow.firstHidden <= STAND_ITEM) 1 else 0) {
+                SubHeading(stringResource(R.string.controls_hidden))
+                Column(Modifier.semantics { testTag = "sheet-controls" }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                    for (item in hidden) item(true)
+                }
+            }
             // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
@@ -562,6 +564,9 @@ private fun segmentColors() = SegmentedButtonDefaults.colors(
     inactiveContainerColor = BrasscribeTheme.colors.secondary, inactiveContentColor = BrasscribeTheme.colors.textMuted,
     inactiveBorderColor = BrasscribeTheme.colors.border,
 )
+
+/** Index of the music stand in the row under the score (the ⋯ sheet has its own entry for it). */
+private const val STAND_ITEM = 2
 
 @Composable
 private fun BottomSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
