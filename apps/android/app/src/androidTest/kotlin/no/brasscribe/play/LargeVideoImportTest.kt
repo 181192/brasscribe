@@ -131,12 +131,29 @@ class LargeVideoImportTest {
         out.delete()
     }
 
+    @Test
+    fun otherCodecsAreDecodedToAWav() {
+        // AMR-NB: MPEG-4 holds it, but it is not AAC, so the sound is decoded once into a WAV.
+        val seconds = makeVideo(video, 4L shl 20, amr = true)
+        val imported = MediaImport.import(activity, Uri.fromFile(video), video.name, File(activity.cacheDir, "takes"))
+        assertEquals("wav", imported.file.extension)
+        assertTrue(imported.hasVideo)
+        assertEquals(seconds, imported.durationS, 0.5)
+        val pcm = assertNotNull(imported.audio).let { imported.audio!! }
+        assertEquals(8000, pcm.sampleRate)
+        assertEquals(seconds, pcm.seconds, 0.5)
+        val wav = no.brasscribe.play.audio.WavFile.read(imported.file)
+        assertEquals(pcm.samples.size, wav.samples.size)
+        assertTrue("the tone is there", wav.peak() > 0.1f)
+        imported.file.delete()
+    }
+
     /**
      * Writes an MP4 of about [bytes]: 30 fps video samples of 1 MB filler behind a real H.264 config,
-     * and a real 44.1 kHz AAC tone for the same duration. Returns the duration in seconds.
+     * and a real tone for the same duration (44.1 kHz AAC, or 8 kHz AMR-NB with [amr]). Returns the duration in seconds.
      */
-    private fun makeVideo(file: File, bytes: Long): Double {
-        val aac = encodeAacTone()
+    private fun makeVideo(file: File, bytes: Long, amr: Boolean = false): Double {
+        val aac = if (amr) encodeTone(MediaFormat.MIMETYPE_AUDIO_AMR_NB, 8000, 12_200, 160) else encodeTone(MediaFormat.MIMETYPE_AUDIO_AAC, 44100, 96_000, 1024)
         val videoFormat = avcFormat()
         val frameBytes = 1 shl 20
         val frames = (bytes / frameBytes).toInt().coerceAtLeast(10)
@@ -151,7 +168,7 @@ class LargeVideoImportTest {
             for (i in 0 until frameBytes) put(i, (i * 131 + 17).toByte())
         }
         val info = MediaCodec.BufferInfo()
-        val aacFrameUs = 1024 * 1_000_000L / 44100
+        val aacFrameUs = aac.frameUs
         var audioUs = 0L
         var a = 0
         for (f in 0 until frames) {
@@ -177,16 +194,15 @@ class LargeVideoImportTest {
         return durationUs / 1e6
     }
 
-    private class Aac(val format: MediaFormat, val frames: List<ByteArray>)
+    private class Aac(val format: MediaFormat, val frames: List<ByteArray>, val frameUs: Long)
 
-    /** One second of a 440 Hz tone, AAC-LC mono; its frames are repeated for longer tracks. */
-    private fun encodeAacTone(): Aac {
-        val rate = 44100
-        val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, rate, 1).apply {
-            setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-            setInteger(MediaFormat.KEY_BIT_RATE, 96_000)
+    /** One second of a 440 Hz tone, mono, in [mime]; its frames are repeated for longer tracks. */
+    private fun encodeTone(mime: String, rate: Int, bitRate: Int, samplesPerFrame: Int): Aac {
+        val format = MediaFormat.createAudioFormat(mime, rate, 1).apply {
+            if (mime == MediaFormat.MIMETYPE_AUDIO_AAC) setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
+            setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
         }
-        val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
+        val codec = MediaCodec.createEncoderByType(mime)
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         codec.start()
         val pcm = ByteBuffer.allocate(rate * 2).order(java.nio.ByteOrder.nativeOrder())
@@ -202,7 +218,7 @@ class LargeVideoImportTest {
                 val i = codec.dequeueInputBuffer(10_000)
                 if (i >= 0) {
                     val buf = codec.getInputBuffer(i)!!
-                    val n = minOf(buf.capacity(), pcm.remaining(), 2048)
+                    val n = minOf(buf.capacity(), pcm.remaining(), samplesPerFrame * 2)
                     if (n == 0) {
                         codec.queueInputBuffer(i, 0, 0, pts, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                         inputDone = true
@@ -227,7 +243,7 @@ class LargeVideoImportTest {
             }
         }
         codec.stop(); codec.release()
-        return Aac(outFormat!!, frames)
+        return Aac(outFormat!!, frames, samplesPerFrame * 1_000_000L / rate)
     }
 
     /** A 320x240 H.264 format with the encoder's real SPS/PPS, taken from one encoded frame. */

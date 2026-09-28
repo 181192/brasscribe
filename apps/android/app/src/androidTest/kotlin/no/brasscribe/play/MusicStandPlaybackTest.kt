@@ -197,12 +197,23 @@ class MusicStandPlaybackTest {
         instrumentation.runOnMainSync { container.assistiveOverride = false }
         waitFor("it hides again without", 8_000) { !onScreen("Speed 50%") }
 
-        // A Bluetooth page turner is a keyboard: its keys turn the page and leave the layer hidden,
-        // and having sent them keeps nothing up.
+        // A Bluetooth page turner is a keyboard: its keys turn the page (each press is announced, a
+        // turn or "first/last page") and leave the layer hidden.
         for (k in listOf(KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_UP)) {
+            instrumentation.runOnMainSync { vm.status.value = null }
             key(k)
+            var said: String? = null
+            waitFor("the page key reached the stand", 3_000) { instrumentation.runOnMainSync { said = vm.status.value?.text }; said != null }
+            assertTrue("a page message: $said", said!!.contains("page", ignoreCase = true))
             assertTrue("a page key leaves the layer hidden", !onScreen("Speed 50%"))
         }
+        // With the layer up, page keys don't keep it: it still hides 4 s after the last touch.
+        tapMusic()
+        waitFor("a tap shows the layer", 3_000) { onScreen("Speed 50%") }
+        key(KeyEvent.KEYCODE_PAGE_DOWN)
+        Thread.sleep(2_000)
+        key(KeyEvent.KEYCODE_PAGE_UP)
+        waitFor("page keys don't restart the 4 s timer", 2_500) { !onScreen("Speed 50%") }
         // Tab shows the layer, and it stays until the next touch.
         key(KeyEvent.KEYCODE_TAB)
         waitFor("Tab shows the layer", 3_000) { onScreen("Speed 50%") }

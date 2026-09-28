@@ -212,10 +212,11 @@ fun ScoreScreen(vm: PlayViewModel) {
             focusOpener = true
         }
     }
-    fun turnPage(to: Int) {
+    /** [touch]: a swipe or a page button restarts the hide timer; a page key (a pedal) does not. */
+    fun turnPage(to: Int, touch: Boolean = true) {
         val p = ms.pages ?: return
         val t = to.coerceIn(0, p.count - 1)
-        ms.touches++
+        if (touch) ms.touches++
         // Past either end the page stays, and says where it is, so a pedal press is never silent.
         if (t == ms.page) {
             if (to != t) quiet(res.getString(if (to < 0) R.string.stand_first_page else R.string.stand_last_page))
@@ -256,14 +257,14 @@ fun ScoreScreen(vm: PlayViewModel) {
         }
     }
     fun standCommand(cmd: StandCommand, showsControls: Boolean) {
-        ms.touches++
-        // Only Tab and Space bring the controls up and keep them (§4.2); a page turner's keys just turn.
-        if (showsControls && cmd != StandCommand.LEAVE) { ms.layer = true; ms.keyboardControls = true }
+        // Only Tab and Space bring the controls up and keep them (§4.2). A page turner's keys just turn:
+        // they neither show the layer nor restart its hide timer.
+        if (showsControls && cmd != StandCommand.LEAVE) { ms.touches++; ms.layer = true; ms.keyboardControls = true }
         when (cmd) {
-            StandCommand.NEXT_PAGE -> turnPage(ms.page + 1)
-            StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1)
-            StandCommand.FIRST_PAGE -> turnPage(0)
-            StandCommand.LAST_PAGE -> turnPage(ms.pageCount - 1)
+            StandCommand.NEXT_PAGE -> turnPage(ms.page + 1, touch = false)
+            StandCommand.PREVIOUS_PAGE -> turnPage(ms.page - 1, touch = false)
+            StandCommand.FIRST_PAGE -> turnPage(0, touch = false)
+            StandCommand.LAST_PAGE -> turnPage(ms.pageCount - 1, touch = false)
             StandCommand.NEXT_BAR -> moveBar(1)
             StandCommand.PREVIOUS_BAR -> moveBar(-1)
             StandCommand.PLAY_PAUSE -> controller.togglePlay()
