@@ -12,9 +12,11 @@ import Foundation
 /// music stops or fades, and below the threshold the level of every part is exactly the gain, so
 /// muting or soloing parts keeps their balance.
 public final class OutputStageAU: AUAudioUnit {
+    /// Sandbox-safe: the Mac app runs in the App Sandbox, where a registered unit without the flag
+    /// cannot be instantiated (AudioComponentInstanceNew fails with -3000).
     public static let componentDescription = AudioComponentDescription(
         componentType: kAudioUnitType_Effect, componentSubType: fourCC("bout"), componentManufacturer: fourCC("Brsc"),
-        componentFlags: 0, componentFlagsMask: 0)
+        componentFlags: AudioComponentFlags.sandboxSafe.rawValue, componentFlagsMask: 0)
 
     static let registered: Void = {
         AUAudioUnit.registerSubclass(OutputStageAU.self, as: componentDescription, name: "Brasscribe: Output Stage", version: 1)

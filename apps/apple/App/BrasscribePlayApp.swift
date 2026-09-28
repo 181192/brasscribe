@@ -1,4 +1,5 @@
 import Network
+import PlaybackKit
 import ScoreKit
 import SwiftUI
 import TranscriptionKit
@@ -12,6 +13,8 @@ struct BrasscribePlayApp: App {
     #endif
 
     init() {
+        // the in-process audio units, registered once on the main thread before any score opens
+        PlaybackEngine.prepare()
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-reset") {
             try? FileManager.default.removeItem(at: Piece.libraryURL)

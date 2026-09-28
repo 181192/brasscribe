@@ -1,3 +1,4 @@
+import AudioUnitCatch
 import AVFoundation
 import Foundation
 import ScoreKit
@@ -115,8 +116,8 @@ public final class PlaybackEngine {
                                    ? main.outputFormat(forBus: 0).sampleRate : 44100, channels: 2)!
         // the band's own bus, through the output stage into the main mixer
         engine.attach(bandBus)
-        _ = OutputStageAU.registered
-        let stage = AVAudioUnitEffect(audioComponentDescription: OutputStageAU.componentDescription)
+        Self.prepare()
+        let stage = try Self.makeEffect(OutputStageAU.componentDescription)
         engine.attach(stage)
         engine.connect(bandBus, to: stage, format: stereo)
         engine.connect(stage, to: main, format: stereo)
@@ -125,8 +126,7 @@ public final class PlaybackEngine {
         let out = bandBus
         if let irURL = roomIR, let (ch, sr) = try? RoomIR.load(irURL) {
             // Direct sound from the environment node, reverberant field from the room IR.
-            _ = ConvolutionReverbAU.registered
-            let conv = AVAudioUnitEffect(audioComponentDescription: ConvolutionReverbAU.componentDescription)
+            let conv = try Self.makeEffect(ConvolutionReverbAU.componentDescription)
             engine.attach(conv)
             engine.connect(environment, to: [AVAudioConnectionPoint(node: out, bus: out.nextAvailableInputBus),
                                              AVAudioConnectionPoint(node: conv, bus: 0)], fromBus: 0, format: stereo)
@@ -174,7 +174,7 @@ public final class PlaybackEngine {
         engine.attach(timePitch)
         // the recording's own bus converts to the stage's stereo format (a mono file plays from both sides)
         engine.attach(recordingBus)
-        let recStage = AVAudioUnitEffect(audioComponentDescription: OutputStageAU.componentDescription)
+        let recStage = try Self.makeEffect(OutputStageAU.componentDescription)
         engine.attach(recStage)
         engine.connect(recordingBus, to: recStage, format: stereo)
         engine.connect(recStage, to: main, format: stereo)
@@ -184,11 +184,7 @@ public final class PlaybackEngine {
             originalFile = f
             engine.connect(player, to: timePitch, format: f.processingFormat)
             engine.connect(timePitch, to: recordingBus, format: f.processingFormat)
-            if offlineFormat != nil {
-                levelOriginal(url: originalURL)
-            } else {
-                DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.levelOriginal(url: originalURL) }
-            }
+            if offlineFormat != nil { levelOriginal(url: originalURL) }
         } else {
             engine.connect(player, to: timePitch, format: nil)
             engine.connect(timePitch, to: recordingBus, format: nil)
@@ -199,6 +195,29 @@ public final class PlaybackEngine {
         engine.prepare()
         try engine.start()
         applyRate(); applyRoom()
+        // Measured in the background once the engine is complete: the result is applied on the main
+        // thread, which may already own the engine while an init on another thread is still running.
+        if let originalURL, offlineFormat == nil {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.levelOriginal(url: originalURL) }
+        }
+    }
+
+    /// Registers the in-process audio units (the output stage and the convolution reverb). The app
+    /// calls it at launch on the main thread; every engine calls it again before it makes the units,
+    /// so the order does not matter. Idempotent and thread-safe.
+    public static func prepare() {
+        _ = OutputStageAU.registered
+        _ = ConvolutionReverbAU.registered
+    }
+
+    /// An effect unit, or `PlaybackError.audioUnit` when it cannot be made. AVFAudio raises an
+    /// Objective-C exception for a unit it cannot instantiate, which would end the app.
+    static func makeEffect(_ description: AudioComponentDescription) throws -> AVAudioUnitEffect {
+        var error: NSError?
+        guard let unit = makeAudioUnitEffect(description, &error) else {
+            throw PlaybackError.audioUnit("\(fourCCString(description.componentSubType)): \(error?.localizedDescription ?? "unknown")")
+        }
+        return unit
     }
 
     deinit {
@@ -652,6 +671,12 @@ public final class PlaybackEngine {
 
 public enum PlaybackError: Error, Equatable {
     case noOriginal, notOffline, render(String)
+    /// An audio unit could not be instantiated: its subtype and the reason.
+    case audioUnit(String)
+}
+
+private func fourCCString(_ code: OSType) -> String {
+    String(decoding: [24, 16, 8, 0].map { UInt8((code >> $0) & 0xff) }, as: UTF8.self)
 }
 
 public extension AVAudioPCMBuffer {
