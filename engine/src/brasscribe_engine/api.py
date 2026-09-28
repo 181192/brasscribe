@@ -31,6 +31,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Literal
 
+import anyio
+
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -51,6 +53,9 @@ BAND_SOUNDS_CACHE = "public, max-age=86400"
 STATIC = Path(__file__).resolve().parent / "static"
 BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from BRASSCRIBE_BAND_SOUNDS_DIR
 HEARTBEAT_S = 15.0
+# Event streams wait on their job in threads of their own: in the shared pool (40 threads) forty open
+# streams would leave no thread for any other request.
+STREAM_WAITERS = 256
 ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 
 MEDIA = {
@@ -103,6 +108,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     )
     app.state.settings = settings
     app.state.jobs = JobManager(settings, workers=workers)
+    stream_waiters = anyio.CapacityLimiter(STREAM_WAITERS)
     app.state.trust_loopback = settings.trust_local if trust_loopback is None else trust_loopback
     app.state.admin_token = settings.admin_credential()
     from .discovery import service_name
@@ -502,10 +508,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         job = job_or_404(job_id)
         start = int(last_event_id) if last_event_id and last_event_id.lstrip("-").isdigit() else after
 
-        def gen():
+        async def gen():
             last = start
             while True:
-                batch = job.events_after(last, HEARTBEAT_S)
+                batch = await anyio.to_thread.run_sync(job.events_after, last, HEARTBEAT_S, limiter=stream_waiters)
                 for e in batch:
                     last = e["id"]
                     yield f"id: {e['id']}\nevent: {e.get('type', 'message')}\ndata: {json.dumps(e)}\n\n"
