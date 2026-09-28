@@ -73,15 +73,19 @@ final class FakeLauncher: ProcessLauncher, @unchecked Sendable {
     var exits: [Int32: @Sendable (Int32) -> Void] = [:]
     var nextPid: Int32 = 4000
     var failWith: LaunchFailure?
+    /// Set: every process exits by itself at once with this status (a `pixi install`).
+    var exitStatus: Int32?
 
     func launch(_ plan: LaunchPlan, onExit: @escaping @Sendable (Int32) -> Void) throws -> Int32 {
-        try lock.withLock {
+        let (pid, status) = try lock.withLock { () -> (Int32, Int32?) in
             if let failWith { throw failWith }
             nextPid += 1
             launched.append(plan)
-            exits[nextPid] = onExit
-            return nextPid
+            if exitStatus == nil { exits[nextPid] = onExit }
+            return (nextPid, exitStatus)
         }
+        if let status { DispatchQueue.global().async { onExit(status) } }
+        return pid
     }
 
     func terminate(pid: Int32, grace: TimeInterval) {

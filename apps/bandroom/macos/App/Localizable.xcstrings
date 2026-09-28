@@ -371,6 +371,16 @@
         }
       }
     },
+    "Brasscribe couldn't finish updating": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe fikk ikke fullført oppdateringen"
+          }
+        }
+      }
+    },
     "Brasscribe couldn't save the download": {
       "localizations": {
         "nb": {
@@ -807,6 +817,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Laster ned det Brasscribe trenger"
+          }
+        }
+      }
+    },
+    "Engine build": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motorbygg"
           }
         }
       }
@@ -2051,6 +2071,16 @@
         }
       }
     },
+    "The previous version is still running, so phones can keep sending recordings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."
+          }
+        }
+      }
+    },
     "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.": {
       "localizations": {
         "nb": {
@@ -2127,6 +2157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oppdaterer"
+          }
+        }
+      }
+    },
+    "Updating Brasscribe…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdaterer Brasscribe …"
           }
         }
       }
@@ -2217,6 +2257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Arbeidsmengde"
+          }
+        }
+      }
+    },
+    "Workspace": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbeidsområde"
           }
         }
       }

@@ -9,17 +9,20 @@ public struct Health: Codable, Sendable, Equatable {
     public var authRequired: Bool
     public var serverId: String
     public var serverName: String
+    /// Which build is running: the commit and workspace stamp of an installed engine; nil from older engines.
+    public var build: String?
 
     enum CodingKeys: String, CodingKey {
-        case status, version, device
+        case status, version, device, build
         case authRequired = "auth_required"
         case serverId = "server_id"
         case serverName = "server_name"
     }
 
-    public init(status: String = "ok", version: String, device: String, authRequired: Bool = false, serverId: String, serverName: String) {
+    public init(status: String = "ok", version: String, device: String, authRequired: Bool = false, serverId: String, serverName: String,
+                build: String? = nil) {
         self.status = status; self.version = version; self.device = device
-        self.authRequired = authRequired; self.serverId = serverId; self.serverName = serverName
+        self.authRequired = authRequired; self.serverId = serverId; self.serverName = serverName; self.build = build
     }
 }
 

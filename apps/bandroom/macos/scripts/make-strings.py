@@ -264,6 +264,11 @@ NB = {
     "this score": "dette partituret",
     "“%@”": "«%@»",
     "“%@” from %@": "«%@» fra %@",
+    "Brasscribe couldn't finish updating": "Brasscribe fikk ikke fullført oppdateringen",
+    "The previous version is still running, so phones can keep sending recordings.": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.",
+    "Updating Brasscribe…": "Oppdaterer Brasscribe …",
+    "Engine build": "Motorbygg",
+    "Workspace": "Arbeidsområde",
 }
 
 # Keys built at run time that the compiler can't extract (none today).

@@ -7,6 +7,8 @@ public enum Problem: Equatable, Sendable {
     /// environment) aren't installed yet.
     case missingDownload([ModelComponent])
     case noFreePort
+    /// The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.
+    case updateFailed
 }
 
 /// What the menu-bar icon, the tooltip and the status line show (§6.1).

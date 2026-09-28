@@ -1,9 +1,10 @@
 import Foundation
 import Observation
 
-/// First-run setup of the engine environment (design/server-app.md §5.1 option A): copy the workspace that
-/// ships in the app (pixi.toml, pixi.lock and the engine source) into `<data>/envs`, then `pixi install`
-/// from the lockfile. A checkout only needs the install.
+/// The engine environment (design/server-app.md §5.1 option A). First run: copy the workspace that ships in the app
+/// (pixi.toml, pixi.lock and the engine source) into `<data>/envs`, then `pixi install` from the lockfile; a
+/// checkout only needs the install. After an app update: replace that copy with the app's (`WorkspaceSwap`) and
+/// install again only when the lockfile changed; a failure puts the old copy back.
 @MainActor
 @Observable
 public final class Bootstrapper {
@@ -16,6 +17,8 @@ public final class Bootstrapper {
     }
 
     public private(set) var phase: Phase = .idle
+    /// The current run replaces an installed copy ("Updating Brasscribe…") rather than making the first one.
+    public private(set) var isUpdate = false
 
     @ObservationIgnored private let launcher: ProcessLauncher
 
@@ -34,52 +37,74 @@ public final class Bootstrapper {
         }
     }
 
+    /// An update is under way.
+    public var isUpdating: Bool {
+        isUpdate && (phase == .copying || phase == .installing)
+    }
+
     public func run(configuration: EngineConfiguration, bundledWorkspace: URL?, base: [String: String] = ProcessInfo.processInfo.environment) async {
+        isUpdate = false
         do {
             if case .installed(let workspace, _) = configuration.source {
                 phase = .copying
                 guard let bundledWorkspace else { throw LaunchFailure.notInstalled("this build has no engine workspace") }
-                try Self.syncWorkspace(from: bundledWorkspace, to: workspace)
+                try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: workspace).commit() }.value
             }
             if configuration.source.isEnvironmentReady {
                 phase = .done
                 return
             }
             phase = .installing
-            let plan = try configuration.installPlan(base: base)
-            let status: Int32 = try await withCheckedThrowingContinuation { cont in
-                do {
-                    _ = try launcher.launch(plan) { cont.resume(returning: $0) }
-                } catch {
-                    cont.resume(throwing: error)
-                }
-            }
-            phase = status == 0 ? .done : .failed("pixi install exited with status \(status); see \(plan.log.path)")
+            let (status, log) = try await install(configuration, base: base)
+            phase = status == 0 ? .done : .failed("pixi install exited with status \(status); see \(log.path)")
         } catch {
             phase = .failed(String(describing: error))
         }
     }
 
-    /// Copies files that differ (by size and date) so an update fetches only what changed.
-    nonisolated static func syncWorkspace(from source: URL, to dest: URL) throws {
-        let fm = FileManager.default
-        try fm.createDirectory(at: dest, withIntermediateDirectories: true)
-        guard let walker = fm.enumerator(at: source, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey]) else { return }
-        let base = source.standardizedFileURL.path
-        for case let url as URL in walker {
-            let rel = String(url.standardizedFileURL.path.dropFirst(base.count + 1))
-            let target = dest.appending(path: rel)
-            let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
-            if values.isDirectory == true {
-                try fm.createDirectory(at: target, withIntermediateDirectories: true)
-                continue
+    /// Replaces the installed workspace with the app's; the engine must be stopped first. Returns whether the new
+    /// copy is in place. On failure the old copy is back as it was, and `phase` says why.
+    @discardableResult
+    public func update(configuration: EngineConfiguration, bundledWorkspace: URL, lockChanged: Bool,
+                       base: [String: String] = ProcessInfo.processInfo.environment) async -> Bool {
+        isUpdate = true
+        let workspace = configuration.source.workspace
+        phase = .copying
+        do {
+            let swap = try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: workspace) }.value
+            if lockChanged || !configuration.source.isEnvironmentReady {
+                phase = .installing
+                let result: (status: Int32, log: URL)
+                do {
+                    result = try await install(configuration, base: base)
+                } catch {
+                    try? swap.rollback()
+                    throw error
+                }
+                if result.status != 0 {
+                    try? swap.rollback()
+                    phase = .failed("pixi install exited with status \(result.status); see \(result.log.path)")
+                    return false
+                }
             }
-            if let existing = try? target.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
-               existing.fileSize == values.fileSize, existing.contentModificationDate == values.contentModificationDate {
-                continue
-            }
-            try? fm.removeItem(at: target)
-            try fm.copyItem(at: url, to: target)
+            swap.commit()
+            phase = .done
+            return true
+        } catch {
+            phase = .failed(String(describing: error))
+            return false
         }
+    }
+
+    private func install(_ configuration: EngineConfiguration, base: [String: String]) async throws -> (status: Int32, log: URL) {
+        let plan = try configuration.installPlan(base: base)
+        let status: Int32 = try await withCheckedThrowingContinuation { cont in
+            do {
+                _ = try launcher.launch(plan) { cont.resume(returning: $0) }
+            } catch {
+                cont.resume(throwing: error)
+            }
+        }
+        return (status, plan.log)
     }
 }
