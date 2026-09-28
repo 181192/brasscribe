@@ -3,7 +3,9 @@ import Foundation
 /// A Needs-attention problem with one fix (design/server-app.md §6.2).
 public enum Problem: Equatable, Sendable {
     case lowDisk(freeGB: Int)
-    case missingDownload
+    /// What a full-band score still needs, in catalogue order; empty when Brasscribe's own tools (the engine
+    /// environment) aren't installed yet.
+    case missingDownload([ModelComponent])
     case noFreePort
 }
 
@@ -25,7 +27,7 @@ public enum DisplayState: Equatable, Sendable {
         if let setupPercent { return .settingUp(percent: setupPercent) }
         switch phase {
         case .failed(.noFreePort): return .attention(.noFreePort)
-        case .failed(.notInstalled): return .attention(.missingDownload)
+        case .failed(.notInstalled): return .attention(.missingDownload([]))
         case .failed: return .error
         default: break
         }

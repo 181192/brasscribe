@@ -11,6 +11,26 @@
         }
       }
     },
+    "%@ GB": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ GB"
+          }
+        }
+      }
+    },
+    "%@ aren't downloaded yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ er ikke lastet ned ennå."
+          }
+        }
+      }
+    },
     "%@ is paired.": {
       "localizations": {
         "nb": {
@@ -31,12 +51,32 @@
         }
       }
     },
+    "%@ of %@ GB": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ av %@ GB"
+          }
+        }
+      }
+    },
     "%@ wants to use this computer.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ vil bruke denne datamaskinen."
+          }
+        }
+      }
+    },
+    "%@ · about %lld min left": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · omtrent %lld min igjen"
           }
         }
       }
@@ -141,6 +181,16 @@
         }
       }
     },
+    "A download arrived damaged": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En nedlasting kom fram skadet"
+          }
+        }
+      }
+    },
     "About Brasscribe Bandroom": {
       "localizations": {
         "nb": {
@@ -161,12 +211,42 @@
         }
       }
     },
+    "Accept the licence on Hugging Face, then try again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godta lisensen på Hugging Face, og prøv igjen"
+          }
+        }
+      }
+    },
     "Access key from Hugging Face": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Tilgangsnøkkel fra Hugging Face"
+          }
+        }
+      }
+    },
+    "Add an access key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til en tilgangsnøkkel"
+          }
+        }
+      }
+    },
+    "Add the key, then try again. The separators download without it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til nøkkelen, og prøv igjen. Skillerne lastes ned uten den."
           }
         }
       }
@@ -281,22 +361,32 @@
         }
       }
     },
-    "Beat finder": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Taktfinner"
-          }
-        }
-      }
-    },
     "Brasscribe can't start": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe kan ikke starte"
+          }
+        }
+      }
+    },
+    "Brasscribe couldn't save the download": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe fikk ikke lagret nedlastingen"
+          }
+        }
+      }
+    },
+    "Brasscribe deleted it. Try again to fetch it afresh.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe har slettet den. Prøv igjen for å hente den på nytt."
           }
         }
       }
@@ -317,6 +407,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe er klar"
+          }
+        }
+      }
+    },
+    "Brasscribe is ready. Phones and tablets can make full-band scores now.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."
           }
         }
       }
@@ -367,6 +467,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe stoppet uventet"
+          }
+        }
+      }
+    },
+    "Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe bruker nøkkelen bare til å laste ned bandskriveren fra Hugging Face, og oppbevarer den i nøkkelringen din."
+          }
+        }
+      }
+    },
+    "Brasscribe's own tools aren't installed yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribes egne verktøy er ikke installert ennå."
           }
         }
       }
@@ -481,6 +601,16 @@
         }
       }
     },
+    "Check the internet connection, then try again. It continues where it stopped.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet."
+          }
+        }
+      }
+    },
     "Check this computer": {
       "localizations": {
         "nb": {
@@ -537,6 +667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "Continue without it": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett uten"
           }
         }
       }
@@ -611,6 +751,16 @@
         }
       }
     },
+    "Don't see it? On a MacBook it can hide behind the camera notch. Open Brasscribe from Launchpad any time.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ser du det ikke? På en MacBook kan det skjule seg bak kamerahakket. Du kan alltid åpne Brasscribe fra Launchpad."
+          }
+        }
+      }
+    },
     "Done": {
       "localizations": {
         "nb": {
@@ -627,6 +777,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last ned"
+          }
+        }
+      }
+    },
+    "Downloading": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laster ned"
           }
         }
       }
@@ -691,6 +851,16 @@
         }
       }
     },
+    "For when the Brasscribe mark is hidden in the menu bar, for example behind the camera notch.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Til når Brasscribe-merket er skjult i menylinjen, for eksempel bak kamerahakket."
+          }
+        }
+      }
+    },
     "Free space": {
       "localizations": {
         "nb": {
@@ -751,12 +921,32 @@
         }
       }
     },
+    "Got it": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "Hugging Face access": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Tilgang til Hugging Face"
+          }
+        }
+      }
+    },
+    "Hugging Face didn't accept the access key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hugging Face godtok ikke tilgangsnøkkelen"
           }
         }
       }
@@ -931,6 +1121,16 @@
         }
       }
     },
+    "Missing %lld downloads": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mangler %lld nedlastinger"
+          }
+        }
+      }
+    },
     "Missing one download": {
       "localizations": {
         "nb": {
@@ -947,6 +1147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mer"
+          }
+        }
+      }
+    },
+    "Name shown to phones": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navnet telefonene ser"
           }
         }
       }
@@ -1001,6 +1211,16 @@
         }
       }
     },
+    "Not enough space": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nok plass"
+          }
+        }
+      }
+    },
     "Not enough space: needs about 15 GB, %lld GB free": {
       "localizations": {
         "nb": {
@@ -1041,12 +1261,32 @@
         }
       }
     },
+    "Open Menu Bar settings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne innstillingene for menylinjen"
+          }
+        }
+      }
+    },
     "Open Studio": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Åpne Studio"
+          }
+        }
+      }
+    },
+    "Open the MuScriptor page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne MuScriptor-siden"
           }
         }
       }
@@ -1121,6 +1361,36 @@
         }
       }
     },
+    "Paste a new key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lim inn en ny nøkkel"
+          }
+        }
+      }
+    },
+    "Pause": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Paused · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På pause · %@"
+          }
+        }
+      }
+    },
     "Phone doesn't show this computer?": {
       "localizations": {
         "nb": {
@@ -1157,6 +1427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Telefonene kan ikke sende opptak før du starter den."
+          }
+        }
+      }
+    },
+    "Phones list this Mac as “Brasscribe on %@”.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonene viser denne Macen som «Brasscribe på %@»."
           }
         }
       }
@@ -1341,6 +1621,16 @@
         }
       }
     },
+    "Resume": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        }
+      }
+    },
     "Running": {
       "localizations": {
         "nb": {
@@ -1441,6 +1731,16 @@
         }
       }
     },
+    "Show in the Dock": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis i Dock"
+          }
+        }
+      }
+    },
     "Show logs": {
       "localizations": {
         "nb": {
@@ -1461,12 +1761,32 @@
         }
       }
     },
+    "Signed in, but the licence isn't accepted yet. Choose **Agree** on the MuScriptor page.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du er logget inn, men lisensen er ikke godtatt ennå. Velg **Agree** på MuScriptor-siden."
+          }
+        }
+      }
+    },
     "Skip for now": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Hopp over nå"
+          }
+        }
+      }
+    },
+    "Soloist separator": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solistskiller"
           }
         }
       }
@@ -1591,12 +1911,32 @@
         }
       }
     },
+    "The Brasscribe mark may be hidden behind the camera notch. Open Brasscribe from Launchpad any time, or make room in System Settings › Menu Bar.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe-merket kan være skjult bak kamerahakket. Du kan alltid åpne Brasscribe fra Launchpad, eller gi plass i Systeminnstillinger › Menylinje."
+          }
+        }
+      }
+    },
     "The band writer isn't downloaded yet.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Bandskriveren er ikke lastet ned ennå."
+          }
+        }
+      }
+    },
+    "The band writer needs your Hugging Face access key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face"
           }
         }
       }
@@ -1621,6 +1961,16 @@
         }
       }
     },
+    "The downloads need about %@ GB; %@ GB is free.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedlastingene trenger omtrent %@ GB, og %@ GB er ledig."
+          }
+        }
+      }
+    },
     "The downloads stay in %@, so installing again doesn't fetch them again.": {
       "localizations": {
         "nb": {
@@ -1631,12 +1981,32 @@
         }
       }
     },
+    "The instrument separator isn't downloaded yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrumentskilleren er ikke lastet ned ennå."
+          }
+        }
+      }
+    },
     "The key is saved in your Keychain.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Nøkkelen er lagret i nøkkelringen."
+          }
+        }
+      }
+    },
+    "The key may have been deleted or have expired.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøkkelen kan være slettet eller utløpt."
           }
         }
       }
@@ -1667,6 +2037,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Telefonen viser tallet: %@"
+          }
+        }
+      }
+    },
+    "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skillerne har ingen oppgitt lisens, så Brasscribe deler dem ikke videre. Macen laster dem ned der de som laget dem, publiserer dem."
+          }
+        }
+      }
+    },
+    "The soloist separator isn't downloaded yet.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solistskilleren er ikke lastet ned ennå."
           }
         }
       }
@@ -1731,6 +2121,16 @@
         }
       }
     },
+    "Use this name": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk dette navnet"
+          }
+        }
+      }
+    },
     "Uses the graphics chip": {
       "localizations": {
         "nb": {
@@ -1757,6 +2157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Svært travel"
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venter"
           }
         }
       }
@@ -1837,6 +2247,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "lite ledig plass"
+          }
+        }
+      }
+    },
+    "the band writer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bandskriveren"
+          }
+        }
+      }
+    },
+    "the instrument separator": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "instrumentskilleren"
+          }
+        }
+      }
+    },
+    "the soloist separator": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "solistskilleren"
           }
         }
       }

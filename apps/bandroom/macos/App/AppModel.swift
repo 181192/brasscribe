@@ -15,6 +15,10 @@ final class AppModel {
     let monitor = StatusMonitor()
     let pairing = PairingModel()
     let bootstrapper = Bootstrapper()
+    /// The three model downloads (docs/plan/apps-plan.md §7), from their makers' own release URLs.
+    let downloader: ModelDownloader
+    /// Window requests wait here until SwiftUI's openWindow is available (a reopen event can come first).
+    let opener = WindowOpener()
     private(set) var host: HostSnapshot?
     private(set) var models: ModelCheck.Result = .init(missing: [])
     var setupComplete: Bool {
@@ -26,12 +30,34 @@ final class AppModel {
     /// The name on a request that lapsed before it was answered.
     var expiredRequest: String?
     var loginItemEnabled = false
+    /// The menu-bar mark looked hidden after launch (behind the notch, or pushed off a crowded menu bar).
+    private(set) var iconHidden = false
+    /// "The Brasscribe mark may be hidden…" is shown until it's dismissed, once.
+    var hiddenIconNoticeDismissed: Bool {
+        didSet { UserDefaults.standard.set(hiddenIconNoticeDismissed, forKey: "hiddenIconNoticeDismissed") }
+    }
+    var showHiddenIconNotice: Bool { iconHidden && !hiddenIconNoticeDismissed }
+    /// Settings › Show in the Dock: a way back in when the menu-bar mark can't be seen.
+    var showInDock: Bool {
+        didSet {
+            UserDefaults.standard.set(showInDock, forKey: "showInDock")
+            applyDockPolicy()
+        }
+    }
+    /// The Mac's own name (System Settings › General › About).
+    let systemComputerName: String
+    /// Settings › Name shown to phones; empty uses the Mac's own name.
+    private(set) var customComputerName: String
     /// Where the panel is: the main status or the phones list.
     var panelPage: PanelPage = .status
 
     enum PanelPage: Equatable { case status, phones }
 
-    @ObservationIgnored var openWindow: ((String) -> Void)?
+    /// Opens a window by id (setup, main, pair), now or as soon as SwiftUI can.
+    func openWindow(_ id: String) {
+        NSApp.activate()
+        opener(id)
+    }
     @ObservationIgnored private let sampler: HostSampler
     @ObservationIgnored private var sampleTask: Task<Void, Never>?
     @ObservationIgnored private var sleepAssertion: IOPMAssertionID = 0
@@ -57,11 +83,21 @@ final class AppModel {
         let bandSounds = EngineConfiguration.findBandSounds(resources: Bundle.main.resourceURL)
         logger.write(bandSounds.map { "band sounds: \($0.path)" }
                      ?? "band sounds missing from the app (Resources/band/brasscribe-band.sf2); Studio plays General MIDI sounds")
+        let systemName = ComputerName.current()
+        let customName = UserDefaults.standard.string(forKey: ComputerName.customNameKey) ?? ""
+        systemComputerName = systemName
+        customComputerName = customName
+        hiddenIconNoticeDismissed = UserDefaults.standard.bool(forKey: "hiddenIconNoticeDismissed")
+        showInDock = UserDefaults.standard.bool(forKey: "showInDock")
         let config = EngineConfiguration(source: source, pixi: EngineConfiguration.findPixi(bundle: .main, environment: env),
-                                         paths: paths, computerName: ComputerName.current(), adminToken: token,
+                                         paths: paths, computerName: ComputerName.shown(system: systemName, custom: customName),
+                                         adminToken: token,
                                          bandSounds: bandSounds)
         supervisor = EngineSupervisor(configuration: config, baseEnvironment: AppModel.engineBaseEnvironment(env))
         sampler = HostSampler(volume: paths.data)
+        let hfToken = env["HF_TOKEN"]
+        downloader = ModelDownloader(models: AppModel.modelsDir(paths), hub: ModelCatalog.hubCache(environment: env),
+                                     token: { hfToken ?? HuggingFaceKey.read() })
         #if DEBUG
         demo = env["BANDROOM_DEMO"] != nil
         #else
@@ -74,6 +110,8 @@ final class AppModel {
 
         let log = logger
         supervisor.log = { log.write($0) }
+        downloader.log = { log.write($0) }
+        downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
         supervisor.onFailure = { [weak self] _ in self?.notifyFailure() }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
@@ -92,7 +130,12 @@ final class AppModel {
 
     // MARK: lifecycle
 
+    @ObservationIgnored private var launched = false
+
+    /// Once, at app launch (not from a view: a hidden menu-bar item may never draw its label).
     func launch() {
+        guard !launched else { return }
+        launched = true
         monitor.start()
         startSampling()
         #if DEBUG
@@ -107,8 +150,9 @@ final class AppModel {
         if setupComplete {
             supervisor.start()
         } else {
-            openWindow?("setup")
+            openWindow("setup")
         }
+        watchMenuBarIcon()
     }
 
     func quit() {
@@ -158,12 +202,15 @@ final class AppModel {
     var problems: [Problem] {
         var list: [Problem] = []
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
-        if case .running = phase, !models.isReady { list.append(.missingDownload) }
+        if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
         return list
     }
 
+    /// First run: the engine environment is the first 30 %, the model downloads the rest.
     var setupPercent: Int? {
-        setupComplete ? nil : bootstrapper.percent
+        guard !setupComplete else { return nil }
+        guard bootstrapper.phase == .done else { return bootstrapper.percent * 30 / 100 }
+        return 30 + Int(downloader.fraction * 70)
     }
 
     var displayState: DisplayState {
@@ -211,7 +258,7 @@ final class AppModel {
 
     func tryAgain() {
         if case .failed(.notInstalled) = supervisor.phase {
-            openWindow?("setup")
+            openWindow("setup")
             return
         }
         supervisor.start()
@@ -253,7 +300,11 @@ final class AppModel {
         if let last = supervisor.lastExitStatus { lines.append("Last exit status: \(last)") }
         lines.append("Data: \(paths.data.path)")
         lines.append("Logs: \(paths.logs.path)")
-        if !models.missing.isEmpty { lines.append("Missing: \(models.missing.joined(separator: ", "))") }
+        if !models.missing.isEmpty {
+            lines.append("Missing: " + models.missing.flatMap { c in c.files.map { "\(c.rawValue)/\($0.name)" } }.joined(separator: ", "))
+            lines.append("Models folder: \(downloader.models.path); Hugging Face cache: \(downloader.hub.path)")
+        }
+        if case .failed(let e) = downloader.phase { lines.append("Download: \(e)") }
         if let host { lines.append(String(format: "CPU %.0f%%, memory free %.0f%%, disk free %d GB", host.cpuPercent, host.memoryFreePercent, host.diskFreeGB)) }
         return lines.joined(separator: "\n")
     }
@@ -304,6 +355,92 @@ final class AppModel {
             if error != nil { NSWorkspace.shared.activateFileViewerSelecting([app]) }
             DispatchQueue.main.async { NSApp.terminate(nil) }
         }
+    }
+
+    // MARK: model downloads
+
+    /// Fetches what is missing, only that. Waits for nothing: the engine can run meanwhile.
+    func downloadMissing() {
+        let missing = ModelCheck.check(models: downloader.models).missing
+        models = .init(missing: missing)
+        guard !missing.isEmpty else { return }
+        downloader.start(missing)
+    }
+
+    private func downloadsFinished() {
+        models = ModelCheck.check(models: downloader.models)
+        huggingFaceKeyChanged()
+        guard !isSetupWindowOpen else { return }
+        // First run, with the window closed: the engine is installed, so finish and say so (§6.3).
+        if !setupComplete, bootstrapper.phase == .done { finishSetup(startAtLogin: true) }
+        Notifier.post(id: "ready", title: String(localized: "Brasscribe is ready"),
+                      body: String(localized: "Brasscribe is ready. Phones and tablets can make full-band scores now."))
+    }
+
+    /// The engine reads the key from its environment (the adapter asks Hugging Face for the band writer), so a
+    /// new key means a restart, after the score being made.
+    func huggingFaceKeyChanged() {
+        let env = AppModel.engineBaseEnvironment(environment)
+        guard env["HF_TOKEN"] != supervisor.baseEnvironment["HF_TOKEN"] else { return }
+        supervisor.baseEnvironment = env
+        guard isRunning else { return }
+        if isBusy { restartWhenDone = true } else { restartNow() }
+    }
+
+    /// Set by the setup window while it's on screen.
+    var isSetupWindowOpen = false
+
+    // MARK: the name phones see
+
+    var shownComputerName: String { ComputerName.shown(system: systemComputerName, custom: customComputerName) }
+    var offersCustomComputerName: Bool { ComputerName.offersCustomName(system: systemComputerName, custom: customComputerName) }
+
+    /// Saves the name and restarts the engine with it (after the score being made, if one is).
+    func setCustomComputerName(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != customComputerName else { return }
+        customComputerName = trimmed
+        UserDefaults.standard.set(trimmed, forKey: ComputerName.customNameKey)
+        supervisor.configuration.computerName = shownComputerName
+        logger.write("name shown to phones: \(shownComputerName)")
+        guard isRunning else { return }
+        if isBusy { restartWhenDone = true } else { restartNow() }
+    }
+
+    // MARK: menu-bar icon and the Dock (§3.3)
+
+    /// Opening the app again from Finder, Launchpad, Spotlight or the Dock.
+    func reopen() {
+        openWindow(ReopenPolicy.target(setupComplete: setupComplete).rawValue)
+    }
+
+    func applyDockPolicy() {
+        NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
+    }
+
+    /// A few seconds after launch, checks whether the mark is on screen; if not, opens the window once with a
+    /// notice about the notch.
+    private func watchMenuBarIcon() {
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard let self else { return }
+            let reading = MenuBarReader.read()
+            let hidden = StatusItemVisibility.isHidden(reading)
+            logger.write("menu-bar mark: \(hidden ? "looks hidden" : "visible") (frame \(reading.frame.map { "\($0)" } ?? "none"), "
+                         + "occlusion visible \(reading.occlusionVisible))")
+            iconHidden = hidden
+            // The window opens by itself once; the notice stays in it until Got it.
+            let key = "hiddenIconWindowOpened"
+            if hidden && !hiddenIconNoticeDismissed && setupComplete && !UserDefaults.standard.bool(forKey: key) {
+                UserDefaults.standard.set(true, forKey: key)
+                openWindow("main")
+            }
+        }
+    }
+
+    /// System Settings › Menu Bar (macOS 26; Control Centre on 14–15, where menu-bar items are too).
+    func openMenuBarSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension")!)
     }
 
     func finishSetup(startAtLogin: Bool) {

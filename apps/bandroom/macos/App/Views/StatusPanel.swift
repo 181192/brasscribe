@@ -122,14 +122,14 @@ struct StatusPanel: View {
     @ViewBuilder private var primaryButton: some View {
         switch state {
         case .running, .busy:
-            Button { app.openWindow?("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
+            Button { app.openWindow("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
                 .buttonStyle(BRButtonStyle(kind: app.monitor.requests.isEmpty ? .primary : .secondary, fullWidth: true))
                 .focused($primaryFocused)
         case .stopped:
             Button { app.start() } label: { Text("Start Brasscribe") }
                 .buttonStyle(.brPrimary).focused($primaryFocused)
         case .settingUp:
-            Button { app.openWindow?("setup") } label: { Text("Finish setting up") }
+            Button { app.openWindow("setup") } label: { Text("Finish setting up") }
                 .buttonStyle(.brPrimary).focused($primaryFocused)
         case .error:
             Button { app.tryAgain() } label: { Text("Try again") }
@@ -147,7 +147,7 @@ struct StatusPanel: View {
     private func fix(_ p: Problem) {
         switch p {
         case .lowDisk: app.openStorageSettings()
-        case .missingDownload: app.openWindow?("setup")
+        case .missingDownload: app.openWindow("setup")
         case .noFreePort: app.tryAgain()
         }
     }
@@ -190,7 +190,7 @@ struct StatusPanel: View {
                 Divider()
             }
             HealthRow(symbol: "checkmark.circle", label: "Ready to make scores",
-                      value: app.models.isReady ? String(localized: "Ready") : String(localized: "Missing one download"), meter: nil)
+                      value: app.models.isReady ? String(localized: "Ready") : Strings.missingDownloads(app.models.missing.count), meter: nil)
             Text(app.monitor.health?.device == "cpu" ? String(localized: "Processor only: slower")
                  : String(localized: "Uses the graphics chip"))
                 .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)

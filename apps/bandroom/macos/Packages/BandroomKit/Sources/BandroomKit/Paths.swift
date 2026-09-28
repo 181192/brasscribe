@@ -48,6 +48,29 @@ public enum ComputerName {
         return Host.current().localizedName ?? ProcessInfo.processInfo.hostName
     }
 
+    /// A name nobody chose: a serial-like hostname ("DDPW3GWFDK") or Windows' default ("DESKTOP-4F2K9QZ").
+    /// Capital letters and digits (and hyphens), at least 8 characters, no spaces, with at least one digit.
+    public static func looksMachineGenerated(_ name: String) -> Bool {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard n.count >= 8 else { return false }
+        let allowed = n.unicodeScalars.allSatisfy { ("A"..."Z").contains($0) || ("0"..."9").contains($0) || $0 == "-" }
+        return allowed && n.unicodeScalars.contains { ("0"..."9").contains($0) }
+    }
+
+    /// The name phones see: the one set in Settings › Name shown to phones, else the computer's own.
+    public static func shown(system: String, custom: String?) -> String {
+        let c = custom?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return c.isEmpty ? system : c
+    }
+
+    /// Settings offers its own field only when the computer's name looks machine-made, or one is already set.
+    public static func offersCustomName(system: String, custom: String?) -> Bool {
+        looksMachineGenerated(system) || !(custom?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+    }
+
+    /// UserDefaults key for the name shown to phones (BRASSCRIBE_COMPUTER_NAME).
+    public static let customNameKey = "computerNameShown"
+
     /// "Brasscribe on Kalli's MacBook" → "Kalli's MacBook". Norwegian puts the name in its own sentence.
     public static func host(fromServerName name: String) -> String {
         let prefix = "Brasscribe on "

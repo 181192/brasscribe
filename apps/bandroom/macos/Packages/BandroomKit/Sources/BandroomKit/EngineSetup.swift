@@ -74,7 +74,7 @@ public struct EngineConfiguration: Equatable, Sendable {
     /// Environment for the engine (§5.2). Keeps the variables a GUI app starts with, with a usable PATH.
     public func environment(base: [String: String]) -> [String: String] {
         var env = base.filter { key, _ in
-            ["HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "SHELL", "__CF_USER_TEXT_ENCODING", "HF_HOME", "HF_TOKEN"].contains(key)
+            ["HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "SHELL", "__CF_USER_TEXT_ENCODING", "HF_HOME", "HF_HUB_CACHE", "HF_TOKEN"].contains(key)
         }
         let pixiDir = pixi?.deletingLastPathComponent().path
         env["PATH"] = ([pixiDir].compactMap { $0 } + ["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/opt/homebrew/bin"]).joined(separator: ":")

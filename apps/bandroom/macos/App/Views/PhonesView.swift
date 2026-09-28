@@ -31,7 +31,7 @@ struct PhonesView: View {
             if devices.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("No phones yet. Pair a phone to make full-band scores from it.").brFont(.body)
-                    Button { app.openWindow?("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
+                    Button { app.openWindow("pair") } label: { Label("Pair a phone", systemImage: "iphone") }
                         .buttonStyle(.brPrimary)
                 }
             } else {

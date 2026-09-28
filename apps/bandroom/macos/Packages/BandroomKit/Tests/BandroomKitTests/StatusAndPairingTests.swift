@@ -215,7 +215,7 @@ import Testing
         #expect(DisplayState.resolve(setupPercent: nil, phase: .starting, updating: false, problems: [], jobPercent: nil) == .starting)
         #expect(DisplayState.resolve(setupPercent: nil, phase: .waitingToRetry(attempt: 1, delay: 2), updating: false, problems: [], jobPercent: nil) == .starting)
         #expect(DisplayState.resolve(setupPercent: nil, phase: .stopped, updating: false, problems: [], jobPercent: nil) == .stopped)
-        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(.notInstalled("x")), updating: false, problems: [], jobPercent: nil) == .attention(.missingDownload))
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(.notInstalled("x")), updating: false, problems: [], jobPercent: nil) == .attention(.missingDownload([])))
     }
 
     @Test func pieChangesInEightSteps() {

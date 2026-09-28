@@ -9,11 +9,29 @@ struct SettingsView: View {
     @AppStorage("textSize") private var textSize: TextSize = .standard
     @AppStorage(AppearanceChoice.defaultsKey) private var appearance: AppearanceChoice = .system
     @AppStorage("engineCheckout") private var checkout = ""
+    @State private var shownName = ""
 
     var body: some View {
         Form {
             Section {
                 Toggle("Start when I log in", isOn: Binding(get: { app.loginItemEnabled }, set: { app.setLoginItem($0) }))
+                Toggle("Show in the Dock", isOn: Binding(get: { app.showInDock }, set: { app.showInDock = $0 }))
+                Text("For when the Brasscribe mark is hidden in the menu bar, for example behind the camera notch.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if app.offersCustomComputerName {
+                Section("Name shown to phones") {
+                    TextField("Name shown to phones", text: $shownName, prompt: Text(verbatim: app.systemComputerName))
+                        .onSubmit { app.setCustomComputerName(shownName) }
+                    HStack {
+                        Text("Phones list this Mac as “Brasscribe on \(app.shownComputerName)”.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Use this name") { app.setCustomComputerName(shownName) }
+                            .disabled(shownName.trimmingCharacters(in: .whitespaces) == app.customComputerName)
+                    }
+                }
+                .onAppear { shownName = app.customComputerName }
             }
             Section("Where downloads are kept") {
                 LabeledContent("Data folder") {
@@ -21,7 +39,7 @@ struct SettingsView: View {
                 }
             }
             Section("Hugging Face access") {
-                Button("Sign in again…") { app.openWindow?("setup") }
+                Button("Sign in again…") { app.openWindow("setup") }
             }
             Section("Appearance") {
                 Picker("Appearance", selection: $appearance) {
