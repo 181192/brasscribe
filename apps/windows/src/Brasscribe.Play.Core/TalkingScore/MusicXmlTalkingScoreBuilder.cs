@@ -142,7 +142,7 @@ public static class MusicXmlTalkingScoreBuilder
                             if (ev.Concert is { } concert)
                             {
                                 int midi = Announcer.Midi(concert);
-                                if (matcher?.Match(absQuarter, midi) is { } match)
+                                if (matcher?.Match(absQuarter, midi, ev.PrintedMark) is { } match)
                                 {
                                     var hit = match.Note;
                                     ev.CompositionVoiceId = match.VoiceId;
@@ -390,6 +390,9 @@ public static class MusicXmlTalkingScoreBuilder
     /// <summary>
     /// Finds the Composition note behind a printed note: same onset (in quarters from tick 0) and the
     /// same concert pitch, else the same pitch class (the arranger may move a line by octaves).
+    /// A note the arranger marked uncertain (coloured) is one of the uncertain notes, so an uncertain
+    /// note at the onset comes first: the tune moved down an octave onto a pitch the harmony also
+    /// plays stays the tune's note, and its review group keeps its printed note.
     /// </summary>
     private sealed class CompositionMatcher
     {
@@ -411,17 +414,23 @@ public static class MusicXmlTalkingScoreBuilder
             }
         }
 
-        public MatchedNote? Match(double quarter, int midi)
+        public MatchedNote? Match(double quarter, int midi, bool marked = false)
         {
             long tick = (long)Math.Round(quarter * _tpb);
+            if (marked && Find(tick, midi, n => n.Note.Confidence < 1.0) is { } uncertain) return uncertain;
+            return Find(tick, midi, _ => true);
+        }
+
+        private MatchedNote? Find(long tick, int midi, Func<MatchedNote, bool> allowed)
+        {
             for (long d = 0; d <= 1; d++)
             {
                 foreach (long t in d == 0 ? [tick] : new[] { tick - 1, tick + 1 })
                 {
                     if (!_byOnset.TryGetValue(t, out var list)) continue;
-                    var exact = list.FirstOrDefault(n => n.Note.Pitch == midi);
+                    var exact = list.FirstOrDefault(n => allowed(n) && n.Note.Pitch == midi);
                     if (exact is not null) return exact;
-                    var pc = list.FirstOrDefault(n => ((n.Note.Pitch - midi) % 12 + 12) % 12 == 0);
+                    var pc = list.FirstOrDefault(n => allowed(n) && ((n.Note.Pitch - midi) % 12 + 12) % 12 == 0);
                     if (pc is not null) return pc;
                 }
             }
