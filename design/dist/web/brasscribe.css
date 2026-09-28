@@ -209,9 +209,95 @@
   --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);
 }
 
-/* High contrast: our palette when the user asks for more contrast; tints become outlines. */
-@media (prefers-contrast: more) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+/* High contrast: our palettes when the user asks for more contrast; tints become outlines.
+   Light or dark follows the resolved theme: data-theme when the page pins one, else the system.
+   Under forced colours the system colours below win instead. */
+@media (prefers-contrast: more) and (forced-colors: none) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bc-bg: #FFFFFF;
+    --bc-surface: #FFFFFF;
+    --bc-surface-raised: #FFFFFF;
+    --bc-text: #000000;
+    --bc-text-muted: #000000;
+    --bc-border: #000000;
+    --bc-border-strong: #000000;
+    --bc-primary: #000000;
+    --bc-on-primary: #FFFFFF;
+    --bc-secondary: #FFFFFF;
+    --bc-on-secondary: #000000;
+    --bc-brass: #000000;
+    --bc-brass-text: #000000;
+    --bc-brass-tint: #FFFFFF;
+    --bc-success: #005C1F;
+    --bc-warning: #6B4500;
+    --bc-error: #A10000;
+    --bc-focus: #000000;
+    --bc-scrim: rgb(0 0 0 / 0.4);
+    --bc-ink: #000000;
+    --bc-staff: #000000;
+    --bc-uncertain: #004EC2;
+    --bc-very-uncertain: #9E3400;
+    --bc-adlib-tint: #FFFFFF;
+    --bc-loop-tint: #FFFFFF;
+    --bc-loop-edge: #6B4500;
+    --bc-cursor: #A8006E;
+    --bc-cursor-tint: #FFFFFF;
+    --bc-selection-tint: #FFFFFF;
+    --bc-selection-edge: #000000;
+    --bc-model-1: #004EC2;
+    --bc-model-2: #8A4200;
+    --bc-model-3: #006241;
+    --bc-model-4: #A3007A;
+    --bc-elevation-1: none;
+    --bc-elevation-2: none;
+    --bc-elevation-3: none;
+  }
+}
+@media (prefers-contrast: more) and (forced-colors: none) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bc-bg: #000000;
+    --bc-surface: #000000;
+    --bc-surface-raised: #000000;
+    --bc-text: #FFFFFF;
+    --bc-text-muted: #FFFFFF;
+    --bc-border: #FFFFFF;
+    --bc-border-strong: #FFFFFF;
+    --bc-primary: #FFFFFF;
+    --bc-on-primary: #000000;
+    --bc-secondary: #000000;
+    --bc-on-secondary: #FFFFFF;
+    --bc-brass: #FFFFFF;
+    --bc-brass-text: #FFFFFF;
+    --bc-brass-tint: #000000;
+    --bc-success: #80FF80;
+    --bc-warning: #FFFF00;
+    --bc-error: #FF8080;
+    --bc-focus: #FFFFFF;
+    --bc-scrim: rgb(0 0 0 / 0.4);
+    --bc-ink: #FFFFFF;
+    --bc-staff: #FFFFFF;
+    --bc-uncertain: #00FFFF;
+    --bc-very-uncertain: #FFFF00;
+    --bc-adlib-tint: #000000;
+    --bc-loop-tint: #000000;
+    --bc-loop-edge: #FFFF00;
+    --bc-cursor: #FF80FF;
+    --bc-cursor-tint: #000000;
+    --bc-selection-tint: #000000;
+    --bc-selection-edge: #FFFFFF;
+    --bc-model-1: #00FFFF;
+    --bc-model-2: #FFFF00;
+    --bc-model-3: #80FF80;
+    --bc-model-4: #FF80FF;
+    --bc-elevation-1: none;
+    --bc-elevation-2: none;
+    --bc-elevation-3: none;
+  }
+}
+@media (prefers-contrast: more) and (forced-colors: none) {
+  :root[data-theme="dark"] {
     color-scheme: dark;
     --bc-bg: #000000;
     --bc-surface: #000000;
@@ -288,6 +374,46 @@
   --bc-model-2: #FFFF00;
   --bc-model-3: #80FF80;
   --bc-model-4: #FF80FF;
+  --bc-elevation-1: none;
+  --bc-elevation-2: none;
+  --bc-elevation-3: none;
+}
+:root[data-theme="high-contrast-light"] {
+  color-scheme: light;
+  --bc-bg: #FFFFFF;
+  --bc-surface: #FFFFFF;
+  --bc-surface-raised: #FFFFFF;
+  --bc-text: #000000;
+  --bc-text-muted: #000000;
+  --bc-border: #000000;
+  --bc-border-strong: #000000;
+  --bc-primary: #000000;
+  --bc-on-primary: #FFFFFF;
+  --bc-secondary: #FFFFFF;
+  --bc-on-secondary: #000000;
+  --bc-brass: #000000;
+  --bc-brass-text: #000000;
+  --bc-brass-tint: #FFFFFF;
+  --bc-success: #005C1F;
+  --bc-warning: #6B4500;
+  --bc-error: #A10000;
+  --bc-focus: #000000;
+  --bc-scrim: rgb(0 0 0 / 0.4);
+  --bc-ink: #000000;
+  --bc-staff: #000000;
+  --bc-uncertain: #004EC2;
+  --bc-very-uncertain: #9E3400;
+  --bc-adlib-tint: #FFFFFF;
+  --bc-loop-tint: #FFFFFF;
+  --bc-loop-edge: #6B4500;
+  --bc-cursor: #A8006E;
+  --bc-cursor-tint: #FFFFFF;
+  --bc-selection-tint: #FFFFFF;
+  --bc-selection-edge: #000000;
+  --bc-model-1: #004EC2;
+  --bc-model-2: #8A4200;
+  --bc-model-3: #006241;
+  --bc-model-4: #A3007A;
   --bc-elevation-1: none;
   --bc-elevation-2: none;
   --bc-elevation-3: none;

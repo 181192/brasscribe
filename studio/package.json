@@ -8,7 +8,8 @@
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "test:browser": "playwright test -c playwright.static.config.ts"
   },
   "license": "UNLICENSED",
   "dependencies": {

@@ -102,6 +102,7 @@ On Apple, `accessibilityDifferentiateWithoutColor` needs nothing extra, because 
   - Highlight for focus and cursor
   - LinkText for the uncertain level (shape carries the level)
 - The token values apply when the user picks our high-contrast theme in-app, or the platform has no system palette.
+- There are two high-contrast palettes: `high-contrast` (white on black) and `high-contrast-light` (black on white, every pair at 7:1 or more; see qa/reports/contrast-design-tokens.md). The one used matches the resolved light or dark theme. Studio does this today.
 - Remove tints (ad lib, loop) and replace them with outlines. Staff lines use full ink colour.
 - Keep shape encoding. Shapes carry meaning here, because system palettes collapse colour.
 

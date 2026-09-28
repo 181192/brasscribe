@@ -52,7 +52,24 @@ def test_focus_never_looks_like_uncertainty():
     import sys
     sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
     import contrast
-    for mode in ("light", "dark"):
+    for mode in ("light", "dark", "high-contrast-light"):
         for role in ("uncertain", "very-uncertain"):
             de = contrast.delta_e(build.hexval(mode, "focus"), build.hexval(mode, role), None)
             assert de >= 20, (mode, role, de)
+
+
+def test_light_high_contrast_is_seven_to_one():
+    # Every checked pair reaches WCAG AAA (7:1) on the light high-contrast palette.
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for fg, bg, _, _ in build.EXT["contrast"]["pairs"]:
+        r = contrast.contrast(build.hexval("high-contrast-light", fg), build.hexval("high-contrast-light", bg))
+        assert r >= 7, (fg, bg, round(r, 2))
+
+
+def test_web_high_contrast_follows_the_resolved_theme():
+    css = (build.DIST / "web" / "brasscribe.css").read_text()
+    more = "@media (prefers-contrast: more) and (forced-colors: none)"
+    assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --bc-bg: #FFFFFF;' in css
+    assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
+    assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css

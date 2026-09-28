@@ -214,6 +214,45 @@ val BrasscribeHighContrastColors = BrasscribeColors(
     isHighContrast = true,
 )
 
+/** High contrast on a light ground. Not yet chosen by [BrasscribeTheme], which uses the dark one. */
+val BrasscribeHighContrastLightColors = BrasscribeColors(
+    bg = Color(0xFFFFFFFF),
+    surface = Color(0xFFFFFFFF),
+    surfaceRaised = Color(0xFFFFFFFF),
+    text = Color(0xFF000000),
+    textMuted = Color(0xFF000000),
+    border = Color(0xFF000000),
+    borderStrong = Color(0xFF000000),
+    primary = Color(0xFF000000),
+    onPrimary = Color(0xFFFFFFFF),
+    secondary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFF000000),
+    brass = Color(0xFF000000),
+    brassText = Color(0xFF000000),
+    brassTint = Color(0xFFFFFFFF),
+    success = Color(0xFF005C1F),
+    warning = Color(0xFF6B4500),
+    error = Color(0xFFA10000),
+    focus = Color(0xFF000000),
+    scrim = Color(0x66000000),
+    ink = Color(0xFF000000),
+    staff = Color(0xFF000000),
+    uncertain = Color(0xFF004EC2),
+    veryUncertain = Color(0xFF9E3400),
+    adlibTint = Color(0xFFFFFFFF),
+    loopTint = Color(0xFFFFFFFF),
+    loopEdge = Color(0xFF6B4500),
+    cursor = Color(0xFFA8006E),
+    cursorTint = Color(0xFFFFFFFF),
+    selectionTint = Color(0xFFFFFFFF),
+    selectionEdge = Color(0xFF000000),
+    model1 = Color(0xFF004EC2),
+    model2 = Color(0xFF8A4200),
+    model3 = Color(0xFF006241),
+    model4 = Color(0xFFA3007A),
+    isHighContrast = true,
+)
+
 /** Maps the semantic roles onto Material 3 so stock components look like Brasscribe. */
 fun BrasscribeColors.toColorScheme(dark: Boolean): ColorScheme {
     val scheme = if (dark) darkColorScheme() else lightColorScheme()
