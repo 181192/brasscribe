@@ -227,6 +227,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     /** Set while the score screen is open: MIDI export and "Play this bar" go through it. */
     var scoreController: no.brasscribe.play.score.ScoreController? = null
 
+    /** The last score screen's MIDI, for the export screen after it (the controller itself is let go). */
+    var scoreMidi: no.brasscribe.play.score.ScoreMidi? = null
+
     private var job: Job? = null
     private var engineJobId: String? = null
     private var renderedScoreAudio: PcmAudio? = null

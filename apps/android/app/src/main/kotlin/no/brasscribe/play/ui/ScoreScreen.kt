@@ -138,7 +138,14 @@ fun ScoreScreen(vm: PlayViewModel) {
         controller.load(r.musicXml.toByteArray()) { names -> setOf(defaultPart(names, r.lineup)) }
         (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
-    DisposableEffect(controller) { onDispose { controller.release() } }
+    DisposableEffect(controller) {
+        onDispose {
+            // Export needs the score's MIDI after this screen has gone, never the synth with the SoundFont.
+            vm.scoreMidi = controller.midiSource()
+            if (vm.scoreController === controller) vm.scoreController = null
+            controller.release()
+        }
+    }
     // Settings > Sound: open with the realistic instruments when the player chose them.
     LaunchedEffect(st.loaded) { if (st.loaded && vm.container.realisticByDefault && !st.realistic) controller.setRealistic(true) }
 
@@ -536,7 +543,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                 }
                 InfoNote(stringResource(R.string.written_tip))
             }
-            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont) { on -> controller.setRealistic(on) } }
+            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier)) { on -> controller.setRealistic(on) } }
         null -> Unit
     }
 }

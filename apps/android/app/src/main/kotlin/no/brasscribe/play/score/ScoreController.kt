@@ -138,6 +138,7 @@ class ScoreController(
             hideCredit()
             // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
             view.post { _renders.value++ }
+            preloadSoundFont()
         }
 
         view.api.playedBeatChanged.on { beat ->
@@ -238,7 +239,6 @@ class ScoreController(
             }
             val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
             prepareSound(s, names)
-            loadBandSoundFont()
             _state.value = _state.value.copy(
                 loaded = true, error = null, title = s.title, parts = names,
                 shown = shown, totalBars = s.masterBars.length.toInt(),
@@ -291,10 +291,47 @@ class ScoreController(
     }
 
     private var soundFontRequested = false
+    /** The band SoundFont is in alphaTab's synth, or there is none to load (the basic tier). */
+    private var soundFontSettled = false
+    /** What to play once the band SoundFont has loaded: the Play that asked for it. */
+    private var afterSoundFont: (() -> Unit)? = null
 
     /** The band SoundFont this score read, weakly: a test checks nothing keeps it once alphaTab has it. */
     @androidx.annotation.VisibleForTesting
     @Volatile internal var soundFontBytes: java.lang.ref.WeakReference<ByteArray>? = null
+
+    private var preloadScheduled = false
+
+    /**
+     * The band SoundFont is not loaded when the score opens: alphaTab holds about three times the file
+     * (some 220 MB of heap for the 73 MB phone SoundFont), and a score opened and left at once, or one
+     * opened after another, need not pay for it. Once the score has shown for [SOUNDFONT_PRELOAD_MS]
+     * it loads in the background, so Play starts at once; a Play before that loads it ([withSoundFont]).
+     */
+    private fun preloadSoundFont() {
+        if (preloadScheduled || soundFontRequested) return
+        preloadScheduled = true
+        view.postDelayed({ if (!released) loadBandSoundFont() }, SOUNDFONT_PRELOAD_MS)
+    }
+
+    /**
+     * Runs [action] with the band SoundFont in the synth, loading it first if it is not yet (a Play
+     * right after the score opened waits some 0.4 s for it). A second call while it loads replaces the
+     * first (Play, then Pause before the sound came, plays nothing).
+     */
+    private fun withSoundFont(action: () -> Unit) {
+        if (soundFontSettled) { action(); return }
+        afterSoundFont = action
+        loadBandSoundFont()
+    }
+
+    /** The band SoundFont is in (or will not come): runs the Play waiting for it. */
+    private fun soundFontSettled() {
+        soundFontSettled = true
+        val action = afterSoundFont ?: return
+        afterSoundFont = null
+        if (!released) action()
+    }
 
     /** Replaces alphaTab's built-in SoundFont with the band SoundFont (found and read off the UI thread). */
     private fun loadBandSoundFont() {
@@ -304,16 +341,19 @@ class ScoreController(
         Thread({
             val t0 = System.nanoTime()
             val sf = BandSoundFontFile.resolve(context, bandSoundFont?.takeIf { it.isFile } ?: BandSoundFontFile.sideloaded(context))
-                ?: return@Thread
+            if (sf == null) { view.post { soundFontSettled() }; return@Thread }
             // One copy only, handed over and then dropped: alphaTab copies the sample chunk into its own
             // buffer while it loads, so nothing here may keep this array (or the handler below) alive.
             var bytes: ByteArray? = runCatching { sf.readBytes() }.getOrElse {
-                android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it); return@Thread
+                android.util.Log.w("BrasscribePlay", "band SoundFont unreadable", it)
+                view.post { soundFontSettled() }
+                return@Thread
             }
             val megabytes = bytes!!.size shr 20
             soundFontBytes = java.lang.ref.WeakReference(bytes)
             var listening = false
             fun attempt(tries: Int) {
+                if (released) { bytes = null; return }
                 // api.loadSoundFont(ByteArray) returns false on Android (AndroidUiFacade's `when` compares the
                 // value, not the type), so the synth gets the bytes directly.
                 val player = view.api.player
@@ -328,13 +368,18 @@ class ScoreController(
                             _state.value = _state.value.copy(bandSoundFont = true)
                             android.util.Log.i("BrasscribePlay", "band SoundFont %s (%d MB) loaded by alphaTab in %d ms"
                                 .format(sf.name, megabytes, (System.nanoTime() - t0) / 1_000_000))
+                            view.post { soundFontSettled() }
                         }
                     }
                     player.loadSoundFont(Uint8Array(data.asUByteArray()), false); true
                 }.getOrDefault(false)
                 if (ok) bytes = null
                 else if (tries > 0) view.postDelayed({ attempt(tries - 1) }, 200)
-                else { bytes = null; android.util.Log.w("BrasscribePlay", "alphaTab player not ready for the band SoundFont") }
+                else {
+                    bytes = null
+                    android.util.Log.w("BrasscribePlay", "alphaTab player not ready for the band SoundFont")
+                    soundFontSettled()
+                }
             }
             view.post { attempt(50) }
         }, "band-soundfont").start()
@@ -382,8 +427,13 @@ class ScoreController(
             if (_state.value.playing) android.util.Log.i("BrasscribePlay", "note-ons per channel: $notesPerChannel")
             else if (!_state.value.realistic) { notesPerChannel.clear(); view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn) }
         }
-        if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
-        if (_state.value.playing) fadeThen { view.api.playPause() } else view.api.playPause()
+        if (_state.value.playing) { fadeThen { view.api.playPause() }; return }
+        // Play again before the SoundFont came: the player changed their mind, nothing plays.
+        if (afterSoundFont != null) { afterSoundFont = null; return }
+        withSoundFont {
+            if (!view.api.isReadyForPlayback) android.util.Log.w("BrasscribePlay", "player not ready (state ${view.api.playerState})")
+            view.api.playPause()
+        }
     }
     fun stop() { RealisticSynth.fadeOut(); fadeThen { view.api.stop() } }
 
@@ -478,7 +528,7 @@ class ScoreController(
     fun playBar(bar: Int) {
         setLoop(bar..bar)
         view.api.isLooping = false
-        view.api.play()
+        withSoundFont { view.api.play() }
     }
 
     fun setCountIn(on: Boolean) {
@@ -638,17 +688,35 @@ class ScoreController(
     }
 
     /** Standard MIDI file of the loaded score, generated by alphaTab. */
-    fun midiBytes(): ByteArray? {
+    fun midiBytes(): ByteArray? = midiSource()?.bytes()
+
+    /**
+     * The loaded score's MIDI and the parts on screen, without the view: the export screen keeps this
+     * once the score screen has gone, and not the controller, whose synth holds the band SoundFont.
+     */
+    fun midiSource(): ScoreMidi? {
         val s = score ?: return null
-        val midi = MidiFile()
-        MidiFileGenerator(s, view.settings, AlphaSynthMidiFileHandler(midi, true)).generate()
-        return midi.toBinary().buffer.asByteArray()
+        return ScoreMidi(s, view.settings, _state.value.shown)
     }
 
+    /** Set once the screen let go of the controller: nothing waiting for the SoundFont plays after it. */
+    private var released = false
+
     fun release() {
+        released = true
+        afterSoundFont = null
         humanized.release()
         RealisticSynth.allOff()
         runCatching { view.api.stop() }
+    }
+}
+
+/** A score's MIDI, generated by alphaTab on demand, and the parts that were on screen. */
+class ScoreMidi(private val score: Score, private val settings: alphaTab.Settings, val shown: Set<Int>) {
+    fun bytes(): ByteArray {
+        val midi = MidiFile()
+        MidiFileGenerator(score, settings, AlphaSynthMidiFileHandler(midi, true)).generate()
+        return midi.toBinary().buffer.asByteArray()
     }
 }
 
@@ -679,6 +747,9 @@ private fun Int.toAlphaTabColor() = alphaTab.model.Color(
 )
 
 private const val STOP_FADE_MS = 80L
+
+/** How long a score shows before the band SoundFont loads without a Play asking for it. */
+private const val SOUNDFONT_PRELOAD_MS = 1_500L
 
 /**
  * The surface's clip that cuts off alphaTab's credit line: the engraving's full width ([engravedWidth],

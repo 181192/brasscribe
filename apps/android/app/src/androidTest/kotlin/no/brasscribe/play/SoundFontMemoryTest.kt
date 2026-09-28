@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * The band SoundFont is held once: after alphaTab has loaded it, nothing in Play keeps the file's
+ * The band SoundFont is held once: after alphaTab has loaded it (on the first Play), nothing in Play keeps the file's
  * bytes (alphaTab keeps its own copy of the sample chunk). Needs the SoundFont sideloaded into the
  * app's files, sounds/brasscribe-band-mobile.sf2; skipped without it.
  */
@@ -51,11 +51,18 @@ class SoundFontMemoryTest {
         val file = File(activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(xml) }
         instrumentation.runOnMainSync { vm.openScoreUri(android.net.Uri.fromFile(file)) }
         val end = SystemClock.uptimeMillis() + 60_000
+        while (vm.scoreController?.state?.value?.loaded != true) {
+            assertTrue("score loaded in time", SystemClock.uptimeMillis() < end)
+            Thread.sleep(100)
+        }
+        // The band SoundFont loads with the first Play.
+        instrumentation.runOnMainSync { vm.scoreController!!.togglePlay() }
         while (vm.scoreController?.state?.value?.bandSoundFont != true) {
             assertTrue("band SoundFont loaded in time", SystemClock.uptimeMillis() < end)
             Thread.sleep(100)
         }
         assertTrue("the load was seen", vm.scoreController!!.soundFontBytes != null)
+        instrumentation.runOnMainSync { vm.scoreController!!.stop() }
         Thread.sleep(300)
         gc()
         val heapAfter = used()
