@@ -135,8 +135,14 @@ fail instead of skipping.
   - Afterwards, install the current debug build again (`./gradlew installDebug`).
   - Never uninstall the app: that deletes the user's scores.
 - **iOS simulators.** Headless only. Use `make -C apps/apple test-ios-unit` for the app unit tests.
-- **macOS UI tests** (`make test-mac-ui`) move the real pointer and keyboard. Run them only in the
-  macOS VM ([macos-vm.md](macos-vm.md), `scripts/mac-vm.sh`), never on a Mac someone is using.
+- **macOS UI tests** move the real pointer and keyboard. Run them only in the macOS VM
+  ([macos-vm.md](macos-vm.md)), never on a Mac someone is using.
+  - Run them before a release, and for changes to window, input or navigation code.
+  - Layout and resize regressions are covered earlier, in tiers 1 and 2, by the off-screen layout
+    harness in the macOS app unit tests (`AppTests/LayoutHarness.swift`).
+  - Run the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests[,PlayUITests/testKeyboardShortcuts]`.
+    That takes under a minute warm. The full suite (`scripts/mac-vm.sh test-ui`) takes about 6 minutes over two VMs.
+  - `scripts/mac-vm.sh down` suspends the VMs when you're done.
 
 ## Measurements
 
