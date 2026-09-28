@@ -169,8 +169,8 @@ fun ProfileScreen(vm: PlayViewModel) {
     }
 
     if (changeWhere) {
-        ModalBottomSheet(onDismissRequest = { changeWhere = false }, containerColor = BrasscribeTheme.colors.surfaceRaised, dragHandle = null) {
-            Column(Modifier.padding(horizontal = ScreenMargin).navigationBarsPadding().padding(bottom = BrasscribeSpace.s6),
+        PlaySheet({ changeWhere = false }, BrasscribeTheme.colors.surfaceRaised, dragHandle = false) {
+            Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 SubHeading(stringResource(R.string.where_title))
                 val deviceDesc = when {

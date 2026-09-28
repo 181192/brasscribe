@@ -563,12 +563,11 @@ private fun segmentColors() = SegmentedButtonDefaults.colors(
     inactiveBorderColor = BrasscribeTheme.colors.border,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BottomSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
     // No drag handle: it is a 32 dp wide target; the scrim and Back close the sheet.
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = BrasscribeTheme.colors.surfaceRaised, dragHandle = null) {
-        Column(Modifier.padding(horizontal = ScreenMargin).navigationBarsPadding().padding(bottom = BrasscribeSpace.s6)
+    PlaySheet(onDismiss, BrasscribeTheme.colors.surfaceRaised, dragHandle = false) {
+        Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6)
             .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) { content() }
     }
 }
