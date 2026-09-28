@@ -263,6 +263,14 @@ pub unsafe extern "C" fn bc_seats(out: *mut *mut c_char, err: *mut *mut c_char) 
     })
 }
 
+/// A part's name in Norwegian (the core's one table): writes the name to `*out`, unchanged when the
+/// table doesn't know it.
+#[no_mangle]
+pub unsafe extern "C" fn bc_part_name_nb(name: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(name) = from_c(name) else { return BC_NULL };
+    run(out, err, || Ok(crate::part_name_nb(name)))
+}
+
 unsafe fn options_json(p: *const c_char) -> Result<serde_json::Value, (i32, String)> {
     match from_c(p) {
         Some(s) if !s.trim().is_empty() => serde_json::from_str(&s).map_err(|e| (BC_INVALID, format!("options: {e}"))),

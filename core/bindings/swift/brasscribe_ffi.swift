@@ -3899,6 +3899,18 @@ public func normalizeComposition(json: String)throws  -> String  {
 })
 }
 /**
+ * A part's name in Norwegian («Solokornett», «Solo althorn», «1. kornett», «Althorn»): the core's one
+ * table, covering the band, small band and quartet parts. Names it doesn't know come back unchanged.
+ */
+public func partNameNb(name: String) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_part_name_nb(
+        FfiConverterString.lower(name),uniffiCallStatus
+    )
+})
+}
+/**
  * Where each part of a Composition's arrangement comes from, in score order.
  */
 public func partSources(compositionJson: String)throws  -> [PartSource]  {
@@ -4059,6 +4071,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_normalize_composition() != 7581) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_part_name_nb() != 11213) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_part_sources() != 8498) {

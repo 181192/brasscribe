@@ -328,6 +328,10 @@ public static class BrasscribeCore
             .Select(x => new PartSource(x.GetProperty("part").GetString()!, x.GetProperty("source").GetString()!)).ToList();
     }
 
+    /// <summary>A part's name in Norwegian (the core's one table); names it doesn't know come back unchanged.</summary>
+    public static string PartNameNb(string name) =>
+        Call((out IntPtr o, out IntPtr e) => Native.bc_part_name_nb(name, out o, out e));
+
     /// <summary>The 18 seats of the contest band, in score order.</summary>
     public static IReadOnlyList<SeatInfo> Seats()
     {
@@ -438,6 +442,9 @@ public static class BrasscribeCore
 
         [DllImport(Lib)]
         public static extern int bc_seats(out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib)]
+        public static extern int bc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
         public static extern int bc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);

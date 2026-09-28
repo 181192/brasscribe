@@ -697,6 +697,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_normalize_composition(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_part_name_nb(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_part_sources(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_quantize_notes(
@@ -820,6 +822,8 @@ internal object UniffiLib {
     external fun uniffi_brasscribe_ffi_fn_func_layers_song_defaults(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_normalize_composition(`json`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_part_name_nb(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_part_sources(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -989,6 +993,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_normalize_composition() and 0xFFFF) != 7581) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_part_name_nb() and 0xFFFF) != 11213) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_part_sources() and 0xFFFF) != 8498) {
@@ -4671,6 +4678,21 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     
         
         FfiConverterString.lower(`json`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * A part's name in Norwegian («Solokornett», «Solo althorn», «1. kornett», «Althorn»): the core's one
+         * table, covering the band, small band and quartet parts. Names it doesn't know come back unchanged.
+         */ fun `partNameNb`(`name`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_part_name_nb(
+    
+        
+        FfiConverterString.lower(`name`),_status)
 }
     )
     }

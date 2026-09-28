@@ -570,6 +570,13 @@ pub fn part_sources(composition_json: String) -> Result<Vec<PartSource>, CoreErr
     Ok(brasscribe_core::arranger::part_sources(&comp).into_iter().map(|(part, s)| PartSource { part, source: s.into() }).collect())
 }
 
+/// A part's name in Norwegian («Solokornett», «Solo althorn», «1. kornett», «Althorn»): the core's one
+/// table, covering the band, small band and quartet parts. Names it doesn't know come back unchanged.
+#[uniffi::export]
+pub fn part_name_nb(name: String) -> String {
+    brasscribe_core::talking_score::nb_part_name(&name).to_string()
+}
+
 /// One seat of the contest band, for the "What do you play?" picker.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct SeatInfo {

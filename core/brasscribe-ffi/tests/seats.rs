@@ -3,7 +3,7 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::{arrange_musicxml_with, part_sources, seat_part, seats, ArrangeOptions, SeatPart};
+use brasscribe_ffi::{arrange_musicxml_with, part_name_nb, part_sources, seat_part, seats, ArrangeOptions, SeatPart};
 
 /// A solo take: only the solo layer has notes (a baritone line, some of it below E3).
 const SOLO: &str = r#"{"title": "S", "voices": [
@@ -74,4 +74,18 @@ fn seat_options_are_checked() {
     assert!(bad(ArrangeOptions { reads: Some("bass".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { lead: Some("seat".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { seat: Some("solo-cornet".into()), reads: Some("bass".into()), ..Default::default() }));
+}
+
+#[test]
+fn part_names_in_norwegian() {
+    assert_eq!(part_name_nb("Solo Horn".into()), "Solo althorn");
+    assert_eq!(part_name_nb("1st Cornet".into()), "1. kornett");
+    assert_eq!(part_name_nb("Tenor Horn".into()), "Althorn");
+    assert_eq!(part_name_nb("Strings".into()), "Strings");
+    // every seat's nb name is the same table
+    for s in seats() {
+        assert_eq!(part_name_nb(s.name.clone()), s.nb_name);
+    }
+    let n = CString::new("E♭ Bass").unwrap();
+    assert_eq!(c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_part_name_nb(n.as_ptr(), o, e) }).unwrap(), "Ess-bass");
 }
