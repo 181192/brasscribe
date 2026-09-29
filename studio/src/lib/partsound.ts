@@ -2,6 +2,8 @@
 // reference is sounds/partsound.py; sounds/partsound-vectors.json are the shared test vectors):
 // normalize, then exact part name, alias, first keyword contained in the name, instrument id or
 // MusicXML instrument-sound, 0-based GM program. A brass part never falls back to General MIDI.
+// A percussion part then plays the kit its program selects when it is in `kit_programs` (1, the
+// pop kit), else the band kit: never silence.
 
 export interface TrackSound {
   program: number;
@@ -31,6 +33,7 @@ export interface Mapping {
     keywords: [string, string][];
     instruments: Record<string, string>;
     programs: Record<string, string>;
+    kit_programs?: number[];
   };
 }
 
@@ -70,8 +73,26 @@ export class PartSoundResolver {
     if (hit === undefined && r && program !== null && String(program) in r.programs) [hit, step] = [r.programs[String(program)], "program"];
     if (hit === undefined) return null;
     const found = this.parts.get(normalize(hit));
-    return found ? { part: found.part, step: step!, sound: found.sound } : null;
+    if (!found) return null;
+    const kit = found.sound.percussion && program !== null && (r?.kit_programs ?? []).includes(program);
+    return { part: found.part, step: step!, sound: kit ? { ...found.sound, program: program! } : found.sound };
   }
+}
+
+/**
+ * The kit a percussion part asks for: the 0-based <midi-program> of its first <midi-instrument>, per
+ * <score-part> in part-list order (the order alphaTab makes its tracks in). alphaTab 1.8.4 reads that
+ * program but resets every percussion track to program 0 when the score finishes loading, so the band
+ * map would never see the pop kit (program 1) without this.
+ */
+export function percussionKits(musicXml: string): (number | null)[] {
+  const end = musicXml.indexOf("</part-list>");
+  if (end < 0) return [];
+  const parts = musicXml.slice(0, end).matchAll(/<score-part\b[^>]*?(\/>|>([\s\S]*?)<\/score-part>)/g);
+  return Array.from(parts, (m) => {
+    const prog = m[2]?.match(/<midi-instrument\b[^>]*>[\s\S]*?<midi-program>\s*(\d+)\s*<\/midi-program>/);
+    return prog ? Number(prog[1]) - 1 : null;
+  });
 }
 
 export const DRUM_CHANNEL = 9;

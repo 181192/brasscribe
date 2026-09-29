@@ -535,6 +535,84 @@
    }
   },
   {
+   "name": "Percussion",
+   "instrument": null,
+   "program": 0,
+   "expect": {
+    "part": "Percussion",
+    "step": "exact",
+    "program": 0,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
+   "name": "Percussion",
+   "instrument": null,
+   "program": 1,
+   "expect": {
+    "part": "Percussion",
+    "step": "exact",
+    "program": 1,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
+   "name": "Drum Set",
+   "instrument": null,
+   "program": 1,
+   "expect": {
+    "part": "Percussion",
+    "step": "alias",
+    "program": 1,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
+   "name": "Percussion",
+   "instrument": null,
+   "program": 25,
+   "expect": {
+    "part": "Percussion",
+    "step": "exact",
+    "program": 0,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
+   "name": "Part 5",
+   "instrument": "drum.group.set",
+   "program": 1,
+   "expect": {
+    "part": "Percussion",
+    "step": "instrument",
+    "program": 1,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
+   "name": "Part 6",
+   "instrument": "drum.group.set",
+   "program": 48,
+   "expect": {
+    "part": "Percussion",
+    "step": "instrument",
+    "program": 0,
+    "bank": 128,
+    "channel_gain_db": -19.3,
+    "percussion": true
+   }
+  },
+  {
    "name": "Part 1",
    "instrument": "brass.alto-horn",
    "program": null,

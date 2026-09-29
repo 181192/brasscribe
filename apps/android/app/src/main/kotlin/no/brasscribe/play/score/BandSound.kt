@@ -46,11 +46,15 @@ class BandSoundMap private constructor(
     private val keywords: List<Pair<String, String>>,
     private val instruments: Map<String, String>,
     private val programs: Map<Int, String>,
+    private val kitPrograms: Set<Int> = emptySet(),
 ) {
     /** Exact-name lookup only (step 1). */
     fun forPart(name: String): TrackSound? = parts[normalize(name)]
 
-    fun resolve(name: String, instrument: String? = null, program: Int? = null): TrackSound? {
+    fun resolve(name: String, instrument: String? = null, program: Int? = null): TrackSound? =
+        byStep(name, instrument, program)?.let { kit(it, program) }
+
+    private fun byStep(name: String, instrument: String?, program: Int?): TrackSound? {
         val n = normalize(name)
         parts[n]?.let { return it }
         aliases[n]?.let { return byName(it, "alias") }
@@ -59,6 +63,10 @@ class BandSoundMap private constructor(
         if (program != null) programs[program]?.let { return byName(it, "program") }
         return null
     }
+
+    /** Step 6: a percussion part plays the kit its program selects (1, the pop kit) when it is in kit_programs, else the band kit. */
+    private fun kit(sound: TrackSound, program: Int?): TrackSound =
+        if (sound.percussion && program != null && program in kitPrograms) sound.copy(program = program) else sound
 
     private fun byName(part: String, step: String) = parts[normalize(part)]?.copy(step = step)
 
@@ -82,8 +90,9 @@ class BandSoundMap private constructor(
                 val a = it.jsonArray
                 a[0].jsonPrimitive.content to a[1].jsonPrimitive.content
             }.orEmpty()
+            val kits = (r?.get("kit_programs") as? JsonArray)?.map { it.jsonPrimitive.int }?.toSet().orEmpty()
             return BandSoundMap(parts, strings("aliases"), keywords, strings("instruments"),
-                strings("programs").mapKeys { it.key.toInt() })
+                strings("programs").mapKeys { it.key.toInt() }, kits)
         }
 
         /** mapping.json `resolve.normalize`: lowercase, ♭ → b, ♯ → #, whitespace runs (incl. U+00A0) → one space, trim. */
@@ -129,15 +138,18 @@ class BandPlan(val percussion: List<Boolean>, val channels: IntArray, val sounds
          * Writes the plan into [s]'s tracks. [band]: the band SoundFont plays (the basic tier keeps
          * bank 0). The MusicXML importer turns <midi-instrument> into per-beat instrument and bank
          * changes that would override the preset, so those are removed. Touches only [s]: safe off
-         * the main thread for a score nothing else holds yet.
+         * the main thread for a score nothing else holds yet. [kits]: [PercussionKit.programs] of the
+         * score's MusicXML, per track.
          */
-        fun apply(s: Score, names: List<String>, soundMap: BandSoundMap?, band: Boolean): BandPlan {
+        fun apply(s: Score, names: List<String>, soundMap: BandSoundMap?, band: Boolean, kits: List<Int?> = emptyList()): BandPlan {
             val percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
             val channels = ChannelPlan.forPlayback(percussion)
             val gains = DoubleArray(names.size) { 1.0 }
             val sounds = names.indices.map { i ->
                 val t = s.tracks[i]
-                soundMap?.resolve(names[i], null, t.playbackInfo.program.toInt().takeIf { it in 0..127 })
+                // alphaTab resets a percussion track to program 0; its kit comes from the MusicXML ([kits]).
+                val program = if (percussion[i]) kits.getOrNull(i) ?: t.playbackInfo.program.toInt() else t.playbackInfo.program.toInt()
+                soundMap?.resolve(names[i], null, program.takeIf { it in 0..127 })
                     ?.let { if (percussion[i] && !it.percussion) it.copy(percussion = true) else it }
             }
             for (i in names.indices) {
@@ -150,7 +162,7 @@ class BandPlan(val percussion: List<Boolean>, val channels: IntArray, val sounds
                     continue
                 }
                 if (sound.step != "exact") android.util.Log.i("BrasscribePlay", "part '${names[i]}' plays the ${sound.part} preset (${sound.step})")
-                t.playbackInfo.program = if (sound.percussion) 0.0 else sound.program.toDouble()
+                t.playbackInfo.program = sound.program.toDouble() // percussion: the kit, on the drum channel's bank 128
                 t.playbackInfo.bank = if (sound.percussion || !band) 0.0 else sound.bank.toDouble()
                 gains[i] = sound.gain
                 for (staff in t.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) {
@@ -188,5 +200,24 @@ object SamePitchTrim {
             if (out[i] != null) nextStart[n.pitch] = n.start
         }
         return out
+    }
+}
+
+/**
+ * The kit a percussion part asks for: the 0-based <midi-program> of its first <midi-instrument>, per
+ * <score-part> in part-list order (the order alphaTab makes its tracks in). alphaTab 1.8.4 reads that
+ * program but resets every percussion track to program 0 when the score finishes loading, so the band
+ * map would never see the pop kit (program 1) without this.
+ */
+object PercussionKit {
+    private val scorePart = Regex("<score-part\\b[^>]*?(/>|>(.*?)</score-part>)", RegexOption.DOT_MATCHES_ALL)
+    private val midiProgram = Regex("<midi-instrument\\b[^>]*>.*?<midi-program>\\s*(\\d+)\\s*</midi-program>", RegexOption.DOT_MATCHES_ALL)
+
+    /** Per score-part index, its first midi-program (0-based), or null when it has none. */
+    fun programs(musicXml: String): List<Int?> {
+        val end = musicXml.indexOf("</part-list>").takeIf { it >= 0 } ?: return emptyList()
+        return scorePart.findAll(musicXml.substring(0, end)).map { m ->
+            m.groups[2]?.value?.let { body -> midiProgram.find(body)?.groupValues?.get(1)?.toIntOrNull()?.minus(1) }
+        }.toList()
     }
 }

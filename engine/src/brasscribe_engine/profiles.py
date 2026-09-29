@@ -5,7 +5,8 @@
   brass-band              brass-only ensemble, no separation: MuScriptor medium +
                           Basic Pitch on the mix, minimal band (pipeline A)
   pop-rock                full band: BS-RoFormer SW, then per-stem transcription
-                          (bass with Basic Pitch), minimal band (pipeline B)
+                          (bass with Basic Pitch), minimal band (pipeline B); a Percussion
+                          part plays the pop kit
   orchestra-with-soloist  layered solo-with-band: Mega-53 solo/bass/drums, the
                           orchestra as residual, 18-part brass band (layered)
 
@@ -133,9 +134,13 @@ def job_options(profile: str, params: dict) -> dict:
     return opts
 
 
-def _arrange_params(title: str, params: dict, lineup: str = "full") -> dict:
-    """lineup: the profile's lineup when the job does not choose one."""
+def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "band") -> dict:
+    """lineup: the profile's lineup when the job does not choose one. kit: the drum kit the Percussion part
+    plays (brasscribe_music.instruments.KITS); set by the profile, not a job option, and passed only when it is
+    not the band kit, so the other profiles keep their cache keys."""
     opts = arrangement_options({**params, "lineup": params.get("lineup") or lineup})
+    if kit != "band":
+        opts["kit"] = kit
     return {"title": title, "arrangement": opts} if opts else {"title": title}
 
 
@@ -282,7 +287,8 @@ def pop_rock(title: str, params: dict) -> Pipeline:
         "beats": Input("beats", "mix.beats"), "melody": Input(f"transcribe.{melody_stem}.muscriptor", f"{melody_stem}-mus.mid"),
         "melody_support": Input(f"transcribe.{melody_stem}.basic-pitch", f"{melody_stem}-bp.mid"),
         "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"), **harmony},
-        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+        S.arrange_band, params=_arrange_params(title, params, kit="pop"), code=SYMBOLIC_CODE,
+        outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("pop-rock", "B", st, _outputs("arrange"), params)
 

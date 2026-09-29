@@ -265,6 +265,10 @@ def lineup_key(lineup: Lineup) -> str:
     return next(k for k, v in LINEUPS.items() if v is lineup)
 
 
+# The drum kits of the band SoundFont a percussion part can play: its 0-based bank 128 program
+# (sounds/mapping.json resolve.kit_programs). The arranger writes the pop kit for a pop or rock take.
+KITS: dict[str, int] = {"band": 0, "pop": 1}
+
 # The own parts of seats that are not a brass-band part, by name: the trumpet's.
 SEAT_OWN_PARTS: dict[str, Part] = {"Trumpet": _p("Trumpet", "bb-trumpet", 1, "Tpt.", 8)}
 

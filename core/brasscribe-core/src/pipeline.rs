@@ -187,6 +187,8 @@ pub struct LayersOptions {
     pub lead: String,
     /// Language of the source footer on the parts: "en" (default when empty) or "nb".
     pub lang: String,
+    /// The drum kit the Percussion part plays (instruments::KITS): "band" (default when empty) or "pop".
+    pub kit: String,
 }
 
 /// The solo line's window without a seat: a cornet or trumpet soloist, E3-E6.
@@ -532,7 +534,8 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     if shift != 0 {
         comp = comp.transposed(shift);
     }
-    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() {
+    let kit = if crate::instruments::kit_program(&opts.kit)? == 0 { "band" } else { opts.kit.as_str() };
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() || kit != "band" {
         let mut a = serde_json::Map::new();
         a.insert("lineup".into(), lineup_name.into());
         a.insert("difficulty".into(), difficulty.into());
@@ -546,6 +549,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             if solo_take || lead == "seat" {
                 a.insert("lead".into(), "seat".into());
             }
+        }
+        if kit != "band" {
+            a.insert("kit".into(), kit.into());
         }
         comp.arrangement = Some(serde_json::Value::Object(a));
     }
@@ -614,6 +620,8 @@ pub struct SongOptions {
     pub reads: Option<String>,
     /// Who plays the tune: "lineup" (default when empty) or "seat".
     pub lead: String,
+    /// The drum kit the Percussion part plays (instruments::KITS): "band" (default when empty) or "pop".
+    pub kit: String,
 }
 
 /// The option value of a song lineup and the lineup ("" -> minimal).
@@ -625,9 +633,9 @@ fn song_lineup(name: &str) -> Result<(&'static str, crate::instruments::Lineup),
     }
 }
 
-/// Records a non-default lineup of the non-layered arrangers in the composition.
-fn record_lineup(comp: &mut Composition, key: &str, seat: Option<&str>, reads: Option<&str>, lead: &str) {
-    if key != "minimal" || seat.is_some() {
+/// Records a non-default lineup (and kit) of the non-layered arrangers in the composition.
+fn record_lineup(comp: &mut Composition, key: &str, seat: Option<&str>, reads: Option<&str>, lead: &str, kit: &str) {
+    if key != "minimal" || seat.is_some() || kit != "band" {
         let mut a = serde_json::Map::new();
         a.insert("lineup".into(), key.into());
         a.insert("difficulty".into(), "faithful".into());
@@ -640,6 +648,9 @@ fn record_lineup(comp: &mut Composition, key: &str, seat: Option<&str>, reads: O
             if lead == "seat" {
                 a.insert("lead".into(), "seat".into());
             }
+        }
+        if kit != "band" {
+            a.insert("kit".into(), kit.into());
         }
         comp.arrangement = Some(serde_json::Value::Object(a));
     }
@@ -710,7 +721,8 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
         review: Vec::new(),
         arrangement: None,
     };
-    record_lineup(&mut comp, lineup_key, opts.seat.as_deref(), opts.reads.as_deref(), lead);
+    let kit = if crate::instruments::kit_program(&opts.kit)? == 0 { "band" } else { opts.kit.as_str() };
+    record_lineup(&mut comp, lineup_key, opts.seat.as_deref(), opts.reads.as_deref(), lead, kit);
     let arrangement = crate::arranger::arrange_opts(&comp, crate::arranger::composition_lineup(&comp).0, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
@@ -740,6 +752,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         key_changes: Vec::new(),
         rehearsal: Vec::new(),
         encoding_date: String::new(),
+        kit_program: 0,
     };
     Ok(write_score(&spec))
 }
@@ -816,7 +829,7 @@ pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, S
 pub fn arrange_reference_with(reference: &Value, title: &str, lineup: &str) -> Result<BandResult, String> {
     let (lineup_key, lineup) = song_lineup(lineup)?;
     let mut comp = composition_from_reference(reference, title)?;
-    record_lineup(&mut comp, lineup_key, None, None, "lineup");
+    record_lineup(&mut comp, lineup_key, None, None, "lineup", "band");
     let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
     let musicxml = write_score(&band_score(&arrangement, &comp));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })

@@ -177,3 +177,59 @@ private func unisonScore() throws -> Score {
     #expect(abs(20 * log10(a / b)) < 1.5, "part 1 lost level after part 2's note-off")
     #expect(abs(20 * log10(a / before)) < 3, "part 1 is quieter after part 2's note-off than before it")
 }
+
+private func drumScore(program: Int?) throws -> Score {
+    // One percussion part, a bass drum on every beat, on channel 10; `program` is the 1-based
+    // <midi-program> the arranger writes for a pop or rock take (2, the pop kit), or none.
+    let prog = program.map { "<midi-program>\($0)</midi-program>" } ?? ""
+    let hit = "<note><unpitched><display-step>F</display-step><display-octave>4</display-octave></unpitched>"
+        + "<duration>1</duration><instrument id=\"P1-I36\"/><type>quarter</type></note>"
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Percussion</part-name>
+    <score-instrument id="P1-I36"><instrument-name>Bass Drum</instrument-name><instrument-sound>drum.group.set</instrument-sound></score-instrument>
+    <midi-instrument id="P1-I36"><midi-channel>10</midi-channel>\(prog)<midi-unpitched>37</midi-unpitched></midi-instrument></score-part></part-list>
+    <part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time>
+    <clef><sign>percussion</sign></clef></attributes><direction><sound tempo="120"/></direction>\(String(repeating: hit, count: 4))</measure></part></score-partwise>
+    """
+    return try MusicXMLParser.parse(Data(xml.utf8))
+}
+
+/// A percussion part's <midi-program> picks the kit: 2 (program 1) the pop kit, none or anything
+/// else the band kit, on the percussion bank either way.
+@Test(.enabled(if: bandSoundFont() != nil)) func percussionProgramSelectsTheKit() throws {
+    let (band, _) = BandSounds.locateBand(bundle: .main)
+    let b = try #require(band)
+    for (program, kit) in [(nil, 0), (1, 0), (2, 1), (26, 0)] as [(Int?, Int)] {
+        let part = try #require(try drumScore(program: program).parts.first)
+        #expect(part.isPercussion)
+        let s = try #require(b.sound(for: part.name, instrumentSound: part.instrumentSound, midiProgram: part.midiProgram))
+        #expect(s.program == kit, "midi-program \(String(describing: program))")
+        #expect(s.bankMSB == 0x78 && s.bankLSB == 0)
+    }
+}
+
+/// The pop kit sounds, and not as the band kit: its bass drum is MS Basic's kick, the band kit's
+/// the concert bass drum.
+@Test(.enabled(if: bandSoundFont() != nil)) func popKitPlays() throws {
+    let bank = SoundBank.locate(bundle: .main)
+    func render(_ program: Int?) throws -> AVAudioPCMBuffer {
+        let score = try drumScore(program: program)
+        let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
+        e.roomOn = false
+        return try e.renderScore(fromBeat: 0, beats: 4)
+    }
+    let band = try render(nil), pop = try render(2)
+    let sr = Int(band.format.sampleRate)
+    let (a, p) = (band.rms(from: 0, to: sr * 2), pop.rms(from: 0, to: sr * 2))
+    print("KIT band kit rms \(a), pop kit rms \(p)")
+    #expect(a > 1e-4 && p > 1e-4, "both kits sound")
+    let n = Int(min(band.frameLength, pop.frameLength))
+    var diff = 0.0, ref = 0.0
+    for i in 0..<n {
+        let x = Double(band.floatChannelData![0][i]), y = Double(pop.floatChannelData![0][i])
+        diff += (x - y) * (x - y)
+        ref += x * x
+    }
+    #expect(diff > 0.1 * ref, "the pop kit plays other samples than the band kit")
+}

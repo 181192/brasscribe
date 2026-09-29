@@ -171,6 +171,53 @@ public class BandSoundFontTests(ITestOutputHelper log)
     }
 
     /// <summary>
+    /// The percussion part's &lt;midi-program&gt; picks the kit through the band map, as the app plays it:
+    /// 2 (program 1) the pop kit, 1 the band kit. Both sound, and differently (the band kit's bass
+    /// drum and snare are the VSCO concert drums, the pop kit's MS Basic's).
+    /// </summary>
+    [SkippableFact]
+    public void Percussion_midi_program_2_plays_the_pop_kit()
+    {
+        // The pinned pack (the app's file): the local master may predate the pop kit.
+        const string packSf2 = "data/sounds/band/brasscribe-band-16bit.sf2";
+        var sf2 = TestPaths.RepoFile(packSf2);
+        var mapping = TestPaths.RepoFile("sounds/mapping.json");
+        Skip.If(sf2 is null, TestPaths.Missing(packSf2));
+        Skip.If(mapping is null, TestPaths.Missing("sounds/mapping.json"));
+        var bytes = File.ReadAllBytes(sf2);
+        var band = BandSoundFont.Load(mapping);
+        float[] Render(int midiProgram)
+        {
+            var output = new BufferedSynthOutput();
+            using var player = new AlphaTabScorePlayer(output);
+            player.SoundMap = band.For;
+            player.LoadSoundFont(bytes);
+            player.LoadScore(System.Text.Encoding.UTF8.GetBytes(DrumScore.Trim().Replace("<midi-program>1</midi-program>", $"<midi-program>{midiProgram}</midi-program>")));
+            Assert.True(player.IsReady, player.LoadError?.Message);
+            Assert.Equal(midiProgram - 1, (int)player.Score!.Tracks[0].PlaybackInfo.Program);
+            Assert.Equal(ChannelPlan.Drums, player.TrackChannels[0]);
+            player.Play();
+            var all = new List<float>();
+            var buffer = new float[2 * 1024];
+            for (int i = 0; i < 44100 * 2 / 1024; i++)
+            {
+                output.Read(buffer);
+                all.AddRange(buffer);
+            }
+            player.Pause();
+            return [.. all];
+        }
+        var bandKit = Render(1);
+        var popKit = Render(2);
+        double Rms(float[] x) => Math.Sqrt(x.Sum(v => (double)v * v) / x.Length);
+        double diff = Math.Sqrt(bandKit.Zip(popKit, (a, b) => (double)(a - b) * (a - b)).Sum() / bandKit.Length);
+        log.WriteLine($"band kit rms {Rms(bandKit):0.00000}, pop kit rms {Rms(popKit):0.00000}, difference rms {diff:0.00000}");
+        Assert.True(Rms(bandKit) > 1e-4, "the band kit is silent");
+        Assert.True(Rms(popKit) > 1e-4, "the pop kit is silent");
+        Assert.True(diff > 0.3 * Rms(bandKit), "the pop kit plays the band kit's samples");
+    }
+
+    /// <summary>
     /// The app loads the map before its first frame; the SoundFont (195 MB) must not be read then,
     /// only by ApplyTo's background task.
     /// </summary>

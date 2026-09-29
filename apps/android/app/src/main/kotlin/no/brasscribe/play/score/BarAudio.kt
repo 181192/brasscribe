@@ -66,7 +66,7 @@ object BarAudio {
         val from = if (pickup) first + 1 else first
         val to = if (pickup) last + 1 else last
         if (from < 1 || from > count) return null
-        val plan = BandPlan.apply(score, BandPlan.partNames(score), soundMap, bandSoundFont != null)
+        val plan = BandPlan.apply(score, BandPlan.partNames(score), soundMap, bandSoundFont != null, PercussionKit.programs(musicXml))
         val midi = MidiFile()
         MidiFileGenerator(score, settings, AlphaSynthMidiFileHandler(midi, true)).generate()
         val end = bars[minOf(maxOf(from, to), count) - 1]

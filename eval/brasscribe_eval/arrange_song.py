@@ -17,9 +17,9 @@ from pathlib import Path
 
 import numpy as np
 from brasscribe_music.arranger import arrange, arrange_composition
-from brasscribe_music.instruments import CLEF_READINGS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
+from brasscribe_music.instruments import CLEF_READINGS, KITS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
 from brasscribe_music.harmony import harmony_slots, slots_to_notes
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
 from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
 from brasscribe_music.spelling import key_of
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
@@ -92,6 +92,8 @@ def main() -> None:
     ap.add_argument("--seat", choices=SEAT_IDS, help="the player's seat (their part; with --lead seat, the tune's)")
     ap.add_argument("--reads", choices=CLEF_READINGS, help="the clef the seat's part is written in (bass: at concert pitch)")
     ap.add_argument("--lead", choices=LEADS, default="lineup", help="who plays the tune: the lineup's lead, or the seat's part")
+    ap.add_argument("--kit", choices=list(KITS), default="band",
+                    help="the drum kit the Percussion part plays: band, or pop for a pop or rock take")
     args = ap.parse_args()
     if args.lead == "seat" and not args.seat:
         ap.error("--lead seat needs --seat")
@@ -104,14 +106,16 @@ def main() -> None:
 
     comp = song_composition(args.beats, args.melody, args.melody_support, args.bass, args.harmony, args.title,
                             tune.instrument.pro if tune else (52, 88))
-    if args.lineup != "minimal" or args.seat:
+    if args.lineup != "minimal" or args.seat or args.kit != "band":
         comp.arrangement = {"lineup": args.lineup, "difficulty": "faithful", "transpose_semitones": 0}
     if args.seat:
         comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
                                  **({"lead": "seat"} if args.lead == "seat" else {})})
+    if args.kit != "band":
+        comp.arrangement["kit"] = args.kit
     comp.to_json(args.out / "composition.json")
     arr = arrange_composition(comp)
-    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
+    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr), composition_kit(comp))
     pdf = xml.with_suffix(".pdf")
     if not args.no_render:
         pdf.unlink(missing_ok=True)

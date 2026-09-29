@@ -370,12 +370,13 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
     return score
 
 
-def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | None = None) -> Path:
+def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | None = None, kit: str = "band") -> Path:
     """Write written-pitch MusicXML: transposing parts are converted exactly once, here.
 
     `sounds` maps part name -> <instrument-sound> id. music21 does not write that
     element, and without it MuseScore guesses from the part name (it reads
-    "E♭ Bass" as a bass voice).
+    "E♭ Bass" as a bass voice). `kit`: the drum kit a percussion part plays (KITS: band,
+    or pop for a pop or rock take), written as the part's <midi-program>.
     """
     written = score.toWrittenPitch(inPlace=False) if any(
         (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
@@ -383,7 +384,7 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
     written.write("musicxml", fp=str(path))
     _drop_repeated_title(path)
     if sounds:
-        _add_instrument_sounds(path, sounds)
+        _add_instrument_sounds(path, sounds, kit)
     return path
 
 
@@ -399,7 +400,7 @@ DRUM_CHANNEL = 10
 _CHANNELS = [c for c in range(1, 17) if c != DRUM_CHANNEL]
 
 
-def _band_midi(root, banks: dict[str, int]) -> None:
+def _band_midi(root, banks: dict[str, int], kit_program: int = 0) -> None:
     """MIDI setup for the band SoundFont.
 
     Pitched parts: their preset's <midi-bank> (from Part.midi_bank) next to the
@@ -408,7 +409,8 @@ def _band_midi(root, banks: dict[str, int]) -> None:
     port 2 (<midi-device port="2">). Percussion: one score-instrument per
     drum sound used, on channel 10 with <midi-unpitched> = GM note + 1, and an
     <instrument id> on every note, so players that map unpitched notes (e.g.
-    alphaTab) sound the kit.
+    alphaTab) sound the kit. A kit other than the band kit (kit_program, 0-based:
+    the pop kit is 1) is written as <midi-program> on each of those.
     """
     import xml.etree.ElementTree as ET
 
@@ -418,7 +420,7 @@ def _band_midi(root, banks: dict[str, int]) -> None:
         pid = sp.get("id")
         part = parts.get(pid)
         if part is not None and part.find(".//unpitched") is not None:
-            _percussion_midi(sp, part)
+            _percussion_midi(sp, part, kit_program)
             continue
         name = (sp.findtext("part-name") or "").strip()
         mi = sp.find("midi-instrument")
@@ -442,7 +444,7 @@ def _band_midi(root, banks: dict[str, int]) -> None:
             bank.tail = ch.tail
 
 
-def _percussion_midi(sp, part) -> None:
+def _percussion_midi(sp, part, kit_program: int = 0) -> None:
     import xml.etree.ElementTree as ET
 
     used: dict[int, str] = {}
@@ -467,6 +469,8 @@ def _percussion_midi(sp, part) -> None:
     for gm in sorted(used):
         mi = ET.SubElement(sp, "midi-instrument", {"id": ids[gm]})
         ET.SubElement(mi, "midi-channel").text = str(DRUM_CHANNEL)
+        if kit_program:
+            ET.SubElement(mi, "midi-program").text = str(kit_program + 1)
         ET.SubElement(mi, "midi-unpitched").text = str(gm + 1)
     for n, gm in notes:
         # Schema order: ..., duration, tie*, instrument, voice, type, ...
@@ -510,7 +514,7 @@ def _drop_repeated_title(path: Path) -> None:
         path.write_text(raw[:move.start()] + raw[move.end():], encoding="utf-8")
 
 
-def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
+def _add_instrument_sounds(path: Path, sounds: dict[str, str], kit: str = "band") -> None:
     import xml.etree.ElementTree as ET
 
     raw = path.read_text(encoding="utf-8")
@@ -529,9 +533,9 @@ def _add_instrument_sounds(path: Path, sounds: dict[str, str]) -> None:
                 # Schema order: instrument-name, instrument-abbreviation?, instrument-sound?
                 idx = 1 + (si.find("instrument-abbreviation") is not None)
                 si.insert(idx, el)
-    from .instruments import part_banks
+    from .instruments import KITS, part_banks
 
-    _band_midi(root, part_banks())
+    _band_midi(root, part_banks(), KITS[kit])
     path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
 
 
@@ -557,6 +561,14 @@ def build_band_score(arrangement, comp) -> stream.Score:
                        very_below=1 - model.very_risk, key_fifths=fifths, key_changes=changes,
                        rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
                        free_spans=spans)
+
+
+def composition_kit(comp) -> str:
+    """The drum kit a Composition was arranged for (its arrangement's "kit"); the band kit when none or unknown."""
+    from .instruments import KITS
+
+    kit = (getattr(comp, "arrangement", None) or {}).get("kit")
+    return kit if kit in KITS else "band"
 
 
 def band_sounds(arrangement) -> dict[str, str]:

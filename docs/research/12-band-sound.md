@@ -455,7 +455,7 @@ Not the cause:
 
 **Open** (all taken up in §13).
 - **Apple per-part balance.** Against alphaSynth, on the golden stems with the solo cornet as reference, Apple plays most parts 2.4–5.3 dB hotter. This was already the case before (0…+5.7 dB).
-- **The pop kit** needs a style signal from the arranger before anything can select it.
+- **The pop kit** now has its signal: the arranger writes `<midi-program>2</midi-program>` on the percussion part for a pop or rock take (`--kit pop`, Python and Rust, conformance case `mikkel/layers-kit-pop`), and every player's resolver plays bank 128 program 1 for it (`resolve.kit_programs`, shared vectors). A pop-rock arrangement still has no Percussion part to play it: it is made for the small band or the quartet, and its drums stem is not transcribed. Adding one is a lineup change in every app.
 - **Velocity layers.** The alphaSynth phrase still jumps 6 dB between mp and mf and 5.7 dB between f and ff, at the three-layer splits.
 
 ## 13. Even dynamics, pedal notes, the kit's bass drum, Apple's balance and the engine's MP3 (pack `sounds-2026.09.30`)
@@ -503,7 +503,7 @@ AVAudioUnitSampler hardly applies zone attenuation, so before it played the raw 
 
 The golden does not check the trims: its Solo Cornet, Flugelhorn and Euphonium stems are 6–9 dB quieter on Apple than on alphaSynth against every other part, before and after the trims, and the Solo Cornet is silent on Apple for 14 s (164–178 s) where alphaSynth holds a steady note. So most of §12's "2.4–5.3 dB hotter" was the solo line playing quieter on Apple, not the seating. Not found here; it needs a note-by-note comparison of the two engines' solo part.
 
-**The pop kit.** The arranger writes the percussion part's `<midi-program>` 2 (bank 128 program 1) for a pop or rock take, and every player's resolver plays it (branch `fix/pop-kit-signal`). A pop-rock arrangement has no Percussion part yet: the minimal band and the quartet have none, and the drums stem is not transcribed. That is the follow-up.
+**The pop kit.** The arranger writes the percussion part's `<midi-program>` 2 (bank 128 program 1) for a pop or rock take, and every player's resolver plays it (conformance case `mikkel/layers-kit-pop`, `resolve.kit_programs`). A pop-rock arrangement has no Percussion part yet: the minimal band and the quartet have none, and the drums stem is not transcribed. That is the follow-up.
 
 **Engine MP3.** MuseScore renders `brass-band.mp3` at its own level: the golden measured −3.67 LUFS with decoded peaks at +12.6 dBFS. The export now measures the file (BS.1770), gains it to the loudness the band plays that arrangement at (its band estimate, clamped like a recording's target) and runs it through the apps' limiter (0.8 / 0.98), re-reading the MP3 so the encoder cannot overshoot: the golden now measures −11.55 LUFS against a −10.99 target (the limiter takes the rest of MuseScore's peaks), peaking at −0.43 dBFS. The sound is still MuseScore's: its command line cannot choose a SoundFont, and the engine has no SoundFont synthesizer on any Bandroom platform (FluidSynth is only a development tool here). Rendering with the band pack needs a synthesizer bundled with the engine.
 

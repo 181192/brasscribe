@@ -324,7 +324,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             let info = partInfos[id] ?? PartInfo(id: id, name: id)
             let perc = partPercussion[id] ?? false || info.instrumentSound.hasPrefix("drum") || info.midiChannel == 10
             return Part(id: id, name: info.name, abbreviation: info.abbreviation, instrumentName: info.instrumentName,
-                        instrumentSound: info.instrumentSound, midiProgram: perc ? nil : info.midiProgram,
+                        instrumentSound: info.instrumentSound, midiProgram: info.midiProgram,
                         midiChannel: info.midiChannel, transposeSemitones: partTranspose[id] ?? 0,
                         isPercussion: perc, writtenFifths: partFifths[id] ?? 0, notes: partNotes[id] ?? [],
                         dynamics: partDynamics[id] ?? [:], wedges: partWedges[id] ?? [], measureFifths: partMeasures[id]?.map(\.fifths) ?? [],
