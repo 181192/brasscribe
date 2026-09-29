@@ -10,10 +10,10 @@ public static class PlaybackLevels
     public const double BandPhraseLufs = -12.0;
 
     /// <summary>Make-up gain on the band before the limiter, measured for alphaSynth with the band SoundFont.</summary>
-    public const double BandGainDb = 5.0;
+    public const double BandGainDb = 11.0;
 
     /// <summary>metronome.gain_db.windows: the click's volume, through the band stage.</summary>
-    public const double MetronomeGainDb = -1.0;
+    public const double MetronomeGainDb = -7.0;
 
     /// <summary>The recording's target when there is no arrangement, or it has no pitched note.</summary>
     public const double RecordingFallbackLufs = -16.0;
@@ -24,14 +24,14 @@ public static class PlaybackLevels
     public const double RecordingMaxCutDb = 30.0;
 
     /// <summary>recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase.</summary>
-    public const double BandEstimateOffsetDb = -0.17;
+    public const double BandEstimateOffsetDb = 0.56;
 
     /// <summary>
     /// dynamics.sampler_velocity.alphatab_lufs: the pitched parts of the full-band phrase through
     /// alphaSynth at each velocity, the L(v) of the band estimate.
     /// </summary>
     public static readonly (int Velocity, double Lufs)[] VelocityLufs =
-        [(15, -44.51), (31, -38.20), (47, -34.58), (63, -28.61), (79, -25.39), (95, -23.36), (111, -17.66), (127, -16.49)];
+        [(15, -43.07), (31, -36.77), (47, -33.15), (63, -29.46), (79, -25.98), (95, -22.30), (111, -18.56), (127, -15.32)];
 
     /// <summary>dynamics.velocity: each mark's velocity by MusicXML element name (alphaTab's rules).</summary>
     public static readonly IReadOnlyDictionary<string, int> DynamicsVelocity = new Dictionary<string, int>

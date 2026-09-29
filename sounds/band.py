@@ -34,7 +34,7 @@ import soundfile as sf
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import sf2  # noqa: E402
-from build import BUILT, DYN_LEVEL_DB, MAX_STRETCH, SR, VEL_SPAN_DB  # noqa: E402
+from build import BUILT, DYN_LEVEL_DB, MAX_STRETCH, SR, VEL_SPAN_DB, vel_curve_db  # noqa: E402
 from dsp import apply_eq, k_weight  # noqa: E402
 from sf3 import SoundFontReader  # noqa: E402
 
@@ -50,6 +50,11 @@ G_FINE_TUNE = 52
 G_SAMPLE_MODES = 54
 G_OVERRIDING_ROOT_KEY = 58
 LAYER_DETUNE_CENTS = 3
+# alphaSynth steps a voice's gain once per 64-sample block, so a release is a staircase: on the lowest notes, whose
+# waveform is a train of loud pulses 30-40 ms apart, a step that lands on a pulse is a click (B-flat Bass B-flat0).
+# Keys up to LOW_RELEASE_KEY release LOW_RELEASE_FACTOR times slower: smaller steps, and a pedal note rings a little.
+LOW_RELEASE_KEY = 27
+LOW_RELEASE_FACTOR = 2.0
 # A key that has no other recording within MAX_STRETCH semitones for a desk variant plays the same
 # sample as variant 0, detuned by this much, so a unison of the two beats instead of doubling.
 FALLBACK_DETUNE_CENTS = 4
@@ -70,13 +75,13 @@ KIT = [
     ((57,), [(85, "varMetal/Cymbals/clash/crash_hit_ff_tight.wav"), (127, "varMetal/Cymbals/clash/crash_hit_fff_loose_2.wav")], 3.0, 1.5),
 ]
 KIT_REPLACES = {35: 36, 36: 36, 38: 38, 40: 40, 49: 49, 57: 57}  # our key -> the MS Basic key whose level it takes
-# Measured against MS Basic, K-weighted over each hit's first 400 ms at velocities 47-127: the muted concert bass drum
-# came out 3.4 dB under the MS Basic kick in FluidSynth and 6.3 dB under in alphaSynth (the reference player, which
-# plays MS Basic's filtered kick louder), and the snares 0.6-1.0 dB over. The bass drum is peak-limited to get
-# there without clipping (its first milliseconds peak far above its body). The crashes carry
-# no trim: MS Basic attenuates its crashes 13-17 dB in the zone, which alphaSynth applies in full, FluidSynth at 0.4
-# and AVAudioUnitSampler hardly at all; the VSCO crashes have that attenuation baked into the sample instead.
-KIT_TRIM_DB = {36: 6.0, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
+# The snares measured 0.6-1.0 dB over MS Basic's (K-weighted, each hit's first 400 ms, velocities 47-127), hence
+# their trim. The bass drum needs none: it plays under MS Basic's kick preset zone (msbasic_levels), and is
+# peak-limited (its first milliseconds peak far above its body); against MS Basic's kick at velocity 80 it measures
+# +0.5 dB in FluidSynth and AVAudioUnitSampler (1 s RMS) and +0.9 LU on alphaSynth. The crashes carry no trim: MS Basic
+# attenuates its crashes 13-17 dB in the instrument zone, which alphaSynth applies in full, FluidSynth at 0.4 and
+# AVAudioUnitSampler hardly at all; the VSCO crashes have that attenuation baked into the sample instead.
+KIT_TRIM_DB = {36: 0.0, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
 KIT_HIGHPASS_HZ = 35  # the concert bass drum's sub-sonic rumble below the kick's fundamental
 
 
@@ -109,15 +114,21 @@ class Bank:
         ins = sf2.Instrument(name=f"{tid}-{art}" + (f"-{variant}" if variant else ""), release_s=a["sf2_release_s"],
                              vel_span_db=VEL_SPAN_DB)
         detuned: list[int] = []
+        level = {tuple(v): DYN_LEVEL_DB[d] for v, d in zip(a["velocity"], a["layers"])}
         for z in desk_variant(a, variant):
             s = by_file[z["file"]]
-            ins.zones.append(sf2.Zone(self._sample(tid, s), z["lokey"], z["hikey"], z["lovel"], z["hivel"],
-                                      int(round(-z["volume_db"] * 10)), bool(s["loop"])))
-            if z.get("detune"):
-                detuned.append(len(ins.zones))  # 1-based: zone 0 of the raw instrument is the global zone
+            for lo, hi, att_db in velocity_steps(z["lovel"], z["hivel"], level[(z["lovel"], z["hivel"])]):
+                ins.zones.append(sf2.Zone(self._sample(tid, s), z["lokey"], z["hikey"], lo, hi,
+                                          int(round((att_db - z["volume_db"]) * 10)), bool(s["loop"])))
+                if z.get("detune"):
+                    detuned.append(len(ins.zones))  # 1-based: zone 0 of the raw instrument is the global zone
         raw = sf2.target_instrument(ins)
         for zi in detuned:
             raw.zones[zi].gens.append((G_FINE_TUNE, z_detune(variant)))
+        for z in raw.zones[1:]:
+            lokey = dict(z.gens)[G_KEY_RANGE] & 0xFF
+            if lokey <= LOW_RELEASE_KEY:
+                z.gens.append((G_RELEASE_VOL_ENV, sf2.timecents(a["sf2_release_s"] * LOW_RELEASE_FACTOR)))
         self._inst_index[key] = len(self.instruments)
         self.instruments.append(raw)
         return self._inst_index[key]
@@ -206,14 +217,17 @@ class Bank:
         # the global zone takes MS Basic's kick modulators, so velocity plays both kits' drums alike
         kick = next(src.instrument(pz.ref) for pz in preset.zones if pz.ref is not None and src.instrument(pz.ref).name == "Std Kick")
         mods = next(z.mods for z in kick.zones if z.ref is None)
-        izones = [sf2.RawZone([(G_RELEASE_VOL_ENV, sf2.timecents(1.0))], mods, None)]
+        # one instrument per MS Basic preset zone our drums take their level from (see msbasic_levels)
+        groups: dict[tuple, list[sf2.RawZone]] = {}
         for keys, layers, keep_s, release_s in KIT:
+            p_gens = ref[KIT_REPLACES[keys[0]]][1]
+            izones = groups.setdefault(p_gens, [sf2.RawZone([(G_RELEASE_VOL_ENV, sf2.timecents(1.0))], mods, None)])
             lovel = 1
             for hivel, rel in layers:
                 data = load_drum(VSCO_PERC / rel, keep_s, highpass=KIT_HIGHPASS_HZ if keys[0] <= 36 else None)
                 lvl = kit_level_db(data)
                 for key in keys:
-                    target = ref[KIT_REPLACES[key]] + KIT_TRIM_DB[KIT_REPLACES[key]]
+                    target = ref[KIT_REPLACES[key]][0] + KIT_TRIM_DB[KIT_REPLACES[key]]
                     y = peak_limit(data * 10 ** ((target - lvl) / 20))
                     skey = f"kit/{rel}/{key}"
                     if skey not in self._sample_index:
@@ -223,10 +237,55 @@ class Bank:
                                                (G_RELEASE_VOL_ENV, sf2.timecents(release_s)), (G_SAMPLE_MODES, 0),
                                                (G_OVERRIDING_ROOT_KEY, key)], [], self._sample_index[skey]))
                 lovel = hivel + 1
-        self.instruments.append(sf2.RawInstrument("VSCO concert perc", izones))
+        extra = []  # their zones are on the replaced keys only
+        for i, (p_gens, izones) in enumerate(groups.items()):
+            self.instruments.append(sf2.RawInstrument(f"VSCO concert {i}", izones))
+            extra.append(sf2.RawZone(list(p_gens), [], len(self.instruments) - 1))
         replaced = {k for keys, *_ in KIT for k in keys}
-        extra = [sf2.RawZone([], [], len(self.instruments) - 1)]  # its zones are on the replaced keys only
         self.drum_kit(MSBASIC, 0, as_program=program, name="Band kit", exclude=replaced, extra=extra)
+
+
+# The band SoundFont's velocity curve (build.py VEL_CURVE). alphaSynth plays amplitude proportional to velocity
+# inside a layer (it ignores the SoundFont's velocity modulators): 2 dB from mp to mf but 6 dB from pp to p. Each
+# layer's velocity range is therefore cut into steps at most VEL_STEP_MAX_DB apart, each attenuated so the level
+# follows VEL_CURVE. No step boosts, so the curve sits VEL_CURVE_OFFSET_DB under full scale at velocity 127; the
+# apps' make-up gain restores the loudness. AVAudioUnitSampler hardly applies zone attenuation: it plays its own
+# steep velocity curve, continuous across the layer splits because every layer is baked at one level, and the app
+# remaps the score's velocities onto it (playback-levels.json dynamics.sampler_velocity).
+VEL_STEP_MAX_DB = 1.0  # 0.5 dB steps overflow the SF2 generator index (65,535)
+
+
+def _residual(v: int, layer_db: float) -> float:
+    """How far a layer at `layer_db` plays over the curve at velocity v on alphaSynth (amplitude ~ velocity)."""
+    return layer_db + 20 * np.log10(v / 127) - vel_curve_db(v)
+
+
+def _curve_offset() -> float:
+    """The largest offset under which every layer of LAYER_DYNAMICS reaches the curve over its whole range."""
+    from build import LAYER_DYNAMICS, velocity_ranges
+    worst = np.inf
+    dyn_sets = list(LAYER_DYNAMICS.values()) + [["mf", "ff"]]  # + the solo cornet's named sustain layers
+    for dyns in dyn_sets:
+        for (lo, hi), d in zip(velocity_ranges(dyns), dyns):
+            worst = min(worst, min(_residual(v, DYN_LEVEL_DB[d]) for v in range(lo, hi + 1)))
+    return float(worst)
+
+
+VEL_CURVE_OFFSET_DB = _curve_offset()
+
+
+def velocity_steps(lovel: int, hivel: int, layer_db: float) -> list[tuple[int, int, float]]:
+    """A layer's velocity range as (lo, hi, attenuation dB) steps that follow VEL_CURVE (see above)."""
+    out: list[tuple[int, int, float]] = []
+    lo = lovel
+    while lo <= hivel:
+        r = [_residual(v, layer_db) - VEL_CURVE_OFFSET_DB for v in range(lo, hivel + 1)]
+        n = 1
+        while n < len(r) and max(r[:n + 1]) - min(r[:n + 1]) <= VEL_STEP_MAX_DB:
+            n += 1
+        out.append((lo, lo + n - 1, max(0.0, float(np.mean(r[:n])))))
+        lo += n
+    return out
 
 
 def z_detune(variant: int) -> int:
@@ -277,15 +336,18 @@ def kit_level_db(y: np.ndarray, sr: int = SR) -> float:
     return float(10 * np.log10(np.mean(k ** 2) + 1e-20))
 
 
-def msbasic_levels(src: SoundFontReader, preset) -> dict[int, float]:
-    """Per MS Basic key we replace: its loudest zone's sample level, minus the zone's instrument and preset
-    attenuation (alphaSynth, the reference player, applies SF2 initialAttenuation in full)."""
-    out: dict[int, float] = {}
+def msbasic_levels(src: SoundFontReader, preset) -> dict[int, tuple[float, tuple]]:
+    """Per MS Basic key we replace: its loudest zone's sample level minus the zone's instrument attenuation,
+    and the generators of the preset zone that plays it. Our drum on that key sits under a preset zone with
+    the same generators, so every player treats the two alike: MS Basic's kick carries a preset-level
+    initialAttenuation of -10 dB (a boost), which alphaSynth applies in full, FluidSynth clamps to 0 and
+    AVAudioUnitSampler hardly applies; levelled on the sample alone, the concert bass drum came out within
+    2 dB of the kick on alphaSynth and 4.5 dB over it in FluidSynth."""
+    out: dict[int, tuple[float, tuple]] = {}
     for pz in preset.zones:
         if pz.ref is None:
             continue
-        p_att = dict(pz.gens).get(G_INITIAL_ATTENUATION, 0)
-        p_att = p_att - 65536 if p_att > 32767 else p_att
+        p_gens = tuple(pz.gens)
         ri = src.instrument(pz.ref)
         g_att = 0
         for iz in ri.zones:
@@ -301,7 +363,7 @@ def msbasic_levels(src: SoundFontReader, preset) -> dict[int, float]:
             for key in set(KIT_REPLACES.values()):
                 if (kr & 0xFF) <= key <= (kr >> 8) and key not in out:
                     s = src.sample(iz.ref)
-                    out[key] = kit_level_db(s.data, s.rate) - (att + p_att) / 10
+                    out[key] = (kit_level_db(s.data, s.rate) - att / 10, p_gens)
     return out
 
 

@@ -7,6 +7,8 @@ import Foundation
 ///   3. keyword: the first `keywords` entry that is a substring of the normalized name
 ///   4. instrument: the MusicXML `<instrument-sound>` (or instrument id) in `instruments`
 ///   5. program: the 0-based General MIDI program in `programs`
+///   6. kit: a percussion part plays the kit its 0-based program selects when it is in
+///      `kit_programs` (1 is the pop kit), else the band kit; never silence
 /// A brass part therefore never falls back to General MIDI; only a non-brass program stays
 /// unresolved. `sounds/partsound-vectors.json` holds the shared test vectors.
 public struct PartSoundResolver: Sendable {
@@ -31,6 +33,7 @@ public struct PartSoundResolver: Sendable {
     let keywords: [(String, String)]
     let instruments: [String: String]
     let programs: [Int: String]
+    let kitPrograms: Set<Int>
 
     public init(mapping url: URL) throws {
         try self.init(data: Data(contentsOf: url))
@@ -57,6 +60,7 @@ public struct PartSoundResolver: Sendable {
         var programs: [Int: String] = [:]
         for (k, v) in r["programs"] as? [String: String] ?? [:] { if let i = Int(k) { programs[i] = v } }
         self.programs = programs
+        kitPrograms = Set((r["kit_programs"] as? [NSNumber] ?? []).map(\.intValue))
     }
 
     /// lowercase; ♭ → b, ♯ → #; every run of whitespace (including U+00A0) → one space; trim.
@@ -82,7 +86,8 @@ public struct PartSoundResolver: Sendable {
         if hit == nil, let instrument, !instrument.isEmpty, let p = instruments[instrument] { hit = p; step = "instrument" }
         if hit == nil, let program, let p = programs[program] { hit = p; step = "program" }
         guard let hit, let e = parts[hit] else { return nil }
-        return Preset(part: hit, step: step, program: e.program, bank: e.bank, channelGainDB: e.gain,
+        let kit = e.bank == 128 ? program.flatMap { kitPrograms.contains($0) ? $0 : nil } : nil
+        return Preset(part: hit, step: step, program: kit ?? e.program, bank: e.bank, channelGainDB: e.gain,
                       percussion: e.bank == 128, seat: e.seat)
     }
 }

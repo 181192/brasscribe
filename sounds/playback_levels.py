@@ -229,7 +229,6 @@ def calibrate() -> None:
     if golden.exists():
         g = musicxml_notes(golden, levels)
         rows.append(("golden, its dynamics (Windows)", levels["band"]["arrangement_lufs"], g))
-        rows.append(("golden, all at velocity 80 (Apple)", -15.95, [(a, b, 80) for a, b, _ in g]))
     sys.path.insert(0, str(HERE))
     from phrases import band_phrase  # needs mido and music/src
     mapping = json.loads((HERE / "mapping.json").read_text())

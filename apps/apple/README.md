@@ -87,7 +87,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   own flag (the red colour in the MusicXML) is kept too.
 - **Bundled band sounds.** Each app bundle carries the band SoundFont in `Sounds/`, staged per platform
   by `scripts/stage-band-sounds.sh` (run by `make project`) from `data/sounds/band`: the Mac gets
-  `brasscribe-band-16bit.sf2` (200 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (71 MB: smaller, for
+  `brasscribe-band-16bit.sf2` (191 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (68 MB: smaller, for
   phone memory and download size). `BandSounds.bandFiles` looks for the same file first on each
   platform; `make size` prints the iOS Release app's size with the phone build. Without
   the files (`pixi run fetch-sounds` was not run) the app builds, plays the basic tier and says the band

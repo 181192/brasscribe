@@ -40,9 +40,19 @@ MAPPING = HERE / "mapping.json"
 # Nominal dynamic of each layer, by number of layers available (softest first).
 LAYER_DYNAMICS = {1: ["mf"], 2: ["p", "f"], 3: ["pp", "mf", "ff"], 4: ["p", "mf", "f", "ff"]}
 DYN_VELOCITY = {"pp": 30, "p": 48, "mf": 80, "f": 100, "ff": 116}
-# Level of each baked sample, dBFS: sustain RMS over 80 ms-1.0 s (body_db), staccato loudest 80 ms.
-DYN_LEVEL_DB = {"pp": -30.0, "p": -26.0, "mf": -21.0, "f": -18.5, "ff": -16.0}
-VEL_SPAN_DB = 6.0  # extra dB-linear velocity scaling inside the layers (same in SFZ and SF2)
+# Level of each baked sample, dBFS: sustain RMS over 80 ms-1.0 s (body_db), staccato loudest 80 ms. Every layer
+# is baked at the same level: the layers give the tone of each dynamic, VEL_CURVE gives the level. Players that
+# ignore zone attenuation and velocity modulators (AVAudioUnitSampler) then play no level jump at a layer split;
+# they used to play 5-10 dB (pp -30, p -26, mf -21, f -18.5, ff -16 dBFS).
+DYN_LEVEL_DB = {"pp": -21.0, "p": -21.0, "mf": -21.0, "f": -21.0, "ff": -21.0}
+VEL_SPAN_DB = 6.0  # the SF2 velocity modulator: dB-linear over 0-127 (FluidSynth follows it; alphaSynth and
+# AVAudioUnitSampler ignore it). The SFZ follows VEL_CURVE instead.
+# VEL_CURVE: the level every player follows between the table's dynamics (sounds/playback-levels.json), dB relative
+# to velocity 127: VEL_CURVE_DB_PER_MARK per 16 velocities (one dynamic mark) from VEL_CURVE_KNEE up, amplitude
+# proportional to velocity below it. The SFZ declares it with amp_velcurve_N; the band SoundFont (band.py) cuts each
+# layer's velocity range into attenuated steps, since alphaSynth plays amplitude proportional to velocity.
+VEL_CURVE_DB_PER_MARK = 3.6
+VEL_CURVE_KNEE = 31
 MAX_STRETCH = 3  # semitones a sample may be transposed before a neighbouring layer's sample is borrowed
 MATCH_MAX_DB = 9.0  # largest boost or cut the spectral match may apply
 EXTEND_BEYOND = 2  # an extension source fills keys more than this many semitones from every primary sample
@@ -319,6 +329,47 @@ def apply_fir(y: np.ndarray, fir: np.ndarray) -> np.ndarray:
     return signal.fftconvolve(y, fir, mode="same")
 
 
+PEDAL_MAX = 4  # semitones a pedal note may lie below the layer's lowest recording
+
+
+def shift_down(y: np.ndarray, semitones: int) -> np.ndarray:
+    """The sample `semitones` lower, by resampling (it also plays that much longer)."""
+    import soxr
+    return soxr.resample(y, SR, SR * 2 ** (semitones / 12), quality="VHQ")
+
+
+def pedal_fill(chosen: list[dict], audio_of: list[np.ndarray], raw_layers: dict, n_dyns: int, lo: int,
+               loops: bool) -> None:
+    """Keys of the part's range under a layer's lowest recording (the pedal notes: Bass Trombone A0-B0, B-flat Bass
+    B-flat0-B0) get a sample of their own: one of the layer's two lowest recordings shifted down (the nearest whose
+    shifted copy still loops, when `loops`), with its long-term spectrum put back where the recording had it
+    (match_filter, fitted on the layer's three lowest recordings against themselves shifted by the same interval).
+    A player stretching the sample itself moves the whole spectrum down by up to 4 semitones, and a key with no
+    sample in its own layer borrowed another layer's (a pp recording at ff)."""
+    added = []
+    for li in range(n_dyns):
+        mine = sorted(((n, y) for n, y in zip(chosen, audio_of)
+                       if n.get("rr", 1) == 1 and layer_of(n, raw_layers, n_dyns) == li), key=lambda t: t[0]["midi"])
+        if not mine or mine[0][0]["midi"] <= lo:
+            continue
+        for k in range(max(lo, mine[0][0]["midi"] - PEDAL_MAX), mine[0][0]["midi"]):
+            for src, src_y in mine[:2]:
+                st = src["midi"] - k
+                if st > PEDAL_MAX + 1:
+                    continue
+                same = [(n["midi"], y) for n, y in mine if n["_src"] == src["_src"]][:3]
+                fir, _ = match_filter(same, [(m, shift_down(y, st)) for m, y in same])
+                y = shift_down(src_y, st)
+                y = apply_fir(y, fir) if fir is not None else y
+                if loops and make_loop(y)[1] is None:
+                    continue
+                added.append((dict(src, midi=k, _pedal=src["file"]), y))
+                break
+    for n, y in added:
+        chosen.append(n)
+        audio_of.append(y)
+
+
 def layer_of(n: dict, raw_layers: dict[str, list[str]], n_dyns: int) -> int:
     """Primary layers map 1:1; an extension source's layers are spread over the primary's by rank."""
     ls = raw_layers[n["_src"]]
@@ -389,6 +440,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
         layers = raw_layers["primary"]
         dyns = (spec.get("dynamics") if art == "sus" else None) or LAYER_DYNAMICS[len(layers)]  # a target may name its sustain layers
         vels = velocity_ranges(dyns)
+        pedal_fill(chosen, audio_of, raw_layers, len(dyns), lo, loops=art == "sus")
         lidx = [layer_of(n, raw_layers, len(dyns)) for n in chosen]
         scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - (body_db(y) if art == "sus" else loudest_window_db(y, win=0.08))) / 20)
                   for i, y in enumerate(audio_of)]
@@ -415,13 +467,14 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 y = y[: int(0.6 * SR)].copy()
                 f = int(0.05 * SR)
                 y[-f:] *= np.linspace(1, 0, f)
-            ext_tag = "" if n["_src"] == "primary" else "_x"
+            ext_tag = ("" if n["_src"] == "primary" else "_x") + ("_pd" if n.get("_pedal") else "")
             name = f"{tid}_{art}_{n['midi']:03d}_{dyns[li]}_rr{n['rr']}{ext_tag}.wav"
             sf.write(str(out / "samples" / name), y.astype(np.float32), SR, subtype="PCM_24")
             samples.append({"file": name, "midi": n["midi"], "cents": n["cents"], "layer": li, "rr": n["rr"],
                             "loop": [int(v) for v in loop] if loop else None, "frames": len(y),
                             "source": f"{n['file']}" + (f"@{n['start']}-{n['end']}" if n["kind"] == "run" else ""),
-                            **({"extension": n["_src"]} if n["_src"] != "primary" else {})})
+                            **({"extension": n["_src"]} if n["_src"] != "primary" else {}),
+                            **({"pedal_from": n["_pedal"]} if n.get("_pedal") else {})})
         regions = []
         for li, dyn in enumerate(dyns):
             for k in range(lo, hi + 1):
@@ -510,9 +563,16 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
     return table
 
 
+def vel_curve_db(v: float) -> float:
+    """VEL_CURVE at velocity v, dB relative to velocity 127."""
+    if v >= VEL_CURVE_KNEE:
+        return -VEL_CURVE_DB_PER_MARK * (127 - v) / 16
+    return -VEL_CURVE_DB_PER_MARK * (127 - VEL_CURVE_KNEE) / 16 + 20 * float(np.log10(v / VEL_CURVE_KNEE))
+
+
 def velcurve_opcodes() -> str:
-    pts = list(range(1, 127, 14)) + [127]
-    return " ".join(f"amp_velcurve_{v}={10 ** (-VEL_SPAN_DB * (1 - v / 127) / 20):.4f}" for v in pts)
+    pts = [1, 8, 16, 24, VEL_CURVE_KNEE] + list(range(47, 127, 16)) + [127]
+    return " ".join(f"amp_velcurve_{v}={10 ** (vel_curve_db(v) / 20):.4f}" for v in pts)
 
 
 def write_sfz(path: Path, tid: str, art: str, table: dict) -> None:

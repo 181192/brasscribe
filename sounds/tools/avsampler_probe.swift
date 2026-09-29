@@ -3,7 +3,7 @@
 //   swiftc -O -o data/sounds/tools/bin/avsampler_probe sounds/tools/avsampler_probe.swift
 //   data/sounds/tools/bin/avsampler_probe data/sounds/band/brasscribe-band.sf2 PROBE.tsv
 //
-// PROBE.tsv lines: bank <TAB> program <TAB> note <TAB> label. Melodic banks are addressed as
+// PROBE.tsv lines: bank <TAB> program <TAB> note <TAB> label [<TAB> velocity, default 80]. Melodic banks are addressed as
 // bankMSB = kAUSampler_DefaultMelodicBankMSB (0x79), bankLSB = SF2 bank; bank 128 as
 // bankMSB = kAUSampler_DefaultPercussionBankMSB (0x78), bankLSB = 0. Prints the RMS of a
 // 1 s render per preset, or the load error. Exit status 1 if any preset fails or is silent.
@@ -24,6 +24,7 @@ var failures = 0
 for line in lines {
     let f = line.split(separator: "\t").map(String.init)
     guard f.count >= 4, let bank = Int(f[0]), let program = UInt8(f[1]), let note = UInt8(f[2]) else { continue }
+    let velocity = f.count >= 5 ? UInt8(f[4]) ?? 80 : 80
     let engine = AVAudioEngine()
     let sampler = AVAudioUnitSampler()
     engine.attach(sampler)
@@ -34,7 +35,7 @@ for line in lines {
         let lsb = bank == 128 ? UInt8(0) : UInt8(bank)
         try sampler.loadSoundBankInstrument(at: url, program: program, bankMSB: msb, bankLSB: lsb)
         try engine.start()
-        sampler.startNote(note, withVelocity: 80, onChannel: 0)
+        sampler.startNote(note, withVelocity: velocity, onChannel: 0)
         let buffer = AVAudioPCMBuffer(pcmFormat: engine.manualRenderingFormat, frameCapacity: 4096)!
         var sum = 0.0, n = 0.0, rendered = 0
         while rendered < Int(sampleRate) {
@@ -52,7 +53,7 @@ for line in lines {
         let db = 20 * log10(max(rms, 1e-9))
         let ok = rms > 1e-4
         if !ok { failures += 1 }
-        print("\(ok ? "ok  " : "FAIL") bank \(bank) program \(program) note \(note) \(f[3]): rms \(String(format: "%.1f", db)) dBFS")
+        print("\(ok ? "ok  " : "FAIL") bank \(bank) program \(program) note \(note) vel \(velocity) \(f[3]): rms \(String(format: "%.1f", db)) dBFS")
     } catch {
         failures += 1
         print("FAIL bank \(bank) program \(program) \(f[3]): \(error)")

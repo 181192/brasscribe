@@ -66,6 +66,14 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         rehearsal: comp.sections.iter().map(|s| (s.tick, s.label.clone())).collect(),
         encoding_date: String::new(),
         tempo_note: comp.tempo_estimated.then(|| TEMPO_ESTIMATED.to_string()),
+        // The kit the arrangement was made for (comp.arrangement "kit"); the band kit when none or unknown.
+        kit_program: comp
+            .arrangement
+            .as_ref()
+            .and_then(|a| a.get("kit"))
+            .and_then(|v| v.as_str())
+            .and_then(|k| crate::instruments::kit_program(k).ok())
+            .unwrap_or(0),
     }
 }
 

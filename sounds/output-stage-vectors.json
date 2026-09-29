@@ -11,16 +11,37 @@
    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. Every app plays the score's dynamics (see dynamics), so a whole arrangement lands at the same level everywhere: arrangement_lufs is the Mikkel golden score, -11.54 LUFS on Windows (alphaSynth) and within 1 LU of it on Apple (-12.08).",
    "phrase_lufs": -12.0,
    "tolerance_lu": 1.0,
-   "arrangement_lufs": -11.54,
+   "arrangement_lufs": -10.99,
    "gain_db": {
-    "apple": 31.5,
-    "android_alphatab": 5.0,
-    "android_sfizz": 4.0,
-    "windows": 5.0
+    "apple": 30.6,
+    "android_alphatab": 11.0,
+    "android_sfizz": 11.0,
+    "windows": 11.0
    },
    "dry_room_gain_db": {
     "about": "Apple only: added to the make-up gain when \"Concert hall sound\" is off, so the band keeps its loudness without the hall. The hall's share of the band's loudness, measured on the golden arrangement and the Old Hundredth fixture (hall minus room).",
     "apple": 5.0
+   },
+   "apple_seat_trim_db": {
+    "about": "Apple only: added to each part's channel gain by its seat (mapping.json parts[].seat). The environment node places every part at its seat (HRTF, distance), which changes the balance against alphaSynth, which plays every part centred: measured with each part of the full-band phrase alone at velocity 80, hall off, relative to the Solo Cornet (DynamicsLevelTests.partBalance against RenderHarnessTests.Measure_part_balance). The trims bring every part within 1 dB of alphaSynth's balance.",
+    "solo-cornets": 0.0,
+    "soprano": 2.9,
+    "repiano": 4.5,
+    "second-cornets": 5.1,
+    "third-cornets": 5.0,
+    "flugel": 1.0,
+    "solo-horn": 0.4,
+    "first-horn": 0.3,
+    "second-horn": 0.4,
+    "first-baritone": 1.3,
+    "second-baritone": 1.8,
+    "first-trombone": 3.3,
+    "second-trombone": 2.8,
+    "bass-trombone": 1.9,
+    "euphoniums": 0.1,
+    "eb-basses": 3.6,
+    "bb-basses": 3.7,
+    "percussion": 13.8
    }
   },
   "dynamics": {
@@ -65,39 +86,39 @@
     "apple_pitched": [
      [
       1,
-      8
+      9
      ],
      [
       3,
-      15
+      12
      ],
      [
       5,
-      19
+      16
      ],
      [
       10,
-      27
+      23
      ],
      [
       15,
-      33
+      28
      ],
      [
       31,
-      47
+      40
      ],
      [
       47,
-      55
+      49
      ],
      [
       63,
-      65
+      60
      ],
      [
       79,
-      77
+      72
      ],
      [
       87,
@@ -105,15 +126,15 @@
      ],
      [
       95,
-      89
+      90
      ],
      [
       111,
-      99
+      109
      ],
      [
       127,
-      101
+      127
      ]
     ],
     "apple_percussion": [
@@ -171,14 +192,14 @@
      ]
     ],
     "alphatab_lufs": {
-     "15": -44.51,
-     "31": -38.2,
-     "47": -34.58,
-     "63": -28.61,
-     "79": -25.39,
-     "95": -23.36,
-     "111": -17.66,
-     "127": -16.49
+     "15": -43.07,
+     "31": -36.77,
+     "47": -33.15,
+     "63": -29.46,
+     "79": -25.98,
+     "95": -22.3,
+     "111": -18.56,
+     "127": -15.32
     }
    }
   },
@@ -186,7 +207,7 @@
    "about": "The original recording plays at the loudness the band plays the arrangement at: target = clamp(band_estimate(arrangement), min_target_lufs, max_target_lufs), or fallback_lufs when there is no arrangement or it has no pitched note. The recording is measured once, as a whole (EBU R128 integrated, whole file, a mono file measured as dual mono because it plays from both speakers). gain = clamp(target - measured, -max_cut_db, max_boost_db); 0 when the file is silent. The limiter follows the gain, so a boost cannot clip.",
    "band_estimate": {
     "about": "Estimated integrated LUFS of the band playing an arrangement, from its dynamics and how many parts sound at once: estimate = offset_db + 10*log10(sum over notes of d * 10^(L(v)/10) / U). The notes: every pitched note of every part (percussion parts are left out; each note of a chord counts, grace notes do not), d its length in quarter notes of score time (tempo is not read), v the velocity it plays at by the dynamics rules (the mark in effect plus accents, before any per-synth velocity correction). L(v): dynamics.sampler_velocity.alphatab_lufs, linear between its knots, L(lowest) + 20*log10(v/lowest) below the lowest knot, L(highest) above the highest. U: the length of score time in which at least one pitched note sounds. More parts sounding at once, or louder marks, raise the estimate by the energy they add. offset_db is fitted on the Mikkel golden arrangement (-11.54 LUFS measured with its dynamics on Windows with the sounds-2026.09.29 pack; estimate -11.54) and checked on the full-band phrase (-12.80 measured on Windows, -12.43 on Apple, band.phrase_lufs -12.0; estimate -12.28).",
-    "offset_db": -0.17
+    "offset_db": 0.56
    },
    "fallback_lufs": -16.0,
    "min_target_lufs": -20.0,
@@ -200,8 +221,8 @@
    "tolerance_db": 1.5,
    "gain_db": {
     "apple": 0.0,
-    "android_alphatab": -1.0,
-    "windows": -1.0
+    "android_alphatab": -7.0,
+    "windows": -7.0
    }
   }
  },
@@ -381,7 +402,7 @@
     ]
    ],
    "pitched_notes": 1,
-   "estimate_lufs": -23.53,
+   "estimate_lufs": -21.74,
    "target_lufs": -20.0
   },
   {
@@ -394,7 +415,7 @@
     ]
    ],
    "pitched_notes": 1,
-   "estimate_lufs": -23.53,
+   "estimate_lufs": -21.74,
    "target_lufs": -20.0
   },
   {
@@ -412,8 +433,8 @@
     ]
    ],
    "pitched_notes": 2,
-   "estimate_lufs": -20.5197,
-   "target_lufs": -20.0
+   "estimate_lufs": -18.7297,
+   "target_lufs": -18.7297
   },
   {
    "name": "eighteen parts at f",
@@ -510,8 +531,8 @@
     ]
    ],
    "pitched_notes": 18,
-   "estimate_lufs": -10.977275,
-   "target_lufs": -10.977275
+   "estimate_lufs": -9.187275,
+   "target_lufs": -10.0
   },
   {
    "name": "eighteen parts at fff (clamped to the highest target)",
@@ -608,7 +629,7 @@
     ]
    ],
    "pitched_notes": 18,
-   "estimate_lufs": -4.107275,
+   "estimate_lufs": -2.207275,
    "target_lufs": -10.0
   },
   {
@@ -706,7 +727,7 @@
     ]
    ],
    "pitched_notes": 18,
-   "estimate_lufs": -25.817275,
+   "estimate_lufs": -23.657275,
    "target_lufs": -20.0
   },
   {
@@ -724,8 +745,8 @@
     ]
    ],
    "pitched_notes": 2,
-   "estimate_lufs": -20.354242,
-   "target_lufs": -20.0
+   "estimate_lufs": -19.528722,
+   "target_lufs": -19.528722
   },
   {
    "name": "below the lowest knot (velocity 5)",
@@ -822,7 +843,7 @@
     ]
    ],
    "pitched_notes": 18,
-   "estimate_lufs": -41.6697,
+   "estimate_lufs": -39.4997,
    "target_lufs": -20.0
   },
   {
@@ -840,7 +861,7 @@
     ]
    ],
    "pitched_notes": 2,
-   "estimate_lufs": -25.56,
+   "estimate_lufs": -25.42,
    "target_lufs": -20.0
   },
   {
@@ -868,7 +889,7 @@
     ]
    ],
    "pitched_notes": 4,
-   "estimate_lufs": -22.548239,
+   "estimate_lufs": -21.750731,
    "target_lufs": -20.0
   },
   {
@@ -886,7 +907,7 @@
     ]
    ],
    "pitched_notes": 1,
-   "estimate_lufs": -23.53,
+   "estimate_lufs": -21.74,
    "target_lufs": -20.0
   },
   {
@@ -934,7 +955,7 @@
     ]
    ],
    "pitched_notes": 8,
-   "estimate_lufs": -8.7991,
+   "estimate_lufs": -8.9691,
    "target_lufs": -10.0
   },
   {
@@ -1032,22 +1053,22 @@
     ]
    ],
    "pitched_notes": 18,
-   "estimate_lufs": -10.819622,
-   "target_lufs": -10.819622
+   "estimate_lufs": -10.862065,
+   "target_lufs": -10.862065
   }
  ],
  "band_estimate_scores": [
   {
    "path": "sounds/band-estimate-score.musicxml",
    "pitched_notes": 7,
-   "estimate_lufs": -18.849961,
-   "target_lufs": -18.849961
+   "estimate_lufs": -17.454295,
+   "target_lufs": -17.454295
   },
   {
    "path": "apps/fixtures/old-hundredth/brass-band.musicxml",
    "pitched_notes": 306,
-   "estimate_lufs": -13.707288,
-   "target_lufs": -13.707288
+   "estimate_lufs": -11.917288,
+   "target_lufs": -11.917288
   }
  ],
  "loudness": [

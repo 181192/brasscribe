@@ -50,7 +50,22 @@ MIKKEL_VARIANTS = [
     ("layers-lead-seat-trumpet-easier", ["--lead", "seat", "--seat", "trumpet", "--difficulty", "easier"]),
     # The footer on the arranged parts in Norwegian.
     ("layers-lang-nb", ["--lang", "nb"]),
+    # The pop kit (a pop or rock take): the Percussion part's midi-instruments select bank 128 program 1.
+    ("layers-kit-pop", ["--kit", "pop"]),
 ]
+# Variants with a golden output of their own: the case name -> its directory under data/golden, or, until it is
+# promoted there, under data-pending/golden next to data/.
+VARIANT_GOLDENS = {"layers-kit-pop": "mikkel-arranged-band-kit-pop"}
+PENDING_GOLDEN = DATA.resolve().parent / "data-pending" / "golden"
+
+
+def variant_golden(stage: str) -> Path | None:
+    name = VARIANT_GOLDENS.get(stage)
+    if name is None:
+        return None
+    return next((d for d in (DATA / "golden" / name, PENDING_GOLDEN / name) if d.exists()), None)
+
+
 # Song lineup options on the chorales: the tune on the player's part (non-layered arranger).
 SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]
 # ChoraleBricks instrument -> the seat its solo take is written for.
@@ -127,7 +142,7 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
     cases = [Case("mikkel/layers", "layers", mikkel, golden=MIKKEL_GOLDEN)]
     # Arrangement options (lineup, difficulty, key) against the Python reference.
     for stage, options in MIKKEL_VARIANTS:
-        cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}))
+        cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}, golden=variant_golden(stage)))
     for eval_set in sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()):
         for song in sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists()):
             base = f"{eval_set.name}/{song.name}"

@@ -81,6 +81,70 @@ public class RenderHarnessTests(ITestOutputHelper log)
         }
     }
 
+    /// <summary>
+    /// Each part of the full-band phrase alone at velocity 80 with the app's channel plan and balance, for
+    /// comparing the part balance with Apple's (DynamicsLevelTests.partBalance). Runs only when BRASSCRIBE_KNOTS=1.
+    /// </summary>
+    [SkippableFact]
+    public void Measure_part_balance()
+    {
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
+        var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(TestPaths.RepoFile("data/sounds/phrases/phrases.json")!));
+        var parts = doc.RootElement.GetProperty("band").EnumerateObject().ToList();
+        var plan = ChannelPlan.ForPlayback(parts.Select((b, i) =>
+        {
+            var s = band.For(b.Name)!;
+            return new ChannelPlan.Part(i, s.Percussion, s.Program, s.GainDb);
+        }).ToList());
+        for (int i = 0; i < parts.Count; i++)
+        {
+            var s = band.For(parts[i].Name)!;
+            var notes = System.Text.Json.JsonSerializer.SerializeToElement(parts[i].Value.GetProperty("notes").EnumerateArray()
+                .Select(n => new object[] { n[0].GetDouble(), n[1].GetDouble(), n[2].GetInt32(), 80 }).ToArray());
+            var gains = new Dictionary<int, double> { [plan[i]] = Math.Pow(10, (s.GainDb - 12) / 20) };
+            var mix = PartSoundTests.Render(bytes, PartSoundTests.Phrase([(plan[i], s.Program, s.Bank, notes)]), PartSoundTests.End(notes) + 2.0, gains);
+            log.WriteLine($"BALANCE {parts[i].Name}\t{LoudnessMeter.Integrated(mix, 44100, 2):0.00}");
+        }
+    }
+
+    /// <summary>
+    /// Every pitched part of the full-band phrase alone through alphaSynth, one held note at the middle of the
+    /// part's phrase at every odd velocity: where the velocity layers split, the level jumps. Writes
+    /// part, velocity and the note's RMS (dBFS, 100–600 ms after the onset) to BRASSCRIBE_SWEEP_OUT (a TSV).
+    /// </summary>
+    [SkippableFact]
+    public void Measure_velocity_sweep()
+    {
+        var outPath = Environment.GetEnvironmentVariable("BRASSCRIBE_SWEEP_OUT");
+        Skip.If(string.IsNullOrEmpty(outPath), "BRASSCRIBE_SWEEP_OUT is not set");
+        var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
+        var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(TestPaths.RepoFile("data/sounds/phrases/phrases.json")!));
+        var lines = new List<string> { "part\tpitch\tvelocity\trms_db" };
+        var velocities = Enumerable.Range(0, 64).Select(i => 1 + 2 * i).ToArray();
+        foreach (var p in doc.RootElement.GetProperty("band").EnumerateObject())
+        {
+            var s = band.For(p.Name)!;
+            if (s.Percussion) continue;
+            var pitches = p.Value.GetProperty("notes").EnumerateArray().Select(n => n[2].GetInt32()).OrderBy(x => x).ToList();
+            int pitch = pitches[pitches.Count / 2];
+            var notes = System.Text.Json.JsonSerializer.SerializeToElement(velocities
+                .Select((v, i) => new object[] { 0.2 + 1.0 * i, 0.9 + 1.0 * i, pitch, v }).ToArray());
+            var mix = PartSoundTests.Render(bytes, PartSoundTests.Phrase([(0, s.Program, s.Bank, notes)]), velocities.Length + 1.0);
+            for (int i = 0; i < velocities.Length; i++)
+            {
+                int a = (int)((0.3 + i) * 44100), b = (int)((0.8 + i) * 44100);
+                double sum = 0;
+                for (int k = a; k < b; k++) { double m = 0.5 * (mix[2 * k] + mix[2 * k + 1]); sum += m * m; }
+                lines.Add($"{p.Name}\t{pitch}\t{velocities[i]}\t{10 * Math.Log10(sum / (b - a) + 1e-20):0.00}");
+            }
+        }
+        File.WriteAllLines(outPath!, lines);
+        log.WriteLine($"SWEEP {outPath}: {lines.Count - 1} rows");
+    }
+
     [SkippableFact]
     public void Render_scores()
     {

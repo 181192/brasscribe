@@ -9,6 +9,7 @@ output bit for bit.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -177,12 +178,29 @@ def export(ctx: StageContext) -> None:
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
         written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
+        mp3 = ctx.out / "brass-band.mp3"
+        if mp3.exists():
+            level = _level_mp3(mp3, xml, ctx)
+            if level:
+                ctx.log(f"brass-band.mp3 levelled: {level}")
     if not mscore:
         ctx.log("mscore not found: PDF, MIDI and MP3 skipped")
     accessible = accessible_exports(score, ctx)
     written += accessible.pop("written")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
                                                      "skipped": [] if mscore else formats, **accessible}, indent=1))
+
+
+def _level_mp3(mp3: Path, score: Path, ctx: StageContext) -> dict | None:
+    """MuseScore's MP3 at the level the apps play the band (audio_level); left as written without the levels file."""
+    from . import audio_level
+
+    band_dir = os.environ.get("BRASSCRIBE_BAND_SOUNDS_DIR")
+    levels = audio_level.levels_path(Path(band_dir) if band_dir else None)
+    if levels is None:
+        ctx.log("playback-levels.json not found: brass-band.mp3 keeps MuseScore's level")
+        return None
+    return audio_level.level_mp3(mp3, score, levels)
 
 
 def accessible_exports(score: Path, ctx: StageContext) -> dict:

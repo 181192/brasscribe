@@ -141,7 +141,8 @@ def target_instrument(inst: Instrument) -> RawInstrument:
         gens = [(G_KEY_RANGE, _range(z.lokey, z.hikey)), (G_VEL_RANGE, _range(z.lovel, z.hivel))]
         if z.attenuation_cb:
             gens.append((G_INITIAL_ATTENUATION, z.attenuation_cb))
-        gens.append((G_SAMPLE_MODES, 1 if z.loop else 0))
+        if z.loop:  # 0 (no loop) is the default
+            gens.append((G_SAMPLE_MODES, 1))
         zones.append(RawZone(gens, [], z.sample))
     return RawInstrument(inst.name, zones)
 

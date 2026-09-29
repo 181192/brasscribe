@@ -42,8 +42,8 @@ public struct BandSoundFont: Sendable {
     public func sound(for name: String, instrumentSound: String?, midiProgram: Int?) -> PartSound? {
         guard let p = resolver.resolve(name: name, instrument: instrumentSound, program: midiProgram.map { $0 - 1 }) else { return nil }
         let seat = p.seat.flatMap { seats[$0] }
-        return PartSound(soundFont: soundFont, target: p.percussion ? "band-kit" : "band-\(p.program)-\(p.bank)",
-                         gainDB: p.channelGainDB, azimuth: seat?["azimuth"], distance: seat?["distance"],
+        return PartSound(soundFont: soundFont, target: p.percussion ? (p.program == 0 ? "band-kit" : "band-kit-\(p.program)") : "band-\(p.program)-\(p.bank)",
+                         gainDB: p.channelGainDB + BandSounds.seatTrimDB(p.seat), azimuth: seat?["azimuth"], distance: seat?["distance"],
                          program: p.program, bankMSB: p.percussion ? 0x78 : 0x79, bankLSB: p.percussion ? 0 : p.bank)
     }
 }
@@ -99,11 +99,16 @@ public enum BandSounds {
             let (az, dist) = polar(p["seat"] as? String, seats, listener)
             let drums = bank == 128
             out[name] = PartSound(soundFont: soundFont, target: drums ? "band-kit" : "band-\(prog)-\(bank)",
-                                  gainDB: (b["channel_gain_db"] as? NSNumber)?.doubleValue ?? 0, azimuth: az, distance: dist,
+                                  gainDB: ((b["channel_gain_db"] as? NSNumber)?.doubleValue ?? 0) + seatTrimDB(p["seat"] as? String),
+                                  azimuth: az, distance: dist,
                                   program: prog, bankMSB: drums ? 0x78 : 0x79, bankLSB: drums ? 0 : bank)
         }
         return out
     }
+
+    /// The seat's balance trim on this platform (PlaybackLevels.appleSeatTrimDB): the environment node plays
+    /// each part at its seat, which moves the balance away from alphaSynth's.
+    static func seatTrimDB(_ seat: String?) -> Double { seat.flatMap { PlaybackLevels.appleSeatTrimDB[$0] } ?? 0 }
 
     static func seatTable(_ seating: URL?) -> [String: [String: Any]] {
         guard let seating, let s = try? JSONSerialization.jsonObject(with: Data(contentsOf: seating)) as? [String: Any] else { return [:] }

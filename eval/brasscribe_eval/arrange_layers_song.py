@@ -29,10 +29,10 @@ from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
 from brasscribe_music.confidence import support as contour_support
 from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import CLEF_READINGS, LEADS, PERCUSSION_SOLO, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
+from brasscribe_music.instruments import CLEF_READINGS, KITS, LEADS, PERCUSSION_SOLO, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
 from brasscribe_music.onsets import contour_notes
 from brasscribe_music.trills import with_trills
 from brasscribe_music.parts import STYLE as PART_STYLE
@@ -113,6 +113,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--lead", choices=LEADS, default="lineup",
                     help="who plays the tune: the lineup's lead, or the seat's part (a solo take always the seat)")
     ap.add_argument("--lang", choices=FOOTER_LANGS, default="en", help="language of the footer on the arranged parts")
+    ap.add_argument("--kit", choices=list(KITS), default="band",
+                    help="the drum kit the Percussion part plays: band, or pop for a pop or rock take")
     tr = ap.add_mutually_exclusive_group()
     tr.add_argument("--key", help="target concert key of the first key signature: Bb, F#, Am, or FIFTHS[:MODE]")
     tr.add_argument("--transpose", type=int, help="transpose the whole arrangement by N semitones")
@@ -337,7 +339,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         comp = comp.transposed(shift)
         print(f"transposed {shift:+d} semitones; first key now {comp.keys[0].fifths} fifths {comp.keys[0].mode}")
     lineup = "band" if args.lineup in ("band", "full") else args.lineup
-    if lineup != "band" or args.difficulty != "faithful" or shift or args.seat or args.trills:
+    if lineup != "band" or args.difficulty != "faithful" or shift or args.seat or args.trills or args.kit != "band":
         comp.arrangement = {"lineup": lineup, "difficulty": args.difficulty, "transpose_semitones": shift}
     if args.trills:
         comp.arrangement["trills"] = True
@@ -345,6 +347,8 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         # The seat's options, like the others; the arrangers read them back (composition_lineup).
         comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
                                  **({"lead": "seat"} if solo_take or args.lead == "seat" else {})})
+    if args.kit != "band":
+        comp.arrangement["kit"] = args.kit
     # Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
     bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
     comp.review = [ReviewItem(v.id, g.start, g.end, g.notes, g.very) for v in comp.voices if v.layer != "drums"
@@ -369,7 +373,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     comp, arr = build(args)
     comp.to_json(args.out / "composition.json")
-    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr))
+    xml = write_musicxml(build_band_score(arr, comp), args.out / "brass-band.musicxml", band_sounds(arr), composition_kit(comp))
     if not args.no_render:
         musescore.convert(xml, [xml.with_suffix(".pdf"), xml.with_suffix(".mp3")])
     # Individual parts (mscore -P crashes): one MusicXML per part, all rendered in one MuseScore launch.

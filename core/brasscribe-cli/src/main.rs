@@ -5,9 +5,9 @@
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
 //!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal|quartet]
 //!                               [--difficulty faithful|standard|easier] [--trills] [--key KEY | --transpose N]
-//!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--lang en|nb]
+//!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--lang en|nb] [--kit band|pop]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
-//!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat]
+//!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--kit band|pop]
 //! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
 //! brasscribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
 //! brasscribe-core quantize --reference JSON --beats FILE --out FILE
@@ -205,6 +205,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 reads: a.opt("reads"),
                 lead: a.opt("lead").unwrap_or_default(),
                 lang: a.opt("lang").unwrap_or_default(),
+                kit: a.opt("kit").unwrap_or_default(),
             };
             let bt = Beats::parse_any(&String::from_utf8_lossy(&read(Path::new(&a.one("beats")?))?))?;
             let r = pipeline::arrange_layers_song(&layers, &bt, &title, &opts)?;
@@ -222,6 +223,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 seat: a.opt("seat"),
                 reads: a.opt("reads"),
                 lead: a.opt("lead").unwrap_or_default(),
+                kit: a.opt("kit").unwrap_or_default(),
             };
             let r = pipeline::arrange_song_opts(&inp, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)

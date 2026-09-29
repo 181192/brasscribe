@@ -290,12 +290,12 @@ class ScoreController(
         // Banks only exist in the band SoundFont; alphaTab's General MIDI one has bank 0 alone, and a
         // pitched channel on a missing bank is silent, so the basic tier keeps bank 0.
         val band = bandSoundFont?.isFile == true || BandSoundFontFile.available(context)
-        return prepareSound(s, names, shown, band)
+        return prepareSound(s, names, shown, band, PercussionKit.programs(bytes.decodeToString()))
     }
 
     /** The playback plan ([BandPlan]), which "Listen to this bar" plays too. */
-    private fun prepareSound(s: Score, names: List<String>, shown: Set<Int>, band: Boolean): Parsed {
-        val plan = BandPlan.apply(s, names, soundMap, band)
+    private fun prepareSound(s: Score, names: List<String>, shown: Set<Int>, band: Boolean, kits: List<Int?>): Parsed {
+        val plan = BandPlan.apply(s, names, soundMap, band, kits)
         return Parsed(s, names, shown, plan.percussion, plan.channels, plan.sounds, plan.gains, band)
     }
 

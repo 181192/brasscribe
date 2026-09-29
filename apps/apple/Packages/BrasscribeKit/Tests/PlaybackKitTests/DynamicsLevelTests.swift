@@ -19,8 +19,8 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
             last = s
         }
     }
-    // linear between knots: halfway from mp (63 → 65) to mf (79 → 77)
-    #expect(PlaybackLevels.samplerVelocity(71, percussion: false) == 71)
+    // linear between knots: halfway from mp (63 → 60) to mf (79 → 72)
+    #expect(PlaybackLevels.samplerVelocity(71, percussion: false) == 66)
 }
 
 extension Phrase {
@@ -65,6 +65,30 @@ struct DynamicsLevelTests {
         let buf = try phrase.at(velocity: v).render(e, score: score, only: Set(phrase.names.filter { $0 != "Percussion" }))
         #expect(buf.peak < OutputStageKernel.threshold, "below the limiter")
         return LoudnessMeter.integrated(buf) + 6
+    }
+
+    /// The sampler's own curve, for fitting dynamics.sampler_velocity.apple_pitched after a sound pack change:
+    /// the phrase's pitched parts at raw sampler velocities, on the scale of `alphatab_lufs`.
+    /// Runs only when BRASSCRIBE_KNOTS=1.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["BRASSCRIBE_KNOTS"] == "1")) func samplerCurve() throws {
+        for v in stride(from: 1, through: 127, by: 2) {
+            print(String(format: "SAMPLER %d %.2f", v, try pitchedLUFS(velocity: v)))
+        }
+    }
+
+    /// Each part of the full-band phrase alone at velocity 80, hall off, for comparing the part balance
+    /// with alphaSynth's (RenderHarnessTests.Measure_part_balance in the Windows tests). Runs only when
+    /// BRASSCRIBE_KNOTS=1.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["BRASSCRIBE_KNOTS"] == "1")) func partBalance() throws {
+        var bank = SoundBank.locate(bundle: .main)
+        bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
+        for name in phrase.names {
+            let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
+            e.roomOn = false
+            e.outputGainDB = PlaybackLevels.bandGainDB - 18
+            let buf = try phrase.at(velocity: 80).render(e, score: score, only: [name])
+            print(String(format: "BALANCE %@\t%.2f", name, LoudnessMeter.integrated(buf)))
+        }
     }
 
     /// The remap keeps the band calibration: the full-band phrase, played at the velocities the

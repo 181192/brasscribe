@@ -71,6 +71,9 @@ pub struct ScoreSpec {
     pub encoding_date: String,
     /// Text above the first tempo mark (musicxml::TEMPO_ESTIMATED when the beat grid is a guess).
     pub tempo_note: Option<String>,
+    /// The drum kit a percussion part plays: its 0-based bank 128 program (instruments::KITS), written
+    /// as <midi-program> when it is not the band kit (0).
+    pub kit_program: i64,
 }
 
 // ---------------------------------------------------------------------------
@@ -1792,7 +1795,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
         line_base += p.lines.len();
     }
     if !spec.sounds.is_empty() {
-        band_midi(&mut root);
+        band_midi(&mut root, spec.kit_program);
     }
     root
 }
@@ -1864,8 +1867,9 @@ fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
 /// score order, skipping the drum channel; past 15 parts the channels continue
 /// on MIDI port 2. Percussion: one score-instrument per drum sound used, on
 /// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
-/// every note.
-fn band_midi(root: &mut X) {
+/// every note; a kit other than the band kit (`kit_program`, 0-based: the pop
+/// kit is 1) as <midi-program> on each of those.
+fn band_midi(root: &mut X, kit_program: i64) {
     let banks: Vec<(&'static str, i64)> = crate::instruments::part_banks();
     let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
     let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
@@ -1888,12 +1892,11 @@ fn band_midi(root: &mut X) {
                 sp.push(X::new("score-instrument").attr("id", format!("{base}-{gm}")).child(X::text("instrument-name", *label)).child(X::text("instrument-sound", "drum.group.set")));
             }
             for (gm, _) in &used {
-                sp.push(
-                    X::new("midi-instrument")
-                        .attr("id", format!("{base}-{gm}"))
-                        .child(X::text("midi-channel", DRUM_CHANNEL.to_string()))
-                        .child(X::text("midi-unpitched", (gm + 1).to_string())),
-                );
+                let mut mi = X::new("midi-instrument").attr("id", format!("{base}-{gm}")).child(X::text("midi-channel", DRUM_CHANNEL.to_string()));
+                if kit_program != 0 {
+                    mi.push(X::text("midi-program", (kit_program + 1).to_string()));
+                }
+                sp.push(mi.child(X::text("midi-unpitched", (gm + 1).to_string())));
             }
             continue;
         }
