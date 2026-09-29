@@ -17,7 +17,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
 # The Mikkel golden output.
-MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band"
+# (a sibling of data/golden/mikkel-arranged-band until the coordinator promotes it: docs/plan/fast-notes.md)
+MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band.fast-notes"
+# The on-device reference clip (the same sibling rule).
+ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref.fast-notes"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 # SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
@@ -163,7 +166,7 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
             cases.append(Case(f"solo-seat/{song.name}/{stem}/{tag}", "layers", {**base, "options": options}))
     # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
     # layered output from the Python reference is kept next to it.
-    ent = DATA / "runs" / "apple" / "entertainer-ref"
+    ent = ONDEVICE_REF
     if (ent / "layers").exists():
         cases.append(Case("entertainer/layers", "layers",
                           {"layers": ent / "layers", "beats": ent / "beats-small0.beats", "title": "Reference",

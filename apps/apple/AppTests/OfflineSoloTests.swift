@@ -5,9 +5,12 @@ import Testing
 import TranscriptionKit
 @testable import BrasscribePlay
 
+/// The on-device reference clip's directory under data/runs/apple (a sibling until promoted: docs/plan/fast-notes.md).
+let onDeviceRefName = "entertainer-ref.fast-notes"
+
 func onDeviceRef() -> URL? {
     guard let d = fixtureDir() else { return nil }
-    let r = d.deletingLastPathComponent().deletingLastPathComponent().appending(path: "runs/apple/entertainer-ref")
+    let r = d.deletingLastPathComponent().deletingLastPathComponent().appending(path: "runs/apple/\(onDeviceRefName)")
     return FileManager.default.fileExists(atPath: r.appending(path: "solo/brass-band.musicxml").path) ? r : nil
 }
 

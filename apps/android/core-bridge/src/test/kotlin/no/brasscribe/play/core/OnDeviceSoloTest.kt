@@ -18,6 +18,9 @@ import kotlin.math.abs
 import no.brasscribe.play.test.Slow
 import org.junit.experimental.categories.Category
 
+/** The on-device reference clip's directory under data/runs/apple (a sibling until promoted: docs/plan/fast-notes.md). */
+private const val ONDEVICE_REF = "entertainer-ref.fast-notes"
+
 /**
  * The phone's offline solo path on the JVM (the same ONNX models and the host build of the core) on
  * the first 30 s of the URMP March trumpet, compared with the engine's solo profile on the same clip
@@ -58,7 +61,7 @@ class OnDeviceSoloTest {
         assumeTrue("models missing", File(models, "swift-f0/swift-f0-window.onnx").isFile)
         val runs = File(System.getProperty("brasscribe.data") ?: "missing", "runs/apple")
         val clipE = File(runs, "entertainer-tpt1-30s.wav")
-        val ref = File(runs, "entertainer-ref/layered/composition.json")
+        val ref = File(runs, "$ONDEVICE_REF/layered/composition.json")
         assumeTrue("Entertainer clip or reference missing", clipE.isFile && ref.isFile)
         val (audio, rate) = readMono(clipE, 60.0)
         val sw = SwiftF0(File(models, "swift-f0/swift-f0-window.onnx").readBytes())

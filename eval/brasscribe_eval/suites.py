@@ -48,8 +48,10 @@ class Suite:
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
 
 
-# The Mikkel golden output (data/golden).
-MIKKEL_GOLDEN = "golden/mikkel-arranged-band"
+# The Mikkel golden output (data/golden), and the on-device reference clip's layered output. Both are
+# siblings of the promoted directories until the coordinator promotes them at merge (docs/plan/fast-notes.md).
+MIKKEL_GOLDEN = "golden/mikkel-arranged-band.fast-notes"
+ONDEVICE_REF = "runs/apple/entertainer-ref.fast-notes"
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""
@@ -490,9 +492,9 @@ def _solo_ondevice(data: Path, mode: str) -> dict[str, float]:
     from brasscribe_engine.compare import compare
     from brasscribe_engine.config import Settings
 
-    ref = data / "runs" / "apple" / "entertainer-ref"
+    ref = data / ONDEVICE_REF
     clip = data / "runs" / "apple" / "entertainer-tpt1-30s.wav"
-    _need(data, "runs/apple/entertainer-ref/layered", "runs/apple/entertainer-tpt1-30s.wav")
+    _need(data, f"{ONDEVICE_REF}/layered", "runs/apple/entertainer-tpt1-30s.wav")
     with tempfile.TemporaryDirectory() as tmp:
         seed = Path(tmp) / "seed"
         (seed / "layers").mkdir(parents=True)
@@ -565,7 +567,7 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
-          _solo_ondevice, ("runs/apple/entertainer-ref", "runs/apple/entertainer-tpt1-30s.wav")),
+          _solo_ondevice, (ONDEVICE_REF, "runs/apple/entertainer-tpt1-30s.wav")),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}
