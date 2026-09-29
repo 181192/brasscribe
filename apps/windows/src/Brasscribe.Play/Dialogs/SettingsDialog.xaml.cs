@@ -1,4 +1,5 @@
 using Brasscribe.Play.Core.Engine;
+using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.TalkingScore;
 using Brasscribe.Play.Core.ViewModels;
 using Microsoft.UI.Xaml;
@@ -18,6 +19,7 @@ public sealed partial class SettingsDialog : ContentDialog
         ConnectionStatus.Show(viewModel.Connection);
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
+        AppearanceBox.SelectedIndex = (int)viewModel.Appearance;
         CoreVersion.Text = App.Strings.Format("Settings_CoreVersion", main.Core.IsNative ? main.Core.Version : App.Strings["Settings_CoreManaged"]);
     }
 
@@ -26,6 +28,12 @@ public sealed partial class SettingsDialog : ContentDialog
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LanguageBox.SelectedItem is ComboBoxItem { Tag: string tag }) ViewModel.Language = tag;
+    }
+
+    /// <summary>Applies at once: the app's theme controller re-themes every window and this dialog; focus stays here.</summary>
+    private void OnAppearanceChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (AppearanceBox.SelectedIndex >= 0) ViewModel.Appearance = (Appearance)AppearanceBox.SelectedIndex;
     }
 
     private void OnVerbosityChanged(object sender, SelectionChangedEventArgs e) =>

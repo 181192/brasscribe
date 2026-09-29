@@ -43,7 +43,14 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 || ViewModel?.Stand.IsOpen == true && Math.Abs(e.NewSize.Height - e.PreviousSize.Height) > 20) QueueRender();
         };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
-        ActualThemeChanged += (_, _) => QueueRender(); // the notation itself is drawn in the theme's ink
+        // The notation itself is drawn in the theme's ink, and the page is the theme's paper (Appearance can
+        // change while the score is open: design/system.md §10).
+        ActualThemeChanged += (_, _) =>
+        {
+            if (ViewModel is null) return;
+            ApplyPageLayout();
+            QueueRender();
+        };
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
 
         // The music stand.
@@ -143,7 +150,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     public async Task ShowGoToBarAsync()
     {
-        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot };
+        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Bar is { } bar)
         {
             ViewModel.GoToBar(bar);
@@ -159,6 +166,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = strings["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = strings["Score_SaveTitle"],
@@ -227,17 +235,17 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (ViewModel.Stand.IsOpen)
         {
             // The stand: the music alone on the paper, edge to edge with a small margin.
-            PageFrame.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+            PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
             PageSheet.MaxWidth = double.PositiveInfinity;
             PageSheet.Margin = new Thickness(24, 0, 24, 0);
-            PageSheet.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+            PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
             return;
         }
         bool part = ViewModel.IsPartView;
-        PageFrame.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[part ? "BcSurfaceBrush" : "BcBgBrush"];
+        PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, part ? "BcSurfaceBrush" : "BcBgBrush");
         PageSheet.MaxWidth = part ? 960 : double.PositiveInfinity;
         PageSheet.Margin = part ? new Thickness(24, 24, 24, 0) : new Thickness(0);
-        PageSheet.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+        PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
     }
 
     private bool _syncing;
@@ -649,6 +657,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         }
         VideoView.SetMediaPlayer(null);
         _pip = new VideoWindow(media.Player, App.Strings["Pip_Title"]);
+        (Application.Current as App)?.Theme?.Attach(_pip);
         _pip.Closed += (_, _) =>
         {
             _pip?.Detach();

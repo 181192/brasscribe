@@ -122,6 +122,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = strings["FinishLater_Title"],
             Content = ViewModel.ConfirmText,
             PrimaryButtonText = strings["FinishLater_Confirm"],
@@ -179,6 +180,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = strings["ChangeNote_Title"],
             Content = content,
             PrimaryButtonText = strings["ChangeNote_Save"],
