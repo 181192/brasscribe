@@ -137,13 +137,25 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Kind.Source = src;
             Kind.Selected = null;
+            Kind.IsPercussionSeat = IsPercussionSeat;
             Kind.SetWhere(Settings.EngineUri);
             Screen = Screen.SourceKind;
             await Kind.RefreshFromEngineAsync(Engine);
         };
         Start.ScoreOpened += (_, path) => OpenScoreFile(path);
+        // "Change what I play" on "What is this?" goes through Settings: the refusal follows the answer.
+        Settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.SeatChoice)) Kind.IsPercussionSeat = IsPercussionSeat;
+        };
         Kind.Chosen += async (_, choice) =>
         {
+            // A drummer's solo take is no drum part: refused before anything is sent (the screen says so too).
+            if (choice.Kind.Kind == SourceKind.Solo && IsPercussionSeat)
+            {
+                _announcer.Announce(_s["Error_PercussionSolo"], AnnouncementKind.Important);
+                return;
+            }
             _lastChoice = choice;
             _result = null;
             // A solo take has no harmony for a quartet; a quartet chosen for an earlier take goes back to the band.
@@ -277,6 +289,9 @@ public sealed partial class MainViewModel : ObservableObject
     private string? _myPartOverride;
 
     /// <summary>A new take: the quartet only for a group, and the player's seat as Settings has it.</summary>
+    /// <summary>The player's seat is percussion (a seat with no clef to read).</summary>
+    public bool IsPercussionSeat => Seats.Find(Settings.SeatChoice.SeatId) is { IsPercussion: true };
+
     private void BeginTake(string profile)
     {
         Output.IsSoloTake = Lineups.IsSoloTake(null, profile);

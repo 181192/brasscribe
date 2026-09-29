@@ -29,6 +29,12 @@ public sealed partial class WhatIsThisPage : Page, IScreenPage
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e) =>
         ViewModel.Selected = Options.SelectedItem as SourceKindOption;
 
+    /// <summary>"Change what I play" (a percussion seat): Settings has the question; the refusal follows the answer.</summary>
+    private async void OnChangeSeat(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindowInstance is { } window) await window.OpenSettingsAsync();
+    }
+
     private void OnCancel(object sender, RoutedEventArgs e)
     {
         if (Main.BackCommand.CanExecute(null)) Main.BackCommand.Execute(null);

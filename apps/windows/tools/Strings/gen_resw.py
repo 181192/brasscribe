@@ -99,6 +99,9 @@ prop("KindHeading", "Text", "What is this?", "Hva er dette?")
 prop("KindIntro", "Text", "Your answer decides how Brasscribe listens. It never guesses.",
      "Svaret ditt avgjør hvordan Brasscribe lytter. Det gjettes aldri.")
 name("KindOptions", "What is this recording?", "Hva er dette opptaket?")
+prop("KindPercussionNote", "Text", "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.",
+     "Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer.")
+text_button("KindChangeSeatButton", "Change what I play", "Endre hva jeg spiller", "Open Settings to change your instrument", "Åpne Innstillinger for å endre instrumentet ditt")
 prop("KindNotSure", "Text", "Not sure? Choose Brass band. You can change it later.", "Usikker? Velg Brassband. Du kan endre det senere.")
 text_button("KindCancelButton", "Cancel", "Avbryt", "Back to Home, the recording is kept", "Tilbake til startsiden, opptaket beholdes")
 prop("ContinueButton", "Content", "Continue", "Fortsett"); help_("ContinueButton", "Make the score. Choose what the recording is first.", "Lag partituret. Velg først hva opptaket er.")
@@ -314,6 +317,7 @@ code = {
     "Start_Notice_TooLoud": ("The sound is too loud and distorts. Turn the volume down a little.", "Lyden er for høy og blir forvrengt. Skru ned volumet litt."),
     "Kind_Solo_Label": ("One instrument", "Ett instrument"),
     "Kind_Solo_Description": ("One player on their own, like you practising the cornet.", "Én musiker alene, som når du øver på kornetten."),
+    "Kind_Solo_Percussion": ("Not for percussion yet", "Ikke for slagverk ennå"),
     "Kind_BrassBand_Label": ("Brass band", "Brassband"),
     "Kind_BrassBand_Description": ("A whole band playing together, with no other instruments.", "Et helt band som spiller sammen, uten andre instrumenter."),
     "Kind_OrchestraWithSoloist_Label": ("Soloist with orchestra or band", "Solist med orkester eller band"),

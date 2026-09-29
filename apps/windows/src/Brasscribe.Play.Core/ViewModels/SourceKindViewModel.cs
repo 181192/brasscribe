@@ -16,6 +16,19 @@ public sealed partial class SourceKindOption(SourceKind kind, string profile, st
     public string Label { get; } = label;
     [ObservableProperty] public partial string Description { get; set; } = description;
     [ObservableProperty] public partial bool IsAvailable { get; set; } = true;
+
+    /// <summary>Why this answer can't be taken for the player's seat ("Not for percussion yet"); null when it can.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRefused), nameof(IsAccepted), nameof(HelpText))]
+    public partial string? Refusal { get; set; }
+
+    public bool IsRefused => Refusal is not null;
+    public bool IsAccepted => Refusal is null;
+
+    /// <summary>What screen readers hear after the label: the refusal, else the description.</summary>
+    public string HelpText => Refusal is { } r ? r + ". " + Description : Description;
+
+    partial void OnDescriptionChanged(string value) => OnPropertyChanged(nameof(HelpText));
 }
 
 /// <summary>
@@ -71,7 +84,19 @@ public sealed partial class SourceKindViewModel : ObservableObject
         if (Source is not null && Selected is not null) Chosen?.Invoke(this, (Source, Selected));
     }
 
-    private bool CanContinue() => Selected is { IsAvailable: true } && Source is not null;
+    private bool CanContinue() => Selected is { IsAvailable: true, IsRefused: false } && Source is not null;
+
+    /// <summary>
+    /// The player's seat is percussion: a drummer's solo take is no drum part (the pitch trackers' notes would be drawn
+    /// as drum hits), so One instrument is refused, with why and what to do. The card stays focusable.
+    /// </summary>
+    [ObservableProperty] public partial bool IsPercussionSeat { get; set; }
+
+    partial void OnIsPercussionSeatChanged(bool value)
+    {
+        foreach (var o in Options.Where(o => o.Kind == SourceKind.Solo)) o.Refusal = value ? _s["Kind_Solo_Percussion"] : null;
+        ContinueCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnSourceChanged(SourceAudio? value)
     {

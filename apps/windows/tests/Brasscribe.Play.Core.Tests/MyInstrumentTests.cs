@@ -316,6 +316,32 @@ public class MyInstrumentTests
         Assert.Equal(6, YourPart.Resolve(new FakeCore(), SeatChoice.Conductor, Lineup.MinimalBand, SmallBand, "E♭ Bass").Index);
     }
 
+    // ---- a percussion seat ----
+
+    [Fact]
+    public void A_drummers_solo_take_is_refused_and_says_why()
+    {
+        var (main, _, _) = Build(setup: s => s.Set("Seat", "percussion"));
+        Assert.True(main.IsPercussionSeat);
+        main.Kind.Source = new SourceAudio("take.wav", "take.wav", TimeSpan.FromSeconds(30), null, false);
+        main.Kind.IsPercussionSeat = main.IsPercussionSeat;
+        var solo = main.Kind.Options.Single(o => o.Kind == SourceKind.Solo);
+        Assert.Equal("Not for percussion yet", solo.Refusal);
+        Assert.StartsWith("Not for percussion yet. ", solo.HelpText);
+        main.Kind.Selected = solo;
+        Assert.False(main.Kind.ContinueCommand.CanExecute(null));
+        // A band recording is fine: a recording with drums gets a percussion part.
+        main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        Assert.True(main.Kind.ContinueCommand.CanExecute(null));
+
+        // Changing what they play in Settings lifts the refusal.
+        main.Settings.SeatChoice = new SeatChoice("euphonium", null);
+        Assert.False(main.Kind.IsPercussionSeat);
+        Assert.Null(solo.Refusal);
+        main.Settings.SeatChoice = new SeatChoice("percussion", null);
+        Assert.True(main.Kind.IsPercussionSeat);
+    }
+
     // ---- the picker ----
 
     [Fact]
