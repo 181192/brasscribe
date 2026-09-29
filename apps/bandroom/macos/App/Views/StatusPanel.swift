@@ -482,7 +482,7 @@ private struct CardIf: ViewModifier {
 }
 
 /// "This request has expired. Choose this computer on the phone again." [OK]
-/// The Keychain didn't hand over the saved key (Deny after an update). Brasscribe runs without it; this says so
+/// The Keychain didn't hand over the saved key (Deny after an update), or its prompt went unanswered. Brasscribe runs without it; this says so
 /// without taking the primary or the status, and offers the two ways back.
 struct KeyUnreadableCard: View {
     @Environment(AppModel.self) private var app
@@ -493,8 +493,14 @@ struct KeyUnreadableCard: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Brasscribe couldn't read your Hugging Face key").brFont(.bodyStrong)
-                    Text("Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.")
-                        .brFont(.callout).fixedSize(horizontal: false, vertical: true)
+                    Group {
+                        if app.keyPromptUnanswered {
+                            Text("Your Mac is still waiting for an answer to its Keychain prompt, so Brasscribe runs without the key for now. Full-band scores may need it.")
+                        } else {
+                            Text("Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.")
+                        }
+                    }
+                    .brFont(.callout).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .accessibilityElement(children: .combine)

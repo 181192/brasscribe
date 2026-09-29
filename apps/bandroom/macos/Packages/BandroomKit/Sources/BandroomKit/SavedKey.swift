@@ -38,6 +38,9 @@ public final class SavedKey {
     public private(set) var state: State = .notRead
     /// The OSStatus of the last read that failed.
     public private(set) var lastFailure: Int32?
+    /// The read under way has waited `unansweredAfter` (a Keychain prompt nobody has answered, or one hidden
+    /// behind other windows). Cleared when the read ends.
+    public private(set) var unanswered = false
     /// On the main actor, whenever the key the engine should get changes.
     @ObservationIgnored public var onChange: ((String?) -> Void)?
     @ObservationIgnored private let store: any SecretStore
@@ -47,10 +50,15 @@ public final class SavedKey {
     /// Bumped by a save or delete that went through, so a read that started before them can't undo them.
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
+    @ObservationIgnored private let unansweredAfter: Duration
+    /// Bumped by every read, so an old read's timer can't mark a newer read unanswered.
+    @ObservationIgnored private var readNumber = 0
 
-    public init(store: any SecretStore, queue: DispatchQueue = .global(qos: .userInitiated)) {
+    public init(store: any SecretStore, queue: DispatchQueue = .global(qos: .userInitiated),
+                unansweredAfter: Duration = .seconds(30)) {
         self.store = store
         self.queue = queue
+        self.unansweredAfter = unansweredAfter
     }
 
     /// The key, from any thread (the downloader asks from its own tasks); nil until it has been read.
@@ -63,12 +71,18 @@ public final class SavedKey {
         guard !reading else { return }
         reading = true
         state = .reading
-        let store = store, queue = queue, started = generation
+        readNumber += 1
+        let store = store, queue = queue, started = generation, number = readNumber, after = unansweredAfter
         Task { [weak self] in
             let result = await withCheckedContinuation { (c: CheckedContinuation<SecretRead, Never>) in
                 queue.async { c.resume(returning: store.read()) }
             }
             self?.apply(result, started: started)
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: after)
+            guard let self, self.reading, self.state == .reading, self.readNumber == number else { return }
+            self.unanswered = true
         }
     }
 
@@ -96,6 +110,7 @@ public final class SavedKey {
         guard ok else { return false }
         generation += 1
         lastFailure = nil
+        unanswered = false
         state = .found
         set(key)
         return true
@@ -108,12 +123,14 @@ public final class SavedKey {
             queue.async { store.delete(); c.resume() }
         }
         generation += 1
+        unanswered = false
         state = .none
         set(nil)
     }
 
     private func apply(_ result: SecretRead, started: Int) {
         reading = false
+        unanswered = false
         defer {
             let done = waiters.values
             waiters.removeAll()

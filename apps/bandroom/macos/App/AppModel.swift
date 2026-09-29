@@ -494,8 +494,11 @@ final class AppModel {
         }
     }
 
-    /// The saved key is there but the Keychain didn't hand it over (Deny on the prompt after an update).
-    var showKeyUnreadableNote: Bool { savedKey.state == .unreadable }
+    /// The saved key is there but the Keychain didn't hand it over (Deny on the prompt after an update), or its
+    /// prompt has waited unanswered for a while. Either way Brasscribe runs without the key for now.
+    var showKeyUnreadableNote: Bool { savedKey.state == .unreadable || keyPromptUnanswered }
+    /// The Keychain prompt for the saved key hasn't been answered (about 30 s); cleared when the read ends.
+    var keyPromptUnanswered: Bool { savedKey.state == .reading && savedKey.unanswered }
 
     /// Set by the setup window while it's on screen.
     var isSetupWindowOpen = false

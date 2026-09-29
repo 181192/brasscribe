@@ -258,6 +258,8 @@ NB = {
         "Uten den kan ikke Brasscribe skrive ned et fullt band. Du kan legge den til senere.",
     "Work load": "Arbeidsmengde",
     "Writing down the notes": "Skriver ned tonene",
+    "Your Mac is still waiting for an answer to its Keychain prompt, so Brasscribe runs without the key for now. Full-band scores may need it.":
+        "Macen venter fortsatt på svar på spørsmålet fra Nøkkelringen, så Brasscribe kjører uten nøkkelen inntil videre. Partitur for fullt band kan trenge den.",
     "Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.":
         "Nøkkelringen ga ikke tilgang, så Brasscribe kjører uten nøkkelen inntil videre. Partitur for fullt band kan trenge den.",
     "Your Keychain didn't let Brasscribe read the saved key. Paste it here again.":

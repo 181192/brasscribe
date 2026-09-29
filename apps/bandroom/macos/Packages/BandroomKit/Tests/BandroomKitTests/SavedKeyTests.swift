@@ -105,6 +105,46 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
         #expect(key.value == "hf_late")
     }
 
+    @Test func anUnansweredPromptIsFlaggedAndClearedWhenTheKeyArrives() async {
+        let keychain = FakeKeychain(.found("hf_late"))
+        keychain.hold()
+        defer { keychain.release() }
+        let key = SavedKey(store: keychain, unansweredAfter: .milliseconds(30))
+        key.read()
+        #expect(!key.unanswered)
+        await waitUntil({ key.unanswered }, seconds: 20)
+        #expect(key.unanswered)
+        #expect(key.state == .reading)
+        keychain.release()
+        await waitUntil { key.state == .found }
+        #expect(!key.unanswered)
+        #expect(key.value == "hf_late")
+    }
+
+    @Test func aQuickReadIsNeverFlaggedUnanswered() async {
+        let key = SavedKey(store: FakeKeychain(.found("hf_saved")), unansweredAfter: .milliseconds(30))
+        key.read()
+        await key.settled(within: .seconds(5))
+        try? await Task.sleep(for: .milliseconds(80))
+        #expect(!key.unanswered)
+    }
+
+    @Test func enteringTheKeyWhileThePromptWaitsClearsTheFlag() async {
+        let keychain = FakeKeychain(.none)
+        keychain.hold()
+        defer { keychain.release() }
+        let key = SavedKey(store: keychain, unansweredAfter: .milliseconds(30))
+        key.read()
+        await waitUntil({ key.unanswered }, seconds: 20)
+        #expect(await key.save("hf_typed"))
+        #expect(!key.unanswered)
+        #expect(key.state == .found)
+        keychain.release()
+        await waitUntil { !key.isReading }
+        #expect(!key.unanswered)
+        #expect(key.value == "hf_typed")
+    }
+
     @Test func tryAgainAfterADenialReadsAgain() async {
         let keychain = FakeKeychain(.unreadable(status: -25293))
         let key = SavedKey(store: keychain)
