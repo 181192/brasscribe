@@ -22,7 +22,8 @@ struct ReviewView: View {
     @State private var loadError: String?
     @State private var filter: Filter = .mine
     /// Notes changed in this review, by item: what Brasscribe wrote. They stay open until Keep.
-    @State private var changes: [ReviewItem.ID: SpelledPitch] = [:]
+    /// Notes changed here: what Brasscribe wrote, by `changeRef(_:)` key (kept with the score).
+    @State private var changes: [String: Piece.ReviewChange] = [:]
     @AccessibilityFocusState private var changedFocused: Bool
 
     /// Triage: your own part first (very unsure first), then the other parts, then all.
@@ -223,7 +224,7 @@ struct ReviewView: View {
                         .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if let was = changes[it.id] { changedRow(it, was: was) }
+                if let was = was(it) { changedRow(it, was: was) }
                 // Listen and Change note come straight after the note, before anything that scrolls
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { listenButton(it); changeButton(it) }
@@ -279,7 +280,7 @@ struct ReviewView: View {
     private func bars(_ it: ReviewItem) -> ClosedRange<Int> { it.bar...max(it.bar, it.lastBar ?? it.bar) }
 
     /// A changed note plays from the score, so the new note is heard; otherwise the recording plays.
-    private func toggleListen(_ it: ReviewItem) { model?.toggleListen(bars: bars(it), original: changes[it.id] == nil) }
+    private func toggleListen(_ it: ReviewItem) { model?.toggleListen(bars: bars(it), original: was(it) == nil) }
 
     /// "Changed to D5 (was C5)" and Undo change, on the card after Save.
     private func changedRow(_ it: ReviewItem, was: SpelledPitch) -> some View {
@@ -456,6 +457,7 @@ struct ReviewView: View {
             composition = piece.loadComposition()
             evidence = piece.loadEvidence()
             checked = piece.loadChecked()
+            changes = piece.loadReviewChanges()
             items = ReviewList.items(score: m.score, composition: m.composition, uncertainty: m.uncertainty)
             // an arranged part keeps "Yours" chosen, so its notice shows (and is said) once
             if count(.mine) == 0, !myPartArranged { filter = .all }
@@ -476,9 +478,15 @@ struct ReviewView: View {
     /// Change note… → Save: the score now has the new note and Review stays on it, still open, so the
     /// player can listen, change it again or undo. "was" stays what Brasscribe wrote.
     private func changed(_ target: ReviewItem, from: SpelledPitch, to: SpelledPitch) {
-        let was = changes[target.id] ?? from
+        let was = self.was(target) ?? from
         reload(keeping: target)
-        changes[target.id] = was.midi == to.midi ? nil : was
+        if let item = items.first(where: { $0.id == target.id }) ?? current.flatMap({ id in items.first { $0.id == id } }),
+           let ref = changeRef(item) {
+            // Stored as the Composition's pitch (or the written one without it), so another band or key reads it right.
+            let stored = changes[ref.key] ?? Piece.ReviewChange(pitch: ref.now - (to.midi - from.midi), written: from)
+            changes[ref.key] = stored.pitch == ref.now ? nil : stored
+            piece.saveReviewChanges(changes)
+        }
         let now = ReviewWords.name(to) + "\(to.octave)", before = ReviewWords.name(was) + "\(was.octave)"
         AccessibilityNotifier.announce(was.midi == to.midi ? Self.undoneWords(before) : Self.changedWords(now: now, was: before))
         focusChanged()
@@ -487,6 +495,7 @@ struct ReviewView: View {
     /// "Undo change": the note goes back to what Brasscribe wrote, and stays open.
     private func undoChange(_ it: ReviewItem, was: SpelledPitch) {
         guard let lead = note(it), case .pitched(let now) = lead.kind else { return }
+        let key = changeRef(it)?.key
         model?.stopListening(announce: false)
         do {
             try ReviewChange.apply(piece: piece, app: app, xml: xml, target: it, lead: lead, from: now, to: was, undo: true)
@@ -495,7 +504,8 @@ struct ReviewView: View {
             return
         }
         reload(keeping: it)
-        changes[it.id] = nil
+        if let key { changes[key] = nil }
+        piece.saveReviewChanges(changes)
         AccessibilityNotifier.announce(Self.undoneWords(ReviewWords.name(was) + "\(was.octave)"))
     }
 
@@ -521,6 +531,28 @@ struct ReviewView: View {
     private func note(_ it: ReviewItem) -> ScoreNote? {
         guard let part = model?.score.parts[safe: it.partIndex], part.notes.indices.contains(it.noteIndex) else { return nil }
         return part.notes[it.noteIndex]
+    }
+
+    /// Where a changed note's original pitch is kept: the Composition note behind it ("voice@start", the same
+    /// note in every arrangement), else the printed note. `now` is its pitch there today, and `toWritten` turns
+    /// a pitch kept there into this part's written pitch.
+    private func changeRef(_ it: ReviewItem) -> (key: String, now: Int, toWritten: Int)? {
+        guard let lead = note(it), case .pitched(let written) = lead.kind else { return nil }
+        if let comp = composition, let p = lead.midiPitch,
+           let (v, i) = CompositionEdit.noteIndex(in: comp, scoreTick: lead.startTick, concertPitch: p) {
+            let n = comp.voices[v].notes[i]
+            return ("\(comp.voices[v].id)@\(n.start)", n.pitch, written.midi - n.pitch)
+        }
+        return ("note:\(it.id)", written.midi, 0)
+    }
+
+    /// What Brasscribe wrote for a note changed here, spelled for this part; nil when it isn't changed.
+    private func was(_ it: ReviewItem) -> SpelledPitch? {
+        guard let ref = changeRef(it), let stored = changes[ref.key], stored.pitch != ref.now else { return nil }
+        let midi = stored.pitch + ref.toWritten
+        // As it was printed, while this part still writes it at that pitch (same band and key)
+        if let w = stored.written, w.midi == midi { return w }
+        return SpelledPitch.spelling(midi: midi, fifths: fifths(it))
     }
 
     private func fifths(_ it: ReviewItem) -> Int {

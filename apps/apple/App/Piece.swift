@@ -136,6 +136,49 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         try? p.save()
     }
 
+    // MARK: changed notes
+
+    var reviewChangesURL: URL { folder.appending(path: "review-changes.json") }
+
+    /// A note changed with Change note…: the pitch Brasscribe wrote, where Review keeps it (the Composition's
+    /// concert pitch, or the printed pitch without a Composition), and how it was spelled on the page then.
+    struct ReviewChange: Codable, Equatable {
+        var pitch: Int
+        var written: SpelledPitch?
+
+        init(pitch: Int, written: SpelledPitch?) { self.pitch = pitch; self.written = written }
+
+        private enum Keys: String, CodingKey { case pitch, step, alter, octave }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: Keys.self)
+            pitch = try c.decode(Int.self, forKey: .pitch)
+            if let step = try c.decodeIfPresent(String.self, forKey: .step) {
+                written = SpelledPitch(step: step, alter: try c.decode(Int.self, forKey: .alter), octave: try c.decode(Int.self, forKey: .octave))
+            }
+        }
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: Keys.self)
+            try c.encode(pitch, forKey: .pitch)
+            if let written {
+                try c.encode(written.step, forKey: .step)
+                try c.encode(written.alter, forKey: .alter)
+                try c.encode(written.octave, forKey: .octave)
+            }
+        }
+    }
+
+    /// The notes changed in Review, by the Composition note behind them ("voice@start"), so the same note
+    /// is found again in any arrangement: after reopening, the card still says "Changed to X (was Y)" and
+    /// Listen plays the changed score, not the recording.
+    func loadReviewChanges() -> [String: ReviewChange] {
+        (try? JSONDecoder().decode([String: ReviewChange].self, from: Data(contentsOf: reviewChangesURL))) ?? [:]
+    }
+
+    func saveReviewChanges(_ changes: [String: ReviewChange]) {
+        if changes.isEmpty { try? FileManager.default.removeItem(at: reviewChangesURL); return }
+        try? JSONEncoder().encode(changes).write(to: reviewChangesURL, options: .atomic)
+    }
+
     /// Only the layered arranger writes the full band: a take without layers (a Brass band or Pop or
     /// rock recording) is always arranged for the small band or the quartet, so Full brass band is not
     /// offered for it. Without the composition, the profile says.

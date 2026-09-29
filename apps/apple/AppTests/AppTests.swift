@@ -199,6 +199,48 @@ func testVideo() -> URL? {
     #expect(after.count == items.count - 1)
 }
 
+/// "Changed to X (was Y)" is kept with the score, by the Composition note behind it: reopening the score
+/// finds it again, and so does arranging it again for another difficulty (the changed note is in the
+/// Composition, so it stays changed there too).
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func changedNotesAreKeptWithTheScore() throws {
+    let dir = try #require(fixtureDir())
+    let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
+    let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+    let r = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: [.musicXML, .composition])
+    let piece = try Piece.create(title: "Changed", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: nil)
+    defer { piece.delete() }
+    #expect(piece.loadReviewChanges().isEmpty)
+
+    // Change note…: the Composition note moves up a tone and the score is arranged again.
+    let app = AppModel()
+    let score = try MusicXMLParser.parse(xml)
+    let first = try #require(ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp)).first)
+    let lead = score.parts[first.partIndex].notes[first.noteIndex]
+    guard case .pitched(let written) = lead.kind else { Issue.record("not pitched"); return }
+    var edited = comp
+    let concert = try #require(lead.midiPitch)
+    let change = try #require(CompositionEdit.change(&edited, scoreTick: lead.startTick, concertPitch: concert, by: 2))
+    try piece.saveComposition(edited)
+    let same = try app.rearrange(piece, composition: edited, output: piece.output ?? OutputChoice(), open: false)
+    let key = "\(change.voice)@\(change.start)"
+    same.saveReviewChanges([key: Piece.ReviewChange(pitch: change.from, written: written)])
+
+    let reopened = try #require(Piece.load(from: piece.metaURL))
+    #expect(reopened.loadReviewChanges() == [key: Piece.ReviewChange(pitch: change.from, written: written)])
+
+    // Another difficulty: the note is still the player's in the Composition, so what Brasscribe wrote is kept.
+    var other = same.output ?? OutputChoice()
+    other.difficulty = other.difficulty == .easier ? .standard : .easier
+    let rearranged = try app.rearrange(same, composition: edited, output: other, open: false)
+    #expect(rearranged.loadReviewChanges()[key]?.pitch == change.from)
+    let now = try #require(rearranged.loadComposition()).voices.first { $0.id == change.voice }?.notes.first { $0.start == change.start }
+    #expect(now?.pitch == change.to)
+
+    // Undoing the last change removes the file.
+    piece.saveReviewChanges([:])
+    #expect(!FileManager.default.fileExists(atPath: piece.reviewChangesURL.path))
+}
+
 /// Mac windows stay whole on their screen's visible frame (AppKit coordinates, y up).
 @Test func windowFitKeepsAWindowOnItsScreen() {
     // a laptop's visible frame: the Dock takes the bottom 70 pt, the menu bar the top 33
