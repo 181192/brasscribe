@@ -129,8 +129,10 @@ final class PlayUITests: XCTestCase {
         transcribe.safeTap(app)
         let position = app.staticTexts["reviewPosition"].firstMatch
         XCTAssertTrue(position.waitForExistence(timeout: 60), "review should follow the transcription")
-        let before = position.label
+        let before = shown(position)
         let changed = app.staticTexts["noteChanged"].firstMatch
+        // macOS exposes a static text's words as its value, iOS as its label
+        func shown(_ e: XCUIElement) -> String { e.label.isEmpty ? (e.value as? String ?? "") : e.label }
 
         func changeUp() {
             app.buttons["changeNote"].firstMatch.safeTap(app)
@@ -142,24 +144,24 @@ final class PlayUITests: XCTestCase {
         }
 
         changeUp()
-        XCTAssertEqual(position.label, before, "Save stays on the same note")
-        XCTAssertTrue(changed.label.hasPrefix("Changed to "), changed.label)
-        let was = String(changed.label[changed.label.range(of: "(was ")!.lowerBound...])
+        XCTAssertEqual(shown(position), before, "Save stays on the same note")
+        XCTAssertTrue(shown(changed).hasPrefix("Changed to "), shown(changed))
+        let was = String(shown(changed)[shown(changed).range(of: "(was ")!.lowerBound...])
         XCTAssertTrue(app.buttons["undoChange"].exists)
 
         changeUp()
-        XCTAssertEqual(position.label, before)
-        XCTAssertTrue(changed.label.hasSuffix(was), "\(changed.label) keeps \(was)")
+        XCTAssertEqual(shown(position), before)
+        XCTAssertTrue(shown(changed).hasSuffix(was), "\(shown(changed)) keeps \(was)")
 
         app.buttons["undoChange"].firstMatch.safeTap(app)
         let gone = NSPredicate(format: "exists == false")
         wait(for: [XCTNSPredicateExpectation(predicate: gone, object: changed)], timeout: 20)
-        XCTAssertEqual(position.label, before)
+        XCTAssertEqual(shown(position), before)
 
         changeUp()
         app.buttons["keepNext"].firstMatch.safeTap(app)
         let total = { (s: String) in Int(s.split(separator: " ")[2]) ?? 0 }
-        let fewer = NSPredicate { _, _ in !position.exists || total(position.label) == total(before) - 1 }
+        let fewer = NSPredicate { _, _ in !position.exists || total(shown(position)) == total(before) - 1 }
         wait(for: [XCTNSPredicateExpectation(predicate: fewer, object: nil)], timeout: 20)
         XCTAssertFalse(changed.exists, "the next note is not changed")
     }

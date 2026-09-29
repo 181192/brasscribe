@@ -59,6 +59,14 @@ start() {
   log "starting $vm headless (no window, no host input)"
   nohup "$TART" run --no-graphics --no-audio --no-clipboard --suspendable "$@" "$vm" >"$OUT/$vm.log" 2>&1 &
   disown || true
+  # a suspended state saved by another process can fail to restore ("permission denied"); boot cold instead
+  sleep 3
+  if grep -q "failed to restore" "$OUT/$vm.log" 2>/dev/null; then
+    log "$vm: saved state won't restore; discarding it and booting cold"
+    rm -f "$HOME/.tart/vms/$vm/state.vzvmsave"
+    nohup "$TART" run --no-graphics --no-audio --no-clipboard --suspendable "$@" "$vm" >"$OUT/$vm.log" 2>&1 &
+    disown || true
+  fi
 }
 
 wait_ssh() {  # <vm> [password-ok]
