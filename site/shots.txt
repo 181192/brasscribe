@@ -4,8 +4,7 @@
 # Kinds: phone = iPhone portrait, 600 px wide at 2x; tablet = iPad portrait, 720 px; desktop = 16:10,
 # 1440 px (cropped from the top); mac = a macOS window with its own title bar, 1440 px at its own ratio.
 # Only screens showing the Old Hundredth fixture, or no score title at all.
-# The home page shows iPhone screens only, apart from the Mac and iPad in the hero. There is no
-# Norwegian Mac screenshot without another title, so both pages use the English Mac score.
+# The home page shows iPhone screens only, apart from the Mac and iPad in the hero.
 # To swap a shot, change its paths here, run the script, and update the alt text on the pages.
 A=apps/apple/docs/screenshots
 S=studio/docs/screenshots/themes
@@ -21,5 +20,5 @@ large-text    phone    $A/iphone-review-large-text-light.png $A/iphone-review-la
 # always shown dark, whatever the page's theme: the dark screen is in the light column
 dark-mode     phone    $A/iphone-part-dark.png         -                              $A/iphone-nb-part-dark.png    -
 ipad-review   tablet   $A/ipad-review-light.png        $A/ipad-review-dark.png        $A/ipad-nb-review-light.png   $A/ipad-nb-review-dark.png
-mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        -                             -
+mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        $A/macos-nb-score-light.png   $A/macos-nb-score-dark.png
 computer      desktop  $S/viewer-light.png             $S/viewer-dark.png             $S/viewer-nb.png              -
