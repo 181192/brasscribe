@@ -459,12 +459,22 @@ def track(clips: list[Path], only: set[str]) -> None:
 FROZEN = ("reference.json", "oracle.beats", "small0.beats", "sw.mid", "bp.mid", "sw.contour.npz")
 
 
+FROZEN_RENDERS = ("samples", "room")  # the real-sample clips; the SoundFont clips stay local
+
+
 def freeze(clips: list[Path]) -> None:
+    """Tracker outputs and references of the real-sample clips -> eval/fixtures/fast-notes (the CI suite)."""
     for c in clips:
+        if not c.name.endswith(FROZEN_RENDERS):
+            continue
         d = FIXTURES / c.name
         d.mkdir(parents=True, exist_ok=True)
         for f in FROZEN:
-            if (c / f).exists():
+            if not (c / f).exists():
+                continue
+            if f == "reference.json":  # compact: the fixtures are committed
+                (d / f).write_text(json.dumps(json.loads((c / f).read_text()), separators=(",", ":")))
+            else:
                 shutil.copy(c / f, d / f)
 
 

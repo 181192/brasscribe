@@ -29,6 +29,10 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 - `eval/fixtures/choralebricks-solo/`: SwiftF0 and Basic Pitch MIDI and Beat This! small0 beats of
   all 93 ChoraleBricks brass stems (trumpet, flugelhorn, French horn, trombone, baritone, tuba), with
   each stem's ChoraleBricks note annotation (`<stem>.notes.csv`, CC-BY 4.0, same source as above).
+- `eval/fixtures/fast-notes/`: fast runs, repeated notes and two-note alternations rendered from real trumpet
+  samples (University of Iowa MIS, VSCO 2 CE; dry and with an OpenAIR church response), with their exact
+  reference, oracle beats, and our SwiftF0, Basic Pitch and Beat This! small0 outputs (`fast_notes.py`;
+  docs/plan/fast-notes.md).
 
 | Suite | CI | Local only because |
 |---|---|---|
@@ -36,6 +40,7 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 | quant-chorales | yes | |
 | consensus-chorales | yes | |
 | solo-instruments, seat-voices | yes | |
+| fast-notes | yes | |
 | arrange | chorales part | URMP part: URMP licence not checked for redistribution |
 | durations | chorales part | URMP part: as above |
 | freetime | chorales part | URMP part and the combined means: as above |

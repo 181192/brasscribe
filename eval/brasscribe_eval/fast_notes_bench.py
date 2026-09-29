@@ -463,6 +463,26 @@ def mikkel(cfg: dict | None = None) -> dict:
             "spans": [(round(a, 2), round(b, 2)) for a, b in spans]}
 
 
+SUITE_STAGES = ("sw", "line", "quantized", "written", "lead:easier")
+
+
+def suite_metrics(root: Path | None = None) -> dict[str, float]:
+    """The bench suite's metrics on the frozen fixtures: per beat source, figure recall and note F1 per stage over
+    all figure clips, alternations kept, and extra notes on each control (lower is better)."""
+    res = evaluate(root)
+    out = {}
+    for b, G in res.items():
+        for s in SUITE_STAGES:
+            out[f"{b}.{s}.fig_recall"] = G["all"][f"{s}|fig_recall"]
+        out[f"{b}.written.note_f1"] = G["all"]["written|note_f1"]
+        out[f"{b}.written.onset25_f1"] = G["all"]["written|onset25_f1"]
+        out[f"{b}.written.alt_kept"] = G["all"]["written|alt_kept"]
+        for g, m in G.items():
+            if g.startswith("ctl-"):
+                out[f"{b}.{g}.extra"] = m["written|extra"]
+    return out
+
+
 def table(res: dict, metric: str) -> str:
     lines = []
     for b, G in res.items():

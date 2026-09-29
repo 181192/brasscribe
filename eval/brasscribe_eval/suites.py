@@ -393,6 +393,16 @@ def _solo_instruments(data: Path, mode: str) -> dict[str, float]:
     return m
 
 
+def _fast_notes(data: Path, mode: str) -> dict[str, float]:
+    """fast_notes_bench on the frozen fast-notes fixtures (real trumpet samples; in the repository; no models run)."""
+    from .fast_notes import FIXTURES
+    from .fast_notes_bench import suite_metrics
+
+    if not FIXTURES.is_dir():
+        raise SkipSuite(f"missing fixtures: {FIXTURES}")
+    return suite_metrics(FIXTURES)
+
+
 def _seat_voices(data: Path, mode: str) -> dict[str, float]:
     """seat_voices_bench: each seat's voice picked out of the brass4 mixes by range (cached MIDI)."""
     from .seat_voices_bench import evaluate
@@ -546,6 +556,8 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           _readability, ("mikkel/repro/layers", MIKKEL_GOLDEN)),
     Suite("solo-instruments", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
           _solo_instruments, (), ci=True),
+    Suite("fast-notes", "fast runs, repeated notes and two-note alternations through the solo path, stage by stage "
+          "(frozen SwiftF0/Basic Pitch/Beat This! outputs on real trumpet samples)", _fast_notes, (), ci=True),
     Suite("seat-voices", "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
           _seat_voices, ("eval/choralebricks-brass4",), ci=True),
     Suite("durations", "written durations and staccato from performed lengths (duration_bench)", _durations,

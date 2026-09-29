@@ -662,6 +662,59 @@
         "consensus.B_f1": 0.382,
         "consensus.B_recall": 0.401
       }
+    },
+    "fast-notes": {
+      "source": "docs/plan/fast-notes.md §2.1 and §4: the solo path on the frozen fast-notes clips (real trumpet samples, dry and in a hall), today's losses",
+      "metrics": {
+        "oracle.ctl-fall.extra": {
+          "value": 1.625,
+          "higher_is_better": false
+        },
+        "oracle.ctl-scoop.extra": {
+          "value": 0.75,
+          "higher_is_better": false
+        },
+        "oracle.ctl-slowslur.extra": {
+          "value": 0.583,
+          "higher_is_better": false
+        },
+        "oracle.ctl-vibrato.extra": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "oracle.lead:easier.fig_recall": 0.208,
+        "oracle.line.fig_recall": 0.436,
+        "oracle.quantized.fig_recall": 0.32,
+        "oracle.sw.fig_recall": 0.584,
+        "oracle.written.alt_kept": 0.15,
+        "oracle.written.fig_recall": 0.32,
+        "oracle.written.note_f1": 0.457,
+        "oracle.written.onset25_f1": 0.511,
+        "small0.ctl-fall.extra": {
+          "value": 1.625,
+          "higher_is_better": false
+        },
+        "small0.ctl-scoop.extra": {
+          "value": 0.75,
+          "higher_is_better": false
+        },
+        "small0.ctl-slowslur.extra": {
+          "value": 0.75,
+          "higher_is_better": false
+        },
+        "small0.ctl-vibrato.extra": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "small0.lead:easier.fig_recall": 0.182,
+        "small0.line.fig_recall": 0.435,
+        "small0.quantized.fig_recall": 0.269,
+        "small0.sw.fig_recall": 0.583,
+        "small0.written.alt_kept": 0.125,
+        "small0.written.fig_recall": 0.269,
+        "small0.written.note_f1": 0.41,
+        "small0.written.onset25_f1": 0.383
+      }
     }
   }
 }
