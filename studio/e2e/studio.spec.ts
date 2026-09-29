@@ -9,6 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const shots = join(here, "..", "docs", "screenshots");
 const repo = join(here, "..", "..");
 const golden = join(repo, "data", "golden", "mikkel-arranged-band");
+// The public-domain score the viewer's screenshots show (they are on the website).
+const fixtureScore = join(repo, "apps", "fixtures", "old-hundredth", "brass-band.musicxml");
 mkdirSync(shots, { recursive: true });
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -394,24 +396,12 @@ const THEMES = [
   { name: "nb", media: { colorScheme: "light" as const, contrast: "no-preference" as const }, lang: "nb" },
 ];
 
-test("every view in light, dark, high contrast and Norwegian passes axe", async ({ page }) => {
-  test.setTimeout(900_000);
-  const run = await mikkelRun(page);
+type ThemedView = { name: string; route: string; score?: boolean; open?: string };
+
+/** Every view in every theme: a viewport screenshot, the score panel for score views, and axe. */
+async function shootThemes(page: Page, views: ThemedView[]): Promise<void> {
   const themes = join(shots, "themes");
   mkdirSync(themes, { recursive: true });
-  const views: { name: string; route: string; score?: boolean; open?: boolean }[] = [
-    { name: "runs", route: "runs" },
-    { name: "run", route: `runs/${run.id}/score`, score: true },
-    { name: "run-roll", route: `runs/${run.id}/roll` },
-    { name: "run-beats", route: `runs/${run.id}/beats` },
-    { name: "run-manifest", route: `runs/${run.id}/manifest` },
-    { name: "viewer", route: "viewer", score: true, open: true },
-    { name: "compare", route: `compare?a=${run.id}&b=ref:mikkel-arranged-band` },
-    { name: "bench", route: "bench" },
-    { name: "parity", route: "parity" },
-    { name: "conformance", route: "conformance" },
-    { name: "registry", route: "registry" },
-  ];
   for (const th of THEMES) {
     await page.emulateMedia(th.media);
     await page.goto("/#/runs");
@@ -419,7 +409,7 @@ test("every view in light, dark, high contrast and Norwegian passes axe", async 
     for (const v of views) {
       await page.goto(`/#/${v.route}`);
       if (v.open) {
-        await page.setInputFiles("#open-musicxml", join(golden, "brass-band.musicxml"));
+        await page.setInputFiles("#open-musicxml", v.open);
       }
       await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 120_000 });
       if (v.score) await waitRendered(page);
@@ -434,6 +424,32 @@ test("every view in light, dark, high contrast and Norwegian passes axe", async 
     }
   }
   await page.locator("#lang-select").selectOption("en");
+}
+
+const VIEWER: ThemedView = { name: "viewer", route: "viewer", score: true, open: fixtureScore };
+
+test("every view in light, dark, high contrast and Norwegian passes axe", async ({ page }) => {
+  test.setTimeout(900_000);
+  const run = await mikkelRun(page);
+  await shootThemes(page, [
+    { name: "runs", route: "runs" },
+    { name: "run", route: `runs/${run.id}/score`, score: true },
+    { name: "run-roll", route: `runs/${run.id}/roll` },
+    { name: "run-beats", route: `runs/${run.id}/beats` },
+    { name: "run-manifest", route: `runs/${run.id}/manifest` },
+    VIEWER,
+    { name: "compare", route: `compare?a=${run.id}&b=ref:mikkel-arranged-band` },
+    { name: "bench", route: "bench" },
+    { name: "parity", route: "parity" },
+    { name: "conformance", route: "conformance" },
+    { name: "registry", route: "registry" },
+  ]);
+});
+
+// The viewer alone, for the website's screenshots (no run or golden data needed).
+test("the score viewer in every theme", async ({ page }) => {
+  test.setTimeout(300_000);
+  await shootThemes(page, [VIEWER]);
 });
 
 test("re-run from a manifest, follow it live, compare with the original", async ({ page }) => {
