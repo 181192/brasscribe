@@ -4,7 +4,7 @@
 #   scripts/check.sh fast [area...]   tier 1, the inner loop: each area well under a minute warm
 #   scripts/check.sh full [area...]   tier 2, before handing off: the full suites, as CI runs them
 #
-# Areas: engine core conformance studio apple android windows core-dotnet.
+# Areas: engine core conformance studio apple android windows core-dotnet bandroom-mac.
 # Without areas, the ones the branch touches (against the merge base with origin/main, plus
 # uncommitted and untracked files); `all` for every area. Prints a timing table at the end and
 # exits non-zero if any area failed.
@@ -23,7 +23,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 tier="${1:-}"; shift || true
 case "$tier" in fast|full) ;; *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;; esac
 
-ALL="engine core conformance studio apple android windows core-dotnet"
+ALL="engine core conformance studio apple android windows core-dotnet bandroom-mac"
 
 changed_areas() {
   local base files
@@ -41,6 +41,7 @@ changed_areas() {
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;
+      apps/bandroom/macos/*) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -98,6 +99,8 @@ run_area() {
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
+    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-kit.sh) ;;
+    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-kit.sh && make build) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }
