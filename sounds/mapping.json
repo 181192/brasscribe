@@ -1321,7 +1321,7 @@
         }
       ],
       "seat": "percussion",
-      "gain_db": -13.0,
+      "gain_db": -19.3,
       "note": "The band kit (bank 128 program 0): VSCO 2 CE concert bass drum, snare and clash cymbals with MS Basic's hi-hats, toms and hand percussion. The offline renderer (render.py) keeps MS Basic in both tiers, so an A/B test isolates the brass.",
       "transposition": {
         "chromatic": 0,
@@ -1347,13 +1347,13 @@
           "midi-program": 1
         },
         "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1.",
-        "channel_gain_db": -13.0,
-        "single_voice_gain_db": -13.0,
+        "channel_gain_db": -19.3,
+        "single_voice_gain_db": -19.3,
         "layered": false
       },
       "balance_lu": -6.0,
-      "kit_offset_db": -7.0,
-      "kit_offset_note": "The MS Basic kit is not levelled like the brass targets (build.py TARGET_K_DB). Measured on the Mikkel render: at balance_lu alone the kit sat 7.1 LU above its target against the Solo Cornet stem, so gain_db and channel_gain_db carry this offset."
+      "kit_offset_db": -13.3,
+      "kit_offset_note": "The MS Basic kit is not levelled like the brass targets (build.py TARGET_K_DB). Measured on the Mikkel golden through alphaSynth: at balance_lu alone the kit sat 7.1 LU above its target against the Solo Cornet stem; since every brass layer follows the velocity curve (build.py VEL_CURVE), the brass plays 6.3 dB lower on the golden and the kit follows it down, to -6.5 LU against the Solo Cornet. gain_db and channel_gain_db carry this offset."
     }
   },
   "transposition": "Informational. Rendering consumes concert-pitch MIDI exported by MuseScore; targets are keyed at sounding pitch, so no transposition is applied at playback.",

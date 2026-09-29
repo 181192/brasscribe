@@ -231,7 +231,7 @@
     "step": "exact",
     "program": 0,
     "bank": 128,
-    "channel_gain_db": -13.0,
+    "channel_gain_db": -19.3,
     "percussion": true
    }
   },
@@ -530,7 +530,7 @@
     "step": "alias",
     "program": 0,
     "bank": 128,
-    "channel_gain_db": -13.0,
+    "channel_gain_db": -19.3,
     "percussion": true
    }
   },

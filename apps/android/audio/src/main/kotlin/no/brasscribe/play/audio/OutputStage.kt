@@ -15,13 +15,13 @@ object PlaybackLevels {
     const val BAND_PHRASE_LUFS = -12.0
 
     /** Make-up gain before the limiter on alphaTab's synth output (unity master volume), measured. */
-    const val ALPHATAB_GAIN_DB = 5.0
+    const val ALPHATAB_GAIN_DB = 11.0
 
     /**
      * Make-up gain on the sfizz tier's mix. Its parts are balanced to the band SoundFont's
      * (single_voice_gain_db), so it takes alphaTab's gain.
      */
-    const val SFIZZ_GAIN_DB = 4.0
+    const val SFIZZ_GAIN_DB = 11.0
 
     /**
      * The original recording plays at the arrangement's estimated band loudness ([bandEstimateLufs]),
@@ -35,7 +35,7 @@ object PlaybackLevels {
     const val RECORDING_MAX_CUT_DB = 30.0
 
     /** recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase. */
-    const val BAND_ESTIMATE_OFFSET_DB = -0.17
+    const val BAND_ESTIMATE_OFFSET_DB = 0.56
 
     /**
      * L(v) of the band estimate: dynamics.sampler_velocity.alphatab_lufs, the pitched parts of the
@@ -53,14 +53,14 @@ object PlaybackLevels {
     const val DYNAMIC_STEP = 16
 
     val VELOCITY_LUFS: List<Pair<Int, Double>> = listOf(
-        15 to -44.51, 31 to -38.20, 47 to -34.58, 63 to -28.61, 79 to -25.39, 95 to -23.36, 111 to -17.66, 127 to -16.49,
+        15 to -43.07, 31 to -36.77, 47 to -33.15, 63 to -29.46, 79 to -25.98, 95 to -22.30, 111 to -18.56, 127 to -15.32,
     )
 
     /** The metronome click's peak after the output. */
     const val METRONOME_CLICK_PEAK_DBFS = -10.0
 
     /** alphaTab's metronome (and count-in) volume that puts its click there through the stage, measured. */
-    const val METRONOME_GAIN_DB = -1.0
+    const val METRONOME_GAIN_DB = -7.0
 
     /** Gain that brings a recording measured at [lufs] (integrated, whole file) to [targetLufs]; 0 for silence. */
     fun recordingGainDb(lufs: Double, targetLufs: Double = RECORDING_FALLBACK_LUFS): Double =

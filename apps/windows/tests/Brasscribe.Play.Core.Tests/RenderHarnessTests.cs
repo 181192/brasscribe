@@ -82,6 +82,34 @@ public class RenderHarnessTests(ITestOutputHelper log)
     }
 
     /// <summary>
+    /// Each part of the full-band phrase alone at velocity 80 with the app's channel plan and balance, for
+    /// comparing the part balance with Apple's (DynamicsLevelTests.partBalance). Runs only when BRASSCRIBE_KNOTS=1.
+    /// </summary>
+    [SkippableFact]
+    public void Measure_part_balance()
+    {
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
+        var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(TestPaths.RepoFile("data/sounds/phrases/phrases.json")!));
+        var parts = doc.RootElement.GetProperty("band").EnumerateObject().ToList();
+        var plan = ChannelPlan.ForPlayback(parts.Select((b, i) =>
+        {
+            var s = band.For(b.Name)!;
+            return new ChannelPlan.Part(i, s.Percussion, s.Program, s.GainDb);
+        }).ToList());
+        for (int i = 0; i < parts.Count; i++)
+        {
+            var s = band.For(parts[i].Name)!;
+            var notes = System.Text.Json.JsonSerializer.SerializeToElement(parts[i].Value.GetProperty("notes").EnumerateArray()
+                .Select(n => new object[] { n[0].GetDouble(), n[1].GetDouble(), n[2].GetInt32(), 80 }).ToArray());
+            var gains = new Dictionary<int, double> { [plan[i]] = Math.Pow(10, (s.GainDb - 12) / 20) };
+            var mix = PartSoundTests.Render(bytes, PartSoundTests.Phrase([(plan[i], s.Program, s.Bank, notes)]), PartSoundTests.End(notes) + 2.0, gains);
+            log.WriteLine($"BALANCE {parts[i].Name}\t{LoudnessMeter.Integrated(mix, 44100, 2):0.00}");
+        }
+    }
+
+    /// <summary>
     /// Every pitched part of the full-band phrase alone through alphaSynth, one held note at the middle of the
     /// part's phrase at every odd velocity: where the velocity layers split, the level jumps. Writes
     /// part, velocity and the note's RMS (dBFS, 100–600 ms after the onset) to BRASSCRIBE_SWEEP_OUT (a TSV).

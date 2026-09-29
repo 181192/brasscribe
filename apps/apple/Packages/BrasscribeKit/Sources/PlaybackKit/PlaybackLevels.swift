@@ -10,22 +10,29 @@ public enum PlaybackLevels {
     /// The full-band test phrase lands here (integrated LUFS) through the band stage.
     public static let bandPhraseLUFS = -12.0
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
-    public static let bandArrangementLUFS = -11.54
+    public static let bandArrangementLUFS = -10.99
     /// Make-up gain on the band before the limiter, measured for this app's band path.
-    public static let bandGainDB = 31.5
+    public static let bandGainDB = 30.6
     /// Added to the make-up gain when "Concert hall sound" is off: the hall's share of the band's
     /// loudness, measured on the golden arrangement and the full-band phrase (band.dry_room_gain_db).
     public static let dryRoomGainDB = 5.0
+    /// Added to a part's channel gain by its seat (band.apple_seat_trim_db): the environment node's seating (HRTF,
+    /// distance) changes the balance against alphaSynth, which plays every part centred.
+    public static let appleSeatTrimDB: [String: Double] = [
+        "solo-cornets": 0.0, "soprano": 2.9, "repiano": 4.5, "second-cornets": 5.1, "third-cornets": 5.0, "flugel": 1.0,
+        "solo-horn": 0.4, "first-horn": 0.3, "second-horn": 0.4, "first-baritone": 1.3, "second-baritone": 1.8, "first-trombone": 3.3,
+        "second-trombone": 2.8, "bass-trombone": 1.9, "euphoniums": 0.1, "eb-basses": 3.6, "bb-basses": 3.7, "percussion": 13.8,
+    ]
     /// The original recording plays at the loudness the band plays the arrangement at
     /// (`bandEstimateLUFS`), clamped to this range; at the fallback without an arrangement.
     public static let recordingFallbackLUFS = -16.0
     public static let recordingMinTargetLUFS = -20.0
     public static let recordingMaxTargetLUFS = -10.0
     /// recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase.
-    public static let bandEstimateOffsetDB = -0.17
+    public static let bandEstimateOffsetDB = 0.56
     /// dynamics.sampler_velocity.alphatab_lufs: (velocity, LUFS of the phrase's pitched parts on alphaSynth).
     public static let velocityLUFS: [(Int, Double)] = [
-        (15, -44.51), (31, -38.20), (47, -34.58), (63, -28.61), (79, -25.39), (95, -23.36), (111, -17.66), (127, -16.49),
+        (15, -43.07), (31, -36.77), (47, -33.15), (63, -29.46), (79, -25.98), (95, -22.30), (111, -18.56), (127, -15.32),
     ]
     public static let recordingMaxBoostDB = 12.0
     public static let recordingMaxCutDB = 30.0
@@ -41,7 +48,7 @@ public enum PlaybackLevels {
     /// ppp to fff), percussion matched in shape and anchored at velocity 90, because its seat at the
     /// back leaves it about 8 dB under alphaSynth's at every velocity.
     public static let samplerVelocityPitched: [(Int, Int)] = [
-        (1, 8), (3, 15), (5, 19), (10, 27), (15, 33), (31, 47), (47, 55), (63, 65), (79, 77), (87, 81), (95, 89), (111, 99), (127, 101),
+        (1, 9), (3, 12), (5, 16), (10, 23), (15, 28), (31, 40), (47, 49), (63, 60), (79, 72), (87, 81), (95, 90), (111, 109), (127, 127),
     ]
     public static let samplerVelocityPercussion: [(Int, Int)] = [
         (1, 1), (3, 15), (5, 21), (10, 30), (15, 36), (31, 52), (47, 64), (63, 75), (79, 83), (87, 88), (95, 92), (111, 100), (127, 107),

@@ -25,6 +25,9 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         #expect(band["phrase_lufs"] as? Double == PlaybackLevels.bandPhraseLUFS)
         #expect((band["gain_db"] as? [String: Double])?["apple"] == PlaybackLevels.bandGainDB)
         #expect(band["arrangement_lufs"] as? Double == PlaybackLevels.bandArrangementLUFS)
+        var trims = try #require(band["apple_seat_trim_db"] as? [String: Any])
+        trims["about"] = nil
+        #expect(trims as? [String: Double] == PlaybackLevels.appleSeatTrimDB)
         let sampler = try #require((levels["dynamics"] as? [String: Any])?["sampler_velocity"] as? [String: Any])
         #expect((sampler["apple_pitched"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPitched.map { [$0.0, $0.1] })
         #expect((sampler["apple_percussion"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPercussion.map { [$0.0, $0.1] })
@@ -185,9 +188,8 @@ struct RecordingLevelTests {
         let target = PlaybackLevels.recordingTargetLUFS(for: score)
         print("LEVELS golden recording target \(target) LUFS")
         #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.1)
-        // sounds/playback_levels.py --calibrate with the sounds-2026.09.29 pack: -11.54, against -11.54 measured.
-        // The golden after the fast-notes promotion (more solo notes): -11.57 (-11.54 before it).
-        #expect(abs(target - (-11.57)) < 0.01)
+        // sounds/playback_levels.py --calibrate with the sounds-2026.09.30 pack: -10.99, against -10.99 measured.
+        #expect(abs(target - (-10.99)) < 0.01)
     }
 
     @Test func loudnessIsMeasuredQuickly() throws {
