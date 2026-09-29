@@ -152,7 +152,7 @@ section + section { border-top: 1px solid var(--bc-border); }
 .tablet-frame img { aspect-ratio: 720 / 1036; border-radius: 10px; }
 /* The macOS capture brings its own title bar and rounded corners; a shadow that follows them is enough. */
 .mac-frame img {
-  width: 100%; height: auto; aspect-ratio: 1440 / 1040;
+  width: 100%; height: auto; aspect-ratio: 1440 / 929;
   filter: drop-shadow(0 0 0.5px rgb(0 0 0 / 0.35)) drop-shadow(0 12px 28px rgb(0 0 0 / 0.14));
 }
 @media (prefers-color-scheme: dark) {

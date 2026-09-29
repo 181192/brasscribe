@@ -7,6 +7,7 @@
 #                                        Brasscribe Play macOS UI tests there (test-without-building, spread over
 #                                        MAC_VM_PARALLEL VMs), copy results and screenshots back to build/mac-vm/<run>/
 #                                        ONLY: comma-separated classes or Class/test, e.g. WindowSizeUITests,PlayUITests/testKeyboardShortcuts
+#                                        MAC_VM_SHOTS=1 turns on the screenshot tests (SiteScreenshotUITests)
 #   scripts/mac-vm.sh test-ui-bandroom   Brasscribe Bandroom in the VM (its UI test scheme when there is one)
 #   scripts/mac-vm.sh ssh [command]      a shell (or one command) in the VM
 #   scripts/mac-vm.sh down [--stop|--reset]  suspend the VMs (resume in seconds); --stop shuts them down,
@@ -331,7 +332,7 @@ run_shard() {
   for t in $ids; do args="$args -only-testing:BrasscribePlayUITests_macOS/$t"; done
   local result="results/$run.xcresult"
   vssh "$ip" "pkill -x xcodebuild; pkill -x BrasscribePlay; rm -rf results; mkdir -p results; \
-    TEST_RUNNER_BRASSCRIBE_FIXTURES=\$HOME/$REMOTE/apps/fixtures/old-hundredth \
+    TEST_RUNNER_BRASSCRIBE_FIXTURES=\$HOME/$REMOTE/apps/fixtures/old-hundredth TEST_RUNNER_BRASSCRIBE_SHOTS=${MAC_VM_SHOTS:-} \
     xcodebuild test-without-building -xctestrun products/$(basename "$XCTESTRUN") -destination platform=macOS \
       -resultBundlePath $result $args" >"$OUT/$run/$vm.log" 2>&1 || rc=$?
   fetch_results "$ip" "$result" "$OUT/$run/$vm" >"$OUT/$run/$vm.summary" 2>&1
