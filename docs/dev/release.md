@@ -227,7 +227,7 @@ pinned in `sounds/band-sounds.json` ([sounds/README.md](../../sounds/README.md))
 4. Commit the pin, with the sources and licences in [sounds/LICENSES.md](../../sounds/LICENSES.md).
    Every checkout then runs `pixi run fetch-sounds` (or `band_sounds.py fetch`) to get the new pack.
 
-The current pack is `sounds-2026.09.29`. An app release bundles whatever pack is pinned on the commit it
+The current pack is `sounds-2026.09.30`. An app release bundles whatever pack is pinned on the commit it
 is built from.
 
 ## 10. Goldens are promoted at merge, never before

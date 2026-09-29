@@ -2,7 +2,7 @@
 
 **Owner feedback:** "The real-life sounds aren't as convincing as we thought and often just fall back to MIDI instruments. We need support for each instrument in each band lineup. It must sound natural and balanced. The worst thing that can happen is that the sound breaks up or chops."
 
-**Status (2026-09-29).** Landed on every platform. Sections 1–11 describe the work as first built, with the `sounds-2026.09.27` pack. The pinned pack is now `sounds-2026.09.29` (`sounds/band-sounds.json`): 16-bit 200.3 MB, phone 70.8 MB. Its changes and the current make-up gains (Apple 31.5 dB, alphaSynth 5 dB, sfizz 4 dB; `sounds/playback-levels.json`) are in §12.
+**Status (2026-09-30).** Landed on every platform. Sections 1–11 describe the work as first built, with the `sounds-2026.09.27` pack; §12 the `sounds-2026.09.29` pack. The pinned pack is now `sounds-2026.09.30` (`sounds/band-sounds.json`): 16-bit 190.7 MB, phone 67.8 MB. Its changes and the current make-up gains (Apple 30.6 dB, alphaSynth 11 dB, sfizz 11 dB; `sounds/playback-levels.json`) are in §13.
 
 **Short answer.**
 - **Fallback.** The samples were never the reason parts fell back to MIDI instruments. The apps were. Apple never loaded the band sounds outside a developer checkout. Android and Studio played General MIDI (Sonivox) by default. On every platform, any part name missing from an exact-match table got General MIDI, a borrowed preset, a sine tone or silence.
@@ -453,7 +453,58 @@ Not the cause:
 
 **Sizes.** 16-bit 195.1 → 200.3 MB; phone 77.3 → 70.8 MB. Loops now end earlier, which pays for the solo cornet, the trumpet and the kit. On Android the score screen uses 35–45 MB less Java heap.
 
-**Open.**
-- **Apple per-part balance.** Against alphaSynth, on the golden stems with the solo cornet as reference, Apple plays most parts 2.4–5.3 dB hotter. This was already the case before (0…+5.7 dB), and comes from the environment node's seating (HRTF, distance), not from the pack.
+**Open** (all taken up in §13).
+- **Apple per-part balance.** Against alphaSynth, on the golden stems with the solo cornet as reference, Apple plays most parts 2.4–5.3 dB hotter. This was already the case before (0…+5.7 dB).
 - **The pop kit** needs a style signal from the arranger before anything can select it.
 - **Velocity layers.** The alphaSynth phrase still jumps 6 dB between mp and mf and 5.7 dB between f and ff, at the three-layer splits.
+
+## 13. Even dynamics, pedal notes, the kit's bass drum, Apple's balance and the engine's MP3 (pack `sounds-2026.09.30`)
+
+Measured with the Windows `RenderHarnessTests` (alphaSynth), the PlaybackKit `DynamicsLevelTests` and `RenderHarnessTests` (AVAudioUnitSampler, offline), FluidSynth (`sounds/sf2play.py`, `sounds/soundcheck.py`) and the engine's export.
+
+**Band kit bass drum.** MS Basic's kick plays under a preset zone with −10 dB `initialAttenuation`, a boost: alphaSynth applies it, FluidSynth clamps it to 0 and AVAudioUnitSampler ignores it. The concert bass drum was levelled on its sample alone, so it could match the kick on one player only. It now sits under a preset zone with the kick's own generators (`band.py` `msbasic_levels`), with no trim. Against MS Basic's kick, velocity 80:
+
+| | before | after |
+|---|---|---|
+| FluidSynth (sf2play, 1 s RMS) | +3.7 dB (FAIL, 42/43) | +0.5 dB (43/43, both files) |
+| alphaSynth (K-weighted, velocities 47–127) | −1.8 LU | +0.9 LU |
+| AVAudioUnitSampler (1 s RMS) | +6.7 dB | +0.5 dB |
+
+The phone file failed one more check nobody had run on it: its closed hi-hat, resampled to 22.05 kHz, lost 4 dB. Drum samples with a real share of their energy above 11 kHz now keep their rate (+0.9 MB).
+
+**Velocity layers.** Every layer is baked at one level; the velocity curve gives the level, 3.6 dB per mark (`build.py` `VEL_CURVE`). alphaSynth plays amplitude ∝ velocity and ignores velocity modulators, so each layer's velocity range is cut into zones at most 1 dB apart that follow the curve (`band.py` `velocity_steps`). A velocity sweep of every part, one held note at every odd velocity through alphaSynth (`Measure_velocity_sweep`):
+
+| | before | after |
+|---|---|---|
+| Largest step between adjacent velocities | 10.0 dB (1st Trombone at 57), median part 7.8 | 2.0 dB, median part 1.3 |
+| Steps between marks, p→mp … ff→fff | 1.2–12.2 dB | 1.9–4.8 dB |
+| pp→fff range | 17.0–27.0 dB | 20.0–22.9 dB |
+
+AVAudioUnitSampler hardly applies zone attenuation, so before it played the raw layer levels: the trombone jumped 9.4 dB between velocities 55 and 56. It now plays one continuous curve (55 → 56: 0.5 dB). Apple's remap was refitted on it: every mark from pp to ff lands within 0.06 LU of alphaSynth on the phrase.
+
+**Pedal notes.** Bass Trombone A0–B0 and B♭ Bass B♭0–B0 were a recording stretched 3–4 semitones down; they now have their own samples (`build.py` `pedal_fill`). The B♭ Bass click on alphaSynth was at note-off on B♭0: alphaSynth steps a voice's gain once per 64 samples, and a step landing on one of the note's pulses (30–40 ms apart) is a click. Keys up to E♭1 release twice as slowly. On a pedal probe (every pedal key at three lengths and velocities) the B♭ Bass goes from 4 clicks to 1 (a 2 s B♭0 at velocity 80, the release step still landing on a pulse; slower releases up to 10× did not remove it). The test phrases: alphaSynth sound check 11 problems before (clicks on nine parts, most at release tails), 3 after; the B♭ Bass click in the phrase is gone. Left: the Bass Trombone's pp C3 is an Iowa run segment with a blip and 150 ms of near silence before the note speaks (a 20 dB "dropout" on every player, already in the old pack), and two tail clicks under −75 dBFS. FluidSynth, both files: 2 problems, that C3 only. Loop seams (`checks.py loops`): 810 loops, pump median 0.35 dB, p95 1.16, max 2.56.
+
+**Levels.** With the curve every part plays 6–7 dB lower on alphaSynth at the same velocity, so the gains moved: alphaSynth 5 → 11 dB (Windows, Android; sfizz takes the same), the metronome through the band stage −1 → −7 dB, Apple 31.5 → 30.6 dB. The kit's channel gain follows the brass (kit_offset_db −13.3). The band estimate is refitted (offset 0.56).
+
+| | Apple | alphaSynth (Windows) |
+|---|---|---|
+| Full-band phrase | −12.78 LUFS, peak −1.9 dBFS | −12.59, peak −0.5 |
+| Golden arrangement | −11.99 (hall), −13.41 (room) | −10.99 |
+| Metronome click | −9.8 dBFS | −9.41 dBFS |
+| Band estimate, golden | −10.99 | −10.99 |
+
+**Apple per-part balance.** Apple adds a per-seat trim to each part's channel gain (`band.apple_seat_trim_db`, 0 to +5.1 dB for the brass, +13.8 for the kit at the back): the environment node's seating (HRTF, distance) moves the parts against alphaSynth, which plays them centred. Fitted with each part of the full-band phrase alone at velocity 80, hall off (`DynamicsLevelTests.partBalance` against `Measure_part_balance`); relative to the Solo Cornet:
+
+| | before | after |
+|---|---|---|
+| Phrase, every brass part (fit) | −0.1 … −5.2 dB | within 0.05 dB |
+| Old Hundredth, whole-score stems (check) | — | −0.73 … −0.13 dB |
+| Golden, whole-score stems | +1.7 … +6.1 dB | see below |
+
+The golden does not check the trims: its Solo Cornet, Flugelhorn and Euphonium stems are 6–9 dB quieter on Apple than on alphaSynth against every other part, before and after the trims, and the Solo Cornet is silent on Apple for 14 s (164–178 s) where alphaSynth holds a steady note. So most of §12's "2.4–5.3 dB hotter" was the solo line playing quieter on Apple, not the seating. Not found here; it needs a note-by-note comparison of the two engines' solo part.
+
+**The pop kit.** The arranger writes the percussion part's `<midi-program>` 2 (bank 128 program 1) for a pop or rock take, and every player's resolver plays it (branch `fix/pop-kit-signal`). A pop-rock arrangement has no Percussion part yet: the minimal band and the quartet have none, and the drums stem is not transcribed. That is the follow-up.
+
+**Engine MP3.** MuseScore renders `brass-band.mp3` at its own level: the golden measured −3.67 LUFS with decoded peaks at +12.6 dBFS. The export now measures the file (BS.1770), gains it to the loudness the band plays that arrangement at (its band estimate, clamped like a recording's target) and runs it through the apps' limiter (0.8 / 0.98), re-reading the MP3 so the encoder cannot overshoot: the golden now measures −11.55 LUFS against a −10.99 target (the limiter takes the rest of MuseScore's peaks), peaking at −0.43 dBFS. The sound is still MuseScore's: its command line cannot choose a SoundFont, and the engine has no SoundFont synthesizer on any Bandroom platform (FluidSynth is only a development tool here). Rendering with the band pack needs a synthesizer bundled with the engine.
+
+**Sizes.** 16-bit 200.3 → 190.7 MB; phone 70.8 → 67.8 MB.
