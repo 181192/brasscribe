@@ -44,13 +44,13 @@ workspace stamp records the commit it was built from:
 
 Commit as `chore(release): X.Y.Z` and `git push origin HEAD:main`.
 
-Before building, run tier 2 (`make check-all`, [verify.md](verify.md)) and, once per release, the
+Recommended before building: tier 2 (`make check-all`, [verify.md](verify.md)) and, once per release, the
 full macOS UI suite in the VM: `MAC_VM_FULL=1 scripts/mac-vm.sh test-ui` ([macos-vm.md](macos-vm.md)).
 
 ## 2. Android
 
 ```sh
-cd apps/android && ./gradlew assembleRelease -q
+cd apps/android && ./gradlew assembleRelease assembleDebug -q   # the debug APK is for the phone (§7)
 ```
 
 This writes `app/build/outputs/apk/release/app-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
@@ -181,7 +181,18 @@ writer's CC BY-NC 4.0 notice stays), and the install notes (Android: allow insta
 Mac: right-click › Open, the one-time keychain prompt, Bandroom's first run of about 10 GB and its
 Hugging Face key). See `gh release view v0.2.0` for the shape.
 
-## 7. The site
+## 7. Installing on the owner's devices
+
+- **Mac.** Quit both apps (`osascript -e 'quit app "BrasscribePlay"'`, `… "Brasscribe Bandroom"`), wait
+  until they are gone and Bandroom's port is free, replace `/Applications/Brasscribe Play.app` and
+  `/Applications/Brasscribe Bandroom.app` with the staged ones (`ditto`), and open Bandroom. Take a file
+  listing of `~/Library/Containers/no.brasscribe.play` and `~/Library/Application Support/Brasscribe`
+  (without `envs/` and `logs/`) before and after, to show the user's data is untouched.
+- **The phone.** It carries the **debug**-signed app, so it gets the debug APK
+  (`adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`). A release APK would need an
+  uninstall first. **Never uninstall the app**: that deletes the user's scores.
+
+## 8. The site
 
 The site is served from the `gh-pages` branch (Pages in legacy branch mode, `gh-pages` at `/`, at
 kalli.no/brasscribe). `.github/workflows/pages.yml` would deploy it on a push to main, but it stops on
@@ -200,7 +211,7 @@ gh api repos/181192/brasscribe/pages/builds/latest
 `site/nb/guide/index.html`) names the current version, its release page and its files: update both
 for each release.
 
-## 8. The band sounds: a separate pre-release
+## 9. The band sounds: a separate pre-release
 
 The band SoundFonts are not in git and not in the app releases. They are a pre-release of their own,
 pinned in `sounds/band-sounds.json` ([sounds/README.md](../../sounds/README.md)):
@@ -219,7 +230,7 @@ pinned in `sounds/band-sounds.json` ([sounds/README.md](../../sounds/README.md))
 The current pack is `sounds-2026.09.29`. An app release bundles whatever pack is pinned on the commit it
 is built from.
 
-## 9. Goldens are promoted at merge, never before
+## 10. Goldens are promoted at merge, never before
 
 `data/` (goldens, runs, band sounds) is one directory, linked into every worktree by
 `scripts/worktree-setup.sh`. Re-saving `data/golden/mikkel-arranged-band` from a branch changes it for

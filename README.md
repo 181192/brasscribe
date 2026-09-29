@@ -80,6 +80,18 @@ pixi run brasscribe run data/mikkel/captured.wav --check-golden data/golden/mikk
 pixi run brasscribe bench cpu
 ```
 
+A job option the engine refuses answers 422 with `{"code": …, "detail": …}`, the code first. The apps word
+the code themselves in English and bokmål; `detail` is English, for logs and Studio
+(`engine/src/brasscribe_engine/profiles.py`):
+
+| Code | Refused |
+| --- | --- |
+| `quartet_needs_group` | the quartet for a solo take (it needs the whole group) |
+| `percussion_solo` | a solo take for the percussion seat |
+| `seat_no_tune` | "the tune on my part" for a seat whose part cannot carry it |
+| `reads_not_offered` | a clef the seat is not offered in |
+| `invalid_options` | anything else wrong with the options |
+
 The Studio bundle in `engine/src/brasscribe_engine/static/` is committed, so the engine runs without Node. Rebuild it only when `studio/src/` changes:
 
 ```sh

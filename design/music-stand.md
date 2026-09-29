@@ -291,7 +291,7 @@ The plan is sized for one workstream per platform. The first step on each platfo
 
 ### Shared, before any platform (design, small)
 
-1. Add the six icons to `design/tokens/icons.json`, then run `uv run design/tokens/build.py`. Also add "Music stand / Notestativ" to the brand table (done in this branch). *Done when:* `build.py --check` passes.
+1. Add the six icons to `design/tokens/icons.json`, then run `uv run design/tokens/build.py`. Also add "Music stand / Notestativ" to the brand table. *Done when:* `build.py --check` passes.
 2. Add the §9 keys to each app's strings. Add the stand keys to `qa/screen-reader-scripts/keyboard-desktop.md` and the TalkBack/VoiceOver/Narrator scripts: enter, leave, pedal and lock.
 
 ### Android (`apps/android`): fix what exists

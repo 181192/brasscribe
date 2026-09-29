@@ -1,8 +1,9 @@
 # Trumpet support: critique
 
-Status (2026-09-29): all P1 and P2 findings are fixed on main, and trumpet shipped in 0.2.0 (Trumpet in B♭,
-a trumpet seat that takes the lead, Android and Apple tiles). Still open: the Windows tile (Windows Play has no
-"What do you play?" yet), a phone check, and P3-5 (the Trumpet part plays the layered Solo Cornet desk).
+Status (2026-09-29): trumpet shipped in 0.2.0 (Trumpet in B♭, a trumpet seat that takes the lead, Android
+and Apple tiles). Every P1 and P2 is settled on main (below, and in
+`docs/plan/trumpet.md` §8, where P2-1 is answered with 93 ChoraleBricks stems), and P3-5 is gone: the Trumpet part is one player on its own trumpet preset (bank 7).
+Still open: the Windows tile (Windows Play has no "What do you play?" yet), and a phone check.
 
 An adversarial review of trumpet support. Part 1 checks the background
 claims before the plan. Part 2 reviews the plan, and Part 3 reviews the implementation as it landed.

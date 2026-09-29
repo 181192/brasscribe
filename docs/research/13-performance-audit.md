@@ -20,7 +20,7 @@
 | **C** | Code proof. The quoted line was re-checked at the cited file:line on a485bef. |
 | **R** | Code reading or estimate. Plausible, not measured and not re-checked line by line. Confirm before acting. |
 
-## 1. Fixed on this branch
+## 1. Fixed
 
 | Commit | Platform | What | Before → after | Test |
 |---|---|---|---|---|
@@ -139,7 +139,7 @@ Not a problem (checked): the engine's upload is streamed and deduplicated by con
 
 ## 3. Top 5 quick wins
 
-Ranked by user impact for their size. Three are done on this branch.
+Ranked by user impact for their size. Three are done.
 
 1. **Done: engine event streams in their own threads** (0696ca8). Any client that opens many streams (several Studio tabs, several phones, reconnect loops) could freeze the whole API.
 2. **Done: Android event stream socket timeout** (8148c8e). Long quiet stages no longer break the stream or end the job with "event stream lost".

@@ -103,7 +103,7 @@ jitter.
 - fall: down 400 c over the last 250 ms;
 - slow two-note slurs at m2, M2 and the octave.
 
-The critic adds 35 real Iowa vibrato sustains, dry and in a hall (`research/fastnotes/real_vibrato.py`). The
+The review adds 35 real Iowa vibrato sustains, dry and in a hall (`research/fastnotes/real_vibrato.py`). The
 gate: no increase in extra notes, and no trill mark.
 
 **Trackers.** SwiftF0 notes and contour, Basic Pitch, and Beat This! small0 are run once per clip, in batches,
@@ -253,9 +253,9 @@ The evidence comes from the waterfall, the one-knob ablations and the code.
 | Merging same or adjacent pitches | **yes**, at two places | `line()` merges onsets under 50 ms apart, and `_monophonize` merges notes sharing a tick. Both keep the higher pitch (upper-share 0.8–1.0). |
 | Onsets on legato slurs (no re-articulation) | **the core of the alternation loss** | Slurred alternation 9–12/s: contour 0.81, sw 0.20. Tongued: sw 0.54. Basic Pitch hears the slurred changes (0.83), but the line keeps only clusters with SwiftF0. |
 | Repeated notes on one pitch | **major** (sw 0.45 at 9–12/s) | No pitch change, so segmentation needs the level dip of the tongue. |
-| Quantization grid too coarse | **major** | `q_ref` 0.49 with oracle beats. There is no 32nd grid. Per-note penalties make 8ths beat triplets (critic §2). `_monophonize` drops collisions silently. Collision-aware grid alone: 0.34 → 0.42 (samples, oracle). |
+| Quantization grid too coarse | **major** | `q_ref` 0.49 with oracle beats. There is no 32nd grid. Per-note penalties make 8ths beat triplets (review §2). `_monophonize` drops collisions silently. Collision-aware grid alone: 0.34 → 0.42 (samples, oracle). |
 | Tempo or beat errors | **moderate** | Oracle against small0: 0.34 against 0.29 overall, 0.84 against 0.44 on slow 16th runs. The collision-aware grid recovers most of that: small0 run slurred ≤ 8/s goes 0.44 → 0.72. |
-| Free time (`FREE_GRIDS` 1, 2) | not in these sets; real in cadenzas | Critic §2: 16ths keep 13/24 in free time. It matters on Mikkel's intro, so it is in F3. |
+| Free time (`FREE_GRIDS` 1, 2) | not in these sets; real in cadenzas | Review §2: 16ths keep 13/24 in free time. It matters on Mikkel's intro, so it is in F3. |
 | Source separation smearing | **moderate, on slurred alternation** | See §2.2. |
 | Difficulty (standard, easier) | by design | `merge_sixteenths` halves 16ths. A trill mark is the readable form there (F5). |
 
@@ -344,7 +344,7 @@ The consumers:
 - the MuseScore round trip;
 - the apps' decoders, which must ignore the field. Playback plays the main note, and that is documented.
 
-Scope risk is high. The step goes in only after F1–F4 land, and only if the critic agrees.
+Scope risk is high. The step goes in only after F1–F4 land, and only if the review agrees.
 
 ## 4. Gates (before → after)
 
@@ -355,7 +355,7 @@ Scope risk is high. The step goes in only after F1–F4 land, and only if the cr
 | Alternations kept, written, slurred 9–12/s (oracle) | 0.02 | ≥ 0.60 |
 | URMP fast-note recall / note F1 (small0) | 0.26 / 0.817 | ≥ 0.45 / ≥ 0.815 |
 | Control extras (vibrato, scoop, fall, slow slur), written | 0 / 0.62 / 1.50 / 0.46 | no increase |
-| Critic's real vibrato set: extras, trill marks | 0.14 dry / 0.40 hall, 0 | no increase, 0 |
+| Review's real vibrato set: extras, trill marks | 0.14 dry / 0.40 hall, 0 | no increase, 0 |
 | Chorale solo stems, written note F1 (small0) | 0.710 (trumpet 0.904) | ≥ 0.705 (trumpet ≥ 0.899) |
 | `brasscribe bench cpu` | 19 pass, 1 pre-existing fail\* | no new failure |
 | Mikkel golden | — | the diff explained, in a sibling directory |
@@ -389,7 +389,7 @@ Numbers are reported per stage before and after, in this file.
 
 ## 6. Order of work
 
-After review, each step goes to the critic when it is done:
+After review, each step goes to review when it is done:
 1. The harness and fixtures: this commit, plus the frozen `fast-notes` suite.
 2. F3, quantization (independent of audio).
 3. F2 + F1, the line and contour onsets.
@@ -482,7 +482,7 @@ Written stage.
 | Real Iowa vibrato (35 notes), hall | 1.229 → 1.057 | |
 
 - The remaining vibrato extras are SwiftF0's own segmentation. They are the same at every stage.
-- The critic's two plateau probes (plateau_rule.py, dip_rule.py) report no false trills.
+- The review's two plateau probes (plateau_rule.py, dip_rule.py) report no false trills.
 - In the fast-notes CI suite, `ctl-vibrato.extra` moved from 0 to 0.05. That is not a regression: the newly
   frozen separated vibrato clip has that value in the old code too.
 
@@ -546,9 +546,9 @@ Bars with more solo notes than before, as bar: before → after:
 - **Trill notation** (F5, a tr mark with its auxiliary note) is not built. Alternations are written out.
 - **Octave lip slurs** at 8 notes/s or slower, slurred: 0.38 → 0.34. Octave alternations are never split,
   because the tracker's octave flips on held notes look the same.
-- **Sextuplet runs** gained less once tuplets need evidence: in the critic's probe, 0.06 → 0.33 dry and
+- **Sextuplet runs** gained less once tuplets need evidence: in the review's probe, 0.06 → 0.33 dry and
   0.11 under a band.
 - **Triplets with 15 ms jitter** are still half written as 16ths.
 - **Tongued fast figures** over 12 notes/s barely improve: pitch alone cannot see a re-articulation. A
   re-tongue detector needs an attack cue that holds in a hall.
-- **Short takes**: a take where the beat tracker finds a single beat still fails (the critic's P3).
+- **Short takes**: a take where the beat tracker finds a single beat still fails (the review's P3).

@@ -20,7 +20,7 @@ Line numbers refer to `157d9df` (`main`). The measurement scripts are in [`trump
 - `soloist_rule.py` compares the soloist rule with today's placement on ChoraleBricks
 - `musescore_ranges.py` reads the ranges from the MuseScore app bundle
 
-The critic's findings are answered point by point in §8.
+The review's findings are answered point by point in §8.
 
 ---
 
@@ -65,7 +65,7 @@ The critic's findings are answered point by point in §8.
 
 ### 1.2 MuseScore ranges
 
-MuseScore 4.7.5 (`/Applications/MuseScore 4.app`) compiles `instruments.xml` into the binary. The templates under `Contents/Resources/templates` carry full `<Instrument>` blocks, which `trumpet/musescore_ranges.py` reads. The critic cross-checked them against `share/instruments/instruments.xml` at tag v4.7.5 and they agree.
+MuseScore 4.7.5 (`/Applications/MuseScore 4.app`) compiles `instruments.xml` into the binary. The templates under `Contents/Resources/templates` carry full `<Instrument>` blocks, which `trumpet/musescore_ranges.py` reads. The review cross-checked them against `share/instruments/instruments.xml` at tag v4.7.5 and they agree.
 
 | MuseScore id | Name | amateur (A) | pro (P) | transpose | sound id | program |
 |---|---|---|---|---|---|---|
@@ -118,7 +118,7 @@ The soloist rule removes the tie-break for the lead: a note that fits is written
 
 ### 1.4 Side effects if the range were simply widened
 
-The critic measured these (`docs/research/15-trumpet-critique.md` §1.2), and they agree with the code. Placement runs before `apply_difficulty` (`arranger.rs:794`, then `difficulty.rs:163`). So widening the cornet's `reading_limit` would change the standard and easier leads as well.
+The review measured these (`docs/research/15-trumpet-critique.md` §1.2), and they agree with the code. Placement runs before `apply_difficulty` (`arranger.rs:794`, then `difficulty.rs:163`). So widening the cornet's `reading_limit` would change the standard and easier leads as well.
 
 Standard and easier then fold the high phrases back note by note (`difficulty.rs:144` `fold`). That raises the octave switches inside phrases from 43 to 47 (standard) and from 68 to 72 (easier). That per-note flipping is exactly what `743c04d` removed from placement.
 
@@ -127,7 +127,7 @@ Widening `reading` would raise standard's lead to 82–84 and easier's to 80. Th
 
 ### 1.5 Every hardcoded copy of instrument facts
 
-This merges the earlier list, the critic's §1.5 and a full audit. "Today with a trumpet" is what a part or seat for Trumpet in B♭ gets now.
+This merges the earlier list, the review's §1.5 and a full audit. "Today with a trumpet" is what a part or seat for Trumpet in B♭ gets now.
 
 | Where | What | Keyed by | Today with a trumpet |
 |---|---|---|---|
@@ -204,7 +204,7 @@ else
 - **`place_soloist`.** It goes phrase by phrase, over the same phrases as today (`phrases()`):
   - **A lone outlier moves alone.** A note outside the range whose neighbours in the phrase are inside, each 7 or more semitones away (`OUTLIER_JUMP`), is almost always a tracker octave error. It moves by the fewest octaves into the range, with the warning `"{part}: moved {p} to {q} at tick {t} (outside the range)"`. That is `place_as_played`'s format, so `inspection.py:97` `_MOVED` reads it.
   - **Then the phrase as a whole.** A phrase that fits is written as played. One that doesn't moves as a whole by the fewest octaves that fit it, with ties going to the shift nearest the previous note, so its contour is kept. A phrase that no octave fits is placed the way a non-soloist lead is (`place_phrase`: split at its largest leaps).
-  - **Why not fold every outside note.** A phrase that peaks above the range (an arch to 88, a trill 84/86) would lose its peak one note at a time and flip direction. That is the bug `743c04d` removed (critic P1-4). Unit tests on both sides pin the arch, the run and the trill, and conformance has `layers-transpose-up-3`, where the lead reaches 87.
+  - **Why not fold every outside note.** A phrase that peaks above the range (an arch to 88, a trill 84/86) would lose its peak one note at a time and flip direction. That is the bug `743c04d` removed (review P1-4). Unit tests on both sides pin the arch, the run and the trill, and conformance has `layers-transpose-up-3`, where the lead reaches 87.
   - Then `hold_small_gaps`, as today.
 - **Why lone outliers first.** A single tracker outlier, such as a harmonic an octave up, must not move the whole phrase. §2.5 measures this: moving a whole phrase leaves trumpet stems 10.5 % moved, and moving only the outliers leaves 0 %.
 - **Unchanged:** standard and easier (placement by the reading range, limit 82, then `fold`), the quartet, `lead=seat` for a band part, solo takes (`place_as_played` keeps `pro`), and the non-layered arrangers.
@@ -219,7 +219,7 @@ else
 Every other part keeps `Instrument::check`. `validate_part(lineup, part, pitches)` sits next to `validate_range` (`instruments.rs:382`, `instruments.py:259`), and these switch to it:
 
 - `music/tests/test_band_export.py:52`
-- the critic's `music/tests/test_range_invariants.py`
+- the review's `music/tests/test_range_invariants.py`
 
 The soft limit is deliberately not widened. A soloist above the amateur top (79 on a cornet, 80 on a trumpet) is still told so, as today. On Mikkel that is 44 notes on the cornet lead (above 79) and 34 on a trumpet lead (above 80). All of them are "uncomfortable" and none are "impossible".
 
@@ -281,7 +281,7 @@ After the step 1 review (P1-4), the rule as built moves a note alone only when i
 
 **What it says:**
 
-- **Tracker outliers.** On tracked trumpet lines today's placement moves a quarter of the notes, because stray notes drag whole phrases to another octave. The soloist rule moves none. The critic's worry, that keeping the played octave also keeps tracker octave errors, doesn't show here: an outlier outside the range is folded note by note, and the notes around it stay put.
+- **Tracker outliers.** On tracked trumpet lines today's placement moves a quarter of the notes, because stray notes drag whole phrases to another octave. The soloist rule moves none. The review's worry, that keeping the played octave also keeps tracker octave errors, doesn't show here: an outlier outside the range is folded note by note, and the notes around it stay put.
 - **The gate.** Trombone and tuba lines sit below the cornet, and the gate keeps today's placement for all tuba stems and 6 of 8 trombone stems.
 - **Behaviour change for low takes.** Baritone chorale voices that stay above E3 (13 of 24) and every horn stem pass the gate. They are now written on the Solo Cornet in the octave played, low on the staff, where today they are moved up an octave. That is what "faithful" promises, and a player who sets their seat gets their own instrument anyway.
 
@@ -292,7 +292,7 @@ The Mikkel intro phrases at ticks 0 and 156 (2 notes and 1 note) are the solo li
 `data/golden` is one directory, symlinked into every worktree. `core/conformance/.../run.py:180-187` compares against it and exits 1 on any difference. So the golden is **not** re-saved in place.
 
 - **The new output** goes to `data/golden/mikkel-arranged-band.soloist`, with its manifest. The recipe is the one from `14730d0`: orchestra-with-soloist, `--reuse data/mikkel/repro`, no heavy models.
-- **In the same commit**, every consumer that compares *this branch's* output with the golden points at `.soloist`:
+- **In the same commit**, every consumer that compares *the new code's* output with the golden points at `.soloist`:
   - `core/conformance/brasscribe_conformance/cases.py:108`
   - the Windows `NativeCoreBridgeTests.cs:20` `GoldenNotes` count, and `TestPaths.cs`
   - `music/tests/test_seats.py`
@@ -400,7 +400,7 @@ The rule behind it: a seat whose own part is not in the lineup takes the part it
 | part | Trumpet (you) | Trompet (deg) |
 
 - **The templates** are `%1$s` = the seat word ("trumpet" / «trompet») and `%2$s` = the `takes` part's display name.
-- **Wording.** «Fullt brassband» is the lineup label (`values-nb/strings.xml:226`). «ingen stemme for trompet» avoids a compound built from a template (critic P2-3).
+- **Wording.** «Fullt brassband» is the lineup label (`values-nb/strings.xml:226`). «ingen stemme for trompet» avoids a compound built from a template (review P2-3).
 - **An older engine.** If the engine has seats but not `trumpet`, it answers 422. The apps map a 422 on a job with a seat, outside the quartet and `lead=seat` cases they already handle (`PlayViewModel.kt:675-676`, `CompanionService.swift:303`), to the existing "too old to write for your instrument" line (`engine_too_old_seat`).
 - **Windows.** `main` has no "What do you play?". On `feat/my-instrument-windows` (`SeatCatalog.cs`), the trumpet tile already appears from the core's `seats()` with the core's `nbName`. That branch needs `bb-trumpet` in `TileOrder` and a `Seat_Tile_Trumpet` string, which is sent to its owner (§7). On `main`, Windows gets:
   - the `PartMap` row;
@@ -497,9 +497,9 @@ The engine title stays "… solo cornet & brass band (draft)" (`profiles.py:251`
   - Android: `TILES`, `Pitch.kt`, `ReviewScreen`.
   - Windows: nb tables, `SeatCatalog`.
   - Each reads these instead of its own table.
-- **Kept on purpose.** `BrassSoundSet.PartMap` stays as the Windows fallback when a build ships without `mapping.json` (dev builds, sideloaded packs; critic P2-4), unless every build is shown to ship it.
+- **Kept on purpose.** `BrassSoundSet.PartMap` stays as the Windows fallback when a build ships without `mapping.json` (dev builds, sideloaded packs; review P2-4), unless every build is shown to ship it.
 - **Proof.** A test instrument fixture must flow through every client's unit tests with no platform code touched.
-- **Dependencies.** It depends on `feat/my-instrument-windows` and on Apple UI tests through the VM, and it gets its own plan and critic round.
+- **Dependencies.** It depends on `feat/my-instrument-windows` and on Apple UI tests through the VM, and it gets its own plan and review round.
 
 ### 5.2 (d) A trumpet sound
 
@@ -520,7 +520,7 @@ The engine title stays "… solo cornet & brass band (draft)" (`profiles.py:251`
 
 ## 6. Build order
 
-Each step is a group of conventional commits with their tests, and is pushed once per group (critic P2-5: `ci.yml` runs on every push). The critic reviews each step before the next.
+Each step is a group of conventional commits with their tests, and is pushed once per group (review P2-5: `ci.yml` runs on every push). Each step is reviewed before the next.
 
 **Step 1 (a).**
 - `feat(core): write a faithful soloist's lead in the octave played`: Rust and Python, `solo`, `lead_moved`, `place_soloist`, `Lineup::check`, `validate_part`, the Studio `validate.ts` row, unit tests, and the conformance diff.
@@ -536,7 +536,7 @@ Each step is a group of conventional commits with their tests, and is pushed onc
 - `feat(apple): trumpet in What do you play`
 - `feat(windows): play and name a Trumpet part`
 
-Everything is pushed to `feat/trumpet` and nothing is merged.
+All of it is merged to `main` (v0.2.0 shipped it).
 
 ---
 
@@ -549,22 +549,22 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
   - `composition_lineup` gets a new "empty" part source;
   - `RustCoreBridge.kt` passes `tune`, and `Seats.swift` changes too.
 
-  It leaves the `SEATS` and `SEAT_PARTS` rows alone. Step 2 goes on top of its commits: this branch rebases on them once they are pushed. `with_seat` goes next to its `with_reading`. For a trumpet `same_key` stays true, because both are treble in B♭.
+  It leaves the `SEATS` and `SEAT_PARTS` rows alone. Step 2 goes on top of its commits: the trumpet work rebased on them once they were pushed. `with_seat` goes next to its `with_reading`. For a trumpet `same_key` stays true, because both are treble in B♭.
 - **`feat/my-instrument-windows`** gets the two-line `TileOrder`/string change for the trumpet tile.
 - **Goldens.** §2.6. Nothing in `data/golden/mikkel-arranged-band` changes before the promotion commit.
 
 ---
 
-## 8. The critic's points
+## 8. The review's points
 
 | Point | Answer |
 |---|---|
-| Critic §1.1: 116 reproduces; 13 needs a wider reading range; the 22 intro moves come from the tie-break | Agreed and reproduced independently (§1.3). The short answer now says it: 22 down and 5 up, from the reading-range count and the centre tie-break. |
-| Critic §1.2: a range change leaks into standard/easier | The soloist range is its own field, used only in faithful soloist placement (§2.2, §2.4). §4.1 holds standard and easier byte-identical. |
-| Critic §1.3: 84 on a cornet reverts `743c04d`; `check`/`validate.ts` flag it; qa row against MuseScore | Section cornets keep 82. The lead is checked against `solo` through `Lineup::check`, and Studio's row changes in the same commit (§2.3). MuseScore wins for the section, the qa row for the soloist (§2.1). |
-| Critic §1.4: trumpet 52–80/52–85, `brass.trumpet.bflat`, 30 uncomfortable | Used as is (§3.1). The soft limit stays. The trumpet lead's notes above 80 (34 of the 694 source notes; the critic counts 30 after placement) are truly above the amateur top, and none of them is impossible (§2.3). |
-| Critic §1.5: missing copies | Merged into §1.5. (b) adds one row per existing table (§3.5). The refactor is (c). |
-| Critic §1.6: pack cost, mobile heap, Literal 422 | (d) is deferred (§5.2). The 422 maps to the existing "too old" line (§3.4). |
+| Review §1.1: 116 reproduces; 13 needs a wider reading range; the 22 intro moves come from the tie-break | Agreed and reproduced independently (§1.3). The short answer now says it: 22 down and 5 up, from the reading-range count and the centre tie-break. |
+| Review §1.2: a range change leaks into standard/easier | The soloist range is its own field, used only in faithful soloist placement (§2.2, §2.4). §4.1 holds standard and easier byte-identical. |
+| Review §1.3: 84 on a cornet reverts `743c04d`; `check`/`validate.ts` flag it; qa row against MuseScore | Section cornets keep 82. The lead is checked against `solo` through `Lineup::check`, and Studio's row changes in the same commit (§2.3). MuseScore wins for the section, the qa row for the soloist (§2.1). |
+| Review §1.4: trumpet 52–80/52–85, `brass.trumpet.bflat`, 30 uncomfortable | Used as is (§3.1). The soft limit stays. The trumpet lead's notes above 80 (34 of the 694 source notes; the review counts 30 after placement) are truly above the amateur top, and none of them is impossible (§2.3). |
+| Review §1.5: missing copies | Merged into §1.5. (b) adds one row per existing table (§3.5). The refactor is (c). |
+| Review §1.6: pack cost, mobile heap, Literal 422 | (d) is deferred (§5.2). The 422 maps to the existing "too old" line (§3.4). |
 | P1-1: the golden re-save breaks everyone | A new directory, the consumers repointed in the same commit, and a promotion commit at merge (§2.6). |
 | P1-2: over-scoped | Agreed: (c) and (d) are follow-ups (§5). |
 | P1-3: (a) needs its validators | They go in the same commit as the placement: `Lineup::check`, `validate_part`, Studio's row. The engine's validation reports only warnings (§2.3). |
@@ -572,7 +572,7 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
 | P2-2: 19th part against swapping | Swap in place, with the reasons in §3.3. |
 | P2-3: nb copy | «Fullt brassband …», «ingen stemme for trompet» (no template compound), «Deg: Trompet» is not shown (the tune is already on the part), and "A trumpet soloist" is dropped along with the soloist option (§3.4). |
 | P2-4: `PartMap` | Kept, and gets a Trumpet row (§3.3, §5.1). |
-| Step 1 review, P1-4: a phrase past the solo range lost its peak note by note | Fixed: only a lone outlier moves alone, otherwise the whole phrase shifts (§2.2). The critic's `test_soloist_edges.py` is taken in with Rust twins, and so is the ported `test_range_invariants.py`. |
+| Step 1 review, P1-4: a phrase past the solo range lost its peak note by note | Fixed: only a lone outlier moves alone, otherwise the whole phrase shifts (§2.2). The review's `test_soloist_edges.py` is taken in with Rust twins, and so is the ported `test_range_invariants.py`. |
 | Step 1 review, P3-4: the fast conformance tier reuses stale Python references | Fixed in `scripts/check.sh`: the references are reused only while a hash of the Python sources matches. |
 | Step 2 review, P2-6: when no whole shift fits, the soloist falls back to the section cornet's placement (Mikkel +1 semitone moved 193 notes) | Fixed: the phrase is split at its leaps inside the solo range, and a lone outlier moves only when that makes its phrase fit. Mikkel +1 now moves 29 notes and +2 moves 97 (main: 276 and 476), each by one octave. |
 | Step 2 review, P2-7: Studio announces a Trumpet part as "Cornet in B♭" | Fixed: a part named for a trumpet is "Trumpet in B♭" / «trompet i B». |
