@@ -70,11 +70,13 @@ KIT = [
     ((57,), [(85, "varMetal/Cymbals/clash/crash_hit_ff_tight.wav"), (127, "varMetal/Cymbals/clash/crash_hit_fff_loose_2.wav")], 3.0, 1.5),
 ]
 KIT_REPLACES = {35: 36, 36: 36, 38: 38, 40: 40, 49: 49, 57: 57}  # our key -> the MS Basic key whose level it takes
-# Measured through FluidSynth against MS Basic, K-weighted over each hit's first 400 ms at velocities 47-127: the
-# muted concert bass drum came out 3.4 dB under the MS Basic kick and the snares 0.6-1.0 dB over. The crashes carry
+# Measured against MS Basic, K-weighted over each hit's first 400 ms at velocities 47-127: the muted concert bass drum
+# came out 3.4 dB under the MS Basic kick in FluidSynth and 6.3 dB under in alphaSynth (the reference player, which
+# plays MS Basic's filtered kick louder), and the snares 0.6-1.0 dB over. The bass drum is peak-limited to get
+# there without clipping (its first milliseconds peak far above its body). The crashes carry
 # no trim: MS Basic attenuates its crashes 13-17 dB in the zone, which alphaSynth applies in full, FluidSynth at 0.4
 # and AVAudioUnitSampler hardly at all; the VSCO crashes have that attenuation baked into the sample instead.
-KIT_TRIM_DB = {36: 3.4, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
+KIT_TRIM_DB = {36: 6.0, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
 KIT_HIGHPASS_HZ = 35  # the concert bass drum's sub-sonic rumble below the kick's fundamental
 
 
@@ -212,8 +214,7 @@ class Bank:
                 lvl = kit_level_db(data)
                 for key in keys:
                     target = ref[KIT_REPLACES[key]] + KIT_TRIM_DB[KIT_REPLACES[key]]
-                    y = data * 10 ** ((target - lvl) / 20)
-                    y *= min(1.0, 0.98 / (np.abs(y).max() + 1e-12))
+                    y = peak_limit(data * 10 ** ((target - lvl) / 20))
                     skey = f"kit/{rel}/{key}"
                     if skey not in self._sample_index:
                         self._sample_index[skey] = len(self.samples)
@@ -253,6 +254,21 @@ def load_drum(path: Path, keep_s: float, highpass: float | None = None) -> np.nd
     fo = min(len(y) // 3, int(0.3 * SR))
     y[len(y) - fo:] *= np.linspace(1, 0, fo) ** 2
     return y
+
+
+def peak_limit(y: np.ndarray, ceiling: float = 0.95, release_s: float = 0.05) -> np.ndarray:
+    """A look-ahead peak limiter for a drum hit: the gain drops to what keeps the next 2 ms under the ceiling
+    and recovers over `release_s`. The concert bass drum's first milliseconds peak far above its body."""
+    need = np.minimum(1.0, ceiling / (np.abs(y) + 1e-12))
+    w = int(0.002 * SR)
+    ahead = np.array([need[i:i + w].min() for i in range(len(need))])
+    g = np.empty_like(ahead)
+    k = np.exp(-1.0 / (release_s * SR))
+    cur = 1.0
+    for i, v in enumerate(ahead):
+        cur = v if v < cur else v + (cur - v) * k
+        g[i] = cur
+    return y * g
 
 
 def kit_level_db(y: np.ndarray, sr: int = SR) -> float:

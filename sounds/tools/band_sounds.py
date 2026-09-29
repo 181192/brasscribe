@@ -2,7 +2,7 @@
 
     python3 sounds/tools/band_sounds.py fetch  [--dir DIR] [FILE...]   # download the pinned release, verify, install
     python3 sounds/tools/band_sounds.py verify [--dir DIR] [FILE...]   # DIR matches the pin (exit 1 if not)
-    python3 sounds/tools/band_sounds.py pin    [--version TAG]         # after a rebuild: rewrite sounds/band-sounds.json
+    python3 sounds/tools/band_sounds.py pin    [--version TAG] [--dir DIR]  # after a rebuild: rewrite sounds/band-sounds.json
 
 sounds/band-sounds.json pins one sound pack: the GitHub release tag (`version`) in this repository
 and the size and sha256 of every file. DIR defaults to data/sounds/band; FILE defaults to every
@@ -128,13 +128,13 @@ def fetch(dest: Path, names: list[str]) -> int:
     return verify(dest, list(want))
 
 
-def pin_files(version: str | None) -> int:
+def pin_files(version: str | None, band: Path = BAND) -> int:
     pin = load_pin()
     if version:
         pin["version"] = version
-    pin["files"] = {n: {"sha256": sha256(BAND / n), "size": (BAND / n).stat().st_size} for n in pin["files"]}
+    pin["files"] = {n: {"sha256": sha256(band / n), "size": (band / n).stat().st_size} for n in pin["files"]}
     PIN.write_text(json.dumps(pin, indent=1) + "\n")
-    write_sums(pin, BAND)
+    write_sums(pin, band)
     print(f"{PIN} ({pin['version']}): {', '.join(f'{n} {v['size'] / 1e6:.1f} MB' for n, v in pin['files'].items())}")
     return 0
 
@@ -148,9 +148,10 @@ def main(argv: list[str]) -> int:
         s.add_argument("files", nargs="*", help="pinned file names (default: all)")
     p = sub.add_parser("pin")
     p.add_argument("--version", help="release tag of the new pack, e.g. sounds-2026.09.27")
+    p.add_argument("--dir", type=Path, default=BAND, help="where the built files are (default: data/sounds/band)")
     a = ap.parse_args(argv)
     if a.cmd == "pin":
-        return pin_files(a.version)
+        return pin_files(a.version, a.dir.resolve())
     return (fetch if a.cmd == "fetch" else verify)(a.dir.resolve(), a.files)
 
 

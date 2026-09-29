@@ -7,6 +7,8 @@ plugins {
 }
 
 val repoRoot = rootProject.extra["repoRoot"] as File
+// The band SoundFonts (data/sounds/band, outside git); BRASSCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
+val bandSoundsDir = System.getenv("BRASSCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
 
 android {
     namespace = "no.brasscribe.play"
@@ -59,6 +61,7 @@ android {
         unitTests.all {
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.
             it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
+            it.systemProperty("brasscribe.bandSounds", bandSoundsDir.absolutePath)
         }
     }
 
@@ -113,7 +116,7 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
     // The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
     into("sounds") {
         from(File(repoRoot, "sounds")) { include("mapping.json") }
-        from(File(repoRoot, "data/sounds/band")) { include("brasscribe-band-mobile.sf2") }
+        from(bandSoundsDir) { include("brasscribe-band-mobile.sf2") }
     }
     filePermissions { user { read = true; write = true } }
 }

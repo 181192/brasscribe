@@ -93,7 +93,7 @@ object SoundFontSubset {
         for (p in 0 until presets) {
             val program = u16(phdr, p * 38 + 20)
             val bank = u16(phdr, p * 38 + 22)
-            val keys = uses.filter { if (bank == PERCUSSION_BANK) it.drums else !it.drums && it.bank == bank && it.program == program }
+            val keys = uses.filter { it.program == program && (if (bank == PERCUSSION_BANK) it.drums else !it.drums && it.bank == bank) }
                 .map { it.key }.toSet()
             if (keys.isEmpty()) {
                 phdrOut.putShort(p * 38 + 20, freeProgram.toShort())

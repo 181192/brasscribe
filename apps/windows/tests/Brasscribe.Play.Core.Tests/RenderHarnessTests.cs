@@ -22,6 +22,29 @@ public class RenderHarnessTests(ITestOutputHelper log)
     private const double RenderGainDb = -12;
 
     /// <summary>
+    /// The band kit (bank 128 program 0) against the pop kit (program 1, MS Basic unchanged) through
+    /// alphaSynth: K-weighted level of each drum's hits. Runs only when BRASSCRIBE_KNOTS=1.
+    /// </summary>
+    [SkippableFact]
+    public void Measure_kits()
+    {
+        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
+        foreach (var key in new[] { 36, 38, 40, 42, 49, 57 })
+        {
+            var levels = new List<string>();
+            foreach (var program in new[] { 0, 1 })
+            {
+                var notes = System.Text.Json.JsonSerializer.SerializeToElement(new[] { 47, 79, 95, 111, 127 }
+                    .Select((v, i) => new object[] { 0.5 + 2.0 * i, 0.6 + 2.0 * i, key, v }).ToArray());
+                var mix = PartSoundTests.Render(bytes, PartSoundTests.Phrase([(ChannelPlan.Drums, program, 128, notes)]), 11.0);
+                levels.Add($"{LoudnessMeter.Integrated(mix, 44100, 2):0.00}");
+            }
+            log.WriteLine($"KIT key {key}: band kit {levels[0]} LUFS, pop kit {levels[1]} LUFS");
+        }
+    }
+
+    /// <summary>
     /// dynamics.sampler_velocity.alphatab_lufs, measured: the full-band phrase's pitched parts at one
     /// velocity through alphaSynth with the app's channel plan and balance, 12 dB under the band gain.
     /// Runs only when BRASSCRIBE_KNOTS=1 (after a sound pack change).

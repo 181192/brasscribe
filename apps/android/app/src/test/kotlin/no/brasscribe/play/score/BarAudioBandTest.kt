@@ -29,7 +29,7 @@ import kotlin.math.abs
  */
 class BarAudioBandTest {
     private val sounds = File(System.getProperty("brasscribe.sounds") ?: "../../../sounds")
-    private val sf2 = File(sounds.parentFile, "data/sounds/band/brasscribe-band-mobile.sf2")
+    private val sf2 = File(System.getProperty("brasscribe.bandSounds") ?: File(sounds.parentFile, "data/sounds/band").path, "brasscribe-band-mobile.sf2")
     private val golden = File(sounds.parentFile, "data/golden/mikkel-arranged-band/brass-band.musicxml")
     private val map = BandSoundMap.parse(File(sounds, "mapping.json").readText())
 
