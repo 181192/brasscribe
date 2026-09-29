@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var modelTick = 0
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
     @AppStorage(AppearanceSetting.key) private var appearance = AppearanceSetting.system.rawValue
+    @AppStorage(PinkUnlock.key) private var pinkUnlocked = false
+    @State private var justUnlocked = false
     @Environment(\.colorSchemeContrast) private var contrast
     @AppStorage(StandSettings.followKey) private var standTurnPages = true
     @AppStorage(StandSettings.keepControlsKey) private var standKeepControls = false
@@ -56,7 +58,9 @@ struct SettingsView: View {
 
                 Section {
                     Picker(selection: $appearance) {
-                        ForEach(AppearanceSetting.allCases) { a in Text(a.title).tag(a.rawValue) }
+                        ForEach(AppearanceSetting.options(pinkUnlocked: pinkUnlocked || appearance == AppearanceSetting.pink.rawValue)) { a in
+                            Text(a.title).tag(a.rawValue)
+                        }
                     } label: { Text("Appearance") }
                     .pickerStyle(.inline)
                     .accessibilityIdentifier("settingAppearance")
@@ -91,10 +95,20 @@ struct SettingsView: View {
                     HStack(spacing: Space.s3) {
                         Lockup()
                         Spacer()
-                        Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
-                            .foregroundStyle(Color.Brasscribe.textMuted)
+                        VersionButton(unlocked: $pinkUnlocked, justUnlocked: $justUnlocked)
                     }
                     .listRowBackground(Color.Brasscribe.brassTint)
+                    if justUnlocked {
+                        Text("🎺 Pink unlocked")
+                            .font(Font.Brasscribe.callout)
+                            .foregroundStyle(Color.Brasscribe.text)
+                            .accessibilityIdentifier("pinkUnlocked")
+                            .listRowBackground(Color.Brasscribe.brassTint)
+                            .task {
+                                try? await Task.sleep(for: .seconds(4))
+                                justUnlocked = false
+                            }
+                    }
                     NavigationLink { LicenceView() } label: { Text("Instrument Serif (SIL Open Font License 1.1)") }
                     Text("Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.")
                     Text("Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.")
@@ -151,6 +165,40 @@ struct SettingsView: View {
         ModelStore.shared.remoteBase = URL(string: app.modelDownloadURL)
         do { try await ModelStore.shared.prepareAll(); status = String(localized: "The listening files are ready.") }
         catch { status = String(localized: "The listening files couldn't be downloaded. Check the connection and try again.") }
+    }
+}
+
+/// The version in About. It looks like plain text, but activating it five times in a row unlocks
+/// Pink in Appearance (design/system.md §10): by tap, click, VoiceOver, Switch Control or the
+/// keyboard. On the Mac, Option-activating it unlocks at once. The unlock is shown under the row and
+/// announced once.
+struct VersionButton: View {
+    @Binding var unlocked: Bool
+    @Binding var justUnlocked: Bool
+    @State private var counter = UnlockCounter()
+
+    private var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "" }
+
+    var body: some View {
+        Button(action: activate) {
+            Text(verbatim: version).foregroundStyle(Color.Brasscribe.textMuted)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Version \(version)"))
+        .accessibilityIdentifier("aboutVersion")
+        .onAppear { counter = UnlockCounter(unlocked: unlocked) }
+    }
+
+    private func activate() {
+        #if os(macOS)
+        let now = NSEvent.modifierFlags.contains(.option) ? counter.unlockNow() : counter.activate()
+        #else
+        let now = counter.activate()
+        #endif
+        guard now else { return }
+        unlocked = true
+        justUnlocked = true
+        AccessibilityNotification.Announcement(String(localized: "🎺 Pink unlocked")).post()
     }
 }
 

@@ -230,8 +230,69 @@ func testVideo() -> URL? {
     #expect(AppearanceSetting.scheme(stored: "light") == .light)
     #expect(AppearanceSetting.scheme(stored: "dark") == .dark)
     #expect(AppearanceSetting.scheme(stored: "something else") == nil)
-    #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark"])
+    #expect(AppearanceSetting.scheme(stored: "pink") == nil)  // Pink follows the system's light or dark
+    #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark", "pink"])
     #expect(AppearanceSetting.allCases.map(\.title).allSatisfy { !$0.isEmpty })
+}
+
+/// Pink is listed only once it is unlocked, and only the "pink" choice turns the Pink palette on.
+@Test @MainActor func pinkIsHiddenUntilUnlockedAndDrivesThePalette() {
+    #expect(AppearanceSetting.options(pinkUnlocked: false) == [.system, .light, .dark])
+    #expect(AppearanceSetting.options(pinkUnlocked: true) == [.system, .light, .dark, .pink])
+    guard LaunchOptions.appearance == nil else { return }
+    #expect(AppearanceSetting.isPink(stored: "pink"))
+    for other in ["system", "light", "dark", "something else"] { #expect(!AppearanceSetting.isPink(stored: other)) }
+    #expect(!AppearanceSetting.isPink(stored: nil))
+}
+
+/// `-appearance` for the harness and screenshots: pink and pink-dark pick the scheme and the palette.
+@Test func launchAppearanceParsesPink() {
+    #expect(LaunchOptions.parseAppearance("pink") == (.light, true))
+    #expect(LaunchOptions.parseAppearance("pink-dark") == (.dark, true))
+    #expect(LaunchOptions.parseAppearance("dark") == (.dark, false))
+    #expect(LaunchOptions.parseAppearance("light") == (.light, false))
+}
+
+/// The unlock flag is kept per device; a stored "pink" counts as unlocked even without it.
+@Test func pinkUnlockPersists() throws {
+    let defaults = try #require(UserDefaults(suiteName: "pink-unlock-\(UUID().uuidString)"))
+    #expect(!PinkUnlock.isUnlocked(defaults))
+    PinkUnlock.unlock(defaults)
+    #expect(PinkUnlock.isUnlocked(defaults))
+    #expect(defaults.bool(forKey: PinkUnlock.key))
+
+    let chosen = try #require(UserDefaults(suiteName: "pink-chosen-\(UUID().uuidString)"))
+    chosen.set("pink", forKey: AppearanceSetting.key)
+    #expect(PinkUnlock.isUnlocked(chosen))
+    chosen.set("dark", forKey: AppearanceSetting.key)
+    #expect(!PinkUnlock.isUnlocked(chosen))
+}
+
+/// Five activations in a row, each within 1.5 s of the one before, unlock it once; a longer pause
+/// starts again, and nothing is reported after the unlock.
+@Test func unlockCounterNeedsFiveQuickActivations() {
+    let t0 = Date(timeIntervalSinceReferenceDate: 0)
+    var c = UnlockCounter()
+    // the activations that reported an unlock, at these offsets
+    func run(_ counter: inout UnlockCounter, _ offsets: [TimeInterval]) -> [Bool] {
+        offsets.map { counter.activate(at: t0.addingTimeInterval($0)) }
+    }
+    #expect(run(&c, [0, 1, 2, 3]) == [false, false, false, false])
+    // a pause longer than the window starts the count again
+    #expect(run(&c, [5]) == [false])
+    #expect(c.count == 1)
+    #expect(run(&c, [6.4, 7.8, 9.2, 10.6]) == [false, false, false, true])
+    #expect(c.unlocked)
+    #expect(run(&c, [11]) == [false])
+    let again = c.unlockNow()
+    #expect(!again)
+
+    var fast = UnlockCounter()
+    let now = fast.unlockNow()
+    #expect(now)
+    #expect(run(&fast, [0]) == [false])
+    var already = UnlockCounter(unlocked: true)
+    #expect(run(&already, [0, 0.1, 0.2, 0.3, 0.4, 0.5]).allSatisfy { !$0 })
 }
 
 /// Zoom (a double-click on the title bar) fills the visible frame, clear of the Dock, and never goes

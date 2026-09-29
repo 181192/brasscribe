@@ -512,6 +512,9 @@ NB = {
     "Appearance": "Utseende",
     "Match system": "Følg systemet",
     "Light": "Lyst",
+    "Pink": "Rosa",
+    "🎺 Pink unlocked": "🎺 Rosa låst opp",
+    "Version %@": "Versjon %@",
     "Dark": "Mørkt",
     "Increase contrast is on, so Brasscribe uses its high-contrast colours.": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene.",
     # the music stand (design/music-stand.md §9)

@@ -3001,6 +3001,16 @@
         }
       }
     },
+    "Pink": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosa"
+          }
+        }
+      }
+    },
     "Pitch": {
       "localizations": {
         "nb": {
@@ -4801,6 +4811,16 @@
         }
       }
     },
+    "Version %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versjon %@"
+          }
+        }
+      }
+    },
     "Very uncertain": {
       "localizations": {
         "nb": {
@@ -5687,6 +5707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "stemmen din: %@"
+          }
+        }
+      }
+    },
+    "🎺 Pink unlocked": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🎺 Rosa låst opp"
           }
         }
       }

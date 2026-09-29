@@ -20,13 +20,14 @@ struct BrasscribePlayApp: App {
             try? FileManager.default.removeItem(at: Piece.libraryURL)
         }
         if args.contains("-skip-first-run") { UserDefaults.standard.set(true, forKey: "firstRunDone") }
+        // the palette before the first frame, so Pink never flashes the standard colours
+        BrasscribePalette.shared.isPink = AppearanceSetting.isPink(stored: UserDefaults.standard.string(forKey: AppearanceSetting.key))
     }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(app)
-                .tint(Color.Brasscribe.primary)
                 .appAppearance()
                 .onOpenURL { url in
                     if url.scheme?.lowercased() == "brasscribe" {
@@ -47,15 +48,16 @@ struct BrasscribePlayApp: App {
 }
 
 /// Settings → Appearance: match the system (the default), or always light or dark. Stored per
-/// device. Increase Contrast still applies on top of either.
+/// device. Increase Contrast still applies on top of either. Pink (design/system.md §10) is hidden
+/// until it is unlocked from About; it follows the system's light or dark with the Pink palette.
 enum AppearanceSetting: String, CaseIterable, Identifiable {
-    case system, light, dark
+    case system, light, dark, pink
     static let key = "appearance"
     var id: String { rawValue }
 
     var colorScheme: ColorScheme? {
         switch self {
-        case .system: nil
+        case .system, .pink: nil
         case .light: .light
         case .dark: .dark
         }
@@ -66,19 +68,84 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
         case .system: String(localized: "Match system")
         case .light: String(localized: "Light")
         case .dark: String(localized: "Dark")
+        case .pink: String(localized: "Pink")
         }
+    }
+
+    /// The options the picker lists: Pink only once it is unlocked.
+    static func options(pinkUnlocked: Bool) -> [AppearanceSetting] {
+        pinkUnlocked ? allCases : allCases.filter { $0 != .pink }
     }
 
     /// The scheme to apply: a test's `-appearance` wins, then the setting.
     static func scheme(stored: String) -> ColorScheme? {
-        LaunchOptions.colorScheme ?? (AppearanceSetting(rawValue: stored) ?? .system).colorScheme
+        if let forced = LaunchOptions.appearance { return forced.scheme }
+        return (AppearanceSetting(rawValue: stored) ?? .system).colorScheme
+    }
+
+    /// Whether the Pink palette applies: a test's `-appearance` wins, then the setting.
+    static func isPink(stored: String?) -> Bool {
+        if let forced = LaunchOptions.appearance { return forced.pink }
+        return stored == AppearanceSetting.pink.rawValue
+    }
+}
+
+/// Unlocking Pink from About. The flag is kept on this device next to `appearance`; a stored "pink"
+/// counts as unlocked, so the choice is never left without its option.
+enum PinkUnlock {
+    static let key = "pinkUnlocked"
+
+    static func isUnlocked(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: key) || defaults.string(forKey: AppearanceSetting.key) == AppearanceSetting.pink.rawValue
+    }
+
+    static func unlock(_ defaults: UserDefaults = .standard) { defaults.set(true, forKey: key) }
+}
+
+/// Counts activations of the version in About: five in a row, each within `window` seconds of the
+/// one before, unlock Pink. A longer pause starts the count again. Once unlocked it stays unlocked
+/// and never reports the unlock a second time.
+struct UnlockCounter {
+    var threshold = 5
+    var window: TimeInterval = 1.5
+    private(set) var count = 0
+    private(set) var unlocked: Bool
+    private var last: Date?
+
+    init(unlocked: Bool = false) { self.unlocked = unlocked }
+
+    /// Records one activation at `now`; true only for the one that unlocks.
+    mutating func activate(at now: Date = Date()) -> Bool {
+        guard !unlocked else { return false }
+        if let last, now.timeIntervalSince(last) > window { count = 0 }
+        last = now
+        count += 1
+        guard count >= threshold else { return false }
+        unlocked = true
+        return true
+    }
+
+    /// Unlocks at once (Option-click on the Mac); true only when that is new.
+    mutating func unlockNow() -> Bool {
+        guard !unlocked else { return false }
+        unlocked = true
+        return true
     }
 }
 
 /// Applies the Appearance setting to a window or a sheet; it changes at once when the setting does.
+/// The tint is set here too, so it follows the palette.
 struct AppAppearance: ViewModifier {
     @AppStorage(AppearanceSetting.key) private var stored = AppearanceSetting.system.rawValue
-    func body(content: Content) -> some View { content.preferredColorScheme(AppearanceSetting.scheme(stored: stored)) }
+    func body(content: Content) -> some View {
+        content
+            .tint(Color.Brasscribe.primary)
+            .preferredColorScheme(AppearanceSetting.scheme(stored: stored))
+            .onChange(of: stored, initial: true) { _, value in
+                let pink = AppearanceSetting.isPink(stored: value)
+                if BrasscribePalette.shared.isPink != pink { BrasscribePalette.shared.isPink = pink }
+            }
+    }
 }
 
 extension View {
@@ -89,11 +156,23 @@ extension View {
 enum LaunchOptions {
     static let args = ProcessInfo.processInfo.arguments
 
-    /// `-appearance dark` / `-appearance light`
-    static var colorScheme: ColorScheme? {
+    /// `-appearance light|dark|pink|pink-dark`: the scheme, and whether the Pink palette applies.
+    static var appearance: (scheme: ColorScheme, pink: Bool)? {
         guard let i = args.firstIndex(of: "-appearance"), i + 1 < args.count else { return nil }
-        return args[i + 1] == "dark" ? .dark : .light
+        return parseAppearance(args[i + 1])
     }
+
+    static func parseAppearance(_ value: String) -> (scheme: ColorScheme, pink: Bool) {
+        switch value {
+        case "dark": (.dark, false)
+        case "pink": (.light, true)
+        case "pink-dark": (.dark, true)
+        default: (.light, false)
+        }
+    }
+
+    /// The scheme a test's `-appearance` forces, if any.
+    static var colorScheme: ColorScheme? { appearance?.scheme }
 
     /// `-screen home|source|transcribing|review|review-listening|score|part|export|first-run|error`
     static var screen: String? {
