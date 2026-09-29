@@ -117,6 +117,7 @@ public sealed partial class MainWindow : Window
     private static Type PageFor(Screen screen) => screen switch
     {
         Screen.FirstRun => typeof(FirstRunPage),
+        Screen.WhatDoYouPlay => typeof(WhatDoYouPlayPage),
         Screen.SourceKind => typeof(WhatIsThisPage),
         Screen.Transcribing => typeof(TranscribingPage),
         Screen.Review => typeof(ReviewPage),

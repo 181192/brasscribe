@@ -60,6 +60,21 @@
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Brasscribe Play</value>
   </data>
+  <data name="AppearanceBox.Header" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="AppearanceContrastNote.Text" xml:space="preserve">
+    <value>Your contrast theme is on, so Windows chooses the colours.</value>
+  </data>
+  <data name="AppearanceDark.Content" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="AppearanceLight.Content" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="AppearanceSystem.Content" xml:space="preserve">
+    <value>Match system</value>
+  </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Ask on the computer instead</value>
   </data>
@@ -122,6 +137,12 @@
   </data>
   <data name="ChangeNote_Up" xml:space="preserve">
     <value>Up a semitone</value>
+  </data>
+  <data name="CheckOtherPartsButton.Content" xml:space="preserve">
+    <value>Check the other parts</value>
+  </data>
+  <data name="CheckOtherPartsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The notes marked ? in every part</value>
   </data>
   <data name="CheckThemButton.Content" xml:space="preserve">
     <value>Check them</value>
@@ -858,6 +879,9 @@
   <data name="Output_FullNotYet" xml:space="preserve">
     <value>Not yet for whole-band recordings</value>
   </data>
+  <data name="Output_KeyAsItSounds" xml:space="preserve">
+    <value>{0}, as it sounds</value>
+  </data>
   <data name="Output_KeyAsRecordedDetail" xml:space="preserve">
     <value>As recorded · concert pitch</value>
   </data>
@@ -867,6 +891,9 @@
   <data name="Output_KeyConcertDetail" xml:space="preserve">
     <value>Concert pitch</value>
   </data>
+  <data name="Output_KeyOnYourPart" xml:space="preserve">
+    <value>{0} on your part</value>
+  </data>
   <data name="Output_KeyWritten" xml:space="preserve">
     <value>{0} for {1} instruments</value>
   </data>
@@ -875,6 +902,9 @@
   </data>
   <data name="Output_NeedsEngine" xml:space="preserve">
     <value>How hard and the key are set by Brasscribe on your computer. Open a score it made to change them.</value>
+  </data>
+  <data name="Output_OldComputer" xml:space="preserve">
+    <value>Brasscribe on your computer is too old to write for your instrument. Update it to use this.</value>
   </data>
   <data name="Output_QuartetBody" xml:space="preserve">
     <value>4 players, one on each part</value>
@@ -887,6 +917,18 @@
   </data>
   <data name="Output_Rearranging" xml:space="preserve">
     <value>Arranging again with your choices</value>
+  </data>
+  <data name="Output_TuneLineup" xml:space="preserve">
+    <value>{0} (as usual)</value>
+  </data>
+  <data name="Output_TuneSeat" xml:space="preserve">
+    <value>You: {0}</value>
+  </data>
+  <data name="Output_YourPart" xml:space="preserve">
+    <value>your part: {0}</value>
+  </data>
+  <data name="Output_YourPartNone" xml:space="preserve">
+    <value>You conduct or listen: every part opens.</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Code</value>
@@ -1080,6 +1122,9 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>to</value>
   </data>
+  <data name="ReviewArrangedTitle.Text" xml:space="preserve">
+    <value>Your part is arranged</value>
+  </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Choose what the note should be; the whole score follows</value>
   </data>
@@ -1151,6 +1196,12 @@
   </data>
   <data name="Review_AllDone" xml:space="preserve">
     <value>Every note is checked</value>
+  </data>
+  <data name="Review_ArrangedBody" xml:space="preserve">
+    <value>Nobody played the {0} part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.</value>
+  </data>
+  <data name="Review_ArrangedTitle" xml:space="preserve">
+    <value>Your part is arranged</value>
   </data>
   <data name="Review_BarHeading" xml:space="preserve">
     <value>Bar {0}</value>
@@ -1302,6 +1353,9 @@
   <data name="Score_AsWritten" xml:space="preserve">
     <value>As written</value>
   </data>
+  <data name="Score_AsWrittenBassClef" xml:space="preserve">
+    <value>As written (bass clef)</value>
+  </data>
   <data name="Score_AsWrittenFor" xml:space="preserve">
     <value>As written for {0}</value>
   </data>
@@ -1334,6 +1388,12 @@
   </data>
   <data name="Score_LoopLabel" xml:space="preserve">
     <value>Repeat {0}–{1}</value>
+  </data>
+  <data name="Score_MadeMine" xml:space="preserve">
+    <value>{0} is your part in this score.</value>
+  </data>
+  <data name="Score_MakeMine" xml:space="preserve">
+    <value>Make this my part</value>
   </data>
   <data name="Score_NoOriginal" xml:space="preserve">
     <value>There's no recording to hear: this score was opened without one.</value>
@@ -1386,6 +1446,201 @@
   <data name="Screen_Transcribing" xml:space="preserve">
     <value>Making the score</value>
   </data>
+  <data name="Screen_WhatDoYouPlay" xml:space="preserve">
+    <value>What do you play?</value>
+  </data>
+  <data name="SeatBody.Text" xml:space="preserve">
+    <value>Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</value>
+  </data>
+  <data name="SeatCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="SeatCancelButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Keep what you play as it was</value>
+  </data>
+  <data name="SeatCaption.Text" xml:space="preserve">
+    <value>New scores open on your part. Scores you already have keep the part you chose for them.</value>
+  </data>
+  <data name="SeatChangeButton.Content" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="SeatChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Change what you play</value>
+  </data>
+  <data name="SeatConductButton.Content" xml:space="preserve">
+    <value>I conduct or listen</value>
+  </data>
+  <data name="SeatConductButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Scores open on every part</value>
+  </data>
+  <data name="SeatConductSettingsButton.Content" xml:space="preserve">
+    <value>I conduct or listen</value>
+  </data>
+  <data name="SeatConductSettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Scores open on every part</value>
+  </data>
+  <data name="SeatContinueButton.Content" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="SeatContinueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Save what you play and go to Home</value>
+  </data>
+  <data name="SeatHeading.Text" xml:space="preserve">
+    <value>What do you play?</value>
+  </data>
+  <data name="SeatInstrumentChoices.Header" xml:space="preserve">
+    <value>Instrument</value>
+  </data>
+  <data name="SeatPartChoices.Header" xml:space="preserve">
+    <value>Which part?</value>
+  </data>
+  <data name="SeatReadsChoices.Header" xml:space="preserve">
+    <value>You read</value>
+  </data>
+  <data name="SeatRowLabel.Text" xml:space="preserve">
+    <value>What you play</value>
+  </data>
+  <data name="SeatSaveButton.Content" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SeatSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Save what you play</value>
+  </data>
+  <data name="SeatSkipButton.Content" xml:space="preserve">
+    <value>Not now</value>
+  </data>
+  <data name="SeatSkipButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Go to Home without choosing. You can choose in Settings.</value>
+  </data>
+  <data name="Seat_ContinueHint" xml:space="preserve">
+    <value>Choose your instrument, or “I conduct or listen”.</value>
+  </data>
+  <data name="Seat_ContinueHintPart" xml:space="preserve">
+    <value>Choose which part you play.</value>
+  </data>
+  <data name="Seat_KeyConcert" xml:space="preserve">
+    <value>concert pitch</value>
+  </data>
+  <data name="Seat_None" xml:space="preserve">
+    <value>I conduct or listen</value>
+  </data>
+  <data name="Seat_NotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Full" xml:space="preserve">
+    <value>This full band has no {0} part. Brasscribe opens every part.</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Quartet" xml:space="preserve">
+    <value>This quartet has no {0} part. Brasscribe opens every part.</value>
+  </data>
+  <data name="Seat_Notice_NoPart_Small" xml:space="preserve">
+    <value>This small band has no {0} part. Brasscribe opens every part.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Full" xml:space="preserve">
+    <value>This full band has no {0}. Your part here is {1}, written for {2}.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Quartet" xml:space="preserve">
+    <value>This quartet has no {0}. Your part here is {1}, written for {2}.</value>
+  </data>
+  <data name="Seat_Notice_OtherKey_Small" xml:space="preserve">
+    <value>This small band has no {0}. Your part here is {1}, written for {2}.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Full" xml:space="preserve">
+    <value>This full band has no {0}. Your part here is {1}, the closest: the same key and clef.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Quartet" xml:space="preserve">
+    <value>This quartet has no {0}. Your part here is {1}, the closest: the same key and clef.</value>
+  </data>
+  <data name="Seat_Notice_SameKey_Small" xml:space="preserve">
+    <value>This small band has no {0}. Your part here is {1}, the closest: the same key and clef.</value>
+  </data>
+  <data name="Seat_ReadsBass" xml:space="preserve">
+    <value>Bass clef, as it sounds</value>
+  </data>
+  <data name="Seat_ReadsBass_Value" xml:space="preserve">
+    <value>bass clef, as it sounds</value>
+  </data>
+  <data name="Seat_ReadsTrebleBb" xml:space="preserve">
+    <value>Treble clef in B♭</value>
+  </data>
+  <data name="Seat_ReadsTrebleBb_Value" xml:space="preserve">
+    <value>treble clef in B♭</value>
+  </data>
+  <data name="Seat_ReadsTrebleEb" xml:space="preserve">
+    <value>Treble clef in E♭</value>
+  </data>
+  <data name="Seat_ReadsTrebleEb_Value" xml:space="preserve">
+    <value>treble clef in E♭</value>
+  </data>
+  <data name="Seat_TileDetail_Baritone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BassTrombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_BbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Cornet" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_EbBass" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Euphonium" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Flugelhorn" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Percussion" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_TileDetail_Soprano" xml:space="preserve">
+    <value>E♭ cornet</value>
+  </data>
+  <data name="Seat_TileDetail_TenorHorn" xml:space="preserve">
+    <value>in E♭</value>
+  </data>
+  <data name="Seat_TileDetail_Trombone" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="Seat_Tile_Baritone" xml:space="preserve">
+    <value>Baritone</value>
+  </data>
+  <data name="Seat_Tile_BassTrombone" xml:space="preserve">
+    <value>Bass Trombone</value>
+  </data>
+  <data name="Seat_Tile_BbBass" xml:space="preserve">
+    <value>B♭ Bass</value>
+  </data>
+  <data name="Seat_Tile_Cornet" xml:space="preserve">
+    <value>Cornet</value>
+  </data>
+  <data name="Seat_Tile_EbBass" xml:space="preserve">
+    <value>E♭ Bass</value>
+  </data>
+  <data name="Seat_Tile_Euphonium" xml:space="preserve">
+    <value>Euphonium</value>
+  </data>
+  <data name="Seat_Tile_Flugelhorn" xml:space="preserve">
+    <value>Flugelhorn</value>
+  </data>
+  <data name="Seat_Tile_Percussion" xml:space="preserve">
+    <value>Percussion</value>
+  </data>
+  <data name="Seat_Tile_Soprano" xml:space="preserve">
+    <value>Soprano</value>
+  </data>
+  <data name="Seat_Tile_TenorHorn" xml:space="preserve">
+    <value>Tenor Horn</value>
+  </data>
+  <data name="Seat_Tile_Trombone" xml:space="preserve">
+    <value>Trombone</value>
+  </data>
+  <data name="Seat_Value" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
   <data name="SetLoopButton.Content" xml:space="preserve">
     <value>Repeat</value>
   </data>
@@ -1421,6 +1676,9 @@
   </data>
   <data name="SettingsStandHeading.Text" xml:space="preserve">
     <value>Music stand</value>
+  </data>
+  <data name="SettingsYouHeading.Text" xml:space="preserve">
+    <value>Your instrument</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>built in (the full arranger isn't installed)</value>
@@ -1602,6 +1860,12 @@
   <data name="Shortcuts_Stand" xml:space="preserve">
     <value>On the music stand</value>
   </data>
+  <data name="ShowMyPartButton.Content" xml:space="preserve">
+    <value>Show my part</value>
+  </data>
+  <data name="ShowMyPartButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Your part in the score</value>
+  </data>
   <data name="ShowScoreButton.Content" xml:space="preserve">
     <value>Show the score</value>
   </data>
@@ -1613,6 +1877,27 @@
   </data>
   <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Keys such as U, R and P. Arrows always work.</value>
+  </data>
+  <data name="SoloOnePartNote.Text" xml:space="preserve">
+    <value>A solo recording gives one part: yours.</value>
+  </data>
+  <data name="Source_Arranged" xml:space="preserve">
+    <value>Arranged from the band's harmony</value>
+  </data>
+  <data name="Source_Explain_Arranged" xml:space="preserve">
+    <value>Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.</value>
+  </data>
+  <data name="Source_Explain_Recording" xml:space="preserve">
+    <value>Brasscribe wrote down the notes it heard for this part.</value>
+  </data>
+  <data name="Source_Explain_YourRecording" xml:space="preserve">
+    <value>Brasscribe wrote down the notes you played.</value>
+  </data>
+  <data name="Source_Recording" xml:space="preserve">
+    <value>From the recording</value>
+  </data>
+  <data name="Source_YourRecording" xml:space="preserve">
+    <value>From your recording</value>
   </data>
   <data name="SpeedLabel.Text" xml:space="preserve">
     <value>Speed</value>
@@ -1953,6 +2238,12 @@
   <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
     <value>Separating the soloist from the band</value>
   </data>
+  <data name="TuneChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Who plays the tune?</value>
+  </data>
+  <data name="TuneHeading.Text" xml:space="preserve">
+    <value>Who plays the tune?</value>
+  </data>
   <data name="UnpairButton.Content" xml:space="preserve">
     <value>Forget this computer</value>
   </data>
@@ -1985,6 +2276,15 @@
   </data>
   <data name="ViewMenuLabel.Text" xml:space="preserve">
     <value>View</value>
+  </data>
+  <data name="WhoPlayedBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The part is written for this instrument when you show the score</value>
+  </data>
+  <data name="WhoPlayedBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Who played this?</value>
+  </data>
+  <data name="WhoPlayedHeading.Text" xml:space="preserve">
+    <value>Who played this?</value>
   </data>
   <data name="WrittenChoice.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Written is what you read on your part.</value>

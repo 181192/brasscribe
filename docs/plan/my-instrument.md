@@ -306,7 +306,7 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 | Key | English | Bokmål |
 |---|---|---|
 | title | What do you play? | Hva spiller du? |
-| body | Brasscribe shows your part first and mutes it when you play along. You can change it in Settings. | Brasscribe viser stemmen din først og slår av lyden på den når du spiller med. Du kan endre det i Innstillinger. |
+| body | Brasscribe shows your part first and mutes it when you play along. You can change it in Settings. | Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger. |
 | instrument group | Instrument | Instrument |
 | which part | Which part? | Hvilken stemme? |
 | reads | You read | Du leser |

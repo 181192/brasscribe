@@ -57,8 +57,11 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
     [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(PrintCommand))]
     public partial ExportScope Scope { get; set; } = ExportScope.MyPart;
 
-    /// <summary>"Solo Cornet (you)".</summary>
+    /// <summary>"Euphonium (you)": the player's part, not the part that happens to be shown.</summary>
     [ObservableProperty] public partial string MyPartLabel { get; set; } = "";
+
+    /// <summary>A part is the player's; with "I conduct or listen" there is none, and Every part is the default.</summary>
+    [ObservableProperty] public partial bool HasMyPart { get; set; }
     [ObservableProperty] public partial string? StatusText { get; set; }
 
     [ObservableProperty]
@@ -82,8 +85,8 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         Parts.Clear();
         foreach (var p in score.Parts) Parts.Add(p);
         _partCount = Parts.Count;
-        _myPart = score.SelectedPartIndex >= 0 ? score.SelectedPartIndex
-            : score.Player.PlayAlongPart is { } mine ? Math.Max(0, Parts.ToList().FindIndex(p => p.Name == mine.Name)) : 0;
+        _myPart = score.MyPartIndex;
+        HasMyPart = _myPart >= 0 && _myPart < Parts.Count;
         ConductorLabel = lineup switch
         {
             Lineup.Quartet => s["Export_Scope_QuartetScore"],
@@ -91,7 +94,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
             _ => throw new ArgumentOutOfRangeException(nameof(lineup), lineup, null),
         };
         // The part names are already in the score's language ("1. kornett (deg)").
-        MyPartLabel = Parts.Count > 0 ? s.Format("Export_Scope_MyPart", Parts[Math.Clamp(_myPart, 0, Parts.Count - 1)].Name) : ConductorLabel;
+        MyPartLabel = HasMyPart ? s.Format("Export_Scope_MyPart", Parts[_myPart].Name) : "";
 
         var options = exports.Options(_sources).ToDictionary(o => o.Format);
         Formats.Clear();
@@ -120,7 +123,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         // Your own part as a PDF, or as MusicXML when no PDF can be made here.
         var first = Formats.FirstOrDefault(f => f.Key == "Pdf" && f.Available) ?? Formats.FirstOrDefault(f => f.Key == "MusicXml" && f.Available);
         if (first is not null) first.IsSelected = true;
-        Scope = ExportScope.MyPart;
+        Scope = HasMyPart ? ExportScope.MyPart : ExportScope.EveryPart;
         StatusText = null;
         OnPropertyChanged(nameof(CanPrintNow));
         OnPropertyChanged(nameof(FileCount));
@@ -140,7 +143,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         var parts = Scope switch
         {
             ExportScope.EveryPart => Enumerable.Range(0, _partCount).Select(i => (int?)i).ToList(),
-            ExportScope.MyPart when _partCount > 0 => [_myPart],
+            ExportScope.MyPart when HasMyPart => [_myPart],
             _ => new List<int?> { null },
         };
         var plan = new List<(ExportFormat, int?, string)>();

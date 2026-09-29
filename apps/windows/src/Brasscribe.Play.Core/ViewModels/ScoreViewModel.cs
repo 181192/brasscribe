@@ -11,6 +11,13 @@ namespace Brasscribe.Play.Core.ViewModels;
 
 public sealed record ScorePartItem(int Index, string Name, string? Instrument, int UncertainCount);
 
+/// <summary>The source label's icons (Segoe Fluent Icons, as BcIconRecordMic and BcIconParts): the record mic for the recording, the parts for arranged.</summary>
+public static class SourceGlyphs
+{
+    public const string Recording = "\uE720";
+    public const string Arranged = "\uEA37";
+}
+
 /// <summary>
 /// The review and practice score: parts, written/concert pitch, zoom, the talking-score cursor and
 /// every score command from the keyboard map. The notation view and its automation peer read
@@ -172,8 +179,11 @@ public sealed partial class ScoreViewModel : ObservableObject
         }
         if (Player.Player is Playback.AlphaTabScorePlayer alphaTabPlayer)
             alphaTabPlayer.PerformanceJson = composition is null ? null : CompositionJson.Serialize(composition);
+        Player.PartLabel = PartLabel;
         Player.Load(System.Text.Encoding.UTF8.GetBytes(musicXml));
-        Player.PlayAlongPart = Player.Parts.FirstOrDefault(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase)) ?? Player.Parts.FirstOrDefault();
+        _sources = SourcesOf(composition);
+        foreach (var m in Player.Parts) ShowSource(m);
+        ApplyYourPart();
         IsLoaded = true;
         HasVideo = Original?.HasVideo == true;
         ListeningTo = ListeningSource.Score;
@@ -278,6 +288,8 @@ public sealed partial class ScoreViewModel : ObservableObject
         {
             if (Document is null || SelectedPartIndex < 0 || SelectedPartIndex >= Document.Parts.Count) return _s["Score_AsWritten"];
             int pc = ((Document.Parts[SelectedPartIndex].Transpose.Chromatic % 12) + 12) % 12;
+            // The player's own part, read in bass clef: written at concert pitch.
+            if (pc == 0 && SelectedPartIndex == MyPartIndex && MyPartReadsBass?.Invoke() == true) return _s["Score_AsWrittenBassClef"];
             string? key = pc switch { 10 => "B♭", 3 => "E♭", 5 => "F", 9 => "A", 2 => "D", 7 => "G", _ => null };
             return key is null ? _s["Score_AsWritten"] : _s.Format("Score_AsWrittenFor", key);
         }
@@ -288,33 +300,185 @@ public sealed partial class ScoreViewModel : ObservableObject
         : ((Language == "nb" ? Document.Parts[SelectedPartIndex].InstrumentNb : null) ?? Document.Parts[SelectedPartIndex].Instrument
            ?? Document.Parts[SelectedPartIndex].Name).ToUpperInvariant();
 
-    /// <summary>The player's own part in the score (the one "Mute my part" silences), or -1 without parts.</summary>
+    /// <summary>
+    /// The player's own part in the score (the one "Mute my part" silences), or -1 when no part is theirs
+    /// ("I conduct or listen", or a lineup without their seat).
+    /// </summary>
     public int MyPartIndex
     {
         get
         {
             if (Document is null || Document.Parts.Count == 0) return -1;
             if (Player.PlayAlongPart is { } mine && Document.Parts.FindIndex(p => p.Name == mine.Name) is var i and >= 0) return i;
-            int solo = Document.Parts.FindIndex(p => p.Name.Contains("Solo", StringComparison.OrdinalIgnoreCase) && !p.Percussion);
-            return solo >= 0 ? solo : 0;
+            return -1;
         }
+    }
+
+    /// <summary>A part is the player's: Mute my part, Only my part and "(you)" are offered.</summary>
+    public bool HasMyPart => MyPartIndex >= 0;
+
+    /// <summary>The player's part by its shown name ("Eufonium"), empty when none.</summary>
+    public string MyPartLabel => MyPartIndex >= 0 ? PartLabelOf(Document!.Parts[MyPartIndex].Name) : "";
+
+    /// <summary>Works out whose part is whose for this score (the seat, the lineup, the part chosen for it); null keeps the first Solo part.</summary>
+    public Func<IReadOnlyList<Seats.ScorePart>, Seats.YourPartResult>? YourPartResolver { get; set; }
+
+    /// <summary>The words for a lineup that lacks the player's seat; null when there is nothing to say.</summary>
+    public Func<IReadOnlyList<Seats.ScorePart>, Seats.YourPartResult, string?>? YourPartNoticeText { get; set; }
+
+    /// <summary>The score was written with the player's part in bass clef (<c>reads</c> "bass").</summary>
+    public Func<bool>? MyPartReadsBass { get; set; }
+
+    /// <summary>"Make this my part" saves the part (by name) with the score.</summary>
+    public Action<string>? PersistMyPart { get; set; }
+
+    /// <summary>A part's name in the UI language, from the core's one table.</summary>
+    public Func<string, string>? PartLabel { get; set; }
+
+    /// <summary>"This small band has no 1st Baritone. Your part here is Euphonium, …"; empty when the seat has its own part.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasYourPartNotice))]
+    public partial string YourPartNotice { get; set; } = "";
+
+    public bool HasYourPartNotice => YourPartNotice.Length > 0;
+
+    private string PartLabelOf(string name) => PartLabel?.Invoke(name) ?? name;
+
+    /// <summary>The parts of the shown score as "your part" is looked up in them.</summary>
+    public IReadOnlyList<Seats.ScorePart> ScoreParts =>
+        Document?.Parts.Select(p => new Seats.ScorePart(p.Name, p.Transpose.Chromatic, p.Percussion)).ToList() ?? [];
+
+    /// <summary>
+    /// Works out the player's part again (the seat changed in Settings). Only the highlight, the mute target and
+    /// the order of the notes to check change; the score is not arranged again.
+    /// </summary>
+    public void RefreshYourPart()
+    {
+        if (Document is null) return;
+        ApplyYourPart();
+    }
+
+    private void ApplyYourPart()
+    {
+        var parts = ScoreParts;
+        var result = YourPartResolver?.Invoke(parts) ?? new Seats.YourPartResult(parts.Count == 0 ? -1 : Seats.YourPart.Legacy(parts));
+        SetMine(result.Index >= 0 && result.Index < parts.Count ? parts[result.Index].Name : null);
+        YourPartNotice = YourPartNoticeText?.Invoke(parts, result) ?? "";
+        // Said once, politely, when the score opens (WCAG 4.1.3): not again when the same score is loaded after an edit.
+        var said = (Title, YourPartNotice);
+        if (YourPartNotice.Length > 0 && said != _noticeSaid) _announcer.Announce(YourPartNotice);
+        _noticeSaid = said;
+    }
+
+    private (string Title, string Notice) _noticeSaid;
+
+    /// <summary>"Make this my part": only the highlight, the mute target, the review order and the share scope change, at once.</summary>
+    public void MakeMine(int index)
+    {
+        if (Document is null || index < 0 || index >= Document.Parts.Count) return;
+        string name = Document.Parts[index].Name;
+        SetMine(name);
+        YourPartNotice = "";
+        PersistMyPart?.Invoke(name);
+        _announcer.Announce(_s.Format("Score_MadeMine", PartLabelOf(name)));
+    }
+
+    private void SetMine(string? name)
+    {
+        // Mute my part follows the part, quietly: the old one sounds again, the new one is muted if it was on.
+        var old = Player.PlayAlongPart;
+        var next = name is null ? null : Player.Parts.FirstOrDefault(m => m.Name == name);
+        if (Player.MuteMyPart)
+        {
+            if (next is null) Player.MuteMyPart = false;
+            else
+            {
+                if (old is not null && !ReferenceEquals(old, next) && Player.Parts.Contains(old)) old.IsMuted = false;
+                next.IsMuted = true;
+            }
+        }
+        Player.PlayAlongPart = next;
+        OnPropertyChanged(nameof(MyPartIndex));
+        OnPropertyChanged(nameof(HasMyPart));
+        OnPropertyChanged(nameof(MyPartLabel));
+        OnPropertyChanged(nameof(MyPartSourceIsArranged));
+        OnPropertyChanged(nameof(CanMakeShownMine));
+        Stand.YourPartChanged();
+    }
+
+    private IReadOnlyDictionary<string, string> _sources = new Dictionary<string, string>();
+
+    /// <summary>Where a part came from (your-recording, recording, arranged), by its own name; null when not known.</summary>
+    public string? SourceOf(string partName) => _sources.TryGetValue(partName, out var source) ? source : null;
+
+    /// <summary>The player's part was arranged from the harmony: there are no notes of theirs to check.</summary>
+    public bool MyPartSourceIsArranged => MyPartIndex >= 0 && SourceOf(Document!.Parts[MyPartIndex].Name) == PartSource.Arranged;
+
+    /// <summary>The source label's words ("From the recording"); empty when not known.</summary>
+    public string SourceLabelOf(string partName) => SourceOf(partName) switch
+    {
+        PartSource.YourRecording => _s["Source_YourRecording"],
+        PartSource.Recording => _s["Source_Recording"],
+        PartSource.Arranged => _s["Source_Arranged"],
+        _ => "",
+    };
+
+    /// <summary>The one sentence a source label opens.</summary>
+    public string SourceExplanationOf(string partName) => SourceOf(partName) switch
+    {
+        PartSource.YourRecording => _s["Source_Explain_YourRecording"],
+        PartSource.Recording => _s["Source_Explain_Recording"],
+        PartSource.Arranged => _s["Source_Explain_Arranged"],
+        _ => "",
+    };
+
+    private IReadOnlyDictionary<string, string> SourcesOf(Composition? composition)
+    {
+        if (composition is null || !_core.IsNative) return new Dictionary<string, string>();
+        try { return _core.PartSources(CompositionJson.Serialize(composition)); }
+        catch (CoreBridgeException) { return new Dictionary<string, string>(); }
+    }
+
+    private void ShowSource(MixerPartViewModel m)
+    {
+        var source = SourceOf(m.Name);
+        m.SourceLabel = SourceLabelOf(m.Name);
+        m.SourceExplanation = SourceExplanationOf(m.Name);
+        m.SourceGlyph = source switch
+        {
+            null => "",
+            PartSource.Arranged => SourceGlyphs.Arranged,
+            _ => SourceGlyphs.Recording,
+        };
     }
 
     /// <summary>The part view: one part chosen, laid out as a page, with the player's own part muted.</summary>
     public bool IsPartView => SelectedPartIndex >= 0;
 
+    /// <summary>The shown part's source label ("Arranged from the band's harmony"), for the part view's header; empty when unknown.</summary>
+    public string ShownSourceLabel => ShownPartName is { } n ? SourceLabelOf(n) : "";
+    public string ShownSourceExplanation => ShownPartName is { } n ? SourceExplanationOf(n) : "";
+    public string ShownSourceGlyph => ShownPartName is { } n ? SourceOf(n) switch { null => "", PartSource.Arranged => SourceGlyphs.Arranged, _ => SourceGlyphs.Recording } : "";
+    public bool HasShownSource => ShownSourceLabel.Length > 0;
+
+    /// <summary>"Make this my part" is offered in the part view of a part that is not the player's.</summary>
+    public bool CanMakeShownMine => IsPartView && SelectedPartIndex != MyPartIndex;
+
+    private string? ShownPartName => Document is { } d && SelectedPartIndex >= 0 && SelectedPartIndex < d.Parts.Count ? d.Parts[SelectedPartIndex].Name : null;
+
     partial void OnSelectedPartIndexChanged(int value)
     {
         OnPropertyChanged(nameof(IsPartView));
+        OnPropertyChanged(nameof(ShownSourceLabel));
+        OnPropertyChanged(nameof(ShownSourceExplanation));
+        OnPropertyChanged(nameof(ShownSourceGlyph));
+        OnPropertyChanged(nameof(HasShownSource));
+        OnPropertyChanged(nameof(CanMakeShownMine));
         OnPropertyChanged(nameof(WrittenLabel));
         OnPropertyChanged(nameof(PartHeader));
         if (_nav is null || value < 0) return;
-        if (value < Player.Parts.Count && !_quietPart)
-        {
-            if (Player.MuteMyPart) Player.MuteMyPart = false; // unmute the part that was yours
-            Player.PlayAlongPart = Player.Parts[value];
-            Player.MuteMyPart = true;
-        }
+        // Your own part on its page is muted, to play along. Another part is only shown: your part stays yours.
+        if (!_quietPart && value == MyPartIndex && !Player.MuteMyPart) Player.MuteMyPart = true;
         _nav.GoToPart(value);
         var part = Document!.Parts[value];
         string name = Language == "nb" ? part.NameNb ?? part.Name : part.Name;

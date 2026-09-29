@@ -33,6 +33,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     public ScoreScreen()
     {
         InitializeComponent();
+        // The part menu is built as it opens, never while one of its own items is being invoked.
+        PartMenu.Opening += (_, _) => FillPartMenu();
         Notation.LeaveRequested += (_, _) => PlayButton.Focus(FocusState.Keyboard);
         Notation.MarkInvoked += (_, _) => Main?.CheckNotesCommand.Execute(null);
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
@@ -206,8 +208,18 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         }
     }
 
-    /// <summary>"All parts" and each part as radio items; choosing one opens the part view.</summary>
+    /// <summary>The part picker's label and the page layout for the part shown.</summary>
     private void FillPartPicker()
+    {
+        UpdatePartPickerLabel();
+        ApplyPageLayout();
+    }
+
+    /// <summary>
+    /// "All parts" and each part as radio items (the player's marked "(you)"); choosing one opens the part view.
+    /// In the part view of another part, "Make this my part" follows.
+    /// </summary>
+    private void FillPartMenu()
     {
         PartMenu.Items.Clear();
         void Add(string name, int index)
@@ -217,9 +229,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             PartMenu.Items.Add(item);
         }
         Add(App.Strings["Score_FullScore"], -1);
-        foreach (var p in ViewModel.Parts) Add(p.Name, p.Index);
-        UpdatePartPickerLabel();
-        ApplyPageLayout();
+        foreach (var p in ViewModel.Parts)
+            Add(p.Index == ViewModel.MyPartIndex ? App.Strings.Format("Stand_PartYours", p.Name) : p.Name, p.Index);
+        if (ViewModel.CanMakeShownMine)
+        {
+            PartMenu.Items.Add(new MenuFlyoutSeparator());
+            var mine = new MenuFlyoutItem { Text = App.Strings["Score_MakeMine"] };
+            mine.Click += (_, _) => ViewModel.MakeMine(ViewModel.SelectedPartIndex);
+            PartMenu.Items.Add(mine);
+        }
     }
 
     private void UpdatePartPickerLabel()

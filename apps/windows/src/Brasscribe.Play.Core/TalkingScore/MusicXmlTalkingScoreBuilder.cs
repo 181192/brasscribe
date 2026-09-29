@@ -18,7 +18,9 @@ public static class MusicXmlTalkingScoreBuilder
     /// <summary>Confidence given to notes the MusicXML colours as uncertain when no Composition matches them.</summary>
     public const double ColourOnlyConfidence = 0.55;
 
-    public static TalkingScoreDocument Build(string musicXml, Composition? composition = null)
+    /// <summary>The talking-score structure of a MusicXML score (and its Composition, for the evidence).</summary>
+    /// <remarks><paramref name="nameNb"/> gives a part's Norwegian name from the core's one table; without it there is none (names stay English).</remarks>
+    public static TalkingScoreDocument Build(string musicXml, Composition? composition = null, Func<string, string>? nameNb = null)
     {
         var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null };
         using var reader = XmlReader.Create(new StringReader(musicXml), settings);
@@ -48,7 +50,7 @@ public static class MusicXmlTalkingScoreBuilder
             {
                 Id = id,
                 Name = name,
-                NameNb = PartNames.Nb(name),
+                NameNb = nameNb?.Invoke(name),
                 Instrument = instrument,
                 InstrumentNb = instrument is null ? null : PartNames.InstrumentNb(instrument),
             };
@@ -439,41 +441,9 @@ public static class MusicXmlTalkingScoreBuilder
     }
 }
 
-/// <summary>Norwegian part and instrument names (spec §7, a proposal) and drum-kit positions.</summary>
+/// <summary>Norwegian instrument names and drum-kit positions. Part names come from the core only (its one table).</summary>
 public static class PartNames
 {
-    private static readonly Dictionary<string, string> Nb_ = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Soprano Cornet"] = "Sopran-kornett",
-        ["Solo Cornet"] = "Solokornett",
-        ["Repiano Cornet"] = "Repiano-kornett",
-        ["2nd Cornet"] = "2. kornett",
-        ["3rd Cornet"] = "3. kornett",
-        ["Flugelhorn"] = "Flygelhorn",
-        ["Solo Horn"] = "Solo althorn",
-        ["1st Horn"] = "1. althorn",
-        ["2nd Horn"] = "2. althorn",
-        ["1st Baritone"] = "1. baryton",
-        ["2nd Baritone"] = "2. baryton",
-        ["1st Trombone"] = "1. trombone",
-        ["2nd Trombone"] = "2. trombone",
-        ["Bass Trombone"] = "Basstrombone",
-        ["Euphonium"] = "Eufonium",
-        ["E♭ Bass"] = "Ess-bass",
-        ["B♭ Bass"] = "B-bass",
-        ["Percussion"] = "Slagverk",
-        // The quartet: 1st Cornet, 2nd Cornet, Tenor Horn, Euphonium.
-        ["1st Cornet"] = "1. kornett",
-        ["Tenor Horn"] = "Althorn",
-        // A trumpet player's lead part.
-        ["Trumpet"] = "Trompet",
-    };
-
-    /// <summary>The English part names this table knows.</summary>
-    public static IEnumerable<string> Known => Nb_.Keys;
-
-    public static string Nb(string en) => Nb_.TryGetValue(en, out var nb) ? nb : en;
-
     public static string InstrumentNb(string en)
     {
         string s = en

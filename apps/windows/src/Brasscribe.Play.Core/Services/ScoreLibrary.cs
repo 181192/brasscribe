@@ -5,6 +5,7 @@ using Brasscribe.Play.Core.Scores;
 namespace Brasscribe.Play.Core.Services;
 
 /// <summary>A score in "Your scores": where its files are and what the list row says.</summary>
+/// <remarks><c>MyPart</c> is the part chosen for this score with "Make this my part" (its own name); null follows the seat.</remarks>
 public sealed record LibraryEntry(
     string Id,
     string Title,
@@ -16,7 +17,8 @@ public sealed record LibraryEntry(
     int NotesToCheck,
     string? JobId = null,
     string? EvidencePath = null,
-    string? Lineup = null);
+    string? Lineup = null,
+    string? MyPart = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, WriteIndented = true)]
 [JsonSerializable(typeof(List<LibraryEntry>))]
@@ -104,6 +106,15 @@ public sealed class ScoreLibrary
         return Put(new LibraryEntry(existing?.Id ?? Guid.NewGuid().ToString("N")[..12], title, path, null, DateTimeOffset.Now, parts, bars, notesToCheck));
     }
 
+    /// <summary>"Make this my part": the part (by its own name) is the player's in this score from now on.</summary>
+    public void SetMyPart(string id, string? part)
+    {
+        int i = _entries.FindIndex(e => e.Id == id);
+        if (i < 0 || _entries[i].MyPart == part) return;
+        _entries[i] = _entries[i] with { MyPart = part };
+        Save();
+    }
+
     /// <summary>Updates how many notes are still to check.</summary>
     public void SetNotesToCheck(string id, int count)
     {
@@ -164,6 +175,8 @@ public sealed class ScoreLibrary
 
     private LibraryEntry Put(LibraryEntry entry)
     {
+        // The same score again (the same job, the same file) keeps the part chosen for it.
+        if (entry.MyPart is null && _entries.FirstOrDefault(e => e.Id == entry.Id)?.MyPart is { } mine) entry = entry with { MyPart = mine };
         _entries.RemoveAll(e => e.Id == entry.Id);
         _entries.Insert(0, entry);
         Save();

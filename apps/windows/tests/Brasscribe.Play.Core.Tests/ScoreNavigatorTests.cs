@@ -5,8 +5,17 @@ namespace Brasscribe.Play.Core.Tests;
 
 public class ScoreNavigatorTests
 {
+    /// <summary>The fixture's Norwegian part names, as the core's table gives them.</summary>
+    internal static string FixtureNb(string name) => name switch
+    {
+        "Solo Cornet" => "Solokornett",
+        "Solo Horn" => "Solo althorn",
+        "Percussion" => "Slagverk",
+        _ => name,
+    };
+
     private static TalkingScoreDocument Doc() =>
-        MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")));
+        MusicXmlTalkingScoreBuilder.Build(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), nameNb: FixtureNb);
 
     [Fact]
     public void Builder_reads_parts_transposition_and_spelling()

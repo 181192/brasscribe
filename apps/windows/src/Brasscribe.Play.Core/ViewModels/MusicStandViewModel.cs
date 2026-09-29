@@ -82,6 +82,15 @@ public sealed partial class MusicStandViewModel : ObservableObject
     /// <summary>There is a part to call yours: without one, Only my part is hidden (my-instrument §3.4).</summary>
     public bool HasMyPart => _score.MyPartIndex >= 0;
 
+    /// <summary>The player's part changed (Make this my part, or the seat in Settings): Only my part follows it.</summary>
+    public void YourPartChanged()
+    {
+        OnPropertyChanged(nameof(HasMyPart));
+        if (!IsOpen) return;
+        ApplyPart();
+        UpdateTexts();
+    }
+
     public StandPages Pages => _pages;
     public int PageCount => _pages.Count;
 
