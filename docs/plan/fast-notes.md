@@ -684,6 +684,10 @@ cover 16th-16th-8th, 8th-16th-16th and 16th-8th-16th with 10 and 20 ms of jitter
 **Readability and parity.**
 - Mikkel's Solo Cornet stays at 0.3 % tuplets, and the `readability` suite passes unchanged.
 - The dense-quantize fixtures are regenerated (9 of 120 cases change) and match in Rust.
+- The on-device reference clip (Entertainer, small0 beats) changes in one beat of the solo. The beat after a triplet
+  beat has its onsets at 0.32 and 0.62 of the beat, and is now written as triplets rather than 16th-16th-8th. The new
+  reference is `data/runs/apple/entertainer-ref.notation-followups`, and every pointer reads it until it is promoted.
+  The Mikkel golden does not change.
 
 ### 8.3 Takes with a single tracked beat
 
