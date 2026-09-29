@@ -114,6 +114,18 @@ public sealed class LoudnessMeter
     /// </summary>
     public static double IntegratedWav(string path)
     {
+        LoudnessMeter? m = null;
+        int channels = 0;
+        ReadWav(path, (rate, ch) => { m = new LoudnessMeter(rate, ch); channels = ch; }, samples => m!.ProcessInterleaved(samples));
+        return m!.IntegratedLufs + (channels == 1 ? 10 * Math.Log10(2) : 0);
+    }
+
+    /// <summary>
+    /// Reads a WAV file (PCM 16/24/32-bit or 32-bit float) in chunks: <paramref name="onFormat"/> gets the sample rate and
+    /// channel count once, then <paramref name="onSamples"/> the interleaved samples as floats in −1..1.
+    /// </summary>
+    internal static void ReadWav(string path, Action<int, int> onFormat, Action<ReadOnlySpan<float>> onSamples)
+    {
         using var s = File.OpenRead(path);
         var head = new byte[12];
         if (s.Read(head, 0, 12) != 12 || !head.AsSpan(0, 4).SequenceEqual("RIFF"u8) || !head.AsSpan(8, 4).SequenceEqual("WAVE"u8))
@@ -139,7 +151,7 @@ public sealed class LoudnessMeter
             {
                 if (channels == 0 || !(format == 1 && bits is 16 or 24 or 32 || format == 3 && bits == 32))
                     throw new InvalidDataException($"unsupported WAV format {format}/{bits}");
-                var m = new LoudnessMeter(rate, channels);
+                onFormat(rate, channels);
                 int bytes = bits / 8, frame = bytes * channels;
                 var raw = new byte[frame * 8192];
                 var f = new float[channels * 8192];
@@ -161,10 +173,10 @@ public sealed class LoudnessMeter
                             : bits == 24 ? ((b[0] | b[1] << 8 | (sbyte)b[2] << 16)) / 8388608f
                             : BinaryPrimitives.ReadInt32LittleEndian(b) / 2147483648f;
                     }
-                    m.ProcessInterleaved(f.AsSpan(0, count));
+                    onSamples(f.AsSpan(0, count));
                     left -= got;
                 }
-                return m.IntegratedLufs + (channels == 1 ? 10 * Math.Log10(2) : 0);
+                return;
             }
             else
             {

@@ -1,9 +1,10 @@
-# Windows Play: manual check before merging feat/windows-parity
+# Windows Play: manual check of the Windows parity work
 
-One run on a Windows 11 PC, with the engine paired (Bandroom or `engine` on another computer). It
+One run on a Windows 11 PC, with the engine paired (Bandroom or `engine` on another computer). The
+work came from `feat/windows-parity` and was merged before any Windows run, so run this on `main`. It
 covers the music stand, the Appearance setting with Pink, "What do you play?" with the trumpet and
-percussion, and the parity fixes. Tick each line. If a step fails, note the step number and what you
-saw, and stop at the first crash.
+percussion, the quiet-recording boost and the other parity fixes. Tick each line. If a step fails,
+note the step number and what you saw, and stop at the first crash.
 
 ## 0. Build
 
@@ -87,7 +88,21 @@ saw, and stop at the first crash.
    Pink light and Pink dark. Look for unreadable text and for surfaces left in the old palette.
    Radio buttons, checks and toggles keep the ink accent; that is expected.
 
-## 4. Narrator
+## 4. A quiet recording
+
+1. Record a quiet take (a soft passage, or the microphone far away), or import a quiet audio file,
+   and make a loud band score from it (Brass band, As played).
+2. Switch between the band and the recording (Listen): the recording is about as loud as the band,
+   not much softer, and never distorts or clips on its loudest notes.
+3. Pause, change the lineup or difficulty so the score is re-arranged, and listen again: the recording
+   still matches the band. Nothing jumps in level while it plays.
+4. Slow the recording to 75 % and loop two bars: speed, position and loop behave as before the boost.
+5. Do the same with a quiet **video**: the picture plays with the boosted sound, in sync, and seeking,
+   speed and picture-in-picture still work. If the video plays at its own (quiet) level instead, the
+   composition failed: note it.
+6. A loud recording is still turned down to the band's level.
+
+## 5. Narrator
 
 Use `qa/screen-reader-scripts/narrator-windows.md` for the full script. For this branch:
 
@@ -100,7 +115,7 @@ Use `qa/screen-reader-scripts/narrator-windows.md` for the full script. For this
 4. The stand: page turns are announced. Entering and leaving are announced. Tab reaches the layer.
 5. The About version is a button named "Version x.y.z", and the unlock is announced once.
 
-## 5. 200 % text size
+## 6. 200 % text size
 
 Settings › Accessibility › Text size 200 %, then restart the app.
 
@@ -116,4 +131,4 @@ Settings › Accessibility › Text size 200 %, then restart the app.
 
 ## Sign-off
 
-- [ ] All sections pass. Then merge `feat/windows-parity` into `main`.
+- [ ] All sections pass. File anything that fails as a fix against `main`, with the step number.
