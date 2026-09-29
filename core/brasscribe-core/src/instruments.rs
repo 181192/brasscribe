@@ -407,6 +407,18 @@ pub fn seat_own_part(name: &str) -> Option<Part> {
     (name == "Trumpet").then(|| ps("Trumpet", &TRUMPET, 1, "Tpt.", Some(8)))
 }
 
+/// The drum kits of the band SoundFont a percussion part can play: its 0-based bank 128 program
+/// (sounds/mapping.json resolve.kit_programs). The arranger writes the pop kit for a pop or rock take.
+pub const KITS: [(&str, i64); 2] = [("band", 0), ("pop", 1)];
+
+/// The program of a kit option ("" = the band kit).
+pub fn kit_program(name: &str) -> Result<i64, String> {
+    if name.is_empty() {
+        return Ok(0);
+    }
+    KITS.iter().find(|(n, _)| *n == name).map(|&(_, p)| p).ok_or_else(|| format!("unknown kit {name} (band or pop)"))
+}
+
 pub fn part_banks() -> Vec<(&'static str, i64)> {
     let mut out: Vec<(&'static str, i64)> = Vec::new();
     let own = seat_own_part("Trumpet").into_iter();

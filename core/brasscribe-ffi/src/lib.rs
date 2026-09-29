@@ -400,6 +400,8 @@ pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: Layer
         reads: o.reads,
         lead: o.lead.unwrap_or_default(),
         lang: o.lang.unwrap_or_default(),
+        // On device only solo takes are arranged: the band kit.
+        kit: String::new(),
     };
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {

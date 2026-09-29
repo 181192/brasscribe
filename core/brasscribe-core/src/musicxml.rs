@@ -59,6 +59,14 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         key_changes: comp.keys.iter().skip(1).map(|k| (k.tick, k.fifths)).collect(),
         rehearsal: comp.sections.iter().map(|s| (s.tick, s.label.clone())).collect(),
         encoding_date: String::new(),
+        // The kit the arrangement was made for (comp.arrangement "kit"); the band kit when none or unknown.
+        kit_program: comp
+            .arrangement
+            .as_ref()
+            .and_then(|a| a.get("kit"))
+            .and_then(|v| v.as_str())
+            .and_then(|k| crate::instruments::kit_program(k).ok())
+            .unwrap_or(0),
     }
 }
 

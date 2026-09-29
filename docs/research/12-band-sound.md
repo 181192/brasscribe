@@ -455,5 +455,5 @@ Not the cause:
 
 **Open.**
 - **Apple per-part balance.** Against alphaSynth, on the golden stems with the solo cornet as reference, Apple plays most parts 2.4–5.3 dB hotter. This was already the case before (0…+5.7 dB), and comes from the environment node's seating (HRTF, distance), not from the pack.
-- **The pop kit** needs a style signal from the arranger before anything can select it.
+- **The pop kit** now has its signal: the arranger writes `<midi-program>2</midi-program>` on the percussion part for a pop or rock take (`--kit pop`, Python and Rust, conformance case `mikkel/layers-kit-pop`), and every player's resolver plays bank 128 program 1 for it (`resolve.kit_programs`, shared vectors). A pop-rock arrangement still has no Percussion part to play it: it is made for the small band or the quartet, and its drums stem is not transcribed. Adding one is a lineup change in every app.
 - **Velocity layers.** The alphaSynth phrase still jumps 6 dB between mp and mf and 5.7 dB between f and ff, at the three-layer splits.

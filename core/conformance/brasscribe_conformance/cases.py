@@ -50,6 +50,8 @@ MIKKEL_VARIANTS = [
     ("layers-lead-seat-trumpet-easier", ["--lead", "seat", "--seat", "trumpet", "--difficulty", "easier"]),
     # The footer on the arranged parts in Norwegian.
     ("layers-lang-nb", ["--lang", "nb"]),
+    # The pop kit (a pop or rock take): the Percussion part's midi-instruments select bank 128 program 1.
+    ("layers-kit-pop", ["--kit", "pop"]),
 ]
 # Song lineup options on the chorales: the tune on the player's part (non-layered arranger).
 SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]

@@ -33,3 +33,18 @@ fn a_part_name_means_one_bank_in_every_lineup() {
         }
     }
 }
+
+#[test]
+fn kits_match_the_band_soundfont_mapping() {
+    use brasscribe_core::instruments::{kit_program, KITS};
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/mapping.json");
+    let m: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).expect("sounds/mapping.json")).unwrap();
+    let mut programs: Vec<i64> = KITS.iter().map(|k| k.1).collect();
+    programs.sort();
+    let want: Vec<i64> = m["resolve"]["kit_programs"].as_array().unwrap().iter().map(|v| v.as_i64().unwrap()).collect();
+    assert_eq!(programs, want);
+    assert_eq!(kit_program("pop").unwrap(), m["band_soundfont"]["pop_kit_program"].as_i64().unwrap());
+    assert_eq!(kit_program("").unwrap(), 0);
+    assert_eq!(kit_program("band").unwrap(), 0);
+    assert!(kit_program("jazz").is_err());
+}

@@ -12,7 +12,7 @@ from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice
 MAPPING = Path(__file__).resolve().parents[2] / "sounds" / "mapping.json"
 
 
-def _xml(tmp_path) -> ET.Element:
+def _xml(tmp_path, kit: str = "band") -> ET.Element:
     solo = [Note(72, i * 24, 24) for i in range(8)]
     bass = [Note(36, i * 96, 96) for i in range(2)]
     strings = [Note(p, 0, 192) for p in (60, 64, 67)]
@@ -22,7 +22,7 @@ def _xml(tmp_path) -> ET.Element:
                              Voice("strings", VoiceRole.HARMONY, strings, layer="strings"),
                              Voice("drums", VoiceRole.RHYTHM, drums, layer="drums")], [Meter(0, 4)], [KeySig(0, 0)])
     arr = arrange_layers(comp)
-    out = write_musicxml(build_band_score(arr, comp), tmp_path / "m.musicxml", band_sounds(arr))
+    out = write_musicxml(build_band_score(arr, comp), tmp_path / "m.musicxml", band_sounds(arr), kit)
     raw = out.read_text()
     return ET.fromstring(raw[raw.index("<score-partwise"):])
 
@@ -54,6 +54,28 @@ def test_percussion_instruments_per_drum(tmp_path):
     part = next(p for p in root.findall("part") if p.get("id") == sp.get("id"))
     notes = [n for n in part.iter("note") if n.find("unpitched") is not None]
     assert notes and all(n.find("instrument").get("id") in unpitched for n in notes)
+    # the band kit is the default program: nothing written
+    assert all(mi.find("midi-program") is None for mi in sp.findall("midi-instrument"))
+
+
+def test_pop_kit_is_the_percussion_program(tmp_path):
+    root = _xml(tmp_path, kit="pop")
+    sp = next(s for s in root.iter("score-part") if s.findtext("part-name") == "Percussion")
+    for mi in sp.findall("midi-instrument"):
+        assert mi.findtext("midi-program") == "2"  # bank 128 program 1, 1-based
+        assert [c.tag for c in mi] == ["midi-channel", "midi-program", "midi-unpitched"]
+    # the pitched parts keep their own programs
+    cornet = next(s for s in root.iter("score-part") if s.findtext("part-name") == "Solo Cornet")
+    assert cornet.find("midi-instrument").findtext("midi-program") == "57"
+
+
+@pytest.mark.skipif(not MAPPING.exists(), reason="sounds/mapping.json not available")
+def test_kits_match_the_band_soundfont_mapping():
+    from brasscribe_music.instruments import KITS
+
+    m = json.loads(MAPPING.read_text())
+    assert sorted(KITS.values()) == m["resolve"]["kit_programs"]
+    assert KITS["pop"] == m["band_soundfont"]["pop_kit_program"]
 
 
 @pytest.mark.skipif(not MAPPING.exists(), reason="sounds/mapping.json not available")
