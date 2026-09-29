@@ -186,7 +186,8 @@ struct RecordingLevelTests {
         print("LEVELS golden recording target \(target) LUFS")
         #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.1)
         // sounds/playback_levels.py --calibrate with the sounds-2026.09.29 pack: -11.54, against -11.54 measured.
-        #expect(abs(target - (-11.54)) < 0.01)
+        // The golden after the fast-notes promotion (more solo notes): -11.57 (-11.54 before it).
+        #expect(abs(target - (-11.57)) < 0.01)
     }
 
     @Test func loudnessIsMeasuredQuickly() throws {
