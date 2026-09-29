@@ -142,6 +142,78 @@ pub fn choose_grids(onset_beats: &[f64], coarse: Option<&Ranges>) -> HashMap<i64
     choice
 }
 
+/// Dense passages (fast runs, trills) on a monophonic line: a beat whose chosen grid would put two onsets on
+/// one slot picks again from these grids, 32nds included (see `choose_grids_dense`).
+pub const DENSE_GRIDS: [(i64, f64); 6] = [(1, 0.0), (2, 0.01), (4, 0.03), (3, 0.06), (6, 0.12), (8, 0.2)];
+pub const COLLIDE: f64 = 1.0;
+/// Snap error weight when a dense beat chooses again: triplets are not 16ths 50 ms off.
+pub const DENSE_ERR: f64 = 10.0;
+/// Leaving the previous beat's grid: a run keeps one subdivision.
+pub const SWITCH: f64 = 0.5;
+/// Seconds: a grid of 6 or 8 with shorter slots is not offered (no 64ths on a doubled beat).
+pub const MIN_SLOT: f64 = 0.045;
+
+/// Onsets of one beat (fractions `f`) that grid `g` cannot hold: two on one slot, or one rounded onto the
+/// next beat's downbeat when that beat starts with an onset.
+fn lost(f: &[f64], g: i64, next_head: Option<&Vec<f64>>) -> i64 {
+    let gf = g as f64;
+    let mut slots: Vec<f64> = f.iter().map(|&x| (x * gf).round_ties_even()).collect();
+    let on_next = slots.iter().any(|&s| s == gf);
+    slots.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    slots.dedup();
+    let mut n = (f.len() - slots.len()) as i64;
+    if let Some(h) = next_head {
+        if on_next && h.iter().any(|&x| x.abs() < 0.5 / gf) {
+            n += 1;
+        }
+    }
+    n
+}
+
+/// `choose_grids`, then every beat whose grid loses onsets chooses again from DENSE_GRIDS (free time
+/// included), paying COLLIDE per onset a grid cannot hold and SWITCH for leaving the previous beat's grid.
+/// Beats that hold their onsets keep their choice.
+pub fn choose_grids_dense(onset_beats: &[f64], coarse: Option<&Ranges>, beat_seconds: &[f64]) -> HashMap<i64, i64> {
+    let mut choice = choose_grids(onset_beats, coarse);
+    let mut by_beat: HashMap<i64, Vec<f64>> = HashMap::new();
+    for &x in onset_beats {
+        let k = beat_index(x);
+        by_beat.entry(k).or_default().push(x - k as f64);
+    }
+    let mut ks: Vec<i64> = by_beat.keys().copied().collect();
+    ks.sort();
+    for k in ks {
+        let f = &by_beat[&k];
+        let nxt = by_beat.get(&(k + 1));
+        if lost(f, choice[&k], nxt) == 0 {
+            continue;
+        }
+        let spb = if beat_seconds.is_empty() { 1.0 } else { beat_seconds[k.clamp(0, beat_seconds.len() as i64 - 1) as usize] };
+        let (mut best, mut best_cost) = (choice[&k], f64::INFINITY);
+        for &(g, pen) in DENSE_GRIDS.iter() {
+            if g >= 6 && spb / (g as f64) < MIN_SLOT {
+                continue;
+            }
+            let gf = g as f64;
+            let sq: Vec<f64> = f
+                .iter()
+                .map(|&x| {
+                    let d = x - (x * gf).round_ties_even() / gf;
+                    d * d
+                })
+                .collect();
+            let switch = if choice.get(&(k - 1)).is_some_and(|&p| p != g) { SWITCH } else { 0.0 };
+            let cost = DENSE_ERR * py::pairwise_sum_f64(&sq) + pen * f.len() as f64 + COLLIDE * lost(f, g, nxt) as f64 + switch;
+            if cost < best_cost {
+                best = g;
+                best_cost = cost;
+            }
+        }
+        choice.insert(k, best);
+    }
+    choice
+}
+
 pub fn snap(x: f64, grids: &HashMap<i64, i64>, default: i64) -> i64 {
     let k = beat_index(x);
     let g = *grids.get(&k).unwrap_or(&default) as f64;
@@ -154,6 +226,20 @@ pub fn quantize(notes: &[RawNote], beat_times: &[f64], monophonic: bool, auto_le
 }
 
 pub fn quantize_coarse(notes: &[RawNote], beat_times: &[f64], monophonic: bool, auto_level: bool, coarse: Option<&Ranges>) -> Vec<QNote> {
+    quantize_with(notes, beat_times, monophonic, auto_level, coarse, false)
+}
+
+/// Notes on the beat grid. `dense` (a monophonic line: the solo) lets beats whose grid would lose onsets
+/// choose a finer one (`choose_grids_dense`), and moves a note that still lands on a taken slot to the next
+/// free slot of its beat's grid, at half its confidence, instead of dropping it.
+pub fn quantize_with(
+    notes: &[RawNote],
+    beat_times: &[f64],
+    monophonic: bool,
+    auto_level: bool,
+    coarse: Option<&Ranges>,
+    dense: bool,
+) -> Vec<QNote> {
     if notes.is_empty() {
         return Vec::new();
     }
@@ -162,7 +248,15 @@ pub fn quantize_coarse(notes: &[RawNote], beat_times: &[f64], monophonic: bool, 
     let bm = BeatMap::new(&bt).expect("two beats");
     let on: Vec<f64> = notes.iter().map(|n| bm.to_beats(n.onset)).collect();
     let off: Vec<f64> = notes.iter().map(|n| bm.to_beats(n.offset)).collect();
-    let grids = choose_grids(&on, coarse);
+    let dense = dense && monophonic;
+    let grids = if dense {
+        let n = bt.len();
+        let mut spb: Vec<f64> = bt.windows(2).map(|w| w[1] - w[0]).collect();
+        spb.push(bt[n - 1] - bt[n - 2]);
+        choose_grids_dense(&on, coarse, &spb)
+    } else {
+        choose_grids(&on, coarse)
+    };
     let mut out: Vec<QNote> = notes
         .iter()
         .zip(on.iter().zip(off.iter()))
@@ -175,11 +269,43 @@ pub fn quantize_coarse(notes: &[RawNote], beat_times: &[f64], monophonic: bool, 
             QNote { pitch: n.pitch, start, end: end.max(start + unit), onset_s: n.onset, offset_s: n.offset, confidence: n.confidence.unwrap_or(1.0), articulations: Vec::new() }
         })
         .collect();
+    if dense {
+        out.sort_by(|a, b| a.start.cmp(&b.start).then(a.onset_s.partial_cmp(&b.onset_s).unwrap()).then(b.pitch.cmp(&a.pitch)));
+        return monophonize_dense(out, &grids);
+    }
     out.sort_by_key(|q| (q.start, -q.pitch));
     if monophonic {
         out = monophonize(out);
     }
     out
+}
+
+/// `monophonize`, but a note on a taken slot moves to the next slot of its beat's grid when that is free
+/// (before the next note), at half its confidence; only then is it dropped.
+fn monophonize_dense(notes: Vec<QNote>, grids: &HashMap<i64, i64>) -> Vec<QNote> {
+    let starts: Vec<i64> = notes.iter().map(|q| q.start).collect();
+    let mut kept: Vec<QNote> = Vec::new();
+    for (i, mut q) in notes.into_iter().enumerate() {
+        if let Some(last) = kept.last() {
+            if q.start <= last.start {
+                let k = py::floordiv(last.start, TICKS_PER_BEAT);
+                let new = last.start + TICKS_PER_BEAT / grids.get(&k).copied().unwrap_or(4);
+                if i + 1 < starts.len() && starts[i + 1] <= new {
+                    continue;
+                }
+                q.end = q.end.max(new + (new - last.start));
+                q.start = new;
+                q.confidence = py::py_round(q.confidence * 0.5, 3);
+            }
+        }
+        if let Some(last) = kept.last_mut() {
+            if last.end > q.start {
+                last.end = q.start;
+            }
+        }
+        kept.push(q);
+    }
+    kept
 }
 
 /// Keep the highest note per onset and cut each note at the next onset.

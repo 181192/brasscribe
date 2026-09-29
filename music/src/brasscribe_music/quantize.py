@@ -100,6 +100,53 @@ def choose_grids(onset_beats: np.ndarray, coarse: list[tuple[float, float]] | No
     return choice
 
 
+# Dense passages (fast runs, trills) on a monophonic line: a beat whose chosen grid would put two onsets on one
+# slot picks again from these grids, 32nds included, paying COLLIDE per onset a grid cannot hold and SWITCH for
+# leaving the previous beat's grid (so a run keeps one subdivision rather than mixing 16ths, sextuplets and 32nds
+# beat to beat). Beats that hold their onsets keep today's choice exactly.
+DENSE_GRIDS: dict[int, float] = {**GRIDS, 8: 0.2}
+COLLIDE = 1.0
+DENSE_ERR = 10.0  # snap error weight when a dense beat chooses again: triplets are not 16ths 50 ms off
+SWITCH = 0.5
+MIN_SLOT = 0.045  # seconds: a grid of 6 or 8 whose slots are shorter than this is not offered (no 64ths on a doubled beat)
+
+
+def _lost(f: np.ndarray, g: int, next_head: np.ndarray | None) -> int:
+    """Onsets of one beat (fractions `f`) that grid g cannot hold: two on one slot, or one rounded onto the next
+    beat's downbeat when that beat starts with an onset (`next_head`: the next beat's fractions)."""
+    slots = np.round(f * g)
+    lost = len(slots) - len(np.unique(slots))
+    if next_head is not None and np.any(slots == g) and np.any(np.abs(next_head) < 0.5 / g):
+        lost += 1
+    return int(lost)
+
+
+def choose_grids_dense(onset_beats: np.ndarray, coarse: list[tuple[float, float]] | None = None,
+                       beat_seconds: np.ndarray | None = None) -> dict[int, int]:
+    """choose_grids, then every beat whose grid loses onsets chooses again from DENSE_GRIDS (free time included)."""
+    choice = choose_grids(onset_beats, coarse)
+    by_beat: dict[int, list[float]] = {}
+    for x in onset_beats:
+        k = int(np.floor(x + 1 / 12))
+        by_beat.setdefault(k, []).append(x - k)
+    for k in sorted(by_beat):
+        f = np.array(by_beat[k])
+        nxt = np.array(by_beat[k + 1]) if k + 1 in by_beat else None
+        if _lost(f, choice[k], nxt) == 0:
+            continue
+        spb = float(beat_seconds[min(max(k, 0), len(beat_seconds) - 1)]) if beat_seconds is not None else 1.0
+        best, best_cost = choice[k], np.inf
+        for g, pen in DENSE_GRIDS.items():
+            if g >= 6 and spb / g < MIN_SLOT:
+                continue
+            cost = (DENSE_ERR * np.sum((f - np.round(f * g) / g) ** 2) + pen * len(f) + COLLIDE * _lost(f, g, nxt)
+                    + (SWITCH if k - 1 in choice and g != choice[k - 1] else 0.0))
+            if cost < best_cost:
+                best, best_cost = g, cost
+        choice[k] = best
+    return choice
+
+
 def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
     k = int(np.floor(x + 1 / 12))
     g = grids.get(k, default)
@@ -107,7 +154,10 @@ def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
 
 
 def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False, auto_level: bool = True,
-             coarse: list[tuple[float, float]] | None = None) -> list[QNote]:
+             coarse: list[tuple[float, float]] | None = None, dense: bool = False) -> list[QNote]:
+    """Notes on the beat grid. `dense` (a monophonic line: the solo) lets beats whose grid would lose onsets choose
+    a finer one (choose_grids_dense), and moves a note that still lands on a taken slot to the next free slot of
+    its beat's grid, at half its confidence, instead of dropping it."""
     if not notes:
         return []
     if auto_level:
@@ -115,7 +165,10 @@ def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False
     bm = BeatMap(beat_times)
     on = bm.to_beats(np.array([n["onset"] for n in notes]))
     off = bm.to_beats(np.array([n["offset"] for n in notes]))
-    grids = choose_grids(on, coarse)
+    if dense and monophonic:
+        grids = choose_grids_dense(on, coarse, np.r_[np.diff(bm.t), bm.t[-1] - bm.t[-2]])
+    else:
+        grids = choose_grids(on, coarse)
     out = []
     for n, a, b in zip(notes, on, off):
         start = snap(a, grids)
@@ -125,10 +178,32 @@ def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False
         unit = TICKS_PER_BEAT // grids.get(k, 2 if _in_ranges(k, coarse) else 4)
         end = max(end, start + unit)
         out.append(QNote(n["pitch"], start, end, n["onset"], n["offset"], n.get("confidence", 1.0)))
+    if dense and monophonic:
+        out.sort(key=lambda q: (q.start, q.onset_s, -q.pitch))
+        return _monophonize_dense(out, grids)
     out.sort(key=lambda q: (q.start, -q.pitch))
     if monophonic:
         out = _monophonize(out)
     return out
+
+
+def _monophonize_dense(notes: list[QNote], grids: dict[int, int]) -> list[QNote]:
+    """_monophonize, but a note on a taken slot moves to the next slot of its beat's grid when that is free
+    (before the next note), at half its confidence; only then is it dropped."""
+    kept: list[QNote] = []
+    for i, q in enumerate(notes):
+        if kept and q.start <= kept[-1].start:
+            k = int(np.floor(kept[-1].start / TICKS_PER_BEAT))
+            new = kept[-1].start + TICKS_PER_BEAT // grids.get(k, 4)
+            if i + 1 < len(notes) and notes[i + 1].start <= new:
+                continue
+            q.end = max(q.end, new + (new - kept[-1].start))
+            q.start = new
+            q.confidence = round(q.confidence * 0.5, 3)
+        if kept and kept[-1].end > q.start:
+            kept[-1].end = q.start
+        kept.append(q)
+    return kept
 
 
 def _monophonize(notes: list[QNote]) -> list[QNote]:
