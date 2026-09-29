@@ -209,6 +209,124 @@
   --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);
 }
 
+/* Pink, the hidden palette (design/system.md §10): data-palette="pink" on the root. Light or dark
+   follows data-theme when the page pins one, else the system. More contrast and forced colours win. */
+@media (forced-colors: none) and (not (prefers-contrast: more)) {
+  :root[data-palette="pink"] {
+    color-scheme: light;
+    --bc-bg: #FFF6F9;
+    --bc-surface: #FCE9F0;
+    --bc-surface-raised: #FFFFFF;
+    --bc-text: #2B1420;
+    --bc-text-muted: #6B4558;
+    --bc-border: #F2D3E0;
+    --bc-border-strong: #A0768A;
+    --bc-primary: #AD1463;
+    --bc-on-primary: #FFFFFF;
+    --bc-secondary: #F9DAE7;
+    --bc-on-secondary: #2B1420;
+    --bc-brass: #A57A2C;
+    --bc-brass-text: #7A5719;
+    --bc-brass-tint: #FBE4ED;
+    --bc-success: #2E6B3F;
+    --bc-warning: #8A5A00;
+    --bc-error: #B3261E;
+    --bc-focus: #2B1420;
+    --bc-scrim: rgb(0 0 0 / 0.4);
+    --bc-ink: #121110;
+    --bc-staff: #57534B;
+    --bc-uncertain: #0063A6;
+    --bc-very-uncertain: #B04A00;
+    --bc-adlib-tint: #F6E8EE;
+    --bc-loop-tint: #FFF3D6;
+    --bc-loop-edge: #8A5A00;
+    --bc-cursor: #6B3FA0;
+    --bc-cursor-tint: #E1D1E7;
+    --bc-selection-tint: #F3E0E8;
+    --bc-selection-edge: #2B1420;
+    --bc-model-1: #0072B2;
+    --bc-model-2: #A65E00;
+    --bc-model-3: #007A5A;
+    --bc-model-4: #A8538A;
+  }
+  :root[data-palette="pink"][data-theme="dark"] {
+    color-scheme: dark;
+    --bc-bg: #1B1017;
+    --bc-surface: #241620;
+    --bc-surface-raised: #2E1D28;
+    --bc-text: #F8E9F0;
+    --bc-text-muted: #CDAABB;
+    --bc-border: #3F2835;
+    --bc-border-strong: #957082;
+    --bc-primary: #FF9ECF;
+    --bc-on-primary: #2B0F1E;
+    --bc-secondary: #44293A;
+    --bc-on-secondary: #F8E9F0;
+    --bc-brass: #D2A955;
+    --bc-brass-text: #D9B266;
+    --bc-brass-tint: #33202B;
+    --bc-success: #8BD39B;
+    --bc-warning: #E0B65C;
+    --bc-error: #FF8A7A;
+    --bc-focus: #F8E9F0;
+    --bc-scrim: rgb(0 0 0 / 0.4);
+    --bc-ink: #F2F0EB;
+    --bc-staff: #A6A29A;
+    --bc-uncertain: #56B4E9;
+    --bc-very-uncertain: #F0A04B;
+    --bc-adlib-tint: #261A21;
+    --bc-loop-tint: #2B2412;
+    --bc-loop-edge: #E0B65C;
+    --bc-cursor: #C9A7F0;
+    --bc-cursor-tint: #3E2E42;
+    --bc-selection-tint: #35242E;
+    --bc-selection-edge: #F8E9F0;
+    --bc-model-1: #56B4E9;
+    --bc-model-2: #E69F00;
+    --bc-model-3: #3FC49A;
+    --bc-model-4: #E08AC0;
+  }
+}
+@media (forced-colors: none) and (not (prefers-contrast: more)) and (prefers-color-scheme: dark) {
+  :root[data-palette="pink"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bc-bg: #1B1017;
+    --bc-surface: #241620;
+    --bc-surface-raised: #2E1D28;
+    --bc-text: #F8E9F0;
+    --bc-text-muted: #CDAABB;
+    --bc-border: #3F2835;
+    --bc-border-strong: #957082;
+    --bc-primary: #FF9ECF;
+    --bc-on-primary: #2B0F1E;
+    --bc-secondary: #44293A;
+    --bc-on-secondary: #F8E9F0;
+    --bc-brass: #D2A955;
+    --bc-brass-text: #D9B266;
+    --bc-brass-tint: #33202B;
+    --bc-success: #8BD39B;
+    --bc-warning: #E0B65C;
+    --bc-error: #FF8A7A;
+    --bc-focus: #F8E9F0;
+    --bc-scrim: rgb(0 0 0 / 0.4);
+    --bc-ink: #F2F0EB;
+    --bc-staff: #A6A29A;
+    --bc-uncertain: #56B4E9;
+    --bc-very-uncertain: #F0A04B;
+    --bc-adlib-tint: #261A21;
+    --bc-loop-tint: #2B2412;
+    --bc-loop-edge: #E0B65C;
+    --bc-cursor: #C9A7F0;
+    --bc-cursor-tint: #3E2E42;
+    --bc-selection-tint: #35242E;
+    --bc-selection-edge: #F8E9F0;
+    --bc-model-1: #56B4E9;
+    --bc-model-2: #E69F00;
+    --bc-model-3: #3FC49A;
+    --bc-model-4: #E08AC0;
+  }
+}
+
 /* High contrast: our palettes when the user asks for more contrast; tints become outlines.
    Light or dark follows the resolved theme: data-theme when the page pins one, else the system.
    Under forced colours the system colours below win instead. */

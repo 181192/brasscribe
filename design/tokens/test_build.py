@@ -73,3 +73,34 @@ def test_web_high_contrast_follows_the_resolved_theme():
     assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --bc-bg: #FFFFFF;' in css
     assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
     assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
+
+
+def test_pink_keeps_the_notation_and_its_meaning():
+    # Pink recolours the chrome only: the notation stays black on light (paper tones on dark) and the
+    # score hues keep their meaning.
+    for pink, base in (("pink", "light"), ("pink-dark", "dark")):
+        for role in ("ink", "staff", "uncertain", "very-uncertain", "loop-edge", "cursor", "success", "warning", "brass"):
+            assert build.hexval(pink, role) == build.hexval(base, role), (pink, role)
+
+
+def test_pink_status_and_primary_stay_apart():
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for mode in ("pink", "pink-dark"):
+        for a, b in (("error", "primary"), ("success", "error"), ("warning", "error"), ("success", "warning"),
+                     ("focus", "uncertain"), ("focus", "very-uncertain")):
+            de = contrast.delta_e(build.hexval(mode, a), build.hexval(mode, b), None)
+            assert de >= 20, (mode, a, b, round(de, 1))
+
+
+def test_every_platform_gets_the_pink_palette():
+    css = (build.DIST / "web" / "brasscribe.css").read_text()
+    assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --bc-bg: #FFF6F9;' in css
+    assert "(not (prefers-contrast: more))" in css
+    kt = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
+    assert "val BrasscribePinkColors" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
+    assert kt.index("highContrast -> ") < kt.index("pink && dark -> ")
+    cs = json.loads((build.DIST / "apple" / "BrasscribeDesign.xcassets" / "BrasscribePink" / "bg.colorset" / "Contents.json").read_text())
+    assert [c["color"]["components"]["red"] for c in cs["colors"]][:1] == [build.rgb_components("#FFF6F9")[0]]
+    assert len(cs["colors"]) == 4  # light, dark and both high-contrast appearances
+    assert "Pink" not in (build.DIST / "windows" / "BrasscribeTheme.xaml").read_text()

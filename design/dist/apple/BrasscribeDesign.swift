@@ -81,77 +81,91 @@ public enum BrasscribeDesign {
     }
 }
 
+/// Which palette `Color.Brasscribe` reads: the standard one, or the hidden Pink one (design/system.md §10).
+/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or
+/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.
+@Observable
+public final class BrasscribePalette: @unchecked Sendable {
+    public static let shared = BrasscribePalette()
+    public var isPink = false
+    public init() {}
+}
+
 public extension Color {
     /// Semantic colours with light, dark and high-contrast variants from the asset catalog.
     enum Brasscribe {
+        private static func named(_ role: String) -> Color {
+            Color((BrasscribePalette.shared.isPink ? "BrasscribePink/" : "Brasscribe/") + role, bundle: BrasscribeDesign.bundle)
+        }
+
         /// Window and page background; also the score paper.
-        public static let bg = Color("Brasscribe/bg", bundle: BrasscribeDesign.bundle)
+        public static var bg: Color { named("bg") }
         /// Grouped areas: player bar, sidebars, list sections.
-        public static let surface = Color("Brasscribe/surface", bundle: BrasscribeDesign.bundle)
+        public static var surface: Color { named("surface") }
         /// Cards, sheets, dialogs and menus that sit above the background.
-        public static let surfaceRaised = Color("Brasscribe/surfaceRaised", bundle: BrasscribeDesign.bundle)
+        public static var surfaceRaised: Color { named("surfaceRaised") }
         /// Body text and icons.
-        public static let text = Color("Brasscribe/text", bundle: BrasscribeDesign.bundle)
+        public static var text: Color { named("text") }
         /// Secondary text. Still at least 4.5:1 on every surface.
-        public static let textMuted = Color("Brasscribe/textMuted", bundle: BrasscribeDesign.bundle)
+        public static var textMuted: Color { named("textMuted") }
         /// Decorative hairlines and dividers. Never the only boundary of a control.
-        public static let border = Color("Brasscribe/border", bundle: BrasscribeDesign.bundle)
+        public static var border: Color { named("border") }
         /// Boundaries of controls (text fields, outlined buttons, chips). At least 3:1.
-        public static let borderStrong = Color("Brasscribe/borderStrong", bundle: BrasscribeDesign.bundle)
+        public static var borderStrong: Color { named("borderStrong") }
         /// Fill of the one primary button per screen, selected chips and switches.
-        public static let primary = Color("Brasscribe/primary", bundle: BrasscribeDesign.bundle)
+        public static var primary: Color { named("primary") }
         /// Text and icons on primary.
-        public static let onPrimary = Color("Brasscribe/onPrimary", bundle: BrasscribeDesign.bundle)
+        public static var onPrimary: Color { named("onPrimary") }
         /// Fill of secondary (tonal) buttons and segmented controls.
-        public static let secondary = Color("Brasscribe/secondary", bundle: BrasscribeDesign.bundle)
+        public static var secondary: Color { named("secondary") }
         /// Text and icons on secondary.
-        public static let onSecondary = Color("Brasscribe/onSecondary", bundle: BrasscribeDesign.bundle)
+        public static var onSecondary: Color { named("onSecondary") }
         /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
-        public static let brass = Color("Brasscribe/brass", bundle: BrasscribeDesign.bundle)
+        public static var brass: Color { named("brass") }
         /// Brand colour when it has to carry text, for example the product name under the wordmark.
-        public static let brassText = Color("Brasscribe/brassText", bundle: BrasscribeDesign.bundle)
+        public static var brassText: Color { named("brassText") }
         /// Background of brand moments: the onboarding hero and the About screen.
-        public static let brassTint = Color("Brasscribe/brassTint", bundle: BrasscribeDesign.bundle)
+        public static var brassTint: Color { named("brassTint") }
         /// Finished states: "Score ready", a passed Studio check. Always with text or an icon.
-        public static let success = Color("Brasscribe/success", bundle: BrasscribeDesign.bundle)
+        public static var success: Color { named("success") }
         /// Notices that need attention but do not block. Always with text or an icon.
-        public static let warning = Color("Brasscribe/warning", bundle: BrasscribeDesign.bundle)
+        public static var warning: Color { named("warning") }
         /// Error text and the error icon. Always with a sentence that says what to do.
-        public static let error = Color("Brasscribe/error", bundle: BrasscribeDesign.bundle)
+        public static var error: Color { named("error") }
         /// Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow.
-        public static let focus = Color("Brasscribe/focus", bundle: BrasscribeDesign.bundle)
+        public static var focus: Color { named("focus") }
         /// Dimmed backdrop behind a sheet or dialog (40% alpha).
-        public static let scrim = Color("Brasscribe/scrim", bundle: BrasscribeDesign.bundle)
+        public static var scrim: Color { named("scrim") }
         /// Noteheads, stems, clefs and confident notes.
-        public static let ink = Color("Brasscribe/ink", bundle: BrasscribeDesign.bundle)
+        public static var ink: Color { named("ink") }
         /// Staff lines and bar lines.
-        public static let staff = Color("Brasscribe/staff", bundle: BrasscribeDesign.bundle)
+        public static var staff: Color { named("staff") }
         /// Notes with confidence 0.4-0.7. Always with a "?" above the note.
-        public static let uncertain = Color("Brasscribe/uncertain", bundle: BrasscribeDesign.bundle)
+        public static var uncertain: Color { named("uncertain") }
         /// Notes with confidence below 0.4. Always with a boxed "?" above the note.
-        public static let veryUncertain = Color("Brasscribe/veryUncertain", bundle: BrasscribeDesign.bundle)
+        public static var veryUncertain: Color { named("veryUncertain") }
         /// Neutral band behind free-time (ad lib) bars; the italic "ad lib." and dashed bar lines carry the meaning. Not blue, so it never reads as uncertain. High contrast: none, outline instead.
-        public static let adlibTint = Color("Brasscribe/adlibTint", bundle: BrasscribeDesign.bundle)
+        public static var adlibTint: Color { named("adlibTint") }
         /// Band behind the loop range. High contrast: none, outline instead.
-        public static let loopTint = Color("Brasscribe/loopTint", bundle: BrasscribeDesign.bundle)
+        public static var loopTint: Color { named("loopTint") }
         /// Bracket markers at both ends of the loop range.
-        public static let loopEdge = Color("Brasscribe/loopEdge", bundle: BrasscribeDesign.bundle)
+        public static var loopEdge: Color { named("loopEdge") }
         /// Playback cursor: a 3 px full-staff-height line.
-        public static let cursor = Color("Brasscribe/cursor", bundle: BrasscribeDesign.bundle)
+        public static var cursor: Color { named("cursor") }
         /// Tint of the bar under the playback cursor: the cursor colour at 20% over the paper.
-        public static let cursorTint = Color("Brasscribe/cursorTint", bundle: BrasscribeDesign.bundle)
+        public static var cursorTint: Color { named("cursorTint") }
         /// Band behind a selected bar range (before it becomes a loop).
-        public static let selectionTint = Color("Brasscribe/selectionTint", bundle: BrasscribeDesign.bundle)
+        public static var selectionTint: Color { named("selectionTint") }
         /// 1 px outline of a selected bar range.
-        public static let selectionEdge = Color("Brasscribe/selectionEdge", bundle: BrasscribeDesign.bundle)
+        public static var selectionEdge: Color { named("selectionEdge") }
         /// Studio data series 1 (MuScriptor). Always repeated by a pattern or label.
-        public static let model1 = Color("Brasscribe/model1", bundle: BrasscribeDesign.bundle)
+        public static var model1: Color { named("model1") }
         /// Studio data series 2 (Basic Pitch).
-        public static let model2 = Color("Brasscribe/model2", bundle: BrasscribeDesign.bundle)
+        public static var model2: Color { named("model2") }
         /// Studio data series 3 (SwiftF0).
-        public static let model3 = Color("Brasscribe/model3", bundle: BrasscribeDesign.bundle)
+        public static var model3: Color { named("model3") }
         /// Studio data series 4.
-        public static let model4 = Color("Brasscribe/model4", bundle: BrasscribeDesign.bundle)
+        public static var model4: Color { named("model4") }
     }
 }
 

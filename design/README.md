@@ -19,7 +19,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 ## Tokens
 
 - **Source:** [`tokens/tokens.json`](tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
-  - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground) and `color.high-contrast-light` (on a light ground).
+  - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground), `color.high-contrast-light` (on a light ground), and the hidden `color.pink` / `color.pink-dark` (§10 of system.md).
   - Studio's `brasscribe.css` picks the high-contrast palette that matches the resolved theme under `prefers-contrast: more`. Compose gets `BrasscribeHighContrastLightColors`, but `BrasscribeTheme` still chooses the dark one. The Apple asset catalog and WinUI (system colours) are unchanged.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
 - **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
@@ -28,12 +28,12 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 uv run design/tokens/build.py            # regenerate design/dist and docs/accessibility/design-tokens.json
 uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tokens
-uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 71 pairs x 3 themes, exit 1 on failure
+uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 72 pairs x 6 modes, exit 1 on failure
 uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
 
-**Contrast:** all 213 pairs pass. See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
+**Contrast:** all 432 pairs pass (72 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
 - `docs/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.

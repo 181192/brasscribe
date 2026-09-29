@@ -182,11 +182,15 @@ def apple_outputs() -> dict[str, str | bytes]:
 
     dark = {"appearance": "luminosity", "value": "dark"}
     high = {"appearance": "contrast", "value": "high"}
+    # The hidden Pink palette has its own namespace with the same high-contrast appearances, so Increase
+    # Contrast still wins over it.
+    out[f"{base}/BrasscribePink/Contents.json"] = out[f"{base}/Brasscribe/Contents.json"]
     for role in roles():
-        colors = [entry("light", role, []), entry("dark", role, [dark]),
-                  entry("high-contrast", role, [high]), entry("high-contrast", role, [dark, high])]
-        out[f"{base}/Brasscribe/{camel(role)}.colorset/Contents.json"] = json.dumps(
-            {"colors": colors, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
+        for ns, light, dk in (("Brasscribe", "light", "dark"), ("BrasscribePink", "pink", "pink-dark")):
+            colors = [entry(light, role, []), entry(dk, role, [dark]),
+                      entry("high-contrast", role, [high]), entry("high-contrast", role, [dark, high])]
+            out[f"{base}/{ns}/{camel(role)}.colorset/Contents.json"] = json.dumps(
+                {"colors": colors, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
 
     lines = [f"// {HEADER}", "//", "// Add BrasscribeDesign.xcassets and Fonts/InstrumentSerif-Regular.ttf to the same target",
              "// as this file, and list the font under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).", "",
@@ -240,11 +244,23 @@ def apple_outputs() -> dict[str, str | bytes]:
         "    }",
         "}", ""]
 
-    lines += ["public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
-              "    enum Brasscribe {"]
+    lines += ["/// Which palette `Color.Brasscribe` reads: the standard one, or the hidden Pink one (design/system.md §10).",
+              "/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or",
+              "/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.",
+              "@Observable",
+              "public final class BrasscribePalette: @unchecked Sendable {",
+              "    public static let shared = BrasscribePalette()",
+              "    public var isPink = false",
+              "    public init() {}",
+              "}", "",
+              "public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
+              "    enum Brasscribe {",
+              "        private static func named(_ role: String) -> Color {",
+              '            Color((BrasscribePalette.shared.isPink ? "BrasscribePink/" : "Brasscribe/") + role, bundle: BrasscribeDesign.bundle)',
+              "        }", ""]
     for role in roles():
         lines.append(f"        /// {desc(role)}")
-        lines.append(f'        public static let {camel(role)} = Color("Brasscribe/{camel(role)}", bundle: BrasscribeDesign.bundle)')
+        lines.append(f'        public static var {camel(role)}: Color {{ named("{camel(role)}") }}')
     lines += ["    }", "}", ""]
 
     typo = group("typography")
@@ -325,9 +341,12 @@ def android_outputs() -> dict[str, str | bytes]:
         L.append(f"    val {camel(r)}: Color,")
     L += ["    val isHighContrast: Boolean,", ")", ""]
     for mode, name in (("light", "BrasscribeLightColors"), ("dark", "BrasscribeDarkColors"),
-                       ("high-contrast", "BrasscribeHighContrastColors"), ("high-contrast-light", "BrasscribeHighContrastLightColors")):
+                       ("high-contrast", "BrasscribeHighContrastColors"), ("high-contrast-light", "BrasscribeHighContrastLightColors"),
+                       ("pink", "BrasscribePinkColors"), ("pink-dark", "BrasscribePinkDarkColors")):
         if mode == "high-contrast-light":
             L.append("/** High contrast on a light ground. Not yet chosen by [BrasscribeTheme], which uses the dark one. */")
+        if mode == "pink":
+            L.append("/** The hidden Pink palette (design/system.md §10), chosen by [BrasscribeTheme] with `pink = true`. */")
         L.append(f"val {name} = BrasscribeColors(")
         for r in rs:
             L.append(f"    {camel(r)} = Color({argb(hexval(mode, r), alpha(mode, r))}),")
@@ -428,16 +447,20 @@ def android_outputs() -> dict[str, str | bytes]:
           " *",
           " * @param display the brand display face; pass FontFamily(Font(R.font.instrument_serif)) after copying",
           " *   design/dist/android/res/font into the app. Defaults to the system serif.",
+          " * @param pink the hidden Pink palette, light or dark by [dark]. The system's high contrast still wins.",
           " */",
           "@Composable",
           "fun BrasscribeTheme(",
           "    dark: Boolean = isSystemInDarkTheme(),",
           "    highContrast: Boolean = systemHighContrast(),",
+          "    pink: Boolean = false,",
           "    display: FontFamily = FontFamily.Serif,",
           "    content: @Composable () -> Unit,",
           ") {",
           "    val colors = when {",
           "        highContrast -> BrasscribeHighContrastColors",
+          "        pink && dark -> BrasscribePinkDarkColors",
+          "        pink -> BrasscribePinkColors",
           "        dark -> BrasscribeDarkColors",
           "        else -> BrasscribeLightColors",
           "    }",
@@ -645,6 +668,18 @@ def web_outputs() -> dict[str, str | bytes]:
           "  }", "}", ':root[data-theme="dark"] {', "  color-scheme: dark;"]
     C += block("dark", "  ")
     C += ["  --bc-elevation-1: none;", "  --bc-elevation-2: 0 4px 16px rgb(0 0 0 / 0.5);", "  --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);", "}", "",
+          "/* Pink, the hidden palette (design/system.md §10): data-palette=\"pink\" on the root. Light or dark",
+          "   follows data-theme when the page pins one, else the system. More contrast and forced colours win. */",
+          "@media (forced-colors: none) and (not (prefers-contrast: more)) {",
+          '  :root[data-palette="pink"] {', "    color-scheme: light;"]
+    C += block("pink", "    ")
+    C += ["  }", '  :root[data-palette="pink"][data-theme="dark"] {', "    color-scheme: dark;"]
+    C += block("pink-dark", "    ")
+    C += ["  }", "}",
+          "@media (forced-colors: none) and (not (prefers-contrast: more)) and (prefers-color-scheme: dark) {",
+          '  :root[data-palette="pink"]:not([data-theme="light"]) {', "    color-scheme: dark;"]
+    C += block("pink-dark", "    ")
+    C += ["  }", "}", "",
           "/* High contrast: our palettes when the user asks for more contrast; tints become outlines.",
           "   Light or dark follows the resolved theme: data-theme when the page pins one, else the system.",
           "   Under forced colours the system colours below win instead. */"]

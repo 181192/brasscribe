@@ -253,6 +253,83 @@ val BrasscribeHighContrastLightColors = BrasscribeColors(
     isHighContrast = true,
 )
 
+/** The hidden Pink palette (design/system.md §10), chosen by [BrasscribeTheme] with `pink = true`. */
+val BrasscribePinkColors = BrasscribeColors(
+    bg = Color(0xFFFFF6F9),
+    surface = Color(0xFFFCE9F0),
+    surfaceRaised = Color(0xFFFFFFFF),
+    text = Color(0xFF2B1420),
+    textMuted = Color(0xFF6B4558),
+    border = Color(0xFFF2D3E0),
+    borderStrong = Color(0xFFA0768A),
+    primary = Color(0xFFAD1463),
+    onPrimary = Color(0xFFFFFFFF),
+    secondary = Color(0xFFF9DAE7),
+    onSecondary = Color(0xFF2B1420),
+    brass = Color(0xFFA57A2C),
+    brassText = Color(0xFF7A5719),
+    brassTint = Color(0xFFFBE4ED),
+    success = Color(0xFF2E6B3F),
+    warning = Color(0xFF8A5A00),
+    error = Color(0xFFB3261E),
+    focus = Color(0xFF2B1420),
+    scrim = Color(0x66000000),
+    ink = Color(0xFF121110),
+    staff = Color(0xFF57534B),
+    uncertain = Color(0xFF0063A6),
+    veryUncertain = Color(0xFFB04A00),
+    adlibTint = Color(0xFFF6E8EE),
+    loopTint = Color(0xFFFFF3D6),
+    loopEdge = Color(0xFF8A5A00),
+    cursor = Color(0xFF6B3FA0),
+    cursorTint = Color(0xFFE1D1E7),
+    selectionTint = Color(0xFFF3E0E8),
+    selectionEdge = Color(0xFF2B1420),
+    model1 = Color(0xFF0072B2),
+    model2 = Color(0xFFA65E00),
+    model3 = Color(0xFF007A5A),
+    model4 = Color(0xFFA8538A),
+    isHighContrast = false,
+)
+
+val BrasscribePinkDarkColors = BrasscribeColors(
+    bg = Color(0xFF1B1017),
+    surface = Color(0xFF241620),
+    surfaceRaised = Color(0xFF2E1D28),
+    text = Color(0xFFF8E9F0),
+    textMuted = Color(0xFFCDAABB),
+    border = Color(0xFF3F2835),
+    borderStrong = Color(0xFF957082),
+    primary = Color(0xFFFF9ECF),
+    onPrimary = Color(0xFF2B0F1E),
+    secondary = Color(0xFF44293A),
+    onSecondary = Color(0xFFF8E9F0),
+    brass = Color(0xFFD2A955),
+    brassText = Color(0xFFD9B266),
+    brassTint = Color(0xFF33202B),
+    success = Color(0xFF8BD39B),
+    warning = Color(0xFFE0B65C),
+    error = Color(0xFFFF8A7A),
+    focus = Color(0xFFF8E9F0),
+    scrim = Color(0x66000000),
+    ink = Color(0xFFF2F0EB),
+    staff = Color(0xFFA6A29A),
+    uncertain = Color(0xFF56B4E9),
+    veryUncertain = Color(0xFFF0A04B),
+    adlibTint = Color(0xFF261A21),
+    loopTint = Color(0xFF2B2412),
+    loopEdge = Color(0xFFE0B65C),
+    cursor = Color(0xFFC9A7F0),
+    cursorTint = Color(0xFF3E2E42),
+    selectionTint = Color(0xFF35242E),
+    selectionEdge = Color(0xFFF8E9F0),
+    model1 = Color(0xFF56B4E9),
+    model2 = Color(0xFFE69F00),
+    model3 = Color(0xFF3FC49A),
+    model4 = Color(0xFFE08AC0),
+    isHighContrast = false,
+)
+
 /** Maps the semantic roles onto Material 3 so stock components look like Brasscribe. */
 fun BrasscribeColors.toColorScheme(dark: Boolean): ColorScheme {
     val scheme = if (dark) darkColorScheme() else lightColorScheme()
@@ -366,16 +443,20 @@ fun systemHighContrast(): Boolean {
  *
  * @param display the brand display face; pass FontFamily(Font(R.font.instrument_serif)) after copying
  *   design/dist/android/res/font into the app. Defaults to the system serif.
+ * @param pink the hidden Pink palette, light or dark by [dark]. The system's high contrast still wins.
  */
 @Composable
 fun BrasscribeTheme(
     dark: Boolean = isSystemInDarkTheme(),
     highContrast: Boolean = systemHighContrast(),
+    pink: Boolean = false,
     display: FontFamily = FontFamily.Serif,
     content: @Composable () -> Unit,
 ) {
     val colors = when {
         highContrast -> BrasscribeHighContrastColors
+        pink && dark -> BrasscribePinkDarkColors
+        pink -> BrasscribePinkColors
         dark -> BrasscribeDarkColors
         else -> BrasscribeLightColors
     }
