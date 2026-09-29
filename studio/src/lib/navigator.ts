@@ -230,9 +230,14 @@ const INSTRUMENTS: Record<number, [string, string]> = {
   [-21]: ["Bass in E♭", "Ess-bass"],
   [-26]: ["Bass in B♭", "B-bass"],
 };
+/** Parts named for an instrument the transposition alone doesn't tell apart (a trumpet is in B♭ like a cornet). */
+const BY_NAME: [RegExp, [string, string]][] = [[/trumpet/i, ["Trumpet in B♭", "trompet i B"]]];
+function instrumentPair(p: NavPart): [string, string] | undefined {
+  return BY_NAME.find(([re]) => re.test(p.name))?.[1] ?? INSTRUMENTS[p.transpose.chromatic + 12 * p.transpose.octave];
+}
 function instrumentOf(p: NavPart): string | undefined {
-  return INSTRUMENTS[p.transpose.chromatic + 12 * p.transpose.octave]?.[0];
+  return instrumentPair(p)?.[0];
 }
 function instrumentNbOf(p: NavPart): string | undefined {
-  return INSTRUMENTS[p.transpose.chromatic + 12 * p.transpose.octave]?.[1];
+  return instrumentPair(p)?.[1];
 }

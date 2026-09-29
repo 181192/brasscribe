@@ -120,4 +120,11 @@ describe("talking score from MusicXML", () => {
     expect(nb.nextNote()!.text).toBe("slag 1-og: G 4, åttendedelsnote");
     expect(nb.setPitchMode("concert")).toBe("Klingende tone");
   });
+
+  it("names a Trumpet part a trumpet, not by its transposition", () => {
+    const tpt = new Navigator(buildTalkingScore(XML.replace("<part-name>Solo Cornet</part-name>", "<part-name>Trumpet</part-name>")));
+    tpt.goBar(0);
+    tpt.setPitchMode("concert");
+    expect(tpt.setPitchMode("written")).toBe("Written pitch, Trumpet in B-flat");
+  });
 });
