@@ -17,7 +17,9 @@ import TranscriptionKit
 
 @Test func thePickerOffersEveryInstrumentOnce() {
     let tiles = Seats.instruments
-    #expect(tiles.count == 11)
+    #expect(tiles.count == 12)
+    let trumpet = tiles.dropFirst().first
+    #expect(trumpet?.id == "bb-trumpet" && trumpet?.title == "Trumpet" && trumpet?.detail == "in B♭")
     #expect(Set(tiles.flatMap(\.seats).map(\.id)) == Set(Seats.all.map(\.id)))
     #expect(tiles.first?.seats.map(\.id) == ["solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet"])
     #expect(tiles.first { $0.id == "eb-bass" }?.accessibilityName.contains("♭") == false)
@@ -62,6 +64,21 @@ import TranscriptionKit
             == "The quartet has no E♭ Bass. Your part here is Euphonium, written for B♭.")
     let exact = try #require(Seats.part("euphonium", in: .fullBand))
     #expect(Seats.mappingNotice(seat: try #require(Seats.info("euphonium")), lineup: .fullBand, part: exact, reads: nil) == nil)
+}
+
+/// A trumpet takes the lead part in the bands, written for trumpet; in the quartet it gets 1st Cornet.
+@Test func aTrumpetTakesTheLeadPart() throws {
+    let tpt = try #require(Seats.info("trumpet"))
+    let full = try #require(Seats.part("trumpet", in: .fullBand))
+    #expect(full.part == "Trumpet" && full.takes == "Solo Cornet" && full.sameKey && !full.exact)
+    #expect(Seats.mappingNotice(seat: tpt, lineup: .fullBand, part: full, reads: nil)
+            == "The full brass band has no trumpet part. You get the Solo Cornet part, written for trumpet.")
+    #expect(Seats.mappingShort(seat: tpt, lineup: .minimalBand, part: try #require(Seats.part("trumpet", in: .minimalBand)))
+            == "The small band has no trumpet part — Solo Cornet, written for trumpet")
+    let q = try #require(Seats.part("trumpet", in: .quartet))
+    #expect(q.part == "1st Cornet" && q.takes == nil)
+    #expect(Seats.mappingNotice(seat: tpt, lineup: .quartet, part: q, reads: nil)
+            == "The quartet has no Trumpet. Your part here is 1st Cornet, the closest: the same key and clef.")
 }
 
 // MARK: with the fixture score

@@ -42,6 +42,8 @@ struct OutputView: View {
     private var asksWhoPlaysTune: Bool {
         guard !isSolo, hasSoloist, lineup != .quartet, let seat, Seats.canCarryTune(seat),
               let part = yourPart(lineup) else { return false }
+        // a seat that takes the lead part (a trumpet) has the tune already
+        if let seatID, Seats.part(seatID, in: lineup)?.takes != nil { return false }
         return part != lineup.lead
     }
 

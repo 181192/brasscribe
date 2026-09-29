@@ -156,11 +156,23 @@ final class PracticeModel {
                 ?? score.parts.first { $0.name.lowercased().contains("solo cornet") }?.id ?? score.parts.first?.id, nil, nil)
         case .seat(let seatID, let reads):
             guard let info = Seats.info(seatID) else { return (nil, nil, nil) }
-            // the seat's own part, when the score has it
-            if let id = id(named: info.name) { return (id, nil, nil) }
             // the score's own lineup first; a score from elsewhere is matched by its part names
             var lineups: [Lineup] = [.fullBand, .minimalBand, .quartet]
             if let own = piece.madeLineup(composition) { lineups.removeAll { $0 == own }; lineups.insert(own, at: 0) }
+            // a seat that takes a lineup part (a trumpet takes the lead): its own part, else the part it takes
+            if let sp = Seats.part(seatID, in: lineups[0]), let takes = sp.takes {
+                if let id = id(named: info.name) {
+                    return (id, Seats.mappingNotice(seat: info, lineup: lineups[0], part: sp, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineups[0], part: sp))
+                }
+                if let id = id(named: takes) {
+                    let mapped = Seats.asTaken(sp)
+                    return (id, Seats.mappingNotice(seat: info, lineup: lineups[0], part: mapped, reads: reads),
+                            Seats.mappingShort(seat: info, lineup: lineups[0], part: mapped))
+                }
+            }
+            // the seat's own part, when the score has it
+            if let id = id(named: info.name) { return (id, nil, nil) }
             for (k, lineup) in lineups.enumerated() {
                 guard let sp = Seats.part(seatID, in: lineup) else { continue }
                 if let part = sp.part, let id = id(named: part) {

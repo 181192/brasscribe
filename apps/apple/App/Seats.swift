@@ -139,7 +139,7 @@ enum Seats {
 
     /// In the order players look for them: cornets first, percussion last.
     static var instruments: [Instrument] {
-        let order = ["bb-cornet", "eb-soprano-cornet", "flugelhorn", "eb-tenor-horn", "baritone", "euphonium",
+        let order = ["bb-cornet", "bb-trumpet", "eb-soprano-cornet", "flugelhorn", "eb-tenor-horn", "baritone", "euphonium",
                      "tenor-trombone", "bass-trombone", "eb-bass", "bb-bass", "drum-kit"]
         let known = Set(order)
         let ids = order + all.map(\.instrument).filter { !known.contains($0) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
@@ -150,6 +150,7 @@ enum Seats {
             // One part: its own name (the core's). Several: the instrument, then Which part?
             switch (id, seats.count) {
             case ("bb-cornet", _): return Instrument(id: id, title: String(localized: "Cornet"), detail: nil, seats: seats)
+            case ("bb-trumpet", _): return Instrument(id: id, title: String(localized: "Trumpet"), detail: String(localized: "in B♭"), seats: seats)
             case ("eb-tenor-horn", _): return Instrument(id: id, title: String(localized: "Tenor Horn"), detail: inEb, seats: seats)
             case ("baritone", _): return Instrument(id: id, title: String(localized: "Baritone"), detail: nil, seats: seats)
             case ("tenor-trombone", _): return Instrument(id: id, title: String(localized: "Trombone"), detail: nil, seats: seats)
@@ -174,6 +175,14 @@ enum Seats {
     static func mappingNotice(seat s: SeatInfo, lineup: Lineup, part: SeatPart, reads: String?) -> String? {
         guard !part.exact else { return nil }
         let seatName = name(s)
+        // A seat that takes a lineup part (a trumpet takes the lead): the part is theirs, written for them.
+        if let takes = part.takes, part.part == s.name {
+            let word = seatName.lowercased(), taken = PartNames.display(takes)
+            switch lineup {
+            case .fullBand: return String(localized: "The full brass band has no \(word) part. You get the \(taken) part, written for \(word).")
+            default: return String(localized: "The small band has no \(word) part. You get the \(taken) part, written for \(word).")
+            }
+        }
         guard let partName = part.part.map({ PartNames.display($0) }) else {
             switch lineup {
             case .quartet: return String(localized: "The quartet has no percussion part. Brasscribe opens every part.")
@@ -183,18 +192,21 @@ enum Seats {
         if part.sameKey {
             switch lineup {
             case .quartet: return String(localized: "The quartet has no \(seatName). Your part here is \(partName), the closest: the same key and clef.")
+            case .fullBand: return String(localized: "The full brass band has no \(seatName). Your part here is \(partName), the closest: the same key and clef.")
             default: return String(localized: "This small band has no \(seatName). Your part here is \(partName), the closest: the same key and clef.")
             }
         }
         if reads == "bass" {
             switch lineup {
             case .quartet: return String(localized: "The quartet has no \(seatName). Your part here is \(partName), the closest, in bass clef as it sounds.")
+            case .fullBand: return String(localized: "The full brass band has no \(seatName). Your part here is \(partName), the closest, in bass clef as it sounds.")
             default: return String(localized: "This small band has no \(seatName). Your part here is \(partName), the closest, in bass clef as it sounds.")
             }
         }
         let key = partKeyName(part.part!) ?? String(localized: "concert pitch")
         switch lineup {
         case .quartet: return String(localized: "The quartet has no \(seatName). Your part here is \(partName), written for \(key).")
+        case .fullBand: return String(localized: "The full brass band has no \(seatName). Your part here is \(partName), written for \(key).")
         default: return String(localized: "This small band has no \(seatName). Your part here is \(partName), written for \(key).")
         }
     }
@@ -204,6 +216,13 @@ enum Seats {
     static func mappingShort(seat s: SeatInfo, lineup: Lineup, part: SeatPart) -> String? {
         guard !part.exact else { return nil }
         let seatName = name(s)
+        if let takes = part.takes, part.part == s.name {
+            let word = seatName.lowercased(), taken = PartNames.display(takes)
+            switch lineup {
+            case .fullBand: return String(localized: "The full brass band has no \(word) part — \(taken), written for \(word)")
+            default: return String(localized: "The small band has no \(word) part — \(taken), written for \(word)")
+            }
+        }
         guard let partName = part.part.map({ PartNames.display($0) }) else {
             switch lineup {
             case .quartet: return String(localized: "The quartet has no percussion part — showing every part")
@@ -212,9 +231,14 @@ enum Seats {
         }
         switch lineup {
         case .quartet: return String(localized: "The quartet has no \(seatName) — showing \(partName)")
+        case .fullBand: return String(localized: "The full brass band has no \(seatName) — showing \(partName)")
         default: return String(localized: "The small band has no \(seatName) — showing \(partName)")
         }
     }
+
+    /// A score not written for the seat (made before the seat was set): the part the seat would take
+    /// ("Solo Cornet" for a trumpet), as a plain mapping.
+    static func asTaken(_ sp: SeatPart) -> SeatPart { SeatPart(part: sp.takes, exact: false, sameKey: sp.sameKey, takes: nil) }
 
     /// The key a lineup part is written in: a band seat's instrument, or the quartet's own parts.
     static func partKeyName(_ part: String) -> String? {

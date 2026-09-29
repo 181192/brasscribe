@@ -4181,6 +4181,66 @@
         }
       }
     },
+    "The full brass band has no %@ part — %@, written for %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen stemme for %1$@ — viser %2$@, skrevet for %3$@"
+          }
+        }
+      }
+    },
+    "The full brass band has no %@ part. You get the %@ part, written for %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen stemme for %1$@. Du får stemmen til %2$@, skrevet for %3$@."
+          }
+        }
+      }
+    },
+    "The full brass band has no %@ — showing %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen %1$@ — viser %2$@"
+          }
+        }
+      }
+    },
+    "The full brass band has no %@. Your part here is %@, the closest, in bass clef as it sounds.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen %1$@. Her er stemmen din %2$@, den nærmeste, i F-nøkkel, klingende."
+          }
+        }
+      }
+    },
+    "The full brass band has no %@. Your part here is %@, the closest: the same key and clef.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen %1$@. Her er stemmen din %2$@, den nærmeste: samme stemming og nøkkel."
+          }
+        }
+      }
+    },
+    "The full brass band has no %@. Your part here is %@, written for %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt brassband har ingen %1$@. Her er stemmen din %2$@, skrevet for %3$@."
+          }
+        }
+      }
+    },
     "The listening files are ready.": {
       "localizations": {
         "nb": {
@@ -4377,6 +4437,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partituret er fortsatt her å lese. Prøv å lukke og åpne det igjen."
+          }
+        }
+      }
+    },
+    "The small band has no %@ part — %@, written for %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det lille bandet har ingen stemme for %1$@ — viser %2$@, skrevet for %3$@"
+          }
+        }
+      }
+    },
+    "The small band has no %@ part. You get the %@ part, written for %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det lille bandet har ingen stemme for %1$@. Du får stemmen til %2$@, skrevet for %3$@."
           }
         }
       }
@@ -4607,6 +4687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trombone"
+          }
+        }
+      }
+    },
+    "Trumpet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trompet"
           }
         }
       }
@@ -5397,6 +5487,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "dobbeltpunktert %@"
+          }
+        }
+      }
+    },
+    "in B♭": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "i B"
           }
         }
       }
