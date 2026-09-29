@@ -419,14 +419,17 @@ def analyse_part(part: Part, rng: tuple[int, int] | None) -> tuple[dict, dict[st
     return m, flags
 
 
-def violations(metrics: list[dict], baseline: dict | None = None) -> list[str]:
-    """Metrics over their threshold. With a baseline, only those that also got worse than it."""
+def violations(metrics: list[dict], baseline: dict | None = None,
+               limits: dict[tuple[str, str], float] | None = None) -> list[str]:
+    """Metrics over their threshold. With a baseline, only those that also got worse than it. `limits` overrides
+    a threshold for one part: {(part, metric): limit}."""
     out = []
     base = {m["part"]: m for m in (baseline or {}).get("parts", [])}
     for m in metrics:
         if m["tacet"]:
             continue
         for key, limit in THRESHOLDS.items():
+            limit = (limits or {}).get((m["part"], key), limit)
             if key not in m or m[key] <= limit:
                 continue
             prev = base.get(m["part"], {}).get(key)
@@ -487,6 +490,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--check", action="store_true", help="exit 1 on threshold violations")
     ap.add_argument("--baseline", type=Path,
                     help="JSON from --json; with --check, fail only on metrics over threshold and worse than the baseline")
+    ap.add_argument("--limit", action="append", default=[], metavar="PART:METRIC=VALUE",
+                    help="a threshold for one part, e.g. 'Solo Cornet:sixteenth_pct=65' (repeatable)")
     a = ap.parse_args(argv)
     rng = tuple(int(x) for x in a.range.split("-")) if a.range else None
     parts, score = parse(a.musicxml)
@@ -494,7 +499,12 @@ def main(argv: list[str] | None = None) -> int:
     metrics = [r[0] for r in results]
     agg = aggregate(metrics, parts, rng)
     baseline = json.loads(a.baseline.read_text()) if a.baseline else None
-    viol = violations(metrics, baseline)
+    limits = {}
+    for spec in a.limit:
+        part, rest = spec.rsplit(":", 1)
+        key, value = rest.split("=", 1)
+        limits[(part, key)] = float(value)
+    viol = violations(metrics, baseline, limits)
     if a.json:
         out = {"file": str(a.musicxml), "range": rng, "score": {**score, "words": score["words"]},
                "aggregate": agg, "parts": metrics, "violations": viol}

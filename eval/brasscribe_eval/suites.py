@@ -312,7 +312,7 @@ def _quartet_audio(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
-def _mikkel_arrangement(data: Path, out: Path) -> Path:
+def _mikkel_arrangement(data: Path, out: Path, difficulty: str = "faithful") -> Path:
     """Arrange the cached Mikkel layers (no heavy model runs) into out; returns the MusicXML path.
 
     The solo contour is light SwiftF0 work: taken from the layers dir when cached,
@@ -339,7 +339,8 @@ def _mikkel_arrangement(data: Path, out: Path) -> Path:
     title = json.loads((data / f"{MIKKEL_GOLDEN}/composition.json").read_text())["title"]
     subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
                     "--layers", str(view), "--beats", str(data / "mikkel/repro/mix.beats"),
-                    "--out", str(out / "score"), "--title", title, "--no-render"], check=True, capture_output=True)
+                    "--out", str(out / "score"), "--title", title, "--no-render", "--difficulty", difficulty],
+                   check=True, capture_output=True)
     return out / "score" / "brass-band.musicxml"
 
 
@@ -357,6 +358,11 @@ def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
             "notes_identical_frac": c.notes_identical / max(1, c.to_dict()["notes_total"])}
 
 
+# Faithful writes the solo's fast notes as played (docs/plan/fast-notes.md §7): Mikkel's Solo Cornet is mostly
+# 16ths there, so that one metric of that one part gets a looser limit. Standard and easier keep every threshold.
+FAITHFUL_LIMITS = {"Solo Cornet:sixteenth_pct": 65.0}
+
+
 def _readability(data: Path, mode: str) -> dict[str, float]:
     """qa/tools/musicxml_readability.py --check --baseline on a fresh Mikkel arrangement."""
     import sys
@@ -365,15 +371,26 @@ def _readability(data: Path, mode: str) -> dict[str, float]:
     baseline = ROOT / "qa" / "reports" / "mikkel-golden-readability.json"
     if not tool.exists() or not baseline.exists():
         raise SkipSuite("qa readability tool or its baseline is missing")
-    with tempfile.TemporaryDirectory() as tmp:
-        xml = _mikkel_arrangement(data, Path(tmp))
-        gate = subprocess.run([sys.executable, str(tool), str(xml), "--check", "--baseline", str(baseline), "--json"],
-                              capture_output=True, text=True)
-    if gate.returncode not in (0, 1):
-        raise RuntimeError(gate.stderr[-1000:])
-    report = json.loads(gate.stdout)
+    out: dict[str, float] = {}
+    passed = True
+    for mode in ("faithful", "standard", "easier"):
+        with tempfile.TemporaryDirectory() as tmp:
+            xml = _mikkel_arrangement(data, Path(tmp), mode)
+            limits = [a for k, v in FAITHFUL_LIMITS.items() for a in ("--limit", f"{k}={v}")] if mode == "faithful" else []
+            gate = subprocess.run([sys.executable, str(tool), str(xml), "--check", "--baseline", str(baseline), "--json",
+                                   *limits], capture_output=True, text=True)
+        if gate.returncode not in (0, 1):
+            raise RuntimeError(gate.stderr[-1000:])
+        passed &= gate.returncode == 0
+        out[f"{mode}.passed"] = float(gate.returncode == 0)
+        if mode == "faithful":
+            report = json.loads(gate.stdout)
+            solo = next((p for p in report["parts"] if p["part"] == "Solo Cornet"), {})
+            for k in ("sixteenth_pct", "tuplet_pct", "tie_stub_pct", "accidental_pct"):
+                if isinstance(solo.get(k), (int, float)):
+                    out[f"solo_cornet.{k}"] = float(solo[k])
     agg = report["aggregate"]
-    out = {"passed": float(gate.returncode == 0), "violations": float(len(report.get("violations", [])))}
+    out.update({"passed": float(passed), "violations": float(len(report.get("violations", [])))})
     for k in ("short_lt16_pct", "sixteenth_pct", "tuplet_pct", "tie_stub_pct", "empty_bar_pct_playing_parts",
               "uncertain_pct"):
         if isinstance(agg.get(k), (int, float)):

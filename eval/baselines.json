@@ -392,11 +392,43 @@
       }
     },
     "readability": {
-      "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement",
+      "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement; per difficulty since the fast-notes solo path (docs/plan/fast-notes.md §7): faithful with the Solo Cornet 16th limit at 65 %, standard and easier on the unchanged thresholds",
       "metrics": {
         "passed": {
           "value": 1,
           "tolerance": 0
+        },
+        "faithful.passed": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "standard.passed": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "easier.passed": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "solo_cornet.sixteenth_pct": {
+          "value": 63.6,
+          "higher_is_better": false,
+          "tolerance": 1.0
+        },
+        "solo_cornet.tuplet_pct": {
+          "value": 0.3,
+          "higher_is_better": false,
+          "tolerance": 1.0
+        },
+        "solo_cornet.tie_stub_pct": {
+          "value": 1.3,
+          "higher_is_better": false,
+          "tolerance": 1.0
+        },
+        "solo_cornet.accidental_pct": {
+          "value": 6.7,
+          "higher_is_better": false,
+          "tolerance": 1.0
         }
       }
     },
@@ -489,7 +521,7 @@
       }
     },
     "solo-instruments": {
-      "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's; cornet_moved since the faithful soloist placement: docs/plan/trumpet.md §2.5",
+      "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's; cornet_moved since the faithful soloist placement: docs/plan/trumpet.md §2.5; since the fast-notes solo path (docs/plan/fast-notes.md §7): more right notes, and far fewer wrong ones (trumpet 16 -> 3, flugelhorn 17 -> 8), so q_hit is a share of a handful; q_missed: wrong notes without a \"?\" per 100 notes (trumpet 0.93 -> 0.25, flugelhorn 0.87 -> 0.62)",
       "metrics": {
         "baritone.sw_f1": 0.972,
         "baritone.bp_f1": 0.869,
@@ -500,7 +532,7 @@
           "higher_is_better": false
         },
         "baritone.seat_f1": 0.97,
-        "baritone.seat_recall": 0.955,
+        "baritone.seat_recall": 0.965,
         "baritone.octave_err": {
           "value": 0.0,
           "higher_is_better": false
@@ -514,17 +546,17 @@
           "value": 0.005,
           "higher_is_better": false
         },
-        "baritone.q_hit": 0.0,
+        "baritone.q_hit": 0.197,
         "flugelhorn.sw_f1": 0.955,
         "flugelhorn.bp_f1": 0.96,
-        "flugelhorn.today_f1": 0.947,
-        "flugelhorn.today_recall": 0.92,
+        "flugelhorn.today_f1": 0.96,
+        "flugelhorn.today_recall": 0.933,
         "flugelhorn.cornet_moved": {
           "value": 0.004,
           "higher_is_better": false
         },
-        "flugelhorn.seat_f1": 0.95,
-        "flugelhorn.seat_recall": 0.921,
+        "flugelhorn.seat_f1": 0.961,
+        "flugelhorn.seat_recall": 0.933,
         "flugelhorn.octave_err": {
           "value": 0.0,
           "higher_is_better": false
@@ -538,17 +570,17 @@
           "value": 0.002,
           "higher_is_better": false
         },
-        "flugelhorn.q_hit": 0.463,
+        "flugelhorn.q_hit": 0.333,
         "trumpet.sw_f1": 0.96,
         "trumpet.bp_f1": 0.875,
-        "trumpet.today_f1": 0.952,
-        "trumpet.today_recall": 0.931,
+        "trumpet.today_f1": 0.971,
+        "trumpet.today_recall": 0.949,
         "trumpet.cornet_moved": {
-          "value": 0.053,
+          "value": 0.0,
           "higher_is_better": false
         },
-        "trumpet.seat_f1": 0.955,
-        "trumpet.seat_recall": 0.932,
+        "trumpet.seat_f1": 0.971,
+        "trumpet.seat_recall": 0.949,
         "trumpet.octave_err": {
           "value": 0.0,
           "higher_is_better": false
@@ -557,18 +589,18 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "trumpet.bp_agrees": 0.979,
+        "trumpet.bp_agrees": 0.993,
         "trumpet.q_false_alarm": {
           "value": 0.004,
           "higher_is_better": false
         },
-        "trumpet.q_hit": 0.438,
+        "trumpet.q_hit": 0.333,
         "tuba.sw_f1": 0.885,
         "tuba.bp_f1": 0.483,
         "tuba.today_f1": 0.0,
         "tuba.today_recall": 0.0,
-        "tuba.seat_f1": 0.866,
-        "tuba.seat_recall": 0.853,
+        "tuba.seat_f1": 0.876,
+        "tuba.seat_recall": 0.87,
         "tuba.octave_err": {
           "value": 0.0,
           "higher_is_better": false
@@ -582,7 +614,7 @@
           "value": 0.036,
           "higher_is_better": false
         },
-        "tuba.q_hit": 0.158,
+        "tuba.q_hit": 0.177,
         "horn.sw_f1": 0.902,
         "horn.bp_f1": 0.799,
         "horn.today_f1": 0.9,
@@ -630,8 +662,38 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "trombone.q_hit": 0.208,
-        "seat_gates": 1.0
+        "trombone.q_hit": 0.319,
+        "seat_gates": 1.0,
+        "baritone.q_missed": {
+          "value": 1.613,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        },
+        "flugelhorn.q_missed": {
+          "value": 0.618,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        },
+        "trumpet.q_missed": {
+          "value": 0.246,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        },
+        "tuba.q_missed": {
+          "value": 9.482,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        },
+        "horn.q_missed": {
+          "value": 1.611,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        },
+        "trombone.q_missed": {
+          "value": 2.11,
+          "higher_is_better": false,
+          "tolerance": 0.1
+        }
       }
     },
     "seat-voices": {
@@ -664,56 +726,128 @@
       }
     },
     "fast-notes": {
-      "source": "docs/plan/fast-notes.md §2.1 and §4: the solo path on the frozen fast-notes clips (real trumpet samples, dry and in a hall), today's losses",
+      "source": "docs/plan/fast-notes.md §7: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets and dense quantization",
       "metrics": {
+        "oracle.ctl-ampvib.extra": {
+          "value": 0.05,
+          "higher_is_better": false
+        },
+        "oracle.ctl-doit.extra": {
+          "value": 0.15,
+          "higher_is_better": false
+        },
         "oracle.ctl-fall.extra": {
-          "value": 1.625,
+          "value": 0.2,
+          "higher_is_better": false
+        },
+        "oracle.ctl-leap.extra": {
+          "value": 0.5,
+          "higher_is_better": false
+        },
+        "oracle.ctl-rip.extra": {
+          "value": 0.45,
           "higher_is_better": false
         },
         "oracle.ctl-scoop.extra": {
-          "value": 0.75,
+          "value": 0.25,
+          "higher_is_better": false
+        },
+        "oracle.ctl-scoop300.extra": {
+          "value": 0.1,
           "higher_is_better": false
         },
         "oracle.ctl-slowslur.extra": {
-          "value": 0.583,
+          "value": 0.125,
+          "higher_is_better": false
+        },
+        "oracle.ctl-vib100.extra": {
+          "value": 0.25,
+          "higher_is_better": false
+        },
+        "oracle.ctl-vib150.extra": {
+          "value": 0.05,
+          "higher_is_better": false
+        },
+        "oracle.ctl-vibdown100.extra": {
+          "value": 0.35,
+          "higher_is_better": false
+        },
+        "oracle.ctl-vibdown120.extra": {
+          "value": 0.7,
           "higher_is_better": false
         },
         "oracle.ctl-vibrato.extra": {
-          "value": 0.0,
+          "value": 0.05,
           "higher_is_better": false
         },
-        "oracle.lead:easier.fig_recall": 0.208,
-        "oracle.line.fig_recall": 0.436,
-        "oracle.quantized.fig_recall": 0.32,
-        "oracle.sw.fig_recall": 0.584,
-        "oracle.written.alt_kept": 0.15,
-        "oracle.written.fig_recall": 0.32,
-        "oracle.written.note_f1": 0.457,
-        "oracle.written.onset25_f1": 0.511,
+        "oracle.lead:easier.fig_recall": 0.326,
+        "oracle.line.fig_recall": 0.597,
+        "oracle.quantized.fig_recall": 0.552,
+        "oracle.sw.fig_recall": 0.589,
+        "oracle.written.alt_kept": 0.41,
+        "oracle.written.fig_recall": 0.552,
+        "oracle.written.note_f1": 0.649,
+        "oracle.written.onset25_f1": 0.665,
+        "small0.ctl-ampvib.extra": {
+          "value": 0.05,
+          "higher_is_better": false
+        },
+        "small0.ctl-doit.extra": {
+          "value": 0.15,
+          "higher_is_better": false
+        },
         "small0.ctl-fall.extra": {
-          "value": 1.625,
+          "value": 0.2,
+          "higher_is_better": false
+        },
+        "small0.ctl-leap.extra": {
+          "value": 0.5,
+          "higher_is_better": false
+        },
+        "small0.ctl-rip.extra": {
+          "value": 0.85,
           "higher_is_better": false
         },
         "small0.ctl-scoop.extra": {
-          "value": 0.75,
+          "value": 0.3,
+          "higher_is_better": false
+        },
+        "small0.ctl-scoop300.extra": {
+          "value": 0.5,
           "higher_is_better": false
         },
         "small0.ctl-slowslur.extra": {
-          "value": 0.75,
+          "value": 0.125,
+          "higher_is_better": false
+        },
+        "small0.ctl-vib100.extra": {
+          "value": 0.25,
+          "higher_is_better": false
+        },
+        "small0.ctl-vib150.extra": {
+          "value": 0.05,
+          "higher_is_better": false
+        },
+        "small0.ctl-vibdown100.extra": {
+          "value": 0.4,
+          "higher_is_better": false
+        },
+        "small0.ctl-vibdown120.extra": {
+          "value": 0.7,
           "higher_is_better": false
         },
         "small0.ctl-vibrato.extra": {
-          "value": 0.0,
+          "value": 0.05,
           "higher_is_better": false
         },
-        "small0.lead:easier.fig_recall": 0.182,
-        "small0.line.fig_recall": 0.435,
-        "small0.quantized.fig_recall": 0.269,
-        "small0.sw.fig_recall": 0.583,
-        "small0.written.alt_kept": 0.125,
-        "small0.written.fig_recall": 0.269,
-        "small0.written.note_f1": 0.41,
-        "small0.written.onset25_f1": 0.383
+        "small0.lead:easier.fig_recall": 0.263,
+        "small0.line.fig_recall": 0.596,
+        "small0.quantized.fig_recall": 0.469,
+        "small0.sw.fig_recall": 0.588,
+        "small0.written.alt_kept": 0.269,
+        "small0.written.fig_recall": 0.469,
+        "small0.written.note_f1": 0.574,
+        "small0.written.onset25_f1": 0.511
       }
     }
   }

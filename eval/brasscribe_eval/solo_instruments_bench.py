@@ -17,6 +17,7 @@ Per instrument (mean over its stems), scored with mir_eval onset F1 at 100 ms ag
   seat_moved          the same on the seat's part (place_as_played: only notes outside the pro range)
   q_false_alarm       share of correct notes marked "?" (seat)
   q_hit               share of wrong notes marked "?" (seat)
+  q_missed            wrong notes without a "?", per 100 written notes (seat; lower is better)
 
     python -m brasscribe_eval.solo_instruments_bench [--json FILE]
 """
@@ -166,6 +167,9 @@ def evaluate(seats: bool = False, root: Path = FIXTURES, notes: list | None = No
                 R["q_false_alarm"].append(float(np.mean(ok)))
             if bad:
                 R["q_hit"].append(float(np.mean(bad)))
+            # wrong notes the reader is not warned about, per 100 notes: q_hit is a share of the wrong notes,
+            # which falls when the easy-to-flag wrong notes stop being made at all
+            R["q_missed"].append(100 * sum(1 for m in bad if not m) / max(1, len(line)))
     out = {}
     for label, R in rows.items():
         out[label] = {k: (float(len(v)) if k == "stems" else round(float(np.nanmean(v)), 4)) for k, v in R.items()}

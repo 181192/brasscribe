@@ -9,8 +9,8 @@ on the contour, on the piece's own tuning:
    confidence above 0.5, or a pitch at all when the contour carries no confidence).
 2. A note splits at every change of plateau semitone when the plateaus look like notes, not like vibrato:
    - one step or a run in one direction (a scale): the plateaus cover at least STEP_DWELL of the note (a
-     single semitone step also needs both plateaus SEMITONE_STEP_FRAMES long: a bend or a vibrato swing
-     otherwise);
+     single semitone step also needs both plateaus SEMITONE_STEP_FRAMES long, and a semitone under
+     BEND_FRAMES into or off a plateau twice its length is that note's bend);
    - alternation at a whole tone or more: DWELL of the note;
    - alternation at a semitone (a trill, or a lip vibrato that swings down a semitone): TRILL_DWELL of the
      note and at least TRILL_CHANGES changes;
@@ -46,6 +46,7 @@ TIGHT = 0.25
 MIN_RUN = 3
 STEP_DWELL = 0.7
 SEMITONE_STEP_FRAMES = 5
+BEND_FRAMES = 8
 DWELL = 0.7
 TRILL_DWELL = 0.85
 TRILL_CHANGES = 4
@@ -107,8 +108,13 @@ def _splits(pl: list[tuple[int, int, int]], n_frames: int) -> bool:
     dwell = sum(b - a for a, b, _ in pl) / max(1, n_frames)
     steps = [b - a for a, b in zip(sems, sems[1:]) if a != b]
     if all(d > 0 for d in steps) or all(d < 0 for d in steps):
-        if len(steps) == 1 and abs(steps[0]) == 1 and min(b - a for a, b, _ in pl) < SEMITONE_STEP_FRAMES:
-            return False  # one semitone step: a bend or a vibrato swing unless both pitches really hold
+        if len(steps) == 1 and abs(steps[0]) == 1:
+            held = [sum(b - a for a, b, s in pl if s == x) for x in (pl[0][2], pl[-1][2])]
+            short, long_ = min(held), max(held)
+            # one semitone step: a bend or a vibrato swing unless both pitches really hold, and a short
+            # semitone into or off a held note (twice as long) is the scoop or the fall of that note
+            if short < SEMITONE_STEP_FRAMES or (short < BEND_FRAMES and long_ >= 2 * short):
+                return False
         return dwell >= STEP_DWELL
     if float(np.median([b - a for a, b, _ in pl])) > ALT_MAX_FRAMES:
         return False

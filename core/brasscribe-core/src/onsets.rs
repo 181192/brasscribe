@@ -10,6 +10,7 @@ pub const TIGHT: f64 = 0.25;
 pub const MIN_RUN: usize = 3;
 pub const STEP_DWELL: f64 = 0.7;
 pub const SEMITONE_STEP_FRAMES: usize = 5;
+pub const BEND_FRAMES: usize = 8;
 pub const DWELL: f64 = 0.7;
 pub const TRILL_DWELL: f64 = 0.85;
 pub const TRILL_CHANGES: usize = 4;
@@ -92,8 +93,15 @@ fn splits(pl: &[Plateau], n_frames: usize) -> bool {
     let dwell = pl.iter().map(len).sum::<usize>() as f64 / n_frames.max(1) as f64;
     let steps: Vec<i64> = sems.windows(2).filter(|w| w[0] != w[1]).map(|w| w[1] - w[0]).collect();
     if steps.iter().all(|&d| d > 0) || steps.iter().all(|&d| d < 0) {
-        if steps.len() == 1 && steps[0].abs() == 1 && pl.iter().map(len).min().unwrap() < SEMITONE_STEP_FRAMES {
-            return false; // one semitone step: a bend or a vibrato swing unless both pitches really hold
+        if steps.len() == 1 && steps[0].abs() == 1 {
+            // One semitone step: a bend or a vibrato swing unless both pitches really hold, and a short semitone
+            // into or off a held note (twice as long) is that note's scoop or fall.
+            let held = |x: i64| pl.iter().filter(|p| p.2 == x).map(len).sum::<usize>();
+            let (h0, h1) = (held(pl[0].2), held(pl[pl.len() - 1].2));
+            let (short, long) = (h0.min(h1), h0.max(h1));
+            if short < SEMITONE_STEP_FRAMES || (short < BEND_FRAMES && long >= 2 * short) {
+                return false;
+            }
         }
         return dwell >= STEP_DWELL;
     }
