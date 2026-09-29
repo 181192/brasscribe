@@ -213,8 +213,8 @@ A fourth Appearance option, **Pink** / «Rosa», that nobody sees until they fin
   - On the Mac, an Option-click (or Option with the keyboard activation) on the version unlocks at once.
   - On unlock, a small note says **🎺 Pink unlocked** / **🎺 Rosa låst opp** for a few seconds, and screen readers announce it once. Pink then appears last in the Appearance picker. Nothing switches by itself.
 - **Staying unlocked.** The unlock is kept on the device (never synced or backed up), like the choice itself. A device that has Pink chosen counts as unlocked. To switch it off, choose any other option; Pink stays in the list.
-- **Where.** Play on Android, iOS, iPadOS and macOS, and Studio. Not in Bandroom or Windows Play yet.
-- **Tokens.** `color.pink` and `color.pink-dark` in [`tokens/tokens.json`](tokens/tokens.json). Compose: `BrasscribeTheme(pink = true)`; SwiftUI: `BrasscribePalette.shared.isPink` switches `Color.Brasscribe.*` to the `BrasscribePink/` colour sets; web: `data-palette="pink"` on the root.
+- **Where.** Play on Android, iOS, iPadOS, macOS and Windows, and Studio. Not in Bandroom yet.
+- **Tokens.** `color.pink` and `color.pink-dark` in [`tokens/tokens.json`](tokens/tokens.json). Compose: `BrasscribeTheme(pink = true)`; SwiftUI: `BrasscribePalette.shared.isPink` switches `Color.Brasscribe.*` to the `BrasscribePink/` colour sets; web: `data-palette="pink"` on the root; WinUI: `BrasscribePinkTheme.xaml` merged after the Brasscribe theme (Windows Play's `ThemeController`).
 
 #### Palette
 

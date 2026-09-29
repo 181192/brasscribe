@@ -257,7 +257,7 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         finally { dir.Delete(true); }
     }
 
-    /// <summary>A loud recording is turned down to the target; a quiet one plays at full volume (the media player cannot boost).</summary>
+    /// <summary>A loud recording is turned down to the target; with a player that can't play a boosted copy, a quiet one plays at full volume.</summary>
     [Fact]
     public async Task Recording_volume_is_set_from_its_measured_loudness()
     {
@@ -278,6 +278,81 @@ public class PlaybackLevelTests(ITestOutputHelper log)
             var c = new ScriptedOriginal();
             Assert.Null(await RecordingLevel.ApplyAsync(c, Path.Combine(dir.FullName, "missing.wav")));
             Assert.Equal(1.0, c.Volume);
+        }
+        finally { dir.Delete(true); }
+    }
+
+    /// <summary>A player that can play its audio from another file, as Windows' media player does for a boost.</summary>
+    private sealed class BoostingOriginal : Brasscribe.Play.Core.Services.IOriginalPlayer
+    {
+        public bool HasMedia => true;
+        public bool HasVideo => false;
+        public void Open(string path, bool hasVideo) { }
+        public void PlayRange(TimeSpan start, TimeSpan end, bool loop) { }
+        public void Play() { }
+        public void Pause() { }
+        public void Stop() { }
+        public bool IsPlaying => false;
+        public bool IsMuted { get; set; }
+        public double Rate { get; set; } = 1;
+        public double Volume { get; set; } = 1;
+        public TimeSpan Position { get; set; }
+        public bool CanUseAudio => true;
+        public string? Audio { get; private set; }
+        public void UseAudio(string? wavPath) => Audio = wavPath;
+    }
+
+    private static float[] Sine(double amplitude, int channels, int seconds = 3) =>
+        Enumerable.Range(0, 44100 * seconds).SelectMany(i => Enumerable.Repeat((float)(amplitude * Math.Sin(2 * Math.PI * 1000 * i / 44100.0)), channels)).ToArray();
+
+    /// <summary>A quiet recording is boosted to the target from a copy with the gain and the soft limiter; a loud one is turned down.</summary>
+    [Fact]
+    public async Task A_quiet_recording_is_boosted_to_the_target_and_cannot_clip()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            string quiet = Path.Combine(dir.FullName, "quiet.wav"), loud = Path.Combine(dir.FullName, "loud.wav");
+            WriteWav(quiet, Sine(0.06, 2), 2, pcm16: true); // about −24 LUFS
+            WriteWav(loud, Sine(0.5, 2), 2, pcm16: true);
+            RecordingLevel.SetArrangement(-14.0);
+            var a = new BoostingOriginal();
+            double lufs = (await RecordingLevel.ApplyAsync(a, quiet))!.Value;
+            Assert.InRange(-14.0 - lufs, 4, PlaybackLevels.RecordingMaxBoostDb);
+            Assert.Equal(1.0, a.Volume);
+            Assert.NotNull(a.Audio);
+            Assert.Equal(-14.0, LoudnessMeter.IntegratedWav(a.Audio!), 0.3);
+
+            // The target follows the next arrangement: a new copy, and none when it no longer needs a boost.
+            RecordingLevel.SetArrangement(-18.0);
+            await RecordingLevel.Settled;
+            Assert.Equal(-18.0, LoudnessMeter.IntegratedWav(a.Audio!), 0.3);
+            RecordingLevel.SetArrangement(-30.0); // clamped to −20: still a boost
+            await RecordingLevel.Settled;
+            Assert.Equal(-20.0, LoudnessMeter.IntegratedWav(a.Audio!), 0.3);
+
+            var b = new BoostingOriginal();
+            double loudLufs = (await RecordingLevel.ApplyAsync(b, loud))!.Value;
+            Assert.Null(b.Audio);
+            Assert.Equal(RecordingLevel.TargetLufs, loudLufs + 20 * Math.Log10(b.Volume), 1);
+        }
+        finally { RecordingLevel.SetArrangement(null); dir.Delete(true); }
+    }
+
+    [Fact]
+    public void The_boost_is_capped_and_its_peaks_stay_under_the_ceiling()
+    {
+        var dir = Directory.CreateTempSubdirectory();
+        try
+        {
+            string near = Path.Combine(dir.FullName, "near.wav");
+            WriteWav(near, Sine(0.3, 1), 1, pcm16: false);
+            string boosted = RecordingBoost.Prepare(near, 12.0); // 0.3 × 4 = 1.2 before the limiter
+            float peak = 0;
+            LoudnessMeter.ReadWav(boosted, (_, ch) => Assert.Equal(1, ch), s => { foreach (var x in s) peak = Math.Max(peak, Math.Abs(x)); });
+            Assert.InRange(peak, OutputStage.Threshold, OutputStage.Ceiling);
+            Assert.Equal(boosted, RecordingBoost.Prepare(near, 12.04)); // the same 0.1 dB step: reused
+            Assert.Equal(PlaybackLevels.RecordingMaxBoostDb, PlaybackLevels.RecordingGainDb(-60, -12));
         }
         finally { dir.Delete(true); }
     }

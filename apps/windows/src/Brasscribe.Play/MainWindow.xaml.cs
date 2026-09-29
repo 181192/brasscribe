@@ -60,6 +60,7 @@ public sealed partial class MainWindow : Window
             if (e.PropertyName is nameof(ScoreViewModel.Title) or nameof(ScoreViewModel.SelectedPartIndex)) UpdateTitleBar();
         };
         ViewModel.Transcription.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TranscriptionViewModel.Title)) UpdateTitleBar(); };
+        ViewModel.Score.Stand.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MusicStandViewModel.IsOpen)) ApplyMusicStand(ViewModel.Score.Stand.IsOpen); };
         Root.Loaded += (_, _) => Show(ViewModel.Screen);
 
         // The heartbeat runs while the window is in front: minimised stops it, restored checks at once.
@@ -80,8 +81,33 @@ public sealed partial class MainWindow : Window
 
     public MainViewModel ViewModel { get; }
 
-    /// <summary>The element UIA notifications are raised from (see <see cref="Services.UiaAnnouncer"/>).</summary>
-    public FrameworkElement AnnouncerHost => StatusText;
+    /// <summary>The element UIA notifications are raised from (see <see cref="Services.UiaAnnouncer"/>); the stand's band while the status line is hidden.</summary>
+    public FrameworkElement AnnouncerHost =>
+        ViewModel.Score.Stand.IsOpen && ContentFrame.Content is ScoreScreen score ? score.StandAnnouncerHost : StatusText;
+
+    private Microsoft.UI.Windowing.AppWindowPresenter? _presenterBeforeStand;
+
+    /// <summary>
+    /// The music stand takes the window full screen, hides the title bar and the status line, and keeps
+    /// the screen on; leaving gives back the window exactly as it was (a maximised window stays maximised).
+    /// </summary>
+    private void ApplyMusicStand(bool open)
+    {
+        AppTitleBar.Visibility = open ? Visibility.Collapsed : Visibility.Visible;
+        StatusText.Visibility = open ? Visibility.Collapsed : Visibility.Visible;
+        StandPlatform.KeepScreenOn(open);
+        if (open)
+        {
+            if (AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen) return;
+            _presenterBeforeStand = AppWindow.Presenter;
+            AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
+        }
+        else if (_presenterBeforeStand is { } before)
+        {
+            _presenterBeforeStand = null;
+            AppWindow.SetPresenter(before);
+        }
+    }
 
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -91,6 +117,7 @@ public sealed partial class MainWindow : Window
     private static Type PageFor(Screen screen) => screen switch
     {
         Screen.FirstRun => typeof(FirstRunPage),
+        Screen.WhatDoYouPlay => typeof(WhatDoYouPlayPage),
         Screen.SourceKind => typeof(WhatIsThisPage),
         Screen.Transcribing => typeof(TranscribingPage),
         Screen.Review => typeof(ReviewPage),
@@ -189,7 +216,7 @@ public sealed partial class MainWindow : Window
     private void OnToggleTalkingScoreAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        if (ContentFrame.Content is not ScoreScreen score) return;
+        if (ContentFrame.Content is not ScoreScreen score || ViewModel.Score.Stand.IsOpen) return;
         ViewModel.Score.ShowTalkingScore = !ViewModel.Score.ShowTalkingScore;
         score.FocusScore();
     }
@@ -224,7 +251,7 @@ public sealed partial class MainWindow : Window
     {
         if (!ViewModel.OpenExportCommand.CanExecute(null)) return;
         ViewModel.OpenExportCommand.Execute(null);
-        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot };
+        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
         await dialog.ShowAsync();
         ExportButton.Focus(FocusState.Programmatic);
     }
@@ -242,7 +269,7 @@ public sealed partial class MainWindow : Window
         _settingsOpen = true;
         try
         {
-            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot };
+            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
             if (pairingLink is not null) dialog.Opened += async (_, _) => await ViewModel.Settings.PairFromLinkAsync(pairingLink);
             await dialog.ShowAsync();
             ViewModel.Settings.CancelAsk();
@@ -253,7 +280,7 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowShortcutsAsync()
     {
-        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot };
+        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
         await dialog.ShowAsync();
         HelpButton.Focus(FocusState.Programmatic);
     }

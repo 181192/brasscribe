@@ -24,7 +24,7 @@
         <Border Style="{StaticResource SegmentGroupStyle}" HorizontalAlignment="Left" x:Uid="ExportScope">
             <StackPanel Orientation="Horizontal" Spacing="3">
                 <RadioButton x:Name="MyPartChoice" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}" Checked="OnScopeChecked" Tag="0"
-                             Content="{x:Bind ViewModel.MyPartLabel, Mode=OneWay}" />
+                             Content="{x:Bind ViewModel.MyPartLabel, Mode=OneWay}" Visibility="{x:Bind ViewModel.HasMyPart, Mode=OneWay}" />
                 <RadioButton x:Name="EveryPartChoice" x:Uid="ExportEveryPart" GroupName="Scope" Style="{StaticResource SegmentRadioStyle}"
                              Checked="OnScopeChecked" Tag="1" />
                 <!-- "Conductor's score", or "Score (all 4 parts)" for a quartet (no conductor). -->

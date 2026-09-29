@@ -537,4 +537,46 @@ public class AppFlowTests
         Assert.Equal("notes.docx can't be opened. Try an MP3, WAV, M4A or MP4 file, or a MusicXML score.", main.Start.ErrorText);
         Assert.Equal(Screen.Start, main.Screen);
     }
+
+    [Fact]
+    public void The_music_stand_closes_before_the_score_and_follows_the_settings()
+    {
+        var (main, said) = Build(Engine(""));
+        main.OpenScoreFile(TestPaths.Fixture("two-parts.musicxml"));
+        Assert.Equal(Screen.Score, main.Screen);
+        main.Score.ShowTalkingScore = true;
+
+        main.Settings.StandTurnPages = false;
+        Assert.False(main.Score.Stand.TurnPagesWhilePlaying);
+        main.Settings.StandKeepControls = true;
+        Assert.True(main.Score.Stand.KeepControlsVisible);
+
+        main.Score.Stand.Enter();
+        Assert.True(main.Score.Stand.IsOpen);
+        Assert.False(main.Score.ShowTalkingScore); // the stand is the music, not the text list
+        Assert.Equal(main.Score.MyPartIndex, main.Score.SelectedPartIndex);
+
+        // Back (Alt+Left, the mouse's back button) leaves the stand first, then the score.
+        main.BackCommand.Execute(null);
+        Assert.False(main.Score.Stand.IsOpen);
+        Assert.Equal(Screen.Score, main.Screen);
+        Assert.Equal(-1, main.Score.SelectedPartIndex);
+        Assert.True(main.Score.ShowTalkingScore);
+        Assert.Equal("Music stand closed.", said.Items[^1].Text);
+        main.BackCommand.Execute(null);
+        Assert.Equal(Screen.Start, main.Screen);
+
+        // Any other screen closes it, quietly.
+        main.Screen = Screen.Score;
+        main.Score.Stand.Enter();
+        main.Screen = Screen.Review;
+        Assert.False(main.Score.Stand.IsOpen);
+
+        // The hint, once dismissed, is remembered.
+        main.Screen = Screen.Score;
+        main.Score.Stand.Enter();
+        main.Score.Stand.Tap();
+        main.Score.Stand.Tap();
+        Assert.True(main.Settings.StandHintSeen);
+    }
 }

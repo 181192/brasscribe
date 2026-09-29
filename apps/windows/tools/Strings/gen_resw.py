@@ -99,6 +99,9 @@ prop("KindHeading", "Text", "What is this?", "Hva er dette?")
 prop("KindIntro", "Text", "Your answer decides how Brasscribe listens. It never guesses.",
      "Svaret ditt avgjør hvordan Brasscribe lytter. Det gjettes aldri.")
 name("KindOptions", "What is this recording?", "Hva er dette opptaket?")
+prop("KindPercussionNote", "Text", "Brasscribe can't write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.",
+     "Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer.")
+text_button("KindChangeSeatButton", "Change what I play", "Endre hva jeg spiller", "Open Settings to change your instrument", "Åpne Innstillinger for å endre instrumentet ditt")
 prop("KindNotSure", "Text", "Not sure? Choose Brass band. You can change it later.", "Usikker? Velg Brassband. Du kan endre det senere.")
 text_button("KindCancelButton", "Cancel", "Avbryt", "Back to Home, the recording is kept", "Tilbake til startsiden, opptaket beholdes")
 prop("ContinueButton", "Content", "Continue", "Fortsett"); help_("ContinueButton", "Make the score. Choose what the recording is first.", "Lag partituret. Velg først hva opptaket er.")
@@ -193,7 +196,8 @@ name("VideoView", "Original video", "Originalvideo")
 name("PlayerBar", "Player", "Avspiller")
 add(f"PlayerBar.{AUTO}.LocalizedLandmarkType", "player", "avspiller")
 icon_button("PreviousBarButton", "Previous bar", "Forrige takt", "Go to the bar before", "Gå til takten før")
-icon_button("PlayPauseButton", "Play or pause", "Spill av eller pause", "Space in the score, Ctrl+Shift+Space anywhere", "Mellomrom i partituret, Ctrl+Shift+Mellomrom hvor som helst")
+# The name follows the state ("Play" / "Pause", PlayerViewModel.PlayPauseName); the tooltip covers both.
+tip("PlayPauseButton", "Play or pause", "Spill av eller pause"); help_("PlayPauseButton", "Space in the score, Ctrl+Shift+Space anywhere", "Mellomrom i partituret, Ctrl+Shift+Mellomrom hvor som helst")
 icon_button("NextBarButton", "Next bar", "Neste takt", "Go to the bar after", "Gå til takten etter")
 name("HearChoice", "Hear", "Hør")
 prop("HearBand", "Content", "Hear the band", "Hør bandet"); help_("HearBand", "Play the score", "Spill av partituret")
@@ -231,6 +235,15 @@ prop("LanguageBox", "Header", "App language", "Appspråk")
 prop("LanguageSystem", "Content", "Same as Windows", "Samme som Windows")
 prop("LanguageRestartNote", "Text", "A new language is used the next time you start the app.", "Nytt språk tas i bruk neste gang du starter appen.")
 prop("SettingsAccessibilityHeading", "Text", "Display and keyboard", "Visning og tastatur")
+prop("AppearanceBox", "Header", "Appearance", "Utseende")
+prop("AppearanceSystem", "Content", "Match system", "Følg systemet")
+prop("AppearanceLight", "Content", "Light", "Lyst")
+prop("AppearanceDark", "Content", "Dark", "Mørkt")
+# The hidden Pink palette (design/system.md §10): its item is added in code, last, once it is unlocked from About.
+add("Appearance_Pink", "Pink", "Rosa")
+add("Pink_Unlocked", "🎺 Pink unlocked", "🎺 Rosa låst opp")
+add("Settings_AppVersion", "Version {0}", "Versjon {0}")
+prop("AppearanceContrastNote", "Text", "Your contrast theme is on, so Windows chooses the colours.", "Kontrasttemaet ditt er på, så Windows velger fargene.")
 prop("SingleKeySwitch", "Header", "Single-key shortcuts in the score", "Hurtigtaster med én tast i partituret")
 help_("SingleKeySwitch", "Keys such as U, R and P. Arrows always work.", "Taster som U, R og P. Piltastene virker alltid.")
 prop("ReduceMotionSwitch", "Header", "Reduce motion", "Mindre bevegelse")
@@ -308,6 +321,7 @@ code = {
     "Start_Notice_TooLoud": ("The sound is too loud and distorts. Turn the volume down a little.", "Lyden er for høy og blir forvrengt. Skru ned volumet litt."),
     "Kind_Solo_Label": ("One instrument", "Ett instrument"),
     "Kind_Solo_Description": ("One player on their own, like you practising the cornet.", "Én musiker alene, som når du øver på kornetten."),
+    "Kind_Solo_Percussion": ("Not for percussion yet", "Ikke for slagverk ennå"),
     "Kind_BrassBand_Label": ("Brass band", "Brassband"),
     "Kind_BrassBand_Description": ("A whole band playing together, with no other instruments.", "Et helt band som spiller sammen, uten andre instrumenter."),
     "Kind_OrchestraWithSoloist_Label": ("Soloist with orchestra or band", "Solist med orkester eller band"),
@@ -645,6 +659,173 @@ HEADER = """<?xml version="1.0" encoding="utf-8"?>
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 """
+
+
+# ---- the music stand (design/music-stand.md §9) ----
+name("MusicStandButton", "Music stand", "Notestativ")
+tip("MusicStandButton", "The music alone, for playing from the stand (F)", "Bare notene, til å spille fra notestativet (F)")
+help_("MusicStandButton", "F or F11. Esc leaves it.", "F eller F11. Esc går ut.")
+prop("MusicStandLabel", "Text", "Music stand", "Notestativ")
+prop("MusicStandItem", "Text", "Music stand", "Notestativ")
+name("StandBand", "Music stand", "Notestativ")
+name("StandLeaveButton", "Leave the music stand", "Gå ut av notestativet")
+help_("StandLeaveButton", "Esc, F or F11", "Esc, F eller F11")
+prop("StandLeaveLabel", "Text", "Leave", "Gå ut")
+name("StandLayer", "Music stand controls", "Knappene på notestativet")
+icon_button("StandPreviousPage", "Previous page", "Forrige side", "Left arrow, Up arrow or Page Up", "Venstre pil, pil opp eller Page Up")
+icon_button("StandNextPage", "Next page", "Neste side", "Right arrow, Down arrow or Page Down", "Høyre pil, pil ned eller Page Down")
+icon_button("StandPreviousBar", "Previous bar", "Forrige takt", "Ctrl+Up arrow", "Ctrl+pil opp")
+icon_button("StandNextBar", "Next bar", "Neste takt", "Ctrl+Down arrow", "Ctrl+pil ned")
+tip("StandPlayPause", "Play or pause", "Spill av eller pause"); help_("StandPlayPause", "Space", "Mellomrom")
+icon_button("StandSlower", "Slower", "Saktere", "The - key", "Minus-tasten")
+icon_button("StandFaster", "Faster", "Raskere", "The + key", "+-tasten")
+help_("StandRepeatToggle", "Plays the chosen bars over and over (L)", "Spiller de valgte taktene om og om igjen (L)")
+prop("StandOnlyMineLabel", "Text", "Only my part", "Bare stemmen min")
+name("StandOnlyMine", "Only my part", "Bare stemmen min")
+prop("StandHint", "Text", "Tap the music to show the controls.", "Trykk på notene for å vise knappene.")
+add("Stand_RepeatFrom", "Repeat bars", "Gjenta takt")
+add("Stand_RepeatTo", "to", "til")
+add("Stand_RepeatSet", "Repeat", "Gjenta")
+add("Stand_RepeatSetHelp", "Plays these bars over and over (L)", "Spiller disse taktene om og om igjen (L)")
+prop("SettingsStandHeading", "Text", "Music stand", "Notestativ")
+prop("StandKeepControlsSwitch", "Header", "Keep the stand controls visible", "Vis alltid knappene på notestativet")
+prop("StandTurnPagesSwitch", "Header", "Turn the pages while playing", "Bla om mens musikken spiller")
+prop("StandPedalNote", "Text",
+     "Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.",
+     "Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.")
+add("Player_Play", "Play", "Spill av")
+add("Player_Pause", "Pause", "Pause")
+add("Stand_PartYours", "{0} (you)", "{0} (deg)")
+add("Stand_Detail", "{0} · bar {1} · {2}", "{0} · takt {1} · {2}")
+add("Stand_Page", "page {0} of {1}", "side {0} av {1}")
+add("Stand_Pages", "pages {0}–{1} of {2}", "side {0}–{1} av {2}")
+add("Stand_Speed", "Speed {0}", "Tempo {0}")
+add("Stand_Repeat", "Repeat", "Gjenta")
+add("Stand_RepeatOn", "Repeat {0}–{1}", "Gjenta {0}–{1}")
+add("Stand_Entered", "Music stand. {0}, bar {1} of {2}.", "Notestativ. {0}, takt {1} av {2}.")
+add("Stand_EnteredTouch", "Tap the music to show the controls.", "Trykk på notene for å vise knappene.")
+add("Stand_PageTurned", "Page {0} of {1}, bars {2} to {3}.", "Side {0} av {1}, takt {2} til {3}.")
+add("Stand_FirstPage", "First page.", "Første side.")
+add("Stand_LastPage", "Last page.", "Siste side.")
+add("Stand_Left", "Music stand closed.", "Notestativet er lukket.")
+add("ScoreOptions_OpenOnStand", "Open on the music stand", "Åpne på notestativet")
+add("Shortcuts_Stand", "On the music stand", "På notestativet")
+add("Shortcut_Stand", "Music stand, or leave it", "Notestativ, eller gå ut av det")
+add("Shortcut_StandPage", "Next or previous page", "Neste eller forrige side")
+add("Shortcut_StandFirstLast", "First or last page", "Første eller siste side")
+add("Shortcut_StandLeave", "Leave the music stand", "Gå ut av notestativet")
+
+# ---- my instrument (docs/plan/my-instrument.md §3.8) ----
+# Part and seat names never come from here: the core's seats() and part_name_nb are the one table.
+add("Screen_WhatDoYouPlay", "What do you play?", "Hva spiller du?")
+prop("SeatHeading", "Text", "What do you play?", "Hva spiller du?")
+prop("SeatBody", "Text", "Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.",
+     "Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger.")
+prop("SeatInstrumentChoices", "Header", "Instrument", "Instrument")
+prop("SeatPartChoices", "Header", "Which part?", "Hvilken stemme?")
+prop("SeatReadsChoices", "Header", "You read", "Du leser")
+text_button("SeatContinueButton", "Continue", "Fortsett", "Save what you play and go to Home", "Lagre hva du spiller, og gå til startsiden")
+text_button("SeatConductButton", "I conduct or listen", "Jeg dirigerer eller lytter", "Scores open on every part", "Partiturene åpner på alle stemmene")
+text_button("SeatSkipButton", "Not now", "Ikke nå", "Go to Home without choosing. You can choose in Settings.", "Gå til startsiden uten å velge. Du kan velge i Innstillinger.")
+add("Seat_ContinueHint", "Choose your instrument, or “I conduct or listen”.", "Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».")
+add("Seat_ContinueHintPart", "Choose which part you play.", "Velg hvilken stemme du spiller.")
+# The tiles' instrument words and their second line (the mockup's, the same on every platform); "-": no second line.
+for key, en, nb, den, dnb in [
+    ("Cornet", "Cornet", "Kornett", "-", "-"),
+    ("Trumpet", "Trumpet", "Trompet", "in B♭", "i B"),
+    ("Soprano", "Soprano", "Sopran", "E♭ cornet", "Ess-kornett"),
+    ("Flugelhorn", "Flugelhorn", "Flygelhorn", "-", "-"),
+    ("TenorHorn", "Tenor Horn", "Althorn", "in E♭", "i Ess"),
+    ("Baritone", "Baritone", "Baryton", "-", "-"),
+    ("Euphonium", "Euphonium", "Eufonium", "-", "-"),
+    ("Trombone", "Trombone", "Trombone", "-", "-"),
+    ("BassTrombone", "Bass Trombone", "Basstrombone", "-", "-"),
+    ("EbBass", "E♭ Bass", "Ess-bass", "-", "-"),
+    ("BbBass", "B♭ Bass", "B-bass", "-", "-"),
+    ("Percussion", "Percussion", "Slagverk", "-", "-"),
+]:
+    add(f"Seat_Tile_{key}", en, nb)
+    add(f"Seat_TileDetail_{key}", den, dnb)
+add("Seat_ReadsTrebleBb", "Treble clef in B♭", "G-nøkkel i B")
+add("Seat_ReadsTrebleEb", "Treble clef in E♭", "G-nøkkel i Ess")
+add("Seat_ReadsBass", "Bass clef, as it sounds", "F-nøkkel, klingende")
+add("Seat_ReadsTrebleBb_Value", "treble clef in B♭", "G-nøkkel i B")
+add("Seat_ReadsTrebleEb_Value", "treble clef in E♭", "G-nøkkel i Ess")
+add("Seat_ReadsBass_Value", "bass clef, as it sounds", "F-nøkkel, klingende")
+add("Seat_Value", "{0} · {1}", "{0} · {1}")
+add("Seat_NotSet", "Not set", "Ikke valgt")
+add("Seat_None", "I conduct or listen", "Jeg dirigerer eller lytter")
+add("Seat_KeyConcert", "concert pitch", "klingende")
+# One sentence per lineup, so Norwegian has its own definite form ("Det lille bandet", "Kvartetten").
+add("Seat_Notice_SameKey_Full", "This full band has no {0}. Your part here is {1}, the closest: the same key and clef.",
+    "Det fulle bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.")
+add("Seat_Notice_SameKey_Small", "This small band has no {0}. Your part here is {1}, the closest: the same key and clef.",
+    "Det lille bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.")
+add("Seat_Notice_SameKey_Quartet", "This quartet has no {0}. Your part here is {1}, the closest: the same key and clef.",
+    "Kvartetten har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.")
+add("Seat_Notice_OtherKey_Full", "This full band has no {0}. Your part here is {1}, written for {2}.",
+    "Det fulle bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
+add("Seat_Notice_OtherKey_Small", "This small band has no {0}. Your part here is {1}, written for {2}.",
+    "Det lille bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
+add("Seat_Notice_OtherKey_Quartet", "This quartet has no {0}. Your part here is {1}, written for {2}.",
+    "Kvartetten har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
+# A trumpet takes the band's lead part: {0} the seat word in running text ("trumpet"), {1} the part it takes.
+add("Seat_Notice_Takes_Full", "The full brass band has no {0} part. You get the {1} part, written for {0}.",
+    "Fullt brassband har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.")
+add("Seat_Notice_Takes_Small", "The small band has no {0} part. You get the {1} part, written for {0}.",
+    "Det lille bandet har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.")
+add("Seat_Notice_NoPart_Full", "This full band has no {0} part. Brasscribe opens every part.",
+    "Det fulle bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
+add("Seat_Notice_NoPart_Small", "This small band has no {0} part. Brasscribe opens every part.",
+    "Det lille bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
+add("Seat_Notice_NoPart_Quartet", "This quartet has no {0} part. Brasscribe opens every part.",
+    "Kvartetten har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
+prop("SettingsYouHeading", "Text", "Your instrument", "Instrumentet ditt")
+prop("SeatRowLabel", "Text", "What you play", "Hva du spiller")
+text_button("SeatChangeButton", "Change…", "Endre …", "Change what you play", "Endre hva du spiller")
+text_button("SeatSaveButton", "Save", "Lagre", "Save what you play", "Lagre hva du spiller")
+text_button("SeatConductSettingsButton", "I conduct or listen", "Jeg dirigerer eller lytter", "Scores open on every part", "Partiturene åpner på alle stemmene")
+text_button("SeatCancelButton", "Cancel", "Avbryt", "Keep what you play as it was", "Behold det du spiller slik det var")
+prop("SeatCaption", "Text", "New scores open on your part. Scores you already have keep the part you chose for them.",
+     "Nye partiturer åpner på stemmen din. Partiturer du har fra før, beholder stemmen du valgte.")
+add("Score_MakeMine", "Make this my part", "Gjør til min stemme")
+add("Score_MadeMine", "{0} is your part in this score.", "{0} er stemmen din i dette partituret.")
+add("Source_YourRecording", "From your recording", "Fra opptaket ditt")
+add("Source_Recording", "From the recording", "Fra opptaket")
+add("Source_Arranged", "Arranged from the band's harmony", "Arrangert ut fra harmoniene i bandet")
+add("Source_Explain_YourRecording", "Brasscribe wrote down the notes you played.", "Brasscribe skrev ned tonene du spilte.")
+add("Source_Explain_Recording", "Brasscribe wrote down the notes it heard for this part.", "Brasscribe skrev ned tonene den hørte for denne stemmen.")
+add("Source_Explain_Arranged",
+    "Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.",
+    "Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.")
+add("Review_ArrangedTitle", "Your part is arranged", "Stemmen din er arrangert")
+add("Source_Empty", "Nothing to play in this arrangement", "Tom i dette arrangementet")
+add("Source_Explain_Empty", "Nothing in the recording gave this part any notes, so it is left empty.",
+    "Ingenting i opptaket ga denne stemmen noen toner, så den står tom.")
+add("Review_EmptyTitle", "Your part is empty", "Stemmen din er tom")
+add("Review_EmptyBody", "Nothing in the recording gave the {0} part any notes, so there is nothing of yours to check.",
+    "Ingenting i opptaket ga {0} noen toner, så det er ingenting av ditt å sjekke.")
+add("Review_ArrangedBody",
+    "Nobody played the {0} part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.",
+    "Ingen spilte {0} alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.")
+text_button("CheckOtherPartsButton", "Check the other parts", "Sjekk de andre stemmene", "The notes marked ? in every part", "Tonene merket ? i alle stemmene")
+text_button("ShowMyPartButton", "Show my part", "Vis stemmen min", "Your part in the score", "Stemmen din i partituret")
+prop("WhoPlayedHeading", "Text", "Who played this?", "Hvem spilte?")
+name("WhoPlayedBox", "Who played this?", "Hvem spilte?")
+help_("WhoPlayedBox", "The part is written for this instrument when you show the score", "Stemmen skrives for dette instrumentet når du viser partituret")
+prop("SoloOnePartNote", "Text", "A solo recording gives one part: yours.", "Et soloopptak gir én stemme: din.")
+prop("TuneHeading", "Text", "Who plays the tune?", "Hvem spiller melodien?")
+name("TuneChoices", "Who plays the tune?", "Hvem spiller melodien?")
+add("Output_TuneLineup", "{0} (as usual)", "{0} (som vanlig)")
+add("Output_TuneSeat", "You: {0}", "Deg: {0}")
+add("Output_YourPart", "your part: {0}", "stemmen din: {0}")
+add("Output_YourPartNone", "You conduct or listen: every part opens.", "Du dirigerer eller lytter: alle stemmene åpnes.")
+add("Output_KeyAsItSounds", "{0}, as it sounds", "{0}, klingende")
+add("Score_AsWrittenBassClef", "As written (bass clef)", "Notert (F-nøkkel)")
+add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
+add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
+    "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")
+
 
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):

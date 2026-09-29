@@ -28,7 +28,18 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         "bc_humanize_json", "bc_talking_score_new", "bc_talking_score_free", "bc_talking_score_json", "bc_talking_announce_json",
     ];
 
-    private NativeCoreBridge(string version) => Version = version;
+    /// <summary>Exports a newer core adds; without one of them that feature is left out, not the whole core.</summary>
+    internal static readonly string[] OptionalExports = ["bc_seats", "bc_seat_part", "bc_part_sources", "bc_part_name_nb"];
+
+    private NativeCoreBridge(string version, IReadOnlySet<string> optional)
+    {
+        Version = version;
+        _optional = optional;
+    }
+
+    private readonly IReadOnlySet<string> _optional;
+    private IReadOnlyList<SeatInfo>? _seats;
+    private readonly Dictionary<string, string> _nb = [];
 
     public string Version { get; }
     public bool IsNative => true;
@@ -59,10 +70,11 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         }
         foreach (var export in RequiredExports)
             if (!NativeLibrary.TryGetExport(_handle, export, out _)) return null;
+        var optional = OptionalExports.Where(e => NativeLibrary.TryGetExport(_handle, e, out _)).ToHashSet();
         try
         {
             nint v = bc_version();
-            try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native"); }
+            try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native", optional); }
             finally { bc_string_free(v); }
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
@@ -148,6 +160,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         };
         if (options.Key is { } key) o["key"] = key;
         if (options.Transpose is { } t) o["transpose"] = t;
+        AddSeat(o, options);
         return o.ToJsonString();
     }
 
@@ -211,6 +224,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         };
         if (options.Key is { } key) o["key"] = key;
         if (options.Transpose is { } t) o["transpose"] = t;
+        AddSeat(o, options);
         if (contour is not null)
             o["solo_contour"] = new JsonObject
             {
@@ -222,6 +236,14 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         if (contour?.Confidence is { } conf)
             o["solo_contour"]!["confidence"] = Floats(conf, 0);
         return o.ToJsonString();
+    }
+
+    /// <summary>The player's seat, reading and lead, only when set: without them the options (and the score) are as before.</summary>
+    private static void AddSeat(JsonObject o, ArrangementOptions options)
+    {
+        if (options.Seat is { } seat) o["seat"] = seat;
+        if (options.Reads is { } reads) o["reads"] = reads;
+        if (options.Lead is { } lead) o["lead"] = lead;
     }
 
     public HumanizedPart? Humanize(IReadOnlyList<HumanizeNote> notes, string part, int player, string? compositionJson)
@@ -246,6 +268,59 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             n.GetProperty("start").GetDouble(), n.GetProperty("end").GetDouble(), n.GetProperty("pitch").GetInt32(),
             (int)n.GetProperty("velocity").GetDouble(), n.GetProperty("staccato").GetBoolean(), n.GetProperty("from_composition").GetBoolean())).ToList();
         return new HumanizedPart(played, root.TryGetProperty("detune", out var d) ? d.GetDouble() : 0);
+    }
+
+    public IReadOnlyList<SeatInfo> Seats()
+    {
+        if (_seats is not null) return _seats;
+        if (!_optional.Contains("bc_seats")) return _seats = [];
+        Check(bc_seats(out var json, out var err), err);
+        return _seats = ParseSeats(Take(json));
+    }
+
+    /// <summary>The rows of bc_seats: <c>[{"id", "name", "nb_name", "instrument", "clef", "reads": [...], "tune"}]</c>.</summary>
+    internal static IReadOnlyList<SeatInfo> ParseSeats(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray().Select(x => new SeatInfo(
+            x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!, x.GetProperty("nb_name").GetString()!,
+            x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
+            x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList(),
+            x.TryGetProperty("tune", out var tune) && tune.ValueKind == JsonValueKind.True)).ToList();
+    }
+
+    public SeatPart? SeatPartFor(string lineup, string seat)
+    {
+        if (!_optional.Contains("bc_seat_part")) return null;
+        Check(bc_seat_part(lineup, seat, out var json, out var err), err);
+        using var doc = JsonDocument.Parse(Take(json));
+        var r = doc.RootElement;
+        var part = r.GetProperty("part");
+        return new SeatPart(part.ValueKind == JsonValueKind.Null ? null : part.GetString(), r.GetProperty("exact").GetBoolean(),
+            r.GetProperty("same_key").GetBoolean(),
+            r.TryGetProperty("takes", out var takes) && takes.ValueKind == JsonValueKind.String ? takes.GetString() : null);
+    }
+
+    public IReadOnlyDictionary<string, string> PartSources(string compositionJson)
+    {
+        var sources = new Dictionary<string, string>();
+        if (!_optional.Contains("bc_part_sources")) return sources;
+        Check(bc_part_sources(compositionJson, out var json, out var err), err);
+        using var doc = JsonDocument.Parse(Take(json));
+        foreach (var row in doc.RootElement.EnumerateArray())
+            sources[row.GetProperty("part").GetString()!] = row.GetProperty("source").GetString()!;
+        return sources;
+    }
+
+    public string PartNameNb(string name)
+    {
+        if (!_optional.Contains("bc_part_name_nb")) return name;
+        lock (_nb)
+            if (_nb.TryGetValue(name, out var known)) return known;
+        Check(bc_part_name_nb(name, out var nb, out var err), err);
+        string result = Take(nb);
+        lock (_nb) _nb[name] = result;
+        return result;
     }
 
     private static void Check(int status, nint err)
@@ -296,6 +371,18 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     [LibraryImport(Lib)]
     private static partial int bc_talking_score_json(nint ts, out nint json, out nint err);
+
+    [LibraryImport(Lib)]
+    private static partial int bc_seats(out nint json, out nint err);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int bc_seat_part(string lineup, string seat, out nint json, out nint err);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int bc_part_sources(string compositionJson, out nint json, out nint err);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int bc_part_name_nb(string name, out nint nb, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     private static partial int bc_talking_announce_json(string request, out nint json, out nint err);

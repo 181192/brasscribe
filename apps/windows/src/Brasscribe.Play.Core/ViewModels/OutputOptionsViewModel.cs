@@ -1,6 +1,7 @@
 using Brasscribe.Play.Core.Arrangement;
 using Brasscribe.Play.Core.Bridge;
 using Brasscribe.Play.Core.Engine;
+using Brasscribe.Play.Core.Seats;
 using Brasscribe.Play.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -35,6 +36,135 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     partial void OnIsSoloTakeChanged(bool value)
     {
         if (value && Lineup == Lineup.Quartet) Lineup = Lineup.FullBand;
+        SeatChanged();
+    }
+
+    partial void OnLineupChanged(Lineup value) => SeatChanged();
+
+    // ---- The player: their seat for this score, who played a solo take, who plays the tune ----
+
+    /// <summary>The seats (from the core); null or empty: nothing about the player is asked here.</summary>
+    public SeatCatalog? Seats { get; set; }
+
+    /// <summary>A part's name in the UI language (the core's table).</summary>
+    public Func<string, string> PartLabel { get; set; } = name => name;
+
+    /// <summary>The player's answer in Settings: new takes start from it.</summary>
+    public SeatChoice PlayerSeat { get; set; } = SeatChoice.NotSet;
+
+    /// <summary>
+    /// The seat this score is written for (a core seat id), or null. It is the score's own: changing Settings
+    /// never arranges a score again; only "Who played this?" and Show the score do.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WhoPlayedIndex))]
+    public partial string? Seat { get; set; }
+
+    /// <summary>The clef the seat's part is read in (treble, bass), or null for the band's own.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyDetail))]
+    public partial string? Reads { get; set; }
+
+    /// <summary>"Who plays the tune?": the player's part (lead "seat") instead of the lineup's lead.</summary>
+    [ObservableProperty] public partial bool TuneOnMyPart { get; set; }
+
+    /// <summary>The recording has a soloist over a band or orchestra (the solo layer): "Who plays the tune?" may be asked.</summary>
+    [ObservableProperty] public partial bool HasSoloist { get; set; }
+
+    partial void OnSeatChanged(string? value) => SeatChanged();
+    partial void OnHasSoloistChanged(bool value) => SeatChanged();
+
+    private void SeatChanged()
+    {
+        OnPropertyChanged(nameof(ShowsWhoPlayed));
+        OnPropertyChanged(nameof(SoloGivesOnePart));
+        OnPropertyChanged(nameof(ShowsLineupChoice));
+        OnPropertyChanged(nameof(ShowsTuneChoice));
+        OnPropertyChanged(nameof(TuneLineupLabel));
+        OnPropertyChanged(nameof(TuneSeatLabel));
+        OnPropertyChanged(nameof(FullBandYourPart));
+        OnPropertyChanged(nameof(SmallBandYourPart));
+        OnPropertyChanged(nameof(QuartetYourPart));
+    }
+
+    /// <summary>A new take starts from the player's answer, before anything is sent.</summary>
+    public void BeginTake()
+    {
+        Seat = PlayerSeat.SeatId;
+        Reads = PlayerSeat.SeatId is null ? null : PlayerSeat.Reads;
+        TuneOnMyPart = false;
+    }
+
+    /// <summary>The seats "Who played this?" offers (every brass seat), by the core's names.</summary>
+    public IReadOnlyList<SeatInfo> WhoPlayedSeats => Seats?.All.Where(x => x.Reads.Count > 0).ToList() ?? [];
+
+    public IReadOnlyList<string> WhoPlayedChoices => WhoPlayedSeats.Select(x => Seats!.Name(x)).ToList();
+
+    /// <summary>Index into <see cref="WhoPlayedChoices"/>; -1 when nobody is chosen (the take stays a Solo Cornet part).</summary>
+    public int WhoPlayedIndex
+    {
+        get => Seat is { } id ? WhoPlayedSeats.ToList().FindIndex(x => x.Id == id) : -1;
+        set
+        {
+            var seats = WhoPlayedSeats;
+            string? id = value >= 0 && value < seats.Count ? seats[value].Id : null;
+            if (id == Seat) return;
+            // The player's own seat keeps how they read it; a friend's instrument is written the band's way.
+            Reads = id is not null && id == PlayerSeat.SeatId ? PlayerSeat.Reads : null;
+            Seat = id;
+        }
+    }
+
+    /// <summary>"Who played this?" on a solo take: a friend may have played it.</summary>
+    public bool ShowsWhoPlayed => IsSoloTake && Seats is { IsAvailable: true };
+
+    /// <summary>A solo take written for a seat is one part: the band question goes away, with one line saying why.</summary>
+    public bool SoloGivesOnePart => IsSoloTake && Seat is not null;
+
+    public bool ShowsLineupChoice => !SoloGivesOnePart;
+
+    /// <summary>The seat's part in a lineup (the core's table), or null.</summary>
+    private string? SeatPartIn(Lineup lineup) => SeatPartRow(lineup)?.Part;
+
+    private SeatPart? SeatPartRow(Lineup lineup)
+    {
+        if (Seat is not { } seat) return null;
+        try { return core.SeatPartFor(Lineups.Core(lineup), seat); }
+        catch (CoreBridgeException) { return null; }
+    }
+
+    /// <summary>The lead of a band lineup (the core's lineups: Solo Cornet in both).</summary>
+    private const string BandLead = "Solo Cornet";
+
+    /// <summary>
+    /// "Who plays the tune?" for a soloist recording, in the band lineups only (the quartet keeps the tune on its
+    /// 1st Cornet), when the player's part is not the lead and can carry a melody (the core's <c>tune</c>). A seat
+    /// that takes the lead part (a trumpet) already has the tune: nothing to choose.
+    /// </summary>
+    public bool ShowsTuneChoice => !IsSoloTake && HasSoloist && Lineup != Lineup.Quartet && Seats is { } catalog
+        && SeatPartRow(Lineup) is { Part: { } part, Takes: null } && part != BandLead && catalog.CarriesTune(part);
+
+    /// <summary>"Solo Cornet (as usual)".</summary>
+    public string TuneLineupLabel => s.Format("Output_TuneLineup", PartLabel(BandLead));
+
+    /// <summary>"You: Euphonium".</summary>
+    public string TuneSeatLabel => SeatPartIn(Lineup) is { } part ? s.Format("Output_TuneSeat", PartLabel(part)) : "";
+
+    /// <summary>"Your part: Euphonium" on a lineup card, so the player knows before Show the score; empty without a seat.</summary>
+    private string YourPartOn(Lineup lineup) => Seat is null ? ""
+        : SeatPartIn(lineup) is { } part ? s.Format("Output_YourPart", PartLabel(part))
+        : s["Output_YourPartNone"];
+
+    public string FullBandYourPart => YourPartOn(Lineup.FullBand);
+    public string SmallBandYourPart => YourPartOn(Lineup.MinimalBand);
+    public string QuartetYourPart => IsSoloTake ? "" : YourPartOn(Lineup.Quartet);
+
+    /// <summary>The seat, reading and lead the options carry: a solo take for a seat always has the tune on it.</summary>
+    private (string? Seat, string? Reads, string? Lead) SeatOptions()
+    {
+        if (Seat is not { } seat) return (null, null, null);
+        string? lead = IsSoloTake || TuneOnMyPart && ShowsTuneChoice ? "seat" : null;
+        return (seat, Reads, lead);
     }
 
     public bool QuartetAvailable => !IsSoloTake;
@@ -110,9 +240,15 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     [NotifyPropertyChangedFor(nameof(KeyDetail))]
     public partial int? InstrumentChromatic { get; set; }
 
+    /// <summary>The instrument in <see cref="InstrumentChromatic"/> is the player's own part (they said what they play).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(KeyDetail))]
+    public partial bool InstrumentIsYours { get; set; }
+
     /// <summary>Sets the recorded key and the player's instrument from a loaded score.</summary>
-    public void SetScoreContext(Scores.Composition? composition, int? chromatic)
+    public void SetScoreContext(Scores.Composition? composition, int? chromatic, bool yours = false)
     {
+        InstrumentIsYours = yours;
         RecordedKey = composition?.Keys.OrderBy(k => k.Tick).FirstOrDefault() is { } k
             ? (Scores.KeyNames.TonicOf(k.Fifths, k.Mode == "minor"), k.Mode == "minor")
             : null;
@@ -139,8 +275,16 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         {
             var parts = new List<string>();
             if (KeyIndex == 0) parts.Add(s["Key_AsRecorded"]);
+            // Read in bass clef, the player's part is at concert pitch: "D major, as it sounds".
+            if (ConcertKey is { } sounding && InstrumentIsYours && Reads == "bass")
+            {
+                parts.Add(s.Format("Output_KeyAsItSounds", Scores.KeyNames.Name(sounding.PitchClass, sounding.Minor, Nb)));
+                return string.Join(" · ", parts);
+            }
             if (ConcertKey is { } k && InstrumentChromatic is { } c && Scores.KeyNames.InstrumentKey(c, Nb) is { } instrument)
-                parts.Add(s.Format("Output_KeyWritten", Scores.KeyNames.Name(Scores.KeyNames.WrittenOf(k.PitchClass, c), k.Minor, Nb), instrument));
+                parts.Add(InstrumentIsYours
+                    ? s.Format("Output_KeyOnYourPart", Scores.KeyNames.Name(Scores.KeyNames.WrittenOf(k.PitchClass, c), k.Minor, Nb))
+                    : s.Format("Output_KeyWritten", Scores.KeyNames.Name(Scores.KeyNames.WrittenOf(k.PitchClass, c), k.Minor, Nb), instrument));
             return parts.Count > 0 ? string.Join(" · ", parts) : s["Output_KeyConcertDetail"];
         }
     }
@@ -170,7 +314,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     /// A score was opened from "Your scores": the choices follow what it was arranged with, so
     /// "Show the score" and a changed note keep its lineup.
     /// </summary>
-    public void ShowingSaved(Lineup? lineup, string? difficulty)
+    public void ShowingSaved(Lineup? lineup, string? difficulty, Scores.Composition? composition = null)
     {
         var chosen = lineup ?? Lineup.FullBand;
         if (chosen == Lineup.Quartet && IsSoloTake) chosen = Lineup.FullBand;
@@ -178,7 +322,20 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         _fullPutBack = Lineup != chosen;
         Difficulty = difficulty switch { "standard" => Difficulty.Standard, "easier" => Difficulty.Easier, _ => Difficulty.Faithful };
         KeyIndex = 0;
+        // The seat it was written for, as recorded; a score from before anyone was asked has none.
+        Reads = Lineups.RecordedReads(composition);
+        Seat = Lineups.RecordedSeat(composition);
+        TuneOnMyPart = Lineups.RecordedLead(composition) == "seat" && !IsSoloTake;
         Applied = Options;
+    }
+
+    /// <summary>A score just made: the choices are what it was made with.</summary>
+    public void ShowingMade(ArrangementOptions options)
+    {
+        Reads = options.Reads;
+        Seat = options.Seat;
+        TuneOnMyPart = options.Lead == "seat" && !IsSoloTake;
+        Applied = options;
     }
 
     /// <summary>Raised when the score can be shown as it is (nothing changed).</summary>
@@ -220,10 +377,18 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
 
     [ObservableProperty] public partial string? StatusText { get; set; }
 
-    public ArrangementOptions Options => new(
-        Lineups.Engine(Lineup),
-        Difficulty switch { Difficulty.Standard => "standard", Difficulty.Easier => "easier", _ => "faithful" },
-        Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } tonic && RecordedKey is { Minor: true } ? tonic + "m" : Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)]);
+    public ArrangementOptions Options
+    {
+        get
+        {
+            var (seat, reads, lead) = SeatOptions();
+            return new(
+                Lineups.Engine(Lineup),
+                Difficulty switch { Difficulty.Standard => "standard", Difficulty.Easier => "easier", _ => "faithful" },
+                Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)] is { } tonic && RecordedKey is { Minor: true } ? tonic + "m" : Keys[Math.Clamp(KeyIndex, 0, Keys.Length - 1)],
+                Seat: seat, Reads: reads, Lead: lead);
+        }
+    }
 
     /// <summary>Raised with the options when the engine should arrange again.</summary>
     public event EventHandler<ArrangementOptions>? RearrangeRequested;

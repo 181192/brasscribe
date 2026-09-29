@@ -78,6 +78,16 @@ public interface IOriginalPlayer
     /// brings the recording to the band's loudness. Players that cannot change it ignore it.
     /// </summary>
     double Volume { get => 1; set { } }
+
+    /// <summary>The player can play its audio from another file on the same timeline (<see cref="UseAudio"/>).</summary>
+    bool CanUseAudio => false;
+
+    /// <summary>
+    /// Plays the audio from this WAV (the recording, boosted by <see cref="Playback.RecordingBoost"/>) instead of the
+    /// source's own; null goes back to the source's own. A video keeps its picture. Applied when the player is not playing,
+    /// else the next time it stops, so the level never jumps while it plays.
+    /// </summary>
+    void UseAudio(string? wavPath) { }
     TimeSpan Position { get; set; }
 
     /// <summary>A range played without looping reached its end (raised on the UI thread).</summary>

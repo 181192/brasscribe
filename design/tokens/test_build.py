@@ -104,3 +104,8 @@ def test_every_platform_gets_the_pink_palette():
     assert [c["color"]["components"]["red"] for c in cs["colors"]][:1] == [build.rgb_components("#FFF6F9")[0]]
     assert len(cs["colors"]) == 4  # light, dark and both high-contrast appearances
     assert "Pink" not in (build.DIST / "windows" / "BrasscribeTheme.xaml").read_text()
+    xaml = (build.DIST / "windows" / "BrasscribePinkTheme.xaml").read_text()
+    light, dark = xaml.index('x:Key="Light"'), xaml.index('x:Key="Dark"')
+    assert xaml.index('<Color x:Key="BcBgColor">#FFFFF6F9</Color>') in range(light, dark)
+    assert xaml.index('<Color x:Key="BcPrimaryColor">#FFFF9ECF</Color>') > dark
+    assert 'x:Key="HighContrast"' in xaml

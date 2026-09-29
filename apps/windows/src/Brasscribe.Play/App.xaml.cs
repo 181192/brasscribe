@@ -24,8 +24,6 @@ public partial class App : Application
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
-        // --theme light|dark: a fixed theme for screenshots; otherwise Windows decides.
-        if (Option("--theme") is { } theme) RequestedTheme = theme == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
         InitializeComponent();
         Settings = settings;
     }
@@ -57,6 +55,9 @@ public partial class App : Application
     public static MainWindow? MainWindowInstance => (Current as App)?._window;
 
     internal JsonSettingsStore Settings { get; }
+
+    /// <summary>Settings › Display › Appearance on every window (design/system.md §10).</summary>
+    internal ThemeController? Theme { get; private set; }
 
     /// <summary>Other launches with a pairing link are sent to the running app under this key.</summary>
     private const string InstanceKey = "BrasscribePlay";
@@ -119,7 +120,10 @@ public partial class App : Application
             LayerCacheRoot = System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "layers"),
         };
 
+        // --theme light|dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
+        Theme = new ThemeController(settingsVm, queue, Option("--theme"));
         _window = new MainWindow(main, Strings);
+        Theme.Attach(_window);
         _window.Closed += (_, _) =>
         {
             _audioOut?.Dispose();

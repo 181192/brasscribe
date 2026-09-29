@@ -83,11 +83,66 @@ public static class PlaybackLevels
         double.IsFinite(lufs) ? Math.Clamp(targetLufs - lufs, -RecordingMaxCutDb, RecordingMaxBoostDb) : 0;
 
     /// <summary>
-    /// The media player's volume for a recording measured at <paramref name="lufs"/>. Windows' media
-    /// player can only turn down (volume 0–1), so a recording quieter than the target keeps its level.
+    /// The media player's volume for a recording measured at <paramref name="lufs"/>: the cut, as the media player can
+    /// only turn down (volume 0–1). A boost is made by <see cref="RecordingBoost"/> instead, and the volume stays at 1.
     /// </summary>
     public static double RecordingVolume(double lufs, double targetLufs = RecordingFallbackLufs) =>
         Math.Min(1, Math.Pow(10, RecordingGainDb(lufs, targetLufs) / 20));
+}
+
+/// <summary>
+/// A quiet recording brought up to its target: a copy of the decoded recording with the gain and then the output
+/// stage's soft limiter (<see cref="OutputStage.Limit"/>), so the boost cannot clip, as the other Play apps apply it
+/// on the fly. Windows' media player cannot go above volume 1, so it plays this copy instead.
+/// </summary>
+public static class RecordingBoost
+{
+    /// <summary>Boosts smaller than this (dB) are not worth a copy.</summary>
+    public const double MinBoostDb = 0.1;
+
+    /// <summary>
+    /// The boosted copy of <paramref name="wavPath"/> for <paramref name="gainDb"/> (rounded to 0.1 dB), next to it;
+    /// written once and reused. Throws IOException or InvalidDataException when the file can't be read or written.
+    /// </summary>
+    public static string Prepare(string wavPath, double gainDb)
+    {
+        double rounded = Math.Round(gainDb, 1);
+        string path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(wavPath))!,
+            $"{Path.GetFileNameWithoutExtension(wavPath)}.boost{rounded.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}.wav");
+        if (File.Exists(path) && File.GetLastWriteTimeUtc(path) >= File.GetLastWriteTimeUtc(wavPath)) return path;
+        string temp = path + ".part";
+        Render(wavPath, temp, rounded);
+        File.Move(temp, path, overwrite: true);
+        return path;
+    }
+
+    /// <summary>Writes <paramref name="wavPath"/> with <paramref name="gainDb"/> and the soft limiter as a 32-bit float WAV.</summary>
+    public static void Render(string wavPath, string outPath, double gainDb)
+    {
+        float gain = (float)Math.Pow(10, gainDb / 20);
+        using var w = new BinaryWriter(File.Create(outPath));
+        long dataStart = 0, frames = 0;
+        int channels = 0;
+        var buffer = new byte[4 * 8192 * 2];
+        LoudnessMeter.ReadWav(wavPath, (rate, ch) =>
+        {
+            channels = ch;
+            w.Write("RIFF"u8); w.Write(0); w.Write("WAVE"u8);
+            w.Write("fmt "u8); w.Write(16); w.Write((short)3); w.Write((short)ch); w.Write(rate); w.Write(rate * ch * 4); w.Write((short)(ch * 4)); w.Write((short)32);
+            w.Write("data"u8); w.Write(0);
+            dataStart = w.BaseStream.Position;
+        }, samples =>
+        {
+            if (buffer.Length < samples.Length * 4) buffer = new byte[samples.Length * 4];
+            for (int i = 0; i < samples.Length; i++)
+                System.Buffers.Binary.BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(i * 4), OutputStage.Limit(samples[i] * gain));
+            w.Write(buffer, 0, samples.Length * 4);
+            frames += samples.Length;
+        });
+        long bytes = frames * 4;
+        w.Seek(4, SeekOrigin.Begin); w.Write((int)(36 + bytes));
+        w.Seek((int)dataStart - 4, SeekOrigin.Begin); w.Write((int)bytes);
+    }
 }
 
 /// <summary>
@@ -100,48 +155,78 @@ public static class RecordingLevel
 {
     private static readonly object Gate = new();
     private static Services.IOriginalPlayer? _player;
+    private static string? _wav;
     private static double _lufs = double.NegativeInfinity;
     private static double _target = PlaybackLevels.RecordingFallbackLufs;
+    private static int _version;
+    private static Task _settled = Task.CompletedTask;
 
     /// <summary>The recording's target for the loaded arrangement (the fallback before one loads).</summary>
     public static double TargetLufs { get { lock (Gate) return _target; } }
 
+    /// <summary>The last level change, done: a boosted copy written and handed to the player.</summary>
+    public static Task Settled { get { lock (Gate) return _settled; } }
+
     /// <summary>
-    /// Measures <paramref name="wavPath"/> (the decoded copy of the recording) off the UI thread and
-    /// sets the player's volume, so the recording plays at <see cref="TargetLufs"/> (or as close as a
-    /// volume of at most 1 allows). Returns the measured loudness, or null when the file cannot be
-    /// read (the volume is then left alone).
+    /// Measures <paramref name="wavPath"/> (the decoded copy of the recording) off the UI thread and levels it, so the
+    /// recording plays at <see cref="TargetLufs"/>: a loud one through the player's volume, a quiet one from a boosted
+    /// copy (<see cref="RecordingBoost"/>) when the player can play one. Returns the measured loudness, or null when the
+    /// file cannot be read (the level is then left alone).
     /// </summary>
     public static async Task<double?> ApplyAsync(Services.IOriginalPlayer player, string wavPath)
     {
         double lufs;
         try { lufs = await Task.Run(() => LoudnessMeter.IntegratedWav(wavPath)).ConfigureAwait(true); }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException) { return null; }
-        double target;
+        Task level;
         lock (Gate)
         {
-            (_player, _lufs) = (player, lufs);
-            target = _target;
+            (_player, _lufs, _wav) = (player, lufs, wavPath);
+            _settled = level = LevelAsync(player, wavPath, lufs, _target, ++_version);
         }
-        player.Volume = PlaybackLevels.RecordingVolume(lufs, target);
+        await level.ConfigureAwait(true);
         return lufs;
     }
 
     /// <summary>
     /// The arrangement now loaded has this band estimate (null: none, or no pitched note). The target
-    /// moves to it, and the last measured recording's volume follows. Returns the new target.
+    /// moves to it, and the last measured recording's level follows (see <see cref="Settled"/>). Returns the new target.
     /// </summary>
     public static double SetArrangement(double? bandEstimateLufs)
     {
-        Services.IOriginalPlayer? player;
-        double lufs, target = PlaybackLevels.RecordingTargetLufs(bandEstimateLufs);
+        double target = PlaybackLevels.RecordingTargetLufs(bandEstimateLufs);
         lock (Gate)
         {
             _target = target;
-            (player, lufs) = (_player, _lufs);
+            if (_player is { } player && _wav is { } wav) _settled = LevelAsync(player, wav, _lufs, target, ++_version);
         }
-        if (player is not null) player.Volume = PlaybackLevels.RecordingVolume(lufs, target);
         return target;
+    }
+
+    /// <summary>
+    /// Sets the level for a gain: a cut (or no change) is the volume, at once; a boost is a copy written off the UI
+    /// thread, then played at volume 1. A newer level that started meanwhile wins.
+    /// </summary>
+    private static async Task LevelAsync(Services.IOriginalPlayer player, string wav, double lufs, double target, int version)
+    {
+        double gain = PlaybackLevels.RecordingGainDb(lufs, target);
+        if (gain < RecordingBoost.MinBoostDb || !player.CanUseAudio)
+        {
+            player.UseAudio(null);
+            player.Volume = PlaybackLevels.RecordingVolume(lufs, target);
+            return;
+        }
+        string boosted;
+        try { boosted = await Task.Run(() => RecordingBoost.Prepare(wav, gain)).ConfigureAwait(true); }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            player.UseAudio(null);
+            player.Volume = 1; // as loud as the media player goes
+            return;
+        }
+        lock (Gate) if (version != _version) return;
+        player.Volume = 1;
+        player.UseAudio(boosted);
     }
 }
 

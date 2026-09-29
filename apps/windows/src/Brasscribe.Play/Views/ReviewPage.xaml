@@ -56,7 +56,21 @@
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
-                <ListView x:Name="NoteList" x:Uid="ReviewList" Grid.Row="1" SelectionMode="Single" SelectionChanged="OnNoteSelected">
+                <!-- The player's part was arranged, or is empty: no notes of theirs to check. This stands in place of an empty Yours list. -->
+                <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="16" Margin="12,0" VerticalAlignment="Top"
+                        Visibility="{x:Bind ViewModel.ShowsArrangedNotice, Mode=OneWay}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource HeadlineStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.ArrangedTitle, Mode=OneWay}"
+                                   AutomationProperties.HeadingLevel="Level2" />
+                        <TextBlock Style="{StaticResource BodyStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.ArrangedBody, Mode=OneWay}" />
+                        <Button x:Uid="CheckOtherPartsButton" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch"
+                                Command="{x:Bind ViewModel.CheckOtherPartsCommand}" />
+                        <Button x:Uid="ShowMyPartButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" HorizontalAlignment="Stretch"
+                                Command="{x:Bind ViewModel.ShowMyPartCommand}" />
+                    </StackPanel>
+                </Border>
+                <ListView x:Name="NoteList" x:Uid="ReviewList" Grid.Row="1" SelectionMode="Single" SelectionChanged="OnNoteSelected"
+                          Visibility="{x:Bind ViewModel.ShowsList, Mode=OneWay}">
                     <ListView.GroupStyle>
                         <GroupStyle>
                             <GroupStyle.HeaderTemplate>

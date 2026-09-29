@@ -169,6 +169,9 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     private double _volume = 1;
     private int _fade;
     private bool _fading;
+    private string? _path;
+    /// <summary>The audio playing now (null: the source's own) and the audio asked for (a boosted copy of the recording).</summary>
+    private string? _audio, _wantAudio;
 
     public MediaPlayerOriginal(DispatcherQueue? queue = null)
     {
@@ -200,8 +203,63 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     public void Open(string path, bool hasVideo)
     {
         _player.Source = MediaSource.CreateFromUri(new Uri(path));
+        _path = path;
+        _audio = _wantAudio = null;
         HasMedia = true;
         HasVideo = hasVideo;
+    }
+
+    /// <summary>A quiet recording plays from a boosted copy (Core's RecordingLevel): the media player can't go above volume 1.</summary>
+    public bool CanUseAudio => true;
+
+    public void UseAudio(string? wavPath)
+    {
+        _wantAudio = wavPath;
+        if (!IsPlaying && !_fading) SwapAudio();
+    }
+
+    /// <summary>
+    /// Plays the audio asked for, keeping the position and speed: the boosted WAV for a recording, or for a video its
+    /// picture with the WAV as the sound (a composition, the video's own track silent). Never while it plays; if the
+    /// composition can't be made, the video keeps its own sound.
+    /// </summary>
+    private async void SwapAudio()
+    {
+        if (_path is not { } path || _wantAudio == _audio) return;
+        string? audio = _wantAudio;
+        var position = _player.PlaybackSession.Position;
+        double rate = _player.PlaybackSession.PlaybackRate;
+        var source = audio is null ? MediaSource.CreateFromUri(new Uri(path))
+            : !HasVideo ? MediaSource.CreateFromUri(new Uri(audio))
+            : await WithAudioAsync(path, audio);
+        if (source is null || audio != _wantAudio || path != _path || IsPlaying) return;
+        _audio = audio;
+        void Opened(MediaPlayer p, object _)
+        {
+            p.MediaOpened -= Opened;
+            p.PlaybackSession.Position = position;
+            p.PlaybackSession.PlaybackRate = rate;
+        }
+        _player.MediaOpened += Opened;
+        _player.Source = source;
+    }
+
+    private static async Task<MediaSource?> WithAudioAsync(string video, string wav)
+    {
+        try
+        {
+            var composition = new Windows.Media.Editing.MediaComposition();
+            var clip = await Windows.Media.Editing.MediaClip.CreateFromFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(video));
+            clip.Volume = 0;
+            composition.Clips.Add(clip);
+            composition.BackgroundAudioTracks.Add(
+                await Windows.Media.Editing.BackgroundAudioTrack.CreateFromFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(wav)));
+            return MediaSource.CreateFromMediaStreamSource(composition.GenerateMediaStreamSource());
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or System.Runtime.InteropServices.COMException)
+        {
+            return null;
+        }
     }
 
     public void Play()
@@ -236,6 +294,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
             _fade++;
             _player.Pause(); // nothing to hear, nothing to fade
             _player.Volume = _volume;
+            if (_wantAudio != _audio) SwapAudio();
             return;
         }
         _fading = true;
@@ -250,6 +309,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
         _fading = false;
         _player.Pause();
         _player.Volume = _volume;
+        if (_wantAudio != _audio) SwapAudio(); // a level asked for while it played
     }
 
     private void CancelFade()

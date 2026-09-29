@@ -175,4 +175,43 @@ public class EngineClientTests
         Assert.InRange(r, 20, 30);
         Assert.Equal(TimeSpan.Zero, est.Update(1.0));
     }
+
+    /// <summary>An engine from before the trumpet seat: it refuses seats it doesn't know with a 422 and no refusal code.</summary>
+    private static (EngineClient Client, FakeHandler Handler) OldEngine(params string[] known) => Make((r, _) =>
+    {
+        var body = r.Content!.ReadAsStringAsync().Result;
+        var seat = JsonDocument.Parse(body).RootElement.TryGetProperty("seat", out var s) ? s.GetString() : null;
+        return seat is not null && !known.Contains(seat)
+            ? FakeHandler.Json("""{"detail":[{"loc":["body","seat"],"msg":"Input should be 'soprano-cornet', ..."}]}""", HttpStatusCode.UnprocessableEntity)
+            : FakeHandler.Json(JobJson, HttpStatusCode.Accepted);
+    });
+
+    private static string? SeatOf(string? body) =>
+        JsonDocument.Parse(body!).RootElement.TryGetProperty("seat", out var s) ? s.GetString() : null;
+
+    [Fact]
+    public async Task An_older_engine_gets_a_trumpet_job_as_solo_cornet()
+    {
+        var (c, h) = OldEngine("solo-cornet");
+        var (job, fellBack) = await ViewModels.EngineSeats.CreateJobAsync(c, new JobCreate("a1", Seat: "trumpet", Reads: "treble", Lead: "seat"));
+        Assert.Equal("j1", job.Id);
+        Assert.True(fellBack);
+        Assert.Equal(["trumpet", "solo-cornet"], h.Requests.Select(x => SeatOf(x.Body)));
+        var again = JsonDocument.Parse(h.Requests[1].Body!).RootElement;
+        Assert.False(again.TryGetProperty("lead", out var lead) && lead.ValueKind != JsonValueKind.Null);
+        Assert.False(again.TryGetProperty("reads", out var reads) && reads.ValueKind != JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task A_known_seat_goes_once_and_other_refusals_are_not_retried()
+    {
+        var (c, h) = OldEngine("trumpet");
+        Assert.False((await ViewModels.EngineSeats.CreateJobAsync(c, new JobCreate("a1", Seat: "trumpet"))).FellBack);
+        Assert.Single(h.Requests);
+
+        var (old, oh) = OldEngine();
+        var e = await Assert.ThrowsAsync<EngineException>(() => ViewModels.EngineSeats.CreateJobAsync(old, new JobCreate("a1", Seat: "euphonium")));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, e.Status);
+        Assert.Single(oh.Requests);
+    }
 }

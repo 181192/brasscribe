@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
+    xmlns:views="using:Brasscribe.Play.Views"
     NavigationCacheMode="Required">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -21,17 +22,30 @@
                           SelectionChanged="OnSelectionChanged" MaxColumns="2">
                 <RadioButtons.ItemTemplate>
                     <DataTemplate x:DataType="vm:SourceKindOption">
+                        <!-- A refused answer (One instrument for a percussion seat) stays focusable, is dimmed and says why;
+                             Continue stays off for it. -->
                         <RadioButton Style="{StaticResource ChoiceCardStyle}" IsEnabled="{x:Bind IsAvailable, Mode=OneWay}" Margin="0,0,16,16"
                                      AutomationProperties.Name="{x:Bind Label}"
-                                     AutomationProperties.HelpText="{x:Bind Description, Mode=OneWay}">
+                                     AutomationProperties.HelpText="{x:Bind HelpText, Mode=OneWay}">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="{x:Bind Label}" Style="{StaticResource HeadlineStyle}" />
+                                <TextBlock Text="{x:Bind Label}" Style="{StaticResource HeadlineStyle}"
+                                           Opacity="{x:Bind views:Shown.Dimmed(IsAccepted), Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind Refusal, Mode=OneWay}" Style="{StaticResource LabelStyle}"
+                                           Visibility="{x:Bind views:Shown.HasText(Refusal), Mode=OneWay}" />
                                 <TextBlock Text="{x:Bind Description, Mode=OneWay}" Style="{StaticResource MutedStyle}" FontSize="15" LineHeight="21" />
                             </StackPanel>
                         </RadioButton>
                     </DataTemplate>
                 </RadioButtons.ItemTemplate>
             </RadioButtons>
+            <!-- The player's seat is percussion: why One instrument is refused, and the way to change the answer. -->
+            <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsPercussionSeat, Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                    <TextBlock x:Uid="KindPercussionNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="640" />
+                </StackPanel>
+                <Button x:Name="ChangeSeatButton" x:Uid="KindChangeSeatButton" Style="{StaticResource PlainButtonStyle}" Click="OnChangeSeat" />
+            </StackPanel>
             <TextBlock x:Uid="KindNotSure" Style="{StaticResource MutedStyle}" />
 
             <Grid ColumnSpacing="16" Margin="0,16,0,0">

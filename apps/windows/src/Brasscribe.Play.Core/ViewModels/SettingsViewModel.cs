@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>
-/// Language, keyboard, motion, talking-score and engine settings, persisted through <see cref="ISettingsStore"/>.
+/// Language, appearance, keyboard, motion, talking-score and engine settings, persisted through <see cref="ISettingsStore"/>.
 /// The engine credential is not a setting: it lives in the vault, keyed by the engine's server id
 /// (<see cref="EngineCredentials"/>), and only a 401 asks for pairing again.
 /// </summary>
@@ -40,11 +40,18 @@ public sealed partial class SettingsViewModel : ObservableObject
         _clients = clients ?? ((uri, token) => new EngineClient(new HttpClient(), uri) { Token = token });
         _time = time ?? TimeProvider.System;
         Language = store.Get(nameof(Language), "system");
+        Appearance = AppearanceSetting.Parse(store.Get<string?>(AppearanceSetting.Key, null));
+        _pinkUnlock = new PinkUnlock(store.Get(AppearanceSetting.PinkUnlockedKey, false) || Appearance == Appearance.Pink, _time);
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
+        StandKeepControls = store.Get(nameof(StandKeepControls), false);
+        StandTurnPages = store.Get(nameof(StandTurnPages), true);
+        StandHintSeen = store.Get(nameof(StandHintSeen), false);
         Verbosity = store.Get(nameof(Verbosity), Verbosity.Standard);
         EngineAddress = store.Get(nameof(EngineAddress), EngineClient.DefaultBaseAddress.ToString());
         FirstRunDone = store.Get(nameof(FirstRunDone), false);
+        Seat = store.Get<string?>(nameof(Seat), null);
+        Reads = store.Get<string?>(nameof(Reads), null);
         Credentials = new EngineCredentials(vault ?? new InMemorySecretVault(), store);
         EngineToken = Credentials.Current?.Token;
         Connection = new ConnectionMonitor(Credentials, _clients, _discovery, () => EngineUri, u => EngineAddress = u.ToString(),
@@ -61,10 +68,93 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial bool FirstRunDone { get; set; }
     partial void OnFirstRunDoneChanged(bool value) => _store.Set(nameof(FirstRunDone), value);
 
+    /// <summary>What the player plays: a core seat id, "none" (I conduct or listen), or null (not set).</summary>
+    [ObservableProperty] public partial string? Seat { get; set; }
+    partial void OnSeatChanged(string? value)
+    {
+        _store.Set(nameof(Seat), value);
+        if (!_settingChoice) OnPropertyChanged(nameof(SeatChoice));
+    }
+
+    /// <summary>The clef the player reads their part in ("treble", "bass"); null for the band's own.</summary>
+    [ObservableProperty] public partial string? Reads { get; set; }
+    partial void OnReadsChanged(string? value)
+    {
+        _store.Set(nameof(Reads), value);
+        if (!_settingChoice) OnPropertyChanged(nameof(SeatChoice));
+    }
+
+    private bool _settingChoice;
+
+    /// <summary>The answer as one value; setting it tells listeners once, with the seat and its reading together.</summary>
+    public Seats.SeatChoice SeatChoice
+    {
+        get => new(Seat, Reads);
+        set
+        {
+            if (value == SeatChoice) return;
+            _settingChoice = true;
+            try
+            {
+                Reads = value.Reads;
+                Seat = value.Seat;
+            }
+            finally { _settingChoice = false; }
+            OnPropertyChanged(nameof(SeatChoice));
+        }
+    }
+
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
+    /// <summary>Match system, Light, Dark or (once unlocked) Pink, for this PC only (design/system.md §10).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
+    public partial Appearance Appearance { get; set; }
+
+    /// <summary>A Windows contrast theme is on (set by the app from AccessibilitySettings): it decides the colours.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
+    public partial bool HighContrast { get; set; }
+
+    /// <summary>What every window root asks for: the choice, or Default while a contrast theme is on.</summary>
+    public RootTheme RootTheme => AppearanceSetting.Resolve(Appearance, HighContrast);
+
+    /// <summary>The Pink palette is on the chrome now (chosen, and no contrast theme).</summary>
+    public bool UsesPink => AppearanceSetting.UsesPink(Appearance, HighContrast);
+
+    private readonly PinkUnlock _pinkUnlock;
+
+    /// <summary>Pink is in the Appearance list: unlocked on this PC, or chosen.</summary>
+    public bool PinkUnlocked => _pinkUnlock.IsUnlocked;
+
+    /// <summary>The Appearance box's choices, in order (Pink last once unlocked).</summary>
+    public IReadOnlyList<Appearance> AppearanceChoices => AppearanceSetting.Choices(PinkUnlocked);
+
+    /// <summary>Raised once, when the version in About unlocks Pink.</summary>
+    public event EventHandler? PinkUnlockedNow;
+
+    /// <summary>
+    /// The version in About was activated (a click, Space or Enter, Narrator): the fifth in a row unlocks Pink, keeps it
+    /// on this PC, and says so once. Nothing switches by itself.
+    /// </summary>
+    public void ActivateVersion()
+    {
+        if (!_pinkUnlock.Tap()) return;
+        _store.Set(AppearanceSetting.PinkUnlockedKey, true);
+        OnPropertyChanged(nameof(PinkUnlocked));
+        OnPropertyChanged(nameof(AppearanceChoices));
+        _announcer.Announce(_s["Pink_Unlocked"], AnnouncementKind.Important);
+        PinkUnlockedNow?.Invoke(this, EventArgs.Empty);
+    }
+
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; }
     [ObservableProperty] public partial bool ReduceMotion { get; set; }
+    /// <summary>Music stand: Keep the stand controls visible (off by default).</summary>
+    [ObservableProperty] public partial bool StandKeepControls { get; set; }
+    /// <summary>Music stand: Turn the pages while playing (on by default; design/music-stand.md §12.2).</summary>
+    [ObservableProperty] public partial bool StandTurnPages { get; set; }
+    /// <summary>The stand's "Tap the music to show the controls." hint was dismissed; it does not come back.</summary>
+    [ObservableProperty] public partial bool StandHintSeen { get; set; }
     [ObservableProperty] public partial Verbosity Verbosity { get; set; }
     [ObservableProperty] public partial string EngineAddress { get; set; }
 
@@ -91,8 +181,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnMatchCodeChanged(string? value) => OnPropertyChanged(nameof(MatchCodeSpoken));
 
     partial void OnLanguageChanged(string value) => _store.Set(nameof(Language), value);
+    partial void OnAppearanceChanged(Appearance value) => _store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(value));
     partial void OnSingleKeyShortcutsChanged(bool value) => _store.Set(nameof(SingleKeyShortcuts), value);
     partial void OnReduceMotionChanged(bool value) => _store.Set(nameof(ReduceMotion), value);
+    partial void OnStandKeepControlsChanged(bool value) => _store.Set(nameof(StandKeepControls), value);
+    partial void OnStandTurnPagesChanged(bool value) => _store.Set(nameof(StandTurnPages), value);
+    partial void OnStandHintSeenChanged(bool value) => _store.Set(nameof(StandHintSeen), value);
     partial void OnVerbosityChanged(Verbosity value) => _store.Set(nameof(Verbosity), value);
 
     partial void OnEngineAddressChanged(string value)

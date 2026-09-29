@@ -137,6 +137,36 @@ public sealed partial class ReviewViewModel : ObservableObject
     [ObservableProperty] public partial bool HasMyPart { get; set; }
     [ObservableProperty] public partial ReviewScope Scope { get; set; } = ReviewScope.MyPart;
 
+    /// <summary>
+    /// The player's part was arranged from the harmony, so it has no notes of theirs to check: "Your part is
+    /// arranged" stands in place of an empty Yours list, until "Check the other parts".
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsList))]
+    public partial bool ShowsArrangedNotice { get; set; }
+
+    public bool ShowsList => !ShowsArrangedNotice;
+
+    /// <summary>"Your part is arranged", or "Your part is empty" when nothing in the recording gave it notes.</summary>
+    [ObservableProperty] public partial string ArrangedTitle { get; set; } = "";
+
+    /// <summary>"Nobody played the Euphonium part on its own in the recording, so …" (or why it is empty).</summary>
+    [ObservableProperty] public partial string ArrangedBody { get; set; } = "";
+
+    /// <summary>"Show my part": the score, on the player's part.</summary>
+    public event EventHandler? ShowMyPartRequested;
+
+    /// <summary>"Check the other parts": the list of every part's notes.</summary>
+    [RelayCommand]
+    private void CheckOtherParts()
+    {
+        ShowsArrangedNotice = false;
+        if (Scope != ReviewScope.AllParts) Scope = ReviewScope.AllParts;
+    }
+
+    [RelayCommand]
+    private void ShowMyPart() => ShowMyPartRequested?.Invoke(this, EventArgs.Empty);
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasCurrent))]
     public partial ReviewItem? Current { get; set; }
@@ -204,6 +234,12 @@ public sealed partial class ReviewViewModel : ObservableObject
         AllPartsScopeLabel = s.Format("Review_ScopeAll", all.Count);
         TriageText = HasMyPart ? s.Format("Review_Triage", myItems.Count, myItems[0].PartName, myItems.Count(i => i.IsVeryUncertain)) : "";
         IsConfirmingFinish = false;
+        ShowsArrangedNotice = !HasMyPart && all.Count > 0 && scope is null && score.MyPartSourceIsArranged;
+        bool empty = score.MyPartSourceIsEmpty;
+        ArrangedTitle = ShowsArrangedNotice ? s[empty ? "Review_EmptyTitle" : "Review_ArrangedTitle"] : "";
+        ArrangedBody = ShowsArrangedNotice ? s.Format(empty ? "Review_EmptyBody" : "Review_ArrangedBody", score.MyPartLabel) : "";
+        // Said once, politely, as the review opens (WCAG 4.1.3).
+        if (ShowsArrangedNotice) announcer.Announce(ArrangedTitle + ". " + ArrangedBody);
         var wanted = scope ?? (HasMyPart ? ReviewScope.MyPart : ReviewScope.AllParts);
         if (Scope != wanted) Scope = wanted; // applies the scope
         else Apply();

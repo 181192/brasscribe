@@ -8,8 +8,8 @@ using Microsoft.UI.Xaml.Media;
 namespace Brasscribe.Play.Views;
 
 /// <summary>
-/// The "more" menu on a row of "Your scores" (sidebar and Home): Edit title, Check the notes, Delete.
-/// The same three on every platform; Delete asks first.
+/// The "more" menu on a row of "Your scores" (sidebar and Home): Edit title, Check the notes, Open on
+/// the music stand, Delete. Delete asks first.
 /// </summary>
 internal static class ScoreOptions
 {
@@ -31,11 +31,14 @@ internal static class ScoreOptions
             Icon = new PathIcon { Data = (Geometry)XamlBindingHelper.ConvertValue(typeof(Geometry), Glyph("BcIconPathNextUncertain")) },
         };
         check.Click += async (_, _) => await main.OpenLibraryItemAsync(item, review: true);
+        var stand = new MenuFlyoutItem { Text = s["ScoreOptions_OpenOnStand"], Icon = new FontIcon { Glyph = Glyph("BcIconMusicStand") } };
+        stand.Click += async (_, _) => await main.OpenOnMusicStandAsync(item);
         var delete = new MenuFlyoutItem { Text = s["ScoreOptions_Delete"], Icon = new FontIcon { Glyph = Glyph("BcIconDelete") } };
         delete.Click += async (_, _) => await DeleteAsync(main, item, root);
         var flyout = new MenuFlyout();
         flyout.Items.Add(edit);
         flyout.Items.Add(check);
+        flyout.Items.Add(stand);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(delete);
         return flyout;
@@ -49,6 +52,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = s["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = s["Score_SaveTitle"],
@@ -65,6 +69,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
+            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
             Title = s.Format("ScoreOptions_DeleteTitle", item.Title),
             Content = s[item.OnComputer ? "ScoreOptions_DeleteComputer" : "ScoreOptions_DeleteThisPc"],
             PrimaryButtonText = s["ScoreOptions_Delete"],

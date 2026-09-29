@@ -10,10 +10,14 @@ namespace Brasscribe.Play.Core.ViewModels;
 public sealed record BeatCell(int Number, bool IsCurrent);
 
 /// <summary>One mixer row: mute, solo and volume for a part.</summary>
-public sealed partial class MixerPartViewModel(IScorePlayer player, TrackInfo track, string muteLabel = "", string soloLabel = "") : ObservableObject
+public sealed partial class MixerPartViewModel(IScorePlayer player, TrackInfo track, string muteLabel = "", string soloLabel = "", string? label = null)
+    : ObservableObject
 {
     public int Index { get; } = track.Index;
+    /// <summary>The part's own name, as the arranger wrote it (what "your part" and the sources are matched on).</summary>
     public string Name { get; } = track.Name;
+    /// <summary>The name shown and read, in the UI language ("Eufonium").</summary>
+    public string Label { get; } = label ?? track.Name;
     /// <summary>Accessible names of the M and S buttons ("Mute Solo Cornet").</summary>
     public string MuteLabel { get; } = muteLabel;
     public string SoloLabel { get; } = soloLabel;
@@ -25,6 +29,19 @@ public sealed partial class MixerPartViewModel(IScorePlayer player, TrackInfo tr
 
     /// <summary>The player's own part ("your part" in the list; Mute my part silences it).</summary>
     [ObservableProperty] public partial bool IsMine { get; set; }
+
+    /// <summary>Where the part came from, in words ("Arranged from the band's harmony"); empty when not known.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSource))]
+    public partial string SourceLabel { get; set; } = "";
+
+    /// <summary>The one sentence the source label opens.</summary>
+    [ObservableProperty] public partial string SourceExplanation { get; set; } = "";
+
+    /// <summary>The source label's icon: the record mic for the recording, the parts for arranged.</summary>
+    [ObservableProperty] public partial string SourceGlyph { get; set; } = "";
+
+    public bool HasSource => SourceLabel.Length > 0;
 
     partial void OnIsMutedChanged(bool value) => player.SetMute(Index, value);
     partial void OnIsSoloChanged(bool value) => player.SetSolo(Index, value);
@@ -62,9 +79,17 @@ public sealed partial class PlayerViewModel : ObservableObject
     }
 
     public IScorePlayer Player => _player;
+
+    /// <summary>A part's name in the UI language (the core's table); the name as written when unset.</summary>
+    public Func<string, string>? PartLabel { get; set; }
     public ObservableCollection<MixerPartViewModel> Parts { get; } = [];
 
     [ObservableProperty] public partial bool IsPlaying { get; set; }
+
+    /// <summary>The Play button's accessible name: what pressing it does now ("Play" or "Pause", WCAG 4.1.2).</summary>
+    public string PlayPauseName => _s[IsPlaying ? "Player_Pause" : "Player_Play"];
+
+    partial void OnIsPlayingChanged(bool value) => OnPropertyChanged(nameof(PlayPauseName));
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LastBar))]
     public partial int BarCount { get; set; }
@@ -99,10 +124,14 @@ public sealed partial class PlayerViewModel : ObservableObject
         _player.LoadScore(musicXml);
         Parts.Clear();
         foreach (var t in _player.Tracks)
-            Parts.Add(new MixerPartViewModel(_player, t, _s.Format("Mixer_Mute", t.Name), _s.Format("Mixer_Solo", t.Name)));
+        {
+            string label = PartLabel?.Invoke(t.Name) ?? t.Name;
+            Parts.Add(new MixerPartViewModel(_player, t, _s.Format("Mixer_Mute", label), _s.Format("Mixer_Solo", label), label));
+        }
         BarCount = _player.BarCount;
         LoopStart = 1;
         LoopEnd = Math.Min(4, BarCount);
+        LoopChosen = false;
         IsLooping = false;
         LoopText = _s["Player_LoopOff"];
         UpdatePositionText(0);
@@ -147,6 +176,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     partial void OnMetronomeChanged(bool value) => _player.Metronome = value;
     partial void OnTransposeChanged(int value) => _player.Transpose = value;
 
+    /// <summary>The player has chosen bars to repeat for this score (not just the defaults).</summary>
+    public bool LoopChosen { get; private set; }
+
     [RelayCommand]
     private void SetLoop()
     {
@@ -156,6 +188,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         LoopStart = a;
         LoopEnd = b;
         _player.SetLoop(a - 1, b - 1);
+        LoopChosen = true;
         IsLooping = true;
         LoopText = _s.Format("Player_LoopSet", a, b);
         _announcer.Announce(LoopText);
@@ -180,6 +213,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void SetLoopStartAt(int bar)
     {
         LoopStart = bar;
+        LoopChosen = true;
         if (LoopEnd < bar) LoopEnd = bar;
         _announcer.Announce(_s.Format("Player_LoopStartAt", bar));
     }
@@ -281,7 +315,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         IsPlayingAlong = !IsPlayingAlong;
         if (PlayAlongPart is { } part) part.IsMuted = IsPlayingAlong;
         _announcer.Announce(IsPlayingAlong
-            ? _s.Format("Player_PlayAlongOn", PlayAlongPart?.Name ?? "")
+            ? _s.Format("Player_PlayAlongOn", PlayAlongPart?.Label ?? "")
             : _s["Player_PlayAlongOff"]);
         if (IsPlayingAlong)
         {
@@ -317,7 +351,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         if (PlayAlongPart is { } part) part.IsMuted = value;
         IsPlayingAlong = value;
-        _announcer.Announce(value ? _s.Format("Player_PlayAlongOn", PlayAlongPart?.Name ?? "") : _s["Player_PlayAlongOff"]);
+        _announcer.Announce(value ? _s.Format("Player_PlayAlongOn", PlayAlongPart?.Label ?? "") : _s["Player_PlayAlongOff"]);
     }
 
     /// <summary>"Bar 13, beat 2".</summary>

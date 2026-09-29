@@ -10,6 +10,32 @@
     DefaultButton="Close">
     <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12" MinWidth="420">
+            <!-- Your instrument: the first section. The row shows the answer; Change opens the same questions as the
+                 first run right here (a dialog can't open another), and nothing changes until Save. -->
+            <TextBlock x:Uid="SettingsYouHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <Grid ColumnSpacing="12" x:Name="SeatRow">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Uid="SeatRowLabel" Style="{StaticResource LabelStyle}" />
+                    <TextBlock x:Name="SeatValue" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button x:Name="SeatChangeButton" x:Uid="SeatChangeButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}" MinHeight="44"
+                        VerticalAlignment="Center" Click="OnChangeSeat" />
+            </Grid>
+            <StackPanel x:Name="SeatEditor" Spacing="12" Visibility="Collapsed">
+                <views:SeatPickerView x:Name="SeatPicker" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Uid="SeatSaveButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnSaveSeat" />
+                    <Button x:Uid="SeatConductSettingsButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnConductSeat" />
+                    <Button x:Uid="SeatCancelButton" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Click="OnCancelSeat" />
+                </StackPanel>
+                <TextBlock x:Name="SeatHint" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+            <TextBlock x:Uid="SeatCaption" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+
             <TextBlock x:Uid="SettingsLanguageHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <ComboBox x:Name="LanguageBox" x:Uid="LanguageBox" SelectionChanged="OnLanguageChanged" HorizontalAlignment="Stretch">
                 <ComboBoxItem x:Uid="LanguageSystem" Tag="system" />
@@ -19,8 +45,23 @@
             <TextBlock x:Uid="LanguageRestartNote" Style="{StaticResource MutedStyle}" />
 
             <TextBlock x:Uid="SettingsAccessibilityHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <!-- Appearance (design/system.md §10): one native choice, applied at once, stored on this PC. The header
+                 names the combo box for UIA, which reads the selected item as its value ("Appearance, Dark").
+                 A contrast theme always wins; the box stays enabled and the line below says why. -->
+            <ComboBox x:Name="AppearanceBox" x:Uid="AppearanceBox" SelectionChanged="OnAppearanceChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="AppearanceSystem" />
+                <ComboBoxItem x:Uid="AppearanceLight" />
+                <ComboBoxItem x:Uid="AppearanceDark" />
+            </ComboBox>
+            <TextBlock x:Uid="AppearanceContrastNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.HighContrast, Mode=OneWay}" />
             <ToggleSwitch x:Uid="SingleKeySwitch" IsOn="{x:Bind ViewModel.SingleKeyShortcuts, Mode=TwoWay}" />
             <ToggleSwitch x:Uid="ReduceMotionSwitch" IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}" />
+            <!-- The music stand (design/music-stand.md §9). Opening on turning the phone is a phone setting, not here. -->
+            <TextBlock x:Uid="SettingsStandHeading" Style="{StaticResource LabelStyle}" Margin="0,8,0,0" AutomationProperties.HeadingLevel="Level3" />
+            <ToggleSwitch x:Uid="StandTurnPagesSwitch" IsOn="{x:Bind ViewModel.StandTurnPages, Mode=TwoWay}" />
+            <ToggleSwitch x:Uid="StandKeepControlsSwitch" IsOn="{x:Bind ViewModel.StandKeepControls, Mode=TwoWay}" />
+            <TextBlock x:Uid="StandPedalNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
             <ComboBox x:Name="VerbosityBox" x:Uid="VerbosityBox" SelectionChanged="OnVerbosityChanged" HorizontalAlignment="Stretch">
                 <ComboBoxItem x:Uid="VerbosityBrief" />
                 <ComboBoxItem x:Uid="VerbosityStandard" />
@@ -70,6 +111,10 @@
             <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
             <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
+            <!-- The version is an ordinary button (click, Space, Enter, Narrator): five in a row unlock the hidden Pink
+                 appearance (design/system.md §10). Nothing about it hints that it does more. -->
+            <Button x:Name="AppVersion" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Padding="0" Click="OnVersion" />
+            <TextBlock x:Name="PinkNote" Style="{StaticResource LabelStyle}" Visibility="Collapsed" />
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

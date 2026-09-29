@@ -51,6 +51,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Page Include="$(DesignDir)dist\windows\BrasscribeTheme.xaml" Link="Themes\BrasscribeTheme.xaml" />
+    <!-- The hidden Pink palette: merged in by Services/ThemeController while Pink is chosen. -->
+    <Page Include="$(DesignDir)dist\windows\BrasscribePinkTheme.xaml" Link="Themes\BrasscribePinkTheme.xaml" />
     <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The brass italic of the display face ("a score.") is its own font file, not a slanted Regular. -->
     <Content Include="$(DesignDir)brand\fonts\InstrumentSerif-Italic.ttf" Link="Assets\Fonts\InstrumentSerif-Italic.ttf" CopyToOutputDirectory="PreserveNewest" />

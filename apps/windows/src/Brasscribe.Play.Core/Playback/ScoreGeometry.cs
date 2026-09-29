@@ -158,4 +158,27 @@ public static class ScoreGeometry
         }
         return regions;
     }
+
+    /// <summary>
+    /// The systems (lines of music) of a layout, top to bottom, for the music stand's pages. Each spans
+    /// its real bounds, which tile the score vertically, and holds its first to last bar (0-based).
+    /// </summary>
+    public static IReadOnlyList<Stand.StandSystem> Systems(BoundsLookup bounds)
+    {
+        var systems = new List<Stand.StandSystem>();
+        foreach (var system in bounds.StaffSystems)
+        {
+            if (system.Bars.Count == 0) continue;
+            var r = system.RealBounds;
+            int first = int.MaxValue, last = int.MinValue;
+            foreach (var bar in system.Bars)
+            {
+                first = Math.Min(first, (int)bar.Index);
+                last = Math.Max(last, (int)bar.Index);
+            }
+            systems.Add(new Stand.StandSystem(r.Y, r.Y + r.H, first, last));
+        }
+        systems.Sort((a, b) => a.Top.CompareTo(b.Top));
+        return systems;
+    }
 }
