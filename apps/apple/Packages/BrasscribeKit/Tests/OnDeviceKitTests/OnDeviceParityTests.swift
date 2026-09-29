@@ -8,7 +8,7 @@ import Testing
 func refDir() -> URL? {
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        let c = dir.appending(path: "data/runs/apple/entertainer-ref")
+        let c = dir.appending(path: "data/runs/apple/entertainer-ref.notation-followups")
         if FileManager.default.fileExists(atPath: c.appending(path: "sw.mid").path) { return c }
         dir = dir.deletingLastPathComponent()
     }

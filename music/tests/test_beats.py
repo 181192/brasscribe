@@ -108,7 +108,7 @@ def test_track_bar_phase_drops_an_inserted_and_restores_a_missed_beat():
     assert len(out) == 40 and np.allclose(out, t)
 
 
-REF = Path(__file__).resolve().parents[2] / "data" / "runs" / "apple" / "entertainer-ref"
+REF = Path(__file__).resolve().parents[2] / "data" / "runs" / "apple" / "entertainer-ref.notation-followups"
 
 
 def _grid(b, on, du, infer):
