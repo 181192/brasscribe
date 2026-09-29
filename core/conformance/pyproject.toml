@@ -1,6 +1,7 @@
 [project]
 name = "brasscribe-conformance"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
 description = "Runs the Python reference and the Rust core on identical inputs and diffs the outputs"
 requires-python = ">=3.12,<3.13"
 dependencies = [

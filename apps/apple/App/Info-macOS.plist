@@ -93,6 +93,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Brasscribe Play scans the code your computer shows, to connect to it.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Brasscribe Play talks to Brasscribe on your own computer to transcribe recordings.</string>
 	<key>NSMicrophoneUsageDescription</key>

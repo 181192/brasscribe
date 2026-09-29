@@ -1,0 +1,18 @@
+Copyright (c) 2026 Kristoffer-Andre Kalliainen
+
+Brasscribe is licensed under either of
+
+  * Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+  * MIT License (LICENSE-MIT or http://opensource.org/licenses/MIT)
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this project by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
+
+SPDX-License-Identifier: MIT OR Apache-2.0
+
+This licence covers the project's own source code and documentation. Third-party
+software, fonts, sounds and machine-learning models used by Brasscribe keep their
+own licences; see THIRD_PARTY_NOTICES.md.

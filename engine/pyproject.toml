@@ -1,6 +1,7 @@
 [project]
 name = "brasscribe-engine"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
 description = "brasscribe engine: job DAG, artifact cache, profiles, benchmark suites and the HTTP service behind Studio and Play"
 requires-python = ">=3.12,<3.13"
 dependencies = [

@@ -7,7 +7,8 @@
     <Authors>brasscribe</Authors>
     <Product>Brasscribe Play</Product>
     <Company>brasscribe</Company>
-    <Copyright>brasscribe contributors (non-commercial)</Copyright>
+    <Copyright>Copyright (c) 2026 Kristoffer-Andre Kalliainen</Copyright>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <!-- Lets the Windows-only projects compile against reference assemblies on macOS and Linux. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- Windows target. Per-app loopback additionally checks for OS build 20348 at run time. -->
