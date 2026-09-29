@@ -11,8 +11,8 @@ own virtual display, 1440 × 900 pt.
 
 ```sh
 scripts/mac-vm.sh up                 # start or resume headless, wait for SSH (provisions the first time)
-scripts/mac-vm.sh test-ui            # build on the host, run every Play macOS UI test over two VMs
-scripts/mac-vm.sh test-ui WindowSizeUITests,PlayUITests/testKeyboardShortcuts   # only these
+scripts/mac-vm.sh test-ui WindowSizeUITests,PlayUITests/testKeyboardShortcuts   # build on the host, run only these
+MAC_VM_FULL=1 scripts/mac-vm.sh test-ui   # every Play macOS UI test over two VMs (before a release)
 scripts/mac-vm.sh test-ui-bandroom   # Bandroom: its UI test scheme, or build + unit tests until it has one
 scripts/mac-vm.sh ssh [command]      # a shell in the VM
 scripts/mac-vm.sh down [--stop|--reset]  # suspend; --stop shuts down; --reset also deletes the clones
@@ -164,7 +164,7 @@ It prints the time of each step and exits non-zero when a test fails. `down` sus
 
 ### Timings
 
-Measured on September 29, 2026, on a host shared with other agents. All 30 tests (25 run, 5 skip themselves):
+Measured on September 29, 2026, on a host shared with other parallel builds. All 30 tests at the time (25 run, 5 skip themselves; the suite has 33 now):
 
 | Step | The first design: build and test in one VM | Now, warm | Now, two tests |
 |---|---|---|---|
@@ -203,7 +203,7 @@ The window size tests (`AppUITests/WindowSizeUITests.swift`):
 
 They skip themselves outside a virtual machine (`kern.hv_vmm_present`).
 
-## For agents
+## Rules for anyone running the tests
 
 - Never run `make test-mac-ui`, `xcodebuild test` on a UI test scheme, `screenshots.sh mac` or any
   other input automation on the host. Use `scripts/mac-vm.sh test-ui`, or `scripts/mac-vm.sh ssh …`

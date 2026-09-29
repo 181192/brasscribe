@@ -12,7 +12,9 @@ change touches a device or the UI.
 `make check-fast` and `make check` run the areas the branch touches (against the merge base with
 `origin/main`, plus uncommitted and untracked files). `AREAS="engine core"` picks areas, and
 `make check-all` runs tier 2 everywhere. Both print a timing table at the end. Areas: `engine`,
-`core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`.
+`core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`, `bandroom-mac`.
+Changes under `music/` or `eval/` count as `engine` (and `conformance`), `capture/` as `apple`, and
+`apps/bandroom/macos/` as `bandroom-mac`. `scripts/check.sh fast|full [area...]` is the same without make.
 
 ## A new worktree
 
@@ -22,7 +24,8 @@ Once per checkout or worktree:
 eval "$(scripts/worktree-setup.sh)"      # later shells: source .brasscribe-env
 ```
 
-The script is idempotent. It does four things:
+The script is idempotent. `--print-env` only prints the environment, `--no-core` skips the prebuilt
+core, and `--core host,apple` limits it to those components. It does four things:
 
 - Links `data/`, `models/` and `apps/apple/Frameworks` (Verovio) from the main checkout. It finds
   the main checkout through `git worktree list` (`BRASSCRIBE_MAIN` overrides it). `BRASSCRIBE_REPO`
@@ -32,8 +35,9 @@ The script is idempotent. It does four things:
   - `BrasscribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
-- Prints the environment: `BRASSCRIBE_REPO`, `BRASSCRIBE_FFI_PATH`, `BRASSCRIBE_REQUIRE_DATA`,
-  `ANDROID_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and `PATH` with rustup and the Android tools.
+- Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `BRASSCRIBE_FFI_PATH`,
+  `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
+  `PATH` with rustup and the Android tools.
 
 ### The core artifact cache
 
@@ -67,6 +71,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | android | `./gradlew testDebugUnitTest -Pbrasscribe.fast` | JUnit category `Slow`, release unit tests, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
+| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]` | the app build (tier 2 adds `make build`) |
 
 A test that takes seconds gets the slow marker of its framework:
 
@@ -88,10 +93,11 @@ build for testing again.
 - `cargo test --release`
 - conformance on every case
 - vitest and the Playwright browser tests
-- the Swift packages and the macOS app unit tests
+- the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
 - `./gradlew testDebugUnitTest lint assembleDebug`
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
+- Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`
 
 Things that differ from running the suites by hand:
 
@@ -116,7 +122,7 @@ fail instead of skipping.
 
 ## Tier 3: devices and UI
 
-- **Android emulators.** Each agent gets its own emulator from the pool:
+- **Android emulators.** Each checkout or shell gets its own emulator from the pool:
 
   ```sh
   serial=$(apps/android/scripts/emulator-pool.sh acquire)   # headless; about 6 s once the pool AVD exists
@@ -145,11 +151,12 @@ fail instead of skipping.
   - Run the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests[,PlayUITests/testKeyboardShortcuts]`.
     That takes under a minute warm. The full suite (`MAC_VM_FULL=1 scripts/mac-vm.sh test-ui`) takes about 6 minutes over two VMs.
     Runs from different worktrees queue on a host-wide lock.
+  - Bandroom has its own entry point: `scripts/mac-vm.sh test-ui-bandroom`.
   - `scripts/mac-vm.sh down` suspends the VMs when you're done.
 
 ## Measurements
 
-Measured on an 18-core M-series Mac with 48 GB, shared with other agents (load average 15 to 40).
+Measured on an 18-core M-series Mac with 48 GB, shared with other parallel builds (load average 15 to 40).
 Treat the numbers as rough.
 
 - **Cold** is a fresh worktree: nothing local to the worktree, but the global caches warm (`~/.gradle`,
