@@ -173,15 +173,75 @@ fn lost(f: &[f64], g: i64, next_head: Option<&Vec<f64>>) -> i64 {
     n
 }
 
-/// `choose_grids`, then every beat whose grid loses onsets chooses again from DENSE_GRIDS (free time
-/// included), paying COLLIDE per onset a grid cannot hold and SWITCH for leaving the previous beat's grid.
-/// Beats that hold their onsets keep their choice.
+/// Tuplet runs: at least TUPLET_RUN consecutive beats that each hold exactly g onsets (3 or 6) are
+/// written in that tuplet when, summed over the run, its snap error is under TUPLET_RATIO of the plain
+/// grid's (16ths for triplets, 32nds for sextuplets) and no onset is more than TUPLET_FIT off its slot.
+pub const TUPLET_RUN: usize = 2;
+pub const TUPLET_RATIO: f64 = 0.25;
+pub const TUPLET_FIT: f64 = 0.1;
+const TUPLET_PLAIN: [(i64, i64); 2] = [(3, 4), (6, 8)];
+
+fn sse(f: &[f64], g: i64) -> f64 {
+    let gf = g as f64;
+    let sq: Vec<f64> = f
+        .iter()
+        .map(|&x| {
+            let d = x - (x * gf).round_ties_even() / gf;
+            d * d
+        })
+        .collect();
+    py::pairwise_sum_f64(&sq)
+}
+
+/// Beats of the tuplet runs and their tuplet grid.
+pub fn tuplet_runs(by_beat: &HashMap<i64, Vec<f64>>, beat_seconds: &[f64]) -> Vec<(i64, i64)> {
+    let mut out = Vec::new();
+    for (g, plain) in TUPLET_PLAIN {
+        let mut ks: Vec<i64> = by_beat.iter().filter(|(_, f)| f.len() == g as usize).map(|(k, _)| *k).collect();
+        ks.sort();
+        let mut runs: Vec<Vec<i64>> = Vec::new();
+        for k in ks {
+            match runs.last_mut() {
+                Some(r) if *r.last().unwrap() == k - 1 => r.push(k),
+                _ => runs.push(vec![k]),
+            }
+        }
+        for run in runs {
+            if run.len() < TUPLET_RUN {
+                continue;
+            }
+            if !beat_seconds.is_empty()
+                && g >= 6
+                && run.iter().any(|&k| beat_seconds[k.clamp(0, beat_seconds.len() as i64 - 1) as usize] / (g as f64) < MIN_SLOT)
+            {
+                continue;
+            }
+            let gf = g as f64;
+            let worst = run.iter().flat_map(|k| by_beat[k].iter()).map(|&x| (x - (x * gf).round_ties_even() / gf).abs()).fold(0.0, f64::max);
+            if worst > TUPLET_FIT {
+                continue;
+            }
+            let (a, b) = run.iter().fold((0.0, 0.0), |(a, b), k| (a + sse(&by_beat[k], g), b + sse(&by_beat[k], plain)));
+            if a < TUPLET_RATIO * b {
+                out.extend(run.iter().map(|&k| (k, g)));
+            }
+        }
+    }
+    out
+}
+
+/// `choose_grids`; beats of a tuplet run take its tuplet; then every beat whose grid loses onsets
+/// chooses again from DENSE_GRIDS (free time included), paying COLLIDE per onset a grid cannot hold
+/// and SWITCH for leaving the previous beat's grid.
 pub fn choose_grids_dense(onset_beats: &[f64], coarse: Option<&Ranges>, beat_seconds: &[f64]) -> HashMap<i64, i64> {
     let mut choice = choose_grids(onset_beats, coarse);
     let mut by_beat: HashMap<i64, Vec<f64>> = HashMap::new();
     for &x in onset_beats {
         let k = beat_index(x);
         by_beat.entry(k).or_default().push(x - k as f64);
+    }
+    for (k, g) in tuplet_runs(&by_beat, beat_seconds) {
+        choice.insert(k, g);
     }
     let mut ks: Vec<i64> = by_beat.keys().copied().collect();
     ks.sort();

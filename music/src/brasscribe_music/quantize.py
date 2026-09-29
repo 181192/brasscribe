@@ -125,14 +125,56 @@ def _lost(f: np.ndarray, g: int, next_head: np.ndarray | None) -> int:
     return int(lost)
 
 
+# Tuplet runs: jitter of 15 ms moves a triplet 8th past DENSE_FIT of its slot in about half the beats, so a beat on
+# its own is weak evidence. A run of at least TUPLET_RUN consecutive beats that each hold exactly g onsets (3 or 6)
+# is written in that tuplet when, summed over the run, the tuplet's snap error is under TUPLET_RATIO of the plain
+# grid's (16ths for triplets, 32nds for sextuplets) and no onset is more than TUPLET_FIT off its slot. Straight 16ths
+# never hold exactly 3 or 6 onsets a beat unless notes are missing, and then the plain grid fits them far better.
+TUPLET_RUN = 2
+TUPLET_RATIO = 0.25
+TUPLET_FIT = 0.1
+TUPLET_PLAIN = {3: 4, 6: 8}
+
+
+def _sse(f: np.ndarray, g: int) -> float:
+    return float(np.sum((f - np.round(f * g) / g) ** 2))
+
+
+def tuplet_runs(by_beat: dict[int, list[float]], beat_seconds: np.ndarray | None = None) -> dict[int, int]:
+    """Beats of the tuplet runs (see TUPLET_RUN) and their tuplet grid."""
+    out: dict[int, int] = {}
+    for g, plain in TUPLET_PLAIN.items():
+        ks = sorted(k for k, f in by_beat.items() if len(f) == g)
+        runs: list[list[int]] = []
+        for k in ks:
+            if runs and runs[-1][-1] == k - 1:
+                runs[-1].append(k)
+            else:
+                runs.append([k])
+        for run in runs:
+            if len(run) < TUPLET_RUN:
+                continue
+            if beat_seconds is not None and g >= 6 and any(
+                    float(beat_seconds[min(max(k, 0), len(beat_seconds) - 1)]) / g < MIN_SLOT for k in run):
+                continue
+            fs = [np.array(by_beat[k]) for k in run]
+            if max(float(np.max(np.abs(f - np.round(f * g) / g))) for f in fs) > TUPLET_FIT:
+                continue
+            if sum(_sse(f, g) for f in fs) < TUPLET_RATIO * sum(_sse(f, plain) for f in fs):
+                out.update({k: g for k in run})
+    return out
+
+
 def choose_grids_dense(onset_beats: np.ndarray, coarse: list[tuple[float, float]] | None = None,
                        beat_seconds: np.ndarray | None = None) -> dict[int, int]:
-    """choose_grids, then every beat whose grid loses onsets chooses again from DENSE_GRIDS (free time included)."""
+    """choose_grids; beats of a tuplet run (tuplet_runs) take its tuplet; then every beat whose grid loses onsets
+    chooses again from DENSE_GRIDS (free time included)."""
     choice = choose_grids(onset_beats, coarse)
     by_beat: dict[int, list[float]] = {}
     for x in onset_beats:
         k = int(np.floor(x + 1 / 12))
         by_beat.setdefault(k, []).append(x - k)
+    choice.update(tuplet_runs(by_beat, beat_seconds))
     for k in sorted(by_beat):
         f = np.array(by_beat[k])
         nxt = np.array(by_beat[k + 1]) if k + 1 in by_beat else None

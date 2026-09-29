@@ -69,3 +69,32 @@ def test_rubato_sixteenths_keep_one_grid():
     bt = np.arange(1.0 - 4 * beat, 1.0 + 40 * beat, beat)
     q = quantize(notes, bt, monophonic=True, auto_level=False, dense=True)
     assert {x.start % 24 for x in q} <= {0, 6, 12, 18}
+
+
+def jittered(bpm: float, pattern: list[float], bars: int, jitter: float, seed: int):
+    """Onsets on `pattern` (fractions of a beat) in every beat, each moved by gaussian jitter (seconds)."""
+    spb = 60 / bpm
+    beats = np.arange(0, 4 * bars + 8) * spb + 0.5
+    rng = np.random.default_rng(seed)
+    on = sorted(float(beats[k] + f * spb + rng.normal(0, jitter)) for k in range(2, 2 + 4 * bars) for f in pattern)
+    notes = [{"pitch": 60 + (i % 2), "onset": t, "offset": t + 0.05} for i, t in enumerate(on)]
+    return notes, beats
+
+
+def test_jittered_triplets_stay_triplets():
+    # 15 ms of jitter at 100 BPM used to write half the beats as 16ths: a run of triplet beats is evidence enough.
+    for seed in range(10):
+        notes, beats = jittered(100, [0, 1 / 3, 2 / 3], 4, 0.015, seed)
+        q = quantize(notes, beats, monophonic=True, auto_level=False, dense=True)
+        assert len(q) == len(notes) and all(x.start % 8 == 0 for x in q), seed
+
+
+def test_three_note_sixteenth_figures_stay_sixteenths():
+    # 16th-16th-8th, 8th-16th-16th and 16th-8th-16th also hold three onsets a beat; with jitter at 140 BPM they
+    # stay 16ths.
+    for pattern in ([0, 0.25, 0.5], [0, 0.5, 0.75], [0, 0.25, 0.75]):
+        for jitter in (0.01, 0.02):
+            for seed in range(10):
+                notes, beats = jittered(140, pattern, 4, jitter, seed)
+                q = quantize(notes, beats, monophonic=True, auto_level=False, dense=True)
+                assert all(x.start % 6 == 0 for x in q), (pattern, jitter, seed, [x.start % 24 for x in q])
