@@ -144,8 +144,9 @@ def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = 
         out["q_ref"] = [{"pitch": x.pitch, "onset": float(s)} for x, s in zip(qr, _seconds([x.start for x in qr], times))]
     out["quantized"] = [{"pitch": p, "onset": float(s)} for (p, _, _), s in zip(q, _seconds([x[1] for x in q], times))]
     solo = [n for v in comp.voices if v.layer == "solo" for n in v.notes]
-    out["written"] = [{"pitch": n.pitch, "onset": float(s)} for n, s in
+    out["written"] = [{"pitch": n.pitch, "onset": float(s), "tick": n.start + pickup, "dur": n.dur} for n, s in
                       zip(solo, _seconds([n.start + pickup for n in solo], times))]
+    out["_line_n"] = [{"n": len(trace["line"]), "q": len(q)}]
     for d in ("faithful", "standard", "easier"):
         with contextlib.redirect_stdout(io.StringIO()):
             arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=d)
@@ -154,6 +155,33 @@ def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = 
         out[f"lead:{d}"] = [{"pitch": n.pitch, "onset": float(s)} for n, s in
                             zip(lead, _seconds([n.start + pickup for n in lead], times))]
     return out
+
+
+def slot_grid(tick: int) -> int:
+    """The simplest grid (subdivisions per beat) a tick position lies on."""
+    for g in (1, 2, 4, 3, 6, 8, 12, 24):
+        if (tick % 24) % (24 // g) == 0:
+            return g
+    return 24
+
+
+def readability(written: list[dict], lo: float, hi: float) -> dict[str, float]:
+    """In the figure span: changes between duple and triple subdivision from one beat to the next, per bar (4 beats),
+    and the share of notes on 32nds or on tuplets."""
+    fig = [n for n in written if lo <= n["onset"] <= hi and "tick" in n]
+    if not fig:
+        return {}
+    by_beat: dict[int, int] = {}
+    for n in fig:
+        k = n["tick"] // 24
+        by_beat[k] = max(by_beat.get(k, 1), slot_grid(n["tick"]), key=lambda g: (g % 3 == 0, g))
+    ks = sorted(by_beat)
+    dense = [k for k in ks if by_beat[k] > 1]
+    changes = sum(1 for a, b in zip(dense, dense[1:]) if b == a + 1 and (by_beat[a] % 3 == 0) != (by_beat[b] % 3 == 0))
+    bars = max(1, (ks[-1] - ks[0]) // 4 + 1)
+    return {"grid_changes_per_bar": changes / bars,
+            "thirtyseconds": float(np.mean([slot_grid(n["tick"]) in (8, 24) for n in fig])),
+            "tuplets": float(np.mean([slot_grid(n["tick"]) in (3, 6, 12) for n in fig]))}
 
 
 def score_clip(ref_doc: dict, est: dict[str, list[dict]], clip: Path) -> dict[str, dict]:
@@ -180,6 +208,11 @@ def score_clip(ref_doc: dict, est: dict[str, list[dict]], clip: Path) -> dict[st
             span = [n for n in e if lo <= n["onset"] <= hi]
             lower = min(ref[i]["pitch"] for i in fig)
             r["upper_share"] = float(np.mean([n["pitch"] > lower for n in span])) if span else float("nan")
+        if stage == "written":
+            r.update(readability(e, lo, hi))
+            ln = est.get("_line_n")
+            if ln:
+                r["dropped_in_quantize"] = (ln[0]["n"] - ln[0]["q"]) / max(1, ln[0]["n"])
         if kind.startswith("ctl-") and stage != "contour":
             matched_e = {j for _, j in m}
             span = [j for j, n in enumerate(e) if lo <= n["onset"] <= hi]
@@ -194,6 +227,8 @@ def group_of(spec: dict) -> str:
         return "urmp-trumpet"
     if k == "chorale":
         return f"chorale-{spec['art']}"
+    if k == "ctl-realvib":
+        return f"ctl-realvib-{spec['art']}"
     if k.startswith("ctl-"):
         return k
     rate = spec["tempo"] / 60 * spec["subdiv"]
@@ -320,6 +355,9 @@ def collision_grids(onset_beats, coarse=None, extra=(8,), collide=1.0):
 
 ABLATIONS = {
     "today": {},
+    "no-dense": {"dense": False},
+    "no-f1": {"f1": False},
+    "base": {"f1": False, "dense": False},
     "hold40": {"seg": 40.0},
     "hold20": {"seg": 20.0},
     "line30": {"line": (0.03, 0.02)},
@@ -335,8 +373,12 @@ def ablation(cfg: dict):
 
     from . import arrange_layers_song as A
 
-    saved = (A.line, Q.choose_grids)
+    saved = (A.line, Q.choose_grids, A.quantize, A.contour_notes)
     try:
+        if cfg.get("f1") is False:
+            A.contour_notes = lambda notes, c, others=None: notes
+        if cfg.get("dense") is False:
+            A.quantize = lambda *a, **k: Q.quantize(*a, **{**k, "dense": False})
         if "line" in cfg:
             md, merge = cfg["line"]
 
@@ -356,7 +398,7 @@ def ablation(cfg: dict):
             Q.choose_grids = collision_grids
         yield
     finally:
-        A.line, Q.choose_grids = saved
+        A.line, Q.choose_grids, A.quantize, A.contour_notes = saved
 
 
 # ------------------------------------------------------------------ Mikkel (no ground truth: proxy counts)
@@ -453,6 +495,16 @@ def mikkel(cfg: dict | None = None) -> dict:
     times, pickup = trace["times"], trace["pickup"]
     q = trace["quantized"]
     solo = [n for v in comp.voices if v.layer == "solo" for n in v.notes]
+    if cfg.get("_written") is not None:  # the written solo in seconds, for mikkel_stability
+        on = _seconds([n.start + pickup for n in solo], times)
+        off = _seconds([n.start + n.dur + pickup for n in solo], times)
+        cfg["_written"].extend({"pitch": n.pitch, "onset": float(a), "offset": float(b)} for n, a, b in zip(solo, on, off))
+        cfg["_spans"] = spans
+    if cfg.get("_stages") is not None:  # every stage in seconds, for mikkel_scored
+        cfg["_stages"].update({
+            "sw": sw, "line": trace["line"],
+            "quantized": [{"pitch": p_, "onset": float(t)} for (p_, _, _), t in zip(q, _seconds([x[1] for x in q], times))],
+            "written": [{"pitch": n.pitch, "onset": float(t)} for n, t in zip(solo, _seconds([n.start + pickup for n in solo], times))]})
     stages = {"plateaus": [n["onset"] for n in pl], "sw": [n["onset"] for n in sw],
               "line": [n["onset"] for n in trace["line"]],
               "quantized": list(_seconds([x[1] for x in q], times)),
@@ -483,6 +535,84 @@ def suite_metrics(root: Path | None = None) -> dict[str, float]:
     return out
 
 
+MIKKEL_REF_SPANS = ((57.56, 61.01), (61.07, 67.97))  # two fast passages of the solo
+
+
+def _salience(y: np.ndarray, sr: int, a: float, b: float, pitch: float) -> float:
+    """Harmonic sum (partials 1-5, weights 1/k) of the magnitude spectrum of y[a:b] at `pitch` (MIDI)."""
+    seg = y[int(a * sr): int(b * sr)]
+    if len(seg) < 256:
+        return 0.0
+    spec = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), 8 * len(seg)))
+    f = np.fft.rfftfreq(8 * len(seg), 1 / sr)
+    f0 = 440 * 2 ** ((pitch - 69) / 12)
+    return float(sum(spec[np.argmin(np.abs(f - k * f0))] / k for k in range(1, 6)))
+
+
+def mikkel_reference() -> list[dict]:
+    """PROVISIONAL reference notes for two fast Mikkel passages (no hand transcription exists): the SwiftF0
+    contour's plateaus (48 ms at one semitone on the piece's tuning), kept only where an independent harmonic
+    sum over the solo stem's own spectrum puts the pitch on that semitone rather than a neighbour or the octave
+    below. For spot-checking by ear (docs/plan/fast-notes.md lists them); test only."""
+    import soundfile as sf
+
+    from .paths import DATA
+
+    contour = mikkel_contour()
+    if contour is None:
+        return []
+    y, sr = sf.read(DATA / "mikkel/repro/layers/solo.wav", dtype="float32", always_2d=True)
+    y = y.mean(axis=1)
+    out = []
+    for n in plateaus(contour):
+        if not any(a <= n["onset"] <= b for a, b in MIKKEL_REF_SPANS):
+            continue
+        sal = {d: _salience(y, sr, n["onset"], n["offset"], n["pitch"] + d) for d in (-12, -1, 0, 1)}
+        if sal[0] >= max(sal[-1], sal[1]) and sal[0] >= 0.8 * sal[-12]:
+            out.append(n)
+    # one note per plateau run: a plateau interrupted and resumed on the same semitone is one note
+    merged = []
+    for n in out:
+        if merged and merged[-1]["pitch"] == n["pitch"] and n["onset"] - merged[-1]["offset"] < 0.04:
+            merged[-1]["offset"] = n["offset"]
+        else:
+            merged.append(dict(n))
+    return merged
+
+
+def mikkel_scored(cfg: dict | None = None) -> dict:
+    """Recall and F1 of each stage against the provisional Mikkel reference, inside its passages."""
+    ref = mikkel_reference()
+    cfg = {**(cfg or {}), "_written": [], "_stages": {}}
+    mikkel(cfg)
+    lo, hi = MIKKEL_REF_SPANS[0][0], MIKKEL_REF_SPANS[-1][1]
+    res = {"notes": len(ref)}
+    for name, est in cfg["_stages"].items():
+        est = [e for e in est if lo <= e["onset"] <= hi and any(a <= e["onset"] <= b for a, b in MIKKEL_REF_SPANS)]
+        m = match(ref, est)
+        res[name] = {"recall": round(len(m) / max(1, len(ref)), 3), "f1": round(f1(len(m), len(ref), len(est)), 3)}
+    return res
+
+
+def mikkel_stability(before: str = "base", after: str = "today") -> dict:
+    """Mikkel's written solo under two configurations: the notes that change outside the fast passages (each
+    listed, ideally none), and the long notes (>= 300 ms written before) that the new one splits (false splits)."""
+    runs = {}
+    for name in (before, after):
+        cfg = {**ABLATIONS[name], "_written": []}
+        mikkel(cfg)
+        runs[name] = (cfg["_written"], cfg.get("_spans", []))
+    (a, spans), (b, _) = runs[before], runs[after]
+    inside = lambda x: any(s0 - 0.05 <= x <= s1 + 0.05 for s0, s1 in spans)  # noqa: E731
+    key = lambda n: (round(n["onset"], 2), n["pitch"])  # noqa: E731
+    ka, kb = {key(n) for n in a if not inside(n["onset"])}, {key(n) for n in b if not inside(n["onset"])}
+    split = [n for n in a if n["offset"] - n["onset"] >= 0.3
+             and sum(1 for m in b if n["onset"] - 0.02 <= m["onset"] < n["offset"] - 0.02) >= 2]
+    return {"outside_removed": sorted(ka - kb), "outside_added": sorted(kb - ka),
+            "outside_notes": len(ka), "long_notes": sum(1 for n in a if n["offset"] - n["onset"] >= 0.3),
+            "long_split": [(round(n["onset"], 2), n["pitch"], round(n["offset"] - n["onset"], 2)) for n in split]}
+
+
 def table(res: dict, metric: str) -> str:
     lines = []
     for b, G in res.items():
@@ -499,12 +629,19 @@ def main() -> None:
     ap.add_argument("--only")
     ap.add_argument("--root", type=Path)
     ap.add_argument("--beats", default="oracle,small0")
-    ap.add_argument("--metrics", default="fig_recall,note_f1,onset_f1,onset25_f1,alt_kept,upper_share,extra")
+    ap.add_argument("--metrics", default="fig_recall,note_f1,onset_f1,onset25_f1,alt_kept,upper_share,extra,"
+                                          "grid_changes_per_bar,thirtyseconds,tuplets,dropped_in_quantize")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--mikkel", action="store_true", help="Mikkel proxy counts (with --ablate: per ablation)")
     ap.add_argument("--ablate", help=f"comma list of {', '.join(ABLATIONS)}: written-stage figure recall per group")
     args = ap.parse_args()
     if args.mikkel:
+        st = mikkel_stability()
+        print("stability (base -> today):", json.dumps(st))
+        ref = mikkel_reference()
+        print("provisional reference:", len(ref), "notes:", [(round(n["onset"], 2), n["pitch"]) for n in ref])
+        for name in (args.ablate or "base,today").split(","):
+            print("scored", name, json.dumps(mikkel_scored(ABLATIONS[name])))
         for name in (args.ablate or "today").split(","):
             r = mikkel(ABLATIONS[name])
             spans = r.pop("spans", [])
@@ -522,7 +659,7 @@ def main() -> None:
             for b in args.beats.split(","):
                 groups = sorted({g for r in out.values() for g in r.get(b, {})})
                 print(f"\n{m} at the written stage ({b} beats)")
-                print(f"{'group':28}" + "".join(f"{k:>20}" for k in out))
+                print(f"{'group':28}" + "".join(f"{k:>20}" for k in out))  # noqa: E501
                 for g in groups:
                     print(f"{g:28}" + "".join(f"{out[k].get(b, {}).get(g, {}).get(f'written|{m}', float('nan')):>20.3f}"
                                               for k in out))

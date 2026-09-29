@@ -88,6 +88,17 @@ def specs() -> list[Spec]:
                     Spec("ctl-fall", 0, tempo, 1, "tongue", render)]
         for i in (1, 2, 12):
             out.append(Spec("ctl-slowslur", i, 80, 1, "slur", render))
+    # Must-stay-one-note traps, dry and in the hall (and separated: SEP_CLIPS).
+    for render in ("samples", "room"):
+        for tempo in (70, 100):
+            out += [Spec(k, 0, tempo, 1, "tongue", render) for k in CONTROLS if k not in ("ctl-vibrato", "ctl-scoop", "ctl-fall")]
+        if render == "room":
+            for tempo in (70, 100):
+                out += [Spec("ctl-vibrato", 0, tempo, 1, "slur", render), Spec("ctl-scoop", 0, tempo, 1, "tongue", render),
+                        Spec("ctl-fall", 0, tempo, 1, "tongue", render)]
+            for i in (1, 2, 12):
+                out.append(Spec("ctl-slowslur", i, 80, 1, "slur", render))
+            out.append(Spec("ctl-leap", 12, 80, 1, "slur", render))
     # A reverberant hall on the alternations and runs at the middle tempo.
     for art in ("slur", "tongue"):
         for sub in SUBDIVS:
@@ -132,20 +143,62 @@ def score(s: Spec) -> list[dict]:
     return notes
 
 
+# Control kind -> the pitch (or level) modulation of its long notes: name:depth:rate (see cents_curve).
+CONTROLS = {
+    "ctl-vibrato": "vibrato",  # +-60 c, 5.5 Hz
+    "ctl-vib100": "vib:100:6",
+    "ctl-vib150": "vib:150:7",
+    "ctl-vibdown100": "vibdown:100:5.5",  # lip vibrato: one-sided, down from the note
+    "ctl-vibdown120": "vibdown:120:7",
+    "ctl-ampvib": "amp:3:5.5",  # +-3 dB level vibrato, steady pitch
+    "ctl-scoop": "scoop",
+    "ctl-scoop300": "scoop:300:0.15",
+    "ctl-fall": "fall",
+    "ctl-doit": "doit:500:0.2",  # up 500 c over the last 200 ms
+    "ctl-rip": "rip:700:0.15",  # a rip up into the note from 700 c below over 150 ms
+}
+
+
 def _control(s: Spec) -> list[dict]:
     """Bars 2-4 of a control clip: every note here must come out as exactly one note."""
+    if s.kind == "ctl-leap":  # slurred octave leaps: the hall's tail of each note under the next
+        return [{"pitch": 67 if k % 2 == 0 else 79, "beat": 4.0 + 2 * k, "dur": 2.0, "role": "figure", "mod": None,
+                 "slur": k < 3} for k in range(4)]
     if s.kind == "ctl-slowslur":
         lo = OCT_LOW if s.interval == 12 else LOW
         return [{"pitch": lo if k % 2 == 0 else lo + s.interval, "beat": 4.0 + 2 * k, "dur": 2.0, "role": "figure",
                  "mod": None, "slur": k < 3} for k in range(4)]
-    mod = s.kind[4:]
+    mod = CONTROLS[s.kind]
     pitches = (72, 70, 69, 67)
     return [{"pitch": p, "beat": 4.0 + 2 * k, "dur": 2.0, "role": "figure", "mod": mod, "slur": False}
             for k, p in enumerate(pitches)]
 
 
+def amp_curve(mod: str | None, t: np.ndarray) -> np.ndarray:
+    """Level factor over a note's own time axis (amplitude vibrato)."""
+    if mod and mod.startswith("amp:"):
+        _, db, rate = mod.split(":")
+        return 10 ** (float(db) * np.sin(2 * np.pi * float(rate) * np.maximum(t - 0.15, 0)) / 20)
+    return np.ones_like(t)
+
+
 def cents_curve(mod: str | None, t: np.ndarray, dur: float) -> np.ndarray:
     """Pitch deviation in cents over a note's own time axis."""
+    if mod and ":" in mod:
+        name, a, b = mod.split(":")
+        a, b = float(a), float(b)
+        ramp = np.clip((t - 0.15) / 0.2, 0, 1)
+        if name == "vib":
+            return a * np.sin(2 * np.pi * b * np.maximum(t - 0.15, 0)) * ramp
+        if name == "vibdown":
+            return -a * 0.5 * (1 - np.cos(2 * np.pi * b * np.maximum(t - 0.15, 0))) * ramp
+        if name == "scoop":
+            return -a * np.clip(1 - t / b, 0, 1) ** 1.5
+        if name == "rip":
+            return -a * np.clip(1 - t / b, 0, 1)
+        if name == "doit":
+            return a * np.clip((t - (dur - b)) / b, 0, 1) ** 2
+        return np.zeros_like(t)
     if mod == "vibrato":  # +-60 cents at 5.5 Hz after a 150 ms straight start (a wide cornet vibrato)
         return 60 * np.sin(2 * np.pi * 5.5 * np.maximum(t - 0.15, 0)) * np.clip((t - 0.15) / 0.2, 0, 1)
     if mod == "scoop":  # up from 200 cents flat over 120 ms
@@ -291,7 +344,7 @@ def render_samples(notes: list[dict], seconds: float, seed: int) -> np.ndarray:
             t = np.arange(ln) / SR
             cents = cents_curve(n["mod"], t, n["offset"] - n["onset"]) + rng.normal(0, 3)
             pos = smp.start if m == 0 else smp.steady + int(rng.uniform(0, 0.3) * SR)
-            pieces.append((a - buf_start, _voice(smp, pos, ln, n["pitch"], cents)))
+            pieces.append((a - buf_start, _voice(smp, pos, ln, n["pitch"], cents) * amp_curve(n["mod"], t).astype(np.float32)))
         total = int(chain[-1]["offset"] * SR) - buf_start + xf
         buf = np.zeros(total, np.float32)
         for m, (off, y) in enumerate(pieces):
@@ -351,7 +404,9 @@ def render_sf2(notes: list[dict], seconds: float) -> np.ndarray:
                 c = float(cents_curve(n["mod"], np.array([tt]), n["offset"] - n["onset"])[0])
                 val = int(np.clip(round(c / 200 * 8192), -8192, 8191))
                 ev.append((a + int(tt * tps), 1, mido.Message("pitchwheel", channel=ch, pitch=val)))
-            ev.append((b, 1, mido.Message("pitchwheel", channel=ch, pitch=0)))
+            # back to centre once the release has died away, not at the note-off (a bend back up in the tail)
+            nxt = min((m["onset"] for m in notes if m["onset"] > n["onset"]), default=n["offset"] + 0.6)
+            ev.append((int((nxt - 0.02) * tps), 1, mido.Message("pitchwheel", channel=ch, pitch=0)))
     ev.sort(key=lambda e: (e[0], e[1]))
     tr = mido.MidiTrack()
     mid.tracks.append(tr)
@@ -459,7 +514,7 @@ def track(clips: list[Path], only: set[str]) -> None:
 FROZEN = ("reference.json", "oracle.beats", "small0.beats", "sw.mid", "bp.mid", "sw.contour.npz")
 
 
-FROZEN_RENDERS = ("samples", "room")  # the real-sample clips; the SoundFont clips stay local
+FROZEN_RENDERS = ("samples", "room")  # the real-sample clips (and their separated controls); the SoundFont clips stay local
 
 
 def freeze(clips: list[Path]) -> None:
@@ -481,8 +536,14 @@ def freeze(clips: list[Path]) -> None:
 SEP_OUT = DATA / "eval" / "fast-notes-sep"
 SEP_CLIPS = ("alt-i1-t120-s4-slur-samples", "alt-i2-t120-s6-slur-samples", "alt-i12-t120-s4-slur-samples",
              "alt-i3-t120-s6-tongue-samples", "run-i0-t120-s4-slur-samples", "run-i0-t120-s6-tongue-samples",
-             "arp-i0-t120-s4-tongue-samples", "repeat-i0-t120-s4-tongue-samples", "ctl-vibrato-i0-t70-s1-slur-samples",
-             "ctl-scoop-i0-t100-s1-tongue-samples")
+             "arp-i0-t120-s4-tongue-samples", "repeat-i0-t120-s4-tongue-samples",
+             # slurred alternation: every interval, two rates
+             *(f"alt-i{i}-t{t}-s4-slur-samples" for i in (1, 2, 3, 5, 12) for t in (90, 150)
+               if (i, t) not in ((1, 120), (12, 120))),
+             # every control
+             "ctl-vibrato-i0-t70-s1-slur-samples", "ctl-scoop-i0-t100-s1-tongue-samples", "ctl-fall-i0-t100-s1-tongue-samples",
+             *(f"{k}-i0-t100-s1-tongue-samples" for k in CONTROLS if k not in ("ctl-vibrato", "ctl-scoop", "ctl-fall")),
+             "ctl-slowslur-i1-t80-s1-slur-samples", "ctl-slowslur-i12-t80-s1-slur-samples")
 BED = [(43, 55, 59, 62), (48, 55, 60, 64), (50, 57, 62, 66), (43, 55, 59, 62)]  # G C D G, one chord per bar
 
 
@@ -505,6 +566,9 @@ def separated(src: Path = OUT, dst: Path = SEP_OUT) -> list[Path]:
     with tempfile.TemporaryDirectory() as tmp:
         for cid in SEP_CLIPS:
             c = src / cid
+            if (dst / cid / "audio.wav").exists():
+                out.append(dst / cid)
+                continue
             ref = json.loads((c / "reference.json").read_text())
             y, _ = sf.read(c / "audio.wav", dtype="float32")
             bed = band_bed(len(y) / SR, ref["seconds_per_beat"])[: len(y)]
@@ -564,6 +628,70 @@ def urmp(dst: Path = URMP_OUT) -> list[Path]:
     return out
 
 
+VIBRATO_IN = DATA / "eval" / "fast-notes-vibrato"  # vib-<midi>-{dry,hall}.wav: Iowa MIS trumpet vibrato sustains
+VIBRATO_OUT = DATA / "eval" / "fast-notes-realvib"
+
+
+def real_vibrato(src: Path = VIBRATO_IN, dst: Path = VIBRATO_OUT) -> list[Path]:
+    """Real trumpet vibrato (35 University of Iowa MIS "Trumpet.vib.ff" sustains, dry and convolved with the
+    OpenAIR Usina hall response), one sustained note each: a clip per file, its one note spanning the voiced
+    part, on oracle 120 BPM beats. Track with `track --root`."""
+    out = []
+    for w in sorted(src.glob("vib-*-*.wav")):
+        _, midi, env = w.stem.split("-")
+        c = dst / f"ctl-realvib-i0-t120-s1-{env}-{midi}"
+        c.mkdir(parents=True, exist_ok=True)
+        y, sr = sf.read(w, dtype="float32")
+        env_db = 20 * np.log10(np.sqrt(np.convolve(y ** 2, np.ones(sr // 50) / (sr // 50), "same")) + 1e-9)
+        on = np.nonzero(env_db > env_db.max() - 30)[0]
+        a, b = on[0] / sr, on[-1] / sr
+        sf.write(c / "audio.wav", y, sr, subtype="PCM_16")
+        beats = [(k * 0.5, k % 4 + 1) for k in range(int(len(y) / sr / 0.5) + 2)]
+        (c / "oracle.beats").write_text("".join(f"{t:.6f}\t{p}\n" for t, p in beats))
+        spec = {"kind": "ctl-realvib", "interval": 0, "tempo": 120, "subdiv": 1, "art": env, "render": env}
+        note = {"pitch": int(midi), "onset": float(a), "offset": float(b), "beat": 0.0, "dur": 0.0, "role": "figure",
+                "mod": "real", "slur": False}
+        (c / "reference.json").write_text(json.dumps({"spec": spec, "id": c.name, "notes": [note]}, indent=1))
+        out.append(c)
+    return out
+
+
+URMP_SEP_OUT = DATA / "eval" / "fast-notes-urmpsep"
+URMP_SOLO_TRUMPET = ("09_Jesus_tpt_vn", "10_March_tpt_sax", "18_Nocturne_vn_fl_tpt", "20_Pavane_tpt_vn_vc")
+
+
+def urmp_separated(dst: Path = URMP_SEP_OUT) -> list[Path]:
+    """Real brass with a band behind it and real separation: the URMP pieces with one trumpet, their mix
+    (AuMix) through Mega-53, the trumpet stem scored against the trumpet's URMP notes. Local only (URMP)."""
+    from .gpulock import gpu_lock
+
+    out = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in URMP_SOLO_TRUMPET:
+            piece = URMP / name
+            c = dst / name
+            c.mkdir(parents=True, exist_ok=True)
+            if not (c / "audio.wav").exists():
+                stems = Path(tmp) / name
+                with gpu_lock():
+                    subprocess.run(["python3", str(adapter_dir("mega53").parent / "run_adapter.py"), "mega53",
+                                    str(next(piece.glob("AuMix_*.wav"))), str(stems)], check=True, capture_output=True)
+                t, sr = sf.read(stems / "trumpet.flac", dtype="float32", always_2d=True)
+                sf.write(c / "audio.wav", t.mean(axis=1), sr, subtype="PCM_16")
+            rows = [list(map(float, ln.split())) for ln in next(piece.glob("Notes_*_tpt_*.txt")).read_text().splitlines()
+                    if ln.strip()]
+            on = np.array([r[0] for r in rows])
+            ioi = np.diff(on)
+            near = np.minimum(np.r_[np.inf, ioi], np.r_[ioi, np.inf])
+            notes = [{"pitch": int(round(69 + 12 * np.log2(r[1] / 440))), "onset": r[0], "offset": r[0] + r[2],
+                      "role": "figure" if g < FAST_IOI else "lead", "mod": None, "slur": False}
+                     for r, g in zip(rows, near)]
+            spec = {"kind": "urmp", "interval": 0, "tempo": 0, "subdiv": 0, "art": "sep", "render": "urmp-sep"}
+            (c / "reference.json").write_text(json.dumps({"spec": spec, "id": c.name, "notes": notes}, indent=1))
+            out.append(c)
+    return out
+
+
 CHORALES_SOLO = ROOT / "eval" / "fixtures" / "choralebricks-solo"
 CHORALES_OUT = DATA / "eval" / "fast-notes-chorales"
 
@@ -598,7 +726,7 @@ def chorales(dst: Path = CHORALES_OUT) -> list[Path]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("cmd", choices=("build", "track", "freeze", "list", "urmp", "chorales", "separate"))
+    ap.add_argument("cmd", choices=("build", "track", "freeze", "list", "urmp", "chorales", "separate", "realvib", "urmpsep"))
     ap.add_argument("--only", help="substring of the clip ids to process")
     ap.add_argument("--tools", default="sw,bp,beats", help="track: which trackers (sw, bp, beats)")
     ap.add_argument("--root", type=Path, default=OUT)
@@ -607,6 +735,16 @@ def main() -> None:
     if args.cmd == "urmp":
         made = urmp()
         print(len(made), "URMP trumpet parts ->", URMP_OUT)
+        return
+    if args.cmd == "urmpsep":
+        made = urmp_separated()
+        track(made, {"sw", "bp", "beats"})
+        print(len(made), "separated URMP trumpet parts ->", URMP_SEP_OUT)
+        return
+    if args.cmd == "realvib":
+        made = real_vibrato()
+        track(made, {"sw", "bp"})
+        print(len(made), "real vibrato clips ->", VIBRATO_OUT)
         return
     if args.cmd == "separate":
         print(len(separated()), "separated clips ->", SEP_OUT)
