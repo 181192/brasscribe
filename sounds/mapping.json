@@ -1346,7 +1346,7 @@
           "midi-channel": 10,
           "midi-program": 1
         },
-        "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1, selected by the part's <midi-program>2.",
+        "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1.",
         "channel_gain_db": -13.0,
         "single_voice_gain_db": -13.0,
         "layered": false
