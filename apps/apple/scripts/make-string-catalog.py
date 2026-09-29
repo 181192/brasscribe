@@ -149,6 +149,7 @@ NB = {
     "Standard": "Standard",
     "Start Brasscribe on your computer with “brasscribe serve --host 0.0.0.0” and type the six-digit code it shows.": "Start Brasscribe på datamaskinen med «brasscribe serve --host 0.0.0.0» og skriv inn den sekssifrede koden som vises.",
     "Start recording": "Start opptak",
+    "Play the bar with this note": "Spill takten med denne tonen",
     "Stop": "Stopp",
     "Switch between the score and the original recording at the same place.": "Bytt mellom partituret og originalopptaket på samme sted.",
     "Talking score": "Talende partitur",

@@ -66,6 +66,7 @@
     <string name="review_listen_side_by_side">%1$s. Lytt til opptaket og partituret side om side.</string>
     <string name="change_note">Endre tone …</string>
     <string name="change_note_title">Endre tone</string>
+    <string name="change_note_preview">Spill takten med denne tonen</string>
     <plurals name="notes_to_check">
         <item quantity="one">%d tone å sjekke</item>
         <item quantity="other">%d toner å sjekke</item>

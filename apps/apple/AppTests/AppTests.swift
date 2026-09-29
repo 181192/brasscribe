@@ -241,6 +241,38 @@ func testVideo() -> URL? {
     #expect(!FileManager.default.fileExists(atPath: piece.reviewChangesURL.path))
 }
 
+/// Change note…'s "Play the bar with this note" plays the bar with the candidate pitch on the sampler,
+/// stops on a second press, and writes nothing to the piece.
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func previewPlaysTheCandidateWithoutSaving() async throws {
+    let dir = try #require(fixtureDir())
+    let xmlData = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
+    let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+    let r = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xmlData, available: [.musicXML, .composition])
+    let piece = try Piece.create(title: "Preview", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: nil)
+    defer { piece.delete() }
+    let xml = try piece.musicXML()
+    let score = try MusicXMLParser.parse(xmlData)
+    let target = try #require(ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp)).first)
+    guard case .pitched(let written) = score.parts[target.partIndex].notes[target.noteIndex].kind else { Issue.record("not a pitched note"); return }
+    let candidate = SpelledPitch.spelling(midi: written.midi + 1, fifths: 0)
+
+    let preview = NotePreview()
+    await preview.play(piece: piece, xml: xml, target: target, pitch: candidate, bars: target.bar...target.bar)
+    let model = try #require(preview.model)
+    try #require(model.engine != nil, "no audio engine here: \(model.loadError ?? "")")
+    // The preview's score has the candidate in place of the note; the piece's score is untouched.
+    guard case .pitched(let heard) = try #require(model.score.part(id: target.partID)).notes[target.noteIndex].kind else { Issue.record("not pitched"); return }
+    #expect(heard.midi == written.midi + 1)
+    #expect(preview.isPlaying)
+    #expect(model.listening == target.bar...target.bar)
+    preview.stop(announce: true)
+    #expect(!preview.isPlaying)
+    #expect(try piece.musicXML() == xml)
+    #expect(!FileManager.default.fileExists(atPath: piece.reviewChangesURL.path))
+    preview.close()
+    #expect(preview.model == nil)
+}
+
 /// Mac windows stay whole on their screen's visible frame (AppKit coordinates, y up).
 @Test func windowFitKeepsAWindowOnItsScreen() {
     // a laptop's visible frame: the Dock takes the bottom 70 pt, the menu bar the top 33

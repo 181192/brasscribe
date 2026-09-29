@@ -18,6 +18,8 @@ struct ChangeNoteSheet: View {
     @State private var fifths = 0
     @State private var transpose = 0
     @State private var saveError: String?
+    /// Plays the bar with the pitch chosen here, before it is saved.
+    @State private var preview = NotePreview()
 
     var body: some View {
         NavigationStack {
@@ -49,6 +51,7 @@ struct ChangeNoteSheet: View {
                         }
                     }
                 }
+                previewButton
                 Text("Save changes the note in the score. Listen to it, then keep it to take the ? mark away.")
                     .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -59,6 +62,7 @@ struct ChangeNoteSheet: View {
             .frame(maxHeight: .infinity, alignment: .top)
             #endif
             .padding(Space.s6)
+            .modifier(ScrollsOnPhone())
             .pageBackground()
             .navigationTitle(Text("Change note"))
             .toolbar {
@@ -71,10 +75,33 @@ struct ChangeNoteSheet: View {
                 Button("OK") { saveError = nil }
             } message: { Text(saveError ?? "") }
             .task { load() }
+            .onChange(of: written) { preview.stop() }
+            .onDisappear { preview.close() }
         }
         #if os(macOS)
         .sheetSize(minWidth: 420, idealWidth: 480, maxWidth: 560)
         #endif
+    }
+
+    /// "Play the bar with this note", and "Stop" in the same place while it plays: the bar with the pitch
+    /// chosen here, on the band's sampler, before anything is saved.
+    private var previewButton: some View {
+        let playing = preview.isPlaying
+        return Button { togglePreview() } label: {
+            ListenStopLabel(playing: playing, listenText: "Play the bar with this note").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(SecondaryButtonStyle(minHeight: 48))
+        .keyboardShortcut(.space, modifiers: [])
+        .disabled(written == nil)
+        .accessibilityLabel(playing ? Text("Stop") : Text("Play the bar with this note"))
+        .accessibilityIdentifier("previewNote")
+    }
+
+    private func togglePreview() {
+        guard let written else { return }
+        if preview.isPlaying { preview.stop(announce: true); return }
+        let bars = target.bar...max(target.bar, target.lastBar ?? target.bar)
+        Task { await preview.play(piece: piece, xml: xml, target: target, pitch: written, bars: bars) }
     }
 
     /// Model pitches, written for this part, grouped with the models that heard each one.
@@ -128,5 +155,57 @@ enum ReviewChange {
         } else {
             try piece.saveMusicXML(MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: to))
         }
+    }
+}
+
+/// On the phone the sheet scrolls, so every control stays reachable at the largest text sizes.
+private struct ScrollsOnPhone: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        ScrollView { content }
+        #else
+        content
+        #endif
+    }
+}
+
+/// Change note…'s preview: the score with the candidate pitch in place of the note, played on its own
+/// sampler for the note's bars. Nothing is written; the model is kept while the pitch stays the same.
+@MainActor @Observable
+final class NotePreview {
+    private(set) var model: PracticeModel?
+    private var madeFor: Int?
+    /// A model is being made for a press; a second press meanwhile stops it before it plays.
+    private(set) var preparing = false
+
+    var isPlaying: Bool { preparing || model?.listening != nil }
+
+    func play(piece: Piece, xml: String, target: ReviewItem, pitch: SpelledPitch, bars: ClosedRange<Int>) async {
+        if model == nil || madeFor != pitch.midi {
+            model?.stopAll()
+            model = nil
+            preparing = true
+            guard let candidate = try? MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: pitch),
+                  let score = try? MusicXMLParser.parse(Data(candidate.utf8)) else { preparing = false; return }
+            let m = await PracticeModel.open(piece, score: score, composition: piece.loadComposition())
+            guard preparing else { m.stopAll(); return }  // stopped while it was being made
+            preparing = false
+            model = m
+            madeFor = pitch.midi
+        }
+        model?.listen(bars: bars, original: false)
+    }
+
+    func stop(announce: Bool = false) {
+        preparing = false
+        model?.stopListening(announce: announce)
+    }
+
+    /// The sheet has gone: the preview's engine goes with it.
+    func close() {
+        preparing = false
+        model?.stopAll()
+        model = nil
+        madeFor = nil
     }
 }

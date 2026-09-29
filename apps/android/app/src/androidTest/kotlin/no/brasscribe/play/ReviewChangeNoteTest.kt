@@ -90,6 +90,38 @@ class ReviewChangeNoteTest {
 
     private fun melodyPitches() = vm.result.value!!.composition!!.voices.first { it.role == VoiceRole.MELODY }.notes.map { it.pitch }
 
+    /** "Play the bar with this note" plays the candidate before Save, stops on a second press, and writes nothing. */
+    @Test
+    fun previewPlaysTheCandidateWithoutSaving() {
+        val xmlBefore = vm.result.value!!.musicXml
+        val pitchesBefore = melodyPitches()
+        rule.onNodeWithText("Change note…").performScrollTo().performClick()
+        rule.onNodeWithText("Up a semitone").performClick()
+        rule.onNodeWithTag("preview-note").performScrollTo().assertHeightIsAtLeast(48.dp).performClick()
+        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        val bar = vm.clipPlaying.value
+        assertNotNull("the preview plays", bar)
+        // What plays is the bar with the candidate: another score, and the bar sounds different.
+        rule.waitUntil(20_000) { vm.lastPreviewXml != null }
+        val candidate = vm.lastPreviewXml!!
+        assertTrue("the preview has the candidate", candidate != xmlBefore)
+        val context = rule.activity.applicationContext
+        val old = BarAudio.render(context, xmlBefore, bar!!)!!
+        val heard = BarAudio.render(context, candidate, bar)!!
+        assertTrue("the candidate sounds different", old.samples.size != heard.samples.size ||
+            old.samples.indices.any { abs(old.samples[it] - heard.samples[it]) > 1e-3f })
+        rule.onNodeWithTag("preview-note").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Play the bar with this note").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(null, vm.clipPlaying.value)
+        // Nothing was written: same score, no change on the card.
+        assertEquals(xmlBefore, vm.result.value!!.musicXml)
+        assertEquals(pitchesBefore, melodyPitches())
+        assertTrue(!vm.result.value!!.changedOnPhone)
+        rule.onNodeWithText("Cancel").performClick()
+        rule.waitForIdle()
+        assertEquals(null, changedText())
+    }
+
     @Test
     fun saveStaysOnTheNoteUntilKeep() {
         val before = position()

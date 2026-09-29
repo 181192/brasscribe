@@ -341,7 +341,10 @@ fun ReviewScreen(vm: PlayViewModel) {
                     )
                     if (changing && note != null) ChangeNoteSheet(
                         written = note.pitch, evidence = evidence, pitchLabel = label,
-                        dismiss = { changing = false },
+                        dismiss = { vm.stopListening(announce = false); changing = false },
+                        previewing = playingBar == current.bar,
+                        preview = { shift -> vm.previewNote(current.bar, voiceId, note.start, note.pitch, shift) },
+                        stopPreview = vm::stopListening,
                         // Save writes the note and stays on it, still open: listen, change again or undo, then Keep.
                         save = { shift ->
                             changing = false
@@ -614,7 +617,10 @@ private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (Int) -> String, dismiss: () -> Unit, save: (Int) -> Unit) {
+private fun ChangeNoteSheet(
+    written: Int, evidence: NoteEvidence?, pitchLabel: (Int) -> String, dismiss: () -> Unit, save: (Int) -> Unit,
+    previewing: Boolean, preview: (Int) -> Unit, stopPreview: () -> Unit,
+) {
     var shift by remember(written) { mutableIntStateOf(0) }
     val c = BrasscribeTheme.colors
     // Fully open, and scrollable, so Save is reachable at large text sizes.
@@ -648,6 +654,8 @@ private fun ChangeNoteSheet(written: Int, evidence: NoteEvidence?, pitchLabel: (
                     }
                 }
             }
+            // Hear the bar with this pitch before saving: rendered on the phone, nothing is written yet.
+            ListenButton(previewing, { preview(shift) }, stopPreview, listenText = stringResource(R.string.change_note_preview), tag = "preview-note")
             PrimaryButton(stringResource(R.string.save), { save(shift) }, enabled = shift != 0)
             PlainButton(stringResource(R.string.cancel), dismiss, Modifier.fillMaxWidth())
         }
@@ -739,12 +747,14 @@ private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, b
  * that wraps the longer one does not change the height. Enter and Space both press it.
  */
 @Composable
-fun ListenButton(playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier) {
-    val listenText = stringResource(R.string.action_listen_bar)
+fun ListenButton(
+    playing: Boolean, listen: () -> Unit, stop: () -> Unit, modifier: Modifier = Modifier,
+    listenText: String = stringResource(R.string.action_listen_bar), tag: String = "listen-bar",
+) {
     val stopText = stringResource(R.string.listen_stop)
     androidx.compose.material3.FilledTonalButton(
         if (playing) stop else listen,
-        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged("listen-bar")
+        modifier.fillMaxWidth().heightIn(min = 48.dp).tagged(tag)
             // Compose buttons take Enter; Space is added so a keyboard user can start and stop with either.
             .onPreviewKeyEvent { e ->
                 if (e.key != androidx.compose.ui.input.key.Key.Spacebar) return@onPreviewKeyEvent false

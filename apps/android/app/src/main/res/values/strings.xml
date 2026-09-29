@@ -68,6 +68,7 @@
     <string name="review_listen_side_by_side">%1$s. Listen to the original and the score side by side.</string>
     <string name="change_note">Change note…</string>
     <string name="change_note_title">Change note</string>
+    <string name="change_note_preview">Play the bar with this note</string>
     <plurals name="notes_to_check">
         <item quantity="one">%d note to check</item>
         <item quantity="other">%d notes to check</item>

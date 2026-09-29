@@ -876,12 +876,15 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrDefault(false)
     }
 
-    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
-        val current = result.value ?: return false
-        val composition = current.composition ?: return false
-        val voice = composition.voice(voiceId) ?: return false
+    /**
+     * The score with the note at [start] moved from [pitch] by [semitones], arranged as Save writes it: the
+     * Composition and the MusicXML. Nothing is kept; null when the note is not there or the score can't be written.
+     */
+    private fun changedScore(current: TranscriptionResult, voiceId: String, start: Int, pitch: Int, semitones: Int): Pair<Composition, String>? {
+        val composition = current.composition ?: return null
+        val voice = composition.voice(voiceId) ?: return null
         val noteIndex = voice.notes.indexOfFirst { it.start == start && it.pitch == pitch }
-        if (noteIndex < 0) return false
+        if (noteIndex < 0) return null
         val updatedVoice = voice.copy(notes = voice.notes.mapIndexed { index, note ->
             if (index == noteIndex) note.copy(pitch = (note.pitch + semitones).coerceIn(0, 127)) else note
         })
@@ -902,8 +905,13 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val arranged = runCatching { arrangeComposition(updatedComposition, options, current.isSoloTake) }.getOrNull()
         val xml = arranged?.second
             ?: runCatching { container.core.toMusicXml(updatedComposition, parts) }.getOrNull()
-            ?: return false
-        val finalComposition = arranged?.first ?: updatedComposition
+            ?: return null
+        return (arranged?.first ?: updatedComposition) to xml
+    }
+
+    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
+        val current = result.value ?: return false
+        val (finalComposition, xml) = changedScore(current, voiceId, start, pitch, semitones) ?: return false
         val newPitch = (pitch + semitones).coerceIn(0, 127)
         // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
         val evidence = current.evidence?.let { e ->
@@ -1025,6 +1033,31 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         // the engine's render is mastered hot: it plays at the same loudness as the recording
         return withContext(Dispatchers.Default) { renderedLevel.slice(rendered, from, to, r.musicXml) }
     }
+
+    /**
+     * Change note…'s "Play the bar with this note": [bar] with the note at [start] moved from [pitch] by
+     * [semitones], before it is saved. It is arranged as Save would write it and rendered on the phone (the
+     * band SoundFont's subset for the bar, [no.brasscribe.play.score.BarAudio]); nothing is kept. Pressing it
+     * again while it plays stops it.
+     */
+    fun previewNote(bar: Int, voiceId: String, start: Int, pitch: Int, semitones: Int) {
+        val current = result.value ?: return
+        listening.toggle(bar) {
+            val audio = withContext(Dispatchers.Default) {
+                val xml = if (semitones == 0) current.musicXml else changedScore(current, voiceId, start, pitch, semitones)?.second
+                lastPreviewXml = xml
+                xml?.let { x ->
+                    runCatching { no.brasscribe.play.score.BarAudio.render(getApplication(), x, bar) }
+                        .onFailure { android.util.Log.w("BrasscribePlay", "bar $bar not rendered for the preview", it) }.getOrNull()
+                }
+            }
+            BarListening.Clips(listOfNotNull(audio), withRecording = false)
+        }
+    }
+
+    /** The score the last preview played (tests check it has the candidate). */
+    @androidx.annotation.VisibleForTesting
+    @Volatile internal var lastPreviewXml: String? = null
 
     fun stopListening(announce: Boolean = true) = listening.stop(announce)
 

@@ -219,12 +219,27 @@ final class PracticeModel {
         return m
     }
 
+    /// A model for a score that is not saved (Change note…'s preview of a candidate pitch), made the way
+    /// `open` makes one: the playback engine off the main actor.
+    static func open(_ piece: Piece, score: Score, composition: Composition?) async -> PracticeModel {
+        MediaTools.configureSession(recording: false)
+        let engine = await Task.detached(priority: .userInitiated) {
+            Opened.Engine(made: Result { try PracticeModel.makeEngine(piece: piece, score: score, composition: composition) })
+        }.value
+        let m = PracticeModel(piece: piece, score: score, composition: composition)
+        m.adopt(engine.made)
+        return m
+    }
+
     /// What `open` prepares off the main actor. The engine is made there and handed over once,
     /// before anything else touches it; from then on only the main actor uses it.
     private struct Opened: @unchecked Sendable {
         let score: Score
         let composition: Composition?
         let engine: Result<PlaybackEngine, Error>
+
+        /// An engine made off the main actor, handed over once.
+        struct Engine: @unchecked Sendable { let made: Result<PlaybackEngine, Error> }
 
         init(piece: Piece) throws {
             score = try piece.loadScore()

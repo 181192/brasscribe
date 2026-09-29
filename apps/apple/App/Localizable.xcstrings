@@ -3071,6 +3071,16 @@
         }
       }
     },
+    "Play the bar with this note": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill takten med denne tonen"
+          }
+        }
+      }
+    },
     "Play the piece, record a rehearsal, or open a file you have.": {
       "localizations": {
         "nb": {
