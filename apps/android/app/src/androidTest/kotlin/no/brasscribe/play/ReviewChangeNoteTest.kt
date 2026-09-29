@@ -5,19 +5,23 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
-import androidx.compose.ui.test.junit4.accessibility.disableAccessibilityChecks
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -49,10 +53,11 @@ class ReviewChangeNoteTest {
 
     @Before
     fun setUp() {
-        // ATF checks are not on for every action: the bottom sheet's own Material 3 drag handle (32 dp
-        // wide) fails the touch-target check. The review screen is checked once the card shows the change.
+        // ATF checks on every action, the Change note sheet included (its drag handle is a 48 dp target).
+        rule.enableAccessibilityChecks()
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
+        if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()
         val assets = InstrumentationRegistry.getInstrumentation().context.assets
         (rule.activity.application as PlayApplication).container.fixtureSource =
             FixtureSource { name -> runCatching { assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
@@ -95,6 +100,9 @@ class ReviewChangeNoteTest {
         // Save with nothing changed does nothing.
         rule.onNodeWithText("Change note…").performScrollTo().performClick()
         rule.onNodeWithText("Save").assertIsNotEnabled()
+        // The sheet's drag handle (TalkBack's dismiss and expand actions) is a full-size target.
+        rule.onNode(hasContentDescription("Drag handle", substring = true)).assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
+        rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithText("Cancel").performClick()
         rule.waitForIdle()
 
@@ -116,9 +124,7 @@ class ReviewChangeNoteTest {
             n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains("Changed to") } == true
         }).fetchSemanticsNodes().first()
         assertTrue(card.config[SemanticsActions.CustomActions].any { it.label == "Undo change" })
-        rule.enableAccessibilityChecks()
         rule.onRoot().tryPerformAccessibilityChecks()
-        rule.disableAccessibilityChecks()
 
         // Listen plays the bar as it is now: rendered on the phone from the changed score.
         val context = rule.activity.applicationContext

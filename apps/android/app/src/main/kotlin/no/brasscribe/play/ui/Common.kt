@@ -437,7 +437,14 @@ fun PlaySheet(
         onDismissRequest = onDismiss,
         containerColor = containerColor,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        dragHandle = if (dragHandle) ({ androidx.compose.material3.BottomSheetDefaults.DragHandle() }) else null,
+        // The Material 3 handle is 32 dp wide; the sheet puts its dismiss/expand actions on the handle's own
+        // bounds, so a 48 dp box around it makes that a full-size touch target (and passes ATF's check).
+        dragHandle = if (dragHandle) ({
+            androidx.compose.foundation.layout.Box(
+                Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) { androidx.compose.material3.BottomSheetDefaults.DragHandle() }
+        }) else null,
     ) {
         androidx.compose.foundation.layout.Column(
             Modifier.windowInsetsPadding(
