@@ -2,7 +2,7 @@
 
 A phrase that peaks above the solo range must not lose its peak an octave down note by note: a
 rising line would then fall a seventh and climb back, and a trill would become leaps of a tenth.
-Only a lone outlier (both neighbours inside the range, far from it) moves on its own.
+A lone outlier moving on its own is covered in test_soloist.py.
 """
 
 import pytest
@@ -31,7 +31,3 @@ def test_a_phrase_past_the_solo_range_keeps_its_direction(pitches):
     assert all(lo <= p <= hi for p in placed)
     assert direction(placed) == direction(pitches), placed
 
-
-def test_a_lone_outlier_still_moves_alone():
-    placed = [n.pitch for n in place_soloist(line([72, 74, 76, 90, 79, 81]), BRASS_BAND.lead_part, [])]
-    assert placed == [72, 74, 76, 78, 79, 81]
