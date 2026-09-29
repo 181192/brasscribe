@@ -183,8 +183,14 @@ final class WindowSizeUITests: XCTestCase {
         XCTAssertTrue(visibleFrame.insetBy(dx: -1, dy: -1).contains(tallSheet), "the Settings sheet \(tallSheet) stays inside the visible frame \(visibleFrame)")
         let added = tall.height - short.height
         guard added > 100 else { throw XCTSkip("the window did not get taller (\(short.height) → \(tall.height) pt)") }
-        XCTAssertLessThan(tallSheet.height - shortSheet.height, max(60, 0.5 * added),
-                          "the Settings sheet is \(shortSheet.height) pt in a \(short.height) pt window and \(tallSheet.height) pt in a \(tall.height) pt one")
+        // Settings is longer than the screen, so its sheet takes the room it is given, which ends at the
+        // window's bottom or at the Dock, and scrolls inside. A sheet whose content fits stops short of
+        // both, and must keep its height in a taller window.
+        let room = min(tall.maxY, visibleFrame.maxY)
+        if tallSheet.maxY < room - 60 {
+            XCTAssertLessThan(tallSheet.height - shortSheet.height, max(60, 0.5 * added),
+                              "the Settings sheet is \(shortSheet.height) pt in a \(short.height) pt window and \(tallSheet.height) pt in a \(tall.height) pt one")
+        }
     }
 
     // MARK: - Helpers

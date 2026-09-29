@@ -117,20 +117,21 @@ final class MusicStandUITests: XCTestCase {
         enterStand()
         let first = position
         XCTAssertTrue(first.contains("1"), first)
+        // a page turns with a short fade, and the position line follows it
         app.safeTypeKey(next.rawValue, modifierFlags: [])
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 != first }, "the next-page key turns the page: \(position)")
         let second = position
-        XCTAssertNotEqual(second, first, "the next-page key turns the page")
         app.safeTypeKey(previous.rawValue, modifierFlags: [])
-        XCTAssertEqual(position, first, "the previous-page key turns back")
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 == first }, "the previous-page key turns back: \(position)")
         app.safeTypeKey(XCUIKeyboardKey.rightArrow.rawValue, modifierFlags: [])
-        XCTAssertEqual(position, second, "→ turns the page, not the bar")
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 == second }, "→ turns the page, not the bar: \(position)")
         app.safeTypeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
-        XCTAssertEqual(position, first, "← turns back")
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 == first }, "← turns back: \(position)")
         #if os(macOS)
         app.safeTypeKey(XCUIKeyboardKey.end.rawValue, modifierFlags: [])
-        XCTAssertNotEqual(position, first, "End goes to the last page")
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 != first }, "End goes to the last page: \(position)")
         app.safeTypeKey(XCUIKeyboardKey.home.rawValue, modifierFlags: [])
-        XCTAssertEqual(position, first, "Home goes to the first page")
+        XCTAssertTrue(waitForPosition(timeout: 5) { $0 == first }, "Home goes to the first page: \(position)")
         #endif
         #if os(macOS)
         app.safeTypeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
