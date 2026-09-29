@@ -10,9 +10,15 @@ public struct PlaybackNote: Sendable, Equatable {
 }
 
 public extension Part {
-    /// Notes to sound, with tied notes merged into one and rests dropped.
+    /// Ticks of one trill note: alphaTab's 32nds, so every player trills at the same rate.
+    static let trillTicks = Score.ticksPerQuarter / 8
+
+    /// Notes to sound, with tied notes merged into one and rests dropped. As alphaTab plays them: a staccato
+    /// note sounds half its value (and its tie is not followed), and a trill alternates the note and its written
+    /// auxiliary in 32nds over the whole tie chain, starting on the note.
     var playbackNotes: [PlaybackNote] {
         var out: [PlaybackNote] = []
+        var trills: [Int: Int] = [:] // index in out -> semitones to the auxiliary
         var open: [Int: Int] = [:] // pitch -> index in out of a note awaiting a tie stop
         for n in notes.sorted(by: { $0.startTick < $1.startTick }) {
             guard let p = n.midiPitch, n.durTicks > 0 else { continue }
@@ -21,10 +27,30 @@ public extension Part {
                 if !n.tieStart { open[p] = nil }
                 continue
             }
+            if n.staccato {
+                out.append(PlaybackNote(pitch: p, startTick: n.startTick, durTicks: max(1, n.durTicks / 2), velocity: n.velocity))
+                open[p] = nil
+                continue
+            }
             out.append(PlaybackNote(pitch: p, startTick: n.startTick, durTicks: n.durTicks, velocity: n.velocity))
+            if n.trill != 0 && !isPercussion { trills[out.count - 1] = n.trill }
             if n.tieStart { open[p] = out.count - 1 } else { open[p] = nil }
         }
-        return out
+        guard !trills.isEmpty else { return out }
+        var expanded: [PlaybackNote] = []
+        for (i, n) in out.enumerated() {
+            guard let up = trills[i] else { expanded.append(n); continue }
+            var tick = n.startTick, main = true
+            let end = n.startTick + n.durTicks
+            // alphaTab's loop: a last piece of 10 ticks or less is not played
+            while tick + 10 < end {
+                let len = min(Self.trillTicks, end - tick)
+                expanded.append(PlaybackNote(pitch: main ? n.pitch : n.pitch + up, startTick: tick, durTicks: len, velocity: n.velocity))
+                main.toggle()
+                tick += len
+            }
+        }
+        return expanded
     }
 }
 

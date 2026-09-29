@@ -35,6 +35,18 @@ public enum MusicXMLParser {
 
     public static func parse(url: URL) throws -> Score { try parse(Data(contentsOf: url)) }
 
+    /// Semitones from a trilled note up to its auxiliary: the next letter up, with the accidental-mark's
+    /// alteration, else the key signature's (accidentals earlier in the bar are not read, as the arranger writes it).
+    public static func trillSemitones(_ p: SpelledPitch, accidentalMark: String?, fifths: Int) -> Int {
+        let steps = ["C", "D", "E", "F", "G", "A", "B"]
+        let i = steps.firstIndex(of: p.step) ?? 0
+        let auxStep = steps[(i + 1) % 7]
+        let marks = ["sharp": 1, "natural": 0, "flat": -1, "double-sharp": 2, "sharp-sharp": 2, "flat-flat": -2]
+        let alter = accidentalMark.flatMap { marks[$0] } ?? SpelledPitch.keyAlter(step: auxStep, fifths: fifths)
+        let aux = SpelledPitch(step: auxStep, alter: alter, octave: p.octave + (i == 6 ? 1 : 0))
+        return aux.midi - p.midi
+    }
+
     /// General MIDI drum key for an unpitched note, inverting the arranger's drum map
     /// (display position on a five-line percussion staff plus notehead).
     public static func drumKey(displayStep: String, displayOctave: Int, notehead: String) -> Int {
@@ -68,6 +80,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         var duration = 0, type: String?, dots = 0, tieStart = false, tieStop = false
         var hasPitch = false
         var accent = 0
+        var trill = false, trillAccidental: String?, staccato = false
     }
     struct RawMeasure { var number = "", start = 0, maxPos = 0, beats = 4, beatType = 4, fifths = 0 }
 
@@ -154,6 +167,8 @@ private final class Delegate: NSObject, XMLParserDelegate {
                 partDynamics[part, default: [:]][note == nil ? currentTick : partTick + toTicks(note!.isChord ? lastNoteStart : pos)] = name
                 mark = name
             }
+        case "trill-mark" where stack.dropLast().last == "ornaments": note?.trill = true
+        case "staccato" where stack.dropLast().last == "articulations": note?.staccato = true
         case "accent", "strong-accent":
             if stack.dropLast().last == "articulations", let n = note { note?.accent = max(n.accent, Dynamics.accentSteps[name] ?? 0) }
         case "wedge":
@@ -217,6 +232,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "step": if parent == "pitch" { note?.step = t }
         case "alter": if parent == "pitch" { note?.alter = Int(Double(t)?.rounded() ?? 0) }
         case "octave": if parent == "pitch" { note?.octave = Int(t) ?? 4 }
+        case "accidental-mark" where parent == "ornaments": note?.trillAccidental = t
         case "display-step": note?.displayStep = t
         case "display-octave": note?.displayOctave = Int(t) ?? 4
         case "notehead": note?.notehead = t
@@ -268,10 +284,13 @@ private final class Delegate: NSObject, XMLParserDelegate {
             kind = .pitched(written: sp)
             midi = sp.midi + chromatic + 12 * octaveChange
         }
+        var trill = 0
+        if n.trill, case .pitched(let sp) = kind { trill = MusicXMLParser.trillSemitones(sp, accidentalMark: n.trillAccidental, fifths: fifths) }
         partNotes[p, default: []].append(ScoreNote(
             kind: kind, measureIndex: measureIndex, startTick: partTick + toTicks(start),
             durTicks: toTicks(n.duration), type: n.type, dots: n.dots, isChordTone: n.isChord,
-            tieStart: n.tieStart, tieStop: n.tieStop, midiPitch: midi, dynamic: mark, accent: n.accent))
+            tieStart: n.tieStart, tieStop: n.tieStop, midiPitch: midi, dynamic: mark, accent: n.accent,
+            trill: trill, staccato: n.staccato))
     }
 
     /// Each note's velocity: its mark, moved by any hairpin it starts in, plus its accent.

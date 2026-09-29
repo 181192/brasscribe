@@ -85,6 +85,24 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         }
     }
 
+    /// Every note the sequencer plays for the first score, from the MIDI file the engine loads: track (part index),
+    /// channel, start and end in seconds, key, velocity (the score's, before the sampler's velocity map). Written to
+    /// `BRASSCRIBE_NOTES_OUT` (a TSV), for a note-by-note comparison with alphaSynth's (Windows RenderHarnessTests.Dump_notes).
+    @Test(.enabled(if: renderEnv["BRASSCRIBE_NOTES_OUT"] != nil)) func dumpNotes() throws {
+        let url = try #require(scores.first)
+        let (score, _) = try load(url)
+        let chans = MIDIWriter.channels(for: score)
+        var lines = ["track\tchannel\tstart\tend\tkey\tvelocity"]
+        for (i, part) in score.parts.enumerated() {
+            for n in part.playbackNotes {
+                lines.append(String(format: "%d\t%d\t%.4f\t%.4f\t%d\t%d", i, chans[part.id] ?? 0, score.seconds(atTick: n.startTick),
+                                    score.seconds(atTick: n.startTick + n.durTicks), n.pitch, n.velocity))
+            }
+        }
+        try lines.joined(separator: "\n").write(toFile: renderEnv["BRASSCRIBE_NOTES_OUT"]!, atomically: true, encoding: .utf8)
+        print("NOTES \(lines.count - 1) notes")
+    }
+
     @Test(.enabled(if: renderEnv["BRASSCRIBE_RENDER_PARTS"] == "1")) func renderPartsSolo() throws {
         let url = try #require(scores.first)
         try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)

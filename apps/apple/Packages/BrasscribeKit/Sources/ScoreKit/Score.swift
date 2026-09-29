@@ -164,6 +164,11 @@ public struct ScoreNote: Sendable, Equatable {
     public var accent: Int = 0
     /// MIDI velocity from the dynamics, hairpins and accents (`Dynamics`).
     public var velocity: Int = Dynamics.velocity(mark: Dynamics.defaultMark)
+    /// A trill mark: semitones up to the written auxiliary (`<trill-mark>` with its `<accidental-mark>`, else the
+    /// key); 0 for none.
+    public var trill: Int = 0
+    /// A staccato mark: the note sounds half its value, as alphaTab plays it.
+    public var staccato: Bool = false
 
     public var isRest: Bool { if case .rest = kind { return true } else { return false } }
     public var endTick: Int { startTick + durTicks }
@@ -176,6 +181,14 @@ public struct SpelledPitch: Sendable, Equatable, Hashable {
     public var octave: Int
 
     public init(step: String, alter: Int, octave: Int) { self.step = step; self.alter = alter; self.octave = octave }
+
+    /// The alteration a key signature of `fifths` gives a letter.
+    public static func keyAlter(step: String, fifths: Int) -> Int {
+        guard let i = Array("FCGDAEB").firstIndex(of: Character(step)) else { return 0 }
+        if fifths > 0 { return i < fifths ? 1 : 0 }
+        if fifths < 0 { return 6 - i < -fifths ? -1 : 0 }
+        return 0
+    }
 
     public var midi: Int {
         let base = ["C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11][step] ?? 0
