@@ -111,7 +111,7 @@ struct SettingsView: View {
                     }
                     NavigationLink { LicenceView() } label: { Text("Instrument Serif (SIL Open Font License 1.1)") }
                     Text("Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.")
-                    Text("Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.")
+                    Text("Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).")
                 } header: { Text("About") }
             }
             .formStyle(.grouped)

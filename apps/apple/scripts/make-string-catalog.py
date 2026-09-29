@@ -28,7 +28,7 @@ NB = {
     "Bars": "Takter",
     "Bars %lld–%lld: ad lib (free time)": "Takt %lld–%lld: ad lib (fritt tempo)",
     "Bars with uncertain notes": "Takter med usikre noter",
-    "Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.": "Grunnlyder: MuseScore General SoundFont (MIT), lastes ned separat.",
+    "Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).": "Bandlydene er laget av VSCO 2 Community Edition (CC0), University of Iowa Musical Instrument Samples og MS Basic (MIT).",
     "Braille music (BRF)": "Punktskriftnoter (BRF)",
     "Brass band": "Brassband",
     "Brasscribe Play": "Brasscribe Play",

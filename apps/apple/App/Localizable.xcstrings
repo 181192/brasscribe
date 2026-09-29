@@ -841,12 +841,12 @@
         }
       }
     },
-    "Baseline sounds: MuseScore General SoundFont (MIT), downloaded separately.": {
+    "Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Grunnlyder: MuseScore General SoundFont (MIT), lastes ned separat."
+            "value": "Bandlydene er laget av VSCO 2 Community Edition (CC0), University of Iowa Musical Instrument Samples og MS Basic (MIT)."
           }
         }
       }
