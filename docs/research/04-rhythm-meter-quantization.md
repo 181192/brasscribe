@@ -1,6 +1,8 @@
 # 04 — Rhythm, meter, quantization and structure
 
 Scope: beat/downbeat tracking, tempo and tempo changes, meter/time signature, performance-MIDI → notated rhythm (tuplets, ties, voices), end-to-end audio→score, voice separation for notation, and section/structure segmentation.
+**Status (2026-09-29):** desk research, acted on. Beat This! gives the beats (in the engine, and the small model on the phone); quantization, free time and bar-line cleanup are built in-house in `music/` and the Rust core ([10-benchmark-results.md](10-benchmark-results.md)).
+
 Research date: 2026-09-25. Repo/PyPI facts were pulled live with `gh api` / PyPI JSON on that date.
 
 ---

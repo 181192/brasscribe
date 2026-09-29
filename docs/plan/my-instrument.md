@@ -2,9 +2,12 @@
 
 The question from the owner: is Solo Cornet the right default for export and analysis? Should the player pick their own instrument and have Brasscribe adapt to it, and can the phone actually pick out the right notes for that instrument?
 
-This plan answers the capability question with measurements, designs the UX, and lists every place in the stack that has to change and the order to build it in. It is a plan only. No production code has changed.
+This plan answers the capability question with measurements, designs the UX, and lists every place in the stack that has to change and the order to build it in. Line numbers refer to commit `b9ced99` (`main`). Where the quartet plan (`docs/plan/kvartett.md`) already changes a line, this plan builds on its version and says so.
 
-Line numbers refer to commit `b9ced99` (`main`). Where the quartet plan (`docs/plan/kvartett.md` on `docs/kvartett-plan`, built on `feat/kvartett`) already changes a line, this plan builds on its version and says so.
+**Status (2026-09-29): partly done.** Built: seats, readings and part sources in the Python reference and the Rust core (with conformance), `lead="seat"`, the FFI, the engine, Studio, the `solo-instruments` and `seat-voices` benchmarks, and "What do you play?" in Play for Android and Apple (released in v0.2.0, with Trumpet added by `docs/plan/trumpet.md`). The user-flow fixes from `docs/research/16-user-flow-review.md` (seat clefs, the tune offered only where it fits, the percussion refusal, the "empty" part source) are on `main`.
+Left:
+- Windows (§5.7): "What do you play?" and the rest of the seat UI are on the unmerged `feat/my-instrument-windows`;
+- open questions 1–3 (§10).
 
 ---
 
@@ -29,7 +32,7 @@ Line numbers refer to commit `b9ced99` (`main`). Where the quartet plan (`docs/p
 - Write a solo take for that instrument.
 - Say plainly on every part whether it came from the recording or was arranged.
 
-One implementation agent can build this in 9 ordered steps (§9) after the connection, pairing and quartet branches merge. With no instrument chosen, every output stays byte-identical.
+It builds in 9 ordered steps (§9) after the connection, pairing and quartet branches merge. With no instrument chosen, every output stays byte-identical.
 
 ---
 
@@ -618,7 +621,7 @@ Record one real take each on euphonium, tenor horn and E♭ bass with a phone in
 
 ## 8. Merge conflicts to expect
 
-This builds on `feat/kvartett`, and it must land after it. The files below are also touched by the connection, pairing and sound branches (their agents are working now, so their diffs are not on `main` yet):
+This builds on `feat/kvartett`, and it must land after it. The files below are also touched by the connection, pairing and sound branches (when this was written their diffs were not on `main` yet):
 
 | File | Branch | Likelihood |
 |---|---|---|

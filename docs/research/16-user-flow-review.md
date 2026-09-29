@@ -1,5 +1,7 @@
 # 16 · User flow review: from recording to "my part"
 
+**Status (2026-09-29):** the top 5 fixes (§5) are on `main` and released in v0.2.0: the core's `tune` flag on Android, each mapped part in its seat's own clef, Full brass band disabled for whole-band takes, the percussion refusal with the "empty" part source, «Demp stemmen min», and "How should the score be?" reachable from every score. Refused job options carry a code the apps word in en and nb. Open: P1-5 and the other Windows findings, because Windows `main` still has no "What do you play?" (`feat/my-instrument-windows` is unmerged).
+
 **Question.** Does each step of Brasscribe Play (Android, Apple iOS/iPadOS/macOS, Windows) and Studio make sense? Does the player understand what is happening, and do they get the right part? The review looks hardest at players who are **not** the solo cornet.
 
 **Method.** The flows were walked in code and strings (en + nb) on `origin/main` at `157d9df`. Sources:

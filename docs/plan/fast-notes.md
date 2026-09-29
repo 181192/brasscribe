@@ -6,8 +6,12 @@ between two tones, that is often used on cornet/trumpet." This plan covers two k
 - fast passages: semiquavers and faster, and double or triple tonguing;
 - rapid alternation between two notes: lip trills, shakes, trills, and tremolo between two pitches.
 
-Status: built and reviewed. The results are in §7. An independent baseline is in
-[research/17-fast-notes-critique.md](../research/17-fast-notes-critique.md) (branch `review/fastnotes-critic`).
+**Status (2026-09-29): done, except the trill mark.** The contour split and the dense-grid quantizer
+(both at faithful difficulty only), their Python–Rust parity, and the faithful readability gate (65 % 16ths on the Solo Cornet) are on `main`, and the
+Mikkel golden and the on-device reference were promoted (the previous ones are in
+`data/golden-backups/before-fast-notes/`). The results are in §7. Left: trill notation (F5) and the weaker
+cases in §7.5, and the owner's listening check in §7.4. An independent review is in
+[research/17-fast-notes-critique.md](../research/17-fast-notes-critique.md).
 Where both measured the same thing, the numbers below agree with it.
 
 ## Short answer
@@ -374,7 +378,7 @@ Numbers are reported per stage before and after, in this file.
 
   Tests that pin counts from the golden move with it, and the fast tier runs on every area touched.
 
-  `data/golden` is never modified in place. The coordinator promotes it at merge.
+  `data/golden` is never modified in place. It is promoted at merge, because `data/` is shared by every checkout.
 - **Entertainer.** The case's golden (`data/runs/apple/entertainer-ref/layered`) gets the same treatment if the
   output changes.
 - **Rust parity.** `onsets.rs`, the `line` parameters and `quantize.rs` mirror Python exactly. New unit
@@ -508,9 +512,9 @@ trumpet 16 → 3 wrong notes, flugelhorn 17 → 8. No wrong note lost its mark.
 | `readability` suite | Now runs faithful, standard and easier. Faithful allows 65 % 16ths in the Solo Cornet part only; every other threshold is unchanged. Standard and easier pass the unchanged gate. The owner has to accept this density (7.4). |
 | `fast-notes` suite | Adds the new controls and the separated clips. Baselines are refreshed, with all the improvements in them. |
 | `solo-instruments` suite | Adds `q_missed`. Baselines are refreshed. |
-| Golden | New in `data/golden/mikkel-arranged-band.fast-notes`; its manifest names e688670f. `data/golden` itself is untouched. |
-| On-device reference | New in `data/runs/apple/entertainer-ref.fast-notes`. |
-| Pointers | Python, conformance, Android and Apple each read these through one constant. Promotion at merge swaps the directories back to the plain names. |
+| Golden | Built in `data/golden/mikkel-arranged-band.fast-notes` (its manifest names e688670f), then promoted to `data/golden/mikkel-arranged-band` at merge; the old one is in `data/golden-backups/before-fast-notes/`. |
+| On-device reference | Built in `data/runs/apple/entertainer-ref.fast-notes`, then promoted to `data/runs/apple/entertainer-ref`. |
+| Pointers | Python, conformance, Android, Apple and Windows each read these through one constant, which points at the plain names again since the promotion. |
 
 ### 7.4 For the owner to check by ear (Mikkel, faithful)
 

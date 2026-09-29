@@ -1,5 +1,7 @@
 # 00 — Research summary and architecture decision (draft)
 
+**Status (2026-09-29):** the §0 decision is built. The engine runs these stages through `ml/adapters/` (separator, Mega-53, MuScriptor, Basic Pitch, SwiftF0, Beat This!, PANNs), and the symbolic side is the Rust core with its Python reference. Later measurements are in [10-benchmark-results.md](10-benchmark-results.md); open engine work is in `docs/plan/apps-plan.md` §8.
+
 Date: 2026-09-25. Target machine: Apple M5 Pro, 48 GB, macOS 26.6.
 Detail and citations are in the area reports:
 

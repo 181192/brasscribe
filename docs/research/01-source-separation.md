@@ -1,5 +1,7 @@
 # 01 — Music Source Separation
 
+**Status (2026-09-29):** desk research, acted on. BS-RoFormer SW and Mega-53 run in the engine through `ml/adapters/separator` and `ml/adapters/mega53`; the decision is in [00-summary.md](00-summary.md) §0. Separation does not run on the phone.
+
 Research date: 2026-09-25. Scope: separation as a front end for brasscribe (recorded audio → musical understanding → brass-band arrangement). Desk research only; nothing was installed or run.
 
 ---

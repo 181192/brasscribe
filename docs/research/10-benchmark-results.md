@@ -1,5 +1,7 @@
 # 10 — Benchmark results
 
+**Status (2026-09-29):** a living record; `eval/baselines.json` is the source of truth for the gated numbers. The Mikkel figures under "Difficulty modes and lineups", "Readability" and "Rust core conformance" were measured before the fast-notes change was promoted to the golden. At faithful the Solo Cornet is now 63.6 % 16ths (gate 65 %; `docs/plan/fast-notes.md` §7).
+
 ## Reproducing these numbers
 
 **Regression suites.** `pixi run brasscribe bench <suite>` (or `all`, or `ci` for the subset that gates in CI) runs every benchmark below from cached model outputs and gates against `eval/baselines.json` (±0.01 F1 unless a metric says otherwise). `eval/README.md` lists which suites gate in CI and which need local data.
@@ -465,7 +467,7 @@ Open: large transpositions put the basses on ledger lines (E♭ Bass with 3+ led
 
 ## Readability (Mikkel)
 
-`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json`. Old golden → current golden, Solo Cornet: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5% → 6.4%; 16ths 40.2% → 38.4%. Whole score: dynamics 0 → 201, rehearsal marks 0 → 11, key changes 0 → 8.
+`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json`. Old golden → current golden, Solo Cornet: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5% → 6.4%; 16ths 40.2% → 38.4%. Since the fast-notes golden (2026-09-29): 16ths 63.6 %, accidentals 6.7 %, and the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/brasscribe_eval/suites.py`). Whole score: dynamics 0 → 201, rehearsal marks 0 → 11, key changes 0 → 8.
 
 ## Rust core conformance
 

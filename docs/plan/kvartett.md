@@ -1,8 +1,8 @@
 # Kvartett: a third output option
 
-This plan adds a brass quartet as a third lineup, next to the full brass band and the small band. It covers what the quartet is, every place in the stack that has to change, and the order to build it in. It is a plan only. No production code has changed.
+This plan adds a brass quartet as a third lineup, next to the full brass band and the small band. It covers what the quartet is, every place in the stack that has to change, and the order to build it in. Line numbers refer to commit `fd41d61`.
 
-Line numbers refer to commit `fd41d61`.
+**Status (2026-09-29): done.** The quartet is built in the Python reference, the Rust core and conformance, the FFI, the engine, Studio, the band sounds (`sounds/mapping.json`, `seating.json`) and all three Play apps, with the `quartet-audio` benchmark and baselines. The owner's open questions were settled as recommended: the parts are "1st Cornet" and "Tenor Horn", and a solo take is refused for the quartet (`quartet_needs_group`). Left: a melody harmoniser, so a solo take could be written for the quartet.
 
 ---
 
@@ -18,7 +18,7 @@ Line numbers refer to commit `fd41d61`.
 
 **Solo takes** have no harmony to arrange. The quartet stays disabled for solo and on-device takes until a melody harmoniser exists.
 
-**Size.** One implementation agent can build it in 9 ordered steps (§6). Step 1 is a refactor that must leave every golden and conformance output byte-identical.
+**Size.** It builds in 9 ordered steps (§6). Step 1 is a refactor that must leave every golden and conformance output byte-identical.
 
 ---
 

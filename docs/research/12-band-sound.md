@@ -2,6 +2,8 @@
 
 **Owner feedback:** "The real-life sounds aren't as convincing as we thought and often just fall back to MIDI instruments. We need support for each instrument in each band lineup. It must sound natural and balanced. The worst thing that can happen is that the sound breaks up or chops."
 
+**Status (2026-09-29).** Landed on every platform. Sections 1–11 describe the work as first built, with the `sounds-2026.09.27` pack. The pinned pack is now `sounds-2026.09.29` (`sounds/band-sounds.json`): 16-bit 200.3 MB, phone 70.8 MB. Its changes and the current make-up gains (Apple 31.5 dB, alphaSynth 5 dB, sfizz 4 dB; `sounds/playback-levels.json`) are in §12.
+
 **Short answer.**
 - **Fallback.** The samples were never the reason parts fell back to MIDI instruments. The apps were. Apple never loaded the band sounds outside a developer checkout. Android and Studio played General MIDI (Sonivox) by default. On every platform, any part name missing from an exact-match table got General MIDI, a borrowed preset, a sine tone or silence.
 - **Chopping.** There were seven separate causes. Each one is measured below, and each is now fixed.
@@ -297,13 +299,13 @@ For the A/B sets, keep `key.json` away from listeners and score with `sounds/ab-
   - alphaTab at loop wrap and seek (it probably stops voices dead there too).
   - Real-time behaviour on a physical Android phone (xrun count, sfizz memory of about 100 MB estimated).
   - Studio in a browser.
-- **Every build bundles the band sounds; users never download them.** The SoundFonts are built files, not in git, and the repository is private, so they are published as assets of a pre-release in this repository (`sounds-2026.09.27`) and bundled at build time:
+- **Every build bundles the band sounds; users never download them.** The SoundFonts are built files, not in git, and the repository is private, so they are published as assets of a pre-release in this repository (`sounds-2026.09.27` when this was written; `sounds-2026.09.29` now) and bundled at build time:
   - `sounds/band-sounds.json` pins the pack: the release tag plus the size and sha256 of each file;
   - `sounds/tools/band_sounds.py fetch` (`pixi run fetch-sounds` locally, `.github/actions/band-sounds` in CI, cached per pin) downloads them with `gh release download` and checks them against the pin and the release's SHA256SUMS;
   - the Android, Apple and Windows release jobs and the Bandroom Windows job use it, and **fail** when the files cannot be had or a hash does not match.
 
   A new pack: rebuild, `band_sounds.py pin --version sounds-YYYY.MM.DD`, then publish the files and SHA256SUMS under that tag (see the script's docstring).
-- **Who bundles which file.** Android and iOS/iPadOS: `brasscribe-band-mobile.sf2` (77 MB). macOS, Windows Play and both Bandroom apps: `brasscribe-band-16bit.sf2` (195 MB). Bandroom puts it under `band/` with `mapping.json` and passes the folder to the engine as `BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`. The engine's MP3 export does not use it: that is MuseScore's own sounds.
+- **Who bundles which file.** Android, iOS/iPadOS and both Bandroom apps: `brasscribe-band-mobile.sf2` (77 MB then, 70.8 MB in `sounds-2026.09.29`). macOS and Windows Play: `brasscribe-band-16bit.sf2` (195 MB then, 200.3 MB now). Bandroom puts it under `band/` with `mapping.json` and passes the folder to the engine as `BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`. The engine's MP3 export does not use it: that is MuseScore's own sounds.
 - **Memory is not measured on devices.**
   - Apple loads each part's preset into its own sampler, in memory (needed against cause 1). The sustain samples of all 17 brass presets add up to about 270 MB at 16-bit, or 535 MB if the sampler keeps float32 and does not share samples between instances. That is fine on a Mac, but has to be measured on an iPhone before release. A quartet or the minimal band loads a fraction of it.
   - Android's alphaTab holds the whole phone SoundFont as floats: about 155 MB, against about 117 MB before. The full 16-bit file ran out of memory at 298 MB of floats.
@@ -348,7 +350,7 @@ The plan is in `sounds/recording-plan.md`:
 
 **The target** lives in `sounds/playback-levels.json`. `sounds/playback_levels.py --vectors` writes `sounds/output-stage-vectors.json` from it, and `--check` (stdlib, in CI) fails when the two drift apart.
 - **Band stage.** Make-up gain, then a memoryless soft limiter: `y = x` up to 0.8 (−1.9 dBFS), `sign(x)·(0.8 + 0.18·tanh((|x| − 0.8)/0.18))` above it, approaching a ceiling of 0.98 (−0.18 dBFS). It has no attack or release, so it cannot pump, and below 0.8 every part keeps its level, so mute and solo keep the balance.
-- **Band calibration.** The full-band test phrase (`phrases.json` "band") lands at **−12 LUFS integrated (±1 LU)**, peaking at or under the ceiling. Each band path has its own measured make-up gain: Apple +26 dB (environment node, parts metres away), alphaSynth on Android and Windows +4 dB at unity master volume, sfizz +4 dB (its parts are balanced to the SoundFont's).
+- **Band calibration.** The full-band test phrase (`phrases.json` "band") lands at **−12 LUFS integrated (±1 LU)**, peaking at or under the ceiling. Each band path has its own measured make-up gain: Apple +26 dB (environment node, parts metres away), alphaSynth on Android and Windows +4 dB at unity master volume, sfizz +4 dB (the `sounds-2026.09.29` pack moved Apple to +31.5 dB and alphaSynth to +5 dB; §12) (its parts are balanced to the SoundFont's).
 - **Recording.** The original recording is measured once, as a whole (EBU R128 integrated), when it loads, and plays at **the loudness the band plays that arrangement at**: the arrangement's estimated band loudness, clamped to [−20, −10] LUFS, or −16 LUFS when there is no arrangement. Gain = clamp(target − measured, −30, +12) dB, and the limiter follows the gain, so a boost cannot clip. A mono file is measured as dual mono (+3 dB), because it plays from both speakers. It is never normalised per bar, so a soft bar stays softer than a loud one.
 - **Band estimate** (`recording.band_estimate`). From the arrangement's pitched notes, with no rendering: estimate = −1.2 + 10·log10(Σ d·10^(L(v)/10) / U). d is each note's length in quarter notes and v its velocity by the dynamics rules. L(v) is the phrase's pitched loudness at that velocity (`alphatab_lufs`). U is the score time in which any pitched note sounds. So the part count enters as the energy of the parts sounding together, and the marks enter through L. Percussion is left out. The −1.2 dB offset is fitted on the golden, and the rule is checked on two more measurements (`sounds/playback_levels.py --calibrate`):
 

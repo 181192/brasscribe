@@ -1,5 +1,7 @@
 # Pitch benchmark
 
+**Status (2026-09-29):** reference notes from the external [pitch-benchmark](https://github.com/lars76/pitch-benchmark) project, which ranks the pitch trackers cited in [03-amt-polyphonic-stem.md](03-amt-polyphonic-stem.md). The relative links below (`prepare/…`, `speed.py`) point into that project and do not resolve in this repository.
+
 ## The design
 
 For each tracker, the headline score is the mean pitch F1 across $C$ corpora and eight

@@ -6,6 +6,12 @@ The owner wants to be able to add a trumpet. This plan does three things:
 - it designs what is built now: **(a)** a soloist range for the lead, and **(b)** "Trumpet in B♭" in "What do you play?";
 - it describes two follow-ups that are **not built now**: **(c)**, instrument facts read from the core on every platform, and **(d)**, a trumpet sound preset (§5).
 
+**Status (2026-09-29): (a), (b) and (d) done, (c) open.**
+- (a) The soloist range is on `main`, and its golden was promoted (the old one is in `data/golden-backups/before-soloist/`).
+- (b) Trumpet in B♭ and the trumpet seat are in the core, the engine, Studio, and "What do you play?" on Android and Apple (released in v0.2.0). Windows plays and names a Trumpet part, but has no "What do you play?" on `main`.
+- (d) The Trumpet part now plays its own trumpet preset (bank 7) from the `sounds-2026.09.29` pack, so §3.3's "keeps the Solo Cornet's sound" and the P3-5 answer in §8 describe the state before it.
+- Left: (c), instrument facts from the core on every platform (§5.1), and owner question 3 (§9).
+
 Line numbers refer to `157d9df` (`main`). The measurement scripts are in [`trumpet/`](trumpet/):
 
 - `sweep.sh` runs the Rust path over a set of ranges
@@ -112,7 +118,7 @@ The soloist rule removes the tie-break for the lead: a note that fits is written
 
 ### 1.4 Side effects if the range were simply widened
 
-The critic measured these (`docs/research/15-trumpet-critique.md` §1.2 on `review/trumpet-critic`), and they agree with the code. Placement runs before `apply_difficulty` (`arranger.rs:794`, then `difficulty.rs:163`). So widening the cornet's `reading_limit` would change the standard and easier leads as well.
+The critic measured these (`docs/research/15-trumpet-critique.md` §1.2), and they agree with the code. Placement runs before `apply_difficulty` (`arranger.rs:794`, then `difficulty.rs:163`). So widening the cornet's `reading_limit` would change the standard and easier leads as well.
 
 Standard and easier then fold the high phrases back note by note (`difficulty.rs:144` `fold`). That raises the octave switches inside phrases from 43 to 47 (standard) and from 68 to 72 (easier). That per-note flipping is exactly what `743c04d` removed from placement.
 
@@ -512,7 +518,7 @@ The engine title stays "… solo cornet & brass band (draft)" (`profiles.py:251`
 
 ---
 
-## 6. Build order (phase B, this go)
+## 6. Build order
 
 Each step is a group of conventional commits with their tests, and is pushed once per group (critic P2-5: `ci.yml` runs on every push). The critic reviews each step before the next.
 
@@ -536,7 +542,7 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
 
 ## 7. Coordination
 
-- **`fix/user-flow` (`flow-fix`)** touches `instruments.rs`/`.py`. Its changes:
+- **`fix/user-flow`** touches `instruments.rs`/`.py`. Its changes:
   - `with_reading` takes the seat;
   - `seat_lineup` refuses percussion;
   - `seat_part.same_key` uses the reading;
@@ -544,7 +550,7 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
   - `RustCoreBridge.kt` passes `tune`, and `Seats.swift` changes too.
 
   It leaves the `SEATS` and `SEAT_PARTS` rows alone. Step 2 goes on top of its commits: this branch rebases on them once they are pushed. `with_seat` goes next to its `with_reading`. For a trumpet `same_key` stays true, because both are treble in B♭.
-- **`feat/my-instrument-windows` (`myinst-windows`)** gets the two-line `TileOrder`/string change for the trumpet tile.
+- **`feat/my-instrument-windows`** gets the two-line `TileOrder`/string change for the trumpet tile.
 - **Goldens.** §2.6. Nothing in `data/golden/mikkel-arranged-band` changes before the promotion commit.
 
 ---
@@ -576,13 +582,13 @@ Everything is pushed to `feat/trumpet` and nothing is merged.
 | The golden | Promoted at the owner's go: `.soloist` is now `data/golden/mikkel-arranged-band`, and the old one is kept in `data/golden-backups/before-soloist/`. |
 | P2-5: CI per push | One push per step group (§6). |
 | P3: `mikkel.md:14`; the resolver keyword goes with (d); §6.4 goes with (c) | The soloist is recorded as unresolved (§1). The keyword stays until (d), and the data-only test is in (c). |
-| Advisor: soprano doubling via `tune_on_top` would turn on for a flugelhorn `lead=seat` | Not changed to `tune_on_top`. `BAND_LEADS` (`arranger.rs:617`) gains "Trumpet". A Trumpet part only ever exists as the lead it took, so the Soprano doubles it in standard and easier exactly as it doubles the Solo Cornet. Flugelhorn `lead=seat` is unchanged. |
+| Review: soprano doubling via `tune_on_top` would turn on for a flugelhorn `lead=seat` | Not changed to `tune_on_top`. `BAND_LEADS` (`arranger.rs:617`) gains "Trumpet". A Trumpet part only ever exists as the lead it took, so the Soprano doubles it in standard and easier exactly as it doubles the Solo Cornet. Flugelhorn `lead=seat` is unchanged. |
 
 ---
 
 ## 9. Questions for the owner
 
-The coordinator answered 1 and 2 on the owner's behalf on 2026-09-29. Both are defaults the owner can change.
+Questions 1 and 2 were answered with defaults on 2026-09-29. The owner can change both.
 
 1. **The cornet soloist's top.** **Default: 84** (written D6, the qa "solo cornet" row). It covers Mikkel's top note and stays one step under MuseScore's trumpet top. A trumpet seat gets 85, MuseScore's professional trumpet top.
 2. **The low solo takes.** **Default: keep them in the octave played.** With no seat set, horn and upper baritone takes are written on the Solo Cornet in the octave played (§2.5). A note outside the solo range is moved, and it carries a range warning. A test pins this: `test_a_low_take_in_the_cornets_range_is_written_as_played`.

@@ -1,5 +1,7 @@
 # 13 — Performance audit: memory, main thread, start-up, engine, network, core
 
+**Status (2026-09-29):** the fixes marked fixed below are on `main` (the audit and app-side fix branches are merged). Items marked open in the ranked list are still open.
+
 **Why.** An Android video upload read the whole file into memory, copied it again, and crashed at the 512 MB heap (fixed in 0c8b98b by streaming the upload and extracting the audio on the device). This audit looks for the same class of problem everywhere else: the engine (`engine/`, `music/`, `ml/adapters`), the Rust core, Studio, Play on Apple, Android and Windows, and Bandroom on macOS and Windows. Date: 2026-09-28, on `main` at a485bef.
 
 **Short answer.**

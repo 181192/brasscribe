@@ -1,5 +1,7 @@
 # Realistic playback, room sound and on-device ML
 
+**Status (2026-09-29): research, acted on.** The band sounds are built from VSCO 2 CE, Iowa MIS and MS Basic (`sounds/LICENSES.md`, pack `sounds-2026.09.29`); SwiftF0, Basic Pitch and Beat This! small run on the phone. Neural synthesis and on-device separation or MuScriptor were not built.
+
 Researched 2026-09-25. Every claim links to a primary source (project repo, licence text, vendor docs, paper). "Not found" means I searched and found no primary source. It does not mean the thing doesn't exist.
 
 ## TL;DR

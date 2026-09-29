@@ -2,6 +2,8 @@
 
 Scope: models that turn **one separated stem at a time** into notes, whether the stem is polyphonic (a brass section, piano, guitar) or monophonic (a melody, bass line, single brass voice, or vocal). Also: how per-stem outputs can be fused. Multi-instrument end-to-end models such as MT3, YourMT3+ and MuScriptor belong to a separate report. They appear here only when they are a realistic choice for **per-stem** use.
 
+**Status (2026-09-29):** desk research, acted on. SwiftF0 and Basic Pitch are the solo-line trackers, in the engine and on the phone; see [00-summary.md](00-summary.md) §0 and [10-benchmark-results.md](10-benchmark-results.md).
+
 Research date: 2026-09-25. Every number below is quoted from the linked source. Numbers from different papers are **not comparable** unless this report says they are.
 
 ---

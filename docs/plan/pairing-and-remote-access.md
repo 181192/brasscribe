@@ -4,6 +4,9 @@ How the Play apps (Apple, Android, Windows) find the engine, pair with it once, 
 
 Read it together with `docs/plan/apps-plan.md` (§3 architecture, §7 licences) and `design/system.md` (rule 8: commands and addresses go under **Details for the band's tech person**).
 
+**Status (2026-09-29): partly done.** Pair once is built: per-device credentials that survive restarts and address changes, the approve-on-the-computer path, rotation, unpair and revoke, and the lockout (§4.8). All three Play apps keep the token in the platform keystore (Keychain, Android Keystore, a Windows credential vault), reconnect by server id and scan the `brasscribe://pair` QR code. Bandroom for macOS and Windows is the desktop helper.
+Left (§7): LAN TLS with a pinned key (§4.9), the `--mode home|remote|hosted` switch, device-bound (DPoP) tokens, and everything for hosted mode.
+
 ---
 
 ## Short answer

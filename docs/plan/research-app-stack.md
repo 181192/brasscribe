@@ -1,5 +1,7 @@
 # App stack research: workbench (A) and musician app (B)
 
+**Status (2026-09-29): research, acted on.** The shell recommendation (Tauri 2) was superseded by native apps per platform (`docs/plan/apps-plan.md`); pixi and the notation findings were adopted.
+
 As of 2026-09-25. Versions checked via `gh api` on that date. Where no primary source was found, the text says "not found" or labels the evidence.
 
 **Apps.** (A) is the technical workbench: pipeline stages, scores, benchmarks, GPU. (B) is the musician app: source to MusicXML, score, play-along, a11y, desktop plus mobile if possible.
@@ -116,7 +118,7 @@ Apps must meet the same minimum as websites ([uutilsynet](https://www.uutilsynet
   - Commercial: GOODFEEL, BrailleMUSE ([overview](https://tobyrush.com/braillemusic/)).
 - **Hand-off to MuseScore Studio.** It supports NVDA, VoiceOver and Orca; JAWS is not supported ([handbook](https://handbook.musescore.org/navigation/accessibility)). "Open in MuseScore" is a legitimate accessible path for score editing.
 
-**Local check.** `mscore -o out.brf` on `data/mikkel/mikkel-leadsheet-v4.musicxml` aborted in the agent shell (`mutex lock failed`), and MIDI export failed the same way. This is an environment issue, not a BRF verdict. Re-test from a normal terminal.
+**Local check.** `mscore -o out.brf` on `data/mikkel/mikkel-leadsheet-v4.musicxml` aborted in a sandboxed shell (`mutex lock failed`), and MIDI export failed the same way. This is an environment issue, not a BRF verdict. Re-test from a normal terminal.
 
 ## Open spikes
 1. alphaTab with a real brass-band MusicXML: import completeness, transposing display, 10+ staves, performance in WKWebView, WebView2 and WebKitGTK.

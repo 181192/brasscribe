@@ -1,5 +1,7 @@
 # 05 — Key, chords, melody, symbolic harmony, and audio embeddings for verification
 
+**Status (2026-09-29):** desk research, partly acted on. Key estimation and spelling (ps13) are built in-house in `music/` and the Rust core. The audio-side key and chord cross-check is not built (`docs/plan/apps-plan.md` §8, item 4).
+
 Desk research, 2026-09-25. Follows `_brief.md`. Every claim links to a source. "Not found" means I could not verify it. Repo dates come from `gh api` on 2026-09-25.
 
 ---

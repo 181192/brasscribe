@@ -1,5 +1,7 @@
 # 06 — Arrangement generation, macOS audio capture, MusicXML export
 
+**Status (2026-09-29):** desk research, partly acted on. The arrangers are deterministic and rule-based (`music/`, Rust core); no CP-SAT solver or Anticipatory Music Transformer is used. Capture is the Core Audio process tap in `capture/`. MusicXML is written by music21 in the Python reference and by the Rust core in the apps.
+
 Desk research, 2026-09-25. Target: M5 Pro / 48 GB / macOS 26.6. Scope: (1) symbolic arrangement/orchestration models and constraint solvers, (2) system/app audio capture on macOS 26, (3) MusicXML generation and tooling. Every claim links to a source. "not found" means I could not verify it.
 
 ---

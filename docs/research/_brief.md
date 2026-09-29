@@ -2,6 +2,8 @@
 
 Project: "brasscribe" — local-first app: recorded audio (pop/rock/orchestral/brass etc.) → musical understanding (melody, bass, harmony, chords, rhythm, tempo, meter, key, sections, countermelodies) → brass-band arrangement → MusicXML. Personal use, accuracy >> speed, offline batch, not real-time. Target machine: Apple M5 Pro, 48 GB unified memory, macOS 26.6. Pipeline stages are replaceable adapters (likely Go orchestrator → per-model Python subprocess).
 
+**Status (2026-09-29):** the brief reports 01–06 were written to on 2026-09-25. Kept for reference.
+
 ## Rules
 - Your knowledge cutoff is ~June 2026; today is 2026-09-25. Actively SEARCH for releases/papers since then (ISMIR 2026 papers, arXiv Jul–Sep 2026, new HF models). Never fill a field from memory. If you can't verify something, write "not found".
 - Primary sources only: arXiv, ISMIR/ICASSP/TASLP proceedings, official GitHub repos, Hugging Face model cards, challenge leaderboards (MDX/SDX, MIREX, etc.). No SEO listicles. Don't rely on Papers with Code (defunct/redirected).

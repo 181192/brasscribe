@@ -2,6 +2,8 @@
 
 Date: 2026-09-27. Desk research plus one-off measurements on the existing eval sets and the Mikkel run. The scripts were inline and are not committed. As in [10-benchmark-results.md](10-benchmark-results.md), treat the numbers as findings to re-derive, not as regression baselines.
 
+**Status (2026-09-29):** recommendation 3 (contour segmentation for the solo line) is built for fast notes and bends in `docs/plan/fast-notes.md`: a short semitone into or off a held note is now its bend, and alternations are split on contour plateaus. Recommendations 1 (voice separation that allows unisons) and 2 (tuning-aware pitch decisions beyond the solo contour) are open.
+
 "Mellom toner" covers two different problems, and this report covers both:
 - **(a) Notes hidden where instruments overlap:** unisons (cornet + flugel on one pitch), octaves (E♭ and B♭ bass, euphonium under cornet), an upper note sitting on a partial of a lower one, and close voicings.
 - **(b) Pitches between semitones:** tuning offset, intonation drift, vibrato, scoops, falls, doits and glissandi, which get snapped to the wrong note or split into extra notes.

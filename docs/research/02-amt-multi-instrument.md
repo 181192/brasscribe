@@ -1,5 +1,7 @@
 # 02 — Multi-instrument automatic music transcription (mixture → notes + instrument labels)
 
+**Status (2026-09-29):** desk research, acted on. MuScriptor is the engine's multi-instrument transcriber (`ml/adapters/muscriptor`); the benchmarked decision is in [00-summary.md](00-summary.md) §0.
+
 Research date: 2026-09-25. Desk research only; nothing was installed or run. Every number below is quoted from the cited source. Where two sources disagree, both are given.
 
 ---
