@@ -109,9 +109,9 @@ public class AlphaTabMusicXmlTests
     }
 
     /// <summary>
-    /// The golden arrangement as saved before the ties were numbered: every pitched part sounds each tie chain
-    /// once, so its notes are the score's notes less its tie stops. Before the fix alphaTab sounded the Solo
-    /// Cornet 1146 s in all (the score has 195 s), from notes held into the next phrase.
+    /// The golden arrangement: every pitched part sounds each tie chain once, so its notes are the score's notes
+    /// less its tie stops. On the golden saved before the ties were numbered, alphaTab sounded the Solo Cornet 1146 s
+    /// in all (the score has 195 s), from notes held into the next phrase; the fixture keeps unnumbered ties covered.
     /// </summary>
     [SkippableFact]
     public void Golden_plays_each_tie_chain_once()

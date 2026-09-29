@@ -34,8 +34,8 @@ object PlaybackLevels {
     const val RECORDING_MAX_BOOST_DB = 12.0
     const val RECORDING_MAX_CUT_DB = 30.0
 
-    /** recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase. */
-    const val BAND_ESTIMATE_OFFSET_DB = 0.56
+    /** recording.band_estimate.offset_db: fitted on two arrangements (the golden and Old Hundredth). */
+    const val BAND_ESTIMATE_OFFSET_DB = -3.05
 
     /**
      * L(v) of the band estimate: dynamics.sampler_velocity.alphatab_lufs, the pitched parts of the

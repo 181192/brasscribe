@@ -23,8 +23,8 @@ public static class PlaybackLevels
     public const double RecordingMaxBoostDb = 12.0;
     public const double RecordingMaxCutDb = 30.0;
 
-    /// <summary>recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase.</summary>
-    public const double BandEstimateOffsetDb = 0.56;
+    /// <summary>recording.band_estimate.offset_db: fitted on two arrangements (the golden and Old Hundredth).</summary>
+    public const double BandEstimateOffsetDb = -3.05;
 
     /// <summary>
     /// dynamics.sampler_velocity.alphatab_lufs: the pitched parts of the full-band phrase through

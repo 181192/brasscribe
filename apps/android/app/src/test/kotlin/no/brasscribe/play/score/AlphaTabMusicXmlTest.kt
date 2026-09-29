@@ -10,7 +10,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
-import kotlin.math.abs
 
 /**
  * alphaTab's MusicXML fixes ([AlphaTabMusicXml]): ties in transposing parts sound once, a note whose tie start
@@ -54,8 +53,6 @@ class AlphaTabMusicXmlTest {
         }
         return out.sortedWith(compareBy({ it.track }, { it.start }))
     }
-
-    private fun near(a: Double, b: Double) = abs(a - b) < 1e-3
 
     @Test
     fun tiesSoundOnceInTransposingAndConcertParts() {
@@ -104,7 +101,7 @@ class AlphaTabMusicXmlTest {
             note("E", "<tied type=\"stop\" number=\"3\" />")), out)
     }
 
-    /** The golden as saved before the ties were numbered: every pitched part sounds each tie chain once. */
+    /** The golden: every pitched part sounds each tie chain once (the fixture keeps unnumbered ties covered). */
     @Test
     fun goldenPlaysEachTieChainOnce() {
         assumeTrue("no golden arrangement in data/golden", golden.isFile)

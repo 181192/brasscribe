@@ -610,10 +610,13 @@ apart.
 - The music21 and Rust writers produce identical files.
 
 **Renderers and playback.**
-- alphaTab shows the tr mark: on its 1.8.4 importer, `trillValue` is set and `vibrato` is not. Verovio reads the same
-  standard `<trill-mark>`, `<accidental-mark>` and `<wavy-line>`, but it was not checked here.
-- The apps' own players play the main note. alphaTab's synthesizer (Android) plays a trill from the mark, a whole tone
-  up by default.
+- alphaTab shows the tr mark: on its 1.8.4 importer, `trillValue` is set and `vibrato` is not. Verovio draws the tr
+  mark, the accidental-mark above it and the wavy line over a tied trill (NotationKit
+  `trillsShowTheirMarkAccidentalAndWavyLine`).
+- Every player trills in 32nds from the main note to the written auxiliary (the next letter up, from the
+  accidental-mark, else the key). alphaTab's importer played the written note plus two semitones (four above the main
+  note on a B♭ part); Android and Windows now set its trill value from the MusicXML (`AlphaTabMusicXml`), and Apple
+  expands the trill in `playbackNotes`. The cases are in `apps/fixtures/ties-and-trills.musicxml`.
 
 **Not covered yet.**
 - The faithful trill option is not exposed in the engine's API and schema, and no app has a control for it.
