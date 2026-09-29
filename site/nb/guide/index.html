@@ -42,6 +42,8 @@
     <h2 id="toc-title" class="toc-title">I denne veiledningen</h2>
     <ol>
       <li><a href="#get-started">Kom i gang</a></li>
+      <li><a href="#download">Last ned</a></li>
+      <li><a href="#instrument">Hva spiller du?</a></li>
       <li><a href="#open">Åpne eller spill inn</a></li>
       <li><a href="#what">Hva er dette?</a></li>
       <li><a href="#making">Partituret lages</a></li>
@@ -52,6 +54,7 @@
       <li><a href="#computer">Brasscribe på datamaskinen</a></li>
       <li><a href="#access">Tilgjengelighet</a></li>
       <li><a href="#trouble">Når noe går galt</a></li>
+      <li><a href="#credits">Lyder og kreditering</a></li>
     </ol>
   </nav>
 
@@ -60,11 +63,52 @@
       <p class="overline">Brukerveiledning</p>
       <h1>Kom i gang</h1>
       <p class="lead">Brasscribe Play gjør et opptak om til et partitur for brassbandet ditt. Denne veiledningen går gjennom det én gang, fra opptaket til de utskrevne stemmene.</p>
-      <p>Brasscribe Play finnes for iPhone, iPad, Mac, Android og Windows. Den er i tidlig testing og ligger ikke i appbutikkene ennå: den tekniske i bandet kan bygge den fra <a href="https://github.com/181192/brasscribe#readme">kildekoden på GitHub</a>.</p>
-      <p>Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>. Den spør om mikrofonen først når du spiller inn.</p>
+      <p>Brasscribe Play finnes for iPhone, iPad, Mac, Android og Windows. Den er i tidlig testing og ligger ikke i appbutikkene ennå. Android-telefoner og Mac kan <a href="#download">laste den ned</a>. På iPhone, iPad og Windows bygger den tekniske i bandet den fra <a href="https://github.com/181192/brasscribe#readme">kildekoden på GitHub</a>.</p>
+      <p>Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og så spør den <a href="#instrument">hva du spiller</a>. Den spør om mikrofonen først når du spiller inn.</p>
       <div class="note">
         <p><strong>Solo eller fullt band?</strong> Ett instrument kan skrives ned på telefonen. For et fullt band gjør Brasscribe på datamaskinen jobben. Se <a href="#computer">Brasscribe på datamaskinen</a>.</p>
       </div>
+    </section>
+
+    <section id="download">
+      <h2>Last ned</h2>
+      <p>Gjeldende versjon er <strong>Brasscribe 0.2.0</strong>. Last ned filen for enheten din fra <a href="https://github.com/181192/brasscribe/releases/tag/v0.2.0">utgivelsessiden på GitHub</a>.</p>
+      <div class="table-scroll" role="region" aria-labelledby="download-caption" tabindex="0">
+        <table>
+          <caption id="download-caption">Filene i versjon 0.2.0</caption>
+          <thead><tr><th scope="col">Fil</th><th scope="col">For</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>brasscribe-play-android-arm64-v8a.apk</code></th><td>Brasscribe Play for de fleste Android-telefoner og -nettbrett</td></tr>
+            <tr><th scope="row"><code>brasscribe-play-android-universal.apk</code></th><td>Brasscribe Play for Android, alle typer prosessorer</td></tr>
+            <tr><th scope="row"><code>brasscribe-play-macos-arm64.zip</code></th><td>Brasscribe Play for Mac med Apple-prosessor</td></tr>
+            <tr><th scope="row"><code>brasscribe-bandroom-macos-arm64.zip</code></th><td>Brasscribe Bandroom for Mac med Apple-prosessor: <a href="#computer">datamaskinen</a> gjør det tunge arbeidet for et fullt band</td></tr>
+            <tr><th scope="row"><code>brasscribe-core-macos-arm64.zip</code></th><td>Kommandolinjeverktøyet <code>brasscribe-core</code>, for den tekniske i bandet</td></tr>
+            <tr><th scope="row"><code>SHA256SUMS</code></th><td>Sjekksummer for å kontrollere nedlastingene</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Android:</strong> tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og partiturene dine blir liggende.</li>
+        <li><strong>Mac:</strong> appene er ikke notarisert ennå. Pakk ut, høyreklikk appen, velg <strong>Åpne</strong> og så <strong>Åpne</strong> igjen. For å oppdatere bytter du ut den gamle appen i Programmer; partiturene og innstillingene blir liggende.</li>
+        <li><strong>iPhone og iPad:</strong> ingen nedlasting ennå. De krever en Apple-utviklerkonto, så den tekniske i bandet bygger dem fra kildekoden.</li>
+      </ul>
+      <div class="note">
+        <p><strong>Windows:</strong> det finnes ingen nedlasting for Windows ennå. Bygget fra kildekoden mangler Brasscribe Play for Windows foreløpig notestativet, innstillingen for utseende og <em>Hva spiller du?</em>. Det kommer etter en testrunde på Windows.</p>
+      </div>
+    </section>
+
+    <section id="instrument">
+      <h2>Hva spiller du?</h2>
+      <p>Første gang spør Brasscribe hva du spiller. Stemmen din vises først, og <strong>Demp stemmen min</strong> demper den når du spiller med.</p>
+      <ul>
+        <li>Velg instrument: Kornett, Trompet (i B), Sopran (Ess-kornett), Flygelhorn, Althorn (i Ess), Baryton, Eufonium, Trombone, Basstrombone, Ess-bass, B-bass eller Slagverk. Velg så hvilken stemme du spiller.</li>
+        <li>Brasscribe viser hvordan du leser: G-nøkkel i B, G-nøkkel i Ess, eller F-nøkkel, klingende. Stemmen din skrives i den nøkkelen.</li>
+        <li>Velg <strong>Jeg dirigerer eller lytter</strong> hvis du ikke spiller en stemme, eller <strong>Ikke nå</strong> for å bestemme deg senere.</li>
+      </ul>
+      <p>Du kan endre det når som helst under <strong>Innstillinger › Hva du spiller</strong>. Nye partiturer åpner på stemmen din; partiturer du har fra før, beholder stemmen du valgte for dem.</p>
+      <p>Har bandet ingen stemme for instrumentet ditt, sier Brasscribe hvilken stemme du får i stedet. Hver stemme sier hvor tonene kommer fra: <em>Fra opptaket</em>, <em>Arrangert ut fra harmoniene i bandet</em> når ingen spilte den alene, eller <em>Tom i dette arrangementet</em> når den er tom.</p>
+      <p>For en solist med band kan <strong>Hvem spiller melodien?</strong> legge melodien på din egen stemme, men bare når instrumentet ditt kan bære den. En trompet tar førstestemmen og har derfor melodien fra før.</p>
+      <p>Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Vil du ha slagverkstemmen, tar du opp bandet: du får en slagverkstemme når opptaket har trommer.</p>
     </section>
 
     <section id="open">
@@ -82,7 +126,7 @@
       <ul>
         <li><strong>Åpne et opptak:</strong> en lyd- eller videofil du har (MP3, WAV, M4A, MP4 og de fleste andre formater). Du kan også dele en fil til Brasscribe fra en annen app, eller slippe den i vinduet på datamaskinen.</li>
         <li><strong>Spill inn med mikrofonen:</strong> spill stemmen din selv, eller ta opp øvelsen.</li>
-        <li><strong>Spill inn det som spilles</strong> (Android og Windows): ta opp lyden fra en annen app, eller alt enheten spiller.</li>
+        <li><strong>Ta opp det som spilles</strong> (Android, Mac og Windows): ta opp lyden fra en annen app, eller alt enheten spiller.</li>
       </ul>
       <p>Lenker til strømmetjenester kan ikke lastes ned. Spill musikken og ta den opp i stedet. Strømmeapper stopper som regel opptak, så mikrofonen er veien rundt det.</p>
       <p>Partiturene dine ligger under <strong>Partiturene dine</strong> på startsiden.</p>
@@ -148,7 +192,7 @@
       <ul>
         <li><strong>Lytt til denne takten</strong> spiller takten fra opptaket, om og om igjen.</li>
         <li><strong>Behold, gå til neste</strong> hvis den er riktig. Spørsmålstegnet fjernes.</li>
-        <li><strong>Endre tone …</strong> hvis den er feil: velg riktig tone, så fjernes spørsmålstegnet.</li>
+        <li><strong>Endre tone …</strong> hvis den er feil: velg riktig tone og <strong>Lagre</strong>. Spørsmålstegnet fjernes, og du blir stående på tonen så du kan høre den igjen.</li>
         <li><strong>Hopp over</strong> lar tonen være merket og går videre.</li>
       </ul>
       <p>Du trenger ikke sjekke alle tonene nå. <strong>Fortsett senere</strong> beholder spørsmålstegnene, og <strong>«9 toner merket ? · Sjekk dem»</strong> over partituret tar deg tilbake når som helst.</p>
@@ -167,7 +211,7 @@
       </figure>
       <p>Tre spørsmål på én skjerm. Brasscribe husker svarene for hver låt.</p>
       <ul>
-        <li><strong>Hvilket band?</strong> Fullt brassband (rundt 25 musikere) eller lite band (10–15 musikere, stemmene slått sammen).</li>
+        <li><strong>Hvilket band?</strong> Fullt brassband (rundt 25 musikere), lite band (10–15 musikere, stemmene slått sammen) eller kvartett (4 musikere, én på hver stemme). Et opptak av hele bandet kan skrives for lite band eller kvartett, men ikke for fullt band ennå. En kvartett trenger et opptak av hele gruppen, ikke en solo.</li>
         <li><strong>Hvor vanskelig?</strong> <em>Som spilt</em>, <em>Litt enklere</em> eller <em>Enklere</em>: melodien beholdes, men høye toner og raske løp unngås.</li>
         <li><strong>Toneart:</strong> som i opptaket, eller trinn opp og ned til tonearten du vil ha.</li>
       </ul>
@@ -204,10 +248,12 @@
         <li><strong>Tempo:</strong> fra 25&nbsp;% til 150&nbsp;%. Tempoet vises som «♩ = 102 (ned fra 136)».</li>
         <li><strong>Gjenta takt</strong> [12] til [13] spiller en passasje om og om igjen. <strong>Slutt å gjenta</strong> slår det av.</li>
         <li><strong>Inntelling:</strong> én takt med klikk før musikken starter. <strong>Metronom:</strong> et klikk på hvert slag.</li>
-        <li><strong>Lyd av min stemme:</strong> stemmen din blir stille, så du kan spille den selv.</li>
-        <li>I stemmelisten slår <strong>Lyd av</strong> av en stemme, og <strong>Bare denne</strong> spiller én stemme alene.</li>
-        <li>På iPhone, iPad og Mac bytter <strong>Originalopptak</strong> til opptaket på samme sted. På Windows velger du <strong>Hør bandet</strong> eller <strong>Opptaket</strong>.</li>
+        <li><strong>Demp stemmen min:</strong> stemmen din blir stille, så du kan spille den selv.</li>
+        <li>I stemmelisten demper <strong>Demp</strong> én stemme, og <strong>Bare denne</strong> spiller én stemme alene.</li>
+        <li>På iPhone, iPad, Mac og Windows velger du <strong>Hør bandet</strong> eller <strong>Opptak</strong> for å bytte til opptaket på samme sted.</li>
       </ul>
+      <h3>Notestativet</h3>
+      <p><strong>Notestativ</strong> viser bare notene, side for side, til å spille fra stativet. Trykk på notene for å vise kontrollene: bla om, saktere og raskere, gjenta og bare stemmen din. Sidene kan bla seg selv mens musikken spiller. Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down; mellomrom starter og stopper musikken. På Mac trykker du <kbd>F</kbd>. (Ikke på Windows ennå.)</p>
     </section>
 
     <section id="share">
@@ -262,24 +308,31 @@
           </picture>
         </div>
       </figure>
+      <p>På en Mac med Apple-prosessor installerer du <strong>Brasscribe Bandroom</strong> fra <a href="#download">nedlastingen</a>. Den kjører stille i menylinjen; se etter Brasscribe-merket øverst på skjermen.</p>
+      <ul>
+        <li>Første gang laster den ned det Brasscribe trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass. Internett trengs bare for disse nedlastingene.</li>
+        <li>Den ber om en tilgangsnøkkel fra Hugging Face for å laste ned bandskriveren. Den modellen er gratis bare for ikke-kommersiell bruk (CC BY-NC 4.0): godta lisensen med din egen Hugging Face-konto. Bandroom tar vare på nøkkelen i nøkkelringen.</li>
+        <li>Etter at du har oppdatert Bandroom, spør macOS én gang om den kan bruke den lagrede nøkkelen. Skriv inn Mac-passordet og velg <strong>Tillat alltid</strong>. Bandroom venter til du har svart, og oppdaterer så motoren sin selv.</li>
+      </ul>
+      <p>Koble så til telefonen:</p>
       <ol>
-        <li>Start Brasscribe på datamaskinen. Den viser en sekssifret kode.</li>
+        <li>Velg <strong>Koble til en telefon</strong> på datamaskinen. Den viser en sekssifret kode og en QR-kode.</li>
         <li>Sett telefonen på <strong>samme Wi-Fi</strong> som datamaskinen.</li>
         <li>Åpne <strong>Innstillinger</strong> i appen, og så <strong>Brasscribe på datamaskinen</strong>.</li>
         <li>Datamaskinen dukker opp i listen, for eksempel <em>Brasscribe på Karis Mac</em>. Velg den. På Windows velger du <strong>Finn på dette nettverket</strong> først.</li>
-        <li>Skriv inn den sekssifrede koden og velg <strong>Koble til</strong>.</li>
+        <li>Skriv inn den sekssifrede koden og velg <strong>Koble til</strong>, eller skann QR-koden med kameraet på telefonen.</li>
       </ol>
-      <p>Appen sier <em>Koblet til</em> og viser navnet på datamaskinen. Du gjør dette bare én gang; koble til på nytt hvis koden på datamaskinen endres.</p>
+      <p>Appen sier <em>Koblet til</em> og viser navnet på datamaskinen. Du gjør dette én gang for hver telefon eller hvert nettbrett: den forblir tilkoblet, også når datamaskinen starter på nytt eller får ny adresse.</p>
       <details>
         <summary>Detaljer for den tekniske i bandet</summary>
-        <p>Start motoren på datamaskinen fra en kopi av kodelageret:</p>
+        <p>Uten Bandroom (på Windows, eller på en Mac du heller vil styre selv) starter du motoren fra en kopi av kodelageret:</p>
         <pre tabindex="0"><code>pixi install
-BRASSCRIBE_TOKEN=velg-en-lang-hemmelighet pixi run serve --lan</code></pre>
-        <p>Den lytter på port 8765 på alle nettverkskort, skriver ut LAN-adressen og paringskoden, og kunngjør seg over Bonjour/mDNS som <code>_brasscribe._tcp</code>. Med <code>BRASSCRIBE_TOKEN</code> satt forblir telefonene paret når motoren starter på nytt.</p>
+pixi run serve-lan</code></pre>
+        <p>Den lytter på port 8765 på alle nettverkskort, skriver ut LAN-adressen og paringskoden, og kunngjør seg over Bonjour/mDNS som <code>_brasscribe._tcp</code>. Tilkoblede telefoner forblir tilkoblet når motoren starter på nytt.</p>
         <ul>
           <li>Tillat innkommende tilkoblinger når brannmuren spør (macOS: Systeminnstillinger › Nettverk › Brannmur; Windows: private nettverk).</li>
           <li>Gjestenett og kontornett hindrer ofte enheter i å se hverandre. Skriv inn adressen i stedet, for eksempel <code>http://192.168.1.20:8765</code>.</li>
-          <li>Fem feil koder på rad gjør at motoren velger en ny kode. Start den på nytt for å se den nye.</li>
+          <li>Etter fem feil koder på rad låses paringen en stund, fra 30 sekunder opp til 15 minutter. Selve koden endres ikke.</li>
           <li><code>--no-advertise</code> slår av kunngjøringen. Docker-bildet gjør det som standard.</li>
         </ul>
       </details>
@@ -291,28 +344,32 @@ BRASSCRIBE_TOKEN=velg-en-lang-hemmelighet pixi run serve --lan</code></pre>
         <li>Fungerer med VoiceOver, TalkBack og Skjermleser. Fremdrift og endringer leses opp.</li>
         <li><strong>Les opp</strong> (Vis-menyen) leser partituret som talende partitur: takt for takt, med ord.</li>
         <li>Usikre toner merkes med en form (et spørsmålstegn, eller et i en boks), aldri bare med farge.</li>
-        <li>Følger tekststørrelse, mørk modus, høy kontrast og redusert bevegelse fra systemet.</li>
+        <li>Følger tekststørrelse, mørk modus, høy kontrast og redusert bevegelse fra systemet. Under <strong>Innstillinger › Utseende</strong> velger du <strong>Følg systemet</strong>, <strong>Lyst</strong> eller <strong>Mørkt</strong>. Når kontrastinnstillingen i systemet er på, bruker Brasscribe høykontrastfargene.</li>
         <li>Del eller skriv ut har talende partitur og punktskriftnoter.</li>
       </ul>
       <h3>Tastatur</h3>
       <p>På datamaskinen fungerer alt fra tastaturet. Hurtigtaster med én tast kan slås av i Innstillinger.</p>
       <div class="table-scroll" role="region" aria-labelledby="keys" tabindex="0">
         <table>
-          <caption id="keys">Hurtigtaster i partituret</caption>
-          <thead><tr><th scope="col">Tast</th><th scope="col">Gjør</th></tr></thead>
+          <caption id="keys">De viktigste hurtigtastene i partituret</caption>
+          <thead><tr><th scope="col">Gjør</th><th scope="col">Mac</th><th scope="col">Windows</th></tr></thead>
           <tbody>
-            <tr><th scope="row"><kbd>Mellomrom</kbd></th><td>Spill av eller pause</td></tr>
-            <tr><th scope="row"><kbd aria-label="Venstre pil">←</kbd> <kbd aria-label="Høyre pil">→</kbd></th><td>Flytt én tone</td></tr>
-            <tr><th scope="row"><kbd>U</kbd></th><td>Neste tone merket med spørsmålstegn</td></tr>
-            <tr><th scope="row"><kbd>K</kbd></th><td>Behold tonen (når du sjekker)</td></tr>
-            <tr><th scope="row"><kbd>L</kbd></th><td>Gjenta disse taktene</td></tr>
-            <tr><th scope="row"><kbd>O</kbd></th><td>Hør opptaket herfra</td></tr>
-            <tr><th scope="row"><kbd>P</kbd></th><td>Stemmer</td></tr>
-            <tr><th scope="row"><kbd>Tab</kbd></th><td>Gå ut av partituret</td></tr>
+            <tr><th scope="row">Spill av eller pause</th><td><kbd>Mellomrom</kbd></td><td><kbd>Mellomrom</kbd></td></tr>
+            <tr><th scope="row">Forrige eller neste takt</th><td><kbd aria-label="Venstre pil">←</kbd> <kbd aria-label="Høyre pil">→</kbd></td><td><kbd>Ctrl</kbd>+<kbd aria-label="Pil opp">↑</kbd> <kbd>Ctrl</kbd>+<kbd aria-label="Pil ned">↓</kbd></td></tr>
+            <tr><th scope="row">Forrige eller neste tone</th><td>—</td><td><kbd aria-label="Venstre pil">←</kbd> <kbd aria-label="Høyre pil">→</kbd></td></tr>
+            <tr><th scope="row">Neste tone merket med spørsmålstegn</th><td>—</td><td><kbd>U</kbd></td></tr>
+            <tr><th scope="row">Behold tonen (når du sjekker)</th><td><kbd>K</kbd></td><td><kbd>C</kbd></td></tr>
+            <tr><th scope="row">Gjenta takter</th><td><kbd>L</kbd></td><td><kbd>L</kbd></td></tr>
+            <tr><th scope="row">Saktere eller raskere</th><td><kbd>,</kbd> <kbd>.</kbd></td><td><kbd>-</kbd> <kbd>=</kbd></td></tr>
+            <tr><th scope="row">Inntelling, metronom</th><td><kbd>C</kbd> <kbd>M</kbd></td><td><kbd>K</kbd> <kbd>T</kbd></td></tr>
+            <tr><th scope="row">Demp stemmen min</th><td><kbd>A</kbd></td><td>—</td></tr>
+            <tr><th scope="row">Hør bandet eller opptaket</th><td><kbd>O</kbd></td><td><kbd>O</kbd></td></tr>
+            <tr><th scope="row">Notestativ</th><td><kbd>F</kbd></td><td>—</td></tr>
+            <tr><th scope="row">Gå ut av partituret</th><td>—</td><td><kbd>Tab</kbd> eller <kbd>Esc</kbd></td></tr>
           </tbody>
         </table>
       </div>
-      <p>På Windows viser <kbd>F1</kbd> alle hurtigtastene.</p>
+      <p>På Mac står de i menyen <strong>Avspilling</strong>. På Windows viser <kbd>F1</kbd> alle hurtigtastene.</p>
     </section>
 
     <section id="trouble">
@@ -328,7 +385,7 @@ BRASSCRIBE_TOKEN=velg-en-lang-hemmelighet pixi run serve --lan</code></pre>
       </details>
       <details>
         <summary>«Feil paringskode»</summary>
-        <p>Skriv inn de seks sifrene datamaskinen viser akkurat nå. Etter fem feil forsøk velger datamaskinen en ny kode.</p>
+        <p>Skriv inn de seks sifrene datamaskinen viser akkurat nå. Etter fem feil forsøk låses paringen en stund; vent litt, og skriv inn den samme koden igjen.</p>
       </details>
       <details>
         <summary>Opptaket er stille</summary>
@@ -338,6 +395,25 @@ BRASSCRIBE_TOKEN=velg-en-lang-hemmelighet pixi run serve --lan</code></pre>
         <summary>Mange toner er merket med spørsmålstegn</summary>
         <p>Sjekk svaret på <em>Hva er dette?</em>: et band spilt inn som <em>Ett instrument</em> gir rare resultater. Et tydeligere opptak, med mindre prat og romstøy, hjelper også.</p>
       </details>
+      <details>
+        <summary>«Ikke for slagverk ennå»</summary>
+        <p>Et soloopptak kan ikke skrives ned for slagverkstemmen ennå. Ta opp bandet i stedet: du får en slagverkstemme når opptaket har trommer.</p>
+      </details>
+      <details>
+        <summary>«Brasscribe på datamaskinen er for gammel»</summary>
+        <p>Oppdater Brasscribe Bandroom, eller motoren, på datamaskinen. En eldre versjon kan fortsatt lage partitur, men ikke for alle instrumenter og valg.</p>
+      </details>
+    </section>
+
+    <section id="credits">
+      <h2>Lyder og kreditering</h2>
+      <p>Bandlydene følger med i alle appene; det er ikke noe mer å laste ned for avspilling. Alle lydprøvene kan deles fritt:</p>
+      <ul>
+        <li>Brass og konsertslagverk fra <a href="https://github.com/sgossner/VSCO-2-CE">VSCO 2 Community Edition</a> av Versilian Studios (CC0 1.0).</li>
+        <li>Brass fra <a href="https://theremin.music.uiowa.edu/MIS.html">University of Iowa Musical Instrument Samples</a>, Electronic Music Studios, Lawrence Fritts.</li>
+        <li>Trommesett og håndslagverk fra MuseScores SoundFont MS Basic (MIT), basert på FluidR3 av Frank Wen, FluidR3Mono av Michael Cowgill og MuseScore_General av S. Christian Collins.</li>
+      </ul>
+      <p>Det finnes ingen fritt tilgjengelige lydprøver av kornett, althorn, baryton eller eufonium, så de er formet ut fra trompet, valthorn og trombone. Hele listen over kilder og lisenser står i <a href="https://github.com/181192/brasscribe/blob/main/sounds/LICENSES.md">sounds/LICENSES.md</a>. Notene settes med Verovio (LGPL-3.0) på iPhone, iPad og Mac, og med alphaTab (MPL-2.0) på Android og Windows. Overskriftene er satt i Instrument Serif (OFL).</p>
       <p><a class="to-top" href="#main">Tilbake til toppen</a></p>
     </section>
   </article>

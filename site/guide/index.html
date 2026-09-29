@@ -42,6 +42,8 @@
     <h2 id="toc-title" class="toc-title">In this guide</h2>
     <ol>
       <li><a href="#get-started">Get started</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#instrument">What do you play?</a></li>
       <li><a href="#open">Open or record</a></li>
       <li><a href="#what">What is this?</a></li>
       <li><a href="#making">Making the score</a></li>
@@ -52,6 +54,7 @@
       <li><a href="#computer">Brasscribe on your computer</a></li>
       <li><a href="#access">Accessibility</a></li>
       <li><a href="#trouble">When something goes wrong</a></li>
+      <li><a href="#credits">Sounds and credits</a></li>
     </ol>
   </nav>
 
@@ -60,11 +63,52 @@
       <p class="overline">User guide</p>
       <h1>Get started</h1>
       <p class="lead">Brasscribe Play turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts.</p>
-      <p>Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet: the band's tech person can build it from the <a href="https://github.com/181192/brasscribe#readme">source code on GitHub</a>.</p>
-      <p>The first time you open the app, it shows three points and <strong>Get started</strong>. It asks for the microphone only when you first record.</p>
+      <p>Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones and Macs can <a href="#download">download it</a>; on iPhone, iPad and Windows, the band's tech person builds it from the <a href="https://github.com/181192/brasscribe#readme">source code on GitHub</a>.</p>
+      <p>The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href="#instrument">what you play</a>. It asks for the microphone only when you first record.</p>
       <div class="note">
         <p><strong>Solo or full band?</strong> A single instrument can be written down on your phone. For a full band, Brasscribe on your computer does the work. See <a href="#computer">Brasscribe on your computer</a>.</p>
       </div>
+    </section>
+
+    <section id="download">
+      <h2>Download</h2>
+      <p>The current release is <strong>Brasscribe 0.2.0</strong>. Download the file for your device from the <a href="https://github.com/181192/brasscribe/releases/tag/v0.2.0">release page on GitHub</a>.</p>
+      <div class="table-scroll" role="region" aria-labelledby="download-caption" tabindex="0">
+        <table>
+          <caption id="download-caption">Files in the 0.2.0 release</caption>
+          <thead><tr><th scope="col">File</th><th scope="col">For</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>brasscribe-play-android-arm64-v8a.apk</code></th><td>Brasscribe Play for most Android phones and tablets</td></tr>
+            <tr><th scope="row"><code>brasscribe-play-android-universal.apk</code></th><td>Brasscribe Play for Android, every type of processor</td></tr>
+            <tr><th scope="row"><code>brasscribe-play-macos-arm64.zip</code></th><td>Brasscribe Play for a Mac with Apple silicon</td></tr>
+            <tr><th scope="row"><code>brasscribe-bandroom-macos-arm64.zip</code></th><td>Brasscribe Bandroom for a Mac with Apple silicon: <a href="#computer">your computer</a> does the heavy work for a full band</td></tr>
+            <tr><th scope="row"><code>brasscribe-core-macos-arm64.zip</code></th><td>The <code>brasscribe-core</code> command-line tool, for the tech person</td></tr>
+            <tr><th scope="row"><code>SHA256SUMS</code></th><td>Checksums to check the downloads</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Android:</strong> allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and your scores stay.</li>
+        <li><strong>Mac:</strong> the apps are not notarised yet. Unzip, right-click the app, choose <strong>Open</strong>, then <strong>Open</strong> again. To update, replace the old app in Applications; your scores and settings stay.</li>
+        <li><strong>iPhone and iPad:</strong> no download yet. They need an Apple Developer account, so the tech person builds them from the source.</li>
+      </ul>
+      <div class="note">
+        <p><strong>Windows:</strong> there is no Windows download yet. Built from the source, Brasscribe Play for Windows does not yet have the music stand, the Appearance setting or <em>What do you play?</em>; these wait for a test run on Windows.</p>
+      </div>
+    </section>
+
+    <section id="instrument">
+      <h2>What do you play?</h2>
+      <p>The first time, Brasscribe asks what you play. It shows your part first, and <strong>Mute my part</strong> mutes it when you play along.</p>
+      <ul>
+        <li>Choose your instrument: Cornet, Trumpet (in B♭), Soprano (E♭ cornet), Flugelhorn, Tenor Horn (in E♭), Baritone, Euphonium, Trombone, Bass Trombone, E♭ Bass, B♭ Bass or Percussion. Then choose which part you play.</li>
+        <li>Brasscribe shows how you read: treble clef in B♭, treble clef in E♭, or bass clef as it sounds. Your part is written in that clef.</li>
+        <li>Choose <strong>I conduct or listen</strong> if you don't play a part, or <strong>Not now</strong> to decide later.</li>
+      </ul>
+      <p>Change it any time under <strong>Settings › What you play</strong>. New scores open on your part; scores you already have keep the part you chose for them.</p>
+      <p>If the band has no part for your instrument, Brasscribe says which part you get instead. Every part says where its notes came from: <em>From the recording</em>, <em>Arranged from the band's harmony</em> when nobody played it on its own, or <em>Nothing to play in this arrangement</em> when it is empty.</p>
+      <p>For a soloist with a band, <strong>Who plays the tune?</strong> can put the tune on your own part, but only when your instrument can carry it. A trumpet takes the lead part, so it has the tune already.</p>
+      <p>Brasscribe can't write down percussion from a solo take yet. For the percussion part, record the band: you get a percussion part when the recording has drums.</p>
     </section>
 
     <section id="open">
@@ -82,7 +126,7 @@
       <ul>
         <li><strong>Open a recording:</strong> an audio or video file you have (MP3, WAV, M4A, MP4 and most other formats). You can also share a file to Brasscribe from another app, or drop it on the window on a computer.</li>
         <li><strong>Record:</strong> play your part, or record the rehearsal, with the microphone.</li>
-        <li><strong>Record what's playing</strong> (Android and Windows): record the sound from another app, or everything the device plays.</li>
+        <li><strong>Record what's playing</strong> (Android, Mac and Windows): record the sound from another app, or everything the device plays.</li>
       </ul>
       <p>Links to streaming sites can't be downloaded. Play the music and record it instead. Streaming apps usually block recording, so the microphone is the way round that.</p>
       <p>Your scores are listed under <strong>Your scores</strong> on the home screen.</p>
@@ -150,7 +194,7 @@
       <ul>
         <li><strong>Listen to this bar</strong> plays that bar from the recording, over and over.</li>
         <li><strong>Keep, go to next</strong> if it's right. The question mark is removed.</li>
-        <li><strong>Change note…</strong> if it's wrong: pick the right note, and the question mark is removed.</li>
+        <li><strong>Change note…</strong> if it's wrong: pick the right note and choose <strong>Save</strong>. The question mark is removed, and you stay on that note to hear it again.</li>
         <li><strong>Skip</strong> leaves the note marked and moves on.</li>
       </ul>
       <p>You don't have to check every note now. <strong>Finish later</strong> keeps the question marks, and <strong>"9 notes marked ? · Check them"</strong> above the score takes you back any time.</p>
@@ -169,7 +213,7 @@
       </figure>
       <p>Three questions on one screen. Brasscribe remembers the answers for each song.</p>
       <ul>
-        <li><strong>Which band?</strong> Full brass band (around 25 players) or a small band (10–15 players, with parts combined).</li>
+        <li><strong>Which band?</strong> Full brass band (around 25 players), a small band (10–15 players, with parts combined) or a quartet (4 players, one on each part). A recording of a whole band can be written for the small band or the quartet, not yet for the full band. A quartet needs a recording of the whole group, not a solo.</li>
         <li><strong>How hard?</strong> <em>As played</em>, <em>A bit easier</em> or <em>Easier</em>: it keeps the tune but avoids high notes and fast runs.</li>
         <li><strong>Key:</strong> as recorded, or step up and down to the key you want.</li>
       </ul>
@@ -208,8 +252,10 @@
         <li><strong>Count-in:</strong> one bar of clicks before the music starts. <strong>Metronome:</strong> a click on every beat.</li>
         <li><strong>Mute my part:</strong> your part goes quiet so you can play it yourself.</li>
         <li>In the parts list, <strong>Mute</strong> silences a part and <strong>Only this</strong> plays one part alone.</li>
-        <li>On iPhone, iPad and Mac, <strong>Original recording</strong> switches to the recording at the same place. On Windows, choose <strong>Hear the band</strong> or <strong>Recording</strong>.</li>
+        <li>On iPhone, iPad, Mac and Windows, choose <strong>Hear the band</strong> or <strong>Recording</strong> to switch to the recording at the same place.</li>
       </ul>
+      <h3>The music stand</h3>
+      <p><strong>Music stand</strong> shows the music alone, page by page, for playing from the stand. Tap the music to show the controls: turn the page, slower and faster, repeat, and only your part. The pages can turn by themselves while the music plays. Page turners and pedals work when they send arrow keys or Page Up and Page Down; Space starts and stops the music. On a Mac, press <kbd>F</kbd>. (Not on Windows yet.)</p>
     </section>
 
     <section id="share">
@@ -265,24 +311,31 @@
           </picture>
         </div>
       </figure>
+      <p>On a Mac with Apple silicon, install <strong>Brasscribe Bandroom</strong> from the <a href="#download">download</a>. It runs quietly in the menu bar; look for the Brasscribe mark at the top of the screen.</p>
+      <ul>
+        <li>The first run downloads what Brasscribe needs, about 10 GB, so keep about 15 GB free. The internet is needed only for these downloads.</li>
+        <li>It asks for an access key from Hugging Face, to download the band writer. That model is free for non-commercial use only (CC BY-NC 4.0): accept its licence with your own Hugging Face account. Bandroom keeps the key in your Keychain.</li>
+        <li>After you update Bandroom, macOS asks once whether it may use its saved key. Enter your Mac password and choose <strong>Always Allow</strong>. Bandroom waits until you answer, then brings its engine up to date by itself.</li>
+      </ul>
+      <p>Then connect your phone:</p>
       <ol>
-        <li>Start Brasscribe on your computer. It shows a six-digit code.</li>
+        <li>On the computer, choose <strong>Pair a phone</strong>. It shows a six-digit code and a QR code.</li>
         <li>Put your phone on the <strong>same Wi-Fi</strong> as the computer.</li>
         <li>In the app, open <strong>Settings</strong>, then <strong>Brasscribe on your computer</strong>.</li>
         <li>Your computer appears in the list, for example <em>Brasscribe on Kari's Mac</em>. Choose it. On Windows, choose <strong>Find on this network</strong> first.</li>
-        <li>Type the six-digit code and choose <strong>Connect</strong>.</li>
+        <li>Type the six-digit code and choose <strong>Connect</strong>, or scan the QR code with the phone's camera.</li>
       </ol>
-      <p>The app says <em>Connected</em> and shows the computer's name. You only do this once; pair again if the computer's code changes.</p>
+      <p>The app says <em>Connected</em> and shows the computer's name. You do this once for each phone or tablet: it stays paired, also when the computer restarts or gets a new address.</p>
       <details>
         <summary>Details for the band's tech person</summary>
-        <p>Start the engine on the computer, from a copy of the repository:</p>
+        <p>Without Bandroom (on Windows, or on a Mac you'd rather run by hand), start the engine from a copy of the repository:</p>
         <pre tabindex="0"><code>pixi install
-BRASSCRIBE_TOKEN=pick-a-long-secret pixi run serve --lan</code></pre>
-        <p>It listens on port 8765 on every network interface, prints the LAN address and the pairing code, and announces itself over Bonjour/mDNS as <code>_brasscribe._tcp</code>. Setting <code>BRASSCRIBE_TOKEN</code> keeps phones paired when the engine restarts.</p>
+pixi run serve-lan</code></pre>
+        <p>It listens on port 8765 on every network interface, prints the LAN address and the pairing code, and announces itself over Bonjour/mDNS as <code>_brasscribe._tcp</code>. Paired phones stay paired when the engine restarts.</p>
         <ul>
           <li>Allow incoming connections when the firewall asks (macOS: System Settings › Network › Firewall; Windows: private networks).</li>
           <li>Guest and office Wi-Fi often block devices from seeing each other. Type the address instead, for example <code>http://192.168.1.20:8765</code>.</li>
-          <li>Five wrong codes in a row make the engine pick a new code. Restart it to see the new one.</li>
+          <li>After five wrong codes in a row, pairing locks for a while, from 30 seconds up to 15 minutes. The code itself doesn't change.</li>
           <li><code>--no-advertise</code> turns off the announcement. The Docker image does this by default.</li>
         </ul>
       </details>
@@ -294,28 +347,32 @@ BRASSCRIBE_TOKEN=pick-a-long-secret pixi run serve --lan</code></pre>
         <li>Works with VoiceOver, TalkBack and Narrator. Progress and changes are announced.</li>
         <li><strong>Read aloud</strong> (View menu) reads the score as a talking score: bar by bar, in words.</li>
         <li>Uncertain notes are marked with a shape (a question mark, or one in a box), never with colour alone.</li>
-        <li>Follows your system text size, dark mode, high contrast and reduced motion.</li>
+        <li>Follows your system text size, dark mode, high contrast and reduced motion. Under <strong>Settings › Appearance</strong>, choose <strong>Match system</strong>, <strong>Light</strong> or <strong>Dark</strong>. With the system's contrast setting on, Brasscribe uses its high-contrast colours.</li>
         <li>Share or print includes talking score text and braille music.</li>
       </ul>
       <h3>Keyboard</h3>
       <p>On a computer, everything works from the keyboard. Single-key shortcuts can be turned off in Settings.</p>
       <div class="table-scroll" role="region" aria-labelledby="keys" tabindex="0">
         <table>
-          <caption id="keys">Keyboard shortcuts in the score</caption>
-          <thead><tr><th scope="col">Key</th><th scope="col">Does</th></tr></thead>
+          <caption id="keys">The main keyboard shortcuts in the score</caption>
+          <thead><tr><th scope="col">Does</th><th scope="col">Mac</th><th scope="col">Windows</th></tr></thead>
           <tbody>
-            <tr><th scope="row"><kbd>Space</kbd></th><td>Play or pause</td></tr>
-            <tr><th scope="row"><kbd aria-label="Left arrow">←</kbd> <kbd aria-label="Right arrow">→</kbd></th><td>Move one note</td></tr>
-            <tr><th scope="row"><kbd>U</kbd></th><td>Next note marked with a question mark</td></tr>
-            <tr><th scope="row"><kbd>K</kbd></th><td>Keep this note (while checking)</td></tr>
-            <tr><th scope="row"><kbd>L</kbd></th><td>Repeat these bars</td></tr>
-            <tr><th scope="row"><kbd>O</kbd></th><td>Hear the recording from here</td></tr>
-            <tr><th scope="row"><kbd>P</kbd></th><td>Parts</td></tr>
-            <tr><th scope="row"><kbd>Tab</kbd></th><td>Leave the score</td></tr>
+            <tr><th scope="row">Play or pause</th><td><kbd>Space</kbd></td><td><kbd>Space</kbd></td></tr>
+            <tr><th scope="row">Previous or next bar</th><td><kbd aria-label="Left arrow">←</kbd> <kbd aria-label="Right arrow">→</kbd></td><td><kbd>Ctrl</kbd>+<kbd aria-label="Up arrow">↑</kbd> <kbd>Ctrl</kbd>+<kbd aria-label="Down arrow">↓</kbd></td></tr>
+            <tr><th scope="row">Previous or next note</th><td>—</td><td><kbd aria-label="Left arrow">←</kbd> <kbd aria-label="Right arrow">→</kbd></td></tr>
+            <tr><th scope="row">Next note marked with a question mark</th><td>—</td><td><kbd>U</kbd></td></tr>
+            <tr><th scope="row">Keep this note (while checking)</th><td><kbd>K</kbd></td><td><kbd>C</kbd></td></tr>
+            <tr><th scope="row">Repeat bars</th><td><kbd>L</kbd></td><td><kbd>L</kbd></td></tr>
+            <tr><th scope="row">Slower or faster</th><td><kbd>,</kbd> <kbd>.</kbd></td><td><kbd>-</kbd> <kbd>=</kbd></td></tr>
+            <tr><th scope="row">Count-in, metronome</th><td><kbd>C</kbd> <kbd>M</kbd></td><td><kbd>K</kbd> <kbd>T</kbd></td></tr>
+            <tr><th scope="row">Mute my part</th><td><kbd>A</kbd></td><td>—</td></tr>
+            <tr><th scope="row">Hear the band or the recording</th><td><kbd>O</kbd></td><td><kbd>O</kbd></td></tr>
+            <tr><th scope="row">Music stand</th><td><kbd>F</kbd></td><td>—</td></tr>
+            <tr><th scope="row">Leave the score</th><td>—</td><td><kbd>Tab</kbd> or <kbd>Esc</kbd></td></tr>
           </tbody>
         </table>
       </div>
-      <p>On Windows, <kbd>F1</kbd> lists every shortcut.</p>
+      <p>On the Mac, the <strong>Playback</strong> menu lists them. On Windows, <kbd>F1</kbd> lists every shortcut.</p>
     </section>
 
     <section id="trouble">
@@ -331,7 +388,7 @@ BRASSCRIBE_TOKEN=pick-a-long-secret pixi run serve --lan</code></pre>
       </details>
       <details>
         <summary>"Wrong pairing code"</summary>
-        <p>Type the six digits the computer shows right now. After five wrong tries, the computer picks a new code.</p>
+        <p>Type the six digits the computer shows right now. After five wrong tries, pairing locks for a while; wait, then type the same code again.</p>
       </details>
       <details>
         <summary>The recording is silent</summary>
@@ -341,6 +398,25 @@ BRASSCRIBE_TOKEN=pick-a-long-secret pixi run serve --lan</code></pre>
         <summary>Lots of notes are marked with a question mark</summary>
         <p>Check the answer to <em>What is this?</em>: a band recorded as <em>One instrument</em> gives odd results. A clearer recording, with less talking and room noise, also helps.</p>
       </details>
+      <details>
+        <summary>"Not for percussion yet"</summary>
+        <p>A solo take can't be written down for the percussion part yet. Record the band instead: you get a percussion part when the recording has drums.</p>
+      </details>
+      <details>
+        <summary>"Brasscribe on your computer is too old"</summary>
+        <p>Update Brasscribe Bandroom, or the engine, on the computer. An older one can still make a score, but not for every instrument or choice.</p>
+      </details>
+    </section>
+
+    <section id="credits">
+      <h2>Sounds and credits</h2>
+      <p>The band sounds are part of every app; there is nothing else to download for playback. Every sample is free to share:</p>
+      <ul>
+        <li>Brass and concert percussion from <a href="https://github.com/sgossner/VSCO-2-CE">VSCO 2 Community Edition</a> by Versilian Studios (CC0 1.0).</li>
+        <li>Brass from the <a href="https://theremin.music.uiowa.edu/MIS.html">University of Iowa Musical Instrument Samples</a>, Electronic Music Studios, Lawrence Fritts.</li>
+        <li>Drum kit and hand percussion from MuseScore's MS Basic SoundFont (MIT), based on FluidR3 by Frank Wen, FluidR3Mono by Michael Cowgill and MuseScore_General by S. Christian Collins.</li>
+      </ul>
+      <p>No cornet, tenor horn, baritone or euphonium samples are freely available, so those are shaped from trumpet, horn and trombone. The full list of sources and licences is in <a href="https://github.com/181192/brasscribe/blob/main/sounds/LICENSES.md">sounds/LICENSES.md</a>. Notation is engraved with Verovio (LGPL-3.0) on iPhone, iPad and Mac, and with alphaTab (MPL-2.0) on Android and Windows. Headings are set in Instrument Serif (OFL).</p>
       <p><a class="to-top" href="#main">Back to the top</a></p>
     </section>
   </article>

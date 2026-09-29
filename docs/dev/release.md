@@ -196,8 +196,9 @@ git commit -m "docs(site): …" && git push origin gh-pages     # never force: o
 gh api repos/181192/brasscribe/pages/builds/latest
 ```
 
-`$W` is the release worktree. The site links to the releases page rather than to versioned files, so a
-release alone often changes nothing on it.
+`$W` is the release worktree. The guide's Download section (`site/guide/index.html` and
+`site/nb/guide/index.html`) names the current version, its release page and its files: update both
+for each release.
 
 ## 8. The band sounds: a separate pre-release
 
