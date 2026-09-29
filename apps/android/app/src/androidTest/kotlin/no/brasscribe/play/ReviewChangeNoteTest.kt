@@ -90,6 +90,35 @@ class ReviewChangeNoteTest {
 
     private fun melodyPitches() = vm.result.value!!.composition!!.voices.first { it.role == VoiceRole.MELODY }.notes.map { it.pitch }
 
+    /**
+     * The pitch Brasscribe wrote is kept with the score: reopened from Your scores, the card still says
+     * "Changed to X (was Y)" and Undo still puts it back; after Undo, reopening shows no change.
+     */
+    @Test
+    fun theOriginalPitchIsKeptWithTheScore() {
+        val pitchesBefore = melodyPitches()
+        changeUp()
+        val changed = changedText()
+        assertNotNull(changed)
+        val saved = vm.savedScores.value.first()
+        assertEquals(1, saved.reviewChanges.size)
+
+        rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
+        rule.waitUntil(20_000) { changedText() != null }
+        assertEquals(changed, changedText())
+        assertTrue(vm.result.value!!.changedOnPhone)
+        rule.onRoot().tryPerformAccessibilityChecks()
+
+        rule.onNodeWithTag("undo-change").performScrollTo().performClick()
+        rule.waitForIdle()
+        assertEquals(null, changedText())
+        assertEquals(pitchesBefore, melodyPitches())
+        assertTrue(vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty())
+        rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
+        rule.waitForIdle()
+        assertEquals(null, changedText())
+    }
+
     /** "Play the bar with this note" plays the candidate before Save, stops on a second press, and writes nothing. */
     @Test
     fun previewPlaysTheCandidateWithoutSaving() {

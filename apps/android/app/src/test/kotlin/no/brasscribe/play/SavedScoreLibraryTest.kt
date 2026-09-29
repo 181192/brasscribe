@@ -31,6 +31,13 @@ class SavedScoreLibraryTest {
             val changed = library.save(fromComputer.id, "Take 2", "brass-band", "<y/>", null, jobId = "run-1", changedOnPhone = true)
             assertEquals(true, library.list().first { it.id == changed.id }.changedOnPhone)
             assertEquals(true, library.rename(changed.id, "Take 3")!!.changedOnPhone)
+            // So is what Brasscribe wrote for each changed note, by its Composition note.
+            val was = mapOf("melody@480" to 70, "layer-2@1920" to 55)
+            library.save(changed.id, "Take 3", "brass-band", "<y/>", null, jobId = "run-1", changedOnPhone = true, reviewChanges = was)
+            assertEquals(was, library.list().first { it.id == changed.id }.reviewChanges)
+            assertEquals(was, library.rename(changed.id, "Take 4")!!.reviewChanges)
+            library.save(changed.id, "Take 4", "brass-band", "<y/>", null, jobId = "run-1", changedOnPhone = true)
+            assertEquals(emptyMap<String, Int>(), library.list().first { it.id == changed.id }.reviewChanges)
             library.delete(fromComputer.id)
             assertEquals(1, library.list().size)
         } finally {

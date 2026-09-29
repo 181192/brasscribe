@@ -641,6 +641,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val take = soloTake
+                // Only arranging the Composition again keeps the notes changed in Review (they are in it);
+                // a take or the computer writes them afresh.
+                val fromComposition = !(r.onDevice && take != null) && !(!r.onDevice && r.audioId != null)
                 val updated = when {
                     r.onDevice && take != null -> withContext(Dispatchers.Default) {
                         container.core.arrangeSolo(take, opts.toCore())?.let {
@@ -654,7 +657,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     r.onDevice && r.composition != null -> withContext(Dispatchers.Default) { rearrange(r, opts) }
                     else -> null
                 }
-                if (updated != null) { lastApplied = opts; result.value = updated; saveCurrentScore(updated) }
+                if (updated != null) {
+                    lastApplied = opts
+                    if (!fromComposition) reviewChanges.value = emptyMap()
+                    result.value = updated
+                    saveCurrentScore(updated)
+                }
                 if (updated != null && !updated.onDevice && seatFellBack)
                     sayText(res.getString(R.string.arrangement_ready) + " " + res.getString(R.string.engine_too_old_seat))
                 else say(R.string.arrangement_ready)
@@ -766,7 +774,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             ?: res.getString(R.string.score_title)
         val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
             jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value, changedOnPhone = r.changedOnPhone)
+            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value, changedOnPhone = r.changedOnPhone,
+            reviewChanges = reviewChanges.value)
         currentSavedScoreId = saved.id
         savedScores.value = scoreLibrary.list()
     }
@@ -838,7 +847,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         myPartOverride.value = saved.part
         mappedNoticeSeen.value = saved.noticeSeen
         source.value = Source(saved.title, SourceKind.SCORE, 0.0)
-        reviewChanges.value = emptyMap()
+        reviewChanges.value = saved.reviewChanges
         result.value = TranscriptionResult(
             composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
             musicXml = saved.musicXml,
@@ -865,7 +874,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
             val compositionJson = composition?.let(container.core::encodeComposition)
             val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
-            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone)
+            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges)
             savedScores.value = scoreLibrary.list()
             saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
             if (currentSavedScoreId == id) {
@@ -963,9 +972,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val key = changeKey(voiceId, start)
         val was = reviewChanges.value[key] ?: pitch
         stopListening(announce = false)
-        if (!correctNote(voiceId, start, pitch, semitones)) return false
+        val before = reviewChanges.value
         val now = (pitch + semitones).coerceIn(0, 127)
+        // Set first, so the score is saved with it.
         reviewChanges.update { if (now == was) it - key else it + (key to was) }
+        if (!correctNote(voiceId, start, pitch, semitones)) { reviewChanges.value = before; return false }
         return true
     }
 
@@ -974,8 +985,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val key = changeKey(voiceId, start)
         val was = reviewChanges.value[key] ?: return false
         stopListening(announce = false)
-        if (was != pitch && !correctNote(voiceId, start, pitch, was - pitch)) return false
+        val before = reviewChanges.value
         reviewChanges.update { it - key }
+        if (was == pitch) { result.value?.let(::saveCurrentScore); return true }
+        if (!correctNote(voiceId, start, pitch, was - pitch)) { reviewChanges.value = before; return false }
         return true
     }
 
