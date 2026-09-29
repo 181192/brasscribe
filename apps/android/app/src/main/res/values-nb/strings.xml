@@ -582,6 +582,9 @@
     <string name="seat_none">Jeg dirigerer eller lytter</string>
     <string name="seat_skip">Ikke nå</string>
     <string name="inst_cornet">Kornett</string>
+    <string name="inst_trumpet">Trompet</string>
+    <string name="inst_trumpet_sub">i B</string>
+    <string name="inst_trumpet_sub_spoken">i B</string>
     <string name="inst_soprano">Sopran</string>
     <string name="inst_soprano_sub">Ess-kornett</string>
     <string name="inst_soprano_sub_spoken">Ess-kornett</string>
@@ -628,6 +631,10 @@
     <string name="review_arranged_body">Ingen spilte %1$s alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.</string>
     <string name="review_check_others">Sjekk de andre stemmene</string>
     <string name="review_show_mine">Vis stemmen min</string>
+    <string name="mapped_same_full">Fullt brassband har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
+    <string name="mapped_other_full">Fullt brassband har ingen %1$s. Her er stemmen din %2$s, skrevet for %3$s.</string>
+    <string name="mapped_takes_full">Fullt brassband har ingen stemme for %1$s. Du får stemmen til %2$s, skrevet for %1$s.</string>
+    <string name="mapped_takes_minimal">Det lille bandet har ingen stemme for %1$s. Du får stemmen til %2$s, skrevet for %1$s.</string>
     <string name="mapped_same_minimal">Det lille bandet har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
     <string name="mapped_same_quartet">Kvartetten har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
     <string name="mapped_other_minimal">Det lille bandet har ingen %1$s. Her er stemmen din %2$s, skrevet for %3$s.</string>
@@ -643,6 +650,9 @@
     <string name="lineup_your_part">%1$s · stemmen din: %2$s</string>
     <string name="engine_too_old_seat">Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
     <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?</string>
+    <string name="mapped_short_full">Fullt brassband har ingen %1$s — viser %2$s</string>
+    <string name="mapped_short_takes_full">Fullt brassband har ingen stemme for %1$s — viser %2$s, skrevet for %1$s</string>
+    <string name="mapped_short_takes_minimal">Det lille bandet har ingen stemme for %1$s — viser %2$s, skrevet for %1$s</string>
     <string name="mapped_short_minimal">Det lille bandet har ingen %1$s — viser %2$s</string>
     <string name="mapped_short_quartet">Kvartetten har ingen %1$s — viser %2$s</string>
     <string name="mapped_short_none_minimal">Det lille bandet har ingen slagverkstemme — viser alle stemmene</string>

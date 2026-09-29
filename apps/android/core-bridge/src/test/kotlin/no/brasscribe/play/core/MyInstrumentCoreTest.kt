@@ -42,6 +42,8 @@ class MyInstrumentCoreTest {
         assertEquals(SeatPart("Euphonium", exact = false, sameKey = true), c.seatPart("minimal", "1st-baritone"))
         assertEquals(SeatPart("Euphonium", exact = false, sameKey = false), c.seatPart("quartet", "eb-bass"))
         assertEquals(SeatPart("2nd Cornet", exact = true, sameKey = true), c.seatPart("band", "2nd-cornet"))
+        assertEquals(SeatPart("Trumpet", exact = false, sameKey = true, takes = "Solo Cornet"), c.seatPart("band", "trumpet"))
+        assertEquals(SeatPart("1st Cornet", exact = false, sameKey = true), c.seatPart("quartet", "trumpet"))
         assertNull(c.seatPart("quartet", "percussion")?.part)
         assertNull(c.seatPart("band", "no-such-seat"))
     }
@@ -52,7 +54,8 @@ class MyInstrumentCoreTest {
         assertEquals("1. kornett", c.partNameNb("1st Cornet"))
         assertEquals("Althorn", c.partNameNb("Tenor Horn"))
         assertEquals("Solokornett", c.partNameNb("Solo Cornet"))
-        assertEquals("Trumpet", c.partNameNb("Trumpet"))
+        assertEquals("Trompet", c.partNameNb("Trumpet"))
+        assertEquals("Strings", c.partNameNb("Strings"))
     }
 
     /** Engine and saved scores reach the core through the Kotlin Composition: the sources must survive that. */

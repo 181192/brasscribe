@@ -130,7 +130,9 @@ fun OutputScreen(vm: PlayViewModel) {
         }
         // A soloist recording: the tune on the lineup's lead as usual, or on the player's part (band lineups only).
         val yourBandPart = yourPartIn(options.lineup)
-        if (!soloTake && canArrange && seat != null && seat.tune && options.lineup != Lineup.QUARTET && yourBandPart != null &&
+        // A seat that takes the lead part (a trumpet) has the tune already: nothing to choose.
+        val takesLead = seat?.let { s -> vm.container.core.seatPart(options.lineup.core, s.id)?.takes } != null
+        if (!soloTake && canArrange && seat != null && seat.tune && !takesLead && options.lineup != Lineup.QUARTET && yourBandPart != null &&
             yourBandPart != options.lineup.lead && r?.profile in setOf(no.brasscribe.play.engine.Profile.ORCHESTRA_WITH_SOLOIST, no.brasscribe.play.engine.Profile.BRASS_BAND)) {
             SubHeading(stringResource(R.string.who_plays_tune))
             ChoiceGroup(2) {

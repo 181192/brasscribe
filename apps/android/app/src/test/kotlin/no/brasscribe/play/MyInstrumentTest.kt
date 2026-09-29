@@ -25,6 +25,7 @@ class MyInstrumentTest {
         Seat("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", listOf("treble", "bass"), -21, tune = false),
         Seat("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", emptyList(), 0, tune = false),
         Seat("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", listOf("treble", "bass"), -14, tune = true),
+        Seat("trumpet", "Trumpet", "Trompet", "bb-trumpet", "treble", listOf("treble"), -2, tune = true),
     )
 
     @org.junit.Test
@@ -59,6 +60,8 @@ class MyInstrumentTest {
         ("quartet" to "eb-bass") to SeatPart("Euphonium", false, false),
         ("quartet" to "percussion") to SeatPart(null, false, false),
         ("band" to "1st-baritone") to SeatPart("1st Baritone", true, true),
+        ("band" to "trumpet") to SeatPart("Trumpet", false, true, takes = "Solo Cornet"),
+        ("quartet" to "trumpet") to SeatPart("1st Cornet", false, true),
     )
     private val seatPart = { lineup: String, seat: String -> table[lineup to seat] }
 
@@ -101,6 +104,20 @@ class MyInstrumentTest {
         val q = resolve(Lineup.QUARTET_PARTS, Lineup.QUARTET, SeatChoice.Player("eb-bass"))
         assertEquals(3, q.index)
         assertEquals(false, q.mapped!!.sameKey)
+    }
+
+    /** A trumpet takes the lead part: in a score written for them it is "Trumpet"; in an older one, Solo Cornet. */
+    @Test fun aTrumpetTakesTheLeadPart() {
+        val written = band.map { if (it == "Solo Cornet") "Trumpet" else it }
+        val p = resolve(written, Lineup.FULL, SeatChoice.Player("trumpet"))
+        assertEquals(1, p.index)
+        assertEquals(MappedSeat(Lineup.FULL, seats[5], "Trumpet", true, takes = "Solo Cornet"), p.mapped)
+        val old = resolve(band, Lineup.FULL, SeatChoice.Player("trumpet"))
+        assertEquals(1, old.index)
+        assertEquals(MappedSeat(Lineup.FULL, seats[5], "Solo Cornet", true), old.mapped)
+        val q = resolve(Lineup.QUARTET_PARTS, Lineup.QUARTET, SeatChoice.Player("trumpet"))
+        assertEquals(0, q.index)
+        assertEquals(null, q.mapped!!.takes)
     }
 
     @Test fun percussionInTheQuartetOpensEveryPart() {

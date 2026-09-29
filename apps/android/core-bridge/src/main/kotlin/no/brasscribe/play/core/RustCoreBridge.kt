@@ -115,7 +115,7 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
     }
 
     override fun seatPart(lineup: String, seat: String): SeatPart? = runCatching {
-        coreSeatPart(coreLineup(lineup), seat).let { SeatPart(it.part, it.exact, it.sameKey) }
+        coreSeatPart(coreLineup(lineup), seat).let { SeatPart(it.part, it.exact, it.sameKey, it.takes) }
     }.getOrNull()
 
     override fun partSources(compositionJson: String): Map<String, PartSource> = runCatching {

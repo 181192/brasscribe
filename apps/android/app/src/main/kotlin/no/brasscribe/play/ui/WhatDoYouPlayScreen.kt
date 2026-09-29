@@ -55,6 +55,7 @@ private data class InstrumentTile(val id: String, @StringRes val name: Int, @Str
 /** The tiles in the mockup's order (design/mockups/my-instrument-first-run.html). */
 private val TILES = listOf(
     InstrumentTile("bb-cornet", R.string.inst_cornet),
+    InstrumentTile("bb-trumpet", R.string.inst_trumpet, R.string.inst_trumpet_sub, spokenSub = R.string.inst_trumpet_sub_spoken),
     InstrumentTile("eb-soprano-cornet", R.string.inst_soprano, R.string.inst_soprano_sub, spokenSub = R.string.inst_soprano_sub_spoken),
     InstrumentTile("flugelhorn", R.string.inst_flugelhorn),
     InstrumentTile("eb-tenor-horn", R.string.inst_tenor_horn, R.string.inst_tenor_horn_sub, spokenSub = R.string.inst_tenor_horn_sub_spoken),
@@ -283,12 +284,17 @@ fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier 
 @Composable
 fun mappedText(m: no.brasscribe.play.MappedSeat, reads: String?, seats: List<Seat>): String {
     val quartet = m.lineup == no.brasscribe.play.Lineup.QUARTET
+    val full = m.lineup == no.brasscribe.play.Lineup.FULL
     val seat = PartNames.display(m.seat.name)
+    m.takes?.let { takes ->
+        return stringResource(if (full) R.string.mapped_takes_full else R.string.mapped_takes_minimal, seat.lowercase(), PartNames.display(takes))
+    }
     val part = m.part ?: return stringResource(if (quartet) R.string.mapped_none_quartet else R.string.mapped_none_minimal)
     val shown = PartNames.display(part)
-    return if (m.sameKey || reads == "bass") stringResource(if (quartet) R.string.mapped_same_quartet else R.string.mapped_same_minimal, seat, shown)
-    else stringResource(if (quartet) R.string.mapped_other_quartet else R.string.mapped_other_minimal, seat, shown,
-        stringResource(keyOf(no.brasscribe.play.YourParts.chromatic(part, seats) ?: m.seat.chromatic)))
+    return if (m.sameKey || reads == "bass") stringResource(
+        when { quartet -> R.string.mapped_same_quartet; full -> R.string.mapped_same_full; else -> R.string.mapped_same_minimal }, seat, shown)
+    else stringResource(when { quartet -> R.string.mapped_other_quartet; full -> R.string.mapped_other_full; else -> R.string.mapped_other_minimal },
+        seat, shown, stringResource(keyOf(no.brasscribe.play.YourParts.chromatic(part, seats) ?: m.seat.chromatic)))
 }
 
 /** "B♭" or "E♭": the key a part is written in, from its transposition. */
@@ -299,8 +305,14 @@ fun keyOf(chromatic: Int): Int = if (Math.floorMod(chromatic, 12) == 3) R.string
 @Composable
 fun mappedShort(m: no.brasscribe.play.MappedSeat): String {
     val quartet = m.lineup == no.brasscribe.play.Lineup.QUARTET
+    val full = m.lineup == no.brasscribe.play.Lineup.FULL
+    m.takes?.let { takes ->
+        return stringResource(if (full) R.string.mapped_short_takes_full else R.string.mapped_short_takes_minimal,
+            PartNames.display(m.seat.name).lowercase(), PartNames.display(takes))
+    }
     val part = m.part ?: return stringResource(if (quartet) R.string.mapped_short_none_quartet else R.string.mapped_short_none_minimal)
-    return stringResource(if (quartet) R.string.mapped_short_quartet else R.string.mapped_short_minimal, PartNames.display(m.seat.name), PartNames.display(part))
+    return stringResource(when { quartet -> R.string.mapped_short_quartet; full -> R.string.mapped_short_full; else -> R.string.mapped_short_minimal },
+        PartNames.display(m.seat.name), PartNames.display(part))
 }
 
 /** Where a part came from, in one sentence: what the source pill opens. */

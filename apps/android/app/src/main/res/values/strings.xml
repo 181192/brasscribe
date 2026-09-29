@@ -584,6 +584,9 @@
     <string name="seat_none">I conduct or listen</string>
     <string name="seat_skip">Not now</string>
     <string name="inst_cornet">Cornet</string>
+    <string name="inst_trumpet">Trumpet</string>
+    <string name="inst_trumpet_sub">in B♭</string>
+    <string name="inst_trumpet_sub_spoken">in B flat</string>
     <string name="inst_soprano">Soprano</string>
     <string name="inst_soprano_sub">E♭ cornet</string>
     <string name="inst_soprano_sub_spoken">E flat cornet</string>
@@ -630,6 +633,10 @@
     <string name="review_arranged_body">Nobody played the %1$s part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.</string>
     <string name="review_check_others">Check the other parts</string>
     <string name="review_show_mine">Show my part</string>
+    <string name="mapped_same_full">The full brass band has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
+    <string name="mapped_other_full">The full brass band has no %1$s. Your part here is %2$s, written for %3$s.</string>
+    <string name="mapped_takes_full">The full brass band has no %1$s part. You get the %2$s part, written for %1$s.</string>
+    <string name="mapped_takes_minimal">The small band has no %1$s part. You get the %2$s part, written for %1$s.</string>
     <string name="mapped_same_minimal">This small band has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
     <string name="mapped_same_quartet">This quartet has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
     <string name="mapped_other_minimal">The small band has no %1$s. Your part here is %2$s, written for %3$s.</string>
@@ -645,6 +652,9 @@
     <string name="lineup_your_part">%1$s · your part: %2$s</string>
     <string name="engine_too_old_seat">Brasscribe on your computer is too old to write for your instrument. Update it to use this.</string>
     <string name="lead_seat_refused">The tune can\'t go on your part in this band. Under Who plays the tune?, choose the band\'s usual part.</string>
+    <string name="mapped_short_full">The full brass band has no %1$s — showing %2$s</string>
+    <string name="mapped_short_takes_full">The full brass band has no %1$s part — %2$s, written for %1$s</string>
+    <string name="mapped_short_takes_minimal">The small band has no %1$s part — %2$s, written for %1$s</string>
     <string name="mapped_short_minimal">The small band has no %1$s — showing %2$s</string>
     <string name="mapped_short_quartet">The quartet has no %1$s — showing %2$s</string>
     <string name="mapped_short_none_minimal">The small band has no percussion part — showing every part</string>

@@ -18,6 +18,8 @@ data class Health(
     @SerialName("server_id") val serverId: String,
     /** "Brasscribe on <computer name>". */
     @SerialName("server_name") val serverName: String,
+    /** Which build is running (the commit and workspace stamp); null when unknown. */
+    val build: String? = null,
     val status: String = "ok",
 )
 

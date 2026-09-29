@@ -59,7 +59,8 @@ data class Seat(
 fun Seat.reading(reads: String?): String? = reads ?: this.reads.firstOrNull()
 
 /** The player's part in a lineup for their seat: [part] null when the lineup has none. */
-data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean)
+/** [takes]: the lineup's part the seat's own part replaces (a trumpet takes "Solo Cornet"); null for a band seat. */
+data class SeatPart(val part: String?, val exact: Boolean, val sameKey: Boolean, val takes: String? = null)
 
 /** Where a part comes from, as the core derives it from the arrangement. */
 enum class PartSource(val id: String) {

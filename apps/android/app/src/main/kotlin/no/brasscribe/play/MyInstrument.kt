@@ -60,8 +60,12 @@ class SeatStore(private val store: KeyValueStore) {
  */
 data class YourPart(val index: Int?, val mapped: MappedSeat? = null)
 
-/** "This small band has no 1st Baritone. Your part here is Euphonium…": [part] null when there is none. */
-data class MappedSeat(val lineup: Lineup, val seat: Seat, val part: String?, val sameKey: Boolean)
+/**
+ * "This small band has no 1st Baritone. Your part here is Euphonium…": [part] null when there is none.
+ * [takes]: the lineup part the seat's own part replaced ("The full brass band has no trumpet part. You get
+ * the Solo Cornet part, written for trumpet.").
+ */
+data class MappedSeat(val lineup: Lineup, val seat: Seat, val part: String?, val sameKey: Boolean, val takes: String? = null)
 
 /**
  * The player's seat is percussion (a seat with no clef to read): a solo take can't be written for it,
@@ -93,8 +97,15 @@ object YourParts {
             SeatChoice.Conductor -> YourPart(null)
             is SeatChoice.Player -> {
                 val seat = seats.firstOrNull { it.id == choice.seat } ?: return YourPart(leadPartIndex(parts, lineup))
-                names.indexOfFirst { it.equals(seat.name, true) }.takeIf { it >= 0 }?.let { return YourPart(it) }
                 val known = lineup ?: Lineup.ofParts(names)
+                // A seat that takes a lineup part (a trumpet takes the lead): its own part, or the part it takes.
+                known?.let { seatPart(it.core, seat.id) }?.takes?.let { takes ->
+                    names.indexOfFirst { it.equals(seat.name, true) }.takeIf { it >= 0 }
+                        ?.let { return YourPart(it, MappedSeat(known, seat, seat.name, true, takes)) }
+                    names.indexOfFirst { it.equals(takes, true) }.takeIf { it >= 0 }
+                        ?.let { return YourPart(it, MappedSeat(known, seat, takes, true)) }
+                }
+                names.indexOfFirst { it.equals(seat.name, true) }.takeIf { it >= 0 }?.let { return YourPart(it) }
                 val tries = if (known != null) listOf(known) else listOf(Lineup.MINIMAL, Lineup.QUARTET)
                 for (l in tries) {
                     val sp = seatPart(l.core, seat.id) ?: continue
