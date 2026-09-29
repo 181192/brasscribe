@@ -32,6 +32,54 @@
         87
       ]
     },
+    "solo-cornet": {
+      "instrument": "bb-cornet",
+      "source": {
+        "library": "vsco2ce",
+        "instrument": "trumpet-vib"
+      },
+      "stac_source": {
+        "library": "vsco2ce",
+        "instrument": "trumpet"
+      },
+      "eq": [
+        {
+          "type": "lowshelf",
+          "f": 350,
+          "gain_db": 2.0,
+          "q": 0.7
+        },
+        {
+          "type": "peak",
+          "f": 1600,
+          "gain_db": -2.0,
+          "q": 1.0
+        },
+        {
+          "type": "peak",
+          "f": 2600,
+          "gain_db": -3.0,
+          "q": 1.0
+        },
+        {
+          "type": "highshelf",
+          "f": 3200,
+          "gain_db": -5.0,
+          "q": 0.7
+        },
+        {
+          "type": "lowpass",
+          "f": 6000,
+          "q": 0.707
+        }
+      ],
+      "vibrato": true,
+      "why": "The solo cornet as one player, with the singing vibrato a brass-band principal cornet plays: VSCO trumpet vibrato sustains (2 layers, every 2-4 semitones) with the cornet desk's EQ. Harmonic centroid 2.14 and 1-4 kHz at +1.0 dB re 100 Hz-1 kHz, against 2.29-2.38 and -2.0..-2.3 dB for real trumpets (URMP, ChoraleBricks): a little darker than a trumpet, as a cornet is. Loops are whole vibrato cycles.",
+      "range": [
+        52,
+        82
+      ]
+    },
     "cornet-a": {
       "instrument": "bb-cornet",
       "source": {
@@ -118,6 +166,35 @@
       "range": [
         52,
         82
+      ]
+    },
+    "trumpet": {
+      "instrument": "bb-trumpet",
+      "source": {
+        "library": "iowa-mis",
+        "instrument": "trumpet"
+      },
+      "stac_source": {
+        "library": "iowa-mis",
+        "instrument": "trumpet"
+      },
+      "eq": [
+        {
+          "type": "peak",
+          "f": 2200,
+          "gain_db": -8.0,
+          "q": 0.6
+        },
+        {
+          "type": "lowpass",
+          "f": 8000,
+          "q": 0.707
+        }
+      ],
+      "why": "B-flat trumpet, not a cornet: Iowa MIS trumpet, chromatic E3-D#6 in pp/mf/ff, without the cornet EQ. The Iowa recording is close-miked (harmonic centroid 3.17, 1-4 kHz +7.1 dB against 2.3 and -2 dB for trumpets heard in a room, URMP and ChoraleBricks), so a broad 2.2 kHz dip and an 8 kHz low-pass stand in for the distance: 2.77 and +3.7 dB, still the brightest brass in the band. Staccato is the sustain cut short, so both articulations have one tone.",
+      "range": [
+        52,
+        85
       ]
     },
     "flugelhorn": {
@@ -482,20 +559,11 @@
       "instrument": "bb-cornet",
       "players": [
         {
-          "target": "cornet-a"
-        },
-        {
-          "target": "cornet-b"
-        },
-        {
-          "target": "cornet-a"
-        },
-        {
-          "target": "cornet-b"
+          "target": "solo-cornet"
         }
       ],
       "seat": "solo-cornets",
-      "gain_db": -6.0,
+      "gain_db": 0.0,
       "transposition": {
         "chromatic": -2,
         "diatonic": -1,
@@ -519,11 +587,51 @@
           "midi-program": 57,
           "midi-bank": 1
         },
-        "channel_gain_db": -3.0,
-        "layered": true,
+        "channel_gain_db": 0.0,
+        "layered": false,
         "single_voice_gain_db": 0.0
       },
-      "balance_lu": 0.0
+      "balance_lu": 0.0,
+      "note": "The lead: one player with vibrato (solo-cornet), as a brass band's principal cornet plays a solo. The back-row desks (2nd and 3rd Cornet) keep the layered section sound."
+    },
+    "Trumpet": {
+      "instrument": "bb-trumpet",
+      "players": [
+        {
+          "target": "trumpet"
+        }
+      ],
+      "seat": "solo-cornets",
+      "gain_db": 0.0,
+      "transposition": {
+        "chromatic": -2,
+        "diatonic": -1,
+        "written_clef": "treble"
+      },
+      "range": {
+        "pro": [
+          52,
+          85
+        ],
+        "comfortable": [
+          52,
+          80
+        ]
+      },
+      "band_soundfont": {
+        "program": 56,
+        "bank": 7,
+        "staccato_bank": 71,
+        "musicxml": {
+          "midi-program": 57,
+          "midi-bank": 8
+        },
+        "channel_gain_db": 0.0,
+        "layered": false,
+        "single_voice_gain_db": 0.0
+      },
+      "balance_lu": 0.0,
+      "note": "The trumpet seat's own part: it takes the lead part in place (docs/plan/trumpet.md), one player."
     },
     "1st Cornet": {
       "instrument": "bb-cornet",
@@ -557,8 +665,8 @@
           "midi-program": 57,
           "midi-bank": 1
         },
-        "channel_gain_db": -3.0,
-        "layered": true,
+        "channel_gain_db": 0.0,
+        "layered": false,
         "single_voice_gain_db": 0.0
       },
       "preset_of": "Solo Cornet",
@@ -569,7 +677,8 @@
       "instrument": "bb-cornet",
       "players": [
         {
-          "target": "cornet-b"
+          "target": "cornet-b",
+          "variant": 2
         }
       ],
       "seat": "repiano",
@@ -648,10 +757,12 @@
       "instrument": "bb-cornet",
       "players": [
         {
-          "target": "cornet-b"
+          "target": "cornet-b",
+          "variant": 1
         },
         {
-          "target": "cornet-a"
+          "target": "cornet-a",
+          "variant": 1
         }
       ],
       "seat": "third-cornets",
@@ -805,7 +916,8 @@
       "instrument": "eb-tenor-horn",
       "players": [
         {
-          "target": "tenor-horn"
+          "target": "tenor-horn",
+          "variant": 1
         }
       ],
       "seat": "first-horn",
@@ -843,7 +955,8 @@
       "instrument": "eb-tenor-horn",
       "players": [
         {
-          "target": "tenor-horn"
+          "target": "tenor-horn",
+          "variant": 2
         }
       ],
       "seat": "second-horn",
@@ -919,7 +1032,8 @@
       "instrument": "baritone",
       "players": [
         {
-          "target": "baritone"
+          "target": "baritone",
+          "variant": 1
         }
       ],
       "seat": "second-baritone",
@@ -995,7 +1109,8 @@
       "instrument": "tenor-trombone",
       "players": [
         {
-          "target": "trombone"
+          "target": "trombone",
+          "variant": 1
         }
       ],
       "seat": "second-trombone",
@@ -1071,10 +1186,12 @@
       "instrument": "euphonium",
       "players": [
         {
-          "target": "euphonium"
+          "target": "euphonium",
+          "variant": 2
         },
         {
-          "target": "euphonium"
+          "target": "euphonium",
+          "variant": 2
         }
       ],
       "seat": "euphoniums",
@@ -1153,10 +1270,12 @@
       "instrument": "bb-bass",
       "players": [
         {
-          "target": "bb-bass"
+          "target": "bb-bass",
+          "variant": 1
         },
         {
-          "target": "bb-bass"
+          "target": "bb-bass",
+          "variant": 1
         }
       ],
       "seat": "bb-basses",
@@ -1199,7 +1318,7 @@
       ],
       "seat": "percussion",
       "gain_db": -13.0,
-      "note": "Drums are rendered with MS Basic (bank 128) in both tiers so an A/B test isolates the brass.",
+      "note": "The band kit (bank 128 program 0): VSCO 2 CE concert bass drum, snare and clash cymbals with MS Basic's hi-hats, toms and hand percussion. The offline renderer uses the same kit.",
       "transposition": {
         "chromatic": 0,
         "diatonic": 0,
@@ -1223,7 +1342,7 @@
           "midi-channel": 10,
           "midi-program": 1
         },
-        "note": "General MIDI Standard kit from MS Basic (MIT), GM drum note numbers.",
+        "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1.",
         "channel_gain_db": -13.0,
         "single_voice_gain_db": -13.0,
         "layered": false
@@ -1238,10 +1357,13 @@
     "file": "data/sounds/band/brasscribe-band.sf2",
     "about": "One SoundFont for the whole band, built by sounds/band.py. Every brass part has its own sustain preset at (bank, program) and a staccato preset at (staccato_bank = bank + 64, program). The program is the part's General MIDI program from music/src/brasscribe_music/instruments.py (gm_program), so a GM player that ignores banks still plays the right family; bank 0 of each program is the section principal (Solo Cornet, 1st Trombone, E-flat Bass, Solo Horn), which is also what a bank-less lookup finds. Percussion is bank 128 program 0 on MIDI channel 10. MusicXML numbers are 1-based: <midi-program> = program + 1, <midi-bank> = bank + 1.",
     "layering": "A part whose players use more than one target (the cornet desks) layers those targets in its preset, detuned by +-3 cents, so one MIDI channel sounds like a section; the second voice adds about 3 dB, which channel_gain_db compensates.",
-    "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine."
+    "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine.",
+    "pop_kit_program": 1,
+    "kits": "Bank 128 program 0 is the band kit: MS Basic's GM Standard kit (MIT) with the bass drums (35, 36), snares (38, 40) and crash cymbals (49, 57) replaced by VSCO 2 CE concert percussion (CC0): a muted concert bass drum, a concert snare and clash cymbals, each hit levelled to the MS Basic drum it replaces. Hi-hats, toms, side stick, ride and tambourine stay MS Basic. Bank 128 program 1 is MS Basic's Standard kit unchanged, a pop kit; nothing selects it yet (the arranger has no style signal).",
+    "desk_variants": "Parts that play the same target (the three tenor horns, the two baritones, the two trombones) or the same recordings (baritone, euphonium and trombone from VSCO tenor trombone; E-flat and B-flat bass from VSCO tuba; the cornet desks) use different desk variants (players[].variant): variant v sounds, for each key, another round robin of the note or the v-th nearest other sampled note within 3 semitones. Two parts in unison then sum like two players (about +3 dB) instead of one waveform doubled (+6 dB, and a comb filter where the EQs differ). A key with no other note that close plays variant 0's sample 4 cents off. No sample is added."
   },
   "lineups": {
-    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/brasscribe-core/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset.",
+    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/brasscribe-core/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset. The two 'trumpet seat' lineups are the arranger's lineups with a trumpet seat, whose Trumpet part takes the lead part in place.",
     "Brass band": [
       "Soprano Cornet",
       "Solo Cornet",
@@ -1277,6 +1399,36 @@
       "2nd Cornet",
       "Tenor Horn",
       "Euphonium"
+    ],
+    "Brass band, trumpet seat": [
+      "Soprano Cornet",
+      "Trumpet",
+      "Repiano Cornet",
+      "2nd Cornet",
+      "3rd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Horn",
+      "2nd Horn",
+      "1st Baritone",
+      "2nd Baritone",
+      "1st Trombone",
+      "2nd Trombone",
+      "Bass Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass",
+      "Percussion"
+    ],
+    "Minimal brass, trumpet seat": [
+      "Trumpet",
+      "2nd Cornet",
+      "Flugelhorn",
+      "Solo Horn",
+      "1st Trombone",
+      "Euphonium",
+      "E♭ Bass",
+      "B♭ Bass"
     ]
   },
   "resolve": {
@@ -1364,7 +1516,11 @@
       ],
       [
         "trumpet",
-        "Solo Cornet"
+        "Trumpet"
+      ],
+      [
+        "trompet",
+        "Trumpet"
       ],
       [
         "2nd horn",
@@ -1448,7 +1604,9 @@
       "eb-soprano-cornet": "Soprano Cornet",
       "brass.cornet": "Solo Cornet",
       "bb-cornet": "Solo Cornet",
-      "brass.trumpet": "Solo Cornet",
+      "brass.trumpet": "Trumpet",
+      "brass.trumpet.bflat": "Trumpet",
+      "bb-trumpet": "Trumpet",
       "brass.flugelhorn": "Flugelhorn",
       "flugelhorn": "Flugelhorn",
       "brass.alto-horn": "Tenor Horn",

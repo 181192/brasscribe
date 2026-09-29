@@ -23,7 +23,7 @@
     "step": "exact",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -244,7 +244,7 @@
     "step": "exact",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -258,6 +258,19 @@
     "program": 60,
     "bank": 0,
     "channel_gain_db": -3.0,
+    "percussion": false
+   }
+  },
+  {
+   "name": "Trumpet",
+   "instrument": null,
+   "program": null,
+   "expect": {
+    "part": "Trumpet",
+    "step": "exact",
+    "program": 56,
+    "bank": 7,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -283,7 +296,7 @@
     "step": "alias",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -296,7 +309,7 @@
     "step": "keyword",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -309,7 +322,7 @@
     "step": "exact",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -318,11 +331,11 @@
    "instrument": null,
    "program": null,
    "expect": {
-    "part": "Solo Cornet",
+    "part": "Trumpet",
     "step": "keyword",
     "program": 56,
-    "bank": 0,
-    "channel_gain_db": -3.0,
+    "bank": 7,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },
@@ -556,7 +569,7 @@
     "step": "program",
     "program": 56,
     "bank": 0,
-    "channel_gain_db": -3.0,
+    "channel_gain_db": 0.0,
     "percussion": false
    }
   },

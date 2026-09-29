@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -62,15 +63,34 @@ def loops() -> None:
             # natural continuation y[a-w:a] -> y[a:a+w]
             pre_end, pre_start = y[b - w : b], y[a - w : a]
             corr = float(np.dot(pre_end, pre_start) / (np.linalg.norm(pre_end) * np.linalg.norm(pre_start) + 1e-12))
-            rows.append((t["target"], s["file"], step, corr))
+            rows.append((t["target"], s["file"], step, corr, loop_pump_db(y, a, b)))
     steps = np.array([r[2] for r in rows])
     corrs = np.array([r[3] for r in rows])
+    pumps = np.array([r[4] for r in rows])
     print(f"{len(rows)} loops: step/p99-natural median {np.median(steps):.3f}, p99 {np.percentile(steps, 99):.3f}, max {steps.max():.3f}; "
-          f"seam correlation median {np.median(corrs):.3f}, p1 {np.percentile(corrs, 1):.3f}, min {corrs.min():.3f}")
-    bad = [r for r in rows if r[2] > 1.0 or r[3] < 0.9]
+          f"seam correlation median {np.median(corrs):.3f}, p1 {np.percentile(corrs, 1):.3f}, min {corrs.min():.3f}; "
+          f"pump median {np.median(pumps):.2f} dB, p95 {np.percentile(pumps, 95):.2f}, max {pumps.max():.2f}")
+    bad = [r for r in rows if r[2] > 1.0 or r[3] < 0.9 or r[4] > PUMP_MAX_DB]
     for r in bad:
-        print(f"  check {r[0]:15s} {r[1]:40s} step {r[2]:.2f} corr {r[3]:.3f}")
-    print(f"{len(bad)} outliers (jump step above the largest natural step, or correlation < 0.9)")
+        print(f"  check {r[0]:15s} {r[1]:40s} step {r[2]:.2f} corr {r[3]:.3f} pump {r[4]:.2f} dB")
+    print(f"{len(bad)} outliers (jump step above the largest natural step, correlation < 0.9, "
+          f"or the held note's level swinging more than {PUMP_MAX_DB} dB per loop)")
+
+
+PUMP_MAX_DB = 3.0
+
+
+def loop_pump_db(y: np.ndarray, a: int, b: int, seconds: float = 6.0) -> float:
+    """How much a held note's level swings once per loop: play the sample looped for `seconds`,
+    take the level over 300 ms windows (10 ms hop) from the loop start on, and return max - min
+    in dB. A loop cut from a decaying or swelling stretch saws up and down at the loop rate."""
+    body = y[a:b]
+    reps = int(np.ceil(seconds * SR / max(1, len(body))))
+    held = np.concatenate([y[:b]] + [body] * reps)[a: a + int(seconds * SR)]
+    n, hop = int(0.3 * SR), int(0.01 * SR)
+    p = np.convolve(held ** 2, np.ones(n) / n, mode="valid")[::hop]
+    lv = 10 * np.log10(p + 1e-20)
+    return float(lv.max() - lv.min())
 
 
 def balance(runs: list[str]) -> None:
@@ -114,11 +134,12 @@ def coverage() -> int:
                 problems.append(f"{lineup}/{name}: no preset bank {r.bank} program {r.program} in {BAND_SF2.name}")
                 continue
             if inst.id == "drum-kit":
-                rows.append((lineup, name, f"bank 128 kit '{pr.name}'", "GM drum kit (MS Basic, MIT)", "-", "-", "-", "-"))
+                rows.append((lineup, name, f"bank 128 kit '{pr.name}'", "band kit (VSCO 2 CE, CC0; MS Basic, MIT)", "-", "-", "-", "-"))
                 continue
             inames = [sf.instrument(z.ref).name for z in pr.zones if z.ref is not None]
-            targets = [n.rsplit("-", 1)[0] for n in inames]
-            bad = [n for n in inames if n.rsplit("-", 1)[0] not in mapping["targets"]]
+            # instrument names are <target>-<art>, or <target>-<art>-<desk variant>
+            targets = [re.sub(r"-(sus|stac)(-\d+)?$", "", n) for n in inames]
+            bad = [n for n, t_ in zip(inames, targets) if t_ not in mapping["targets"]]
             if bad:
                 problems.append(f"{lineup}/{name}: preset uses non-target instruments {bad}")
             worst_c, worst_p, unlooped, rel = 0, 0, 0, 9.0

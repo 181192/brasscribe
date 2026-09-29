@@ -4,7 +4,7 @@
 
 alphaTab's Kotlin synth holds every sample of a SoundFont as floats on the Java heap, so the full
 brasscribe-band.sf2 (149 MB at 16 bits) runs out of memory on Android (576 MB large heap). This
-variant keeps the same presets at the same (bank, program), the same layering and the same drum kit,
+variant keeps the same presets at the same (bank, program), the same layering, desk variants and kits,
 with:
   * the sustain presets only (staccato banks bank + 64 are left out; alphaTab falls back to bank 0),
   * samples resampled to --rate, 16-bit, with every loop rebuilt at the new rate (below).
@@ -87,29 +87,17 @@ def resampled(s: sf2.Sample, rate: int) -> sf2.Sample:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("-o", "--out", default=str(REPO / "data" / "sounds" / "band" / "brasscribe-band-mobile.sf2"))
+    ap.add_argument("-o", "--out", default=str(band.BUILT.parent / "band" / "brasscribe-band-mobile.sf2"))
     ap.add_argument("--rate", type=int, default=22050)
     args = ap.parse_args()
     mapping = json.loads((SOUNDS / "mapping.json").read_text())
-    brass = {n: p for n, p in mapping["parts"].items() if p["players"][0]["target"] != "msbasic-drums" and "preset_of" not in p}
-    bank = band.Bank()
-    for name, part in brass.items():
-        bs = part["band_soundfont"]
-        targets = band.layers(part["players"])
-        zones = []
-        for li, tid in enumerate(targets):
-            gens = []
-            if len(targets) > 1:
-                gens.append((band.G_FINE_TUNE, band.LAYER_DETUNE_CENTS if li % 2 == 0 else -band.LAYER_DETUNE_CENTS))
-            zones.append(sf2.RawZone(gens, [], bank.target(tid, "sus")))
-        short = name.replace("♭", "b").replace("Cornet", "Cnt").replace("Trombone", "Tbn").replace("Baritone", "Bar")
-        bank.presets.append(sf2.RawPreset(f"{short} sus"[:19], bs["program"], bs["bank"], zones))
-    bank.drum_kit(band.MSBASIC, mapping["parts"]["Percussion"]["band_soundfont"]["program"])
+    bank, _ = band.build_bank(mapping, arts=("sus",))
     samples = [resampled(s, args.rate) for s in bank.samples]
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     sf2.write_raw(args.out, "brasscribe band mobile", samples, bank.instruments, bank.presets, bits=16,
                   comment="Phone variant of brasscribe-band.sf2 (sustain presets, "
-                          f"{args.rate} Hz, loops rebuilt): VSCO 2 CE (CC0), Univ. of Iowa MIS; drum kit from MuseScore MS Basic (MIT).")
+                          f"{args.rate} Hz, loops rebuilt): VSCO 2 CE (CC0), Univ. of Iowa MIS; band kit from VSCO 2 CE and "
+                          "MuseScore MS Basic (MIT), pop kit from MS Basic. See sounds/LICENSES.md.")
     print(f"{args.out}: {Path(args.out).stat().st_size / 1e6:.1f} MB, {len(samples)} samples, {len(bank.presets)} presets")
 
 
