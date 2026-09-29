@@ -128,3 +128,16 @@ def test_a_low_take_in_the_cornets_range_is_written_as_played():
     assert in_register(solo, CORNET.solo_range)
     assert [n.pitch for n in place_soloist(solo, MINIMAL_BAND.lead_part, [])] == [n.pitch for n in solo]
     assert [n.pitch for n in _place_line(solo, MINIMAL_BAND.lead_part, [])] != [n.pitch for n in solo]
+
+
+def test_a_lead_a_semitone_past_the_range_moves_only_around_its_peaks(mikkel):
+    # Mikkel a semitone up: 5 notes above the cornet's solo range of 84. Only the passages around them
+    # change octave, split at their leaps inside the solo range, never by two octaves.
+    up = replace(mikkel, voices=[replace(v, notes=[replace(n, pitch=n.pitch + 1) for n in v.notes]) if v.layer == "solo" else v
+                                 for v in mikkel.voices])
+    solo = {n.start: n.pitch for n in _layer(up, "solo")}
+    lead = arrange_layers(up).parts["Solo Cornet"]
+    moved = [n for n in lead if n.pitch != solo[n.start]]
+    assert all(abs(n.pitch - solo[n.start]) == 12 for n in moved)
+    assert all(52 <= n.pitch <= 84 for n in lead)
+    assert len(moved) < 60, len(moved)

@@ -276,13 +276,16 @@ fn fewest_octaves(pitch: i32, range: (i32, i32)) -> Option<i32> {
 /// - a phrase that then fits is written as played;
 /// - a phrase that still doesn't fit moves as a whole by the fewest octaves that fit it (ties: nearest
 ///   the previous note), so its contour is kept;
-/// - a phrase no octave fits is placed as a non-soloist lead is (`place_phrase`: split at its leaps).
+/// - a phrase no octave fits is split at its largest leaps (`place_phrase`) inside the solo range, so
+///   only the passage past the range changes octave.
 pub fn place_soloist(notes: &[Note], part: &Part, warnings: &mut Vec<String>) -> Vec<Note> {
     let (lo, hi) = part.instrument.solo_range();
     let fits = |p: i32| lo <= p && p <= hi;
     let mut placed: Vec<Note> = Vec::new();
-    for mut phrase in phrases(notes) {
+    for phrase in phrases(notes) {
         let orig: Vec<i32> = phrase.iter().map(|n| n.pitch).collect();
+        let mut fixed = phrase.clone();
+        let mut moves = Vec::new();
         for i in 0..phrase.len() {
             let p = orig[i];
             let nb: Vec<i32> = [i.checked_sub(1), Some(i + 1)].into_iter().flatten().filter_map(|j| orig.get(j).copied()).collect();
@@ -290,9 +293,16 @@ pub fn place_soloist(notes: &[Note], part: &Part, warnings: &mut Vec<String>) ->
                 continue;
             }
             if let Some(q) = fewest_octaves(p, (lo, hi)) {
-                warnings.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, p, q, phrase[i].start));
-                phrase[i].pitch = q;
+                moves.push(format!("{}: moved {} to {} at tick {} (outside the range)", part.name, p, q, phrase[i].start));
+                fixed[i].pitch = q;
             }
+        }
+        // The lone outliers moved, the phrase fits as played: keep it. Otherwise the phrase moves as a
+        // whole from the notes as played (an outlier moved first would move twice).
+        if fixed.iter().all(|n| fits(n.pitch)) {
+            warnings.extend(moves);
+            placed.extend(fixed);
+            continue;
         }
         let prev = placed.last().map(|n| n.pitch);
         let shift = (-4..=4i32)
@@ -301,11 +311,27 @@ pub fn place_soloist(notes: &[Note], part: &Part, warnings: &mut Vec<String>) ->
         match shift {
             Some(k) => placed.extend(phrase.iter().map(|n| renote(n, n.pitch + 12 * k))),
             None => {
-                place_phrase(&phrase, part, warnings, 0, false, false, &mut placed, false, None);
+                let soloist = Part { instrument: soloist_instrument(part.instrument), ..part.clone() };
+                place_phrase(&phrase, &soloist, warnings, 0, false, false, &mut placed, false, None);
             }
         }
     }
     hold_small_gaps(placed)
+}
+
+/// `inst` with its solo range as both its reading range and its placement limit: `place_phrase` then
+/// places and splits a soloist's phrase inside the solo range, not the section's.
+fn soloist_instrument(inst: &'static crate::instruments::Instrument) -> &'static crate::instruments::Instrument {
+    use std::sync::{Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<Vec<&'static crate::instruments::Instrument>>> = OnceLock::new();
+    let r = Some(inst.solo_range());
+    let mut all = CACHE.get_or_init(|| Mutex::new(Vec::new())).lock().expect("soloist instruments");
+    if let Some(i) = all.iter().find(|i| i.id == inst.id && i.chromatic == inst.chromatic && i.reading == r && i.reading_limit == r) {
+        return i;
+    }
+    let i: &'static crate::instruments::Instrument = Box::leak(Box::new(crate::instruments::Instrument { reading: r, reading_limit: r, ..inst.clone() }));
+    all.push(i);
+    i
 }
 
 /// Inside the instrument's preferred (reading) range.

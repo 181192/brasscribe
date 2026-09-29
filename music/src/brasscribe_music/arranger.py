@@ -211,7 +211,8 @@ def place_soloist(notes: list[Note], part: Part, warnings: list[str]) -> list[No
     - a phrase that then fits is written as played;
     - a phrase that still doesn't fit moves as a whole by the fewest octaves that fit it (ties: nearest
       the previous note), so its contour is kept;
-    - a phrase no octave fits is placed as a non-soloist lead is (_place_phrase: split at its leaps).
+    - a phrase no octave fits is split at its largest leaps (_place_phrase) inside the solo range, so only
+      the passage past the range changes octave.
     """
     lo, hi = rng = part.instrument.solo_range
 
@@ -221,22 +222,29 @@ def place_soloist(notes: list[Note], part: Part, warnings: list[str]) -> list[No
     placed: list[Note] = []
     for phrase in _phrases(notes):
         orig = [n.pitch for n in phrase]
-        phrase = list(phrase)
+        fixed, moves = list(phrase), []
         for i, p in enumerate(orig):
             nb = [orig[j] for j in (i - 1, i + 1) if 0 <= j < len(orig)]
             if fits(p) or not nb or not all(fits(q) and abs(p - q) >= OUTLIER_JUMP for q in nb):
                 continue
             q = _fewest_octaves(p, rng)
             if q is not None:
-                warnings.append(f"{part.name}: moved {p} to {q} at tick {phrase[i].start} (outside the range)")
-                phrase[i] = _moved(phrase[i], q)
+                moves.append(f"{part.name}: moved {p} to {q} at tick {phrase[i].start} (outside the range)")
+                fixed[i] = _moved(phrase[i], q)
+        # The lone outliers moved, the phrase fits as played: keep it. Otherwise the phrase moves as a
+        # whole from the notes as played (an outlier moved first would move twice).
+        if all(fits(n.pitch) for n in fixed):
+            warnings.extend(moves)
+            placed.extend(_moved(n, n.pitch) for n in fixed)
+            continue
         prev = placed[-1].pitch if placed else None
         ks = [k for k in range(-4, 5) if all(fits(n.pitch + 12 * k) for n in phrase)]
         if ks:
             k = min(ks, key=lambda k: (abs(k), abs(phrase[0].pitch + 12 * k - prev) if prev is not None else 0))
             placed.extend(_moved(n, n.pitch + 12 * k) for n in phrase)
         else:
-            _place_phrase(phrase, part, warnings, 0, False, False, placed)
+            soloist = replace(part, instrument=replace(part.instrument, reading=rng, reading_limit=rng))
+            _place_phrase(phrase, soloist, warnings, 0, False, False, placed)
     return _hold_small_gaps(placed)
 
 
