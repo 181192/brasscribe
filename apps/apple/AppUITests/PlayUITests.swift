@@ -372,12 +372,13 @@ final class PlayUITests: XCTestCase {
             let line = "AUDIT \(issue.auditType) | \(issue.compactDescription) | \(issue.element?.identifier ?? "") \(issue.element?.label ?? "") type=\(issue.element?.elementType.rawValue ?? 0) frame=\(issue.element?.frame ?? .zero) \(issue.detailedDescription.prefix(200))"
             issues.append(line)
             print(line)
-            // Not ours: the system menu bar, and SwiftUI's unlabeled hosting groups: the
-            // window group, and on macOS the sidebar and inspector columns (groups as tall as
-            // the window). All are listed in the report.
+            // Not ours: the system menu bar, a tooltip left up by the resting pointer (AppKit draws
+            // `.help` text in a help tag without a description; the text is the button's help),
+            // and SwiftUI's unlabeled hosting groups: the window group, and on macOS the sidebar
+            // and inspector columns (groups as tall as the window). All are listed in the report.
             let window = self.app.windows.firstMatch.frame
             let f = issue.element?.frame ?? .zero
-            let systemOwned = issue.element?.elementType == .menuBar || f.minY == 0
+            let systemOwned = issue.element?.elementType == .menuBar || issue.element?.elementType == .helpTag || f.minY == 0
                 || (issue.element?.elementType == .group && (f.width >= window.width - 1 || f.height >= window.height - 60))
             if (issue.auditType == .sufficientElementDescription || issue.auditType == .hitRegion), !systemOwned {
                 blocking.append(line)

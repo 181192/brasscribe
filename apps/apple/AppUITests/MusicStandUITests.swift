@@ -39,7 +39,17 @@ final class MusicStandUITests: XCTestCase {
         XCTAssertTrue(element("standScore").waitForExistence(timeout: 30))
     }
 
-    private var position: String { element("standPosition").label }
+    /// The position line. iOS reports a text's words as its label; the Mac reports them as its value.
+    private var position: String {
+        let e = element("standPosition")
+        return e.label.isEmpty ? (e.value as? String ?? "") : e.label
+    }
+
+    /// Waits until the position line satisfies `test`.
+    private func waitForPosition(timeout: TimeInterval, _ test: @escaping (String) -> Bool) -> Bool {
+        XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in test(self.position) }, object: nil)],
+                       timeout: timeout) == .completed
+    }
 
     private func waitFor(_ e: XCUIElement, exists: Bool, timeout: TimeInterval) -> Bool {
         XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == %@", NSNumber(value: exists)), object: e)],
@@ -60,14 +70,11 @@ final class MusicStandUITests: XCTestCase {
         let only = element("standOnlyMine")
         XCTAssertTrue(only.exists)
         only.safeTap(app)
-        let all = NSPredicate(format: "label CONTAINS 'All parts'")
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: all, object: element("standPosition"))], timeout: 30), .completed,
-                       "Only my part off: \(position)")
+        XCTAssertTrue(waitForPosition(timeout: 30) { $0.contains("All parts") }, "Only my part off: \(position)")
         only.safeTap(app)
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", mine),
-                                                                      object: element("standPosition"))], timeout: 30), .completed)
+        XCTAssertTrue(waitForPosition(timeout: 30) { $0 == mine }, "Only my part on again: \(position)")
         // "Only my part" is on: the part line says it is yours
-        XCTAssertTrue(position.contains("(you)") || element("standPosition").label.contains("(you)"), position)
+        XCTAssertTrue(position.contains("(you)"), position)
         app.buttons["standLeave"].safeTap(app)
         XCTAssertTrue(app.buttons["musicStand"].waitForExistence(timeout: 10), "back on the score")
         XCTAssertTrue(app.buttons["playPause"].waitForExistence(timeout: 10))

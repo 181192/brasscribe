@@ -38,6 +38,8 @@ import TranscriptionKit
         var sidebar: Bool
         /// Landmarks (`layoutProbe`) in the content's coordinates.
         var probes: [String: CGRect]
+        /// A sheet: its size once laid out (a form's height is known only then).
+        var fitting: CGSize? = nil
     }
 
     struct ScreenReport: Codable {
@@ -98,9 +100,14 @@ import TranscriptionKit
         let file = "sheet-\(name)"
         Thumbnails.save(host.bitmap(), name: file, width: 400)
         let probes = LayoutProbe.frames
+        // its ideal size now that it is laid out (a form's content height is known only then)
+        host.hosting.sizingOptions = [.minSize, .intrinsicContentSize]
+        await host.settle(0.3)
+        let fitting = host.hosting.intrinsicContentSize
         host.close()
         return ScreenReport(screen: name, kind: "sheet", sizes: measured,
-                            renders: [Render(screen: name, size: "ideal", window: size, content: size, file: file, sidebar: false, probes: probes)])
+                            renders: [Render(screen: name, size: "ideal", window: size, content: size, file: file, sidebar: false,
+                                             probes: probes, fitting: fitting)])
     }
 
     @Test(.enabled(if: fixtureDir() != nil)) func everyScreenAtEverySize() async throws {
@@ -188,6 +195,33 @@ import TranscriptionKit
 
         Thumbnails.report(reports, name: "measurements")
         check(reports, standPages: standPages, spreads: spreads)
+    }
+
+    /// SwiftUI raised a later window's minimum to 900 × 620 with the same layout; the app holds it
+    /// at 900 × 600 however often SwiftUI sets it again.
+    @Test func windowMinimumHoldsAt900x600() async {
+        let host = OffscreenHost(Color.clear.frame(minWidth: 200, minHeight: 200), size: CGSize(width: 1280, height: 748))
+        host.window.styleMask.insert(.titled)
+        host.window.styleMask.insert(.fullSizeContentView)
+        WindowMinimum.hold(host.window)
+        #expect(host.window.minSize == WindowFit.minimumWindow)
+        host.window.contentMinSize = CGSize(width: 900, height: 620)
+        #expect(host.window.contentMinSize == WindowMinimum.contentMinimum(host.window))
+        #expect(host.window.frameRect(forContentRect: CGRect(origin: .zero, size: host.window.contentMinSize)).size == WindowFit.minimumWindow)
+        host.window.contentMinSize = CGSize(width: 1291, height: 855)
+        #expect(host.window.frameRect(forContentRect: CGRect(origin: .zero, size: host.window.contentMinSize)).size == WindowFit.minimumWindow)
+        host.close()
+    }
+
+    /// A sheet hangs from below the window's toolbar: its room ends at the visible frame's bottom.
+    @Test func sheetRoomEndsAboveTheDock() {
+        // the VM's screen: 1440 × 900, menu bar 30 pt, Dock 79 pt
+        let visible = CGRect(x: 0, y: 79, width: 1440, height: 791)
+        // a sheet whose top is 122 pt below the screen's top: 699 pt to the Dock, less than 90 % (711)
+        #expect(SheetSize.maxHeight(top: 900 - 122, visible: visible) == 699)
+        // a sheet high on a tall screen: 90 % of the visible height
+        #expect(SheetSize.maxHeight(top: 860, visible: visible) == 711)
+        #expect(SheetSize.maxHeight(top: 50, visible: visible) == 0)
     }
 
     // MARK: the rules
@@ -299,6 +333,13 @@ import TranscriptionKit
         if let s = sheets.first(where: { $0.screen == "settings" }) {
             #expect(s.sizes.ideal.width <= 680 && s.sizes.ideal.width >= 520, "Settings opens \(s.sizes.ideal.width) wide")
             #expect(s.renders.first?.probes["settingsDone"] != nil, "Settings on the Mac has a Done button")
+        }
+        // Settings is a form taller than any screen: laid out, the sheet is at most the cap
+        for name in ["settings", "settings-pairing"] {
+            guard let fitting = sheets.first(where: { $0.screen == name })?.renders.first?.fitting else {
+                Issue.record("\(name) not rendered"); continue
+            }
+            #expect(fitting.height >= 360 && fitting.height <= maxHeight + 1, "\(name) is \(fitting.height) pt tall, the cap is \(maxHeight)")
         }
     }
 }

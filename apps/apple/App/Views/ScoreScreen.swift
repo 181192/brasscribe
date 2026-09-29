@@ -17,6 +17,13 @@ struct ScoreScreen: View {
             .toolbar { editToolbar }
             .task { await loadModel() }
             .onDisappear { model?.stopAll() }
+            // "Open on the music stand" for the score that is already open: the path does not change,
+            // so no new screen loads to take the request
+            .onChange(of: app.openOnStand) { _, row in
+                guard let row, row == piece.id.uuidString, let model else { return }
+                app.openOnStand = nil
+                if model.stand == nil { model.enterStand(from: .library(row)) }
+            }
     }
 
     @ViewBuilder private var screenContent: some View {
@@ -143,6 +150,7 @@ struct PracticeView: View {
             }
             .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
             .heightShare(Self.headerShare, of: screenHeight)
+            .accessibilitySortPriority(StackedAccessibility.header)
             Divider().overlay(Color.Brasscribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
@@ -153,6 +161,7 @@ struct PracticeView: View {
                             .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                             .shadow(color: .black.opacity(0.15), radius: 4)
                             .accessibilityLabel(Text("Video of the performance, synced to the score"))
+                            .accessibilitySortPriority(StackedAccessibility.overlay)
                     }
                 }
                 .padding(Space.s3)
@@ -168,6 +177,8 @@ struct PracticeView: View {
             .heightShare(Self.playerShare, of: screenHeight)
             .background(Color.Brasscribe.surface.ignoresSafeArea(edges: .bottom))
             .accessibilityElement(children: .contain)
+            // the score's scroll content runs on under the band: see `StackedAccessibility`
+            .accessibilitySortPriority(StackedAccessibility.overlay)
             .accessibilityIdentifier("playerArea")
         }
         #if os(macOS)
@@ -1211,6 +1222,18 @@ struct PlayerLayerView: NSViewRepresentable {
     func updateNSView(_ v: PlayerLayerNSView, context: Context) { v.playerLayer.player = player }
 }
 #endif
+
+/// Sort priorities for controls drawn over the score. On the Mac, SwiftUI's accessibility hit test
+/// (VoiceOver's pointer, Switch Control, XCUITest's `isHittable`) returns the first element in
+/// accessibility order whose frame holds the point, whatever is drawn on top. The score comes
+/// first in the view tree, and its frame (with the scroll view's content, which runs on past the
+/// visible part) covers the player band, the stand's controls and the video, so a pointer on Play
+/// found the score. Ordering the overlaid controls before the score makes the hit test find them;
+/// the header keeps its place at the top of the reading order.
+enum StackedAccessibility {
+    static let header: Double = 2
+    static let overlay: Double = 1
+}
 
 extension View {
     /// At least 44 × 44 pt to hit (WCAG 2.5.8 asks for 24; Apple's guideline is 44).

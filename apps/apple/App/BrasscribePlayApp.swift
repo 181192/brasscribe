@@ -309,11 +309,12 @@ struct LibrarySidebar: View {
                         row(title: entry.title, icon: entry.piece == nil ? BrasscribeIcon.computer.systemName : BrasscribeIcon.score.systemName,
                             selected: entry.piece?.id == openPiece && openPiece != nil) { app.open(entry) }
                             .scoreRowFocus(entry.id)
+                            .accessibilityIdentifier("sidebar-\(entry.title)")
                         if app.openingScore == entry.id { ProgressView().controlSize(.small) }
                         ScoreOptionsMenu(entry: entry)
                     }
+                    // the identifiers sit on the row and on its menu: one here would override both
                     .contextMenu { ScoreOptionItems(entry: entry) }
-                    .accessibilityIdentifier("sidebar-\(entry.title)")
                 }
             }
             .padding(Space.s3)
@@ -414,6 +415,7 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.arguments.contains("-ui-test-window") {
             placed = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main) { n in
                 guard let w = n.object as? NSWindow, let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+                MainActor.assumeIsolated { WindowMinimum.keep(w) }
                 if w.styleMask.contains(.fullScreen) { w.toggleFullScreen(nil) }
                 let v = screen.visibleFrame.insetBy(dx: 20, dy: 20)
                 let size = CGSize(width: min(1200, v.width), height: min(820, v.height))
@@ -432,6 +434,7 @@ final class MacLaunch: NSObject, NSApplicationDelegate {
                     // while the pointer drags an edge the window follows it; it is fitted when the drag ends
                     if n.name == NSWindow.didResizeNotification, w.inLiveResize { return }
                     MainActor.assumeIsolated {
+                        WindowMinimum.keep(w)
                         ZoomToVisibleFrame.install(on: w)
                         Self.fit(w)
                     }

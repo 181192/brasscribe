@@ -295,6 +295,8 @@ struct MusicStandView: View {
         .padding(.vertical, Space.s2)
         // the stand's chrome grows with the text up to a point, so the music keeps its room
         .dynamicTypeSize(...(form == .phoneSide ? DynamicTypeSize.xxLarge : .accessibility1))
+        // read first, before the controls that sit over the music (`StackedAccessibility`)
+        .accessibilitySortPriority(StackedAccessibility.header)
     }
 
     private var leaveButton: some View {
@@ -353,6 +355,8 @@ struct MusicStandView: View {
         .dynamicTypeSize(...(form == .phoneSide ? DynamicTypeSize.xxLarge : .accessibility1))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Music stand controls"))
+        // drawn over the music: see `StackedAccessibility`
+        .accessibilitySortPriority(StackedAccessibility.overlay)
         .accessibilityIdentifier("standLayer")
     }
 
@@ -495,11 +499,19 @@ struct MusicStandView: View {
             .accessibilityIdentifier("standHint")
     }
 
-    // MARK: keys (§7): leaving and play; the page keys are the onKeyPress above
+    // MARK: keys (§7): leaving, play, and on the Mac the page keys; the arrows are the onKeyPress above
 
     private var keys: some View {
         Group {
             key(.escape) { leave() }
+            #if os(macOS)
+            // AppKit turns Page Up, Page Down, Home and End into scroll commands before the focused
+            // view's onKeyPress sees them, so on the Mac they are key equivalents (page turners send them)
+            key(.pageDown) { stand.nextPage(model) }
+            key(.pageUp) { stand.previousPage(model) }
+            key(.home) { stand.turn(to: 0, model, byPlayer: true) }
+            key(.end) { stand.turn(to: Int.max, model, byPlayer: true) }
+            #endif
             if singleKeys {
                 key("f") { leave() }
                 #if os(iOS)
