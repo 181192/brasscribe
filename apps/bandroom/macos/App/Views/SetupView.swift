@@ -14,6 +14,8 @@ struct SetupView: View {
     /// Saving waits for the Keychain, which may ask first.
     @State private var saving = false
     @State private var saveFailed = false
+    /// Came from "Enter the key again" on a finished setup: saving the key is all there is to do.
+    @State private var reenteringKey = false
     @State private var startAtLogin = true
 
     /// From the key read at launch, never a Keychain read here (it can wait for a prompt).
@@ -73,6 +75,7 @@ struct SetupView: View {
     private func openAtKey() {
         app.setupOpensAtKey = false
         finishing = app.setupComplete
+        reenteringKey = app.setupComplete
         step = 1
     }
 
@@ -167,7 +170,14 @@ struct SetupView: View {
                         let ok = await app.savedKey.save(key)
                         saving = false
                         saveFailed = !ok
-                        if ok { toDownloads() }
+                        guard ok else { return }
+                        // Nothing left to download: close, rather than walk through Ready (and its login-item toggle).
+                        if reenteringKey && !app.models.missing.contains(.bandWriter) {
+                            reenteringKey = false
+                            dismissWindow(id: "setup")
+                        } else {
+                            toDownloads()
+                        }
                     }
                 } label: { Text("Continue") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40))

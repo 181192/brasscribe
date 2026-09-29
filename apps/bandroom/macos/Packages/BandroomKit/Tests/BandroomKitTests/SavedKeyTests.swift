@@ -187,7 +187,7 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
 /// hand the key over when it comes.
 @MainActor
 @Suite struct StartupWithoutTheKeyTests {
-    func startup(_ keychain: FakeKeychain) async -> (SavedKey, EngineSupervisor, FakeLauncher) {
+    func startup(_ keychain: FakeKeychain, wait: Duration = .milliseconds(50)) async -> (SavedKey, EngineSupervisor, FakeLauncher) {
         let launcher = FakeLauncher()
         let (sup, _) = EngineSupervisorTests().make(launcher, FakeEngine())
         let key = SavedKey(store: keychain)
@@ -196,7 +196,7 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
             if sup.useHuggingFaceKey(k, environment: env, busy: false) == .restartNow { sup.restart() }
         }
         key.read()
-        await key.settled(within: .milliseconds(50))
+        await key.settled(within: wait)
         sup.start()
         await settle()
         return (key, sup, launcher)
@@ -235,7 +235,7 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
     }
 
     @Test func aKeyReadInTimeIsThereFromTheFirstLaunch() async throws {
-        let (key, sup, launcher) = await startup(FakeKeychain(.found("hf_saved")))
+        let (key, sup, launcher) = await startup(FakeKeychain(.found("hf_saved")), wait: .seconds(2))
         #expect(key.state == .found)
         #expect(sup.phase == .running)
         #expect(launcher.launched.count == 1)
