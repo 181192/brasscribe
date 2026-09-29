@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Screenshots of every key screen, light and dark, into docs/screenshots/.
 # Usage: scripts/screenshots.sh mac|iphone|ipad [screen …]     (NB=1 for Norwegian, named …-nb-…;
-#        CONNECTION=offline|reconnecting|needs-pairing for another connection row, default connected)
+#        CONNECTION=offline|reconnecting|needs-pairing for another connection row, default connected;
+#        SIM_DEVICE=<udid or name> shoots on that simulator instead of the shared "iPhone 17" / iPad Air)
 # Build first (make build, or xcodebuild … build). The macOS build can carry another bundle
 # id (PLAY_BUNDLE_ID=…) so it runs beside another copy of the app.
 set -uo pipefail
@@ -59,8 +60,8 @@ for s in "${SCREENS[@]}"; do
   for look in light dark; do
     case "$TARGET" in
       mac) shoot_mac "$s" "$look" ;;
-      iphone) shoot_sim "iPhone 17" iphone "$s" "$look" ;;
-      ipad) shoot_sim "iPad Air 11-inch (M4)" ipad "$s" "$look" ;;
+      iphone) shoot_sim "${SIM_DEVICE:-iPhone 17}" iphone "$s" "$look" ;;
+      ipad) shoot_sim "${SIM_DEVICE:-iPad Air 11-inch (M4)}" ipad "$s" "$look" ;;
     esac
   done
 done
