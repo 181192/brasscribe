@@ -1,6 +1,6 @@
 # 10 — Benchmark results
 
-**Status (2026-09-29):** a living record; `eval/baselines.json` is the source of truth for the gated numbers. The Mikkel figures under "Difficulty modes and lineups", "Readability" and "Rust core conformance" were measured before the fast-notes change was promoted to the golden. At faithful the Solo Cornet is now 63.6 % 16ths (gate 65 %; `docs/plan/fast-notes.md` §7).
+**Status (2026-09-29):** a living record; `eval/baselines.json` is the source of truth for the gated numbers. "Difficulty modes and lineups", "Readability" and "Rust core conformance" were rerun on the fast-notes golden (2026-09-29). At faithful the Solo Cornet is 63.6 % 16ths (gate 65 %; `docs/plan/fast-notes.md` §7).
 
 ## Reproducing these numbers
 
@@ -454,24 +454,24 @@ Changed pieces all improve (Entertainer position 0.48 → 0.90, Air 0.07 → 0.3
 
 ## Difficulty modes and lineups
 
-`music/src/brasscribe_music/difficulty.py`; benchmark `brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass --mikkel ../data/golden/mikkel-arranged-band/composition.json`. Faithful at default options stays identical to the golden output.
+`music/src/brasscribe_music/difficulty.py`; benchmark `brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass --mikkel ../data/golden/mikkel-arranged-band/composition.json`. Faithful at default options stays identical to the golden output. Rerun 2026-09-29 on the fast-notes golden: faithful writes the solo's fast notes as played, so its solo 16ths rose from 38.8 % to 66.6 % (the bench counts the solo layer; the readability tool's Solo Cornet part is 63.6 %), and standard and easier now keep less of the melody than before.
 
 | Mikkel, full band | Solo / other 16ths | Uncomfortable | Harmony fidelity | Melody kept | Contour | Key changes |
 |---|---|---|---|---|---|---|
-| faithful | 38.8 / 3.1% | 27 | 0.834 | 1.0 | 1.0 | 8 |
-| standard | 16.1 / 1.7% | 0 | 0.792 | 0.79 | 0.775 | 8 |
-| easier | 8.6 / 0% | 0 | 0.793 | 0.742 | 0.717 | 4 |
+| faithful | 66.6 / 2.9% | 32 | 0.839 | 1.0 | 1.0 | 8 |
+| standard | 20.1 / 1.7% | 0 | 0.767 | 0.603 | 0.575 | 8 |
+| easier | 9.0 / 0% | 0 | 0.769 | 0.552 | 0.561 | 4 |
 
 URMP: uncomfortable 1.0 / 0 / 0, harmony fidelity 0.971 / 0.958 / 0.958. Separating reading ranges from playable ranges took URMP uncomfortable notes from 3.8 to 1.0 (current baseline).
 Open: large transpositions put the basses on ledger lines (E♭ Bass with 3+ ledger lines: 6.0% at +5 semitones, 7.7% at −5; limit 5%).
 
 ## Readability (Mikkel)
 
-`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json`. Old golden → current golden, Solo Cornet: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5% → 6.4%; 16ths 40.2% → 38.4%. Since the fast-notes golden (2026-09-29): 16ths 63.6 %, accidentals 6.7 %, and the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/brasscribe_eval/suites.py`). Whole score: dynamics 0 → 201, rehearsal marks 0 → 11, key changes 0 → 8.
+`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json` (the baseline is the tool's `--json` output for the golden). Solo Cornet, from the first golden to the current one: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5 % → 6.7 %; 16ths 40.2 % → 63.6 %. The 16ths rose with the fast-notes golden (2026-09-29), which writes the solo's fast notes as played; the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/brasscribe_eval/suites.py`), and every other threshold is unchanged. Whole score: dynamics 0 → 209, rehearsal marks 0 → 11, key changes 0 → 8.
 
 ## Rust core conformance
 
-`cd core/conformance && uv run python -m brasscribe_conformance.run --musescore`: 102/102 cases and 1442/1442 files identical to the Python reference (golden Mikkel, option variants, 20 eval songs, arranger and quantize benches), talking score 50/50 vectors in en and nb, humanization 3762/3762 runs byte-identical, MuseScore round trip 84/84. Speed: Mikkel layers arrangement 7.2 s (Python) vs 0.28 s (Rust). The Python reference is exact only on macOS arm64 with NumPy 2.5.3 (argsort tie order, FMA in `interp`).
+`cd core/conformance && uv run python -m brasscribe_conformance.run --musescore` (rerun 2026-09-29 on the fast-notes golden, 28 min on an M-series Mac): 413/413 cases and 4974/4974 files identical to the Python reference (golden Mikkel, option variants, eval songs, per-seat solo takes, arranger and quantize benches), with the talking score and the humanization compared inside each case; the committed golden 34/34 files identical. MuseScore round trip 208/211: three band arrangements (URMP 34 Fugue; ChoraleBricks Jan "Du großer Schmerzensmann" A and Telemann "Der lieben Sonne Licht und Pracht" B) were not written back by MuseScore 4. Mikkel layers case: 53.5 s for the Python reference with its exports, 0.78 s for Rust. The Python reference is exact only on macOS arm64 with NumPy 2.5.3 (argsort tie order, FMA in `interp`).
 
 ## On-device model parity
 
