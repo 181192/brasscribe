@@ -29,7 +29,7 @@ Everything else is the platform's own controls, so each app feels native and fam
    - **On/off toggles are never ink-filled.** "On" is a tonal fill (`secondary`), a 1.5 px ink edge and a ✓ before the label; "off" is an outline. This keeps Count-in, Mute my part, Mute and Only this from looking like the primary.
 2. **The score owns colour.**
    - Blue, orange, amber and purple mean uncertain, very uncertain, loop and cursor.
-   - They appear nowhere else in Play, and UI chrome stays neutral.
+   - They appear nowhere else in Play, and UI chrome stays neutral (the one exception is the hidden Pink appearance, §10).
    - Brass is the brand colour. It is used only for the mark, the icon, the display italic, the progress bar and onboarding, never inside the score or the review list.
 3. **Uncertainty is shape plus colour**: a "?" above the note, and a boxed "?" below 0.4 confidence (visual-design-tokens.md §2). Never rings, diamonds or brackets.
 4. **Tints never stack.**
@@ -176,7 +176,7 @@ The score alone, for reading from a stand: one part, in pages, with a control la
 
 Settings › Display has one row, **Appearance** / «Utseende», that forces light or dark on this device.
 
-- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt». No description line.
+- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt», and **Pink** / «Rosa» once it is unlocked (see Pink below). No description line.
 - **One choice, native picker.** It is never ink-filled or a row of toggles. The selected option shows the platform's ✓ or radio, and screen readers announce the row as a choice with its current value ("Appearance, Dark").
 
   | SwiftUI | Compose | WinUI 3 | Studio HTML |
@@ -199,3 +199,98 @@ Settings › Display has one row, **Appearance** / «Utseende», that forces lig
   | Android, Studio (more contrast) | Your contrast setting is on, so Brasscribe uses its high-contrast colours. | Kontrastinnstillingen din er på, så Brasscribe bruker høykontrastfargene. |
 
 - **Bandroom** puts the row in its settings (the macOS Settings scene, the Windows settings page), not in the popover or the tray flyout.
+
+### Pink (hidden)
+
+A fourth Appearance option, **Pink** / «Rosa», that nobody sees until they find it. It is a small present for the players who poke around, not a feature to explain, so it is never mentioned in onboarding, help or release notes.
+
+- **What it is.** A playful palette for the chrome: blush paper, plum text, a raspberry primary (bubblegum on dark), rose tonal fills. It follows the system's light or dark, like Match system. It is the one exception to rule 2 ("UI chrome stays neutral"): the chrome may be pink, but **the notation keeps its own colours**. Noteheads and staff stay ink on near-white paper (paper tones on dark), and uncertain, very uncertain, loop and cursor keep their hues. Brass stays the brand colour. Pink dark moves `error` to coral so it stays apart from the pink primary.
+- **System contrast still wins.** Increase Contrast, a high contrast level and `prefers-contrast: more` give the high-contrast palette, and Windows contrast themes and forced colours give the system's. Pink stays chosen for when contrast is turned off. PDFs, printouts and the pairing QR code stay light, as for every choice.
+- **How to find it.** In About, activate the version five times in a row, each within 1.5 s of the one before (a longer pause starts again). In Studio, which has no About, it is the Brasscribe Studio lockup in the header, activated on its own page (Runs).
+  - Any activation counts: a tap, a click, Space or Enter, a VoiceOver or TalkBack double tap, Switch Control. The target is an ordinary button or link, so it is reachable from the keyboard, and nothing about it hints that it does more.
+  - On the Mac, an Option-click (or Option with the keyboard activation) on the version unlocks at once.
+  - On unlock, a small note says **🎺 Pink unlocked** / **🎺 Rosa låst opp** for a few seconds, and screen readers announce it once. Pink then appears last in the Appearance picker. Nothing switches by itself.
+- **Staying unlocked.** The unlock is kept on the device (never synced or backed up), like the choice itself. A device that has Pink chosen counts as unlocked. To switch it off, choose any other option; Pink stays in the list.
+- **Where.** Play on Android, iOS, iPadOS and macOS, and Studio. Not in Bandroom or Windows Play yet.
+- **Tokens.** `color.pink` and `color.pink-dark` in [`tokens/tokens.json`](tokens/tokens.json). Compose: `BrasscribeTheme(pink = true)`; SwiftUI: `BrasscribePalette.shared.isPink` switches `Color.Brasscribe.*` to the `BrasscribePink/` colour sets; web: `data-palette="pink"` on the root.
+
+#### Palette
+
+The roles that differ from Light and Dark. Everything else, including every score hue, `success`, `warning` and brass, is the same as in Light (Pink) or Dark (Pink dark).
+
+| Role | Pink | Pink dark | Use |
+|---|---|---|---|
+| `bg` | `#FFF6F9` | `#1B1017` | window, page and score paper |
+| `surface` | `#FCE9F0` | `#241620` | player bar, sidebars |
+| `surface-raised` | `#FFFFFF` | `#2E1D28` | cards, sheets, menus |
+| `text` | `#2B1420` | `#F8E9F0` | body text (plum) |
+| `text-muted` | `#6B4558` | `#CDAABB` | secondary text |
+| `border` | `#F2D3E0` | `#3F2835` | hairlines |
+| `border-strong` | `#A0768A` | `#957082` | control edges |
+| `primary` | `#AD1463` | `#FF9ECF` | the one primary button (raspberry / bubblegum) |
+| `on-primary` | `#FFFFFF` | `#2B0F1E` | text on primary |
+| `secondary` | `#F9DAE7` | `#44293A` | tonal buttons |
+| `on-secondary` | `#2B1420` | `#F8E9F0` | text on secondary |
+| `brass-tint` | `#FBE4ED` | `#33202B` | About and onboarding ground |
+| `focus` | `#2B1420` | `#F8E9F0` | focus ring |
+| `error` | `#B3261E` | `#FF8A7A` | error text and icon (coral on dark) |
+| `adlib-tint` | `#F6E8EE` | `#261A21` | ad lib band |
+| `selection-tint` | `#F3E0E8` | `#35242E` | selected bars |
+| `cursor-tint` | `#E1D1E7` | `#3E2E42` | bar under the cursor (cursor at 20 %) |
+
+| Foreground / background | Min | Pink | Pink dark |
+|---|---|---|---|
+| text / bg | 4.5:1 (1.4.3) | 16.18:1 | 15.80:1 |
+| text / surface | 4.5:1 (1.4.3) | 14.75:1 | 14.79:1 |
+| text / surface-raised | 4.5:1 (1.4.3) | 17.16:1 | 13.54:1 |
+| text-muted / bg | 4.5:1 (1.4.3) | 7.57:1 | 8.88:1 |
+| text-muted / surface | 4.5:1 (1.4.3) | 6.90:1 | 8.31:1 |
+| text-muted / secondary | 4.5:1 (1.4.3) | 6.19:1 | 6.20:1 |
+| text-muted / brass-tint | 4.5:1 (1.4.3) | 6.66:1 | 7.28:1 |
+| on-primary / primary | 4.5:1 (1.4.3) | 6.87:1 | 9.28:1 |
+| on-secondary / secondary | 4.5:1 (1.4.3) | 13.25:1 | 11.02:1 |
+| brass-text / brass-tint | 4.5:1 (1.4.3) | 5.44:1 | 7.60:1 |
+| success / bg | 4.5:1 (1.4.3) | 6.02:1 | 10.49:1 |
+| warning / bg | 4.5:1 (1.4.3) | 5.59:1 | 9.72:1 |
+| error / bg | 4.5:1 (1.4.3) | 6.16:1 | 8.09:1 |
+| error / surface | 4.5:1 (1.4.3) | 5.62:1 | 7.57:1 |
+| border-strong / bg | 3.0:1 (1.4.11) | 3.63:1 | 4.34:1 |
+| border-strong / surface | 3.0:1 (1.4.11) | 3.31:1 | 4.06:1 |
+| primary / bg | 3.0:1 (1.4.11) | 6.48:1 | 9.75:1 |
+| focus / bg | 3.0:1 (2.4.13) | 16.18:1 | 15.80:1 |
+| focus / surface | 3.0:1 (1.4.11) | 14.75:1 | 14.79:1 |
+| ink / bg | 3.0:1 (1.4.11) | 17.79:1 | 16.27:1 |
+| ink / cursor-tint | 3.0:1 (1.4.11) | 13.00:1 | 11.01:1 |
+| staff / bg | 3.0:1 (1.4.11) | 7.22:1 | 7.29:1 |
+| uncertain / bg | 3.0:1 (1.4.11) | 5.94:1 | 8.03:1 |
+| very-uncertain / bg | 3.0:1 (1.4.11) | 5.18:1 | 8.68:1 |
+| cursor / bg | 3.0:1 (1.4.11) | 6.96:1 | 9.06:1 |
+| loop-edge / loop-tint | 3.0:1 (1.4.11) | 5.37:1 | 8.08:1 |
+
+| Must stay apart | Pink | Pink dark |
+|---|---|---|
+| ink / uncertain | 34 | 29 |
+| ink / very-uncertain | 39 | 28 |
+| uncertain / very-uncertain | 47 | 47 |
+| focus / uncertain | 36 | 35 |
+| error / primary | 22 | 21 |
+| success / error | 56 | 54 |
+| warning / error | 26 | 30 |
+| success / warning | 33 | 29 |
+
+Every one of the 72 checked pairs passes in both modes; the full list is in [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md). The last table is the CIEDE2000 difference under normal vision (20 or more reads as distinct; shape and words carry the meaning as well).
+
+#### Screenshots
+
+Screenshots are in [`pink/`](pink/).
+
+| | Pink | Pink dark |
+|---|---|---|
+| Android score | ![](pink/android-score-pink.png) | ![](pink/android-score-pink-dark.png) |
+| Android settings | ![](pink/android-settings-pink.png) | ![](pink/android-settings-pink-dark.png) |
+| macOS home | ![](pink/apple-home-pink.png) | ![](pink/apple-home-pink-dark.png) |
+| macOS score | ![](pink/apple-score-pink.png) | ![](pink/apple-score-pink-dark.png) |
+| macOS settings | ![](pink/apple-settings-pink.png) | ![](pink/apple-settings-pink-dark.png) |
+| Studio score viewer | ![](pink/studio-viewer-pink.png) | ![](pink/studio-viewer-pink-dark.png) |
+
+The unlock note on Android: ![](pink/android-about-unlocked-pink.png)
