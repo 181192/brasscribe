@@ -8,6 +8,7 @@ import TranscriptionKit
 struct ReviewView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
     let piece: Piece
 
     @State private var model: PracticeModel?
@@ -27,6 +28,11 @@ struct ReviewView: View {
 
     /// Triage: your own part first (very unsure first), then the other parts, then all.
     enum Filter: Hashable { case mine, others, all }
+
+    /// Skip and Keep follow the note instead of staying pinned at the bottom: on the Mac, and at the
+    /// accessibility text sizes, where a pinned bar would cover most of the phone and leave the note
+    /// half hidden under it.
+    private var actionsFollow: Bool { PageActions.followContent || typeSize.isAccessibilitySize }
 
     private var wide: Bool {
         #if os(macOS)
@@ -104,7 +110,7 @@ struct ReviewView: View {
                 }
             }
         }
-        .bottomActions { if !allOpen.isEmpty, item != nil { actionBar } }
+        .safeAreaInset(edge: .bottom) { if !actionsFollow, !allOpen.isEmpty, item != nil { actionBar } }
         .alert("Finish checking later?", isPresented: $confirmLater) {
             Button("Finish later") { finish() }
             Button("Keep checking", role: .cancel) {}
@@ -241,8 +247,14 @@ struct ReviewView: View {
                     .buttonStyle(.plainText)
                     .accessibilityIdentifier("keepRestOfBar")
                 }
-                // Mac: Skip and Keep follow the note, before the evidence
-                if PageActions.followContent { actionButtons.padding(.top, Space.s2).layoutProbe("pageActions") }
+                // Mac and the largest text sizes: Skip and Keep follow the note, before the evidence
+                if actionsFollow {
+                    VStack(spacing: Space.s2) {
+                        if !wide { finishLaterButton }
+                        actionButtons
+                    }
+                    .padding(.top, Space.s2).layoutProbe("pageActions")
+                }
                 EvidencePanel(note: evidenceFor(it), fifths: fifths(it), part: model.score.parts[it.partIndex])
             }
             .accessibilityElement(children: .contain)
@@ -332,11 +344,7 @@ struct ReviewView: View {
 
     private var actionBar: some View {
         VStack(spacing: Space.s1) {
-            if !wide {
-                Button("Finish later (\(open.count) left)") { confirmLater = true }
-                    .buttonStyle(.plainText)
-                    .accessibilityIdentifier("openScore")
-            }
+            if !wide { finishLaterButton }
             actionButtons
         }
         .padding(.horizontal, wide ? Space.s8 : Space.s5)
@@ -344,7 +352,35 @@ struct ReviewView: View {
         .background(Color.Brasscribe.bg)
     }
 
-    private var actionButtons: some View {
+    private var finishLaterButton: some View {
+        Button("Finish later (\(open.count) left)") { confirmLater = true }
+            .buttonStyle(.plainText)
+            .accessibilityIdentifier("openScore")
+    }
+
+    /// Side by side; at the accessibility text sizes on a phone, where the labels would break
+    /// mid-word, one above the other at full width, Keep first.
+    @ViewBuilder private var actionButtons: some View {
+        if typeSize.isAccessibilitySize, !wide {
+            VStack(spacing: Space.s2) { keepButton; skipButton }
+        } else {
+            actionRow
+        }
+    }
+
+    private var skipButton: some View {
+        Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
+            .buttonStyle(SecondaryButtonStyle(fullWidth: true, minHeight: 48))
+    }
+
+    private var keepButton: some View {
+        Button { keep() } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
+            .buttonStyle(PrimaryButtonStyle(fullWidth: true))
+            .keyboardShortcut("k", modifiers: [])
+            .accessibilityIdentifier("keepNext")
+    }
+
+    private var actionRow: some View {
         HStack(spacing: Space.s3) {
             if wide {
                 // the keys, where there's room beside the buttons
