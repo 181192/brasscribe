@@ -7,7 +7,9 @@ brasscribe-band.sf2 (149 MB at 16 bits) runs out of memory on Android (576 MB la
 variant keeps the same presets at the same (bank, program), the same layering, desk variants and kits,
 with:
   * the sustain presets only (staccato banks bank + 64 are left out; alphaTab falls back to bank 0),
-  * samples resampled to --rate, 16-bit, with every loop rebuilt at the new rate (below).
+  * the brass samples resampled to --rate, 16-bit, with every loop rebuilt at the new rate (below);
+    a drum sample with a real share of its energy above the new Nyquist (hi-hats, cymbals, tambourine)
+    keeps its own rate: at 22.05 kHz the closed hi-hat lost 4 dB.
 Layered parts keep both targets (the cornet desks' +-3 cent pair): both cornet builds are in the file
 anyway as the first desk of other parts, so the layers cost no sample data, and channel_gain_db in
 mapping.json (which subtracts 3 dB for a layered preset) stays right for this file too.
@@ -85,6 +87,22 @@ def resampled(s: sf2.Sample, rate: int) -> sf2.Sample:
     return sf2.Sample(s.name, data, rate, s.root, s.cents, loop, s.kind, s.link)
 
 
+HIGH_SHARE = 0.1  # a kit sample keeps its rate when this share of its energy lies above the new Nyquist
+
+
+def kit_samples(bank, rate: int) -> set[int]:
+    """Indices of the drum-kit (bank 128) samples that would lose their top at `rate`."""
+    insts = {z.ref for p in bank.presets if p.bank == 128 for z in p.zones if z.ref is not None}
+    out = set()
+    for i in {z.ref for n in insts for z in bank.instruments[n].zones if z.ref is not None}:
+        s = bank.samples[i]
+        spec = np.abs(np.fft.rfft(s.data)) ** 2
+        f = np.fft.rfftfreq(len(s.data), 1 / s.rate)
+        if s.rate > rate and spec[f > rate / 2].sum() > HIGH_SHARE * spec.sum():
+            out.add(i)
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-o", "--out", default=str(band.BUILT.parent / "band" / "brasscribe-band-mobile.sf2"))
@@ -92,7 +110,8 @@ def main() -> None:
     args = ap.parse_args()
     mapping = json.loads((SOUNDS / "mapping.json").read_text())
     bank, _ = band.build_bank(mapping, arts=("sus",))
-    samples = [resampled(s, args.rate) for s in bank.samples]
+    kit = kit_samples(bank, args.rate)
+    samples = [s if i in kit else resampled(s, args.rate) for i, s in enumerate(bank.samples)]
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     sf2.write_raw(args.out, "brasscribe band mobile", samples, bank.instruments, bank.presets, bits=16,
                   comment="Phone variant of brasscribe-band.sf2 (sustain presets, "

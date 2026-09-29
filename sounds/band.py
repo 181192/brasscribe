@@ -70,13 +70,13 @@ KIT = [
     ((57,), [(85, "varMetal/Cymbals/clash/crash_hit_ff_tight.wav"), (127, "varMetal/Cymbals/clash/crash_hit_fff_loose_2.wav")], 3.0, 1.5),
 ]
 KIT_REPLACES = {35: 36, 36: 36, 38: 38, 40: 40, 49: 49, 57: 57}  # our key -> the MS Basic key whose level it takes
-# Measured against MS Basic, K-weighted over each hit's first 400 ms at velocities 47-127: the muted concert bass drum
-# came out 3.4 dB under the MS Basic kick in FluidSynth and 6.3 dB under in alphaSynth (the reference player, which
-# plays MS Basic's filtered kick louder), and the snares 0.6-1.0 dB over. The bass drum is peak-limited to get
-# there without clipping (its first milliseconds peak far above its body). The crashes carry
-# no trim: MS Basic attenuates its crashes 13-17 dB in the zone, which alphaSynth applies in full, FluidSynth at 0.4
-# and AVAudioUnitSampler hardly at all; the VSCO crashes have that attenuation baked into the sample instead.
-KIT_TRIM_DB = {36: 6.0, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
+# The snares measured 0.6-1.0 dB over MS Basic's (K-weighted, each hit's first 400 ms, velocities 47-127), hence
+# their trim. The bass drum needs none: it plays under MS Basic's kick preset zone (msbasic_levels), and is
+# peak-limited (its first milliseconds peak far above its body); against MS Basic's kick at velocity 80 it measures
+# +0.5 dB in FluidSynth and AVAudioUnitSampler (1 s RMS) and +0.9 LU on alphaSynth. The crashes carry no trim: MS Basic
+# attenuates its crashes 13-17 dB in the instrument zone, which alphaSynth applies in full, FluidSynth at 0.4 and
+# AVAudioUnitSampler hardly at all; the VSCO crashes have that attenuation baked into the sample instead.
+KIT_TRIM_DB = {36: 0.0, 38: -0.6, 40: -1.0, 49: 0.0, 57: 0.0}
 KIT_HIGHPASS_HZ = 35  # the concert bass drum's sub-sonic rumble below the kick's fundamental
 
 
@@ -206,14 +206,17 @@ class Bank:
         # the global zone takes MS Basic's kick modulators, so velocity plays both kits' drums alike
         kick = next(src.instrument(pz.ref) for pz in preset.zones if pz.ref is not None and src.instrument(pz.ref).name == "Std Kick")
         mods = next(z.mods for z in kick.zones if z.ref is None)
-        izones = [sf2.RawZone([(G_RELEASE_VOL_ENV, sf2.timecents(1.0))], mods, None)]
+        # one instrument per MS Basic preset zone our drums take their level from (see msbasic_levels)
+        groups: dict[tuple, list[sf2.RawZone]] = {}
         for keys, layers, keep_s, release_s in KIT:
+            p_gens = ref[KIT_REPLACES[keys[0]]][1]
+            izones = groups.setdefault(p_gens, [sf2.RawZone([(G_RELEASE_VOL_ENV, sf2.timecents(1.0))], mods, None)])
             lovel = 1
             for hivel, rel in layers:
                 data = load_drum(VSCO_PERC / rel, keep_s, highpass=KIT_HIGHPASS_HZ if keys[0] <= 36 else None)
                 lvl = kit_level_db(data)
                 for key in keys:
-                    target = ref[KIT_REPLACES[key]] + KIT_TRIM_DB[KIT_REPLACES[key]]
+                    target = ref[KIT_REPLACES[key]][0] + KIT_TRIM_DB[KIT_REPLACES[key]]
                     y = peak_limit(data * 10 ** ((target - lvl) / 20))
                     skey = f"kit/{rel}/{key}"
                     if skey not in self._sample_index:
@@ -223,9 +226,11 @@ class Bank:
                                                (G_RELEASE_VOL_ENV, sf2.timecents(release_s)), (G_SAMPLE_MODES, 0),
                                                (G_OVERRIDING_ROOT_KEY, key)], [], self._sample_index[skey]))
                 lovel = hivel + 1
-        self.instruments.append(sf2.RawInstrument("VSCO concert perc", izones))
+        extra = []  # their zones are on the replaced keys only
+        for i, (p_gens, izones) in enumerate(groups.items()):
+            self.instruments.append(sf2.RawInstrument(f"VSCO concert {i}", izones))
+            extra.append(sf2.RawZone(list(p_gens), [], len(self.instruments) - 1))
         replaced = {k for keys, *_ in KIT for k in keys}
-        extra = [sf2.RawZone([], [], len(self.instruments) - 1)]  # its zones are on the replaced keys only
         self.drum_kit(MSBASIC, 0, as_program=program, name="Band kit", exclude=replaced, extra=extra)
 
 
@@ -277,15 +282,18 @@ def kit_level_db(y: np.ndarray, sr: int = SR) -> float:
     return float(10 * np.log10(np.mean(k ** 2) + 1e-20))
 
 
-def msbasic_levels(src: SoundFontReader, preset) -> dict[int, float]:
-    """Per MS Basic key we replace: its loudest zone's sample level, minus the zone's instrument and preset
-    attenuation (alphaSynth, the reference player, applies SF2 initialAttenuation in full)."""
-    out: dict[int, float] = {}
+def msbasic_levels(src: SoundFontReader, preset) -> dict[int, tuple[float, tuple]]:
+    """Per MS Basic key we replace: its loudest zone's sample level minus the zone's instrument attenuation,
+    and the generators of the preset zone that plays it. Our drum on that key sits under a preset zone with
+    the same generators, so every player treats the two alike: MS Basic's kick carries a preset-level
+    initialAttenuation of -10 dB (a boost), which alphaSynth applies in full, FluidSynth clamps to 0 and
+    AVAudioUnitSampler hardly applies; levelled on the sample alone, the concert bass drum came out within
+    2 dB of the kick on alphaSynth and 4.5 dB over it in FluidSynth."""
+    out: dict[int, tuple[float, tuple]] = {}
     for pz in preset.zones:
         if pz.ref is None:
             continue
-        p_att = dict(pz.gens).get(G_INITIAL_ATTENUATION, 0)
-        p_att = p_att - 65536 if p_att > 32767 else p_att
+        p_gens = tuple(pz.gens)
         ri = src.instrument(pz.ref)
         g_att = 0
         for iz in ri.zones:
@@ -301,7 +309,7 @@ def msbasic_levels(src: SoundFontReader, preset) -> dict[int, float]:
             for key in set(KIT_REPLACES.values()):
                 if (kr & 0xFF) <= key <= (kr >> 8) and key not in out:
                     s = src.sample(iz.ref)
-                    out[key] = kit_level_db(s.data, s.rate) - (att + p_att) / 10
+                    out[key] = (kit_level_db(s.data, s.rate) - att / 10, p_gens)
     return out
 
 
