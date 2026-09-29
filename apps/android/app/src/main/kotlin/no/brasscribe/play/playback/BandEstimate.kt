@@ -1,13 +1,12 @@
 package no.brasscribe.play.playback
 
-import alphaTab.core.ecmaScript.Uint8Array
-import alphaTab.importer.ScoreLoader
 import alphaTab.model.AccentuationType
 import alphaTab.model.GraceType
 import alphaTab.model.Note
 import alphaTab.model.Score
 import no.brasscribe.play.audio.BandNote
 import no.brasscribe.play.audio.PlaybackLevels
+import no.brasscribe.play.score.AlphaTabMusicXml
 
 /**
  * The arrangement's band loudness, estimated from its notes as alphaTab reads them
@@ -21,7 +20,7 @@ object BandEstimate {
     /** alphaTab's MIDI ticks per quarter note. */
     private const val QUARTER = 960.0
 
-    fun score(musicXml: ByteArray): Score = ScoreLoader.loadScoreFromBytes(Uint8Array(musicXml.asUByteArray()), alphaTab.Settings())
+    fun score(musicXml: ByteArray): Score = AlphaTabMusicXml.parse(musicXml, alphaTab.Settings())
 
     /** The pitched notes of [musicXml], each note of a chord and each tied note on its own. */
     fun notes(musicXml: ByteArray): List<BandNote> = notes(score(musicXml))

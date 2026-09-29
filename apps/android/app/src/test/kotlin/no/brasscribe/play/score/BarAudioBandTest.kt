@@ -4,7 +4,6 @@ import alphaTab.IEventEmitter
 import alphaTab.IEventEmitterOfT
 import alphaTab.core.ecmaScript.Float32Array
 import alphaTab.core.ecmaScript.Uint8Array
-import alphaTab.importer.ScoreLoader
 import alphaTab.midi.AlphaSynthMidiFileHandler
 import alphaTab.midi.MidiFile
 import alphaTab.midi.MidiFileGenerator
@@ -58,7 +57,7 @@ class BarAudioBandTest {
 
     private fun subsetSize(first: Int, last: Int): Int {
         val settings = alphaTab.Settings()
-        val score = ScoreLoader.loadScoreFromBytes(Uint8Array(golden.readBytes().asUByteArray()), settings)
+        val score = AlphaTabMusicXml.parse(golden.readBytes(), settings)
         BandPlan.apply(score, BandPlan.partNames(score), map, true)
         val midi = MidiFile()
         MidiFileGenerator(score, settings, AlphaSynthMidiFileHandler(midi, true)).generate()
@@ -82,7 +81,7 @@ class BarAudioBandTest {
     private fun levelOf(first: Int, last: Int) {
         val bar = render(first, last, whole = false)
         val settings = alphaTab.Settings()
-        val score = ScoreLoader.loadScoreFromBytes(Uint8Array(golden.readBytes().asUByteArray()), settings)
+        val score = AlphaTabMusicXml.parse(golden.readBytes(), settings)
         val plan = BandPlan.apply(score, BandPlan.partNames(score), map, true)
         val midi = MidiFile()
         MidiFileGenerator(score, settings, AlphaSynthMidiFileHandler(midi, true)).generate()

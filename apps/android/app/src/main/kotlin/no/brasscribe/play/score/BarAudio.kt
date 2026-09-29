@@ -1,7 +1,6 @@
 package no.brasscribe.play.score
 
 import alphaTab.core.ecmaScript.Uint8Array
-import alphaTab.importer.ScoreLoader
 import alphaTab.midi.AlphaSynthMidiFileHandler
 import alphaTab.midi.ControlChangeEvent
 import alphaTab.midi.ControllerType
@@ -58,7 +57,7 @@ object BarAudio {
         whole: Boolean = false, generalMidi: () -> ByteArray,
     ): PcmAudio? {
         val settings = alphaTab.Settings()
-        val score = ScoreLoader.loadScoreFromBytes(Uint8Array(musicXml.toByteArray().asUByteArray()), settings)
+        val score = AlphaTabMusicXml.parse(musicXml.toByteArray(), settings)
         val bars = score.masterBars
         val count = bars.length.toInt()
         val pickup = count > 0 && bars[0].isAnacrusis

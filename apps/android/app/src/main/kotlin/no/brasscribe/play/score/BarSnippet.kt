@@ -4,8 +4,6 @@ import alphaTab.AlphaTabView
 import alphaTab.LayoutMode
 import alphaTab.PlayerMode
 import alphaTab.collections.DoubleList
-import alphaTab.core.ecmaScript.Uint8Array
-import alphaTab.importer.ScoreLoader
 import alphaTab.model.Beat
 import alphaTab.model.Score
 import android.content.Context
@@ -62,7 +60,7 @@ class BarSnippet(context: Context) {
     /** Shows [bar] (1-based) of the single-part [musicXml], ringing the note [offsetQuarters] into the bar. */
     fun show(musicXml: String, bar: Int, offsetQuarters: Double, barCount: Int = 1) {
         val s = if (musicXml == loadedXml) score else runCatching {
-            ScoreLoader.loadScoreFromBytes(Uint8Array(musicXml.toByteArray().asUByteArray()), view.settings)
+            AlphaTabMusicXml.parse(musicXml.toByteArray(), view.settings)
         }.getOrNull()?.also { loaded ->
             score = loaded; loadedXml = musicXml
             overlay.marks = collectMarks(loaded).first

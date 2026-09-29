@@ -104,7 +104,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     public void LoadScore(byte[] musicXml)
     {
         _musicXml = musicXml;
-        _score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(musicXml), _settings);
+        _score = Parse(musicXml, _settings);
         Tracks = _score.Tracks.Select(t => new TrackInfo(
             (int)t.Index, t.Name.Replace('\u00A0', ' '), t.Staves.Any(s => s.IsPercussion),
             (int)(t.Staves.FirstOrDefault()?.DisplayTranspositionPitch ?? 0))).ToList();
@@ -129,6 +129,15 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         _volumes = Tracks.Select(_ => 1.0).ToArray();
         for (int t = 0; t < Tracks.Count; t++) ApplyVolume(t);
         Transpose = _transpose;
+    }
+
+    /// <summary>alphaTab's parse, with its tie and trill fixes (<see cref="AlphaTabMusicXml"/>).</summary>
+    public static Score Parse(byte[] musicXml, Settings settings)
+    {
+        var prepared = AlphaTabMusicXml.Prepare(musicXml);
+        var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(prepared.MusicXml), settings);
+        AlphaTabMusicXml.ApplyTrills(score, prepared.Trills);
+        return score;
     }
 
     public void LoadSoundFont(byte[] soundFont, bool append = false)
@@ -396,7 +405,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         // From a fresh load: the playback model has remapped programs and display styling that
         // must not leak into the file. The playback MIDI also carries synth-only events, so the
         // export is generated in SMF1 mode.
-        var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(_musicXml), new Settings());
+        var score = Parse(_musicXml, new Settings());
         Prepare(score, forMidiFile: true, PercussionKit.Programs(_musicXml));
         var smf = new MidiFile { Format = MidiFileFormat.MultiTrack };
         new MidiFileGenerator(score, new Settings(), new AlphaSynthMidiFileHandler(smf, true)).Generate();

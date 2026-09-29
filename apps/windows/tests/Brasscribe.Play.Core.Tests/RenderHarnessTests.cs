@@ -145,6 +145,58 @@ public class RenderHarnessTests(ITestOutputHelper log)
         log.WriteLine($"SWEEP {outPath}: {lines.Count - 1} rows");
     }
 
+    /// <summary>
+    /// Every note alphaSynth plays in the first score (BRASSCRIBE_RENDER_SCORES or the golden), from the MIDI the
+    /// player loads: track, channel, start and end in seconds, key, velocity. Written to BRASSCRIBE_NOTES_OUT (a
+    /// TSV), for a note-by-note comparison with Apple's (PlaybackKit RenderHarnessTests.dumpNotes).
+    /// </summary>
+    [SkippableFact]
+    public void Dump_notes()
+    {
+        var outPath = Environment.GetEnvironmentVariable("BRASSCRIBE_NOTES_OUT");
+        Skip.If(string.IsNullOrEmpty(outPath), "BRASSCRIBE_NOTES_OUT is not set");
+        var score = Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SCORES") is { Length: > 0 } s
+            ? s.Split(':', StringSplitOptions.RemoveEmptyEntries)[0]
+            : TestPaths.RepoFile(TestPaths.GoldenMusicXml)!;
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!).ApplyTo(player).Wait();
+        player.LoadScore(File.ReadAllBytes(score));
+        var midi = player.PlaybackMidi!;
+        var tempos = midi.Events.OfType<AlphaTab.Midi.TempoChangeEvent>().OrderBy(e => e.Tick).ToList();
+        double Seconds(double tick)
+        {
+            double sec = 0, at = 0, us = 500000;
+            foreach (var t in tempos.TakeWhile(t => t.Tick <= tick))
+            {
+                sec += (t.Tick - at) / midi.Division * us / 1e6;
+                at = t.Tick;
+                us = t.MicroSecondsPerQuarterNote;
+            }
+            return sec + (tick - at) / midi.Division * us / 1e6;
+        }
+        var channelTrack = player.TrackChannels.Select((c, i) => (c, i)).ToDictionary(x => x.c, x => x.i);
+        var open = new Dictionary<(int, int), List<(double Tick, int Velocity)>>();
+        var rows = new List<(int Track, int Channel, double Start, double End, int Key, int Velocity)>();
+        foreach (var e in midi.Events.OfType<AlphaTab.Midi.NoteEvent>().OrderBy(e => e.Tick).ThenBy(e => e is AlphaTab.Midi.NoteOnEvent { NoteVelocity: > 0 } ? 1 : 0))
+        {
+            var key = ((int)e.Channel, (int)e.NoteKey);
+            if (e is AlphaTab.Midi.NoteOnEvent { NoteVelocity: > 0 } on)
+            {
+                if (!open.TryGetValue(key, out var list)) open[key] = list = [];
+                list.Add((on.Tick, (int)on.NoteVelocity));
+            }
+            else if (open.TryGetValue(key, out var list) && list.Count > 0)
+            {
+                var (tick, vel) = list[0];
+                list.RemoveAt(0);
+                rows.Add((channelTrack.GetValueOrDefault(key.Item1, -1), key.Item1, Seconds(tick), Seconds(e.Tick), key.Item2, vel));
+            }
+        }
+        File.WriteAllLines(outPath!, new[] { "track\tchannel\tstart\tend\tkey\tvelocity" }
+            .Concat(rows.OrderBy(r => r.Track).ThenBy(r => r.Start).Select(r => $"{r.Track}\t{r.Channel}\t{r.Start:0.0000}\t{r.End:0.0000}\t{r.Key}\t{r.Velocity}")));
+        log.WriteLine($"NOTES {outPath}: {rows.Count} notes");
+    }
+
     [SkippableFact]
     public void Render_scores()
     {

@@ -6,7 +6,6 @@ import alphaTab.PlayerMode
 import alphaTab.ScrollMode
 import alphaTab.collections.DoubleList
 import alphaTab.core.ecmaScript.Uint8Array
-import alphaTab.importer.ScoreLoader
 import alphaTab.midi.AlphaSynthMidiFileHandler
 import alphaTab.midi.MidiEventType
 import alphaTab.midi.MidiFile
@@ -283,7 +282,7 @@ class ScoreController(
         parsedOn = Thread.currentThread()
         val marked = markVeryUncertain(bytes)
         currentCoroutineContext().ensureActive()
-        val s = ScoreLoader.loadScoreFromBytes(Uint8Array(marked.asUByteArray()), settings)
+        val s = AlphaTabMusicXml.parse(marked, settings)
         currentCoroutineContext().ensureActive()
         val names = BandPlan.partNames(s)
         val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
