@@ -1,8 +1,11 @@
 package no.brasscribe.play.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -13,10 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -32,6 +39,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.PinkUnlock
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.connection.ConnectionState
@@ -168,6 +176,33 @@ fun AboutScreen(vm: PlayViewModel) {
         Text(stringResource(R.string.about_text), style = MaterialTheme.typography.bodyLarge)
         Text(stringResource(R.string.about_font), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
         Text("CoreBridge: ${vm.container.core.name}", style = MaterialTheme.typography.bodySmall, color = BrasscribeTheme.colors.textMuted)
+        VersionRow(vm)
     }
+}
+
+/**
+ * The version, which is also the way into the hidden Pink palette (design/system.md §10): five
+ * activations in a row unlock it. It is a real button, so a TalkBack double-tap, a keyboard or a
+ * switch reaches it as well as a finger; nothing on screen says so.
+ */
+@Composable
+private fun VersionRow(vm: PlayViewModel) {
+    val unlock = remember { PinkUnlock(vm.container.pinkUnlocked) }
+    Text(
+        stringResource(R.string.about_version, no.brasscribe.play.BuildConfig.VERSION_NAME),
+        style = MaterialTheme.typography.bodyMedium,
+        color = BrasscribeTheme.colors.textMuted,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Button) {
+                if (unlock.tap()) {
+                    vm.container.unlockPink()
+                    vm.say(R.string.pink_unlocked)
+                }
+            }
+            .wrapContentHeight(Alignment.CenterVertically)
+            .testTag("about-version"),
+    )
 }
 

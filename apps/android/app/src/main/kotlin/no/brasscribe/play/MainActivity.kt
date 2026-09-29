@@ -41,9 +41,10 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             // Settings › Display › Appearance: read before the first frame, so there is no flash.
-            val dark = vm.container.appearance.isDark(isSystemInDarkTheme())
-            SideEffect { applyWindowTheme(dark) }
-            PlayTheme(dark = dark) { PlayRoot(vm) }
+            val appearance = vm.container.appearance
+            val dark = appearance.isDark(isSystemInDarkTheme())
+            SideEffect { applyWindowTheme(dark, appearance.isPink) }
+            PlayTheme(dark = dark, pink = appearance.isPink) { PlayRoot(vm) }
         }
     }
 
@@ -51,20 +52,29 @@ class MainActivity : ComponentActivity() {
      * The window behind Compose and the system bar icons follow the app's appearance, not the phone's
      * night mode. Nothing is recreated, so playback and the score position stay as they are.
      */
-    private var windowDark: Boolean? = null
-    private fun applyWindowTheme(dark: Boolean) {
-        if (windowDark == dark) return
-        windowDark = dark
+    private var windowTheme: Pair<Boolean, Boolean>? = null
+    private fun applyWindowTheme(dark: Boolean, pink: Boolean) {
+        if (windowTheme == dark to pink) return
+        windowTheme = dark to pink
         val scrim = android.graphics.Color.TRANSPARENT
         val bars = if (dark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(if (dark) WINDOW_DARK else WINDOW_LIGHT))
+        val background = when {
+            pink && dark -> WINDOW_PINK_DARK
+            pink -> WINDOW_PINK
+            dark -> WINDOW_DARK
+            else -> WINDOW_LIGHT
+        }
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(background))
     }
 
     private companion object {
         // The same values as windowBackground in res/values(-night)/themes.xml (token bg).
         const val WINDOW_LIGHT = 0xFFFBFAF7.toInt()
         const val WINDOW_DARK = 0xFF131210.toInt()
+        // Token bg of the hidden Pink palette, light and dark.
+        const val WINDOW_PINK = 0xFFFFF6F9.toInt()
+        const val WINDOW_PINK_DARK = 0xFF1B1017.toInt()
     }
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null

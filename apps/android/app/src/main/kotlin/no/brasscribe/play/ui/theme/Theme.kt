@@ -23,9 +23,10 @@ val InstrumentSerif = FontFamily(
  * type ramp, shapes) with the display face. Colours come from [BrasscribeTheme.colors]; the score
  * palette (uncertain, very uncertain, loop, cursor) is for the notation only. [dark] is the resolved
  * Settings › Display › Appearance: the score and every dialog take their colours from here, never from
- * the phone's night mode directly. The phone's high contrast still wins over it.
+ * the phone's night mode directly. [pink] is the hidden Pink palette (light or dark by [dark]). The
+ * phone's high contrast still wins over both.
  */
 @Composable
-fun PlayTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    BrasscribeTheme(dark = dark, display = InstrumentSerif, content = content)
+fun PlayTheme(dark: Boolean = isSystemInDarkTheme(), pink: Boolean = false, content: @Composable () -> Unit) {
+    BrasscribeTheme(dark = dark, pink = pink, display = InstrumentSerif, content = content)
 }

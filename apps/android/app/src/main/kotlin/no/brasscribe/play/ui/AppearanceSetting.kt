@@ -30,6 +30,7 @@ import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.design.systemHighContrast
 import no.brasscribe.play.Appearance
+import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 
@@ -39,6 +40,7 @@ fun appearanceLabel(a: Appearance): String = stringResource(
         Appearance.SYSTEM -> R.string.appearance_system
         Appearance.LIGHT -> R.string.appearance_light
         Appearance.DARK -> R.string.appearance_dark
+        Appearance.PINK -> R.string.appearance_pink
     },
 )
 
@@ -70,7 +72,7 @@ fun AppearanceRow(vm: PlayViewModel) {
             title = { Text(stringResource(R.string.settings_appearance)) },
             text = {
                 Column(Modifier.selectableGroup()) {
-                    Appearance.entries.forEach { a ->
+                    AppearanceStore.choices(vm.container.pinkUnlocked).forEach { a ->
                         Row(
                             Modifier.fillMaxWidth().heightIn(min = 48.dp)
                                 .selectable(selected = a == current, role = Role.RadioButton) {

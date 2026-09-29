@@ -94,6 +94,23 @@ class AppContainer(private val context: Context) {
         appearance = value
     }
 
+    /** Whether the hidden Pink palette is listed in Appearance. Compose state, like [appearance]. */
+    var pinkUnlocked: Boolean by androidx.compose.runtime.mutableStateOf(appearanceStore.pinkUnlocked())
+        private set
+
+    fun unlockPink() {
+        appearanceStore.unlockPink()
+        pinkUnlocked = true
+    }
+
+    /** Hides Pink again, so device tests can walk the unlock from the start. */
+    @androidx.annotation.VisibleForTesting
+    fun forgetPink() {
+        if (appearance == Appearance.PINK) updateAppearance(Appearance.SYSTEM)
+        appearanceStore.forgetPink()
+        pinkUnlocked = false
+    }
+
     private val seatStore = SeatStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))
 
     /**

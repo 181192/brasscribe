@@ -478,6 +478,9 @@
     <string name="appearance_system">Match system</string>
     <string name="appearance_light">Light</string>
     <string name="appearance_dark">Dark</string>
+    <string name="appearance_pink">Pink</string>
+    <string name="pink_unlocked">🎺 Pink unlocked</string>
+    <string name="about_version">Version %1$s</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Brasscribe uses its high-contrast colours.</string>
     <string name="settings_text_motion">Text size and reduced motion</string>
     <string name="settings_text_motion_desc">Brasscribe follows the phone\'s text size, contrast and animation settings</string>
