@@ -11,7 +11,7 @@
     "e2e": "playwright test",
     "test:browser": "playwright test -c playwright.static.config.ts"
   },
-  "license": "UNLICENSED",
+  "license": "MIT OR Apache-2.0",
   "dependencies": {
     "@coderline/alphatab": "^1.8.4"
   },

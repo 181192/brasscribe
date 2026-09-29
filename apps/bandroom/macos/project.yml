@@ -65,7 +65,7 @@ targets:
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
         LSApplicationCategoryType: public.app-category.music
-        NSHumanReadableCopyright: "Brasscribe"
+        NSHumanReadableCopyright: "© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0."
         NSLocalNetworkUsageDescription: Phones and tablets in your band find this Mac on your network and send their recordings here.
         NSBonjourServices: [_brasscribe._tcp]
         NSAppTransportSecurity:

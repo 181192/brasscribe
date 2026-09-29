@@ -7,6 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Brasscribe.Core</RootNamespace>
     <Description>P/Invoke wrapper of the brasscribe Rust core (brasscribe_ffi C ABI).</Description>
+    <Copyright>Copyright (c) 2026 Kristoffer-Andre Kalliainen</Copyright>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <!-- The native library: brasscribe_ffi.dll (Windows), libbrasscribe_ffi.dylib (macOS), libbrasscribe_ffi.so (Linux).

@@ -86,6 +86,7 @@ targets:
       path: App/Info-${platform}.plist
       properties:
         CFBundleDisplayName: Brasscribe Play
+        NSHumanReadableCopyright: "© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0."
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: en
