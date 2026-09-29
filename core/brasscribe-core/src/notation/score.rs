@@ -909,7 +909,9 @@ fn consolidate_tuplets(m: &mut Measure) {
             false
         } else {
             let prev = &m.els[i - 1];
-            let same = (gn.is_rest() && prev.is_rest()) || (!gn.is_rest() && !prev.is_rest() && gn.pitches() == prev.pitches());
+            // Pitches compare as music21's do: spelling, octave and accidental, not whether it is shown.
+            let spelled = |e: &Elem| -> Vec<(u8, i32, Option<i32>)> { e.pitches().iter().map(|p| (p.step, p.octave, p.acc.map(|a| a.alter))).collect() };
+            let same = (gn.is_rest() && prev.is_rest()) || (!gn.is_rest() && !prev.is_rest() && spelled(gn) == spelled(prev));
             same && prev.end() == gn.off && gn.dur.tuplets.len() == 1 && Some(gn.dur.tuplets[0]) == last
         };
         if should_test {
