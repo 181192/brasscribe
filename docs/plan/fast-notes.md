@@ -6,7 +6,7 @@ between two tones, that is often used on cornet/trumpet." This plan covers two k
 - fast passages: semiquavers and faster, and double or triple tonguing;
 - rapid alternation between two notes: lip trills, shakes, trills, and tremolo between two pitches.
 
-Status: measurement and diagnosis are done. The fixes wait for review. An independent baseline is in
+Status: built and reviewed. The results are in §7. An independent baseline is in
 [research/17-fast-notes-critique.md](../research/17-fast-notes-critique.md) (branch `review/fastnotes-critic`).
 Where both measured the same thing, the numbers below agree with it.
 
@@ -392,3 +392,159 @@ After review, each step goes to the critic when it is done:
 4. F4, uncertainty.
 5. Goldens, full check, and the before/after numbers.
 6. F5, the trill, if agreed.
+
+## 7. Results (after the fix)
+
+Built at e688670f. Every number below compares the old solo path (`base`) with the new one, run on the same
+tracker outputs. "Written" means the Composition's solo voice at faithful difficulty.
+
+### 7.1 What changed
+
+**Contour onsets** (`brasscribe_music/onsets.py`, `core/.../onsets.rs`). These run at faithful difficulty only,
+before the consensus:
+
+1. **Plateaus.**
+   - A plateau is a run of at least 3 contour frames (48 ms) within 25 c of one semitone.
+   - Semitones are counted on the piece's own tuning: the circular mean of the voiced frames.
+   - The phone path now passes the SwiftF0 confidence. A contour without confidence counts every pitched frame
+     as voiced.
+2. **When a SwiftF0 note is split.** It splits at every change of plateau semitone, when:
+
+   | Pattern | Condition |
+   |---|---|
+   | Scale or single step | Plateaus cover 70 % of the note. |
+   | Single semitone step | Both sides hold 5 frames, and a semitone under 8 frames next to a held note twice its length counts as that note's bend. |
+   | Alternation, span 2–7 semitones | Median plateau at most 16 frames, each pitch at least 25 % of the frames, dwell 70 %. |
+   | Alternation at a semitone | Also dwell 85 % and at least 4 changes, or dwell 78 % with at least 8 changes and 5-frame plateaus. |
+   | Wider than a fifth | Never split. |
+
+   Before splitting, a glide at either end of the note is set aside.
+3. **Pitch of each piece.** Each piece takes its plateau's own semitone. Only an octave of difference from
+   SwiftF0's label carries over, because SwiftF0 labels a collapsed trill with a compromise pitch.
+4. **Octave flips.** In a run of 3 or more touching notes an octave apart, a note in the other octave folds
+   into its neighbour. Basic Pitch confirming the note keeps it.
+5. **Glides.** A short fragment that is mostly slide and moves toward its touching neighbour at 22 semitones/s
+   or faster becomes that neighbour's attack.
+
+**Line.** Split notes keep 30 ms and a 20 ms merge window.
+
+**Dense quantization** (`quantize.py` / `quantize.rs`, the solo line at faithful difficulty only):
+- A beat whose grid would lose an onset chooses again. It pays per lost onset, and as much again for leaving
+  the previous beat's grid.
+- Tuplets and 32nds are offered only on evidence: at least 3 onsets in the beat, all within 0.045 beats of the
+  slots. 32nds are also dropped when the slots would be shorter than 45 ms.
+- A note that still collides moves to the next slot at half its confidence, instead of being dropped.
+- Beats that hold their onsets choose exactly as before.
+
+**Also changed:**
+- **Parity.** 120 dense-quantize and 160 contour-onset fixtures are bit-identical between Python and Rust. They
+  include contours exactly at the tolerances, contours without confidence, and compromise-labelled trills. Three
+  Rust writer mismatches that fast passages exposed are fixed:
+  - direction `<offset>` after tuplets;
+  - bracket numbering across the score;
+  - pitch equality when consolidating tuplets.
+- **Braille.** A bar too long for a braille line (32nds, sextuplets) is translated on a longer line and wrapped,
+  instead of failing the whole score.
+- **Standard and easier** are unchanged: they keep the old solo line.
+
+### 7.2 Before → after
+
+Written stage.
+
+| Set | Beats | Figure recall | Note F1 | Alternations kept |
+|---|---|---|---|---|
+| Synthetic, all 306 clips | oracle | 0.261 → 0.436 | 0.395 → 0.539 | 0.110 → 0.300 |
+| Synthetic, all 306 clips | small0 | 0.221 → 0.361 | 0.366 → 0.479 | 0.095 → 0.176 |
+| Mega-53-separated clips (18) | oracle | 0.502 → 0.762 | 0.614 → 0.808 | 0.357 → 0.714 |
+| Mega-53-separated clips (18) | small0 | 0.373 → 0.707 | 0.522 → 0.763 | 0.214 → 0.571 |
+| URMP trumpet parts (21, fast notes) | small0 | 0.262 → 0.384 | 0.817 → 0.863 | |
+| URMP one-trumpet mixes through Mega-53 (4) | small0 | 0.178 → 0.250 | 0.530 → 0.597 | |
+| Mikkel provisional reference (93 notes, see 7.4) | tracked | 0.516 → 0.742 | 0.627 → 0.821 | |
+| ChoraleBricks solo stems (93), slow legato | small0 | | 0.710 → 0.722 (trumpet 0.904 → 0.927) | |
+
+**Controls: extra notes per reference note, which must not rise.**
+
+| Control | Oracle beats | small0 |
+|---|---|---|
+| Fall | 1.50 → 0.46 | 1.46 → 0.42 |
+| Doit | 1.00 → 0.19 | 1.06 → 0.19 |
+| Rip | 0.81 → 0.44 | 1.63 → 0.81 |
+| Scoop | 0.50 → 0.17 | 0.54 → 0.21 |
+| Scoop 300 c | 0.56 → 0.13 | 1.06 → 0.56 |
+| Slow slur | 0.42 → 0.19 | 0.47 → 0.19 |
+| Level vibrato | 0.31 → 0 | 0.38 → 0 |
+| Centred and one-sided vibrato (60–150 c) | unchanged | unchanged |
+| Real Iowa vibrato (35 notes), dry | 0.314 → 0.200 | |
+| Real Iowa vibrato (35 notes), hall | 1.229 → 1.057 | |
+
+- The remaining vibrato extras are SwiftF0's own segmentation. They are the same at every stage.
+- The critic's two plateau probes (plateau_rule.py, dip_rule.py) report no false trills.
+- In the fast-notes CI suite, `ctl-vibrato.extra` moved from 0 to 0.05. That is not a regression: the newly
+  frozen separated vibrato clip has that value in the old code too.
+
+**Readability**, on Mikkel's Solo Cornet part at faithful:
+
+| Metric | Before | After |
+|---|---|---|
+| Tuplets | 0.3 % | 0.3 % |
+| Tie stubs | 1.8 % | 1.3 % |
+| Accidentals | | 6.7 % |
+| 16ths | 38.4 % | 63.6 % |
+
+On the synthetic figures:
+- duple/triple grid changes per bar: 0 → 0.08 (oracle) and 0.06 (small0);
+- 32nd share: 0.03;
+- tuplet share: 0.04.
+
+**"?" marks.** Wrong notes without a "?", per 100 written notes: trumpet 0.93 → 0.25, flugelhorn 0.87 → 0.62,
+baritone 1.28 → 1.61, horn 1.43 → 1.61. The share of wrong notes that carry a "?" (`q_hit`) went down, trumpet
+0.44 → 0.33. The reason is that the notes that used to be wrong at low confidence are now written correctly:
+trumpet 16 → 3 wrong notes, flugelhorn 17 → 8. No wrong note lost its mark.
+
+### 7.3 Gates and baselines
+
+| Gate or baseline | Change |
+|---|---|
+| `readability` suite | Now runs faithful, standard and easier. Faithful allows 65 % 16ths in the Solo Cornet part only; every other threshold is unchanged. Standard and easier pass the unchanged gate. The owner has to accept this density (7.4). |
+| `fast-notes` suite | Adds the new controls and the separated clips. Baselines are refreshed, with all the improvements in them. |
+| `solo-instruments` suite | Adds `q_missed`. Baselines are refreshed. |
+| Golden | New in `data/golden/mikkel-arranged-band.fast-notes`; its manifest names e688670f. `data/golden` itself is untouched. |
+| On-device reference | New in `data/runs/apple/entertainer-ref.fast-notes`. |
+| Pointers | Python, conformance, Android and Apple each read these through one constant. Promotion at merge swaps the directories back to the plain names. |
+
+### 7.4 For the owner to check by ear (Mikkel, faithful)
+
+- The solo goes from 694 to 860 written notes.
+- 190 of the 268 notes that are new or moved start within 30 ms of a contour plateau.
+- The rest are notes whose onset moved onto the finer grid.
+- Held notes of 300 ms or more that the new path splits: all 8 are whole-tone neighbour figures (72–74–72,
+  71–69–71) of 300 ms at 45.4, 54.7, 70.6, 75.6, 93.0, 94.1, 96.5 and 101.1 s. The semitone bends are gone.
+
+Bars with more solo notes than before, as bar: before → after:
+
+```
+7:4->5 15:8->9 16:6->10 18:9->12 19:6->7 20:8->9 21:13->14 22:8->9 24:11->13 25:8->10 26:8->14 27:12->14 
+28:12->14 29:10->13 30:7->11 31:14->15 32:9->14 33:10->11 34:13->16 43:8->11 44:7->11 45:9->15 46:11->13 
+47:8->10 48:9->12 49:11->13 50:8->11 51:9->10 52:12->13 53:9->10 54:10->12 55:11->13 56:12->13 57:10->13 
+58:8->10 59:9->13 60:5->9 61:10->14 62:7->11 63:2->3 69:3->5 70:3->4 78:7->8 79:4->5 80:6->7 81:5->6 103:6->8 
+104:9->12 105:10->13 106:7->11 107:9->11 108:6->11 109:10->13 110:11->13 111:8->11 112:9->12 113:7->9 
+114:10->14 115:10->14 116:12->13 117:8->12 118:9->10 119:12->14 120:6->11 121:7->13 122:10->12
+```
+
+**The provisional reference** covers two Mikkel passages, 57.6–61.0 s and 61.1–68.0 s: 93 notes, listed by
+`fast_notes_bench --mikkel`.
+- The notes are contour plateaus whose pitch an independent harmonic sum over the solo stem confirms.
+- They are not a hand transcription, and they share the contour with the thing they check. Use them to
+  spot-check, not as a gate.
+
+### 7.5 Not done, or weaker
+
+- **Trill notation** (F5, a tr mark with its auxiliary note) is not built. Alternations are written out.
+- **Octave lip slurs** at 8 notes/s or slower, slurred: 0.38 → 0.34. Octave alternations are never split,
+  because the tracker's octave flips on held notes look the same.
+- **Sextuplet runs** gained less once tuplets need evidence: in the critic's probe, 0.06 → 0.33 dry and
+  0.11 under a band.
+- **Triplets with 15 ms jitter** are still half written as 16ths.
+- **Tongued fast figures** over 12 notes/s barely improve: pitch alone cannot see a re-articulation. A
+  re-tongue detector needs an attack cue that holds in a hall.
+- **Short takes**: a take where the beat tracker finds a single beat still fails (the critic's P3).
