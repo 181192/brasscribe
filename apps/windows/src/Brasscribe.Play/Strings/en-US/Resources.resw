@@ -1134,9 +1134,6 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>to</value>
   </data>
-  <data name="ReviewArrangedTitle.Text" xml:space="preserve">
-    <value>Your part is arranged</value>
-  </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Choose what the note should be; the whole score follows</value>
   </data>
@@ -1232,6 +1229,12 @@
   </data>
   <data name="Review_CountOne" xml:space="preserve">
     <value>{0} note to check</value>
+  </data>
+  <data name="Review_EmptyBody" xml:space="preserve">
+    <value>Nothing in the recording gave the {0} part any notes, so there is nothing of yours to check.</value>
+  </data>
+  <data name="Review_EmptyTitle" xml:space="preserve">
+    <value>Your part is empty</value>
   </data>
   <data name="Review_FinishConfirm" xml:space="preserve">
     <value>{0} notes keep their ? marks. You can check them any time from the score with “Check them”.</value>
@@ -1908,8 +1911,14 @@
   <data name="Source_Arranged" xml:space="preserve">
     <value>Arranged from the band's harmony</value>
   </data>
+  <data name="Source_Empty" xml:space="preserve">
+    <value>Nothing to play in this arrangement</value>
+  </data>
   <data name="Source_Explain_Arranged" xml:space="preserve">
     <value>Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.</value>
+  </data>
+  <data name="Source_Explain_Empty" xml:space="preserve">
+    <value>Nothing in the recording gave this part any notes, so it is left empty.</value>
   </data>
   <data name="Source_Explain_Recording" xml:space="preserve">
     <value>Brasscribe wrote down the notes it heard for this part.</value>

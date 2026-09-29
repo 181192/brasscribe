@@ -56,11 +56,11 @@
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
-                <!-- The player's part was arranged: no notes of theirs to check. This stands in place of an empty Yours list. -->
+                <!-- The player's part was arranged, or is empty: no notes of theirs to check. This stands in place of an empty Yours list. -->
                 <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="16" Margin="12,0" VerticalAlignment="Top"
                         Visibility="{x:Bind ViewModel.ShowsArrangedNotice, Mode=OneWay}">
                     <StackPanel Spacing="10">
-                        <TextBlock x:Uid="ReviewArrangedTitle" Style="{StaticResource HeadlineStyle}" TextWrapping="Wrap"
+                        <TextBlock Style="{StaticResource HeadlineStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.ArrangedTitle, Mode=OneWay}"
                                    AutomationProperties.HeadingLevel="Level2" />
                         <TextBlock Style="{StaticResource BodyStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.ArrangedBody, Mode=OneWay}" />
                         <Button x:Uid="CheckOtherPartsButton" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch"

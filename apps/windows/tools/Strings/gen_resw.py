@@ -795,7 +795,12 @@ add("Source_Explain_Arranged",
     "Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.",
     "Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.")
 add("Review_ArrangedTitle", "Your part is arranged", "Stemmen din er arrangert")
-prop("ReviewArrangedTitle", "Text", "Your part is arranged", "Stemmen din er arrangert")
+add("Source_Empty", "Nothing to play in this arrangement", "Tom i dette arrangementet")
+add("Source_Explain_Empty", "Nothing in the recording gave this part any notes, so it is left empty.",
+    "Ingenting i opptaket ga denne stemmen noen toner, så den står tom.")
+add("Review_EmptyTitle", "Your part is empty", "Stemmen din er tom")
+add("Review_EmptyBody", "Nothing in the recording gave the {0} part any notes, so there is nothing of yours to check.",
+    "Ingenting i opptaket ga {0} noen toner, så det er ingenting av ditt å sjekke.")
 add("Review_ArrangedBody",
     "Nobody played the {0} part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.",
     "Ingen spilte {0} alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.")

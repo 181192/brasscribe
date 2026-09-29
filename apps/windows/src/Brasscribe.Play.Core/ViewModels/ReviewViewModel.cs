@@ -147,7 +147,10 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     public bool ShowsList => !ShowsArrangedNotice;
 
-    /// <summary>"Nobody played the Euphonium part on its own in the recording, so …".</summary>
+    /// <summary>"Your part is arranged", or "Your part is empty" when nothing in the recording gave it notes.</summary>
+    [ObservableProperty] public partial string ArrangedTitle { get; set; } = "";
+
+    /// <summary>"Nobody played the Euphonium part on its own in the recording, so …" (or why it is empty).</summary>
     [ObservableProperty] public partial string ArrangedBody { get; set; } = "";
 
     /// <summary>"Show my part": the score, on the player's part.</summary>
@@ -232,9 +235,11 @@ public sealed partial class ReviewViewModel : ObservableObject
         TriageText = HasMyPart ? s.Format("Review_Triage", myItems.Count, myItems[0].PartName, myItems.Count(i => i.IsVeryUncertain)) : "";
         IsConfirmingFinish = false;
         ShowsArrangedNotice = !HasMyPart && all.Count > 0 && scope is null && score.MyPartSourceIsArranged;
-        ArrangedBody = ShowsArrangedNotice ? s.Format("Review_ArrangedBody", score.MyPartLabel) : "";
+        bool empty = score.MyPartSourceIsEmpty;
+        ArrangedTitle = ShowsArrangedNotice ? s[empty ? "Review_EmptyTitle" : "Review_ArrangedTitle"] : "";
+        ArrangedBody = ShowsArrangedNotice ? s.Format(empty ? "Review_EmptyBody" : "Review_ArrangedBody", score.MyPartLabel) : "";
         // Said once, politely, as the review opens (WCAG 4.1.3).
-        if (ShowsArrangedNotice) announcer.Announce(s["Review_ArrangedTitle"] + ". " + ArrangedBody);
+        if (ShowsArrangedNotice) announcer.Announce(ArrangedTitle + ". " + ArrangedBody);
         var wanted = scope ?? (HasMyPart ? ReviewScope.MyPart : ReviewScope.AllParts);
         if (Scope != wanted) Scope = wanted; // applies the scope
         else Apply();

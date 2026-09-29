@@ -619,11 +619,34 @@ public class MyInstrumentTests
         main.Review.Load();
         Assert.True(main.Review.ShowsArrangedNotice);
         Assert.False(main.Review.ShowsList);
+        Assert.Equal("Your part is arranged", main.Review.ArrangedTitle);
         Assert.StartsWith("Nobody played the Solo Horn part on its own", main.Review.ArrangedBody);
         Assert.Contains(said.Items, t => t.StartsWith("Your part is arranged. "));
         main.Review.CheckOtherPartsCommand.Execute(null);
         Assert.True(main.Review.ShowsList);
         Assert.Equal(ReviewScope.AllParts, main.Review.Scope);
+    }
+
+    [Fact]
+    public void An_empty_part_is_labelled_empty_and_review_says_so()
+    {
+        var core = new FakeCore();
+        core.Sources["Solo Cornet"] = PartSource.Recording;
+        core.Sources["Solo Horn"] = PartSource.Empty;
+        var (main, said, _) = Build(core, setup: s => s.Set("Seat", "solo-horn"));
+        main.Score.Load(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), new Composition { Title = "Test tune" });
+
+        var horn = main.Score.Player.Parts[1];
+        Assert.Equal("Nothing to play in this arrangement", horn.SourceLabel);
+        Assert.Equal(SourceGlyphs.Arranged, horn.SourceGlyph);
+        Assert.Equal("Nothing in the recording gave this part any notes, so it is left empty.", horn.SourceExplanation);
+        Assert.True(main.Score.MyPartSourceIsEmpty);
+
+        main.Review.Load();
+        Assert.True(main.Review.ShowsArrangedNotice);
+        Assert.Equal("Your part is empty", main.Review.ArrangedTitle);
+        Assert.Equal("Nothing in the recording gave the Solo Horn part any notes, so there is nothing of yours to check.", main.Review.ArrangedBody);
+        Assert.Contains(said.Items, t => t.StartsWith("Your part is empty. "));
     }
 
     [Fact]

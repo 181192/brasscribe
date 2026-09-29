@@ -402,17 +402,24 @@ public sealed partial class ScoreViewModel : ObservableObject
         OnPropertyChanged(nameof(HasMyPart));
         OnPropertyChanged(nameof(MyPartLabel));
         OnPropertyChanged(nameof(MyPartSourceIsArranged));
+        OnPropertyChanged(nameof(MyPartSourceIsEmpty));
         OnPropertyChanged(nameof(CanMakeShownMine));
         Stand.YourPartChanged();
     }
 
     private IReadOnlyDictionary<string, string> _sources = new Dictionary<string, string>();
 
-    /// <summary>Where a part came from (your-recording, recording, arranged), by its own name; null when not known.</summary>
+    /// <summary>Where a part came from (your-recording, recording, arranged, empty), by its own name; null when not known.</summary>
     public string? SourceOf(string partName) => _sources.TryGetValue(partName, out var source) ? source : null;
 
-    /// <summary>The player's part was arranged from the harmony: there are no notes of theirs to check.</summary>
-    public bool MyPartSourceIsArranged => MyPartIndex >= 0 && SourceOf(Document!.Parts[MyPartIndex].Name) == PartSource.Arranged;
+    /// <summary>
+    /// The player's part was arranged from the harmony, or is empty in this arrangement: there are no notes of theirs
+    /// to check.
+    /// </summary>
+    public bool MyPartSourceIsArranged => MyPartIndex >= 0 && SourceOf(Document!.Parts[MyPartIndex].Name) is PartSource.Arranged or PartSource.Empty;
+
+    /// <summary>The player's part has nothing to play in this arrangement (Percussion without drums).</summary>
+    public bool MyPartSourceIsEmpty => MyPartIndex >= 0 && SourceOf(Document!.Parts[MyPartIndex].Name) == PartSource.Empty;
 
     /// <summary>The source label's words ("From the recording"); empty when not known.</summary>
     public string SourceLabelOf(string partName) => SourceOf(partName) switch
@@ -420,6 +427,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         PartSource.YourRecording => _s["Source_YourRecording"],
         PartSource.Recording => _s["Source_Recording"],
         PartSource.Arranged => _s["Source_Arranged"],
+        PartSource.Empty => _s["Source_Empty"],
         _ => "",
     };
 
@@ -429,6 +437,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         PartSource.YourRecording => _s["Source_Explain_YourRecording"],
         PartSource.Recording => _s["Source_Explain_Recording"],
         PartSource.Arranged => _s["Source_Explain_Arranged"],
+        PartSource.Empty => _s["Source_Explain_Empty"],
         _ => "",
     };
 
@@ -444,12 +453,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         var source = SourceOf(m.Name);
         m.SourceLabel = SourceLabelOf(m.Name);
         m.SourceExplanation = SourceExplanationOf(m.Name);
-        m.SourceGlyph = source switch
-        {
-            null => "",
-            PartSource.Arranged => SourceGlyphs.Arranged,
-            _ => SourceGlyphs.Recording,
-        };
+        m.SourceGlyph = GlyphOf(source);
     }
 
     /// <summary>The part view: one part chosen, laid out as a page, with the player's own part muted.</summary>
@@ -458,7 +462,15 @@ public sealed partial class ScoreViewModel : ObservableObject
     /// <summary>The shown part's source label ("Arranged from the band's harmony"), for the part view's header; empty when unknown.</summary>
     public string ShownSourceLabel => ShownPartName is { } n ? SourceLabelOf(n) : "";
     public string ShownSourceExplanation => ShownPartName is { } n ? SourceExplanationOf(n) : "";
-    public string ShownSourceGlyph => ShownPartName is { } n ? SourceOf(n) switch { null => "", PartSource.Arranged => SourceGlyphs.Arranged, _ => SourceGlyphs.Recording } : "";
+    public string ShownSourceGlyph => ShownPartName is { } n ? GlyphOf(SourceOf(n)) : "";
+
+    /// <summary>The parts icon for a part nobody played (arranged or empty), the microphone for one from the recording.</summary>
+    private static string GlyphOf(string? source) => source switch
+    {
+        null => "",
+        PartSource.Arranged or PartSource.Empty => SourceGlyphs.Arranged,
+        _ => SourceGlyphs.Recording,
+    };
     public bool HasShownSource => ShownSourceLabel.Length > 0;
 
     /// <summary>"Make this my part" is offered in the part view of a part that is not the player's.</summary>

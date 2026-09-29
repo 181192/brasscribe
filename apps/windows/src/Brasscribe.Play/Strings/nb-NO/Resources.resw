@@ -1134,9 +1134,6 @@
   <data name="RepeatToLabel.Text" xml:space="preserve">
     <value>til</value>
   </data>
-  <data name="ReviewArrangedTitle.Text" xml:space="preserve">
-    <value>Stemmen din er arrangert</value>
-  </data>
   <data name="ReviewChangeNoteButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Velg hva tonen skal være; hele partituret følger med</value>
   </data>
@@ -1232,6 +1229,12 @@
   </data>
   <data name="Review_CountOne" xml:space="preserve">
     <value>{0} tone å sjekke</value>
+  </data>
+  <data name="Review_EmptyBody" xml:space="preserve">
+    <value>Ingenting i opptaket ga {0} noen toner, så det er ingenting av ditt å sjekke.</value>
+  </data>
+  <data name="Review_EmptyTitle" xml:space="preserve">
+    <value>Stemmen din er tom</value>
   </data>
   <data name="Review_FinishConfirm" xml:space="preserve">
     <value>{0} toner beholder ?-merket. Du kan sjekke dem når som helst fra partituret med «Sjekk dem».</value>
@@ -1908,8 +1911,14 @@
   <data name="Source_Arranged" xml:space="preserve">
     <value>Arrangert ut fra harmoniene i bandet</value>
   </data>
+  <data name="Source_Empty" xml:space="preserve">
+    <value>Tom i dette arrangementet</value>
+  </data>
   <data name="Source_Explain_Arranged" xml:space="preserve">
     <value>Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.</value>
+  </data>
+  <data name="Source_Explain_Empty" xml:space="preserve">
+    <value>Ingenting i opptaket ga denne stemmen noen toner, så den står tom.</value>
   </data>
   <data name="Source_Explain_Recording" xml:space="preserve">
     <value>Brasscribe skrev ned tonene den hørte for denne stemmen.</value>
