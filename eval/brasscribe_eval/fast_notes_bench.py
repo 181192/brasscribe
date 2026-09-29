@@ -572,6 +572,12 @@ def suite_metrics(root: Path | None = None) -> dict[str, float]:
         out[f"{b}.written.note_f1"] = G["all"]["written|note_f1"]
         out[f"{b}.written.onset25_f1"] = G["all"]["written|onset25_f1"]
         out[f"{b}.written.alt_kept"] = G["all"]["written|alt_kept"]
+        # Trill notation: alternations written as one trill at easier (re-arranged and built), and trill marks on
+        # the controls (false trills; must stay 0).
+        out[f"{b}.lead:easier.trill_kept"] = G["all"]["lead:easier|trill_kept"]
+        out[f"{b}.built:easier.trill_kept"] = G["all"]["built:easier|trill_kept"]
+        out[f"{b}.ctl.trills"] = round(sum(m.get(f"{s}|trills", 0.0) for g, m in G.items() if g.startswith("ctl-")
+                                           for s in ("lead:easier", "built:easier", "lead:faithful+tr")), 3)
         for g, m in G.items():
             if g.startswith("ctl-"):
                 out[f"{b}.{g}.extra"] = m["written|extra"]

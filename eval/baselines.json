@@ -726,8 +726,9 @@
       }
     },
     "fast-notes": {
-      "source": "docs/plan/fast-notes.md §7: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets and dense quantization",
+      "source": "docs/plan/fast-notes.md §7-§8: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets, dense quantization and trill notation at standard and easier",
       "metrics": {
+        "oracle.built:easier.trill_kept": 0.481,
         "oracle.ctl-ampvib.extra": {
           "value": 0.05,
           "higher_is_better": false
@@ -780,7 +781,12 @@
           "value": 0.05,
           "higher_is_better": false
         },
-        "oracle.lead:easier.fig_recall": 0.326,
+        "oracle.ctl.trills": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "oracle.lead:easier.fig_recall": 0.265,
+        "oracle.lead:easier.trill_kept": 0.37,
         "oracle.line.fig_recall": 0.597,
         "oracle.quantized.fig_recall": 0.552,
         "oracle.sw.fig_recall": 0.589,
@@ -788,6 +794,7 @@
         "oracle.written.fig_recall": 0.552,
         "oracle.written.note_f1": 0.649,
         "oracle.written.onset25_f1": 0.665,
+        "small0.built:easier.trill_kept": 0.481,
         "small0.ctl-ampvib.extra": {
           "value": 0.05,
           "higher_is_better": false
@@ -840,7 +847,12 @@
           "value": 0.05,
           "higher_is_better": false
         },
-        "small0.lead:easier.fig_recall": 0.263,
+        "small0.ctl.trills": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "small0.lead:easier.fig_recall": 0.212,
+        "small0.lead:easier.trill_kept": 0.241,
         "small0.line.fig_recall": 0.596,
         "small0.quantized.fig_recall": 0.469,
         "small0.sw.fig_recall": 0.588,

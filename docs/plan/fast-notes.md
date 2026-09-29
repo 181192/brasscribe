@@ -6,11 +6,13 @@ between two tones, that is often used on cornet/trumpet." This plan covers two k
 - fast passages: semiquavers and faster, and double or triple tonguing;
 - rapid alternation between two notes: lip trills, shakes, trills, and tremolo between two pitches.
 
-**Status (2026-09-29): done, except the trill mark.** The contour split and the dense-grid quantizer
+**Status (2026-09-29): done.** The contour split and the dense-grid quantizer
 (both at faithful difficulty only), their Python–Rust parity, and the faithful readability gate (65 % 16ths on the Solo Cornet) are on `main`, and the
 Mikkel golden and the on-device reference were promoted (the previous ones are in
-`data/golden-backups/before-fast-notes/`). The results are in §7. Left: trill notation (F5) and the weaker
-cases in §7.5, and the owner's listening check in §7.4. An independent review is in
+`data/golden-backups/before-fast-notes/`). The results are in §7. The follow-ups in §8 add three things: trill
+notation (F5), tuplets that survive timing jitter, and a tempo estimate for takes with a single tracked beat. Octave
+lip slurs and tongued figures over 12 notes/s were tried and left out (§8.4). The owner's listening check in §7.4 is
+still open. An independent review is in
 [research/17-fast-notes-critique.md](../research/17-fast-notes-critique.md).
 Where both measured the same thing, the numbers below agree with it.
 
@@ -543,12 +545,191 @@ Bars with more solo notes than before, as bar: before → after:
 
 ### 7.5 Not done, or weaker
 
-- **Trill notation** (F5, a tr mark with its auxiliary note) is not built. Alternations are written out.
+- **Trill notation**: done, §8.1.
 - **Octave lip slurs** at 8 notes/s or slower, slurred: 0.38 → 0.34. Octave alternations are never split,
-  because the tracker's octave flips on held notes look the same.
+  because the tracker's octave flips on held notes look the same. A second attempt, in §8.4, was left out.
 - **Sextuplet runs** gained less once tuplets need evidence: in the review's probe, 0.06 → 0.33 dry and
   0.11 under a band.
-- **Triplets with 15 ms jitter** are still half written as 16ths.
-- **Tongued fast figures** over 12 notes/s barely improve: pitch alone cannot see a re-articulation. A
-  re-tongue detector needs an attack cue that holds in a hall.
-- **Short takes**: a take where the beat tracker finds a single beat still fails (the review's P3).
+- **Triplets with 15 ms jitter**: done, §8.2.
+- **Tongued fast figures** over 12 notes/s barely improve: pitch alone cannot see a re-articulation. An attack
+  cue that holds in a hall was tried in §8.4 and left out.
+- **Short takes** with a single tracked beat: done, §8.3.
+
+## 8. Follow-ups
+
+Each step was measured before and after with `fast_notes_bench` on every fast-notes set, with oracle and small0
+beats.
+
+The bench now also scores the trill, in three new stages:
+- `lead:faithful+tr`: faithful with trills on;
+- `built:standard` and `built:easier`: the lead part of a take transcribed at that difficulty, not re-arranged from
+  faithful.
+
+It also has two new metrics:
+- `trill_kept`: for alternations at a semitone or a whole tone, whether the figure is one trill on the lower pitch,
+  with the upper pitch as its auxiliary, covering at least 80 % of the figure;
+- `trills`: trill marks per clip. Anywhere but those alternations, these are false trills.
+
+### 8.1 Trill notation (F5)
+
+`brasscribe_music/trills.py`, `core/.../trills.rs`.
+
+**What counts as a trill.** A run of at least 7 notes, alternating between two pitches a semitone or a whole tone
+apart.
+- The notes touch (gaps of 50 ms or less), no single step is longer than 0.2 s, and the median inter-onset interval is
+  0.15 s or less (about 7 notes/s or faster).
+- A held last note is the resolution and stays a note of its own.
+- A note the quantizer dropped leaves two neighbours on one pitch. At most two notes in a row on one pitch count as
+  one turn, so the run still counts.
+- Wider alternations (shakes, octave lip slurs) stay written out.
+
+**How it is written.**
+- One note on the lower (main) pitch, from the first onset to the last note's end.
+- `Note.trill` holds the semitones up to the auxiliary. The Composition JSON writes `trill` only where it is set, and
+  the apps' decoders ignore it.
+
+**Where it is applied.**
+- **Standard and easier: by default, in two places.**
+  - In the transcription, the runs found on the contour-split line replace the notes SwiftF0 merged. The rest of the
+    simpler line is unchanged.
+  - In the arrangement, written-out alternations are collapsed before the 16th merges. So a faithful composition
+    re-arranged at standard or easier gets trills too (the FFI re-arrange path).
+- **Faithful: written out, unless asked for.** The option is `--trills` (the transcription CLI and
+  `brasscribe-core arrange-layers`), or `trills` in the FFI `ArrangeOptions` and `LayersSongOptions` and in the C API
+  options. It is recorded as `arrangement.trills`.
+
+**MusicXML.**
+- The mark is `<ornaments><trill-mark/>`, with `<accidental-mark>` only where the key signature does not give the
+  auxiliary.
+- The auxiliary is spelled from the written part and its key at that bar: the next letter up, at the trill's size.
+  Accidentals earlier in the bar are not considered.
+- A trill that goes on through ties gets a wavy line from the first note to the last. The line starts inside the trill
+  mark's `<ornaments>`, after the mark, because alphaTab 1.8.4 reads a wavy line with no trill mark before it as
+  vibrato.
+- No `trill-step` is written. alphaTab parses it as a number, but MusicXML's values are words.
+- The music21 and Rust writers produce identical files.
+
+**Renderers and playback.**
+- Verovio and alphaTab show the tr mark. On the alphaTab 1.8.4 importer, `trillValue` is set and `vibrato` is not.
+- The apps' own players play the main note. alphaTab's synthesizer (Android) plays a trill from the mark, a whole tone
+  up by default.
+
+**Talking score and braille.**
+- The talking score (core, engine, Android, Windows, studio) says "trill", or "trill with sharp" and so on; in
+  Norwegian "trille", "trille med kryss". The vectors are in `talking-score-vectors.json`, and the spec is §4.6.
+- Braille puts the trill sign (dots 2-3-5) before the note, with the auxiliary's accidental before the sign. music21's
+  translator drops trills, so `braille.py` adds the sign.
+
+**Parity.**
+- 160 `trills` fixtures (with_trills, collapse_trills, and apply_difficulty per mode with trills on, off and by
+  default) match exactly in Rust.
+- 25 conformance cases on fast-notes clips: standard, easier, faithful `--trills`, and the full band in D♭ and E.
+
+**Results, before → after** (`trill_kept` on the alternations at a semitone or a whole tone):
+
+| Set | Beats | Built at standard or easier | Re-arranged from faithful at standard or easier | Faithful with trills |
+|---|---|---|---|---|
+| Synthetic (84 clips) | oracle | 0 → 0.39 | 0 → 0.29 | 0 → 0.29 |
+| Synthetic (84 clips) | small0 | 0 → 0.39 | 0 → 0.16 | 0 → 0.16 |
+| Separated by Mega-53 | oracle | 0 → 0.50 | 0 → 0.33 | 0 → 0.50 |
+| Separated by Mega-53 | small0 | 0 → 0.50 | 0 → 0.33 | 0 → 0.50 |
+
+- **By rate** (synthetic, built at standard or easier):
+
+  | Alternation | ≤ 8/s | 9–12/s | > 12/s |
+  |---|---|---|---|
+  | Slurred | 0.50 | 0.56 | 0.50 |
+  | Tongued | 0.20 | 0.50 | 0 |
+
+  The segmentation does not hear tongued alternations above 12/s. A missed alternation is written as before, never as
+  a wrong trill.
+- **False trills: 0.** None on any must-stay-one-note control, in any render (dry, room, separated); none on the 70 real
+  Iowa vibrato notes, dry or in the hall; none on runs, arpeggios, repeated notes, or the minor-3rd, 4th and octave
+  alternations.
+- **URMP.** One trill in 21 parts, in 20_Pavane at 76.9 s. The annotation has a 12-note semitone alternation (G♯–A)
+  there, so it is a real one.
+- **ChoraleBricks and Mikkel.** No trill, at any difficulty. The Mikkel golden is byte-identical, and so is every
+  faithful output: faithful `written` recall and F1 do not move.
+- **The `fast-notes` suite.**
+  - `lead:easier.fig_recall` drops, as expected: 0.326 → 0.265 (oracle) and 0.263 → 0.212 (small0). An alternation is
+    now one note.
+  - The suite now also gates `lead:easier.trill_kept`, `built:easier.trill_kept` and `ctl.trills` (0).
+
+### 8.2 Triplets with timing jitter
+
+With 15 ms of jitter, a triplet 8th lands past the per-beat fit (0.045 beats) in about half the beats. Those beats were
+written as 16ths.
+
+**What changed.** The dense quantizer now reads tuplets from runs of beats. A run of at least two consecutive beats that
+each hold exactly 3 onsets (or 6) is written as triplets (sextuplets) when both hold:
+- over the run, the tuplet's snap error is under a quarter of the plain grid's (16ths, 32nds);
+- no onset is more than 0.1 beats off its slot.
+
+Straight 16ths never hold exactly three onsets a beat unless a note is missing, and then 16ths fit far better. Tests
+cover 16th-16th-8th, 8th-16th-16th and 16th-8th-16th with 10 and 20 ms of jitter.
+
+**Dense probe** (`research/fastnotes/dense_probe.py`), share of notes on their true slot:
+
+| Case | Before | After |
+|---|---|---|
+| Triplet 8ths @100, 15 ms jitter | 0.50 | **0.97** |
+| Sextuplets @100, 10 ms jitter | 0.93 | 0.94 |
+| Every 16th case (exact, 10 and 20 ms jitter, rubato) | unchanged | unchanged |
+
+**Eval sets.**
+- Synthetic: the written tuplet share goes 0.04 → 0.05, and written recall 0.436 → 0.437.
+- URMP: note F1 goes 0.863 → 0.866.
+- No other set moves.
+
+**Readability and parity.**
+- Mikkel's Solo Cornet stays at 0.3 % tuplets, and the `readability` suite passes unchanged.
+- The dense-quantize fixtures are regenerated (9 of 120 cases change) and match in Rust.
+
+### 8.3 Takes with a single tracked beat
+
+**The problem.** A short, fast take where the beat tracker found one beat, or none, failed the whole transcription.
+
+**What changed.** The layered song builds a grid from the onsets:
+- the beat is the multiple of the median inter-onset interval that lies between 75 and 150 BPM, nearest 120;
+- it runs through the tracked beat, in bars of 4.
+
+The Composition records `tempo_estimated`, written only when true, and the score prints "tempo?" above the tempo mark.
+
+**Results.**
+- `repeat-i0-t150-s8-tongue-samples` with small0 beats used to fail. It is now transcribed at an estimated 99 BPM,
+  flagged.
+- Python and Rust are identical, with conformance cases for one beat and for none.
+- Takes with two or more beats do not change: every other clip and the Mikkel golden are identical.
+
+### 8.4 Tried and left out
+
+Both attempts were bounded. Both are left out because the controls rose.
+
+**Octave lip slurs.**
+- **The rule tried.** Split a note whose plateaus alternate by exactly an octave when every plateau holds 5 frames
+  and Basic Pitch has a note at the plateau's own pitch on at least 60 % of them (a harmonic confirmation, which the
+  contour cannot give itself).
+- **The gain.** Slurred alternation at 9–12/s: alternations kept 0.333 → 0.356 (oracle).
+- **The cost.**
+  - Doit extras 0.19 → 0.31.
+  - Fall extras 0.46 → 0.63.
+  - Slow-slur recall 0.89 → 0.86.
+  - Chorale note F1 0.722 → 0.720.
+- **Why.** Basic Pitch also hears the upper partial on falls and doits, so it is not an independent confirmation
+  there.
+
+**Tongued figures over 12 notes/s.**
+- **The cue tried.** An attack on the contour's loudness: a rise of 9 dB within 32 ms, right after a dip of 6 dB below
+  the previous 100 ms.
+- **What the cue finds.**
+  - False cues: none on the 35 real Iowa vibrato notes, dry or in the hall. A 3 dB rise gives 5 per note in the hall.
+  - Tongued onsets up to 12/s: 0.94 found dry and 0.82 in the room.
+  - Tongued onsets above 12/s: 0.45.
+  - SoundFont renders: none, because their notes have no attack.
+- **What it does in the solo path**, splitting SwiftF0 notes at those attacks:
+  - Repeated tongued notes above 12/s: 0.103 → 0.127 (small0 only).
+  - Tongued alternations and runs above 12/s: unchanged. There, the line and the quantizer are the limit, not the
+    onsets.
+  - Rip extras: 0.44 → 0.50.
+- **For a next attempt.** The cue holds in a hall. It is worth trying again together with a finer line and grid at
+  those rates.
