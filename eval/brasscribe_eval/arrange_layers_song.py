@@ -23,7 +23,7 @@ from brasscribe_music.arranger import FOOTER_LANGS, Arrangement, arrange_layers,
 from brasscribe_music import musescore
 from brasscribe_music.energy import Envelope, gate
 from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.beats import clean_beats_gated, downbeat_rate, labels_on, solo_meter
+from brasscribe_music.beats import clean_beats_gated, downbeat_rate, fallback_beats, labels_on, solo_meter
 from brasscribe_music.confidence import Model as CalibrationModel
 from brasscribe_music.confidence import features as confidence_features
 from brasscribe_music.confidence import p_correct, review_groups
@@ -160,11 +160,17 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
             {"stem_minus_mix_db": check.stem_minus_mix_db, "failed": check.failed, "quiet_windows": check.quiet_windows}))
         del audio
 
-    b = np.loadtxt(args.beats, ndmin=2)
+    b = np.loadtxt(args.beats, ndmin=2) if args.beats.read_text().strip() else np.empty((0, 2))
+    onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
+    # Under two tracked beats (a short, fast take): a grid from the onsets, and the score says so.
+    tempo_estimated = len(b) < 2
+    if tempo_estimated:
+        t, p = fallback_beats(b[:, 0], onsets)
+        b = np.column_stack([t, p])
+        print(f"beats: {len(t)} from the onsets, one every {t[1] - t[0]:.3f} s (the tracker found under two)")
     pos = b[:, 1].astype(int)
     gaps = np.diff(np.where(pos == 1)[0])
     beats_per_bar = Counter(gaps).most_common(1)[0][0] if len(gaps) else 1
-    onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
     down = pos == 1
     raw_times = b[:, 0]
     if not args.no_beat_cleanup:
@@ -294,7 +300,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         Voice("brass", VoiceRole.HARMONY, hits, "orchestra hits", "brass"),
         Voice("drums", VoiceRole.RHYTHM, drums, "drum kit", "drums"),
     ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down,
-        free_regions=plan.regions(first_down) if plan else [])
+        free_regions=plan.regions(first_down) if plan else [], tempo_estimated=tempo_estimated)
     for v in comp.voices:
         clip_to_regions(v.notes, comp.free_regions)
     mark_fermatas(solo, comp.free_regions)

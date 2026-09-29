@@ -161,6 +161,7 @@ class Composition:
     sections: list[Section] = field(default_factory=list)
     review: list[ReviewItem] = field(default_factory=list)
     arrangement: dict | None = None  # options the arrangement was made with (lineup, difficulty, ...); None = defaults
+    tempo_estimated: bool = False  # the beat grid is a guess from the onsets (the tracker found under two beats)
 
     def free_region_at(self, tick: int) -> FreeRegion | None:
         return next((r for r in self.free_regions if r.start <= tick < r.end), None)
@@ -189,6 +190,8 @@ class Composition:
             d.pop("arrangement", None)  # files made with the default options stay as they were
         if not d.get("review"):
             d.pop("review", None)
+        if not d.get("tempo_estimated"):
+            d.pop("tempo_estimated", None)
         for v in d["voices"]:
             for n in v["notes"]:
                 if n.get("trill") is None:
@@ -216,4 +219,4 @@ class Composition:
                            [FreeRegion.from_dict(r) for r in d.get("free_regions", [])],
                            [Dynamic(**x) for x in d.get("dynamics", [])],
                            [Section(**x) for x in d.get("sections", [])], [ReviewItem(**x) for x in d.get("review", [])],
-                           d.get("arrangement"))
+                           d.get("arrangement"), bool(d.get("tempo_estimated", False)))

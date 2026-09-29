@@ -140,6 +140,9 @@ def _events(notes: list[QNote]) -> list[tuple[int, int, list[int], float, set[st
     return out
 
 
+TEMPO_ESTIMATED = "tempo?"  # above the tempo mark when the beat grid was estimated from the onsets
+
+
 @dataclass
 class FreeSpan:
     """A free-time passage for the score: [start, end) ticks, notated at `bpm`."""
@@ -335,7 +338,8 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                 very_below: float = 0.4,
                 key_changes: list[tuple[int, int]] | None = None,
                 rehearsal: list[tuple[int, str]] | None = None,
-                free_spans: list[FreeSpan] | None = None) -> stream.Score:
+                free_spans: list[FreeSpan] | None = None, tempo_note: str | None = None) -> stream.Score:
+    """`tempo_note`: text above the first tempo mark (TEMPO_ESTIMATED when the beat grid is a guess)."""
     score = stream.Score()
     score.metadata = None
     from music21 import metadata
@@ -379,6 +383,8 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
         spans = free_spans or []
         opens_free = any(sp.start - pickup_ticks == 0 for sp in spans)
+        if pi == 0 and tempo_note:
+            part.insert(0, expressions.TextExpression(tempo_note))
         if pi == 0 and not opens_free:
             part.insert(0, tempo.MetronomeMark(number=round(bpm)))
         _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
@@ -648,7 +654,7 @@ def build_band_score(arrangement, comp) -> stream.Score:
     return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=1 - model.mark_risk,
                        very_below=1 - model.very_risk, key_fifths=fifths, key_changes=changes,
                        rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
-                       free_spans=spans)
+                       free_spans=spans, tempo_note=TEMPO_ESTIMATED if getattr(comp, "tempo_estimated", False) else None)
 
 
 def band_sounds(arrangement) -> dict[str, str]:

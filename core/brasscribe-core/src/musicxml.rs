@@ -14,6 +14,9 @@ pub use crate::notation::parts::split_parts;
 pub use crate::notation::score::{write_score, FreeSpan, PartSpec, ScoreSpec};
 
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
+/// Above the tempo mark when the beat grid was estimated from the onsets.
+pub const TEMPO_ESTIMATED: &str = "tempo?";
+
 /// QNote articulation "trill:<semitones>" (Note::trill) inside the writer.
 pub const TRILL: &str = "trill:";
 
@@ -62,6 +65,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         key_changes: comp.keys.iter().skip(1).map(|k| (k.tick, k.fifths)).collect(),
         rehearsal: comp.sections.iter().map(|s| (s.tick, s.label.clone())).collect(),
         encoding_date: String::new(),
+        tempo_note: comp.tempo_estimated.then(|| TEMPO_ESTIMATED.to_string()),
     }
 }
 

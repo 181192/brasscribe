@@ -551,3 +551,41 @@ mod meter_tests {
         assert!(out.iter().zip(&t).all(|(a, b)| (a - b).abs() < 1e-9));
     }
 }
+
+/// A take whose beat tracker found fewer than two beats gets a grid from its onsets: the beat is
+/// the multiple of the typical inter-onset interval (the median over FALLBACK_MIN_IOI) within
+/// FALLBACK_BEAT seconds, nearest FALLBACK_PREFERRED (else FALLBACK_PREFERRED), through the
+/// tracked beat (else the first onset), with bars of 4, over the take.
+pub const FALLBACK_MULTIPLES: [f64; 6] = [1.0, 2.0, 3.0, 4.0, 6.0, 8.0];
+pub const FALLBACK_BEAT: (f64, f64) = (0.4, 0.8);
+pub const FALLBACK_PREFERRED: f64 = 0.5;
+pub const FALLBACK_MIN_IOI: f64 = 0.05;
+
+/// (beat times, positions 1-4) for a take with fewer than two tracked beats.
+pub fn fallback_beats(tracked: &[f64], onsets: &[f64]) -> (Vec<f64>, Vec<i64>) {
+    let mut on: Vec<f64> = onsets.iter().map(|&x| py::np_round(x, 3)).collect();
+    on.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    on.dedup();
+    let ioi: Vec<f64> = on.windows(2).map(|w| w[1] - w[0]).filter(|&d| d > FALLBACK_MIN_IOI).collect();
+    let mut period = FALLBACK_PREFERRED;
+    if !ioi.is_empty() {
+        let base = py::median(&ioi);
+        let best = FALLBACK_MULTIPLES
+            .iter()
+            .map(|m| base * m)
+            .filter(|&p| FALLBACK_BEAT.0 <= p && p <= FALLBACK_BEAT.1)
+            .min_by(|a, b| ((a - FALLBACK_PREFERRED).abs(), *a).partial_cmp(&((b - FALLBACK_PREFERRED).abs(), *b)).unwrap());
+        if let Some(p) = best {
+            period = p;
+        }
+    }
+    let anchor = tracked.first().copied().or_else(|| on.first().copied()).unwrap_or(0.0);
+    let (first, last) = match (on.first(), on.last()) {
+        (Some(&a), Some(&b)) => (a, b),
+        _ => (anchor, anchor),
+    };
+    let k0 = ((first - anchor) / period).floor() as i64 - 1;
+    let k1 = ((last - anchor) / period).ceil() as i64 + 3;
+    let ks: Vec<i64> = (k0..k1).collect();
+    (ks.iter().map(|&k| anchor + k as f64 * period).collect(), ks.iter().map(|&k| k.rem_euclid(4) + 1).collect())
+}

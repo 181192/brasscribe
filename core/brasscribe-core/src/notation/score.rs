@@ -69,6 +69,8 @@ pub struct ScoreSpec {
     /// Rehearsal marks (tick, label), shown on the top part.
     pub rehearsal: Vec<(i64, String)>,
     pub encoding_date: String,
+    /// Text above the first tempo mark (musicxml::TEMPO_ESTIMATED when the beat grid is a guess).
+    pub tempo_note: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -459,6 +461,11 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
                 if tick - spec.pickup_ticks > 0 {
                     key_changes.push((tick - spec.pickup_ticks, f));
                 }
+            }
+        }
+        if pi == 0 {
+            if let Some(t) = &spec.tempo_note {
+                push(&mut dirs, 0, Dir::Words(t.clone(), false, false));
             }
         }
         if pi == 0 && !opens_free {

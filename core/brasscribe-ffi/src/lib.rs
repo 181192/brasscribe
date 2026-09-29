@@ -396,7 +396,8 @@ pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: Layer
         drums_audio: stem(drums_audio)?,
         orchestra_audio: stem(orchestra_audio)?,
     };
-    let beats = Beats::parse(beats_text).map_err(invalid)?;
+    // Under two beats is not an error here: the layered song estimates a grid from the onsets.
+    let beats = Beats::parse_any(beats_text).map_err(invalid)?;
     let opts = LayersOptions {
         solo_contour: contour,
         no_free_time: !o.free_time,

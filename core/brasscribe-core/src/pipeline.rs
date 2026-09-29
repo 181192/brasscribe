@@ -41,6 +41,15 @@ pub struct Beats {
 impl Beats {
     /// Parse whitespace-separated rows `time position` (as `np.loadtxt` reads them).
     pub fn parse(text: &str) -> Result<Beats, String> {
+        let b = Beats::parse_any(text)?;
+        if b.times.len() < 2 {
+            return Err("need at least two beats".into());
+        }
+        Ok(b)
+    }
+
+    /// [`Beats::parse`], also with fewer than two beats (the layered song estimates a grid then).
+    pub fn parse_any(text: &str) -> Result<Beats, String> {
         let mut times = Vec::new();
         let mut positions = Vec::new();
         for (i, raw) in text.lines().enumerate() {
@@ -56,9 +65,6 @@ impl Beats {
             let p: f64 = cols[1].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
             times.push(t);
             positions.push(p.trunc() as i64);
-        }
-        if times.len() < 2 {
-            return Err("need at least two beats".into());
         }
         Ok(Beats { times, positions })
     }
@@ -297,10 +303,17 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     }
     let separation_check = separation(layers);
 
+    let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
+    // Under two tracked beats (a short, fast take): a grid from the onsets, and the score says so.
+    let tempo_estimated = beats.times.len() < 2;
+    let fallback = tempo_estimated.then(|| {
+        let (times, positions) = crate::beats::fallback_beats(&beats.times, &onsets);
+        Beats { times, positions }
+    });
+    let beats = fallback.as_ref().unwrap_or(beats);
     // Most common gap between labelled downbeats (1 when there are none).
     let label_bpb = beats.beats_per_bar().ok();
     let mut bpb = label_bpb.unwrap_or(1);
-    let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
     let mut down: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
     let mut raw_times = beats.times.clone();
     let mut first_down;
@@ -517,6 +530,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         sections: Vec::new(),
         review: Vec::new(),
         arrangement: None,
+        tempo_estimated,
     };
     // Dynamics per layer from its own loudness, per bar.
     let bm = BeatMap::new(&comp.beat_times)?;
@@ -734,6 +748,7 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
         sections: Vec::new(),
         review: Vec::new(),
         arrangement: None,
+        tempo_estimated: false,
     };
     record_lineup(&mut comp, lineup_key, opts.seat.as_deref(), opts.reads.as_deref(), lead);
     let arrangement = crate::arranger::arrange_opts(&comp, crate::arranger::composition_lineup(&comp).0, "faithful")?;
@@ -765,6 +780,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         key_changes: Vec::new(),
         rehearsal: Vec::new(),
         encoding_date: String::new(),
+        tempo_note: None,
     };
     Ok(write_score(&spec))
 }
@@ -829,6 +845,7 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         sections: Vec::new(),
         review: Vec::new(),
         arrangement: None,
+        tempo_estimated: false,
     })
 }
 

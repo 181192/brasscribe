@@ -189,6 +189,23 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
         base = {"layers": layers, "beats": src / "oracle.beats", "title": clip, "contour": src / "sw.contour.npz"}
         for tag, options in TRILL_VARIANTS:
             cases.append(Case(f"trills/{clip}/{tag}", "layers", {**base, "options": options}))
+    # Short takes: the beat tracker found one beat (small0 on a fast tongued figure), or none. The grid comes
+    # from the onsets.
+    clip = "repeat-i0-t150-s8-tongue-samples"
+    if (fast / clip / "sw.mid").exists():
+        layers = work / "_fast-notes" / clip
+        layers.mkdir(parents=True, exist_ok=True)
+        for name, f in (("solo-sw.mid", "sw.mid"), ("solo-bp.mid", "bp.mid"), ("solo-mus.mid", "bp.mid")):
+            link = layers / name
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(fast / clip / f)
+        no_beats = work / "_fast-notes" / "no.beats"
+        no_beats.write_text("")
+        for tag, beats in (("one-beat", fast / clip / "small0.beats"), ("no-beat", no_beats)):
+            cases.append(Case(f"short-take/{clip}/{tag}", "layers", {"layers": layers, "beats": beats, "title": clip,
+                                                                      "contour": fast / clip / "sw.contour.npz",
+                                                                      "options": ["--lineup", "minimal"]}))
     # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
     # layered output from the Python reference is kept next to it.
     ent = ONDEVICE_REF

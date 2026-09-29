@@ -206,7 +206,8 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 lead: a.opt("lead").unwrap_or_default(),
                 lang: a.opt("lang").unwrap_or_default(),
             };
-            let r = pipeline::arrange_layers_song(&layers, &beats(Path::new(&a.one("beats")?))?, &title, &opts)?;
+            let bt = Beats::parse_any(&String::from_utf8_lossy(&read(Path::new(&a.one("beats")?))?))?;
+            let r = pipeline::arrange_layers_song(&layers, &bt, &title, &opts)?;
             out_band(Path::new(&a.one("out")?), &r)
         }
         "arrange-song" => {

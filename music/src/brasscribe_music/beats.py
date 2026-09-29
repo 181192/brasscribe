@@ -403,3 +403,31 @@ def solo_meter(times: np.ndarray, downbeat: np.ndarray, positions: np.ndarray, b
         _, first = track_bar_phase(times, phase, m.beats_per_bar, jump_cost=1e9)
         return Meter(m.beats_per_bar, first, False, m.compound, m.strength, np.asarray(times, float))
     return m
+
+
+# A take whose beat tracker found fewer than two beats (a short, fast solo) gets a grid from its onsets instead of
+# failing: the beat is the multiple of the typical inter-onset interval (the median over 50 ms) that lies within
+# FALLBACK_BEAT seconds, nearest FALLBACK_PREFERRED; without one, FALLBACK_PREFERRED. It runs through the tracked
+# beat (else the first onset) with bars of 4, over the take. The score says the tempo is a guess (Composition.
+# tempo_estimated).
+FALLBACK_MULTIPLES = (1, 2, 3, 4, 6, 8)
+FALLBACK_BEAT = (0.4, 0.8)  # seconds: 75 to 150 BPM
+FALLBACK_PREFERRED = 0.5  # seconds: 120 BPM
+FALLBACK_MIN_IOI = 0.05
+
+
+def fallback_beats(tracked: np.ndarray, onsets: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(beat times, positions 1-4) for a take with fewer than two tracked beats (see FALLBACK_MULTIPLES)."""
+    on = np.unique(np.round(np.asarray(onsets, dtype=float), 3))
+    ioi = np.diff(on)
+    ioi = ioi[ioi > FALLBACK_MIN_IOI]
+    period = FALLBACK_PREFERRED
+    if len(ioi):
+        base = float(np.median(ioi))
+        cands = [base * m for m in FALLBACK_MULTIPLES if FALLBACK_BEAT[0] <= base * m <= FALLBACK_BEAT[1]]
+        if cands:
+            period = min(cands, key=lambda p: (abs(p - FALLBACK_PREFERRED), p))
+    anchor = float(tracked[0]) if len(tracked) else float(on[0]) if len(on) else 0.0
+    first, last = (float(on[0]), float(on[-1])) if len(on) else (anchor, anchor)
+    k = np.arange(int(np.floor((first - anchor) / period)) - 1, int(np.ceil((last - anchor) / period)) + 3)
+    return anchor + k * period, k % 4 + 1

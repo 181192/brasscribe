@@ -159,6 +159,13 @@ pub struct Composition {
     /// transpose_semitones); absent = the defaults.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub arrangement: Option<Value>,
+    /// The beat grid is a guess from the onsets (the tracker found under two beats).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub tempo_estimated: bool,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
 }
 
 /// A dynamic marking (pp, p, mp, mf, f, ff) for one textural layer from `tick` on.
