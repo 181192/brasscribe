@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 
-use crate::arranger::{arrange, Arrangement};
+use crate::arranger::Arrangement;
 use crate::beats::clean_beats_gated;
 use crate::consensus::{cluster, consensus, Sources};
 use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
@@ -175,6 +175,8 @@ pub struct LayersOptions {
     pub lineup: String,
     /// "faithful" (default when empty), "standard" or "easier".
     pub difficulty: String,
+    /// Faithful: write sustained two-note alternations as trills (standard and easier always do).
+    pub trills: bool,
     /// Target concert key of the first key signature: Bb, F#, Am or FIFTHS[:MODE].
     pub key: Option<String>,
     /// Transpose the whole arrangement by this many semitones (instead of `key`).
@@ -381,7 +383,12 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // Faithful: pitch-change onsets the segmentation merged (slurred trills and runs), octave flips and glides,
     // and a finer grid where the onsets need it. Standard and easier keep the simpler line.
     let fast_notes = difficulty == "faithful";
-    let solo_sw_f1 = if fast_notes { crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp) } else { solo_sw.clone() };
+    // Standard and easier: a sustained alternation (a trill) the segmentation merged is one trill note (trills.rs).
+    let solo_sw_f1 = if fast_notes {
+        crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp)
+    } else {
+        crate::trills::with_trills(&solo_sw, &crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp))
+    };
     let votes: Sources = vec![
         ("sw".into(), line(&solo_sw_f1, lo, hi, true, MIN_DUR)),
         ("mus".into(), line(&solo_mus, lo, hi, true, MIN_DUR)),
@@ -398,11 +405,15 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     let separated = layers.bass_audio.is_some() || layers.drums_audio.is_some() || layers.orchestra_audio.is_some();
     let model = crate::confidence::Model::load();
     let split_onsets: HashSet<u64> = votes[0].1.iter().filter(|n| n.split).map(|n| n.onset.to_bits()).collect();
+    let trill_of: HashMap<u64, (i32, f64)> = votes[0].1.iter().filter(|n| n.trill != 0).map(|n| (n.onset.to_bits(), (n.trill, n.offset))).collect();
     let cand: Vec<RawNote> = cluster(&votes)
         .into_iter()
         .filter(|c| c.sources.contains("sw"))
         .map(|c| {
             let (on, off) = (c.median_onset(), c.median_offset());
+            // A trill lasts as long as its alternation, whatever the other transcribers heard.
+            let (trill, trill_end) = c.onsets.iter().find_map(|o| trill_of.get(&o.to_bits()).copied()).unwrap_or((0, off));
+            let off = off.max(trill_end);
             let mut src = c.sources.clone();
             if mus_is_bp {
                 src.remove("mus");
@@ -415,6 +426,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
                 offset: off,
                 confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)),
                 split: c.onsets.iter().any(|o| split_onsets.contains(&o.to_bits())),
+                trill,
             }
         })
         .collect();
@@ -430,6 +442,10 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         }
     }
     let mut solo = written_line(quantize_with(&solo_line, &times, true, false, coarse, fast_notes), &times, pickup, "solo")?;
+    let line_trills: HashMap<u64, i32> = solo_line.iter().filter(|n| n.trill != 0).map(|n| (n.onset.to_bits(), n.trill)).collect();
+    for n in solo.iter_mut() {
+        n.trill = n.onset_s.and_then(|o| line_trills.get(&o.to_bits()).copied());
+    }
     let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
 
     let solo_keys: HashSet<(u64, i32)> = solo_line.iter().map(|n| (py::py_round(n.onset, 1).to_bits(), n.pitch)).collect();
@@ -532,11 +548,14 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     if shift != 0 {
         comp = comp.transposed(shift);
     }
-    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() {
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() || opts.trills {
         let mut a = serde_json::Map::new();
         a.insert("lineup".into(), lineup_name.into());
         a.insert("difficulty".into(), difficulty.into());
         a.insert("transpose_semitones".into(), shift.into());
+        if opts.trills {
+            a.insert("trills".into(), true.into());
+        }
         if let Some(s) = &opts.seat {
             // The seat's options, like the others; the arrangers read them back (composition_lineup).
             a.insert("seat".into(), s.as_str().into());
@@ -564,9 +583,15 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         })
         .collect();
     let lineup = crate::arranger::composition_lineup(&comp).0;
-    let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })?;
+    let trills = if opts.trills { Some(true) } else { None };
+    let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), trills, ..Default::default() })?;
     let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp), &crate::arranger::part_footers(&comp, lang));
     Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
+}
+
+/// The trill option a Composition was arranged with (`arrangement.trills`); None: the difficulty's default.
+pub fn recorded_trills(comp: &Composition) -> Option<bool> {
+    comp.arrangement.as_ref().and_then(|a| a.get("trills")).and_then(|v| v.as_bool())
 }
 
 /// Arrange an existing Composition the way it was made: the layered arranger
@@ -578,12 +603,12 @@ pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
     if !layered {
         if lineup != crate::instruments::minimal_band() {
             let difficulty = opt("difficulty").filter(|d| !d.is_empty()).unwrap_or_else(|| "faithful".into());
-            return crate::arranger::arrange_opts(comp, lineup, &difficulty);
+            return crate::arranger::arrange_opts_trills(comp, lineup, &difficulty, recorded_trills(comp));
         }
-        return Ok(arrange(comp));
+        return crate::arranger::arrange_opts_trills(comp, crate::instruments::minimal_band(), "faithful", recorded_trills(comp));
     }
     let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
-    crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, ..Default::default() })
+    crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, trills: recorded_trills(comp), ..Default::default() })
 }
 
 #[derive(Debug, Clone)]
@@ -839,6 +864,7 @@ pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
             offset: o.get("offset").and_then(|v| v.as_f64()).unwrap_or(0.0),
             confidence: o.get("confidence").and_then(|v| v.as_f64()),
             split: false,
+            trill: 0,
         })
         .collect();
     quantize(&raw, &beats.times, false, true)

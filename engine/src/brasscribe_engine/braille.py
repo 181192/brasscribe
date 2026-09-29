@@ -102,7 +102,35 @@ class BrailleResult:
 LONG_LINES = (60, 80, 120, 200, 400)  # cells: fallback line lengths for measures longer than a line
 
 
+TRILL_SIGN = "⠖"  # dots 2-3-5, before the note; an accidental of the auxiliary comes before it
+
+
+def _trill_signs(score) -> None:
+    """music21's braille translator drops trills: write each as a sign before its note (a before-note articulation),
+    with the auxiliary's accidental mark in front of it."""
+    from music21 import articulations, expressions
+    from music21.braille import lookup
+
+    class TrillSign(articulations.Articulation):
+        def __init__(self, accidental: str | None) -> None:
+            super().__init__()
+            self._key = "brasscribe trill" + (f" {accidental}" if accidental else "")
+            lookup.beforeNoteExpr[self._key] = (lookup.accidentals.get(accidental, "") if accidental else "") + TRILL_SIGN
+
+        @property
+        def name(self) -> str:
+            return self._key
+
+    for n in score.recurse().notes:
+        for e in n.expressions:
+            if isinstance(e, expressions.Trill):
+                acc = e.accidental
+                show = acc is not None and acc.displayStatus is not False
+                n.articulations.append(TrillSign(acc.name if show else None))
+
+
 def _prepare(score) -> None:
+    _trill_signs(score)
     md = score.metadata
     if md is not None:
         if (md.movementName or "").lower().endswith((".musicxml", ".xml", ".mxl")):

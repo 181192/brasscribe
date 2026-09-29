@@ -86,6 +86,12 @@ function gcd(a: number, b: number): number {
 
 const ARTICS = ["staccato", "accent", "tenuto", "strong-accent", "staccatissimo"];
 
+/** A trill mark: "trill", or "trill-<accidental>" when its auxiliary carries an accidental mark. */
+function trillArticulation(el: Element): string {
+  const mark = el.querySelector("notations > ornaments > accidental-mark")?.textContent?.trim();
+  return mark ? `trill-${mark}` : "trill";
+}
+
 export function buildTalkingScore(xml: string): TalkingScore {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   if (doc.querySelector("parsererror")) throw new Error("not valid MusicXML");
@@ -206,6 +212,7 @@ export function buildTalkingScore(xml: string): TalkingScore {
             tie: ties.length ? { start: ties.includes("start"), stop: ties.includes("stop"), next: null, chain_beats: null } : null,
             articulations: [
               ...ARTICS.filter((a) => el.querySelector(`notations > articulations > ${a}`)),
+              ...(el.querySelector("notations > ornaments > trill-mark") ? [trillArticulation(el)] : []),
               ...(el.querySelector("notations > fermata") ? ["fermata"] : []),
             ],
             dynamic: pendingDynamic,

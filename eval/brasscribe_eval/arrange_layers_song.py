@@ -34,6 +34,7 @@ from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.onsets import contour_notes
+from brasscribe_music.trills import with_trills
 from brasscribe_music.parts import STYLE as PART_STYLE
 from brasscribe_music.parts import split_parts
 from brasscribe_music.structure import bar_features, letters, section_starts
@@ -104,6 +105,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                     help="band (= full): the 18-part contest band; minimal: the 8-part minimal band; "
                          "quartet: 1st and 2nd Cornet, Tenor Horn and Euphonium")
     ap.add_argument("--difficulty", choices=["faithful", "standard", "easier"], default="faithful")
+    ap.add_argument("--trills", action="store_true",
+                    help="faithful: write sustained two-note alternations as trills (standard and easier always do)")
     ap.add_argument("--seat", choices=SEAT_IDS,
                     help="the player's seat: a solo take is written for it (one part, its range, as played)")
     ap.add_argument("--reads", choices=CLEF_READINGS, help="the clef the seat's part is written in (bass: at concert pitch)")
@@ -219,6 +222,10 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     fast_notes = args.difficulty == "faithful"
     if fast_notes:
         solo_sw = contour_notes(solo_sw, solo_contour, solo_bp)
+    else:
+        # ... but a sustained alternation (a trill) the segmentation merged is written as one trill note there
+        # (trills.py); the faithful line writes it out, and its arrangement collapses it at these modes.
+        solo_sw = with_trills(solo_sw, contour_notes(solo_sw, solo_contour, solo_bp))
     # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
     # solo line is the soloist's, a cornet or trumpet (E3-E6).
     solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
@@ -239,14 +246,18 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     model = CalibrationModel.load()
     cand = []
     split_onsets = {n["onset"] for n in votes["sw"] if n.get("split")}
+    trill_of = {n["onset"]: (n["trill"], n["offset"]) for n in votes["sw"] if n.get("trill")}
     for c in cluster(votes):
         if "sw" not in c.sources:
             continue
         on, off = float(np.median(c.onsets)), float(np.median(c.offsets))
+        trill, trill_end = next((trill_of[o] for o in c.onsets if o in trill_of), (None, off))
+        off = max(off, trill_end)  # a trill lasts as long as its alternation, whatever the other transcribers heard
         src = set(c.sources) - ({"mus"} if mus_is_bp else set())
         x = confidence_features(src, off - on, contour_support(solo_contour, on, c.pitch), separated)
         cand.append({"pitch": c.pitch, "onset": on, "offset": off, "confidence": round(p_correct(x, model), 3),
-                     **({"split": True} if any(o in split_onsets for o in c.onsets) else {})})
+                     **({"split": True} if any(o in split_onsets for o in c.onsets) else {}),
+                     **({"trill": trill} if trill else {})})
     solo_line = line(cand, lo, hi, top=True)
     if args.solo_contour:
         # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
@@ -259,6 +270,9 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         trace.update(line=[dict(n) for n in solo_line], quantized=[(q.pitch, q.start, q.end) for q in solo_q],
                      times=np.asarray(times, float).copy(), pickup=pickup, coarse=coarse)
     solo = written_line(solo_q, times, pickup, "solo")
+    line_trills = {n["onset"]: n["trill"] for n in solo_line if n.get("trill")}
+    for n in solo:
+        n.trill = line_trills.get(n.onset_s)
     bass = written_line(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False, coarse=coarse),
                         times, pickup, "bass")
 
@@ -317,8 +331,10 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         comp = comp.transposed(shift)
         print(f"transposed {shift:+d} semitones; first key now {comp.keys[0].fifths} fifths {comp.keys[0].mode}")
     lineup = "band" if args.lineup in ("band", "full") else args.lineup
-    if lineup != "band" or args.difficulty != "faithful" or shift or args.seat:
+    if lineup != "band" or args.difficulty != "faithful" or shift or args.seat or args.trills:
         comp.arrangement = {"lineup": lineup, "difficulty": args.difficulty, "transpose_semitones": shift}
+    if args.trills:
+        comp.arrangement["trills"] = True
     if args.seat:
         # The seat's options, like the others; the arrangers read them back (composition_lineup).
         comp.arrangement.update({"seat": args.seat, **({"reads": args.reads} if args.reads else {}),
@@ -331,7 +347,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     marked = sum(n.confidence < 1 - model.mark_risk for n in solo)
     print(f"solo notes marked uncertain: {marked} of {len(solo)} ({marked / max(1, len(solo)):.0%}), "
           f"{sum(1 for r in comp.review if r.voice == 'solo')} review groups")
-    arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=args.difficulty)
+    arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=args.difficulty, trills=args.trills or None)
     counts = {k: len(v) for k, v in arr.parts.items()}
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)

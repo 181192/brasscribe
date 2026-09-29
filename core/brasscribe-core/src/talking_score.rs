@@ -462,6 +462,18 @@ impl Lex {
             ("strong-accent", _) => "marcato",
             ("fermata", true) => "fermat",
             ("accent", true) => "aksent",
+            ("trill", false) => "trill",
+            ("trill", true) => "trille",
+            ("trill-sharp", false) => "trill with sharp",
+            ("trill-sharp", true) => "trille med kryss",
+            ("trill-flat", false) => "trill with flat",
+            ("trill-flat", true) => "trille med b",
+            ("trill-natural", false) => "trill with natural",
+            ("trill-natural", true) => "trille med oppløsningstegn",
+            ("trill-double-sharp", false) => "trill with double sharp",
+            ("trill-double-sharp", true) => "trille med dobbeltkryss",
+            ("trill-flat-flat", false) => "trill with double flat",
+            ("trill-flat-flat", true) => "trille med dobbelt-b",
             _ => a,
         }
         .to_string()
@@ -1065,6 +1077,10 @@ fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percu
         let arts = ev.get_mut("articulations").unwrap().as_array_mut().unwrap();
         if let Some(a) = find(nots, "articulations") {
             arts.extend(a.children().filter(|c| c.is_element()).map(|c| json!(c.tag_name().name())));
+        }
+        if let Some(o) = find(nots, "ornaments").filter(|o| find(*o, "trill-mark").is_some()) {
+            let mark = findtext(o, "accidental-mark").map(|t| t.trim().to_string()).unwrap_or_default();
+            arts.push(json!(if mark.is_empty() { "trill".to_string() } else { format!("trill-{mark}") }));
         }
         if find(nots, "fermata").is_some() {
             arts.push(json!("fermata"));

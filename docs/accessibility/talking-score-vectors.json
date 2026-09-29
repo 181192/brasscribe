@@ -266,6 +266,28 @@
       "part": {"name": "Solo Cornet", "instrument": "Cornet in B♭", "instrument_nb": "kornett i B"},
       "event": {"kind": "mode-change"},
       "expected": {"en": "Written pitch, Cornet in B-flat", "nb": "Skrevet tone, kornett i B"}
+    },
+    {
+      "id": "trill",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 20},
+      "bar": {"number": 21},
+      "event": {"kind": "note", "pos": {"beat": 1, "num": 0, "den": 1}, "type": "half", "dots": 0,
+                "written": {"step": "E", "alter": 0, "octave": 5}, "concert": {"step": "D", "alter": 0, "octave": 5},
+                "articulations": ["trill"], "confidence": 0.9, "sources": ["swiftf0"]},
+      "expected": {"en": "bar 21, beat 1: E 5, half note, trill",
+                   "nb": "takt 21, slag 1: E 5, halvnote, trille"}
+    },
+    {
+      "id": "trill-with-accidental",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 21},
+      "bar": {"number": 21},
+      "event": {"kind": "note", "pos": {"beat": 3, "num": 0, "den": 1}, "type": "quarter", "dots": 0,
+                "written": {"step": "C", "alter": 1, "octave": 5}, "concert": {"step": "B", "alter": 0, "octave": 4},
+                "articulations": ["trill-sharp"], "confidence": 0.9, "sources": ["swiftf0"]},
+      "expected": {"en": "beat 3: C-sharp 5, quarter note, trill with sharp",
+                   "nb": "slag 3: Ciss 5, fjerdedelsnote, trille med kryss"}
     }
   ]
 }

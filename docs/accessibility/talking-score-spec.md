@@ -17,6 +17,7 @@ The input is the Composition plus the arrangement: parts, bars, events. §6 give
 | free-time region | `Composition.free_regions[]` = `{start, end` (ticks)`, start_s, end_s, tempo_bpm, notation: "proportional"\|"tempo", label: "ad lib."}` | Inside a region, beat positions are synthetic (evenly spaced), so the announcer uses performed seconds instead (§4.8) |
 | performed time | `onset_s`, `offset_s`, `performed_dur` (ticks) | Seconds from the start of the recording |
 | articulations | `articulations[]`: `staccato`, `fermata` (more later) | |
+| trill | `notes[].trill` (semitones up to the auxiliary); in MusicXML `<ornaments><trill-mark/>`, with `<accidental-mark>` when the key signature does not give the auxiliary | Read from the MusicXML as the articulation `trill` or `trill-<accidental>` (§4.6) |
 
 ## 2. Settings
 
@@ -167,6 +168,7 @@ The offset inside a beat is `num/den` of a beat.
 ### 4.6 Articulations and dynamics
 
 - Articulations: staccato / staccato, accent / aksent, tenuto / tenuto, marcato / marcato, fermata / fermat.
+- Trill (`trill`, on the first note of a tied trill only): trill / trille. When the auxiliary carries an accidental mark, the articulation is `trill-<accidental>` and says which: `trill-sharp` trill with sharp / trille med kryss, `trill-flat` trill with flat / trille med b, `trill-natural` trill with natural / trille med oppløsningstegn, `trill-double-sharp` trill with double sharp / trille med dobbeltkryss, `trill-flat-flat` trill with double flat / trille med dobbelt-b. The auxiliary is the next note up in the key, so the key signature and the mark together give it. The trill comes after the articulations inside `<articulations>` and before a fermata.
 - Dynamics are announced on the note where they take effect, always in full words (screen readers mangle "mf"). The words are the same in both languages: pianissimo, piano, mezzo-piano, mezzo-forte, forte, fortissimo.
 - Hairpins: "crescendo" / "crescendo", "diminuendo" / "diminuendo" at the start note; "end crescendo" / "slutt crescendo" at the end note.
 

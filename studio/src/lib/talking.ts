@@ -230,6 +230,12 @@ const ARTIC: Record<string, { en: string; nb: string }> = {
   marcato: { en: "marcato", nb: "marcato" },
   "strong-accent": { en: "marcato", nb: "marcato" },
   fermata: { en: "fermata", nb: "fermat" },
+  trill: { en: "trill", nb: "trille" },
+  "trill-sharp": { en: "trill with sharp", nb: "trille med kryss" },
+  "trill-flat": { en: "trill with flat", nb: "trille med b" },
+  "trill-natural": { en: "trill with natural", nb: "trille med oppløsningstegn" },
+  "trill-double-sharp": { en: "trill with double sharp", nb: "trille med dobbeltkryss" },
+  "trill-flat-flat": { en: "trill with double flat", nb: "trille med dobbelt-b" },
 };
 
 const DYN: Record<string, string> = {

@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use super::beams::{get_beams, BDir, BeamInput, BeamSequence, Beams, BT};
 use super::duration::{DType, Dur, Rat, TupletType};
-use super::pitch::{altered_names, transpose, transpose_key, update_accidental_display, P};
+use super::pitch::{altered_names, transpose, transpose_key, update_accidental_display, Acc, P};
 use super::xml::El as X;
 use crate::rhythm_spelling::{is_value, pieces};
 use crate::instruments::Instrument;
@@ -111,6 +111,11 @@ pub struct Elem {
     pub color: Option<&'static str>,
     pub staccato: bool,
     pub fermata: bool,
+    /// A trill mark: semitones up to the auxiliary, and the accidental mark the auxiliary needs in
+    /// the written key (set once the part is at written pitch).
+    pub trill: Option<(i32, Option<Acc>)>,
+    /// The wavy line of a trill that goes on through ties: "start" (on the trill) or "stop".
+    pub wavy: Option<&'static str>,
 }
 
 impl Elem {
@@ -500,6 +505,8 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
                     color: None,
                     staccato: false,
                     fermata: false,
+                    trill: None,
+                    wavy: None,
                 });
             }
         };
@@ -587,6 +594,8 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
                     color,
                     staccato: !drums && i == 0 && ev.arts.contains("staccato"),
                     fermata: !drums && i == n - 1 && ev.arts.contains("fermata"),
+                    trill: if !drums && i == 0 && ev.pitches.len() == 1 { trill_of(&ev.arts).map(|t| (t, None)) } else { None },
+                    wavy: None,
                 });
             }
             cursor = end;
@@ -812,6 +821,8 @@ fn split_at(e: &mut Elem, ql: Rat, ids: &mut Ids) -> Option<Elem> {
     }
     e.staccato = false;
     e.fermata = false;
+    rem.trill = None; // a trill stays on the first piece (the writer draws its wavy line)
+    rem.wavy = None;
     if rem.dur.ql > Rat::ZERO {
         Some(rem)
     } else {
@@ -1108,6 +1119,48 @@ fn to_written(part: &mut Part) {
     }
 }
 
+fn trill_of(arts: &HashSet<String>) -> Option<i32> {
+    let mut v: Vec<&String> = arts.iter().filter(|a| a.starts_with(crate::musicxml::TRILL)).collect();
+    v.sort();
+    v.first().and_then(|a| a[crate::musicxml::TRILL.len()..].parse().ok())
+}
+
+/// The auxiliary of each trill, spelled from the written part's key: the next letter up at the
+/// trill's size; an accidental mark only where the key signature does not give that note
+/// (accidentals earlier in the bar are not considered).
+fn trill_accidentals(part: &mut Part) {
+    let altered = |f: i32, step: u8| altered_names(f).iter().find(|(s, _)| *s == step).map(|(_, a)| *a).unwrap_or(0);
+    let mut fifths = part.fifths.unwrap_or(0);
+    for m in part.measures.iter_mut() {
+        if let Some(f) = m.key {
+            fifths = f;
+        }
+        for e in m.els.iter_mut() {
+            let (Some((size, _)), Kind::Note(p, _)) = (e.trill, &e.kind) else { continue };
+            let (step, octave) = if p.step == 6 { (0u8, p.octave + 1) } else { (p.step + 1, p.octave) };
+            let alter = p.ps() + size - P::new(step, 0, octave).ps();
+            e.trill = Some((size, if alter != altered(fifths, step) { Some(Acc { alter, display: Some(true) }) } else { None }));
+        }
+    }
+}
+
+/// A wavy line over a trill that goes on through ties: from the trill to the last tied note.
+fn trill_lines(part: &mut Part) {
+    let mut open = false;
+    for m in part.measures.iter_mut() {
+        for e in m.els.iter_mut() {
+            let Kind::Note(_, tie) = e.kind else { continue };
+            if e.trill.is_some() && tie == Some(Tie::Start) {
+                e.wavy = Some("start");
+                open = true;
+            } else if open && tie == Some(Tie::Stop) {
+                e.wavy = Some("stop");
+                open = false;
+            }
+        }
+    }
+}
+
 fn deep_copy(parts: &mut [Part]) {
     for p in parts {
         for m in p.measures.iter_mut() {
@@ -1340,6 +1393,20 @@ fn note_xml(e: &Elem, head: Head, tie: Option<Tie>, index: usize, full_rest: boo
     }
     if index == 0 && e.staccato {
         notations.push(X::new("articulations").child(X::new("staccato")));
+    }
+    if index == 0 {
+        if let Some((_, mark)) = e.trill {
+            let mut o = X::new("ornaments").child(X::new("trill-mark").attr("placement", "above"));
+            if let Some(a) = mark {
+                o.push(X::text("accidental-mark", a.musicxml_name()).attr("placement", "above"));
+            }
+            if e.wavy == Some("start") {
+                o.push(X::new("wavy-line").attr("type", "start").attr("number", "1"));
+            }
+            notations.push(o);
+        } else if e.wavy == Some("stop") {
+            notations.push(X::new("ornaments").child(X::new("wavy-line").attr("type", "stop").attr("number", "1")));
+        }
     }
     if index == 0 {
         notations.extend(tuplet_els(e));
@@ -1664,6 +1731,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     }
     for part in parts.iter_mut() {
         plain_spellings(part);
+        trill_accidentals(part);
     }
     // export: the exporter's own copy and notation pass
     deep_copy(&mut parts);
@@ -1689,6 +1757,9 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
         }
     }
 
+    for part in parts.iter_mut() {
+        trill_lines(part);
+    }
     let channels = midi_channels(&parts);
     let mut root = X::new("score-partwise").attr("version", "4.0");
     // No <movement-title>: it would repeat the work title, and readers show it as a subtitle.

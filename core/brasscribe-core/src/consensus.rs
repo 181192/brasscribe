@@ -32,7 +32,7 @@ pub struct VotedNote {
 
 impl VotedNote {
     pub fn raw(&self) -> RawNote {
-        RawNote { pitch: self.pitch, onset: self.onset, offset: self.offset, confidence: Some(self.confidence), split: false }
+        RawNote { pitch: self.pitch, onset: self.onset, offset: self.offset, confidence: Some(self.confidence), split: false, trill: 0 }
     }
 }
 

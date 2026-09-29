@@ -43,6 +43,9 @@ pub struct Note {
     /// "staccato" (performed under half the written length) or "fermata".
     #[serde(default)]
     pub articulations: Vec<String>,
+    /// A trill mark: semitones up to the auxiliary (1 or 2; trills.rs). Not written when None.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trill: Option<i32>,
 }
 
 fn one() -> f64 {
@@ -51,7 +54,7 @@ fn one() -> f64 {
 
 impl Note {
     pub fn new(pitch: i32, start: i64, dur: i64, confidence: f64, sources: Vec<String>) -> Self {
-        Note { pitch, start, dur, confidence, sources, onset_s: None, offset_s: None, performed_dur: None, articulations: Vec::new() }
+        Note { pitch, start, dur, confidence, sources, onset_s: None, offset_s: None, performed_dur: None, articulations: Vec::new(), trill: None }
     }
 
     pub fn with_times(mut self, onset_s: Option<f64>, offset_s: Option<f64>) -> Self {

@@ -405,6 +405,12 @@ internal sealed class EnLexicon : Lexicon
         "staccato" => "staccato",
         "tenuto" => "tenuto",
         "marcato" or "strong-accent" => "marcato",
+        "trill" => "trill",
+        "trill-sharp" => "trill with sharp",
+        "trill-flat" => "trill with flat",
+        "trill-natural" => "trill with natural",
+        "trill-double-sharp" => "trill with double sharp",
+        "trill-flat-flat" => "trill with double flat",
         _ => a,
     };
 
@@ -564,6 +570,12 @@ internal sealed class NbLexicon : Lexicon
         "staccato" => "staccato",
         "tenuto" => "tenuto",
         "marcato" or "strong-accent" => "marcato",
+        "trill" => "trille",
+        "trill-sharp" => "trille med kryss",
+        "trill-flat" => "trille med b",
+        "trill-natural" => "trille med oppløsningstegn",
+        "trill-double-sharp" => "trille med dobbeltkryss",
+        "trill-flat-flat" => "trille med dobbelt-b",
         _ => a,
     };
 

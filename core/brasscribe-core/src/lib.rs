@@ -34,6 +34,7 @@ pub mod quantize;
 pub mod rhythm_spelling;
 pub mod spelling;
 pub mod talking_score;
+pub mod trills;
 
 pub use model::Composition;
 

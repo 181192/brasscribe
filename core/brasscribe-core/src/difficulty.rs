@@ -159,18 +159,30 @@ fn fold(notes: &[Note], lo: i32, hi: i32) -> Vec<Note> {
     out
 }
 
+/// Trill notation by default: at standard and easier; faithful writes alternations out unless asked.
+pub fn trills_default(mode: &str) -> bool {
+    mode != "faithful"
+}
+
 /// Parts rewritten for a difficulty mode (faithful returns them unchanged).
 pub fn apply_difficulty(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: &str) -> Result<Vec<(String, Vec<Note>)>, String> {
-    apply_difficulty_only(parts, lineup, mode, None)
+    apply_difficulty_opts(parts, lineup, mode, None, None)
 }
 
 /// [`apply_difficulty`] on the parts named in `only` (all when None); every entry of `parts`
 /// (also one that is not a part of the lineup) still counts for the harmony the 16th merges read.
 pub fn apply_difficulty_only(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: &str, only: Option<&[&str]>) -> Result<Vec<(String, Vec<Note>)>, String> {
+    apply_difficulty_opts(parts, lineup, mode, only, None)
+}
+
+/// [`apply_difficulty_only`] with `trills` (default [`trills_default`]): sustained two-note
+/// alternations written as trills (trills.rs), before the 16th merges.
+pub fn apply_difficulty_opts(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, mode: &str, only: Option<&[&str]>, trills: Option<bool>) -> Result<Vec<(String, Vec<Note>)>, String> {
     if !MODES.contains(&mode) {
         return Err(format!("difficulty must be one of {MODES:?}"));
     }
-    if mode == "faithful" {
+    let trills = trills.unwrap_or_else(|| trills_default(mode));
+    if mode == "faithful" && !trills {
         return Ok(parts);
     }
     let mut source = parts; // the notes the harmony is read from
@@ -195,8 +207,22 @@ pub fn apply_difficulty_only(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, m
             harmony_at(&others, t, name)
         };
         let mut mine = std::mem::take(&mut source[pi].1);
+        // Trills first. The 16th merges then run on the collapsed notes; a clip they make to a note
+        // kept as it was reaches the part's own notes too (the reference shares those objects).
+        let collapsed = if trills { crate::trills::collapse_trills_indexed(&mine) } else { None };
+        if mode == "faithful" {
+            if let (Some(c), Some(o)) = (collapsed, out.iter_mut().find(|(n, _)| n == name)) {
+                o.1 = c.into_iter().map(|(n, _)| n).collect();
+            }
+            source[pi].1 = mine;
+            continue;
+        }
+        let (mut work, back): (Vec<Note>, Vec<Option<usize>>) = match collapsed {
+            Some(c) => c.into_iter().unzip(),
+            None => (std::mem::take(&mut mine), Vec::new()),
+        };
         let notes = if mode == "standard" {
-            let m = merge_sixteenths(&mut mine, &chord_at, false, false);
+            let m = merge_sixteenths(&mut work, &chord_at, false, false);
             let (lo, hi) = part.instrument.preferred();
             if fold_it {
                 fold(&m, lo, hi)
@@ -204,7 +230,7 @@ pub fn apply_difficulty_only(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, m
                 m
             }
         } else {
-            let mut m = merge_sixteenths(&mut mine, &chord_at, true, solo);
+            let mut m = merge_sixteenths(&mut work, &chord_at, true, solo);
             if !solo {
                 m = min_eighth(&m);
             }
@@ -215,6 +241,15 @@ pub fn apply_difficulty_only(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, m
                 m
             }
         };
+        if back.is_empty() {
+            mine = work;
+        } else {
+            for (w, b) in work.iter().zip(&back) {
+                if let Some(k) = b {
+                    mine[*k].dur = w.dur;
+                }
+            }
+        }
         source[pi].1 = mine;
         if let Some(o) = out.iter_mut().find(|(n, _)| n == name) {
             o.1 = notes;

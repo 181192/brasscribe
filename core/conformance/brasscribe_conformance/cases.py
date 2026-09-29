@@ -55,6 +55,14 @@ MIKKEL_VARIANTS = [
 SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]
 # ChoraleBricks instrument -> the seat its solo take is written for.
 SOLO_SEATS = [("bar", "1st-baritone"), ("tb", "1st-trombone"), ("tba", "eb-bass"), ("fho", "solo-horn"), ("tp", "trumpet")]
+# Fast-notes clips for trill notation (data/fast-notes), and the options they run with.
+TRILL_CLIPS = ("alt-i1-t120-s4-slur-samples", "alt-i2-t120-s6-slur-samples", "alt-i2-t120-s6-slur-room",
+               "alt-i1-t90-s8-tongue-samples", "ctl-vibrato-i0-t100-s1-slur-room")
+TRILL_VARIANTS = (("standard", ["--lineup", "minimal", "--difficulty", "standard"]),
+                  ("easier", ["--lineup", "minimal", "--difficulty", "easier"]),
+                  ("faithful-trills", ["--lineup", "minimal", "--trills"]),
+                  ("band-standard-Db", ["--difficulty", "standard", "--key", "Db"]),
+                  ("band-faithful-trills-E", ["--trills", "--key", "E"]))
 # Eval sets whose songs are also arranged for the quartet (song and bench cases): the chorales,
 # which a brass quartet plays.
 QUARTET_SETS = ("choralebricks-brass4",)
@@ -163,6 +171,24 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
             variants.append((f"{seat}-bass-clef", ["--lineup", "minimal", "--seat", seat, "--reads", "bass"]))
         for tag, options in variants:
             cases.append(Case(f"solo-seat/{song.name}/{stem}/{tag}", "layers", {**base, "options": options}))
+    # Trill notation on fast-notes clips (alternations at a semitone and a whole tone, slurred and tongued, dry and in
+    # a hall, and a vibrato control): standard and easier, faithful with --trills, the full band (the E-flat
+    # Soprano Cornet doubles the solo at climaxes) and a key that puts the auxiliary off the key signature.
+    fast = DATA / "fast-notes" / "fast-notes"
+    for clip in TRILL_CLIPS:
+        src = fast / clip
+        if not (src / "sw.mid").exists():
+            continue
+        layers = work / "_fast-notes" / clip
+        layers.mkdir(parents=True, exist_ok=True)
+        for name, f in (("solo-sw.mid", "sw.mid"), ("solo-bp.mid", "bp.mid"), ("solo-mus.mid", "bp.mid")):
+            link = layers / name
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(src / f)
+        base = {"layers": layers, "beats": src / "oracle.beats", "title": clip, "contour": src / "sw.contour.npz"}
+        for tag, options in TRILL_VARIANTS:
+            cases.append(Case(f"trills/{clip}/{tag}", "layers", {**base, "options": options}))
     # On-device clip: small0 beats on one instrument (every beat labelled a downbeat), minimal lineup; its
     # layered output from the Python reference is kept next to it.
     ent = ONDEVICE_REF

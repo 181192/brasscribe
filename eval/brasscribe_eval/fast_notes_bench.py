@@ -11,7 +11,9 @@ It is scored at each stage against the performed ground truth:
   q_ref      the reference notes themselves quantized on the same grid: what quantization loses on its own
   quantized  the line on the beat grid (quantize), mapped back to seconds through the beat grid
   written    the Composition's solo voice (ticks back to seconds)
-  lead:<d>   the arranged lead part at difficulty d (faithful, standard, easier)
+  lead:<d>   the arranged lead part at difficulty d (faithful, standard, easier), re-arranged from the faithful build
+  lead:faithful+tr  the same at faithful with trill notation on
+  built:<d>  the lead part of a build at difficulty d (standard, easier): the line those modes transcribe
 
 Metrics (notes matched one to one; a reference note's window is 50 ms, or less where its neighbours are
 closer: half the smaller inter-onset interval):
@@ -21,6 +23,9 @@ closer: half the smaller inter-onset interval):
   fig_recall  note recall on the figure under test (the two bars of fast notes)
   alt_kept    alternation clips: share of clips whose figure keeps >= 80 % of its notes on the right pitches
   extra       control clips: extra notes per reference note in the figure span (false splits; must be 0)
+  trill_kept  alternation clips at a semitone or whole tone: share whose figure is one trill on the lower pitch with
+              the right auxiliary, covering at least 80 % of the figure
+  trills      trill marks per clip (on the controls and every figure but those alternations: false trills, must be 0)
 
     python -m brasscribe_eval.fast_notes_bench [--only PATTERN] [--beats oracle,small0] [--json FILE]
 """
@@ -41,7 +46,8 @@ from scipy.optimize import linear_sum_assignment
 
 from .fast_notes import FIXTURES, OUT
 
-STAGES = ("contour", "sw", "bp", "line", "q_ref", "quantized", "written", "lead:faithful", "lead:standard", "lead:easier")
+STAGES = ("contour", "sw", "bp", "line", "q_ref", "quantized", "written", "lead:faithful", "lead:standard", "lead:easier",
+          "lead:faithful+tr", "built:standard", "built:easier")
 TOL = 0.05
 
 
@@ -147,13 +153,32 @@ def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = 
     out["written"] = [{"pitch": n.pitch, "onset": float(s), "tick": n.start + pickup, "dur": n.dur} for n, s in
                       zip(solo, _seconds([n.start + pickup for n in solo], times))]
     out["_line_n"] = [{"n": len(trace["line"]), "q": len(q)}]
+    def lead_notes(arr, times, pickup) -> list[dict]:
+        lead = [n for n in arr.parts.get(arr.lineup.lead, []) if n.pitch > 0]
+        on = _seconds([n.start + pickup for n in lead], times)
+        off = _seconds([n.end + pickup for n in lead], times)
+        return [{"pitch": n.pitch, "onset": float(s), "offset": float(e),
+                 **({"trill": n.trill} if getattr(n, "trill", None) else {})} for n, s, e in zip(lead, on, off)]
+
     for d in ("faithful", "standard", "easier"):
         with contextlib.redirect_stdout(io.StringIO()):
             arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=d)
-        lead = arr.parts.get(arr.lineup.lead, [])
-        lead = [n for n in lead if n.pitch > 0]
-        out[f"lead:{d}"] = [{"pitch": n.pitch, "onset": float(s)} for n, s in
-                            zip(lead, _seconds([n.start + pickup for n in lead], times))]
+        out[f"lead:{d}"] = lead_notes(arr, times, pickup)
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty="faithful", trills=True)
+        out["lead:faithful+tr"] = lead_notes(arr, times, pickup)
+    except TypeError:  # before trill notation
+        out["lead:faithful+tr"] = out["lead:faithful"]
+    for d in ("standard", "easier"):
+        tr: dict = {}
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                _, arr = A.build(A.parse_args([*argv, "--difficulty", d]), tr)
+        except (ValueError, IndexError, SystemExit):
+            out[f"built:{d}"] = []
+            continue
+        out[f"built:{d}"] = lead_notes(arr, tr["times"], tr["pickup"])
     return out
 
 
@@ -203,8 +228,12 @@ def score_clip(ref_doc: dict, est: dict[str, list[dict]], clip: Path) -> dict[st
              "fig_recall": sum(i in matched for i in fig) / max(1, len(fig))}
         if stage == "contour":  # a contour is not a note list: only recall means anything
             r = {"fig_recall": r["fig_recall"]}
+        if stage != "contour":
+            r["trills"] = float(sum(1 for n in e if n.get("trill")))
         if kind == "alt" and stage != "contour":
             r["alt_kept"] = float(r["fig_recall"] >= 0.8)
+            if ref_doc["spec"].get("interval") in (1, 2):
+                r["trill_kept"] = float(trill_kept(e, ref, fig))
             span = [n for n in e if lo <= n["onset"] <= hi]
             lower = min(ref[i]["pitch"] for i in fig)
             r["upper_share"] = float(np.mean([n["pitch"] > lower for n in span])) if span else float("nan")
@@ -219,6 +248,20 @@ def score_clip(ref_doc: dict, est: dict[str, list[dict]], clip: Path) -> dict[st
             r["extra"] = sum(j not in matched_e for j in span) / max(1, len(fig))
         res[stage] = r
     return res
+
+
+def trill_kept(est: list[dict], ref: list[dict], fig: list[int]) -> bool:
+    """One trill mark on the figure's lower pitch, with its auxiliary the figure's upper pitch, covering at least 80 %
+    of the figure's span."""
+    pitches = {ref[i]["pitch"] for i in fig}
+    lo_p, hi_p = min(pitches), max(pitches)
+    a, b = ref[fig[0]]["onset"], ref[fig[-1]]["offset"]
+    for n in est:
+        if n.get("trill") and n["pitch"] == lo_p and n["pitch"] + n["trill"] == hi_p:
+            cover = min(b, n.get("offset", n["onset"])) - max(a, n["onset"])
+            if cover >= 0.8 * (b - a):
+                return True
+    return False
 
 
 def group_of(spec: dict) -> str:
@@ -630,7 +673,7 @@ def main() -> None:
     ap.add_argument("--root", type=Path)
     ap.add_argument("--beats", default="oracle,small0")
     ap.add_argument("--metrics", default="fig_recall,note_f1,onset_f1,onset25_f1,alt_kept,upper_share,extra,"
-                                          "grid_changes_per_bar,thirtyseconds,tuplets,dropped_in_quantize")
+                                          "grid_changes_per_bar,thirtyseconds,tuplets,dropped_in_quantize,trill_kept,trills")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--mikkel", action="store_true", help="Mikkel proxy counts (with --ablate: per ablation)")
     ap.add_argument("--ablate", help=f"comma list of {', '.join(ABLATIONS)}: written-stage figure recall per group")

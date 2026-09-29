@@ -146,7 +146,9 @@ class _En(_Lexicon):
              "quarter": ("quarter note", "quarter"), "eighth": ("eighth note", "eighth"), "16th": ("sixteenth note", "sixteenth"),
              "32nd": ("thirty-second note", "thirty-second"), "64th": ("sixty-fourth note", "sixty-fourth")}
     DOTS = {0: "", 1: "dotted ", 2: "double-dotted "}
-    ARTICULATIONS = {"strong-accent": "marcato"}
+    ARTICULATIONS = {"strong-accent": "marcato", "trill": "trill", "trill-sharp": "trill with sharp",
+                     "trill-flat": "trill with flat", "trill-natural": "trill with natural",
+                     "trill-double-sharp": "trill with double sharp", "trill-flat-flat": "trill with double flat"}
 
     def bar(self, n): return f"bar {n}"
     def bars_range(self, a, b): return f"bars {a} to {b}"
@@ -228,7 +230,10 @@ class _Nb(_Lexicon):
              "eighth": "åttendedelspause", "16th": "sekstendedelspause", "32nd": "trettitodelspause",
              "64th": "sekstifiredelspause"}
     DOTS = {0: "", 1: "punktert ", 2: "dobbeltpunktert "}
-    ARTICULATIONS = {"fermata": "fermat", "accent": "aksent", "strong-accent": "marcato"}
+    ARTICULATIONS = {"fermata": "fermat", "accent": "aksent", "strong-accent": "marcato", "trill": "trille",
+                     "trill-sharp": "trille med kryss", "trill-flat": "trille med b",
+                     "trill-natural": "trille med oppløsningstegn", "trill-double-sharp": "trille med dobbeltkryss",
+                     "trill-flat-flat": "trille med dobbelt-b"}
 
     def bar(self, n): return f"takt {n}"
     def bars_range(self, a, b): return f"takt {a} til {b}"
@@ -728,6 +733,10 @@ def _read_note(el, start, dur, divisions, time, part, tuplet_count):
     nots = el.find("notations")
     if nots is not None:
         ev["articulations"] += [a.tag for a in (nots.find("articulations") if nots.find("articulations") is not None else [])]
+        orn = nots.find("ornaments")
+        if orn is not None and orn.find("trill-mark") is not None:
+            mark = (orn.findtext("accidental-mark") or "").strip()
+            ev["articulations"].append(f"trill-{mark}" if mark else "trill")
         if nots.find("fermata") is not None:
             ev["articulations"].append("fermata")
         d = nots.find("dynamics")

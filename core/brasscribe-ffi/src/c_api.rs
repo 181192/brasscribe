@@ -90,7 +90,7 @@ pub unsafe extern "C" fn bc_arrange_musicxml(composition_json: *const c_char, ar
 /// Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
 /// `options` may be null (defaults) or
 /// `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
-///   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ...}` (the keys of
+///   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ..., "trills": true | false | null}` (the keys of
 ///   [`bc_arrange_layers_song`]); `transpose`
 /// is the total from the recording, as in `arrange_musicxml_with`.
 #[no_mangle]
@@ -106,6 +106,7 @@ pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, option
             seat: str_of(&opts, "seat"),
             reads: str_of(&opts, "reads"),
             lead: str_of(&opts, "lead"),
+            trills: opts.get("trills").and_then(|v| v.as_bool()),
         };
         crate::arrange_with_impl(&json, &o).map_err(map_err)
     })
@@ -201,6 +202,7 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
         key_changes: flag("key_changes"),
         lineup: opts.get("lineup").and_then(|v| v.as_str()).unwrap_or("band").to_string(),
         difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
+        trills: opts.get("trills").and_then(|v| v.as_bool()).unwrap_or(false),
         key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
         transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
         seat: str_of(opts, "seat"),

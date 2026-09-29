@@ -212,6 +212,93 @@ def _place_dynamics(part: stream.Part, spec: "PartSpec", pickup_ticks: int, bar:
             part.insert((s - pickup_ticks) / TICKS_PER_BEAT, dynamics.Dynamic(placed[s]))
 
 
+TRILL = "trill:"  # QNote articulation "trill:<semitones>" (Note.trill) inside this writer
+
+
+def _trill_of(arts) -> int:
+    return next((int(x[len(TRILL):]) for x in arts if x.startswith(TRILL)), 0)
+
+
+class _Trill(expressions.Trill):
+    """A trill mark whose auxiliary is `semitones` above the note, spelled from the key (resolveOrnamentalPitches).
+
+    It stays on the first piece when music21 splits its note (music21's own Trill would add an extension line there;
+    _trill_lines draws the wavy line), and its auxiliary stays out of music21's accidental bookkeeping
+    (ornamentalPitches is empty), so the notes around it are written as without it."""
+
+    def __init__(self, semitones: int = 2, **keywords) -> None:
+        super().__init__(**keywords)
+        self.brasscribe_size = interval.Interval("m2" if semitones == 1 else "M2")
+        self._aux: pitch.Pitch | None = None
+
+    def splitClient(self, noteList):
+        if noteList:
+            noteList[0].expressions.append(self)
+        return []
+
+    def resolveOrnamentalPitches(self, srcObj, *, keySig=None) -> None:
+        """The auxiliary: the next letter up at the trill's size, its accidental shown only where the key signature
+        does not give that note (accidentals earlier in the bar are not considered)."""
+        if not srcObj.pitches:
+            return
+        aux = srcObj.pitches[-1].transpose(self.brasscribe_size)
+        ks = keySig or srcObj.getContextByClass(key.KeySignature)
+        in_key = ks.accidentalByStep(aux.step) if ks is not None else None
+        alter = aux.accidental.alter if aux.accidental is not None else 0.0
+        shown = alter != (in_key.alter if in_key is not None else 0.0)
+        if aux.accidental is None and shown:
+            aux.accidental = pitch.Accidental(0)
+        if aux.accidental is not None:
+            aux.accidental.displayStatus = shown
+        self._aux = aux
+        self.accidental = copy.deepcopy(aux.accidental) if shown else None
+
+    @property
+    def ornamentalPitches(self) -> tuple:
+        return ()
+
+    @property
+    def ornamentalPitch(self):
+        return self._aux
+
+
+def _trill_accidentals(score: stream.Score) -> None:
+    """Spell each trill's auxiliary on the written part (after transposition)."""
+    for n in score.recurse().getElementsByClass(note.Note):
+        for tr in n.expressions:
+            if isinstance(tr, _Trill):
+                tr.resolveOrnamentalPitches(n)
+
+
+def _trill_lines(path: Path) -> None:
+    """A wavy line over a trill that goes on through ties: started in the trill mark's <ornaments> (players such as
+    alphaTab read a wavy line as a trill extension only after its trill mark), stopped on the last tied note."""
+    text = path.read_text(encoding="utf-8")
+    if "<trill-mark" not in text:
+        return
+    import xml.etree.ElementTree as ET
+
+    head = text[:text.index("<score-partwise")]
+    root = ET.fromstring(text[len(head):])
+    for part in root.findall("part"):
+        open_ = False
+        for n in part.iter("note"):
+            ties = {t.get("type") for t in n.findall("tie")}
+            orn = n.find("notations/ornaments/trill-mark")
+            if orn is not None and "start" in ties:
+                ET.SubElement(n.find("notations/ornaments[trill-mark]"), "wavy-line", {"type": "start", "number": "1"})
+                open_ = True
+            elif open_ and "stop" in ties and "start" not in ties:
+                nots = n.find("notations")
+                el = ET.Element("ornaments")
+                ET.SubElement(el, "wavy-line", {"type": "stop", "number": "1"})
+                kids = list(nots)
+                at = next((k for k, c in enumerate(kids) if c.tag == "tuplet"), len(kids))
+                nots.insert(at, el)
+                open_ = False
+    path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
+
+
 def _articulate(el, arts: set[str]) -> None:
     if "staccato" in arts:
         el.articulations.append(articulations.Staccato())
@@ -340,6 +427,9 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                     _tie(el, i, len(segs))
                     # Staccato on the attack, fermata on the held end.
                     _articulate(el, {x for x in arts if (x == "staccato" and i == 0) or (x == "fermata" and i == len(segs) - 1)})
+                    tr = _trill_of(arts)
+                    if tr and i == 0 and len(sp) == 1:
+                        el.expressions.append(_Trill(tr))
                 g = lead.get(tick)
                 if g is not None and i == 0:
                     # Colour and "?" on the group's first attack; its other notes stay plain under the bracket.
@@ -380,8 +470,10 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
     written = score.toWrittenPitch(inPlace=False) if any(
         (i.transposition is not None) for i in score.recurse().getElementsByClass(instrument.Instrument)) else score
     _plain_spellings(written)
+    _trill_accidentals(written)
     written.write("musicxml", fp=str(path))
     _drop_repeated_title(path)
+    _trill_lines(path)
     if sounds:
         _add_instrument_sounds(path, sounds)
     return path
@@ -542,7 +634,7 @@ def build_band_score(arrangement, comp) -> stream.Score:
     specs = []
     for part in arrangement.lineup.parts:
         notes = [QNote(n.pitch, n.start, n.end, n.onset_s or 0.0, n.offset_s or 0.0, n.confidence,
-                       tuple(a.value for a in n.articulations))
+                       tuple(a.value for a in n.articulations) + ((f"{TRILL}{n.trill}",) if n.trill else ()))
                  for n in arrangement.parts.get(part.name, [])]
         layer = layer_of_part(arrangement.lineup, part.name)
         dyn = [(d.tick, d.mark) for d in getattr(comp, "dynamics", []) if d.layer == layer]

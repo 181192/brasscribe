@@ -275,6 +275,11 @@ public static class MusicXmlTalkingScoreBuilder
         {
             foreach (var a in nots.Element("articulations")?.Elements() ?? [])
                 ev.Articulations.Add(a.Name.LocalName);
+            if (nots.Element("ornaments") is { } orn && orn.Element("trill-mark") is not null)
+            {
+                var mark = ((string?)orn.Element("accidental-mark") ?? "").Trim();
+                ev.Articulations.Add(mark.Length > 0 ? $"trill-{mark}" : "trill");
+            }
             if (nots.Element("fermata") is not null) ev.Articulations.Add("fermata");
             if (nots.Element("dynamics")?.Elements().FirstOrDefault() is { } d) ev.Dynamic = d.Name.LocalName;
         }

@@ -54,6 +54,7 @@ class Note:
     offset_s: float | None = None
     performed_dur: int | None = None  # performed length in ticks (offset - onset on the tick map); None = unknown
     articulations: list[Articulation] = field(default_factory=list)
+    trill: int | None = None  # a trill mark: semitones up to the auxiliary (1 or 2; trills.py); None = none
 
     @property
     def end(self) -> int:
@@ -188,6 +189,10 @@ class Composition:
             d.pop("arrangement", None)  # files made with the default options stay as they were
         if not d.get("review"):
             d.pop("review", None)
+        for v in d["voices"]:
+            for n in v["notes"]:
+                if n.get("trill") is None:
+                    n.pop("trill", None)  # files without trills stay as they were
         path.write_text(json.dumps(d, indent=1, default=_plain))
 
     def transposed(self, semitones: int) -> Composition:

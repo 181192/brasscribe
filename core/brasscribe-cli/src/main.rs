@@ -4,7 +4,7 @@
 //! ```text
 //! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
 //!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal|quartet]
-//!                               [--difficulty faithful|standard|easier] [--key KEY | --transpose N]
+//!                               [--difficulty faithful|standard|easier] [--trills] [--key KEY | --transpose N]
 //!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--lang en|nb]
 //! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
 //!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat]
@@ -198,6 +198,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 single_key: a.has("single-key"),
                 lineup: a.opt("lineup").unwrap_or_default(),
                 difficulty: a.opt("difficulty").unwrap_or_default(),
+                trills: a.has("trills"),
                 key: a.opt("key"),
                 transpose: a.opt("transpose").map(|s| s.parse::<i32>().map_err(|e| e.to_string())).transpose()?,
                 seat: a.opt("seat"),

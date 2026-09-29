@@ -19,6 +19,7 @@ from dataclasses import replace
 
 from .instruments import Part
 from .score_model import Note
+from .trills import collapse_trills
 
 MODES = ("faithful", "standard", "easier")
 EASY_TOP_TRIM = 4  # semitones taken off the top of the reading range
@@ -118,16 +119,24 @@ def _fold(notes: list[Note], lo: int, hi: int) -> list[Note]:
     return out
 
 
-def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str,
-                     only: tuple[str, ...] | None = None) -> dict[str, list[Note]]:
-    """Parts rewritten for a difficulty mode (faithful returns them unchanged).
+def trills_default(mode: str) -> bool:
+    """Trill notation by default: at standard and easier; faithful writes alternations out unless asked."""
+    return mode != "faithful"
 
-    With `only`, just those parts are rewritten; every entry of `parts` (also one that is not a
-    part of the lineup) still counts for the harmony the 16th merges read.
+
+def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str,
+                     only: tuple[str, ...] | None = None, trills: bool | None = None) -> dict[str, list[Note]]:
+    """Parts rewritten for a difficulty mode (faithful returns them unchanged, unless `trills`).
+
+    `trills` (default: trills_default) writes sustained two-note alternations as trills (trills.collapse_trills),
+    before the 16th merges. With `only`, just those parts are rewritten; every entry of `parts` (also one that is
+    not a part of the lineup) still counts for the harmony the 16th merges read.
     """
     if mode not in MODES:
         raise ValueError(f"difficulty must be one of {MODES}")
-    if mode == "faithful":
+    if trills is None:
+        trills = trills_default(mode)
+    if mode == "faithful" and not trills:
         return parts
     out = dict(parts)
     for part in lineup.parts:
@@ -137,6 +146,11 @@ def apply_difficulty(parts: dict[str, list[Note]], lineup, mode: str,
         notes = parts.get(name, [])
         if not notes or part.instrument.clef == "percussion":
             continue
+        if trills:
+            notes = collapse_trills(notes)
+            if mode == "faithful":
+                out[name] = notes
+                continue
 
         def chord_at(t: int, name=name) -> set[int]:
             return _harmony_at(parts, t, name)

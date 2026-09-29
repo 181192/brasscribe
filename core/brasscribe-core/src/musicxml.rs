@@ -14,6 +14,9 @@ pub use crate::notation::parts::split_parts;
 pub use crate::notation::score::{write_score, FreeSpan, PartSpec, ScoreSpec};
 
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
+/// QNote articulation "trill:<semitones>" (Note::trill) inside the writer.
+pub const TRILL: &str = "trill:";
+
 pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
     let parts = arr
         .lineup
@@ -30,7 +33,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
                     onset_s: n.onset_s.unwrap_or(0.0),
                     offset_s: n.offset_s.unwrap_or(0.0),
                     confidence: n.confidence,
-                    articulations: n.articulations.clone(),
+                    articulations: n.articulations.iter().cloned().chain(n.trill.map(|t| format!("{TRILL}{t}"))).collect(),
                 })
                 .collect();
             let layer = layer_of_part(&arr.lineup, part.name);

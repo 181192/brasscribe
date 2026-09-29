@@ -410,7 +410,7 @@ def _voice_satb_slots(arr: Arrangement, slots: list[tuple[int, int, list[int], f
 HARMONY_CONTEXT = " harmony"  # not a part name: the source harmony as chord context for the difficulty modes
 
 
-def _outer_difficulty(arr: Arrangement, difficulty: str, harmony: list[Note]) -> None:
+def _outer_difficulty(arr: Arrangement, difficulty: str, harmony: list[Note], trills: bool | None = None) -> None:
     """Four-part lineups: the difficulty mode applied to lead and bass before the inner parts are
     voiced against them (so a later change to the outer parts cannot cross an inner one). The
     16th merges read the chord from the other outer part and the source harmony."""
@@ -419,21 +419,22 @@ def _outer_difficulty(arr: Arrangement, difficulty: str, harmony: list[Note]) ->
     names = (arr.lineup.lead, arr.lineup.bass)
     parts = {n: arr.parts[n] for n in names}
     parts[HARMONY_CONTEXT] = harmony
-    out = apply_difficulty(parts, arr.lineup, difficulty, only=names)
+    out = apply_difficulty(parts, arr.lineup, difficulty, only=names, trills=trills)
     for n in names:
         arr.parts[n] = out[n]
 
 
-def _inner_difficulty(arr: Arrangement, difficulty: str) -> dict[str, list[Note]]:
+def _inner_difficulty(arr: Arrangement, difficulty: str, trills: bool | None = None) -> dict[str, list[Note]]:
     """Four-part lineups: the difficulty mode on the inner parts only (voiced in its range already)."""
     from .difficulty import apply_difficulty
 
     inner = tuple(p.name for p in arr.lineup.parts if p.name not in (arr.lineup.lead, arr.lineup.bass))
-    return apply_difficulty(arr.parts, arr.lineup, difficulty, only=inner)
+    return apply_difficulty(arr.parts, arr.lineup, difficulty, only=inner, trills=trills)
 
 
-def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = "faithful") -> Arrangement:
-    """Melody, bass and harmony voices arranged for `lineup`; `difficulty` as in difficulty.py."""
+def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = "faithful",
+            trills: bool | None = None) -> Arrangement:
+    """Melody, bass and harmony voices arranged for `lineup`; `difficulty` and `trills` as in difficulty.py."""
     from .difficulty import apply_difficulty
 
     arr = Arrangement(lineup)
@@ -459,7 +460,7 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = 
     for p in inner:
         arr.parts[p.name] = []
     if lineup.satb:
-        _outer_difficulty(arr, difficulty, harmony)
+        _outer_difficulty(arr, difficulty, harmony, trills)
     satb_slots = []
     slots = sorted({n.start for n in harmony})
     ends = {s: e for s, e in zip(slots, slots[1:])}
@@ -488,9 +489,9 @@ def arrange(comp: Composition, lineup: Lineup = MINIMAL_BAND, difficulty: str = 
         prev.update(voicing)
     if lineup.satb:
         _voice_satb_slots(arr, satb_slots, arr.parts[lead.name], arr.parts[eb.name], difficulty)
-        arr.parts = _inner_difficulty(arr, difficulty)
+        arr.parts = _inner_difficulty(arr, difficulty, trills)
         return arr
-    arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
+    arr.parts = apply_difficulty(arr.parts, lineup, difficulty, trills=trills)
     return arr
 
 
@@ -501,10 +502,11 @@ def arrange_composition(comp: Composition) -> Arrangement:
     difficulty. Otherwise the minimal-band arranger, or the quartet when that is recorded.
     """
     difficulty = (comp.arrangement or {}).get("difficulty") or "faithful"
+    trills = (comp.arrangement or {}).get("trills")
     lineup, layered = composition_lineup(comp)
     if not layered:
-        return arrange(comp, lineup, difficulty) if lineup is not MINIMAL_BAND else arrange(comp)
-    return arrange_layers(comp, lineup, difficulty=difficulty)
+        return arrange(comp, lineup, difficulty, trills) if lineup is not MINIMAL_BAND else arrange(comp, trills=trills)
+    return arrange_layers(comp, lineup, difficulty=difficulty, trills=trills)
 
 
 def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
@@ -786,13 +788,15 @@ def _soprano_doubling(solo: list[Note], part: Part, spans: list[tuple[int, int]]
 
 
 def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: str = "faithful",
-                   soprano: bool | None = None, figuration: bool | None = None) -> Arrangement:
+                   soprano: bool | None = None, figuration: bool | None = None, trills: bool | None = None) -> Arrangement:
     """Layered solo-with-band arrangement.
 
     `difficulty` (faithful, standard, easier; see difficulty.py) rewrites the
     parts afterwards. `soprano` (Soprano Cornet doubling the solo at climaxes)
     and `figuration` (pads re-attacked with the source's rhythm) default to on
     for every mode but faithful, which reproduces the arranger's plain output.
+    `trills` writes sustained two-note alternations as trills (default: standard
+    and easier; see difficulty.apply_difficulty).
     Parts missing from `lineup` are simply not written (e.g. MINIMAL_BAND).
     """
     from .difficulty import apply_difficulty
@@ -813,7 +817,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
     if lineup.as_played:
         # A solo take for the player's seat: their own line in their octave, and nothing else.
         arr.parts[lead] = place_as_played(solo, lineup.lead_part, arr.warnings)
-        arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
+        arr.parts = apply_difficulty(arr.parts, lineup, difficulty, trills=trills)
         return arr
     # The band's own soloist, faithful and in the soloist's register: the line as played.
     if difficulty == "faithful" and lineup.soloist_lead and in_register(solo, lineup.lead_part.instrument.solo_range):
@@ -847,14 +851,14 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
     counter = [n for n in top if n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat]
     if lineup.satb:
         # One set of harmony slots from the whole accompaniment, voiced as alto and tenor.
-        _outer_difficulty(arr, difficulty, strings + keys + brass)
+        _outer_difficulty(arr, difficulty, strings + keys + brass, trills)
         slots = harmony_slots(strings + keys + brass, end)
         if figuration:
             slots = _figurate(slots, [n.start for n in strings + keys + brass])
         _voice_satb_slots(arr, [(s, e, pcs, 0.8) for s, e, pcs in slots], arr.parts[lead], arr.parts[eb.name], difficulty)
         if _layer(comp, "drums"):
             arr.warnings.append(f"{lineup.name}: drums left out (no percussion part)")
-        arr.parts = _inner_difficulty(arr, difficulty)
+        arr.parts = _inner_difficulty(arr, difficulty, trills)
         return arr
     cm = counter_part(lineup)
     if cm is not None:
@@ -889,5 +893,5 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
     drums = _layer(comp, "drums")
     if drums and "Percussion" in names:
         arr.parts["Percussion"] = sorted(drums, key=lambda n: n.start)
-    arr.parts = apply_difficulty(arr.parts, lineup, difficulty)
+    arr.parts = apply_difficulty(arr.parts, lineup, difficulty, trills=trills)
     return arr

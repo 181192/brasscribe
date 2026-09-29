@@ -50,6 +50,20 @@ def test_two_bars_of_a_scale(tmp_path):
     assert [ln.rstrip("⠀") for ln in back if ln] == [ln.rstrip("⠀") for ln in r.unicode.split("\n")]
 
 
+def test_trill_sign_before_its_note(tmp_path):
+    p = tmp_path / "scale.musicxml"
+    xml = _scale_xml()
+    # a trill on the first note (plain) and on the second (its auxiliary sharpened)
+    xml = xml.replace("</type>", "</type><notations><ornaments><trill-mark placement=\"above\"/></ornaments></notations>", 1)
+    at = xml.index("</type>", xml.index("<notations>") + 1)
+    xml = xml[:at] + ("</type><notations><ornaments><trill-mark placement=\"above\"/>"
+                      "<accidental-mark placement=\"above\">sharp</accidental-mark></ornaments></notations>") + xml[at + 7:]
+    p.write_text(xml)
+    r = braille.translate(p)
+    # the trill sign (dots 2-3-5) before C, and sharp + trill sign before D
+    assert "⠖⠐⠹⠩⠖⠱" in r.unicode
+
+
 def test_pagination_breaks_every_25_lines():
     brf = braille.paginate("\n".join(f"#{i}" for i in range(30)))
     pages = brf.split("\f")

@@ -577,12 +577,12 @@ fn voice_satb_slots(arr: &mut Arrangement, slots: &[(i64, i64, Vec<i32>, f64)], 
 /// parts are voiced against them (so a later change to the outer parts cannot cross
 /// an inner one). The 16th merges read the chord from the other outer part and the
 /// source harmony.
-fn outer_difficulty(arr: &mut Arrangement, difficulty: &str, harmony: &[Note]) -> Result<(), String> {
+fn outer_difficulty(arr: &mut Arrangement, difficulty: &str, harmony: &[Note], trills: Option<bool>) -> Result<(), String> {
     let lineup = arr.lineup.clone();
     let names = [lineup.lead, lineup.bass];
     let mut parts: Vec<(String, Vec<Note>)> = names.iter().map(|n| (n.to_string(), arr.part_notes(n).to_vec())).collect();
     parts.push((HARMONY_CONTEXT.to_string(), harmony.to_vec()));
-    let out = crate::difficulty::apply_difficulty_only(parts, &lineup, difficulty, Some(&names))?;
+    let out = crate::difficulty::apply_difficulty_opts(parts, &lineup, difficulty, Some(&names), trills)?;
     for (name, notes) in out {
         if names.contains(&name.as_str()) {
             arr.set(&name, notes);
@@ -592,10 +592,10 @@ fn outer_difficulty(arr: &mut Arrangement, difficulty: &str, harmony: &[Note]) -
 }
 
 /// Four-part lineups: the difficulty mode on the inner parts only (voiced in its range already).
-fn inner_difficulty(arr: &mut Arrangement, difficulty: &str) -> Result<(), String> {
+fn inner_difficulty(arr: &mut Arrangement, difficulty: &str, trills: Option<bool>) -> Result<(), String> {
     let lineup = arr.lineup.clone();
     let inner: Vec<&str> = lineup.parts.iter().map(|p| p.name).filter(|n| *n != lineup.lead && *n != lineup.bass).collect();
-    arr.parts = crate::difficulty::apply_difficulty_only(std::mem::take(&mut arr.parts), &lineup, difficulty, Some(&inner))?;
+    arr.parts = crate::difficulty::apply_difficulty_opts(std::mem::take(&mut arr.parts), &lineup, difficulty, Some(&inner), trills)?;
     Ok(())
 }
 
@@ -609,6 +609,11 @@ pub fn arrange_with(comp: &Composition, lineup: Lineup) -> Arrangement {
 
 /// Melody, bass and harmony voices arranged for `lineup`; `difficulty` as in difficulty.rs.
 pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Result<Arrangement, String> {
+    arrange_opts_trills(comp, lineup, difficulty, None)
+}
+
+/// [`arrange_opts`] with trill notation on or off (None: the difficulty's default, see difficulty.rs).
+pub fn arrange_opts_trills(comp: &Composition, lineup: Lineup, difficulty: &str, trills: Option<bool>) -> Result<Arrangement, String> {
     if !crate::difficulty::MODES.contains(&difficulty) {
         return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
     }
@@ -647,7 +652,7 @@ pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Res
         arr.set(p.name, Vec::new());
     }
     if lineup.satb {
-        outer_difficulty(&mut arr, difficulty, &harmony)?;
+        outer_difficulty(&mut arr, difficulty, &harmony, trills)?;
     }
     let mut satb_slots: Vec<(i64, i64, Vec<i32>, f64)> = Vec::new();
     let mut slots: Vec<i64> = harmony.iter().map(|n| n.start).collect();
@@ -689,10 +694,10 @@ pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Res
     if lineup.satb {
         let (lead_notes, bass_notes) = (arr.part_notes(lead.name).to_vec(), arr.part_notes(eb.name).to_vec());
         voice_satb_slots(&mut arr, &satb_slots, &lead_notes, &bass_notes, difficulty);
-        inner_difficulty(&mut arr, difficulty)?;
+        inner_difficulty(&mut arr, difficulty, trills)?;
         return Ok(arr);
     }
-    arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, difficulty)?;
+    arr.parts = crate::difficulty::apply_difficulty_opts(std::mem::take(&mut arr.parts), &arr.lineup, difficulty, None, trills)?;
     Ok(arr)
 }
 
@@ -838,11 +843,13 @@ pub struct LayersArrangeOptions {
     pub soprano: Option<bool>,
     /// Pads re-attacked with the source's rhythm (default: on unless faithful).
     pub figuration: Option<bool>,
+    /// Sustained two-note alternations written as trills (default: on unless faithful).
+    pub trills: Option<bool>,
 }
 
 impl Default for LayersArrangeOptions {
     fn default() -> Self {
-        LayersArrangeOptions { difficulty: "faithful".into(), soprano: None, figuration: None }
+        LayersArrangeOptions { difficulty: "faithful".into(), soprano: None, figuration: None, trills: None }
     }
 }
 
@@ -872,7 +879,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         // A solo take for the player's seat: their own line in their octave, and nothing else.
         let placed = place_as_played(&solo, lineup.lead_part(), &mut arr.warnings);
         arr.set(lead, placed);
-        arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
+        arr.parts = crate::difficulty::apply_difficulty_opts(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty, None, opts.trills)?;
         return Ok(arr);
     }
     // The band's own soloist, faithful and in the soloist's register: the line as played.
@@ -925,7 +932,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         let mut acc = strings.clone();
         acc.extend(keys.iter().cloned());
         acc.extend(brass.iter().cloned());
-        outer_difficulty(&mut arr, &opts.difficulty, &acc)?;
+        outer_difficulty(&mut arr, &opts.difficulty, &acc, opts.trills)?;
         let mut slots = harmony_slots(&acc, end, 4, 0.35);
         if figuration {
             slots = figurate(&slots, &acc.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
@@ -936,7 +943,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         if !layer(comp, "drums").is_empty() {
             arr.warnings.push(format!("{}: drums left out (no percussion part)", lineup.name));
         }
-        inner_difficulty(&mut arr, &opts.difficulty)?;
+        inner_difficulty(&mut arr, &opts.difficulty, opts.trills)?;
         return Ok(arr);
     }
     let cm = counter_part(&lineup);
@@ -987,7 +994,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         drums.sort_by_key(|n| n.start);
         arr.set("Percussion", drums);
     }
-    arr.parts = crate::difficulty::apply_difficulty(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty)?;
+    arr.parts = crate::difficulty::apply_difficulty_opts(std::mem::take(&mut arr.parts), &arr.lineup, &opts.difficulty, None, opts.trills)?;
     Ok(arr)
 }
 

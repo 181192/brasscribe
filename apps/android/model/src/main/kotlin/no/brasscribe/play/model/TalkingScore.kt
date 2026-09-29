@@ -374,8 +374,16 @@ internal class Words(val lang: Lang) {
         if (en) "${t.actual} in the time of ${t.normal}, ${t.index} of ${t.actual}" else "${t.actual} på ${t.normal}, ${t.index} av ${t.actual}"
     }
 
-    fun articulation(a: String): String = if (en) a else when (a) {
+    fun articulation(a: String): String = if (en) when (a) {
+        "trill" -> "trill"; "trill-sharp" -> "trill with sharp"; "trill-flat" -> "trill with flat"
+        "trill-natural" -> "trill with natural"; "trill-double-sharp" -> "trill with double sharp"
+        "trill-flat-flat" -> "trill with double flat"
+        else -> a
+    } else when (a) {
         "accent" -> "aksent"; "fermata" -> "fermat"
+        "trill" -> "trille"; "trill-sharp" -> "trille med kryss"; "trill-flat" -> "trille med b"
+        "trill-natural" -> "trille med oppløsningstegn"; "trill-double-sharp" -> "trille med dobbeltkryss"
+        "trill-flat-flat" -> "trille med dobbelt-b"
         else -> a
     }
 

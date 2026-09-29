@@ -417,6 +417,93 @@ def part_sources_cases() -> list[dict]:
     return out
 
 
+def _note_json(n) -> dict:
+    from dataclasses import asdict
+
+    d = asdict(n)
+    d["articulations"] = [str(getattr(a, "value", a)) for a in n.articulations]
+    return d
+
+
+def trills_cases() -> list[dict]:
+    """Trill runs on seeded synthetic lines: with_trills on performed notes (alternations at 1-3 semitones, fast and
+    slow, jittered, with gaps, dropped notes and held ends, among other notes), collapse_trills on written notes
+    (performed times or not, chords), and apply_difficulty with trills on and off per mode."""
+    from brasscribe_music.difficulty import apply_difficulty
+    from brasscribe_music.instruments import MINIMAL_BAND
+    from brasscribe_music.score_model import Articulation, Note
+    from brasscribe_music.trills import collapse_trills, with_trills
+
+    rng = np.random.default_rng(20260929)
+    cases = []
+
+    def figure(t: float, tick: int) -> tuple[list[dict], list[Note], float, int]:
+        """An alternation or a stretch of other notes: performed dicts and written Notes."""
+        lo = int(rng.integers(55, 80))
+        alt = rng.random() < 0.7
+        step = int(rng.choice([1, 2, 2, 3])) if alt else 0
+        k = int(rng.integers(3, 16))
+        ioi = float(rng.choice([0.07, 0.1, 0.125, 0.14, 0.16, 0.25]))
+        w = int(rng.choice([3, 4, 6, 6, 8, 12]))
+        perf, wr = [], []
+        for i in range(k):
+            if alt and rng.random() < 0.08:  # a dropped note
+                t += ioi
+                tick += w
+                continue
+            p = lo + (step if i % 2 else 0) if alt else lo + int(rng.integers(-5, 6))
+            on = t + float(rng.normal(0, 0.012))
+            gap = float(rng.choice([0.0, 0.0, 0.0, 0.03, 0.08]))
+            held = i == k - 1 and rng.random() < 0.4
+            off = on + (0.6 if held else ioi - gap)
+            perf.append({"pitch": p, "onset": on, "offset": off})
+            dur = 24 if held else w - (w // 2 if rng.random() < 0.05 else 0)
+            wr.append(Note(p, tick, dur, round(float(rng.uniform(0.3, 1.0)), 3), ["sw"], on, off,
+                           None if rng.random() < 0.3 else int(dur * 0.8),
+                           [Articulation.FERMATA] if held and rng.random() < 0.5 else []))
+            t += 0.6 if held else ioi
+            tick += 24 if held else w
+        return perf, wr, t + 0.02, tick
+
+    for k in range(160):
+        t, tick, perf, wr = 0.5, 0, [], []
+        for _ in range(int(rng.integers(1, 5))):
+            p, w, t, tick = figure(t, tick)
+            perf += p
+            wr += w
+        # the simpler line: the same notes merged into longer ones, some with a compromise pitch
+        line, i = [], 0
+        while i < len(perf):
+            j = min(len(perf), i + int(rng.integers(1, 8)))
+            ps = [x["pitch"] for x in perf[i:j]]
+            line.append({"pitch": int(round(float(np.mean(ps)))), "onset": perf[i]["onset"], "offset": perf[j - 1]["offset"]})
+            i = j
+        out = with_trills([dict(x) for x in line], [dict(x) for x in perf])
+        timed = k % 3 != 0
+        notes = [n if timed else Note(n.pitch, n.start, n.dur, n.confidence, list(n.sources)) for n in wr]
+        if k % 11 == 0 and notes:  # a chord
+            notes.append(Note(notes[0].pitch - 4, notes[0].start, notes[0].dur))
+        written = collapse_trills(notes)
+        case = {"perf": perf, "line": line,
+                "with_trills": [[x["pitch"], x["onset"], x["offset"], x.get("trill", 0)] for x in out],
+                "notes": [_note_json(n) for n in notes], "collapsed": [_note_json(n) for n in written]}
+        if k % 4 == 0:
+            lead, bass = MINIMAL_BAND.lead, MINIMAL_BAND.bass
+            parts = {lead: notes, bass: [Note(43, 24 * b, 24) for b in range(max(1, tick // 24))]}
+            case["difficulty"] = []
+            for mode in ("faithful", "standard", "easier"):
+                for tr in (None, True, False):
+                    fresh = {name: [Note(**{**_note_json(n), "articulations": [Articulation(a) for a in n.articulations]})
+                                    for n in ns] for name, ns in parts.items()}
+                    got = apply_difficulty(fresh, MINIMAL_BAND, mode, trills=tr)
+                    case["difficulty"].append({"mode": mode, "trills": tr,
+                                               "parts": [[name, [_note_json(n) for n in got.get(name, [])]]
+                                                         for name in (lead, bass)]})
+            case["parts"] = [[name, [_note_json(n) for n in ns]] for name, ns in parts.items()]
+        cases.append(case)
+    return cases
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
@@ -426,7 +513,7 @@ def main() -> None:
                        ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng)),
                        ("voice_satb", voice_satb_cases(rng)), ("seats", seat_cases()),
                        ("part_sources", part_sources_cases()), ("quantize_dense", quantize_dense_cases()),
-                       ("onsets", onsets_cases())):
+                       ("onsets", onsets_cases()), ("trills", trills_cases())):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 

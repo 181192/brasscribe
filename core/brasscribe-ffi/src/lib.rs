@@ -104,11 +104,15 @@ pub struct ArrangeOptions {
     /// lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
     #[uniffi(default = None)]
     pub lead: Option<String>,
+    /// Sustained two-note alternations written as trills: None = as the composition records it,
+    /// else the difficulty's default (on at standard and easier, off at faithful).
+    #[uniffi(default = None)]
+    pub trills: Option<bool>,
 }
 
 impl Default for ArrangeOptions {
     fn default() -> Self {
-        ArrangeOptions { lineup: "band".into(), difficulty: "faithful".into(), key: None, transpose: None, seat: None, reads: None, lead: None }
+        ArrangeOptions { lineup: "band".into(), difficulty: "faithful".into(), key: None, transpose: None, seat: None, reads: None, lead: None, trills: None }
     }
 }
 
@@ -161,10 +165,14 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     let layered = comp.voices.iter().any(|v| v.layer.is_some());
     // Only the layered arranger writes the full band.
     let key = if !layered && key == "band" { "minimal" } else { key };
+    let trills = o.trills.or_else(|| brasscribe_core::pipeline::recorded_trills(&comp));
     let mut a = serde_json::Map::new();
     a.insert("lineup".into(), key.into());
     a.insert("difficulty".into(), difficulty.into());
     a.insert("transpose_semitones".into(), (before + shift).into());
+    if let Some(t) = trills {
+        a.insert("trills".into(), t.into());
+    }
     let solo_take = brasscribe_core::arranger::is_solo_take(&comp);
     if let Some(s) = &o.seat {
         if solo_take && seat_by_id(s).map_err(invalid)?.reads.is_empty() {
@@ -185,9 +193,9 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     // The lineup as the composition now records it (seat, reading and lead included).
     let lineup = brasscribe_core::arranger::composition_lineup(&comp).0;
     let arr = if layered {
-        brasscribe_core::arranger::arrange_layers_opts(&comp, lineup, &brasscribe_core::arranger::LayersArrangeOptions { difficulty: difficulty.into(), ..Default::default() })
+        brasscribe_core::arranger::arrange_layers_opts(&comp, lineup, &brasscribe_core::arranger::LayersArrangeOptions { difficulty: difficulty.into(), trills, ..Default::default() })
     } else {
-        brasscribe_core::arranger::arrange_opts(&comp, lineup, difficulty)
+        brasscribe_core::arranger::arrange_opts_trills(&comp, lineup, difficulty, trills)
     }
     .map_err(failed)?;
     Ok(write_score(&band_score(&arr, &comp)))
@@ -279,6 +287,9 @@ pub struct LayersSongOptions {
     pub lineup: String,
     /// "faithful", "standard" or "easier".
     pub difficulty: String,
+    /// Faithful: write sustained two-note alternations as trills (standard and easier always do).
+    #[uniffi(default = false)]
+    pub trills: bool,
     /// Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
     pub key: Option<String>,
     /// Transpose the whole arrangement by this many semitones (instead of `key`).
@@ -312,6 +323,7 @@ impl Default for LayersSongOptions {
             key_changes: true,
             lineup: "band".into(),
             difficulty: "faithful".into(),
+            trills: false,
             key: None,
             transpose: None,
             seat: None,
@@ -394,6 +406,7 @@ pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: Layer
         single_key: !o.key_changes,
         lineup: o.lineup,
         difficulty: o.difficulty,
+        trills: o.trills,
         key: o.key,
         transpose: o.transpose,
         seat: o.seat,
@@ -486,7 +499,7 @@ pub fn quantize_notes(notes: Vec<PerformedNote>, beat_times: Vec<f64>, monophoni
     if beat_times.len() < 2 {
         return Err(invalid("need at least two beats"));
     }
-    let raw: Vec<RawNote> = notes.iter().map(|n| RawNote { pitch: n.pitch, onset: n.onset, offset: n.offset, confidence: n.confidence, split: false }).collect();
+    let raw: Vec<RawNote> = notes.iter().map(|n| RawNote { pitch: n.pitch, onset: n.onset, offset: n.offset, confidence: n.confidence, split: false, trill: 0 }).collect();
     let mut q = quantize(&raw, &beat_times, monophonic, auto_level);
     if fill_gap_ticks > 0 {
         q = fill_gaps(q, fill_gap_ticks, 0.0);

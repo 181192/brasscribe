@@ -332,3 +332,43 @@ fn part_sources_match_reference() {
         assert_eq!(got, want, "case {i}");
     }
 }
+
+#[test]
+fn trills_match_reference() {
+    use brasscribe_core::difficulty::apply_difficulty_opts;
+    use brasscribe_core::instruments::minimal_band;
+    use brasscribe_core::model::Note;
+    use brasscribe_core::trills::{collapse_trills, with_trills};
+    let raw = |v: &Value| -> Vec<RawNote> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|n| RawNote::new(n["pitch"].as_i64().unwrap() as i32, n["onset"].as_f64().unwrap(), n["offset"].as_f64().unwrap()))
+            .collect()
+    };
+    let notes = |v: &Value| -> Vec<Note> { serde_json::from_value(v.clone()).unwrap() };
+    for (i, c) in load("trills").iter().enumerate() {
+        let got: Vec<(i32, u64, u64, i32)> =
+            with_trills(&raw(&c["line"]), &raw(&c["perf"])).iter().map(|n| (n.pitch, n.onset.to_bits(), n.offset.to_bits(), n.trill)).collect();
+        let want: Vec<(i32, u64, u64, i32)> = c["with_trills"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| (x[0].as_i64().unwrap() as i32, x[1].as_f64().unwrap().to_bits(), x[2].as_f64().unwrap().to_bits(), x[3].as_i64().unwrap() as i32))
+            .collect();
+        assert_eq!(got, want, "with_trills case {i}");
+        assert_eq!(collapse_trills(&notes(&c["notes"])), notes(&c["collapsed"]), "collapse_trills case {i}");
+        let Some(runs) = c["difficulty"].as_array() else { continue };
+        let parts: Vec<(String, Vec<Note>)> =
+            c["parts"].as_array().unwrap().iter().map(|p| (p[0].as_str().unwrap().to_string(), notes(&p[1]))).collect();
+        for r in runs {
+            let (mode, trills) = (r["mode"].as_str().unwrap(), r["trills"].as_bool());
+            let got = apply_difficulty_opts(parts.clone(), &minimal_band(), mode, None, trills).unwrap();
+            for w in r["parts"].as_array().unwrap() {
+                let name = w[0].as_str().unwrap();
+                let g = got.iter().find(|(n, _)| n == name).map(|(_, v)| v.clone()).unwrap_or_default();
+                assert_eq!(g, notes(&w[1]), "difficulty case {i} {mode} {trills:?} {name}");
+            }
+        }
+    }
+}
