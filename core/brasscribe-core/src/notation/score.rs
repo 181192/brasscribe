@@ -1607,7 +1607,49 @@ fn part_xml(part: &Part, idx: usize, bpb: i64, line_base: usize) -> X {
         }
         px.push(mx);
     }
+    number_ties(&mut px);
     px
+}
+
+/// Gives every `<tied>` in a part a `number`, so a reader pairs each stop with its start without guessing by
+/// pitch: a start takes the lowest number no open tie holds, its stop the number of the open tie on the
+/// same pitch. alphaTab 1.8.4 pairs unnumbered ties by comparing the stop's written pitch with the starts'
+/// sounding pitch, so in a transposing part a tie either failed (the note sounded again) or joined a stale
+/// start on another note (a note held for seconds). Mirrors `brasscribe_music.musicxml._number_ties`.
+fn number_ties(part: &mut X) {
+    fn text<'a>(el: &'a X, name: &str) -> &'a str {
+        el.children.iter().find(|c| c.name == name).and_then(|c| c.text.as_deref()).unwrap_or("")
+    }
+    let mut open: Vec<(String, usize)> = Vec::new();
+    for m in part.children.iter_mut().filter(|m| m.name == "measure") {
+        for n in m.children.iter_mut().filter(|n| n.name == "note") {
+            let key = match n.children.iter().find(|c| c.name == "pitch" || c.name == "unpitched") {
+                Some(p) if p.name == "pitch" => {
+                    format!("{}{}/{}", text(p, "step"), text(p, "alter").parse::<f64>().unwrap_or(0.0), text(p, "octave"))
+                }
+                Some(p) => format!("u{}/{}", text(p, "display-step"), text(p, "display-octave")),
+                None => continue,
+            };
+            let Some(nots) = n.children.iter_mut().find(|c| c.name == "notations") else { continue };
+            for t in nots.children.iter_mut().filter(|t| t.name == "tied") {
+                let typ = t.attrs.iter().find(|(k, _)| k == "type").map(|(_, v)| v.clone()).unwrap_or_default();
+                if typ != "start" && typ != "stop" {
+                    continue;
+                }
+                let num = if typ == "start" {
+                    let free = (1..).find(|k| !open.iter().any(|(_, o)| o == k)).unwrap();
+                    open.push((key.clone(), free));
+                    free
+                } else {
+                    match open.iter().rposition(|(k, _)| *k == key) {
+                        Some(i) => open.remove(i).1,
+                        None => 1,
+                    }
+                };
+                t.set("number", num.to_string());
+            }
+        }
+    }
 }
 
 /// A dashed review bracket (spanner number: its index in the score, cycling 1..6).
@@ -1922,5 +1964,52 @@ fn band_midi(root: &mut X, kit_program: i64) {
         if port > 0 {
             sp.children.insert(mi, X::new("midi-device").attr("id", mi_id).attr("port", (port + 1).to_string()));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn note(step: &str, octave: i32, tied: &[&str]) -> X {
+        let mut n = X::new("note").child(X::new("pitch").child(X::text("step", step)).child(X::text("octave", octave.to_string())));
+        let mut nots = X::new("notations");
+        for t in tied {
+            nots.push(X::new("tied").attr("type", *t));
+        }
+        n.push(nots);
+        n
+    }
+
+    fn numbers(part: &X) -> Vec<Vec<String>> {
+        part.children[0]
+            .children
+            .iter()
+            .map(|n| n.children[1].children.iter().map(|t| t.attrs.iter().find(|(k, _)| k == "number").map(|(_, v)| v.clone()).unwrap_or_default()).collect())
+            .collect()
+    }
+
+    #[test]
+    fn ties_are_numbered_by_pitch_and_chain() {
+        // D5 start, D5 stop+start, D5 stop; E5 and G5 both tied on (a chord); then G5 and E5 stop
+        let mut m = X::new("measure");
+        for n in [
+            note("D", 5, &["start"]),
+            note("D", 5, &["stop", "start"]),
+            note("D", 5, &["stop"]),
+            note("E", 5, &["start"]),
+            note("G", 5, &["start"]),
+            note("G", 5, &["stop"]),
+            note("E", 5, &["stop"]),
+        ] {
+            m.push(n);
+        }
+        let mut part = X::new("part").child(m);
+        number_ties(&mut part);
+        let want: Vec<Vec<String>> = [&["1"][..], &["1", "1"], &["1"], &["1"], &["2"], &["2"], &["1"]]
+            .iter()
+            .map(|v| v.iter().map(|s| s.to_string()).collect())
+            .collect();
+        assert_eq!(numbers(&part), want);
     }
 }

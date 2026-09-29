@@ -8,6 +8,7 @@ part is a single voice. Real voice separation belongs to a later stage.
 from __future__ import annotations
 
 import copy
+import re
 import warnings
 
 from dataclasses import dataclass, field
@@ -302,6 +303,61 @@ def _trill_lines(path: Path) -> None:
     path.write_text(head + ET.tostring(root, encoding="unicode"), encoding="utf-8")
 
 
+_NOTE = re.compile(r"<note\b.*?</note>", re.S)
+_TIED = re.compile(r'<tied type="(start|stop)"')
+
+
+def _field(xml: str, tag: str) -> str:
+    m = re.search(rf"<{tag}>(.*?)</{tag}>", xml, re.S)
+    return m.group(1) if m else ""
+
+
+def _alter(text: str) -> str:
+    """An alter as the Rust writer's number_ties keys it (f64 Display): "0" for none, "1", "-1", "0.5"."""
+    v = float(text) if text.strip() else 0.0
+    return str(int(v)) if v == int(v) else str(v)
+
+
+def _number_ties(path: Path) -> None:
+    """Give every <tied> a number, so a reader pairs each stop with its start without guessing by pitch: a start
+    takes the lowest number no open tie holds, its stop the number of the open tie on the same pitch. alphaTab 1.8.4
+    pairs unnumbered ties by comparing the stop's written pitch with the starts' sounding pitch, so in a transposing
+    part a tie either failed (the note sounded again) or joined a stale start on another note (a note held for
+    seconds). Mirrors the Rust writer's number_ties."""
+    text = path.read_text(encoding="utf-8")
+    if "<tied " not in text:
+        return
+
+    def part(m: re.Match) -> str:
+        open_: list[tuple[str, int]] = []
+
+        def one(n: re.Match) -> str:
+            body = n.group(0)
+            if "<tied " not in body:
+                return body
+            if "<pitch>" in body:
+                p = _field(body, "pitch")
+                k = f"{_field(p, 'step')}{_alter(_field(p, 'alter'))}/{_field(p, 'octave')}"
+            elif "<unpitched>" in body:
+                u = _field(body, "unpitched")
+                k = f"u{_field(u, 'display-step')}/{_field(u, 'display-octave')}"
+            else:
+                return body
+
+            def tied(t: re.Match) -> str:
+                if t.group(1) == "start":
+                    num = next(i for i in range(1, 1000) if all(o != i for _, o in open_))
+                    open_.append((k, num))
+                else:
+                    at = next((i for i in reversed(range(len(open_))) if open_[i][0] == k), None)
+                    num = open_.pop(at)[1] if at is not None else 1
+                return f'{t.group(0)} number="{num}"'
+            return _TIED.sub(tied, body)
+        return _NOTE.sub(one, m.group(0))
+
+    path.write_text(re.sub(r"<part\b.*?</part>", part, text, flags=re.S), encoding="utf-8")
+
+
 def _articulate(el, arts: set[str]) -> None:
     if "staccato" in arts:
         el.articulations.append(articulations.Staccato())
@@ -481,6 +537,7 @@ def write_musicxml(score: stream.Score, path: Path, sounds: dict[str, str] | Non
     written.write("musicxml", fp=str(path))
     _drop_repeated_title(path)
     _trill_lines(path)
+    _number_ties(path)
     if sounds:
         _add_instrument_sounds(path, sounds, kit)
     return path

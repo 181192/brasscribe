@@ -70,3 +70,24 @@ def test_composition_json_round_trip_keeps_numbers(tmp_path):
     back = Composition.from_json(tmp_path / "c.json")
     assert back.first_downbeat == 3 and isinstance(back.voices[0].notes[0].start, int)
     assert back.end_tick == comp.end_tick
+
+
+def test_ties_are_numbered_so_readers_pair_them_without_guessing(tmp_path):
+    """Every <tied> has a number: a start takes the lowest free one, its stop the open one on the same pitch. alphaTab
+    1.8.4 mismatched unnumbered ties in transposing parts (notes sounding again, or held into the next phrase)."""
+    from brasscribe_music.musicxml import _number_ties
+
+    def note(step: str, *tied: str, alter: str = "") -> str:
+        a = f"<alter>{alter}</alter>" if alter else ""
+        return (f"<note><pitch><step>{step}</step>{a}<octave>5</octave></pitch><notations>"
+                + "".join(f'<tied type="{t}" />' for t in tied) + "</notations></note>")
+
+    p = tmp_path / "t.musicxml"
+    p.write_text('<score-partwise><part id="P1"><measure>' + note("D", "start") + note("D", "stop", "start")
+                 + note("D", "stop") + note("E", "start") + note("G", "start") + note("G", "stop")
+                 + note("E", "stop", alter="0") + "</measure></part></score-partwise>", encoding="utf-8")
+    _number_ties(p)
+    import re
+    got = [re.findall(r'<tied type="(\w+)" number="(\d)"', n) for n in re.findall(r"<note>.*?</note>", p.read_text())]
+    assert got == [[("start", "1")], [("stop", "1"), ("start", "1")], [("stop", "1")], [("start", "1")], [("start", "2")],
+                   [("stop", "2")], [("stop", "1")]]
