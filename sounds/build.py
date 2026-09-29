@@ -34,7 +34,7 @@ import sf2  # noqa: E402
 
 RAW = ROOT / "data" / "sounds" / "raw"
 BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))  # staging builds
-ANALYSIS = ROOT / "data" / "sounds" / "analysis.json"
+ANALYSIS = Path(os.environ.get("BRASSCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
 MAPPING = HERE / "mapping.json"
 
 # Nominal dynamic of each layer, by number of layers available (softest first).

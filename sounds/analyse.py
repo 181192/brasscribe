@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import concurrent.futures as cf
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict
@@ -28,11 +29,12 @@ from dsp import SR, envelope_db, hz_to_midi, midi_from_name  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "sounds" / "raw"
-OUT = ROOT / "data" / "sounds" / "analysis.json"
+# BRASSCRIBE_SOUNDS_ANALYSIS: a staging catalogue, so a rebuild in one checkout leaves the shared one alone
+OUT = Path(os.environ.get("BRASSCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
 
 VSCO_INST = {"Trumpet": "trumpet", "F Horn": "horn", "Tenor Trombone": "tenor-trombone", "Tuba": "tuba"}
 F0_RANGE = {  # Hz, generous: sounding ranges of the source instruments
-    "trumpet": (130, 1500), "horn": (50, 1000), "tenor-trombone": (60, 700),
+    "trumpet": (130, 1500), "trumpet-vib": (130, 1500), "horn": (50, 1000), "tenor-trombone": (60, 700),
     "bass-trombone": (30, 450), "tuba": (25, 400),
 }
 
@@ -100,12 +102,15 @@ def parse_range(s: str) -> tuple[int, int]:
 def catalogue() -> list[dict]:
     items = []
     for f in sorted((RAW / "vsco2ce" / "Brass").rglob("*.wav")):
-        m = re.search(r"_(sus|stac)_([A-G]#?-?\d)_v(\d)(?:_rr(\d)|_(\d))?", f.name)
+        m = re.search(r"_(sus|stac|susvib)_([A-G]#?-?\d)_v(\d)(?:_rr(\d)|_(\d))?", f.name)
         if not m:
             continue
+        vib = m.group(1) == "susvib"  # the vibrato sustains are their own instrument (the solo cornet's)
         items.append({
-            "file": str(f.relative_to(RAW)), "library": "vsco2ce", "instrument": VSCO_INST[f.parent.parent.name],
-            "kind": m.group(1), "art": m.group(1), "dyn": f"v{m.group(3)}", "rr": int(m.group(4) or m.group(5) or 1),
+            "file": str(f.relative_to(RAW)), "library": "vsco2ce",
+            "instrument": VSCO_INST[f.parent.parent.name] + ("-vib" if vib else ""),
+            "kind": "sus" if vib else m.group(1), "art": "sus" if vib else m.group(1), "dyn": f"v{m.group(3)}",
+            "rr": int(m.group(4) or m.group(5) or 1),
             "name_midi": midi_from_name(m.group(2)),
         })
     for f in sorted((RAW / "iowa-mis").glob("*/pitch/*.aif*")):
@@ -188,7 +193,7 @@ def main() -> None:
     resolve(notes)
     OUT.write_text(json.dumps(notes, indent=0))
     usable = [n for n in notes if n.get("midi") is not None]
-    print(f"{len(items)} files -> {len(notes)} notes, {len(usable)} with pitch -> {OUT.relative_to(ROOT)}")
+    print(f"{len(items)} files -> {len(notes)} notes, {len(usable)} with pitch -> {OUT}")
     summary = Counter((n["library"], n["instrument"], n["kind"], n["dyn"], n.get("midi_source", "").split("-")[0])
                       for n in usable)
     for k, v in sorted(summary.items()):
