@@ -46,7 +46,7 @@ class BandEstimateTest {
         val score = BandEstimate.score(golden!!.readBytes())
         val e = PlaybackLevels.bandEstimateLufs(BandEstimate.notes(score))!!
         println("LEVELS android golden band estimate $e LUFS")
-        assertEquals(-11.54, e, 0.05)
+        assertEquals(-11.60, e, 0.05)  // the golden after the fast-notes promotion (-11.54 before it)
         // The velocity rule is alphaTab's: every note its MIDI generator plays has the velocity the estimate gives
         // the note that starts it (a tie chain plays once, at its first note's velocity).
         val estimated = BandEstimate.notes(score).map { it.velocity }.groupingBy { it }.eachCount()
