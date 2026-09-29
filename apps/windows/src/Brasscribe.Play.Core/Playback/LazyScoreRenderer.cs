@@ -41,7 +41,7 @@ public sealed class LazyScoreRenderer : IDisposable
 
     /// <summary>Lays out the score for the given tracks. <paramref name="prepare"/> runs first on the worker (styling, transposition display).</summary>
     public Task<ScoreLayout> LayoutAsync(Score score, IReadOnlyList<int> tracks, double width, double scale, LayoutMode mode, Action<Score>? prepare = null,
-        Review.UncertaintyPalette? theme = null)
+        Review.UncertaintyPalette? theme = null, int barsPerRow = -1)
     {
         int generation = Interlocked.Increment(ref _generation);
         return Run(() =>
@@ -54,6 +54,7 @@ public sealed class LazyScoreRenderer : IDisposable
             settings.Core.IncludeNoteBounds = true;
             settings.Display.Scale = Math.Clamp(scale, 0.5, 4.0);
             settings.Display.LayoutMode = mode;
+            settings.Display.BarsPerRow = barsPerRow; // the music stand fixes bars per system; -1 lets alphaTab choose
             settings.Player.EnableCursor = false;
             if (theme is not null) ScoreStyler.ApplyTheme(settings, theme);
             ScoreStyler.HideHeader(settings); // the screen shows the title itself

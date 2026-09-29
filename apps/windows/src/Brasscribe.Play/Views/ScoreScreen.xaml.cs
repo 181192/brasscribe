@@ -3,10 +3,12 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Brasscribe.Play.Controls;
 using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Review;
+using Brasscribe.Play.Core.Stand;
 using Brasscribe.Play.Core.ViewModels;
 using Brasscribe.Play.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
@@ -34,11 +36,31 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         Notation.LeaveRequested += (_, _) => PlayButton.Focus(FocusState.Keyboard);
         Notation.MarkInvoked += (_, _) => Main?.CheckNotesCommand.Execute(null);
         Notation.GoToBarRequested += async (_, _) => await ShowGoToBarAsync();
-        Notation.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20) QueueRender(); };
+        // The stand's pages also depend on the height (whole systems per page).
+        Notation.SizeChanged += (_, e) =>
+        {
+            if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 20
+                || ViewModel?.Stand.IsOpen == true && Math.Abs(e.NewSize.Height - e.PreviousSize.Height) > 20) QueueRender();
+        };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
         ActualThemeChanged += (_, _) => QueueRender(); // the notation itself is drawn in the theme's ink
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
+
+        // The music stand.
+        Notation.StandTapped += OnStandTapped;
+        Notation.StandTabbed += OnStandTabbed;
+        Notation.StandKey += (_, _) => StandInteraction(showLayer: true);
+        Notation.SpreadFailed += (_, _) => { _spreadFailed = true; QueueRender(); };
+        StandLayer.ObscuredChanged += (_, _) => ApplyStandWindow(fade: false);
+        _hideTimer = DispatcherQueue.CreateTimer();
+        _hideTimer.Interval = StandLayer_HideDelay;
+        _hideTimer.IsRepeating = false;
+        _hideTimer.Tick += (_, _) => OnHideTimer();
+        // "4 s after the last touch": any press in the stand starts the wait again.
+        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => { if (ViewModel?.Stand.IsOpen == true) RestartHideTimer(); }), handledEventsToo: true);
     }
+
+    private static readonly TimeSpan StandLayer_HideDelay = Brasscribe.Play.Core.Stand.StandLayer.HideDelay;
 
     public ScoreViewModel ViewModel
     {
@@ -67,11 +89,24 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         {
             old.PropertyChanged -= self.OnViewModelPropertyChanged;
             old.CursorMoved -= self.OnCursorMoved;
+            old.Stand.PropertyChanged -= self.OnStandPropertyChanged;
+            old.Stand.PageChanged -= self.OnStandPageChanged;
+            old.Stand.Opened -= self.OnStandOpened;
+            old.Stand.Closed -= self.OnStandClosed;
+            old.Player.PropertyChanged -= self.OnPlayerPropertyChanged;
         }
         if (e.NewValue is ScoreViewModel vm)
         {
             vm.PropertyChanged += self.OnViewModelPropertyChanged;
             vm.CursorMoved += self.OnCursorMoved;
+            vm.Stand.PropertyChanged += self.OnStandPropertyChanged;
+            vm.Stand.PageChanged += self.OnStandPageChanged;
+            vm.Stand.Opened += self.OnStandOpened;
+            vm.Stand.Closed += self.OnStandClosed;
+            vm.Stand.DetectScreenReader = StandPlatform.ScreenReaderRunning;
+            vm.Player.PropertyChanged += self.OnPlayerPropertyChanged;
+            self.StandBand.Show(vm);
+            self.StandLayer.Show(vm);
             vm.Player.Player.PositionChanged += (_, p) => self.DispatcherQueue.TryEnqueue(() => self.OnPlaybackPosition(p));
             self.Notation.ViewModel = vm;
         }
@@ -79,8 +114,23 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         self.Bindings.Update();
     }
 
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        // Leaving the page always gives the window back (full screen, the screen kept awake).
+        ViewModel?.Stand.Leave(announce: false);
+        base.OnNavigatedFrom(e);
+    }
+
+    /// <summary>The element stand announcements are raised from while the window's status line is hidden.</summary>
+    public FrameworkElement StandAnnouncerHost => StandBand.Announcer;
+
     public void FocusHeading()
     {
+        if (ViewModel.Stand.IsOpen)
+        {
+            Notation.Focus(FocusState.Programmatic);
+            return;
+        }
         if (ViewModel.IsPartView) PartHeading.Focus(FocusState.Programmatic);
         else Heading.Focus(FocusState.Programmatic);
     }
@@ -174,6 +224,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     /// <summary>The part view is a page on the paper, centred and at most 960 wide; the full score is full width.</summary>
     private void ApplyPageLayout()
     {
+        if (ViewModel.Stand.IsOpen)
+        {
+            // The stand: the music alone on the paper, edge to edge with a small margin.
+            PageFrame.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+            PageSheet.MaxWidth = double.PositiveInfinity;
+            PageSheet.Margin = new Thickness(24, 0, 24, 0);
+            PageSheet.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["BcBgBrush"];
+            return;
+        }
         bool part = ViewModel.IsPartView;
         PageFrame.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[part ? "BcSurfaceBrush" : "BcBgBrush"];
         PageSheet.MaxWidth = part ? 960 : double.PositiveInfinity;
@@ -232,6 +291,11 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     private async Task RenderAsync()
     {
         if (ViewModel.Player.Player is not AlphaTabScorePlayer player || player.Score is null || ViewModel.Document is null) return;
+        if (ViewModel.Stand.IsOpen)
+        {
+            await RenderStandAsync(player);
+            return;
+        }
         var score = player.Score;
         var doc = ViewModel.Document;
         _tracks = ViewModel.SelectedPartIndex >= 0 ? [ViewModel.SelectedPartIndex] : player.Tracks.Select(t => t.Index).ToArray();
@@ -257,6 +321,199 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         Notation.ReduceMotion = !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
         Notation.SetPageSlots(layout.Pages.Select(p => (p.Id, new Rect(p.X, p.Y, p.Width, p.Height))), layout.Width, layout.Height);
         DrawOverlays();
+    }
+
+    // ---- the music stand (design/music-stand.md) ----
+
+    /// <summary>Space kept above the first system and below the last one of a page.</summary>
+    private const double StandPad = 8;
+
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _hideTimer;
+    private Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase? _notationFlyout;
+    private double _standScale = 1.0;
+    private bool _spreadFailed;
+
+    private void OnMusicStand(object sender, RoutedEventArgs e) => ViewModel.Stand.Enter();
+
+    private void OnStandAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (ViewModel.IsLoaded) ViewModel.Stand.Toggle();
+    }
+
+    private void OnStandOpened(object? sender, EventArgs e)
+    {
+        _notationFlyout = Notation.ContextFlyout;
+        Notation.ContextFlyout = null; // no "Listen to this bar" or "Keep" on the stand
+        Notation.IsStand = true;
+        _spreadFailed = false;
+        ApplyPageLayout();
+        QueueRender();
+        RestartHideTimer();
+        // Focus lands on the score; the next Tab reaches Leave, then the controls.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => Notation.Focus(FocusState.Programmatic));
+    }
+
+    private void OnStandClosed(object? sender, EventArgs e)
+    {
+        _hideTimer.Stop();
+        Notation.IsStand = false;
+        Notation.ContextFlyout = _notationFlyout;
+        Notation.BottomObscuredHeight = 96;
+        ApplyPageLayout();
+        QueueRender();
+        // Focus goes back to the button that opened it (the system.md focus rule).
+        if (Main?.Screen == Screen.Score)
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => MusicStandButton.Focus(FocusState.Programmatic));
+    }
+
+    private void OnStandPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MusicStandViewModel.IsLayerShown))
+        {
+            if (ViewModel.Stand.IsLayerShown) RestartHideTimer();
+            // Wait for the card's new size before moving the window (ObscuredChanged follows).
+            DispatcherQueue.TryEnqueue(() => ApplyStandWindow(fade: false));
+        }
+    }
+
+    private void OnStandPageChanged(object? sender, bool byPlayer) => ApplyStandWindow(fade: true);
+
+    private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // The current system may move under the layer without a page turn.
+        if (e.PropertyName == nameof(PlayerViewModel.CurrentBar) && ViewModel.Stand.IsOpen) ApplyStandWindow(fade: false);
+        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying) && ViewModel.Stand.IsOpen) RestartHideTimer();
+    }
+
+    /// <summary>A tap on the music: the layer toggles. If focus is in the layer, it moves to the score first, so it never lands on nothing.</summary>
+    private void OnStandTapped(object? sender, EventArgs e)
+    {
+        if (ViewModel.Stand.IsLayerShown && StandLayer.HasFocusWithin()) Notation.Focus(FocusState.Programmatic);
+        ViewModel.Stand.Tap();
+        RestartHideTimer();
+    }
+
+    /// <summary>Tab from the score shows the layer and goes to Leave; Shift+Tab goes to the layer's last control.</summary>
+    private void OnStandTabbed(object? sender, bool back)
+    {
+        StandInteraction(showLayer: true);
+        DispatcherQueue.TryEnqueue(() => (back ? StandLayer.Last : StandBand.Leave).Focus(FocusState.Keyboard));
+    }
+
+    private void StandInteraction(bool showLayer)
+    {
+        if (showLayer) ViewModel.Stand.KeyPressed();
+        RestartHideTimer();
+    }
+
+    /// <summary>Keys pressed on the stand's controls (focus off the score): pages, Esc and the rest of the stand's keys.</summary>
+    private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Handled || ViewModel?.Stand.IsOpen != true) return;
+        StandInteraction(showLayer: e.Key == Windows.System.VirtualKey.Tab);
+        if (XamlRoot is not null && FocusManager.GetFocusedElement(XamlRoot) is TextBox or NumberBox) return;
+        if (ScoreView.MapKey(e.Key) is not { } key || key == ScoreKey.Space) return; // Space presses the focused button
+        // Single-key shortcuts (F, L, -, +) work only while the score has focus (WCAG 2.1.4).
+        if (ScoreKeyMap.Map(key, ScoreView.Modifiers(), singleKeyShortcuts: false, stand: true) is not { } command) return;
+        ViewModel.Stand.KeyPressed();
+        ViewModel.Execute(command);
+        e.Handled = true;
+    }
+
+    private void RestartHideTimer()
+    {
+        _hideTimer.Stop();
+        if (ViewModel?.Stand.IsOpen == true) _hideTimer.Start();
+    }
+
+    private void OnHideTimer()
+    {
+        if (!ViewModel.Stand.IsOpen) return;
+        var context = new StandContext(
+            Playing: ViewModel.Player.IsPlaying,
+            ScreenReader: StandPlatform.ScreenReaderRunning(),
+            FocusInLayer: StandLayer.HasFocusWithin(),
+            TextInputOrTouchKeyboard: StandPlatform.TextInputOrTouchKeyboard(XamlRoot));
+        if (!ViewModel.Stand.AutoHide(context) && ViewModel.Stand.IsLayerShown) RestartHideTimer(); // look again later
+    }
+
+    /// <summary>
+    /// Lays out the stand from the §3 sizing contract: 4 bars per system (fewer at large text or zoom),
+    /// the staff size fitted so a page holds the target systems, two pages side by side when wide.
+    /// </summary>
+    private async Task RenderStandAsync(AlphaTabScorePlayer player)
+    {
+        var score = player.Score!;
+        var doc = ViewModel.Document!;
+        double viewW = Notation.ActualWidth, viewH = Notation.ActualHeight;
+        if (viewW <= 0 || viewH <= 0) return;
+        _tracks = ViewModel.SelectedPartIndex >= 0 ? [ViewModel.SelectedPartIndex] : player.Tracks.Select(t => t.Index).ToArray();
+        bool concert = ViewModel.ConcertPitch;
+        var display = player.Tracks.ToDictionary(t => t.Index, t => t.DisplayTransposition);
+        var palette = Palette();
+        bool spread = !_spreadFailed && StandSizing.UseSpread(viewW, viewH);
+        Notation.IsSpread = spread;
+        double width = Notation.StandColumnWidth(spread) - 24;
+        double textScale = new Windows.UI.ViewManagement.UISettings().TextScaleFactor;
+        int bars = StandSizing.BarsPerRow(textScale, ViewModel.ZoomPercent / 100.0);
+        double pageHeight = Math.Max(100, viewH - 2 * StandPad);
+        double target = StandSizing.TargetSystems(upright: viewH > viewW, staves: _tracks.Length, textScale);
+
+        Task<ScoreLayout> Layout(double scale) => _renderer.LayoutAsync(score, _tracks, width, scale, AlphaTab.LayoutMode.Page, s =>
+        {
+            foreach (var (index, transposition) in display)
+                foreach (var staff in s.Tracks[index].Staves)
+                    staff.DisplayTranspositionPitch = concert ? 0 : transposition;
+            ScoreStyler.ApplyUncertainty(s, doc, palette);
+        }, palette, bars);
+
+        var layout = await Layout(_standScale);
+        if (layout.Generation != _renderer.Generation || layout.Bounds is null) return;
+        var systems = ScoreGeometry.Systems(layout.Bounds);
+        if (systems.Count > 0)
+        {
+            double typical = systems.Select(x => x.Height).Order().ElementAt(systems.Count / 2);
+            double fitted = StandSizing.FitScale(_standScale, typical, pageHeight, target, width, bars);
+            if (StandSizing.NeedsRelayout(_standScale, fitted))
+            {
+                _standScale = fitted;
+                layout = await Layout(fitted);
+                if (layout.Generation != _renderer.Generation || layout.Bounds is null) return;
+                systems = ScoreGeometry.Systems(layout.Bounds);
+            }
+        }
+        if (!ViewModel.Stand.IsOpen) return; // left while laying out
+
+        _layout = layout;
+        _requested.Clear();
+        Notation.ReduceMotion = ReduceMotion();
+        Notation.SetPageSlots(layout.Pages.Select(p => (p.Id, new Rect(p.X, p.Y, p.Width, p.Height))), layout.Width, layout.Height);
+        DrawOverlays();
+        ViewModel.Stand.SetPages(StandPages.Build(systems, pageHeight, spread));
+    }
+
+    /// <summary>No animation when Windows or the app's own setting reduces motion (WCAG 2.2.2, 2.3.3).</summary>
+    private bool ReduceMotion() => !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled || Main?.Settings.ReduceMotion == true;
+
+    /// <summary>
+    /// Shows the stand's page (and the next one on the right in a spread). The window moves down when the
+    /// current system would be under the control layer (§4.3); nothing is laid out again.
+    /// </summary>
+    private void ApplyStandWindow(bool fade)
+    {
+        if (ViewModel?.Stand.IsOpen != true) return;
+        var pages = ViewModel.Stand.Pages;
+        if (pages.Count == 0) return;
+        int page = pages.Clamp(ViewModel.Stand.Page);
+        var left = pages.Pages[page];
+        double obscured = StandLayer.ObscuredHeight;
+        Notation.BottomObscuredHeight = obscured;
+        int system = pages.SystemOf(ViewModel.Stand.CurrentBar - 1);
+        StandSystem? current = system >= left.FirstSystem && system <= left.LastSystem ? pages.Systems[system] : null;
+        double top = StandPages.WindowTop(left.Top - StandPad, current, Notation.ActualHeight, obscured);
+        double? right = pages.IsSpread && page + 1 < pages.Count ? pages.Pages[page + 1].Top - StandPad : null;
+        Notation.ShowStandWindow(top, right, fade && !ReduceMotion());
     }
 
     /// <summary>Asks for the pages in and around the viewport, nearest first.</summary>

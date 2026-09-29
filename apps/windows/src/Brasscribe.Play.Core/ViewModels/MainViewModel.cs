@@ -180,9 +180,18 @@ public sealed partial class MainViewModel : ObservableObject
             if (e.PropertyName is nameof(SettingsViewModel.EngineAddress) or nameof(SettingsViewModel.EngineToken)) _engine = null;
             if (e.PropertyName == nameof(SettingsViewModel.SingleKeyShortcuts)) Score.SingleKeyShortcuts = Settings.SingleKeyShortcuts;
             if (e.PropertyName == nameof(SettingsViewModel.Verbosity)) Score.Verbosity = Settings.Verbosity;
+            if (e.PropertyName == nameof(SettingsViewModel.StandKeepControls)) Score.Stand.KeepControlsVisible = Settings.StandKeepControls;
+            if (e.PropertyName == nameof(SettingsViewModel.StandTurnPages)) Score.Stand.TurnPagesWhilePlaying = Settings.StandTurnPages;
         };
         Score.SingleKeyShortcuts = Settings.SingleKeyShortcuts;
         Score.Verbosity = Settings.Verbosity;
+        Score.Stand.KeepControlsVisible = Settings.StandKeepControls;
+        Score.Stand.TurnPagesWhilePlaying = Settings.StandTurnPages;
+        Score.Stand.HintSeen = Settings.StandHintSeen;
+        Score.Stand.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MusicStandViewModel.HintSeen) && Score.Stand.HintSeen) Settings.StandHintSeen = true;
+        };
     }
 
     public StartViewModel Start { get; }
@@ -515,8 +524,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnScreenChanged(Screen value)
     {
-        // Leaving a screen stops "Listen to this bar".
+        // Leaving a screen stops "Listen to this bar" and closes the music stand.
         Score.StopListening(announce: false);
+        if (value != Screen.Score) Score.Stand.Leave(announce: false);
         _announcer.Announce(_s[$"Screen_{value}"], AnnouncementKind.Status);
     }
 
@@ -557,7 +567,8 @@ public sealed partial class MainViewModel : ObservableObject
             Screen.SourceKind => Screen.Start,
             // After a failure: back to the score being re-arranged, or to the choice with the source kept.
             Screen.Transcribing => _result is not null ? Screen.Score : Screen.SourceKind,
-            // The part view goes back to the full score; the full score goes Home.
+            // The music stand closes first; the part view goes back to the full score; the full score goes Home.
+            Screen.Score when Score.Stand.IsOpen => LeaveStand(),
             Screen.Score when Score.SelectedPartIndex >= 0 => BackToFullScore(),
             Screen.Score => Screen.Start,
             Screen.Review => Screen.Score,
@@ -565,6 +576,19 @@ public sealed partial class MainViewModel : ObservableObject
             Screen.Error => Screen.Start,
             _ => Screen,
         };
+    }
+
+    private Screen LeaveStand()
+    {
+        Score.Stand.Leave();
+        return Screen.Score;
+    }
+
+    /// <summary>Library → Open on the music stand: the score, then the stand, in one step.</summary>
+    public async Task OpenOnMusicStandAsync(LibraryItem item)
+    {
+        await OpenLibraryItemAsync(item);
+        if (Screen == Screen.Score && Score.IsLoaded) Score.Stand.Enter();
     }
 
     private Screen BackToFullScore()

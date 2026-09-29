@@ -33,6 +33,13 @@
         <ResourceDictionary x:Key="HighContrast" />
     </ResourceDictionary.ThemeDictionaries>
 
+    <!-- Music stand glyphs (Segoe Fluent Icons; design/music-stand.md §8) until design/tokens/icons.json has them. -->
+    <x:String x:Key="BcIconMusicStand">&#xE740;</x:String>
+    <x:String x:Key="BcIconPagePrevious">&#xE76B;</x:String>
+    <x:String x:Key="BcIconPageNext">&#xE76C;</x:String>
+    <x:String x:Key="BcIconMinus">&#xE738;</x:String>
+    <x:String x:Key="BcIconPlus">&#xE710;</x:String>
+
     <!-- ===== Text ===== -->
 
     <!-- Screen titles in the display face (28 epx and up only). Landmarks for screen readers and focus targets. -->

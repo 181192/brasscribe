@@ -42,6 +42,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         Language = store.Get(nameof(Language), "system");
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
+        StandKeepControls = store.Get(nameof(StandKeepControls), false);
+        StandTurnPages = store.Get(nameof(StandTurnPages), true);
+        StandHintSeen = store.Get(nameof(StandHintSeen), false);
         Verbosity = store.Get(nameof(Verbosity), Verbosity.Standard);
         EngineAddress = store.Get(nameof(EngineAddress), EngineClient.DefaultBaseAddress.ToString());
         FirstRunDone = store.Get(nameof(FirstRunDone), false);
@@ -65,6 +68,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string Language { get; set; }
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; }
     [ObservableProperty] public partial bool ReduceMotion { get; set; }
+    /// <summary>Music stand: Keep the stand controls visible (off by default).</summary>
+    [ObservableProperty] public partial bool StandKeepControls { get; set; }
+    /// <summary>Music stand: Turn the pages while playing (on by default; design/music-stand.md §12.2).</summary>
+    [ObservableProperty] public partial bool StandTurnPages { get; set; }
+    /// <summary>The stand's "Tap the music to show the controls." hint was dismissed; it does not come back.</summary>
+    [ObservableProperty] public partial bool StandHintSeen { get; set; }
     [ObservableProperty] public partial Verbosity Verbosity { get; set; }
     [ObservableProperty] public partial string EngineAddress { get; set; }
 
@@ -93,6 +102,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnLanguageChanged(string value) => _store.Set(nameof(Language), value);
     partial void OnSingleKeyShortcutsChanged(bool value) => _store.Set(nameof(SingleKeyShortcuts), value);
     partial void OnReduceMotionChanged(bool value) => _store.Set(nameof(ReduceMotion), value);
+    partial void OnStandKeepControlsChanged(bool value) => _store.Set(nameof(StandKeepControls), value);
+    partial void OnStandTurnPagesChanged(bool value) => _store.Set(nameof(StandTurnPages), value);
+    partial void OnStandHintSeenChanged(bool value) => _store.Set(nameof(StandHintSeen), value);
     partial void OnVerbosityChanged(Verbosity value) => _store.Set(nameof(Verbosity), value);
 
     partial void OnEngineAddressChanged(string value)

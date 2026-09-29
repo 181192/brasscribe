@@ -34,9 +34,26 @@ public sealed partial class ScoreViewModel : ObservableObject
         if (original is not null) original.RangeEnded += (_, _) => EndListening();
         // The native core humanizes playback; the managed fallback plays the score's exact timing.
         if (core.IsNative && player.Player is Playback.AlphaTabScorePlayer alphaTab) alphaTab.Humanizer ??= core.Humanize;
+        Stand = new MusicStandViewModel(this, announcer, strings);
     }
 
     public PlayerViewModel Player { get; }
+
+    /// <summary>The music stand: the score alone, in pages (design/music-stand.md).</summary>
+    public MusicStandViewModel Stand { get; }
+
+    private bool _quietPart;
+
+    /// <summary>
+    /// Shows one part (or, with -1, every part) without the part view's side effects: no announcement
+    /// and no change to whose part is muted. The music stand speaks for itself and leaves the mix alone.
+    /// </summary>
+    public void ShowPartQuietly(int index)
+    {
+        _quietPart = true;
+        try { SelectedPartIndex = index; }
+        finally { _quietPart = false; }
+    }
 
     /// <summary>Set when the band sounds are not installed: one line above the player says so.</summary>
     public bool BandSoundsMissing => Player.Player is AlphaTabScorePlayer { SoundsMissingFrom: not null };
@@ -292,7 +309,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         OnPropertyChanged(nameof(WrittenLabel));
         OnPropertyChanged(nameof(PartHeader));
         if (_nav is null || value < 0) return;
-        if (value < Player.Parts.Count)
+        if (value < Player.Parts.Count && !_quietPart)
         {
             if (Player.MuteMyPart) Player.MuteMyPart = false; // unmute the part that was yours
             Player.PlayAlongPart = Player.Parts[value];
@@ -302,7 +319,7 @@ public sealed partial class ScoreViewModel : ObservableObject
         var part = Document!.Parts[value];
         string name = Language == "nb" ? part.NameNb ?? part.Name : part.Name;
         string mode = _nav.SetPitchMode(ConcertPitch ? PitchMode.Concert : PitchMode.Written);
-        _announcer.Announce(_s.Format("Score_PartShown", name) + " " + mode);
+        if (!_quietPart) _announcer.Announce(_s.Format("Score_PartShown", name) + " " + mode);
         Sync(_nav.Text, announce: false);
         RebuildTalkingLines();
     }
@@ -324,6 +341,7 @@ public sealed partial class ScoreViewModel : ObservableObject
     public bool Execute(ScoreCommand command)
     {
         if (_nav is null) return false;
+        if (ExecuteStand(command)) return true;
         NavigationResult? r = command switch
         {
             ScoreCommand.NextNote => _nav.NextNote(),
@@ -385,6 +403,27 @@ public sealed partial class ScoreViewModel : ObservableObject
             default: return false;
         }
         return true;
+    }
+
+    /// <summary>The stand's own commands; inside the stand, bar moves go through the player so one bar drives the pages.</summary>
+    private bool ExecuteStand(ScoreCommand command)
+    {
+        switch (command)
+        {
+            case ScoreCommand.ToggleStand: Stand.Toggle(); return true;
+            case ScoreCommand.LeaveStand: Stand.Leave(); return true;
+        }
+        if (!Stand.IsOpen) return command is ScoreCommand.NextPage or ScoreCommand.PreviousPage or ScoreCommand.FirstPage or ScoreCommand.LastPage;
+        switch (command)
+        {
+            case ScoreCommand.NextPage: Stand.NextPage(); return true;
+            case ScoreCommand.PreviousPage: Stand.PreviousPage(); return true;
+            case ScoreCommand.FirstPage: Stand.FirstPage(); return true;
+            case ScoreCommand.LastPage: Stand.LastPage(); return true;
+            case ScoreCommand.NextBar: Player.NextBarCommand.Execute(null); return true;
+            case ScoreCommand.PreviousBar: Player.PreviousBarCommand.Execute(null); return true;
+            default: return false;
+        }
     }
 
     [RelayCommand]

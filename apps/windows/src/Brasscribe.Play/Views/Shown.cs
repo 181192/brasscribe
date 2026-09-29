@@ -17,6 +17,9 @@ public static class Shown
     public static Visibility HasText(string? value) => Of(Screens.HasText(value));
     public static Visibility HasNotes(int count) => Of(Screens.HasNotes(count));
     public static Visibility Both(bool a, bool b) => Of(Screens.Both(a, b));
+    public static Visibility If(bool value) => Of(Screens.Is(value));
+    public static Visibility Neither(bool a, bool b) => Of(Screens.Neither(a, b));
+    public static Visibility AndNot(bool a, bool b) => Of(Screens.AndNot(a, b));
     public static Visibility UncertainOpen(bool kept, bool veryUncertain) => Of(Screens.UncertainOpen(kept, veryUncertain));
     public static Visibility VeryUncertainOpen(bool kept, bool veryUncertain) => Of(Screens.VeryUncertainOpen(kept, veryUncertain));
 
