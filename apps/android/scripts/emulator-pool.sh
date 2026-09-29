@@ -180,6 +180,9 @@ acquire() {
     stop "$serial"; die "$serial did not come up"
   fi
   "$ADB" -s "$serial" shell input keyevent 82 >/dev/null 2>&1 || true   # unlock the screen
+  # A fresh instance shows "Viewing full screen … Got it" over the first immersive screen (the music
+  # stand), which hides the app from the tests. Confirmed up front, as a user would have done once.
+  "$ADB" -s "$serial" shell settings put secure immersive_mode_confirmations confirmed >/dev/null 2>&1 || true
   lease "$serial" "$owner" "$ttl" "$pid"
   log "$serial booted in $t s; export ANDROID_SERIAL=$serial"
   echo "$serial"
