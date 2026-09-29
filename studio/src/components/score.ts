@@ -235,9 +235,9 @@ export class ScoreElement extends HTMLElement {
       this.api.render();
     };
     for (const q of queries) q.addEventListener("change", onChange);
-    // The Appearance setting pins the theme with data-theme on <html> (theme.ts).
+    // The Appearance setting pins the theme with data-theme (and Pink with data-palette) on <html> (theme.ts).
     const pinned = new MutationObserver(onChange);
-    pinned.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    pinned.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-palette"] });
     this.themeWatch = () => {
       queries.forEach((q) => q.removeEventListener("change", onChange));
       pinned.disconnect();

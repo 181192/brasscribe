@@ -20,6 +20,7 @@ describe("appearance", () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-palette");
     stubMedia([]);
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -94,7 +95,80 @@ describe("appearance", () => {
     expect(seen).toEqual(["light"]);
   });
 
+  it("keeps Pink hidden until it is unlocked, and remembers the unlock", async () => {
+    let th = await fresh();
+    expect(th.pinkUnlocked()).toBe(false);
+    expect(th.unlockPink()).toBe(true);
+    expect(th.pinkUnlocked()).toBe(true);
+    expect(th.unlockPink()).toBe(false); // nothing new to announce
+    expect(localStorage.getItem(th.PINK_STORE)).toBe("1");
+    th = await fresh();
+    expect(th.pinkUnlocked()).toBe(true);
+  });
+
+  it("counts a stored Pink as unlocked", async () => {
+    localStorage.setItem("brasscribe.studio.theme", "pink");
+    const th = await fresh();
+    expect(th.choice()).toBe("pink");
+    expect(th.pinkUnlocked()).toBe(true);
+  });
+
+  it("tells listeners when Pink is unlocked", async () => {
+    const th = await fresh();
+    let calls = 0;
+    th.onThemeChange(() => calls++);
+    th.unlockPink();
+    th.unlockPink();
+    expect(calls).toBe(1);
+  });
+
+  it("sets data-palette for Pink, follows the system's light or dark, and can be switched off", async () => {
+    const th = await fresh();
+    th.setChoice("dark");
+    th.setChoice("pink");
+    const root = document.documentElement;
+    expect(root.getAttribute("data-palette")).toBe("pink");
+    expect(root.hasAttribute("data-theme")).toBe(false);
+    expect(localStorage.getItem(th.THEME_STORE)).toBe("pink");
+    th.setChoice("light");
+    expect(root.hasAttribute("data-palette")).toBe(false);
+    expect(root.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("lets more contrast and forced colours win over Pink", async () => {
+    const th = await fresh();
+    expect(th.resolvePalette("pink", null)).toBe("pink");
+    expect(th.resolvePalette("pink", "more")).toBeNull();
+    expect(th.resolvePalette("pink", "forced")).toBeNull();
+    expect(th.resolvePalette("dark", null)).toBeNull();
+    expect(th.resolveTheme("pink", null)).toBeNull();
+
+    stubMedia(["(prefers-contrast: more)"]);
+    th.setChoice("pink");
+    expect(document.documentElement.hasAttribute("data-palette")).toBe(false);
+    expect(th.choice()).toBe("pink");
+    stubMedia([]);
+    th.apply();
+    expect(document.documentElement.getAttribute("data-palette")).toBe("pink");
+  });
+
+  it("unlocks after five activations in a row, each within 1.5 s", async () => {
+    const th = await fresh();
+    const c = new th.TapCounter();
+    expect([0, 400, 800, 1200].map((t) => c.tap(t))).toEqual([false, false, false, false]);
+    expect(c.tap(1600)).toBe(true);
+
+    const slow = new th.TapCounter();
+    for (const t of [0, 1000, 2000, 3000]) slow.tap(t);
+    expect(slow.tap(5000)).toBe(false); // the 2 s gap started a new run
+    expect([5500, 6000, 6500].map((t) => slow.tap(t))).toEqual([false, false, false]);
+    expect(slow.tap(7000)).toBe(true);
+  });
+
   it("has the §10 copy in both languages", () => {
+    expect(messages.en["app.theme.pink"]).toBe("Pink");
+    expect(messages.nb["app.theme.pink"]).toBe("Rosa");
+    expect(messages.nb["app.theme.pinkUnlocked"]).toBe("🎺 Rosa låst opp");
     expect(messages.en["app.theme.system"]).toBe("Match system");
     expect(messages.nb["app.theme.system"]).toBe("Følg systemet");
     expect(messages.nb["app.appearance"]).toBe("Utseende");

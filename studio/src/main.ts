@@ -9,8 +9,8 @@ import "./components/stagegraph";
 import "./components/stems";
 import type { ScoreElement } from "./components/score";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
-import { choice, contrast, onThemeChange, parseChoice, setChoice, watchContrast } from "./theme";
-import { clear, h, wireMenus } from "./ui/dom";
+import { choice, contrast, onThemeChange, parseChoice, pinkUnlocked, setChoice, TapCounter, unlockPink, watchContrast } from "./theme";
+import { announce, clear, h, wireMenus } from "./ui/dom";
 import { lockup } from "./ui/icons";
 import { benchView } from "./views/bench";
 import { compareView } from "./views/compare";
@@ -114,7 +114,15 @@ function translateChrome(): void {
 
 /** The Appearance picker and, while a system contrast setting wins, the line that says so. */
 function renderTheme(): void {
-  (document.getElementById("theme-select") as HTMLSelectElement).value = choice();
+  const select = document.getElementById("theme-select") as HTMLSelectElement;
+  // Pink is listed only once it is unlocked (design/system.md §10).
+  let pink = select.querySelector<HTMLOptionElement>('option[value="pink"]');
+  if (pinkUnlocked() && !pink) {
+    pink = h("option", { value: "pink" }) as HTMLOptionElement;
+    select.append(pink);
+  }
+  if (pink) pink.textContent = t("app.theme.pink");
+  select.value = choice();
   const note = document.getElementById("theme-note")!;
   const c = contrast();
   note.hidden = !c;
@@ -210,6 +218,17 @@ onLangChange(() => {
   route(true);
 });
 document.getElementById("brand")!.replaceChildren(lockup());
+// Five activations of the lockup in a row unlock Pink under Appearance: click, tap, Enter or a screen
+// reader all count. The note shows for a few seconds and is announced once.
+const brandTaps = new TapCounter();
+document.getElementById("brand")!.addEventListener("click", () => {
+  if (!brandTaps.tap(performance.now()) || !unlockPink()) return;
+  const message = t("app.theme.pinkUnlocked");
+  announce(message);
+  const note = h("p", { class: "pink-note", "aria-hidden": "true" }, message);
+  document.body.append(note);
+  setTimeout(() => note.remove(), 4000);
+});
 translateChrome();
 shortcutsDialog();
 engineStatus();

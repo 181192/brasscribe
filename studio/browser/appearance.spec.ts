@@ -38,3 +38,48 @@ test("forced colours still drop the pinned theme", async ({ page }) => {
   await page.goto("/#/viewer");
   expect(await theme(page)).toBeNull();
 });
+
+// Pink, the hidden palette: follows the system's light or dark, and steps aside for more contrast.
+const palette = (page: Page) => page.evaluate(() => document.documentElement.getAttribute("data-palette"));
+
+for (const [system, expected] of [["light", "#FFF6F9"], ["dark", "#1B1017"]] as const) {
+  test(`Pink on a ${system} system uses pink ${system}`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink"));
+    await page.emulateMedia({ colorScheme: system, contrast: "no-preference" });
+    await page.goto("/#/viewer");
+    expect(await palette(page)).toBe("pink");
+    expect(await theme(page)).toBeNull();
+    expect(await bg(page)).toBe(expected);
+    expect(await scheme(page)).toBe(system);
+    await expect(page.locator("#theme-select")).toHaveValue("pink");
+  });
+}
+
+test("more contrast wins over Pink", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink"));
+  await page.emulateMedia({ colorScheme: "light", contrast: "more" });
+  await page.goto("/#/viewer");
+  expect(await palette(page)).toBeNull();
+  expect(await bg(page)).toBe("#FFFFFF");
+});
+
+test("five activations of the lockup unlock Pink, from the keyboard too", async ({ page }) => {
+  // On Runs, the lockup's own page, so activating it does not move focus to a new view.
+  await page.goto("/#/runs");
+  const pink = page.locator('#theme-select option[value="pink"]');
+  await expect(pink).toHaveCount(0);
+  await page.locator("#brand").focus();
+  for (let i = 0; i < 5; i++) await page.keyboard.press("Enter");
+  await expect(pink).toHaveCount(1);
+  await expect(pink).toHaveText("Pink");
+  await expect(page.locator("#announcer")).toHaveText("🎺 Pink unlocked");
+  await expect(page.locator(".pink-note")).toBeVisible();
+  await page.selectOption("#theme-select", "pink");
+  expect(await palette(page)).toBe("pink");
+  await page.reload();
+  await expect(pink).toHaveCount(1);
+  // Switching it off: any other choice.
+  await page.selectOption("#theme-select", "system");
+  expect(await palette(page)).toBeNull();
+  await expect(pink).toHaveCount(1);
+});
