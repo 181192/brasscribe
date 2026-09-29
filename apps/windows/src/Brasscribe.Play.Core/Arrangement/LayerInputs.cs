@@ -5,6 +5,9 @@ using System.Text;
 namespace Brasscribe.Play.Core.Arrangement;
 
 /// <summary>Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.</summary>
+/// <param name="Times">Frame times in seconds.</param>
+/// <param name="PitchHz">SwiftF0 pitch per frame in Hz (0 or NaN where there is none).</param>
+/// <param name="LoudnessDb">Frame loudness in dB.</param>
 /// <param name="Confidence">SwiftF0 voicing confidence per frame, when the contour has it: which frames the core's
 /// pitch-change onsets trust.</param>
 public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb, double[]? Confidence = null);

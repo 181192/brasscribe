@@ -1,7 +1,7 @@
 """Where fast notes and two-note alternations are lost: a stage-by-stage waterfall of the solo path.
 
 Every clip of the fast-notes set (fast_notes.py: frozen tracker outputs in eval/fixtures/fast-notes, or
-data/eval/fast-notes) goes through the real solo path, arrange_layers_song with only a solo layer and Basic
+data/fast-notes/fast-notes) goes through the real solo path, arrange_layers_song with only a solo layer and Basic
 Pitch standing in for MuScriptor (as on the phone), with the oracle beats and with Beat This! small0.
 It is scored at each stage against the performed ground truth:
 

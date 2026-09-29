@@ -24,7 +24,7 @@ Renderers:
     python -m brasscribe_eval.fast_notes track          # SwiftF0 notes + contour, Basic Pitch, Beat This! small0
     python -m brasscribe_eval.fast_notes freeze         # tracker outputs + references -> eval/fixtures/fast-notes
 
-Clips go to data/eval/fast-notes/<id>/. Tracking runs the adapters' own environments in batches
+Clips go to data/fast-notes/fast-notes/<id>/. Tracking runs the adapters' own environments in batches
 (the main checkout's ml/adapters when this checkout has none).
 """
 
@@ -45,7 +45,7 @@ import soundfile as sf
 
 from .paths import ADAPTERS, DATA, ROOT
 
-OUT = DATA / "eval" / "fast-notes"
+OUT = DATA / "fast-notes" / "fast-notes"
 FIXTURES = ROOT / "eval" / "fixtures" / "fast-notes"
 RAW = DATA / "sounds" / "raw"
 BAND_SF2 = DATA / "sounds" / "band" / "brasscribe-band.sf2"
@@ -537,7 +537,7 @@ def freeze(clips: list[Path], prefix: str = "", render: str | None = None) -> No
                 shutil.copy(c / f, d / f)
 
 
-SEP_OUT = DATA / "eval" / "fast-notes-sep"
+SEP_OUT = DATA / "fast-notes" / "fast-notes-sep"
 SEP_CLIPS = ("alt-i1-t120-s4-slur-samples", "alt-i2-t120-s6-slur-samples", "alt-i12-t120-s4-slur-samples",
              "alt-i3-t120-s6-tongue-samples", "run-i0-t120-s4-slur-samples", "run-i0-t120-s6-tongue-samples",
              "arp-i0-t120-s4-tongue-samples", "repeat-i0-t120-s4-tongue-samples",
@@ -596,7 +596,7 @@ def separated(src: Path = OUT, dst: Path = SEP_OUT) -> list[Path]:
 
 URMP = DATA / "urmp" / "Dataset"
 URMP_TRACKED = DATA / "runs" / "music-core" / "solo-beats" / "urmp"
-URMP_OUT = DATA / "eval" / "fast-notes-urmp"
+URMP_OUT = DATA / "fast-notes" / "fast-notes-urmp"
 FAST_IOI = 0.16  # seconds: a URMP note this close to a neighbour is a "fast" note (the figure)
 
 
@@ -633,7 +633,7 @@ def urmp(dst: Path = URMP_OUT) -> list[Path]:
 
 
 VIBRATO_IN = DATA / "eval" / "fast-notes-vibrato"  # vib-<midi>-{dry,hall}.wav: Iowa MIS trumpet vibrato sustains
-VIBRATO_OUT = DATA / "eval" / "fast-notes-realvib"
+VIBRATO_OUT = DATA / "fast-notes" / "fast-notes-realvib"
 
 
 def real_vibrato(src: Path = VIBRATO_IN, dst: Path = VIBRATO_OUT) -> list[Path]:
@@ -660,7 +660,7 @@ def real_vibrato(src: Path = VIBRATO_IN, dst: Path = VIBRATO_OUT) -> list[Path]:
     return out
 
 
-URMP_SEP_OUT = DATA / "eval" / "fast-notes-urmpsep"
+URMP_SEP_OUT = DATA / "fast-notes" / "fast-notes-urmpsep"
 URMP_SOLO_TRUMPET = ("09_Jesus_tpt_vn", "10_March_tpt_sax", "18_Nocturne_vn_fl_tpt", "20_Pavane_tpt_vn_vc")
 
 
@@ -697,7 +697,7 @@ def urmp_separated(dst: Path = URMP_SEP_OUT) -> list[Path]:
 
 
 CHORALES_SOLO = ROOT / "eval" / "fixtures" / "choralebricks-solo"
-CHORALES_OUT = DATA / "eval" / "fast-notes-chorales"
+CHORALES_OUT = DATA / "fast-notes" / "fast-notes-chorales"
 
 
 def chorales(dst: Path = CHORALES_OUT) -> list[Path]:

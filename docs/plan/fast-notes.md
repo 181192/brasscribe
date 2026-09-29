@@ -61,7 +61,7 @@ slurred alternation hard:
 ## 1. The eval set
 
 Code: `eval/brasscribe_eval/fast_notes.py` builds the set, and `fast_notes_bench.py` measures it. Clips are in
-`data/eval/fast-notes*/`. Nothing goes into `data/golden`.
+`data/fast-notes/fast-notes*/` (outside data/eval, whose scans expect the eval-set layout). Nothing goes into `data/golden`.
 
 | Set | Clips | Ground truth | Licence |
 |---|---|---|---|
@@ -134,7 +134,7 @@ is smaller.
 
 ```
 python -m brasscribe_eval.fast_notes build|track|urmp|chorales|separate
-python -m brasscribe_eval.fast_notes_bench --root data/eval/fast-notes [--beats oracle,small0]
+python -m brasscribe_eval.fast_notes_bench --root data/fast-notes/fast-notes [--beats oracle,small0]
 python -m brasscribe_eval.fast_notes_bench --root … --ablate today,hold40,line30,grid-collide,…
 python -m brasscribe_eval.fast_notes_bench --mikkel --ablate today,…
 ```
