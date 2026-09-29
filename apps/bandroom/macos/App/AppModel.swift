@@ -23,6 +23,10 @@ final class AppModel {
     let bundledWorkspace: URL? = Bundle.main.resourceURL.map { $0.appending(path: "workspace") }
         .flatMap { FileManager.default.fileExists(atPath: $0.appending(path: "pixi.toml").path) ? $0 : nil }
     private(set) var bundledStamp: WorkspaceStamp?
+    /// The saved Hugging Face key, read in the background: a Keychain prompt after an update mustn't hold up the app.
+    let savedKey: SavedKey
+    /// Setup opens at the key step next time (Enter the key again).
+    var setupOpensAtKey = false
     /// The three model downloads (docs/plan/apps-plan.md §7), from their makers' own release URLs.
     let downloader: ModelDownloader
     /// Window requests wait here until SwiftUI's openWindow is available (a reopen event can come first).
@@ -101,11 +105,14 @@ final class AppModel {
                                          paths: paths, computerName: ComputerName.shown(system: systemName, custom: customName),
                                          adminToken: token,
                                          bandSounds: bandSounds)
-        supervisor = EngineSupervisor(configuration: config, baseEnvironment: AppModel.engineBaseEnvironment(env))
+        // Without the saved key: it's read in the background and handed over when it comes.
+        supervisor = EngineSupervisor(configuration: config, baseEnvironment: env)
         sampler = HostSampler(volume: paths.data)
-        let hfToken = env["HF_TOKEN"]
+        let hfToken = env["HF_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
+        let savedKey = SavedKey(store: KeychainStore())
+        self.savedKey = savedKey
         downloader = ModelDownloader(models: AppModel.modelsDir(paths), hub: ModelCatalog.hubCache(environment: env),
-                                     token: { hfToken ?? HuggingFaceKey.read() })
+                                     token: { hfToken ?? savedKey.value })
         #if DEBUG
         demo = env["BANDROOM_DEMO"] != nil
         #else
@@ -124,14 +131,35 @@ final class AppModel {
         supervisor.onFailure = { [weak self] _ in self?.notifyFailure() }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
+        savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
         log.write("Bandroom \(Bundle.main.shortVersion) starting; data \(paths.data.path); source \(source)")
+        // HF_TOKEN in the environment wins, so there's nothing to read then.
+        if hfToken == nil && !demo { readSavedKey() }
     }
 
-    /// Adds the Hugging Face key from the Keychain for the model downloads.
-    static func engineBaseEnvironment(_ env: [String: String]) -> [String: String] {
-        var env = env
-        if env["HF_TOKEN"] == nil, let key = HuggingFaceKey.read() { env["HF_TOKEN"] = key }
-        return env
+    /// Reads the key in the background (also Try again on the panel's note); the engine gets it when it comes.
+    func readSavedKey() {
+        guard !savedKey.isReading else { return }
+        let started = ContinuousClock.now
+        savedKey.read()
+        Task { [weak self] in
+            guard let self else { return }
+            while self.savedKey.isReading { await self.savedKey.settled(within: .seconds(60)) }
+            let took = ContinuousClock.now - started
+            switch self.savedKey.state {
+            case .found: self.logger.write("Hugging Face key read from the Keychain (\(took))")
+            case .unreadable:
+                self.logger.write("Hugging Face key couldn't be read from the Keychain (status \(self.savedKey.lastFailure ?? 0), "
+                                  + "after \(took)); running without it")
+            default: break
+            }
+        }
+    }
+
+    /// Enter the key again: setup, at the key step.
+    func enterKeyAgain() {
+        setupOpensAtKey = true
+        openWindow("setup")
     }
 
     func log(_ line: String) { logger.write(line) }
@@ -177,6 +205,9 @@ final class AppModel {
         Task { [weak self] in
             guard let self else { return }
             await self.updateWorkspaceIfNeeded()
+            // A quick key read makes the first launch; one waiting on a Keychain prompt doesn't hold up the
+            // engine, which restarts with the key if it's allowed later.
+            await self.savedKey.settled(within: .seconds(2))
             if !self.isRunning { self.supervisor.start() }
         }
     }
@@ -374,6 +405,9 @@ final class AppModel {
             lines.append("Models folder: \(downloader.models.path); Hugging Face cache: \(downloader.hub.path)")
         }
         if case .failed(let e) = downloader.phase { lines.append("Download: \(e)") }
+        if savedKey.state == .unreadable {
+            lines.append("Hugging Face key: couldn't be read from the Keychain (status \(savedKey.lastFailure ?? 0))")
+        }
         if let host { lines.append(String(format: "CPU %.0f%%, memory free %.0f%%, disk free %d GB", host.cpuPercent, host.memoryFreePercent, host.diskFreeGB)) }
         return lines.joined(separator: "\n")
     }
@@ -416,13 +450,16 @@ final class AppModel {
         } catch {
             logger.write("remove: \(error)")
         }
-        HuggingFaceKey.delete()
         if let id = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: id) }
-        let app = Bundle.main.bundleURL
-        NSWorkspace.shared.recycle([app]) { _, error in
-            // Where the app can't be moved (a read-only disk image), show it so it can be dragged to the Bin.
-            if error != nil { NSWorkspace.shared.activateFileViewerSelecting([app]) }
-            DispatchQueue.main.async { NSApp.terminate(nil) }
+        Task {
+            // Off the main thread: the Keychain may ask first.
+            await savedKey.delete()
+            let app = Bundle.main.bundleURL
+            NSWorkspace.shared.recycle([app]) { _, error in
+                // Where the app can't be moved (a read-only disk image), show it so it can be dragged to the Bin.
+                if error != nil { NSWorkspace.shared.activateFileViewerSelecting([app]) }
+                DispatchQueue.main.async { NSApp.terminate(nil) }
+            }
         }
     }
 
@@ -449,12 +486,16 @@ final class AppModel {
     /// The engine reads the key from its environment (the adapter asks Hugging Face for the band writer), so a
     /// new key means a restart, after the score being made.
     func huggingFaceKeyChanged() {
-        let env = AppModel.engineBaseEnvironment(environment)
-        guard env["HF_TOKEN"] != supervisor.baseEnvironment["HF_TOKEN"] else { return }
-        supervisor.baseEnvironment = env
-        guard isRunning else { return }
-        if isBusy { restartWhenDone = true } else { restartNow() }
+        guard !demo else { return }
+        switch supervisor.useHuggingFaceKey(savedKey.value, environment: environment, busy: isBusy) {
+        case .none: break
+        case .restartNow: restartNow()
+        case .restartWhenDone: restartWhenDone = true
+        }
     }
+
+    /// The saved key is there but the Keychain didn't hand it over (Deny on the prompt after an update).
+    var showKeyUnreadableNote: Bool { savedKey.state == .unreadable }
 
     /// Set by the setup window while it's on screen.
     var isSetupWindowOpen = false
@@ -606,25 +647,50 @@ enum LANAddresses {
     }
 }
 
-/// The Hugging Face access key, kept in the Keychain, never in a file (§3.2 step 2).
-enum HuggingFaceKey {
+/// The Hugging Face access key, kept in the Keychain, never in a file (§3.2 step 2). Every call can block while
+/// macOS asks the user, so `SavedKey` makes them off the main thread.
+///
+/// Why a prompt can still appear: this is a legacy (file-based) Keychain item, whose access list names the app by
+/// its code signature. Bandroom is signed ad hoc, so each update is a different app to the Keychain, and macOS
+/// asks (SecurityAgent) before handing the key over. That prompt used to freeze Bandroom at launch; now it only
+/// delays the key, and Deny leaves Bandroom running without it (the panel says so and offers to enter it again).
+/// Always Allow keeps it quiet until the next update.
+///
+/// Weighed and not taken:
+/// - `kSecUseAuthenticationUI: kSecUseAuthenticationUIFail` never prompts, but after every update the key would be
+///   unreadable without a word, and people would have to paste it again each time.
+/// - The data-protection Keychain (`kSecUseDataProtectionKeychain`) grants access by the app's identity rather
+///   than its code hash, so updates wouldn't prompt. It needs an application-identifier / keychain access group
+///   entitlement backed by a Team ID, which an ad-hoc signature doesn't have (Apple TN3137, "On Mac keychain APIs
+///   and implementations"). Move the key there once Bandroom is signed with a Developer ID.
+struct KeychainStore: SecretStore {
     static let service = "no.brasscribe.bandroom.huggingface"
 
-    static func read() -> String? {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+    func read() -> SecretRead {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: Self.service,
                                 kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
         var out: AnyObject?
-        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let data = out as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        let status = SecItemCopyMatching(q as CFDictionary, &out)
+        switch status {
+        case errSecSuccess:
+            guard let data = out as? Data, let key = String(data: data, encoding: .utf8), !key.isEmpty else { return .none }
+            return .found(key)
+        case errSecItemNotFound:
+            return .none
+        default:
+            // errSecUserCanceled (Deny), errSecAuthFailed, errSecInteractionNotAllowed (no one to ask), …
+            return .unreadable(status: status)
+        }
     }
 
-    static func delete() {
-        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)
+    func delete() {
+        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: Self.service] as CFDictionary)
     }
 
-    @discardableResult
-    static func save(_ key: String) -> Bool {
-        let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
+    /// Deletes the old item first; its access list may name an earlier build. When that delete is refused, the add
+    /// finds the old item (errSecDuplicateItem) and the save fails, which setup says.
+    func save(_ key: String) -> Bool {
+        let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: Self.service]
         SecItemDelete(base as CFDictionary)
         var add = base
         add[kSecValueData as String] = Data(key.utf8)

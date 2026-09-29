@@ -381,12 +381,32 @@
         }
       }
     },
+    "Brasscribe couldn't read your Hugging Face key": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe fikk ikke lest Hugging Face-nøkkelen din"
+          }
+        }
+      }
+    },
     "Brasscribe couldn't save the download": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe fikk ikke lagret nedlastingen"
+          }
+        }
+      }
+    },
+    "Brasscribe couldn't save the key in your Keychain. Choose Allow if your Mac asks, then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe fikk ikke lagret nøkkelen i nøkkelringen. Velg Tillat hvis Macen spør, og prøv igjen."
           }
         }
       }
@@ -837,6 +857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Motor fra en utsjekk (mappe med pixi.toml)"
+          }
+        }
+      }
+    },
+    "Enter the key again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriv inn nøkkelen på nytt"
           }
         }
       }
@@ -2287,6 +2317,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart."
+          }
+        }
+      }
+    },
+    "Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøkkelringen ga ikke tilgang, så Brasscribe kjører uten nøkkelen inntil videre. Partitur for fullt band kan trenge den."
+          }
+        }
+      }
+    },
+    "Your Keychain didn't let Brasscribe read the saved key. Paste it here again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøkkelringen lot ikke Brasscribe lese den lagrede nøkkelen. Lim den inn her på nytt."
           }
         }
       }

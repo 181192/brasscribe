@@ -11,8 +11,13 @@ struct SetupView: View {
     @State private var finishing = false
     @State private var pasteOpen = false
     @State private var key = ""
-    @State private var keySaved = HuggingFaceKey.read() != nil
+    /// Saving waits for the Keychain, which may ask first.
+    @State private var saving = false
+    @State private var saveFailed = false
     @State private var startAtLogin = true
+
+    /// From the key read at launch, never a Keychain read here (it can wait for a prompt).
+    private var keySaved: Bool { app.savedKey.state == .found }
 
     private let steps: [LocalizedStringKey] = ["Check this computer", "Accept one licence", "Download", "Ready"]
 
@@ -52,14 +57,23 @@ struct SetupView: View {
         .background(Color.Brasscribe.bg)
         .foregroundStyle(Color.Brasscribe.text)
         .onDisappear { app.isSetupWindowOpen = false }
+        .onChange(of: app.setupOpensAtKey) { _, now in if now { openAtKey() } }
         .onAppear {
             app.isSetupWindowOpen = true
+            if app.setupOpensAtKey { openAtKey(); return }
             // Finish setting up: straight to what is left. The band writer without a key starts at the licence.
             guard app.setupComplete else { return }
             finishing = true
             let missing = app.models.missing
             step = missing.contains(.bandWriter) && !keySaved && !app.downloader.isActive ? 1 : 2
         }
+    }
+
+    /// Enter the key again (the panel's note when the Keychain didn't hand it over).
+    private func openAtKey() {
+        app.setupOpensAtKey = false
+        finishing = app.setupComplete
+        step = 1
     }
 
     // MARK: 1
@@ -124,9 +138,16 @@ struct SetupView: View {
                     }
                     .buttonStyle(.brOutline)
                 }
-                if keySaved {
+                if saveFailed {
+                    Label("Brasscribe couldn't save the key in your Keychain. Choose Allow if your Mac asks, then try again.",
+                          systemImage: "exclamationmark.triangle")
+                        .brFont(.callout).fixedSize(horizontal: false, vertical: true)
+                } else if keySaved {
                     Label("The key is saved in your Keychain.", systemImage: "checkmark.circle")
                         .brFont(.callout)
+                } else if app.savedKey.state == .unreadable {
+                    Label("Your Keychain didn't let Brasscribe read the saved key. Paste it here again.", systemImage: "key")
+                        .brFont(.callout).fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer()
@@ -138,18 +159,27 @@ struct SetupView: View {
                 }
                 Spacer()
                 Button {
-                    if !key.isEmpty {
-                        keySaved = HuggingFaceKey.save(key.trimmingCharacters(in: .whitespacesAndNewlines))
-                        app.huggingFaceKeyChanged()
+                    guard !key.isEmpty else { toDownloads(); return }
+                    saving = true
+                    saveFailed = false
+                    Task {
+                        // The engine gets the new key through savedKey.onChange.
+                        let ok = await app.savedKey.save(key)
+                        saving = false
+                        saveFailed = !ok
+                        if ok { toDownloads() }
                     }
-                    if case .failed = app.downloader.phase { app.downloader.resume() }
-                    step = 2
                 } label: { Text("Continue") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                     .keyboardShortcut(.defaultAction)
-                    .disabled(key.isEmpty && !keySaved)
+                    .disabled((key.isEmpty && !keySaved) || saving)
             }
         }
+    }
+
+    private func toDownloads() {
+        if case .failed = app.downloader.phase { app.downloader.resume() }
+        step = 2
     }
 
     // MARK: 3

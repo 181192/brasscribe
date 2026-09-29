@@ -49,7 +49,10 @@ NB = {
     "Back in about a minute. Phones reconnect by themselves.": "Tilbake om et minutt. Telefonene kobler seg til igjen selv.",
     "Band writer (MuScriptor)": "Bandskriver (MuScriptor)",
     "Brasscribe can't start": "Brasscribe kan ikke starte",
+    "Brasscribe couldn't read your Hugging Face key": "Brasscribe fikk ikke lest Hugging Face-nøkkelen din",
     "Brasscribe couldn't save the download": "Brasscribe fikk ikke lagret nedlastingen",
+    "Brasscribe couldn't save the key in your Keychain. Choose Allow if your Mac asks, then try again.":
+        "Brasscribe fikk ikke lagret nøkkelen i nøkkelringen. Velg Tillat hvis Macen spør, og prøv igjen.",
     "Brasscribe deleted it. Try again to fetch it afresh.": "Brasscribe har slettet den. Prøv igjen for å hente den på nytt.",
     "Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.":
         "Brasscribe gjør det tunge arbeidet her, så telefoner og nettbrett kan lage partitur for hele bandet. Opptakene blir på dine egne enheter.",
@@ -99,6 +102,7 @@ NB = {
     "Downloading": "Laster ned",
     "Downloading what Brasscribe needs": "Laster ned det Brasscribe trenger",
     "Engine from a checkout (folder with pixi.toml)": "Motor fra en utsjekk (mappe med pixi.toml)",
+    "Enter the key again": "Skriv inn nøkkelen på nytt",
     "Expanded": "Åpnet",
     "Fast: uses the graphics chip": "Rask: bruker grafikkbrikken",
     "Finding the beat": "Finner pulsen",
@@ -254,6 +258,10 @@ NB = {
         "Uten den kan ikke Brasscribe skrive ned et fullt band. Du kan legge den til senere.",
     "Work load": "Arbeidsmengde",
     "Writing down the notes": "Skriver ned tonene",
+    "Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.":
+        "Nøkkelringen ga ikke tilgang, så Brasscribe kjører uten nøkkelen inntil videre. Partitur for fullt band kan trenge den.",
+    "Your Keychain didn't let Brasscribe read the saved key. Paste it here again.":
+        "Nøkkelringen lot ikke Brasscribe lese den lagrede nøkkelen. Lim den inn her på nytt.",
     "You can close this window. Brasscribe keeps downloading and tells you when it's ready.":
         "Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart.",
     "full-band scores need one more step": "partitur for fullt band trenger ett steg til",

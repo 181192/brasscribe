@@ -48,6 +48,7 @@ struct StatusPanel: View {
             }
             lead
             primaryButton
+            if app.showKeyUnreadableNote { KeyUnreadableCard() }
             if app.isRunning || app.monitor.status != nil { phonesRow }
             if app.isRunning { thisComputer }
             actions
@@ -481,6 +482,33 @@ private struct CardIf: ViewModifier {
 }
 
 /// "This request has expired. Choose this computer on the phone again." [OK]
+/// The Keychain didn't hand over the saved key (Deny after an update). Brasscribe runs without it; this says so
+/// without taking the primary or the status, and offers the two ways back.
+struct KeyUnreadableCard: View {
+    @Environment(AppModel.self) private var app
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "key").font(.system(size: 16)).foregroundStyle(Color.Brasscribe.textMuted)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Brasscribe couldn't read your Hugging Face key").brFont(.bodyStrong)
+                    Text("Your Keychain didn't allow it, so Brasscribe runs without the key for now. Full-band scores may need it.")
+                        .brFont(.callout).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            HStack(spacing: 8) {
+                Button { app.readSavedKey() } label: { Text("Try again") }.buttonStyle(.brOutline)
+                    .disabled(app.savedKey.state == .reading)
+                Button { app.enterKeyAgain() } label: { Text("Enter the key again") }.buttonStyle(.brOutline)
+            }
+        }
+        .foregroundStyle(Color.Brasscribe.text)
+        .card(padding: 12)
+    }
+}
+
 struct ExpiredCard: View {
     @Environment(AppModel.self) private var app
     let name: String
