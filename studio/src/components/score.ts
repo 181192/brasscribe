@@ -8,7 +8,7 @@ import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
 import { soundFontBytes } from "../lib/soundfontstore";
-import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
+import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
 import { announce, clear, h, menu, nextId, prefersReducedMotion } from "../ui/dom";
@@ -83,6 +83,8 @@ function labelled(name: string, text: string): [SVGSVGElement, HTMLSpanElement] 
 export class ScoreElement extends HTMLElement {
   api: AT.AlphaTabApi | null = null;
   xml: XmlScore | null = null;
+  /** The kit each score-part asks for (percussionKits): alphaTab resets a percussion track to program 0. */
+  private kits: (number | null)[] = [];
   talking: TalkingScore | null = null;
   nav: Navigator | null = null;
   bars: BarSpan[] = [];
@@ -251,6 +253,7 @@ export class ScoreElement extends HTMLElement {
     const zipped = bytes[0] === 0x50 && bytes[1] === 0x4b;
     const text = zipped ? "" : typeof xml === "string" ? xml : new TextDecoder().decode(xml);
     try {
+      this.kits = zipped ? [] : percussionKits(text);
       this.xml = zipped ? null : parseMusicXml(text);
       this.talking = zipped ? null : buildTalkingScore(text);
     } catch {
@@ -364,7 +367,9 @@ export class ScoreElement extends HTMLElement {
     if (!this.band) return;
     const channels = playbackChannels(score.tracks.map((t) => t.staves.some((st) => st.isPercussion)));
     score.tracks.forEach((track, i) => {
-      const sound = this.band!.resolve(track.name, null, track.playbackInfo.program)?.sound ?? null;
+      const drums = track.staves.some((st) => st.isPercussion);
+      const program = drums ? this.kits[i] ?? track.playbackInfo.program : track.playbackInfo.program;
+      const sound = this.band!.resolve(track.name, null, program)?.sound ?? null;
       this.trackSounds.push(sound);
       track.playbackInfo.primaryChannel = channels[i];
       track.playbackInfo.secondaryChannel = channels[i];
@@ -372,7 +377,7 @@ export class ScoreElement extends HTMLElement {
         console.warn(`No band sound for part "${track.name}" (program ${track.playbackInfo.program}).`);
         return;
       }
-      track.playbackInfo.program = sound.percussion ? 0 : sound.program;
+      track.playbackInfo.program = sound.program; // percussion: the kit, on the drum channel's bank 128
       track.playbackInfo.bank = sound.percussion ? 0 : sound.bank;
       for (const staff of track.staves)
         for (const bar of staff.bars)

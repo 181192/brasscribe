@@ -9,8 +9,9 @@ when a brass part's players use anything but a real-sample target, when a target
 not cover the instrument's professional range, or when partsound-vectors.json is out of date.
 
 The rules live in sounds/mapping.json `resolve` (normalize, then exact, alias, keyword,
-instrument, GM program). sounds/partsound-vectors.json holds input -> expected preset rows that
-the Apple, Android, Windows and Studio tests read, so the four resolvers cannot drift apart.
+instrument, GM program; a percussion part then takes the kit its <midi-program> selects,
+`kit_programs`, else the band kit). sounds/partsound-vectors.json holds input -> expected preset
+rows that the Apple, Android, Windows and Studio tests read, so the four resolvers cannot drift apart.
 """
 
 from __future__ import annotations
@@ -63,7 +64,10 @@ def resolve(name: str, mapping: dict, instrument: str | None = None, program: in
     if hit is None:
         return None
     bs = parts[hit]["band_soundfont"]
-    return Preset(hit, step, bs["program"], bs["bank"], bs["channel_gain_db"], bs["bank"] == 128)
+    prog = bs["program"]
+    if bs["bank"] == 128 and program is not None and program in r["kit_programs"]:
+        prog = program  # step 6: the kit the part selects (the pop kit); any other program plays the band kit
+    return Preset(hit, step, prog, bs["bank"], bs["channel_gain_db"], bs["bank"] == 128)
 
 
 VECTOR_INPUTS = [
@@ -74,6 +78,9 @@ VECTOR_INPUTS = [
     ("Horn in E♭",), ("E♭ Horn",), ("Alto Horn",), ("Flugel",), ("Flügelhorn",), ("Baritone",), ("Baritone Horn",),
     ("Euphonium 2",), ("Trombone",), ("Bass Trombone",), ("Tuba",), ("Bass",), ("B♭ Tuba",), ("Eb Bass",), ("BBb Bass",),
     ("Drum Set",),
+    # percussion kits by <midi-program> (0-based): band kit, pop kit, anything else the band kit
+    ("Percussion", None, 0), ("Percussion", None, 1), ("Drum Set", None, 1), ("Percussion", None, 25),
+    ("Part 5", "drum.group.set", 1), ("Part 6", "drum.group.set", 48),
     # unknown names resolved by instrument or GM program
     ("Part 1", "brass.alto-horn", None), ("Part 2", "brass.euphonium", None), ("P3", None, 56), ("P4", None, 58),
     ("Piano", None, 0),

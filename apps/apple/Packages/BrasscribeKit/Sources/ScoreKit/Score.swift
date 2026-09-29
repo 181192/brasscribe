@@ -99,7 +99,7 @@ public struct Part: Sendable, Equatable, Identifiable {
     public var instrumentName: String
     /// MusicXML `<instrument-sound>` id such as `brass.cornet`.
     public var instrumentSound: String
-    /// General MIDI program, 1-based as in MusicXML; nil for percussion.
+    /// General MIDI program, 1-based as in MusicXML; for percussion, the kit (2 is the band SoundFont's pop kit).
     public var midiProgram: Int?
     public var midiChannel: Int
     /// Semitones from written to concert pitch (`chromatic` + 12 × `octave-change`).

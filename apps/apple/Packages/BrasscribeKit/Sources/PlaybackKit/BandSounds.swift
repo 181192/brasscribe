@@ -42,7 +42,7 @@ public struct BandSoundFont: Sendable {
     public func sound(for name: String, instrumentSound: String?, midiProgram: Int?) -> PartSound? {
         guard let p = resolver.resolve(name: name, instrument: instrumentSound, program: midiProgram.map { $0 - 1 }) else { return nil }
         let seat = p.seat.flatMap { seats[$0] }
-        return PartSound(soundFont: soundFont, target: p.percussion ? "band-kit" : "band-\(p.program)-\(p.bank)",
+        return PartSound(soundFont: soundFont, target: p.percussion ? (p.program == 0 ? "band-kit" : "band-kit-\(p.program)") : "band-\(p.program)-\(p.bank)",
                          gainDB: p.channelGainDB, azimuth: seat?["azimuth"], distance: seat?["distance"],
                          program: p.program, bankMSB: p.percussion ? 0x78 : 0x79, bankLSB: p.percussion ? 0 : p.bank)
     }

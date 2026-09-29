@@ -1346,7 +1346,7 @@
           "midi-channel": 10,
           "midi-program": 1
         },
-        "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1.",
+        "note": "Band kit at bank 128 program 0; MS Basic's Standard kit (pop kit) at program 1, selected by the part's <midi-program>2.",
         "channel_gain_db": -13.0,
         "single_voice_gain_db": -13.0,
         "layered": false
@@ -1363,7 +1363,7 @@
     "layering": "A part whose players use more than one target (the cornet desks) layers those targets in its preset, detuned by +-3 cents, so one MIDI channel sounds like a section; the second voice adds about 3 dB, which channel_gain_db compensates.",
     "balance": "Part balance is applied as channel volume, not inside the SoundFont: channel_gain_db = gain_db - max(gain_db) - 3 dB if layered. Measured: AVAudioUnitSampler applies almost none of an SF2 preset-level initialAttenuation and FluidSynth 0.4 of it, so a balance baked into presets would differ per engine.",
     "pop_kit_program": 1,
-    "kits": "Bank 128 program 0 is the band kit: MS Basic's GM Standard kit (MIT) with the bass drums (35, 36), snares (38, 40) and crash cymbals (49, 57) replaced by VSCO 2 CE concert percussion (CC0): a muted concert bass drum, a concert snare and clash cymbals, each hit levelled to the MS Basic drum it replaces. Hi-hats, toms, side stick, ride and tambourine stay MS Basic. Bank 128 program 1 is MS Basic's Standard kit unchanged, a pop kit; nothing selects it yet (the arranger has no style signal).",
+    "kits": "Bank 128 program 0 is the band kit: MS Basic's GM Standard kit (MIT) with the bass drums (35, 36), snares (38, 40) and crash cymbals (49, 57) replaced by VSCO 2 CE concert percussion (CC0): a muted concert bass drum, a concert snare and clash cymbals, each hit levelled to the MS Basic drum it replaces. Hi-hats, toms, side stick, ride and tambourine stay MS Basic. Bank 128 program 1 is MS Basic's Standard kit unchanged, a pop kit: a percussion part selects it with <midi-program>2 (resolve.kit_programs), which the arranger writes for a pop or rock take.",
     "desk_variants": "Parts that play the same target (the three tenor horns, the two baritones, the two trombones) or the same recordings (baritone, euphonium and trombone from VSCO tenor trombone; E-flat and B-flat bass from VSCO tuba; the cornet desks) use different desk variants (players[].variant): variant v sounds, for each key, another round robin of the note or the v-th nearest other sampled note within 3 semitones. Two parts in unison then sum like two players (about +3 dB) instead of one waveform doubled (+6 dB, and a comb filter where the EQs differ). A key with no other note that close plays variant 0's sample 4 cents off. No sample is added."
   },
   "lineups": {
@@ -1443,7 +1443,8 @@
       "2. alias: the normalized name is a key of aliases",
       "3. keyword: the first keywords entry whose text is a substring of the normalized name",
       "4. instrument: the MusicXML <instrument-sound> id, or an instrument id from instruments.py, in instruments",
-      "5. program: the part's 0-based General MIDI program in programs"
+      "5. program: the part's 0-based General MIDI program in programs",
+      "6. kit: a percussion part plays the kit at its 0-based <midi-program> when that program is in kit_programs (bank 128), else the band kit (the Percussion part's own program); a percussion part is never silent"
     ],
     "aliases": {
       "1st cornet": "1st Cornet",
@@ -1639,7 +1640,12 @@
       "57": "1st Trombone",
       "58": "E♭ Bass",
       "60": "Tenor Horn"
-    }
+    },
+    "kit_programs": [
+      0,
+      1
+    ],
+    "kit_programs_about": "Bank 128 programs a percussion part may select with its <midi-program> (0-based here; MusicXML writes program + 1). 0 is the band kit, 1 the pop kit (band_soundfont.pop_kit_program), which the arranger writes for a pop or rock take."
   },
   "balance": {
     "about": "parts[].balance_lu is the part's loudness as heard in the band at the same dynamic, in LU relative to the Solo Cornet section (whole desk, not one player). Every built target is levelled so its mf layer has the same K-weighted level (sounds/build.py TARGET_K_DB), so balance is only this number: apps set channel volume to channel_gain_db = balance_lu - max(balance_lu) - 3 dB for presets that layer two targets; the offline renderer sets each player to gain_db = balance_lu - 10 log10(players). sounds/checks.py balance measures it back from renders.",

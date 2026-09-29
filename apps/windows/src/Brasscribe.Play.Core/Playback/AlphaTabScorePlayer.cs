@@ -109,7 +109,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             (int)t.Index, t.Name.Replace('\u00A0', ' '), t.Staves.Any(s => s.IsPercussion),
             (int)(t.Staves.FirstOrDefault()?.DisplayTranspositionPitch ?? 0))).ToList();
 
-        _gains = Prepare(_score, forMidiFile: false);
+        _gains = Prepare(_score, forMidiFile: false, PercussionKit.Programs(musicXml));
 
         _midi = new MidiFile();
         var generator = new MidiFileGenerator(_score, _settings, new AlphaSynthMidiFileHandler(_midi, false));
@@ -234,15 +234,18 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
 
     /// <summary>
     /// Channels, presets, balance and drum notes for a freshly loaded score. Returns each track's
-    /// linear gain. For a MIDI file the channels fit into 16 and the balance goes into CC 7.
+    /// linear gain. For a MIDI file the channels fit into 16 and the balance goes into CC 7. <paramref name="kits"/>:
+    /// <see cref="PercussionKit.Programs"/> of the score's MusicXML.
     /// </summary>
-    private double[] Prepare(Score score, bool forMidiFile)
+    private double[] Prepare(Score score, bool forMidiFile, IReadOnlyList<int?> kits)
     {
-        var sounds = score.Tracks.Select(t =>
+        var sounds = score.Tracks.Select((t, i) =>
         {
             string name = t.Name.Replace('\u00A0', ' ');
+            // A percussion track's kit comes from its score-part: alphaTab resets it to program 0.
+            int program = t.Staves.Any(st => st.IsPercussion) && i < kits.Count && kits[i] is int kit ? kit : (int)t.PlaybackInfo.Program;
             // ProgramMap numbers are private to the loaded SoundFonts (not GM), so they stay out of files.
-            return SoundMap?.Invoke(name, (int)t.PlaybackInfo.Program)
+            return SoundMap?.Invoke(name, program)
                 ?? (!forMidiFile && ProgramMap?.Invoke(name) is int p ? new TrackSound(p, 0) : null);
         }).ToList();
         var parts = score.Tracks.Select((t, i) => new ChannelPlan.Part(i, t.Staves.Any(st => st.IsPercussion),
@@ -256,7 +259,8 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
             track.PlaybackInfo.SecondaryChannel = channels[i];
             if (sounds[i] is { } sound)
             {
-                track.PlaybackInfo.Program = sound.Percussion ? 0 : sound.Program;
+                // Percussion: the kit's program on the drum channel's bank 128 (0 the band kit, 1 the pop kit).
+                track.PlaybackInfo.Program = sound.Program;
                 track.PlaybackInfo.Bank = sound.Percussion ? 0 : sound.Bank;
                 RemoveInstrumentChanges(track);
             }
@@ -393,7 +397,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         // must not leak into the file. The playback MIDI also carries synth-only events, so the
         // export is generated in SMF1 mode.
         var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(_musicXml), new Settings());
-        Prepare(score, forMidiFile: true);
+        Prepare(score, forMidiFile: true, PercussionKit.Programs(_musicXml));
         var smf = new MidiFile { Format = MidiFileFormat.MultiTrack };
         new MidiFileGenerator(score, new Settings(), new AlphaSynthMidiFileHandler(smf, true)).Generate();
         KeepSharedUnisons(smf);
