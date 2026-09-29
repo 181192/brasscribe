@@ -178,7 +178,7 @@ gh release view vX.Y.Z --json assets     # every asset "uploaded", digests match
 This creates the tag on GitHub. Don't push tags or dispatch workflows yourself. Release notes follow
 the site's rules: plain words, no internal names, no model names outside the research page (the band
 writer's CC BY-NC 4.0 notice stays), and the install notes (Android: allow installs, it updates in place;
-Mac: right-click › Open, the one-time keychain prompt, Bandroom's first run of about 10 GB and its
+Mac: System Settings › Privacy & Security › Open Anyway (right-click › Open no longer bypasses Gatekeeper since macOS 15), the one-time keychain prompt, Bandroom's first run of about 10 GB and its
 Hugging Face key). See `gh release view v0.2.0` for the shape.
 
 ## 7. Installing on the owner's devices
