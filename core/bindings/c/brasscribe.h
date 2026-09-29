@@ -41,10 +41,13 @@ int32_t bc_arrange_musicxml(const char *composition_json,
 // Re-arrange a Composition JSON for a lineup and difficulty and write MusicXML to `*out`.
 // `options` may be null (defaults) or
 // `{"lineup": "band" | "minimal" | "quartet", "difficulty": "faithful" | "standard" | "easier",
-//   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ...}` (the keys of
+//   "key": "Bb" | null, "transpose": null, "seat": ..., "reads": ..., "lead": ..., "trills": true | false | null}` (the keys of
 //   [`bc_arrange_layers_song`]); `transpose`
 // is the total from the recording, as in `arrange_musicxml_with`.
-int32_t bc_arrange_with(const char *composition_json, const char *options, char **out, char **err);
+int32_t bc_arrange_with(const char *composition_json,
+                        const char *options,
+                        char **out,
+                        char **err);
 
 // Solo-with-band arrangement from six MIDI files (solo SwiftF0, solo
 // MuScriptor, solo Basic Pitch, bass, orchestra, drums, in that order) and a

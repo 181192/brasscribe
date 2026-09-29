@@ -1116,6 +1116,11 @@ public struct ArrangeOptions: Equatable, Hashable {
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     public var lead: String?
+    /**
+     * Sustained two-note alternations written as trills: None = as the composition records it,
+     * else the difficulty's default (on at standard and easier, off at faithful).
+     */
+    public var trills: Bool?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1148,7 +1153,11 @@ public struct ArrangeOptions: Equatable, Hashable {
         /**
          * Who plays the tune: "lineup" (None: the lineup's lead) or "seat" (the seat's part; band
          * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
-         */lead: String? = nil) {
+         */lead: String? = nil, 
+        /**
+         * Sustained two-note alternations written as trills: None = as the composition records it,
+         * else the difficulty's default (on at standard and easier, off at faithful).
+         */trills: Bool? = nil) {
         self.lineup = lineup
         self.difficulty = difficulty
         self.key = key
@@ -1156,6 +1165,7 @@ public struct ArrangeOptions: Equatable, Hashable {
         self.seat = seat
         self.reads = reads
         self.lead = lead
+        self.trills = trills
     }
 
     
@@ -1180,7 +1190,8 @@ public struct FfiConverterTypeArrangeOptions: FfiConverterRustBuffer {
                 transpose: FfiConverterOptionInt32.read(from: &buf), 
                 seat: FfiConverterOptionString.read(from: &buf), 
                 reads: FfiConverterOptionString.read(from: &buf), 
-                lead: FfiConverterOptionString.read(from: &buf)
+                lead: FfiConverterOptionString.read(from: &buf), 
+                trills: FfiConverterOptionBool.read(from: &buf)
         )
     }
 
@@ -1192,6 +1203,7 @@ public struct FfiConverterTypeArrangeOptions: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.seat, into: &buf)
         FfiConverterOptionString.write(value.reads, into: &buf)
         FfiConverterOptionString.write(value.lead, into: &buf)
+        FfiConverterOptionBool.write(value.trills, into: &buf)
     }
 }
 
@@ -1825,6 +1837,10 @@ public struct LayersSongOptions: Equatable, Hashable {
      */
     public var difficulty: String
     /**
+     * Faithful: write sustained two-note alternations as trills (standard and easier always do).
+     */
+    public var trills: Bool
+    /**
      * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
      */
     public var key: String?
@@ -1882,6 +1898,9 @@ public struct LayersSongOptions: Equatable, Hashable {
          * "faithful", "standard" or "easier".
          */difficulty: String, 
         /**
+         * Faithful: write sustained two-note alternations as trills (standard and easier always do).
+         */trills: Bool = false, 
+        /**
          * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
          */key: String?, 
         /**
@@ -1911,6 +1930,7 @@ public struct LayersSongOptions: Equatable, Hashable {
         self.keyChanges = keyChanges
         self.lineup = lineup
         self.difficulty = difficulty
+        self.trills = trills
         self.key = key
         self.transpose = transpose
         self.seat = seat
@@ -1943,6 +1963,7 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
                 keyChanges: FfiConverterBool.read(from: &buf), 
                 lineup: FfiConverterString.read(from: &buf), 
                 difficulty: FfiConverterString.read(from: &buf), 
+                trills: FfiConverterBool.read(from: &buf), 
                 key: FfiConverterOptionString.read(from: &buf), 
                 transpose: FfiConverterOptionInt32.read(from: &buf), 
                 seat: FfiConverterOptionString.read(from: &buf), 
@@ -1961,6 +1982,7 @@ public struct FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer {
         FfiConverterBool.write(value.keyChanges, into: &buf)
         FfiConverterString.write(value.lineup, into: &buf)
         FfiConverterString.write(value.difficulty, into: &buf)
+        FfiConverterBool.write(value.trills, into: &buf)
         FfiConverterOptionString.write(value.key, into: &buf)
         FfiConverterOptionInt32.write(value.transpose, into: &buf)
         FfiConverterOptionString.write(value.seat, into: &buf)
@@ -3241,6 +3263,30 @@ fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterDouble.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionBool: FfiConverterRustBuffer {
+    typealias SwiftType = Bool?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterBool.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterBool.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }

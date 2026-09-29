@@ -2248,6 +2248,12 @@ data class ArrangeOptions (
      * lineups only, the quartet keeps its 1st Cornet). A solo take with a seat is always "seat".
      */
     var `lead`: kotlin.String? = null 
+    , 
+    /**
+     * Sustained two-note alternations written as trills: None = as the composition records it,
+     * else the difficulty's default (on at standard and easier, off at faithful).
+     */
+    var `trills`: kotlin.Boolean? = null 
     
 ){
     
@@ -2271,6 +2277,7 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalBoolean.read(buf),
         )
     }
 
@@ -2281,7 +2288,8 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterOptionalInt.allocationSize(value.`transpose`) +
             FfiConverterOptionalString.allocationSize(value.`seat`) +
             FfiConverterOptionalString.allocationSize(value.`reads`) +
-            FfiConverterOptionalString.allocationSize(value.`lead`)
+            FfiConverterOptionalString.allocationSize(value.`lead`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`trills`)
     )
 
     override fun write(value: ArrangeOptions, buf: ByteBuffer) {
@@ -2292,6 +2300,7 @@ public object FfiConverterTypeArrangeOptions: FfiConverterRustBuffer<ArrangeOpti
             FfiConverterOptionalString.write(value.`seat`, buf)
             FfiConverterOptionalString.write(value.`reads`, buf)
             FfiConverterOptionalString.write(value.`lead`, buf)
+            FfiConverterOptionalBoolean.write(value.`trills`, buf)
     }
 }
 
@@ -2801,6 +2810,11 @@ data class LayersSongOptions (
     var `difficulty`: kotlin.String
     , 
     /**
+     * Faithful: write sustained two-note alternations as trills (standard and easier always do).
+     */
+    var `trills`: kotlin.Boolean = false 
+    , 
+    /**
      * Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).
      */
     var `key`: kotlin.String?
@@ -2857,6 +2871,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterBoolean.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalInt.read(buf),
             FfiConverterOptionalString.read(buf),
@@ -2875,6 +2890,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterBoolean.allocationSize(value.`keyChanges`) +
             FfiConverterString.allocationSize(value.`lineup`) +
             FfiConverterString.allocationSize(value.`difficulty`) +
+            FfiConverterBoolean.allocationSize(value.`trills`) +
             FfiConverterOptionalString.allocationSize(value.`key`) +
             FfiConverterOptionalInt.allocationSize(value.`transpose`) +
             FfiConverterOptionalString.allocationSize(value.`seat`) +
@@ -2892,6 +2908,7 @@ public object FfiConverterTypeLayersSongOptions: FfiConverterRustBuffer<LayersSo
             FfiConverterBoolean.write(value.`keyChanges`, buf)
             FfiConverterString.write(value.`lineup`, buf)
             FfiConverterString.write(value.`difficulty`, buf)
+            FfiConverterBoolean.write(value.`trills`, buf)
             FfiConverterOptionalString.write(value.`key`, buf)
             FfiConverterOptionalInt.write(value.`transpose`, buf)
             FfiConverterOptionalString.write(value.`seat`, buf)
@@ -3878,6 +3895,38 @@ public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?>
         } else {
             buf.put(1)
             FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalBoolean: FfiConverterRustBuffer<kotlin.Boolean?> {
+    override fun read(buf: ByteBuffer): kotlin.Boolean? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterBoolean.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Boolean?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterBoolean.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Boolean?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterBoolean.write(value, buf)
         }
     }
 }
