@@ -123,8 +123,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
-    """The Composition and its arrangement (writes separation-check.json into args.out when the layer audio is there)."""
+def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composition, Arrangement]:
+    """The Composition and its arrangement (writes separation-check.json into args.out when the layer audio is there).
+
+    `trace`, when given, receives the solo line's intermediate stages (for the fast-notes bench): "line" (notes in
+    seconds before quantization), "quantized" ((pitch, start, end) ticks from beat 0), "times" (the beat grid) and
+    "pickup" (ticks)."""
     L = args.layers
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -241,7 +245,11 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
                                **SEPARATED_STEM)
         for n, e in zip(solo_line, ends):
             n["offset"] = max(n["offset"], e)
-    solo = written_line(quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse), times, pickup, "solo")
+    solo_q = quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse)
+    if trace is not None:
+        trace.update(line=[dict(n) for n in solo_line], quantized=[(q.pitch, q.start, q.end) for q in solo_q],
+                     times=np.asarray(times, float).copy(), pickup=pickup, coarse=coarse)
+    solo = written_line(solo_q, times, pickup, "solo")
     bass = written_line(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False, coarse=coarse),
                         times, pickup, "bass")
 
