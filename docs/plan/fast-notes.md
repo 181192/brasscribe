@@ -610,9 +610,17 @@ apart.
 - The music21 and Rust writers produce identical files.
 
 **Renderers and playback.**
-- Verovio and alphaTab show the tr mark. On the alphaTab 1.8.4 importer, `trillValue` is set and `vibrato` is not.
+- alphaTab shows the tr mark: on its 1.8.4 importer, `trillValue` is set and `vibrato` is not. Verovio reads the same
+  standard `<trill-mark>`, `<accidental-mark>` and `<wavy-line>`, but it was not checked here.
 - The apps' own players play the main note. alphaTab's synthesizer (Android) plays a trill from the mark, a whole tone
   up by default.
+
+**Not covered yet.**
+- The faithful trill option is not exposed in the engine's API and schema, and no app has a control for it.
+- The apps' managed fallback MusicXML writers (Android `MusicXmlWriter.kt`, Windows' managed path) do not write the
+  mark. They run only when the native core is missing.
+- The apps' Composition models keep `trill` and `tempo_estimated` when they re-encode a composition for the core:
+  Android and Apple through new optional fields, Windows through its extension data.
 
 **Talking score and braille.**
 - The talking score (core, engine, Android, Windows, studio) says "trill", or "trill with sharp" and so on; in
@@ -660,12 +668,14 @@ apart.
 With 15 ms of jitter, a triplet 8th lands past the per-beat fit (0.045 beats) in about half the beats. Those beats were
 written as 16ths.
 
-**What changed.** The dense quantizer now reads tuplets from runs of beats. A run of at least two consecutive beats that
-each hold exactly 3 onsets (or 6) is written as triplets (sextuplets) when both hold:
+**What changed.** The dense quantizer now reads tuplets from runs of beats. A run of at least three consecutive beats
+that each hold exactly 3 onsets (or 6) is written as triplets (sextuplets) when both hold:
 - over the run, the tuplet's snap error is under a quarter of the plain grid's (16ths, 32nds);
 - no onset is more than 0.1 beats off its slot.
 
-Straight 16ths never hold exactly three onsets a beat unless a note is missing, and then 16ths fit far better. Tests
+Straight 16ths hold exactly three onsets a beat in 16th-16th-8th figures, and a late-played one can look like a
+triplet. A run of two was not enough: on the on-device reference clip (the Entertainer, notated in straight 8ths and
+16ths only) it turned one such beat after another into triplets. Three beats in a row leave that clip unchanged. Tests
 cover 16th-16th-8th, 8th-16th-16th and 16th-8th-16th with 10 and 20 ms of jitter.
 
 **Dense probe** (`research/fastnotes/dense_probe.py`), share of notes on their true slot:
@@ -678,16 +688,14 @@ cover 16th-16th-8th, 8th-16th-16th and 16th-8th-16th with 10 and 20 ms of jitter
 
 **Eval sets.**
 - Synthetic: the written tuplet share goes 0.04 → 0.05, and written recall 0.436 → 0.437.
-- URMP: note F1 goes 0.863 → 0.866.
+- URMP: note F1 goes 0.863 → 0.864. The only part that changes is 42_Arioso trumpet 1, whose score has notated
+  triplets: its tuplet share goes 0.030 → 0.052, and its note F1 0.696 → 0.711.
 - No other set moves.
 
 **Readability and parity.**
 - Mikkel's Solo Cornet stays at 0.3 % tuplets, and the `readability` suite passes unchanged.
-- The dense-quantize fixtures are regenerated (9 of 120 cases change) and match in Rust.
-- The on-device reference clip (Entertainer, small0 beats) changes in one beat of the solo. The beat after a triplet
-  beat has its onsets at 0.32 and 0.62 of the beat, and is now written as triplets rather than 16th-16th-8th. The new
-  reference is `data/runs/apple/entertainer-ref.notation-followups`, and every pointer reads it until it is promoted.
-  The Mikkel golden does not change.
+- The Mikkel golden and the on-device reference do not change.
+- The dense-quantize fixtures are regenerated and match in Rust.
 
 ### 8.3 Takes with a single tracked beat
 

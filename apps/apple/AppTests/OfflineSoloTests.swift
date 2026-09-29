@@ -6,7 +6,7 @@ import TranscriptionKit
 @testable import BrasscribePlay
 
 /// The on-device reference clip's directory under data/runs/apple.
-let onDeviceRefName = "entertainer-ref.notation-followups"
+let onDeviceRefName = "entertainer-ref"
 
 func onDeviceRef() -> URL? {
     guard let d = fixtureDir() else { return nil }

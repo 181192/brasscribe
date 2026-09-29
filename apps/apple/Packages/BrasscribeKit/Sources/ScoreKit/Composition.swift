@@ -20,11 +20,13 @@ public struct Composition: Codable, Sendable, Equatable {
         public var performedDur: Int?
         /// `staccato`, `tenuto`, `accent` …
         public var articulations: [String]
+        /// A trill mark: semitones up to the auxiliary (kept so a re-arrangement in the core keeps it).
+        public var trill: Int?
 
         public var end: Int { start + dur }
 
         enum CodingKeys: String, CodingKey {
-            case pitch, start, dur, confidence, sources, articulations
+            case pitch, start, dur, confidence, sources, articulations, trill
             case onsetS = "onset_s"
             case offsetS = "offset_s"
             case performedDur = "performed_dur"
@@ -34,7 +36,7 @@ public struct Composition: Codable, Sendable, Equatable {
                     onsetS: Double? = nil, offsetS: Double? = nil) {
             self.pitch = pitch; self.start = start; self.dur = dur; self.confidence = confidence
             self.sources = sources; self.onsetS = onsetS; self.offsetS = offsetS
-            self.performedDur = nil; self.articulations = []
+            self.performedDur = nil; self.articulations = []; self.trill = nil
         }
 
         public init(from decoder: Decoder) throws {
@@ -48,6 +50,7 @@ public struct Composition: Codable, Sendable, Equatable {
             offsetS = try c.decodeIfPresent(Double.self, forKey: .offsetS)
             performedDur = try c.decodeIfPresent(Int.self, forKey: .performedDur)
             articulations = try c.decodeIfPresent([String].self, forKey: .articulations) ?? []
+            trill = try c.decodeIfPresent(Int.self, forKey: .trill)
         }
     }
 
@@ -123,6 +126,8 @@ public struct Composition: Codable, Sendable, Equatable {
     /// Neighbouring uncertain notes of one voice, reviewed together (music/README.md,
     /// "Confidence and review marks"). Empty when the engine didn't group them.
     public var review: [ReviewGroup]
+    /// The beat grid is a guess from the onsets (the tracker found under two beats).
+    public var tempoEstimated: Bool
 
     public struct ReviewGroup: Codable, Sendable, Equatable {
         public var voice: String
@@ -144,6 +149,7 @@ public struct Composition: Codable, Sendable, Equatable {
         case beatTimes = "beat_times"
         case firstDownbeat = "first_downbeat"
         case ticksPerBeat = "ticks_per_beat"
+        case tempoEstimated = "tempo_estimated"
     }
 
     public init(from decoder: Decoder) throws {
@@ -159,6 +165,7 @@ public struct Composition: Codable, Sendable, Equatable {
         dynamics = try c.decodeIfPresent([Dynamic].self, forKey: .dynamics) ?? []
         sections = try c.decodeIfPresent([Section].self, forKey: .sections) ?? []
         review = try c.decodeIfPresent([ReviewGroup].self, forKey: .review) ?? []
+        tempoEstimated = try c.decodeIfPresent(Bool.self, forKey: .tempoEstimated) ?? false
     }
 
     public static func decode(_ data: Data) throws -> Composition {

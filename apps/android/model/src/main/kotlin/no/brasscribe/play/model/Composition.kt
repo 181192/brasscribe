@@ -33,6 +33,8 @@ data class Composition(
      * the core and the engine record them; null means the defaults. Kept whole so a re-encode keeps it.
      */
     val arrangement: JsonObject? = null,
+    /** The beat grid is a guess from the onsets (the tracker found under two beats); the score says "tempo?". */
+    @SerialName("tempo_estimated") val tempoEstimated: Boolean = false,
 ) {
     val endTick: Int get() = voices.maxOfOrNull { v -> v.notes.maxOfOrNull { it.end } ?: 0 } ?: 0
     val startTick: Int get() = minOf(0, voices.minOfOrNull { v -> v.notes.minOfOrNull { it.start } ?: 0 } ?: 0)
@@ -92,6 +94,8 @@ data class Note(
     /** Performed length in ticks; null when unknown. */
     @SerialName("performed_dur") val performedDur: Int? = null,
     val articulations: List<Articulation> = emptyList(),
+    /** A trill mark: semitones up to the auxiliary; kept so a re-arrangement in the core keeps it. */
+    val trill: Int? = null,
 ) {
     val end: Int get() = start + dur
     val uncertainty: Uncertainty get() = Uncertainty.of(confidence)

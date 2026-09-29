@@ -130,7 +130,7 @@ def _lost(f: np.ndarray, g: int, next_head: np.ndarray | None) -> int:
 # is written in that tuplet when, summed over the run, the tuplet's snap error is under TUPLET_RATIO of the plain
 # grid's (16ths for triplets, 32nds for sextuplets) and no onset is more than TUPLET_FIT off its slot. Straight 16ths
 # never hold exactly 3 or 6 onsets a beat unless notes are missing, and then the plain grid fits them far better.
-TUPLET_RUN = 2
+TUPLET_RUN = 3
 TUPLET_RATIO = 0.25
 TUPLET_FIT = 0.1
 TUPLET_PLAIN = {3: 4, 6: 8}

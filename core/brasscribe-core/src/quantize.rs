@@ -176,7 +176,7 @@ fn lost(f: &[f64], g: i64, next_head: Option<&Vec<f64>>) -> i64 {
 /// Tuplet runs: at least TUPLET_RUN consecutive beats that each hold exactly g onsets (3 or 6) are
 /// written in that tuplet when, summed over the run, its snap error is under TUPLET_RATIO of the plain
 /// grid's (16ths for triplets, 32nds for sextuplets) and no onset is more than TUPLET_FIT off its slot.
-pub const TUPLET_RUN: usize = 2;
+pub const TUPLET_RUN: usize = 3;
 pub const TUPLET_RATIO: f64 = 0.25;
 pub const TUPLET_FIT: f64 = 0.1;
 const TUPLET_PLAIN: [(i64, i64); 2] = [(3, 4), (6, 8)];

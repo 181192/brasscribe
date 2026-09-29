@@ -19,7 +19,7 @@ import no.brasscribe.play.test.Slow
 import org.junit.experimental.categories.Category
 
 /** The on-device reference clip's directory under data/runs/apple. */
-private const val ONDEVICE_REF = "entertainer-ref.notation-followups"
+private const val ONDEVICE_REF = "entertainer-ref"
 
 /**
  * The phone's offline solo path on the JVM (the same ONNX models and the host build of the core) on
