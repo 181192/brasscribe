@@ -48,9 +48,8 @@ class Suite:
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
 
 
-# The Mikkel golden output (data/golden). The soloist-range golden sits next to the current one
-# until it is promoted at merge (docs/plan/trumpet.md §2.6).
-MIKKEL_GOLDEN = "golden/mikkel-arranged-band.soloist"
+# The Mikkel golden output (data/golden).
+MIKKEL_GOLDEN = "golden/mikkel-arranged-band"
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""

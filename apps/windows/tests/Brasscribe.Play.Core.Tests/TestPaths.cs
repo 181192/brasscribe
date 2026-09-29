@@ -46,8 +46,7 @@ internal static class TestPaths
     public const string NoNativeCore =
         "BRASSCRIBE_FFI_PATH is not set: `scripts/core-artifacts.sh ensure host` puts the native core at core/target/release/libbrasscribe_ffi.dylib (.so, .dll); point BRASSCRIBE_FFI_PATH at it";
 
-    // The soloist-range golden sits next to the current one until it is promoted at merge (docs/plan/trumpet.md §2.6).
-    public static string GoldenMusicXml =>"data/golden/mikkel-arranged-band.soloist/brass-band.musicxml";
-    public static string GoldenComposition => "data/golden/mikkel-arranged-band.soloist/composition.json";
+    public static string GoldenMusicXml =>"data/golden/mikkel-arranged-band/brass-band.musicxml";
+    public static string GoldenComposition => "data/golden/mikkel-arranged-band/composition.json";
     public static string SwiftF0Stream => "models/converted/swift-f0/swift-f0-stream.onnx";
 }

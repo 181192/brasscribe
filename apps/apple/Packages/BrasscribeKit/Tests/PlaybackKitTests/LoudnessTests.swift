@@ -185,7 +185,8 @@ struct RecordingLevelTests {
         let target = PlaybackLevels.recordingTargetLUFS(for: score)
         print("LEVELS golden recording target \(target) LUFS")
         #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.1)
-        #expect(abs(target - (-11.82)) < 0.01)
+        // -11.82 when the calibration was fitted; the soloist-range golden (more inner notes) estimates -11.79.
+        #expect(abs(target - (-11.79)) < 0.01)
     }
 
     @Test func loudnessIsMeasuredQuickly() throws {

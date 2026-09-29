@@ -18,7 +18,7 @@ minimal arranger, and the Mikkel layered composition through the layered
 arranger for both lineups.
 
     uv run python -W ignore -m brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass \\
-        --mikkel ../data/golden/mikkel-arranged-band.soloist/composition.json
+        --mikkel ../data/golden/mikkel-arranged-band/composition.json
 """
 
 from __future__ import annotations

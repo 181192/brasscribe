@@ -16,9 +16,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
-# The soloist-range golden sits next to the current one until it is promoted at merge
-# (docs/plan/trumpet.md §2.6).
-MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band.soloist"
+# The Mikkel golden output.
+MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 # SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
