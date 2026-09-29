@@ -378,8 +378,10 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             crate::instruments::lead_lineup(crate::instruments::lineup_by_name(lineup_name)?, s).map_err(|e| format!("--lead seat: {e}"))?;
         }
     }
-    // Pitch-change onsets the segmentation merged (slurred trills and runs), octave flips and glides.
-    let solo_sw_f1 = crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp);
+    // Faithful: pitch-change onsets the segmentation merged (slurred trills and runs), octave flips and glides,
+    // and a finer grid where the onsets need it. Standard and easier keep the simpler line.
+    let fast_notes = difficulty == "faithful";
+    let solo_sw_f1 = if fast_notes { crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp) } else { solo_sw.clone() };
     let votes: Sources = vec![
         ("sw".into(), line(&solo_sw_f1, lo, hi, true, MIN_DUR)),
         ("mus".into(), line(&solo_mus, lo, hi, true, MIN_DUR)),
@@ -427,7 +429,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             }
         }
     }
-    let mut solo = written_line(quantize_with(&solo_line, &times, true, false, coarse, true), &times, pickup, "solo")?;
+    let mut solo = written_line(quantize_with(&solo_line, &times, true, false, coarse, fast_notes), &times, pickup, "solo")?;
     let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
 
     let solo_keys: HashSet<(u64, i32)> = solo_line.iter().map(|n| (py::py_round(n.onset, 1).to_bits(), n.pitch)).collect();

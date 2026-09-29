@@ -517,18 +517,22 @@ FROZEN = ("reference.json", "oracle.beats", "small0.beats", "sw.mid", "bp.mid", 
 FROZEN_RENDERS = ("samples", "room")  # the real-sample clips (and their separated controls); the SoundFont clips stay local
 
 
-def freeze(clips: list[Path]) -> None:
-    """Tracker outputs and references of the real-sample clips -> eval/fixtures/fast-notes (the CI suite)."""
+def freeze(clips: list[Path], prefix: str = "", render: str | None = None) -> None:
+    """Tracker outputs and references of the real-sample clips -> eval/fixtures/fast-notes (the CI suite).
+    `prefix`/`render`: the separated clips, frozen as sep-<id> with render "sep"."""
     for c in clips:
-        if not c.name.endswith(FROZEN_RENDERS):
+        if not c.name.endswith(FROZEN_RENDERS) or not (c / "reference.json").exists():
             continue
-        d = FIXTURES / c.name
+        d = FIXTURES / f"{prefix}{c.name}"
         d.mkdir(parents=True, exist_ok=True)
         for f in FROZEN:
             if not (c / f).exists():
                 continue
             if f == "reference.json":  # compact: the fixtures are committed
-                (d / f).write_text(json.dumps(json.loads((c / f).read_text()), separators=(",", ":")))
+                ref = json.loads((c / f).read_text())
+                if render:
+                    ref["spec"]["render"] = render
+                (d / f).write_text(json.dumps(ref, separators=(",", ":")))
             else:
                 shutil.copy(c / f, d / f)
 
@@ -765,6 +769,8 @@ def main() -> None:
         track([args.root / s.id for s in ss if (args.root / s.id / "audio.wav").exists()], set(args.tools.split(",")))
     else:
         freeze([args.root / s.id for s in ss])
+        if args.root == OUT and SEP_OUT.exists():
+            freeze([SEP_OUT / s.id for s in ss if (SEP_OUT / s.id).exists()], prefix="sep-", render="sep")
 
 
 if __name__ == "__main__":

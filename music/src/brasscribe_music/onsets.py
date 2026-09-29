@@ -49,6 +49,9 @@ SEMITONE_STEP_FRAMES = 5
 DWELL = 0.7
 TRILL_DWELL = 0.85
 TRILL_CHANGES = 4
+LONG_TRILL_CHANGES = 8
+LONG_TRILL_DWELL = 0.78
+LONG_TRILL_FRAMES = 5
 ALT_MAX_FRAMES = 16
 ALT_MAX_SPAN = 7
 MIN_SHARE = 0.25  # in an alternation, each pitch holds at least this share of the plateau frames (not a blip)
@@ -118,7 +121,10 @@ def _splits(pl: list[tuple[int, int, int]], n_frames: int) -> bool:
     if span > ALT_MAX_SPAN:
         return False
     if span == 1:
-        return dwell >= TRILL_DWELL and changes >= TRILL_CHANGES
+        # A long trill whose plateaus hold (a transit frame between them, as real trills have) needs less dwell.
+        long_trill = (changes >= LONG_TRILL_CHANGES and dwell >= LONG_TRILL_DWELL
+                      and float(np.median([b - a for a, b, _ in pl])) >= LONG_TRILL_FRAMES)
+        return long_trill or (dwell >= TRILL_DWELL and changes >= TRILL_CHANGES)
     return dwell >= DWELL
 
 
@@ -153,12 +159,14 @@ def split_note(n: dict, c, tau: float, voiced: np.ndarray) -> list[dict]:
     pl = _without_glides(plateaus(x, voiced[a:b]))
     if not _splits(pl, b - a):
         return [n]
-    # The note's own plateau (the longest in total) carries the tracker's pitch; the others keep their interval.
+    # Each piece is its plateau's own semitone. SwiftF0 labels a collapsed alternation with a compromise pitch
+    # between the plateaus, so only an octave of difference from the note's main plateau carries over (the
+    # tracker hearing the whole passage an octave off).
     total: dict[int, int] = {}
     for p, q, s in pl:
         total[s] = total.get(s, 0) + q - p
     main = max(sorted(total), key=lambda s: total[s])
-    delta = n["pitch"] - main
+    delta = 12 * round((n["pitch"] - main) / 12)
     out = [{**n, "pitch": pl[0][2] + delta, "split": True}]
     for (p0, q0, s0), (p1, _, s1) in zip(pl, pl[1:]):
         if s1 == s0:

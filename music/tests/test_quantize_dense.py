@@ -56,3 +56,16 @@ def test_one_grid_through_a_run():
     q = quantize(notes, beats, monophonic=True, auto_level=False, dense=True)
     assert len(q) == 36
     assert all(x.start % 4 == 0 for x in q)  # every beat of the sextuplet run on the sextuplet grid
+
+
+def test_rubato_sixteenths_keep_one_grid():
+    bpm, div, n = 100, 4, 32
+    beat = 60 / bpm
+    t, on = 1.0, []
+    for i in range(n):
+        on.append(t)
+        t += beat * (1 + 0.10 * np.sin(2 * np.pi * (i / div) / 4)) / div
+    notes = [{"pitch": 60 + i % 5, "onset": o, "offset": o + 0.8 * beat / div, "confidence": 1.0} for i, o in enumerate(on)]
+    bt = np.arange(1.0 - 4 * beat, 1.0 + 40 * beat, beat)
+    q = quantize(notes, bt, monophonic=True, auto_level=False, dense=True)
+    assert {x.start % 24 for x in q} <= {0, 6, 12, 18}

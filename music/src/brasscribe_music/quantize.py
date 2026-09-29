@@ -102,12 +102,16 @@ def choose_grids(onset_beats: np.ndarray, coarse: list[tuple[float, float]] | No
 
 # Dense passages (fast runs, trills) on a monophonic line: a beat whose chosen grid would put two onsets on one
 # slot picks again from these grids, 32nds included, paying COLLIDE per onset a grid cannot hold and SWITCH for
-# leaving the previous beat's grid (so a run keeps one subdivision rather than mixing 16ths, sextuplets and 32nds
-# beat to beat). Beats that hold their onsets keep today's choice exactly.
+# leaving the previous beat's grid (as much as a lost onset: a run keeps one subdivision and moves a note rather
+# than mixing 16ths, sextuplets and 32nds beat to beat). A tuplet or 32nd grid is offered only on evidence:
+# DENSE_MIN_ONSETS onsets in the beat, all within DENSE_FIT of their slots. Beats that hold their onsets keep
+# today's choice exactly.
 DENSE_GRIDS: dict[int, float] = {**GRIDS, 8: 0.2}
 COLLIDE = 1.0
 DENSE_ERR = 10.0  # snap error weight when a dense beat chooses again: triplets are not 16ths 50 ms off
-SWITCH = 0.5
+SWITCH = 1.0
+DENSE_MIN_ONSETS = 3  # a tuplet or 32nd grid needs at least this many onsets in the beat ...
+DENSE_FIT = 0.045  # ... every one of them within this many beats of its slot
 MIN_SLOT = 0.045  # seconds: a grid of 6 or 8 whose slots are shorter than this is not offered (no 64ths on a doubled beat)
 
 
@@ -139,6 +143,8 @@ def choose_grids_dense(onset_beats: np.ndarray, coarse: list[tuple[float, float]
         for g, pen in DENSE_GRIDS.items():
             if g >= 6 and spb / g < MIN_SLOT:
                 continue
+            if g in (3, 6, 8) and (len(f) < DENSE_MIN_ONSETS or np.max(np.abs(f - np.round(f * g) / g)) > DENSE_FIT):
+                continue  # no evidence for the finer grid: keep a plain one (and move a colliding note)
             cost = (DENSE_ERR * np.sum((f - np.round(f * g) / g) ** 2) + pen * len(f) + COLLIDE * _lost(f, g, nxt)
                     + (SWITCH if k - 1 in choice and g != choice[k - 1] else 0.0))
             if cost < best_cost:

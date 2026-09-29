@@ -213,8 +213,12 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     if args.solo_contour is None and (L / "solo-sw.contour.npz").exists():
         args.solo_contour = L / "solo-sw.contour.npz"
     solo_contour = Contour.load(args.solo_contour) if args.solo_contour else None
-    # Pitch-change onsets the segmentation merged (slurred trills and runs), and glides it split off.
-    solo_sw = contour_notes(solo_sw, solo_contour, solo_bp)
+    # Faithful: the fast notes as played, pitch-change onsets the segmentation merged (slurred trills and
+    # runs) and a finer grid where the onsets need it (docs/plan/fast-notes.md). Standard and easier keep the
+    # simpler line they were tuned on.
+    fast_notes = args.difficulty == "faithful"
+    if fast_notes:
+        solo_sw = contour_notes(solo_sw, solo_contour, solo_bp)
     # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
     # solo line is the soloist's, a cornet or trumpet (E3-E6).
     solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
@@ -250,7 +254,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
                                **SEPARATED_STEM)
         for n, e in zip(solo_line, ends):
             n["offset"] = max(n["offset"], e)
-    solo_q = quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse, dense=True)
+    solo_q = quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse, dense=fast_notes)
     if trace is not None:
         trace.update(line=[dict(n) for n in solo_line], quantized=[(q.pitch, q.start, q.end) for q in solo_q],
                      times=np.asarray(times, float).copy(), pickup=pickup, coarse=coarse)

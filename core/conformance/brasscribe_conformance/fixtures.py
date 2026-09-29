@@ -146,9 +146,18 @@ def onsets_cases() -> list[dict]:
             if kind == 6 and len(notes) % 2:
                 p += 12
             notes.append({"pitch": p, "onset": float(t[a]), "offset": float(t[b - 1] + FRAME)})
+        if kind == 7:  # a collapsed alternation labelled with a compromise pitch (sometimes an octave off),
+            lower, interval = int(base), int(rng.integers(1, 4))  # with a transit frame at every change half the time
+            frames = int(rng.integers(4, 8))
+            idx = np.arange(n)
+            midi = (lower + interval * ((idx // frames) % 2) + 0.03
+                    + np.where(idx % frames == 0, interval / 2, 0.0) * (k % 16 == 7)).astype(float)
+            c = Contour(t, midi, np.zeros(n), conf if k % 3 else None)
+            notes = [{"pitch": lower + 1 + (12 if k % 5 == 0 else 0), "onset": 0.0, "offset": float(t[-1] + FRAME)}]
         others = [{"pitch": x["pitch"], "onset": x["onset"] + float(rng.uniform(-0.04, 0.04)), "offset": x["offset"]}
                   for x in notes if rng.random() < 0.5]
         out = contour_notes([dict(x) for x in notes], c, others)
+        midi = c.midi
         cases.append({"t": t.tolist(), "midi": [None if not np.isfinite(x) else float(x) for x in midi],
                       "confidence": None if c.confidence is None else conf.tolist(), "notes": notes, "others": others,
                       "out": [[x["pitch"], x["onset"], x["offset"], bool(x.get("split"))] for x in out]})

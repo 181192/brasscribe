@@ -62,3 +62,25 @@ def test_octave_flips_fold_unless_confirmed():
     assert [n["pitch"] for n in octave_flips(notes, [note(84, 0.21, 0.35)])] == [72, 84, 72]
     held = [note(60, 0.0, 1.0), note(72, 1.0, 2.0), note(60, 2.0, 3.0)]  # a slurred octave between held notes
     assert octave_flips(held) == held
+
+
+def test_split_names_plateaus_by_their_own_semitone():
+    # SwiftF0 labels a collapsed alternation with a compromise pitch between the plateaus
+    for lower, interval, tracker in ((67, 2, 68), (72, 2, 73), (67, 3, 68), (67, 3, 69), (72, 1, 73)):
+        pitch = lower + interval * ((np.arange(144) // 6) % 2) + 0.03
+        out = contour_notes([note(tracker, 0.0, 144 * FRAME)], contour(pitch))
+        assert len(out) > 1 and {n["pitch"] for n in out} == {lower, lower + interval}
+
+
+def test_split_keeps_an_octave_correction_only():
+    pitch = 67 + 2 * ((np.arange(144) // 6) % 2) + 0.03
+    out = contour_notes([note(80, 0.0, 144 * FRAME)], contour(pitch))  # the tracker an octave up
+    assert {n["pitch"] for n in out} == {79, 81}
+
+
+def test_semitone_trill_with_a_transit_frame_splits():
+    seq = []
+    for k in range(24):
+        seq += [72 + (k % 2)] * 5 + [72.5]
+    out = contour_notes([note(72, 0.0, len(seq) * FRAME)], contour(np.array(seq, float) + 0.03))
+    assert len(out) >= 20

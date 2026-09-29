@@ -149,7 +149,10 @@ pub const COLLIDE: f64 = 1.0;
 /// Snap error weight when a dense beat chooses again: triplets are not 16ths 50 ms off.
 pub const DENSE_ERR: f64 = 10.0;
 /// Leaving the previous beat's grid: a run keeps one subdivision.
-pub const SWITCH: f64 = 0.5;
+pub const SWITCH: f64 = 1.0;
+/// A tuplet or 32nd grid needs this many onsets in the beat, each within DENSE_FIT beats of its slot.
+pub const DENSE_MIN_ONSETS: usize = 3;
+pub const DENSE_FIT: f64 = 0.045;
 /// Seconds: a grid of 6 or 8 with shorter slots is not offered (no 64ths on a doubled beat).
 pub const MIN_SLOT: f64 = 0.045;
 
@@ -195,6 +198,11 @@ pub fn choose_grids_dense(onset_beats: &[f64], coarse: Option<&Ranges>, beat_sec
                 continue;
             }
             let gf = g as f64;
+            if matches!(g, 3 | 6 | 8)
+                && (f.len() < DENSE_MIN_ONSETS || f.iter().map(|&x| (x - (x * gf).round_ties_even() / gf).abs()).fold(0.0, f64::max) > DENSE_FIT)
+            {
+                continue; // no evidence for the finer grid
+            }
             let sq: Vec<f64> = f
                 .iter()
                 .map(|&x| {

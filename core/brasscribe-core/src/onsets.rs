@@ -13,6 +13,9 @@ pub const SEMITONE_STEP_FRAMES: usize = 5;
 pub const DWELL: f64 = 0.7;
 pub const TRILL_DWELL: f64 = 0.85;
 pub const TRILL_CHANGES: usize = 4;
+pub const LONG_TRILL_CHANGES: usize = 8;
+pub const LONG_TRILL_DWELL: f64 = 0.78;
+pub const LONG_TRILL_FRAMES: f64 = 5.0;
 pub const ALT_MAX_FRAMES: f64 = 16.0;
 pub const ALT_MAX_SPAN: i64 = 7;
 pub const MIN_SHARE: f64 = 0.25;
@@ -114,7 +117,9 @@ fn splits(pl: &[Plateau], n_frames: usize) -> bool {
         return false;
     }
     if span == 1 {
-        return dwell >= TRILL_DWELL && changes >= TRILL_CHANGES;
+        // A long trill whose plateaus hold (a transit frame between them) needs less dwell.
+        let long_trill = changes >= LONG_TRILL_CHANGES && dwell >= LONG_TRILL_DWELL && py::median(&lens) >= LONG_TRILL_FRAMES;
+        return long_trill || (dwell >= TRILL_DWELL && changes >= TRILL_CHANGES);
     }
     dwell >= DWELL
 }
@@ -175,7 +180,9 @@ pub fn split_note(n: &RawNote, c: &Contour, tau: f64, ok: &[bool]) -> Vec<RawNot
             main = h;
         }
     }
-    let delta = n.pitch as i64 - main.0;
+    // Each piece is its plateau's own semitone; only an octave of difference from the tracker's label carries
+    // over (SwiftF0 labels a collapsed alternation with a compromise pitch between the plateaus).
+    let delta = 12 * ((n.pitch as i64 - main.0) as f64 / 12.0).round_ties_even() as i64;
     let mut out = vec![RawNote { pitch: (pl[0].2 + delta) as i32, split: true, ..n.clone() }];
     for w in pl.windows(2) {
         let (p0, p1) = (w[0], w[1]);
