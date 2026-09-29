@@ -1554,6 +1554,12 @@
   <data name="Seat_Notice_SameKey_Small" xml:space="preserve">
     <value>This small band has no {0}. Your part here is {1}, the closest: the same key and clef.</value>
   </data>
+  <data name="Seat_Notice_Takes_Full" xml:space="preserve">
+    <value>The full brass band has no {0} part. You get the {1} part, written for {0}.</value>
+  </data>
+  <data name="Seat_Notice_Takes_Small" xml:space="preserve">
+    <value>The small band has no {0} part. You get the {1} part, written for {0}.</value>
+  </data>
   <data name="Seat_ReadsBass" xml:space="preserve">
     <value>Bass clef, as it sounds</value>
   </data>
@@ -1605,6 +1611,9 @@
   <data name="Seat_TileDetail_Trombone" xml:space="preserve">
     <value>-</value>
   </data>
+  <data name="Seat_TileDetail_Trumpet" xml:space="preserve">
+    <value>in B♭</value>
+  </data>
   <data name="Seat_Tile_Baritone" xml:space="preserve">
     <value>Baritone</value>
   </data>
@@ -1637,6 +1646,9 @@
   </data>
   <data name="Seat_Tile_Trombone" xml:space="preserve">
     <value>Trombone</value>
+  </data>
+  <data name="Seat_Tile_Trumpet" xml:space="preserve">
+    <value>Trumpet</value>
   </data>
   <data name="Seat_Value" xml:space="preserve">
     <value>{0} · {1}</value>

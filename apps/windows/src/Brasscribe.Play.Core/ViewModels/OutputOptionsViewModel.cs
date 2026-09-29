@@ -124,10 +124,12 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
     public bool ShowsLineupChoice => !SoloGivesOnePart;
 
     /// <summary>The seat's part in a lineup (the core's table), or null.</summary>
-    private string? SeatPartIn(Lineup lineup)
+    private string? SeatPartIn(Lineup lineup) => SeatPartRow(lineup)?.Part;
+
+    private SeatPart? SeatPartRow(Lineup lineup)
     {
         if (Seat is not { } seat) return null;
-        try { return core.SeatPartFor(Lineups.Core(lineup), seat)?.Part; }
+        try { return core.SeatPartFor(Lineups.Core(lineup), seat); }
         catch (CoreBridgeException) { return null; }
     }
 
@@ -136,10 +138,11 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
 
     /// <summary>
     /// "Who plays the tune?" for a soloist recording, in the band lineups only (the quartet keeps the tune on its
-    /// 1st Cornet), when the player's part is not the lead and can carry a melody.
+    /// 1st Cornet), when the player's part is not the lead and can carry a melody (the core's <c>tune</c>). A seat
+    /// that takes the lead part (a trumpet) already has the tune: nothing to choose.
     /// </summary>
     public bool ShowsTuneChoice => !IsSoloTake && HasSoloist && Lineup != Lineup.Quartet && Seats is { } catalog
-        && SeatPartIn(Lineup) is { } part && part != BandLead && catalog.CarriesTune(part);
+        && SeatPartRow(Lineup) is { Part: { } part, Takes: null } && part != BandLead && catalog.CarriesTune(part);
 
     /// <summary>"Solo Cornet (as usual)".</summary>
     public string TuneLineupLabel => s.Format("Output_TuneLineup", PartLabel(BandLead));

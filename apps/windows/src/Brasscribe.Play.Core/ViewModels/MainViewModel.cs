@@ -166,7 +166,8 @@ public sealed partial class MainViewModel : ObservableObject
             // An engine from before seats ignores them: say so once, rather than a silent Solo Cornet part.
             Output.StatusText = null;
             // Only where the seat changes the notes (a solo take, or the tune on the seat): on a band take it changes none.
-            if (r.Options is { Seat: not null, Lead: "seat" } && Lineups.RecordedSeat(r.Composition) is null)
+            // An engine from before the trumpet refused it and wrote the Solo Cornet part: that is said too.
+            if (r.SeatFellBack || r.Options is { Seat: not null, Lead: "seat" } && Lineups.RecordedSeat(r.Composition) is null)
             {
                 Output.StatusText = _s["Output_OldComputer"];
                 _announcer.Announce(Output.StatusText, AnnouncementKind.Important);

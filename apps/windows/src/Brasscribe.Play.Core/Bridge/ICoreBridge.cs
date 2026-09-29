@@ -43,13 +43,13 @@ public interface ICoreBridge
     /// <summary>Humanized timing and velocity for one player's notes, or null when this core has no humanizer.</summary>
     HumanizedPart? Humanize(IReadOnlyList<HumanizeNote> notes, string part, int player, string? compositionJson);
 
-    /// <summary>The 18 seats of the contest band in score order, for "What do you play?"; empty when this core has none.</summary>
+    /// <summary>The seats of the contest band (and the trumpet) in score order, for "What do you play?"; empty when this core has none.</summary>
     IReadOnlyList<SeatInfo> Seats();
 
     /// <summary>The player's part in a lineup (the core's name: band, minimal, quartet) for a seat id; null when this core can't say.</summary>
     SeatPart? SeatPartFor(string lineup, string seat);
 
-    /// <summary>Where each part of a Composition's arrangement comes from (your-recording, recording, arranged); empty when unknown.</summary>
+    /// <summary>Where each part of a Composition's arrangement comes from (your-recording, recording, arranged, empty); empty when unknown.</summary>
     IReadOnlyDictionary<string, string> PartSources(string compositionJson);
 
     /// <summary>A part's name in Norwegian from the core's one table; the name unchanged when the core doesn't know it.</summary>
@@ -63,13 +63,19 @@ public interface ICoreBridge
 /// <param name="Instrument">The instrument id ("bb-cornet", "euphonium").</param>
 /// <param name="Clef">The band part's own clef.</param>
 /// <param name="Reads">The clefs a player of this seat may read, the band's own first; empty for percussion.</param>
-public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads);
+/// <param name="Tune">The seat's part can carry the tune (the core's Melody and Solo roles).</param>
+public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads, bool Tune = false)
+{
+    /// <summary>Percussion: no clef to read, so a solo take can't be written for it.</summary>
+    public bool IsPercussion => Reads.Count == 0;
+}
 
 /// <summary>The player's part in a lineup for their seat (the core's <c>bc_seat_part</c>).</summary>
 /// <param name="Part">The lineup's part; null when the lineup has none (percussion in the small band).</param>
 /// <param name="Exact">The seat's own part.</param>
 /// <param name="SameKey">The part is in the seat's key, so it reads without transposing.</param>
-public sealed record SeatPart(string? Part, bool Exact, bool SameKey);
+/// <param name="Takes">The lineup part the seat's own part replaced (a trumpet takes "Solo Cornet"), or null.</param>
+public sealed record SeatPart(string? Part, bool Exact, bool SameKey, string? Takes = null);
 
 /// <summary>The three sources of a part (the core's <c>part_sources</c>).</summary>
 public static class PartSource
@@ -77,6 +83,8 @@ public static class PartSource
     public const string YourRecording = "your-recording";
     public const string Recording = "recording";
     public const string Arranged = "arranged";
+    /// <summary>Nothing to play in this arrangement (Percussion without drums, a Soprano Cornet with no climax).</summary>
+    public const string Empty = "empty";
 }
 
 public sealed class ManagedCoreBridge : ICoreBridge

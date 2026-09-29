@@ -47,16 +47,17 @@ public class MyInstrumentTests
 
         public IReadOnlyList<SeatInfo> Seats() =>
         [
-            new("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", Treble),
-            new("2nd-cornet", "2nd Cornet", "2. kornett", "bb-cornet", "treble", Treble),
-            new("3rd-cornet", "3rd Cornet", "3. kornett", "bb-cornet", "treble", Treble),
-            new("flugelhorn", "Flugelhorn", "Flygelhorn", "flugelhorn", "treble", Treble),
-            new("solo-horn", "Solo Horn", "Solo althorn", "eb-tenor-horn", "treble", Treble),
+            new("solo-cornet", "Solo Cornet", "Solokornett", "bb-cornet", "treble", Treble, Tune: true),
+            new("2nd-cornet", "2nd Cornet", "2. kornett", "bb-cornet", "treble", Treble, Tune: true),
+            new("3rd-cornet", "3rd Cornet", "3. kornett", "bb-cornet", "treble", Treble, Tune: true),
+            new("flugelhorn", "Flugelhorn", "Flygelhorn", "flugelhorn", "treble", Treble, Tune: true),
+            new("solo-horn", "Solo Horn", "Solo althorn", "eb-tenor-horn", "treble", Treble, Tune: true),
             new("1st-baritone", "1st Baritone", "1. baryton", "baritone", "treble", Both),
             new("2nd-baritone", "2nd Baritone", "2. baryton", "baritone", "treble", Both),
-            new("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", Both),
+            new("euphonium", "Euphonium", "Eufonium", "euphonium", "treble", Both, Tune: true),
             new("eb-bass", "E♭ Bass", "Ess-bass", "eb-bass", "treble", Both),
             new("percussion", "Percussion", "Slagverk", "drum-kit", "percussion", []),
+            new("trumpet", "Trumpet", "Trompet", "bb-trumpet", "treble", Treble, Tune: true),
         ];
 
         private static readonly Dictionary<string, (string? Band, string? Minimal, string? Quartet)> Table = new()
@@ -71,6 +72,8 @@ public class MyInstrumentTests
             ["euphonium"] = ("Euphonium", "Euphonium", "Euphonium"),
             ["eb-bass"] = ("E♭ Bass", "E♭ Bass", "Euphonium"),
             ["percussion"] = ("Percussion", null, null),
+            // The trumpet takes the band's lead part in place; in the quartet it is mapped like any same-key seat.
+            ["trumpet"] = ("Trumpet", "Trumpet", "1st Cornet"),
         };
 
         public SeatPart? SeatPartFor(string lineup, string seat)
@@ -79,7 +82,8 @@ public class MyInstrumentTests
             string? part = lineup switch { "band" => row.Band, "minimal" => row.Minimal, "quartet" => row.Quartet, _ => throw new ArgumentException(lineup) };
             string own = Seats().Single(s => s.Id == seat).Name;
             bool sameKey = part is not null && !(seat == "eb-bass" && part == "Euphonium");
-            return new SeatPart(part, part == own, sameKey);
+            string? takes = seat == "trumpet" && lineup != "quartet" ? "Solo Cornet" : null;
+            return new SeatPart(part, part == own && takes is null, sameKey, takes);
         }
 
         public IReadOnlyDictionary<string, string> PartSources(string compositionJson) => Sources;
@@ -90,6 +94,7 @@ public class MyInstrumentTests
             "Solo Horn" => "Solo althorn",
             "Percussion" => "Slagverk",
             "Euphonium" => "Eufonium",
+            "Trumpet" => "Trompet",
             _ => name,
         };
     }
@@ -228,6 +233,43 @@ public class MyInstrumentTests
             YourPart.Notice(s, catalog, choice, r, SmallBand, new FakeCore().PartNameNb));
     }
 
+    private static readonly ScorePart[] TrumpetSmallBand = [P("Trumpet"), .. SmallBand[1..]];
+
+    [Fact]
+    public void A_trumpet_takes_the_lead_part_in_a_band_and_says_so()
+    {
+        var core = new FakeCore();
+        var choice = new SeatChoice("trumpet", null);
+        var r = YourPart.Resolve(core, choice, Lineup.MinimalBand, TrumpetSmallBand, null);
+        Assert.Equal((0, SeatNotice.Takes, "Solo Cornet"), (r.Index, r.Notice, r.Takes));
+        var en = Strings();
+        Assert.Equal("The small band has no trumpet part. You get the Solo Cornet part, written for trumpet.",
+            YourPart.Notice(en, new SeatCatalog(core, en), choice, r, TrumpetSmallBand, n => n));
+        var full = YourPart.Resolve(core, choice, Lineup.FullBand, TrumpetSmallBand, null);
+        Assert.Equal("The full brass band has no trumpet part. You get the Solo Cornet part, written for trumpet.",
+            YourPart.Notice(en, new SeatCatalog(core, en), choice, full, TrumpetSmallBand, n => n));
+        var nb = Strings("nb-NO");
+        Assert.Equal("Fullt brassband har ingen stemme for trompet. Du får stemmen til Solokornett, skrevet for trompet.",
+            YourPart.Notice(nb, new SeatCatalog(core, nb), choice, full, TrumpetSmallBand, core.PartNameNb));
+        Assert.Equal("Det lille bandet har ingen stemme for trompet. Du får stemmen til Solokornett, skrevet for trompet.",
+            YourPart.Notice(nb, new SeatCatalog(core, nb), choice, r, TrumpetSmallBand, core.PartNameNb));
+    }
+
+    [Fact]
+    public void A_trumpet_opens_on_the_solo_cornet_in_a_score_written_before_the_seat()
+    {
+        // An older engine wrote the job as solo-cornet: the band has its Solo Cornet, and the notice says it is the closest.
+        var s = Strings();
+        var choice = new SeatChoice("trumpet", null);
+        var r = YourPart.Resolve(new FakeCore(), choice, Lineup.MinimalBand, SmallBand, null);
+        Assert.Equal((0, SeatNotice.SameKey), (r.Index, r.Notice));
+        Assert.Equal("This small band has no Trumpet. Your part here is Solo Cornet, the closest: the same key and clef.",
+            YourPart.Notice(s, new SeatCatalog(new FakeCore(), s), choice, r, SmallBand, n => n));
+        // The quartet maps the trumpet like any same-key seat.
+        var q = YourPart.Resolve(new FakeCore(), choice, Lineup.Quartet, Quartet, null);
+        Assert.Equal((0, SeatNotice.SameKey), (q.Index, q.Notice));
+    }
+
     [Fact]
     public void The_notice_is_said_once_and_moving_your_part_keeps_it_muted_quietly()
     {
@@ -284,9 +326,10 @@ public class MyInstrumentTests
         Assert.Equal(-1, picker.InstrumentIndex);
         Assert.False(picker.CanContinue);
         Assert.Equal("Choose your instrument, or “I conduct or listen”.", picker.ContinueHint);
-        Assert.Equal(["Cornet", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "E♭ Bass", "Percussion"], picker.Tiles.Select(t => t.Label));
-        Assert.Equal("Tenor Horn, in E flat", picker.Tiles[2].SpokenLabel);
-        Assert.Equal("E flat Bass", picker.Tiles[5].SpokenLabel);
+        Assert.Equal(["Cornet", "Trumpet", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "E♭ Bass", "Percussion"], picker.Tiles.Select(t => t.Label));
+        Assert.Equal("Trumpet, in B flat", picker.Tiles[1].SpokenLabel);
+        Assert.Equal("Tenor Horn, in E flat", picker.Tiles[3].SpokenLabel);
+        Assert.Equal("E flat Bass", picker.Tiles[6].SpokenLabel);
 
         picker.InstrumentIndex = 0; // Cornet: which part? with nothing chosen
         Assert.True(picker.ShowsParts);
@@ -297,7 +340,12 @@ public class MyInstrumentTests
         picker.PartIndex = 2;
         Assert.Equal(new SeatChoice("3rd-cornet", null), picker.Choice);
 
-        picker.InstrumentIndex = 3; // Baritone: the part again, and the clef with the band's own chosen
+        picker.InstrumentIndex = 1; // Trumpet: one part, treble only (docs/plan/trumpet.md §3.4)
+        Assert.False(picker.ShowsParts);
+        Assert.False(picker.ShowsReads);
+        Assert.Equal(new SeatChoice("trumpet", null), picker.Choice);
+
+        picker.InstrumentIndex = 4; // Baritone: the part again, and the clef with the band's own chosen
         Assert.Equal(-1, picker.PartIndex);
         Assert.True(picker.ShowsReads);
         Assert.Equal(["Treble clef in B♭", "Bass clef, as it sounds"], picker.ReadsChoices);
@@ -306,7 +354,7 @@ public class MyInstrumentTests
         picker.ReadsIndex = 1;
         Assert.Equal(new SeatChoice("1st-baritone", "bass"), picker.Choice);
 
-        picker.InstrumentIndex = 5;
+        picker.InstrumentIndex = 6;
         Assert.Equal(["Treble clef in E♭", "Bass clef, as it sounds"], picker.ReadsChoices);
         Assert.Equal(new SeatChoice("eb-bass", null), picker.Choice);
     }
@@ -317,7 +365,7 @@ public class MyInstrumentTests
         var s = Strings();
         var catalog = new SeatCatalog(new FakeCore(), s);
         var picker = new SeatPickerViewModel(catalog, s, new SeatChoice("1st-baritone", "bass"));
-        Assert.Equal((3, 0, 1), (picker.InstrumentIndex, picker.PartIndex, picker.ReadsIndex));
+        Assert.Equal((4, 0, 1), (picker.InstrumentIndex, picker.PartIndex, picker.ReadsIndex));
         Assert.Equal("1st Baritone · bass clef, as it sounds", catalog.Describe(new SeatChoice("1st-baritone", "bass")));
         Assert.Equal("1st Baritone · treble clef in B♭", catalog.Describe(new SeatChoice("1st-baritone", null)));
         Assert.Equal("2nd Cornet", catalog.Describe(new SeatChoice("2nd-cornet", null)));
@@ -346,7 +394,7 @@ public class MyInstrumentTests
         Assert.Contains("What do you play?", said.Items);
         Assert.False(main.ContinueWithSeatCommand.CanExecute(null));
 
-        main.FirstRunSeat!.InstrumentIndex = 4; // Euphonium: one part
+        main.FirstRunSeat!.InstrumentIndex = 5; // Euphonium: one part
         Assert.True(main.ContinueWithSeatCommand.CanExecute(null));
         Assert.Null(store.Get<string?>("Seat", null)); // nothing until Continue (WCAG 3.2.2)
         main.ContinueWithSeatCommand.Execute(null);
@@ -436,6 +484,11 @@ public class MyInstrumentTests
         output.PlayerSeat = new SeatChoice("solo-cornet", null);
         output.BeginTake();
         Assert.False(output.ShowsTuneChoice);
+        // The trumpet takes the lead part: the tune is on it already.
+        output.PlayerSeat = new SeatChoice("trumpet", null);
+        output.BeginTake();
+        Assert.False(output.ShowsTuneChoice);
+        Assert.Null(output.Options.Lead);
     }
 
     [Fact]
@@ -610,12 +663,20 @@ public class MyInstrumentTests
         Assert.Equal(new SeatPart("Euphonium", false, false), core.SeatPartFor("quartet", "eb-bass"));
         Assert.Equal(new SeatPart(null, false, false), core.SeatPartFor("quartet", "percussion"));
         Assert.Equal("Eufonium", core.PartNameNb("Euphonium"));
+        // The trumpet: its own part in a band, in place of the Solo Cornet; the tune flag is the core's.
+        Assert.Equal(new SeatPart("Trumpet", false, true, "Solo Cornet"), core.SeatPartFor("minimal", "trumpet"));
+        Assert.Null(core.SeatPartFor("quartet", "trumpet")!.Takes);
+        Assert.True(seats.Single(s => s.Id == "trumpet").Tune);
+        Assert.True(seats.Single(s => s.Id == "euphonium").Tune);
+        Assert.False(seats.Single(s => s.Id == "eb-bass").Tune);
+        Assert.True(seats.Single(s => s.Id == "percussion").IsPercussion);
 
         // The picker's instruments, from the core: the four with parts get the app's word, the rest their seat's name.
         var catalog = new SeatCatalog(core, Strings());
-        Assert.Equal(["Cornet", "Soprano", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "Trombone", "Bass Trombone", "E♭ Bass", "B♭ Bass", "Percussion", "Trumpet"],
+        Assert.Equal(["Cornet", "Trumpet", "Soprano", "Flugelhorn", "Tenor Horn", "Baritone", "Euphonium", "Trombone", "Bass Trombone", "E♭ Bass", "B♭ Bass", "Percussion"],
             catalog.Tiles.Select(t => t.Label));
-        Assert.Equal("E♭ cornet", catalog.Tiles[1].Detail);
+        Assert.Equal("E♭ cornet", catalog.Tiles[2].Detail);
+        Assert.Equal(("bb-trumpet", "in B♭"), (catalog.Tiles[1].Key, catalog.Tiles[1].Detail));
         Assert.Equal(["Sopran", "Althorn", "Basstrombone"],
             new SeatCatalog(core, Strings("nb-NO")).Tiles.Where(t => t.Key is "eb-soprano-cornet" or "eb-tenor-horn" or "bass-trombone").Select(t => t.Label));
     }

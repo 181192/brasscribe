@@ -278,14 +278,15 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         return _seats = ParseSeats(Take(json));
     }
 
-    /// <summary>The rows of bc_seats: <c>[{"id", "name", "nb_name", "instrument", "clef", "reads": [...]}]</c>.</summary>
+    /// <summary>The rows of bc_seats: <c>[{"id", "name", "nb_name", "instrument", "clef", "reads": [...], "tune"}]</c>.</summary>
     internal static IReadOnlyList<SeatInfo> ParseSeats(string json)
     {
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.EnumerateArray().Select(x => new SeatInfo(
             x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!, x.GetProperty("nb_name").GetString()!,
             x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
-            x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList())).ToList();
+            x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList(),
+            x.TryGetProperty("tune", out var tune) && tune.ValueKind == JsonValueKind.True)).ToList();
     }
 
     public SeatPart? SeatPartFor(string lineup, string seat)
@@ -296,7 +297,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         var r = doc.RootElement;
         var part = r.GetProperty("part");
         return new SeatPart(part.ValueKind == JsonValueKind.Null ? null : part.GetString(), r.GetProperty("exact").GetBoolean(),
-            r.GetProperty("same_key").GetBoolean());
+            r.GetProperty("same_key").GetBoolean(),
+            r.TryGetProperty("takes", out var takes) && takes.ValueKind == JsonValueKind.String ? takes.GetString() : null);
     }
 
     public IReadOnlyDictionary<string, string> PartSources(string compositionJson)

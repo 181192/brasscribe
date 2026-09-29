@@ -724,6 +724,7 @@ add("Seat_ContinueHintPart", "Choose which part you play.", "Velg hvilken stemme
 # The tiles' instrument words and their second line (the mockup's, the same on every platform); "-": no second line.
 for key, en, nb, den, dnb in [
     ("Cornet", "Cornet", "Kornett", "-", "-"),
+    ("Trumpet", "Trumpet", "Trompet", "in B♭", "i B"),
     ("Soprano", "Soprano", "Sopran", "E♭ cornet", "Ess-kornett"),
     ("Flugelhorn", "Flugelhorn", "Flygelhorn", "-", "-"),
     ("TenorHorn", "Tenor Horn", "Althorn", "in E♭", "i Ess"),
@@ -760,6 +761,11 @@ add("Seat_Notice_OtherKey_Small", "This small band has no {0}. Your part here is
     "Det lille bandet har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
 add("Seat_Notice_OtherKey_Quartet", "This quartet has no {0}. Your part here is {1}, written for {2}.",
     "Kvartetten har ingen {0}. Her er stemmen din {1}, skrevet for {2}.")
+# A trumpet takes the band's lead part: {0} the seat word in running text ("trumpet"), {1} the part it takes.
+add("Seat_Notice_Takes_Full", "The full brass band has no {0} part. You get the {1} part, written for {0}.",
+    "Fullt brassband har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.")
+add("Seat_Notice_Takes_Small", "The small band has no {0} part. You get the {1} part, written for {0}.",
+    "Det lille bandet har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.")
 add("Seat_Notice_NoPart_Full", "This full band has no {0} part. Brasscribe opens every part.",
     "Det fulle bandet har ingen stemme for {0}. Brasscribe åpner alle stemmene.")
 add("Seat_Notice_NoPart_Small", "This small band has no {0} part. Brasscribe opens every part.",

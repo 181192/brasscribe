@@ -1554,6 +1554,12 @@
   <data name="Seat_Notice_SameKey_Small" xml:space="preserve">
     <value>Det lille bandet har ingen {0}. Her er stemmen din {1}, den nærmeste: samme stemming og nøkkel.</value>
   </data>
+  <data name="Seat_Notice_Takes_Full" xml:space="preserve">
+    <value>Fullt brassband har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.</value>
+  </data>
+  <data name="Seat_Notice_Takes_Small" xml:space="preserve">
+    <value>Det lille bandet har ingen stemme for {0}. Du får stemmen til {1}, skrevet for {0}.</value>
+  </data>
   <data name="Seat_ReadsBass" xml:space="preserve">
     <value>F-nøkkel, klingende</value>
   </data>
@@ -1605,6 +1611,9 @@
   <data name="Seat_TileDetail_Trombone" xml:space="preserve">
     <value>-</value>
   </data>
+  <data name="Seat_TileDetail_Trumpet" xml:space="preserve">
+    <value>i B</value>
+  </data>
   <data name="Seat_Tile_Baritone" xml:space="preserve">
     <value>Baryton</value>
   </data>
@@ -1637,6 +1646,9 @@
   </data>
   <data name="Seat_Tile_Trombone" xml:space="preserve">
     <value>Trombone</value>
+  </data>
+  <data name="Seat_Tile_Trumpet" xml:space="preserve">
+    <value>Trompet</value>
   </data>
   <data name="Seat_Value" xml:space="preserve">
     <value>{0} · {1}</value>

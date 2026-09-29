@@ -100,6 +100,7 @@ public sealed class SeatCatalog
     private static string? TileKey(string instrument) => instrument switch
     {
         "bb-cornet" => "Cornet",
+        "bb-trumpet" => "Trumpet",
         "eb-soprano-cornet" => "Soprano",
         "flugelhorn" => "Flugelhorn",
         "eb-tenor-horn" => "TenorHorn",
@@ -113,16 +114,10 @@ public sealed class SeatCatalog
         _ => null,
     };
 
-    /// <summary>The tiles' order, as in the mockup: the cornets first, the basses and percussion last.</summary>
+    /// <summary>The tiles' order, as in the mockup: the cornets first (the trumpet right after), the basses and percussion last.</summary>
     private static readonly List<string> TileOrder =
-        ["bb-cornet", "eb-soprano-cornet", "flugelhorn", "eb-tenor-horn", "baritone", "euphonium", "tenor-trombone", "bass-trombone", "eb-bass", "bb-bass", "drum-kit"];
+        ["bb-cornet", "bb-trumpet", "eb-soprano-cornet", "flugelhorn", "eb-tenor-horn", "baritone", "euphonium", "tenor-trombone", "bass-trombone", "eb-bass", "bb-bass", "drum-kit"];
 
-    /// <summary>
-    /// Instruments whose part can carry the tune (the core's Melody and Solo roles). A stopgap until the core's
-    /// seat rows say it themselves; remove it then.
-    /// </summary>
-    private static readonly HashSet<string> TuneInstruments = ["eb-soprano-cornet", "bb-cornet", "flugelhorn", "eb-tenor-horn", "tenor-trombone", "euphonium"];
-
-    /// <summary>The band part (by name) can carry the tune.</summary>
-    public bool CarriesTune(string part) => All.FirstOrDefault(x => x.Name == part) is { } s && TuneInstruments.Contains(s.Instrument);
+    /// <summary>The band part (by name) can carry the tune: the core's <c>tune</c> for the seat of that part.</summary>
+    public bool CarriesTune(string part) => All.FirstOrDefault(x => x.Name == part) is { Tune: true };
 }

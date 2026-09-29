@@ -24,8 +24,33 @@ public sealed partial class TranscriptionStep(string key, string label) : Observ
 /// <summary>Why making a score stopped, so the error screen can say what to do next.</summary>
 public enum TranscriptionFailure { None, ComputerUnreachable, Failed }
 
+/// <summary>A finished transcription. <c>SeatFellBack</c>: the engine refused the seat and wrote the job for <see cref="EngineSeats.Fallback"/>'s seat.</summary>
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
-    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null);
+    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null, bool SeatFellBack = false);
+
+/// <summary>Seats an engine from before them refuses, and what to send it instead.</summary>
+public static class EngineSeats
+{
+    /// <summary>The seat whose part an older engine writes the same notes for: a trumpet takes the Solo Cornet part.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Fallback = new Dictionary<string, string> { ["trumpet"] = "solo-cornet" };
+
+    /// <summary>
+    /// Creates the job; an engine from before the seat refuses it (422, no refusal code), and then it goes once more
+    /// with the fallback seat and no reading or lead. The second value says it fell back.
+    /// </summary>
+    public static async Task<(Job Job, bool FellBack)> CreateJobAsync(IEngineClient engine, JobCreate request, CancellationToken ct = default)
+    {
+        try
+        {
+            return (await engine.CreateJobAsync(request, ct), false);
+        }
+        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && e.Code is null
+                                        && request.Seat is { } seat && Fallback.ContainsKey(seat))
+        {
+            return (await engine.CreateJobAsync(request with { Seat = Fallback[request.Seat], Reads = null, Lead = null }, ct), true);
+        }
+    }
+}
 
 /// <summary>
 /// Runs a transcription on the companion engine: upload, job, live progress in plain language with
@@ -188,7 +213,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
                 audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
             }
 
-            var job = await engine.CreateJobAsync(new JobCreate(audioId, profile, RenderAudio: true,
+            var (job, seatFellBack) = await EngineSeats.CreateJobAsync(engine, new JobCreate(audioId, profile, RenderAudio: true,
                 Title: Path.GetFileNameWithoutExtension(source.DisplayName),
                 Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
                 Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), ct);
@@ -230,7 +255,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             try { evidence = await engine.GetEvidenceAsync(job.Id, ct); }
             catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
             _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
-            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence));
+            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence, seatFellBack));
         }
         catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
         {

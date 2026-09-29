@@ -10,14 +10,18 @@ namespace Brasscribe.Play.Core.Seats;
 /// <param name="IsPercussion">A percussion part (never the first Solo part).</param>
 public sealed record ScorePart(string Name, int Chromatic, bool IsPercussion);
 
-/// <summary>Why the player's part is not their own seat's part: the lineup lacks the seat.</summary>
-public enum SeatNotice { None, SameKey, OtherKey, NoPart }
+/// <summary>
+/// Why the player's part is not their own seat's part: the lineup lacks the seat. <see cref="Takes"/>: the seat's own
+/// part stands in place of a lineup part (a trumpet takes the Solo Cornet part in a band).
+/// </summary>
+public enum SeatNotice { None, SameKey, OtherKey, NoPart, Takes }
 
 /// <summary>The player's part in one score.</summary>
 /// <param name="Index">Index of the part in the score; -1: no part is the player's (every part is shown).</param>
 /// <param name="Notice">Set when the lineup lacks the seat and the closest part (or none) stands in.</param>
 /// <param name="Lineup">The lineup the seat was looked up in, for the notice's words.</param>
-public sealed record YourPartResult(int Index, SeatNotice Notice = SeatNotice.None, Lineup? Lineup = null)
+/// <param name="Takes">With <see cref="SeatNotice.Takes"/>: the lineup part the seat's part replaced ("Solo Cornet").</param>
+public sealed record YourPartResult(int Index, SeatNotice Notice = SeatNotice.None, Lineup? Lineup = null, string? Takes = null)
 {
     public static readonly YourPartResult Nobody = new(-1);
 }
@@ -36,6 +40,14 @@ public static class YourPart
         if (choice.IsConductor) return YourPartResult.Nobody;
         var seat = choice.SeatId is { } id ? core.Seats().FirstOrDefault(s => s.Id == id) : null;
         if (seat is null) return new(Legacy(parts));
+
+        // A seat that takes a lineup part (a trumpet takes the lead in a band): its own part with the notice saying
+        // which part it replaced, or, in a score written before the seat (an older engine), the part it takes.
+        if (lineup is { } shown && core.SeatPartFor(Lineups.Core(shown), seat.Id) is { Takes: { } takes })
+        {
+            if (IndexOf(parts, seat.Name) is var mine and >= 0) return new(mine, SeatNotice.Takes, shown, takes);
+            if (IndexOf(parts, takes) is var taken and >= 0) return new(taken, SeatNotice.SameKey, shown);
+        }
 
         // The seat's own part: the full band, and a solo take written for the seat.
         if (IndexOf(parts, seat.Name) is var own and >= 0) return new(own);
@@ -77,6 +89,10 @@ public static class YourPart
             _ => throw new ArgumentOutOfRangeException(nameof(result), lineup, null),
         };
         string seatName = seats.Name(seat);
+        // "The full brass band has no trumpet part. You get the Solo Cornet part, written for trumpet." (the seat word in
+        // running text is lower case). The quartet has no such form: there a trumpet is mapped like any same-key seat.
+        if (result.Notice == SeatNotice.Takes && result.Takes is { } replaced && lineup != Lineup.Quartet)
+            return s.Format($"Seat_Notice_Takes_{which}", seatName.ToLowerInvariant(), partName(replaced));
         if (result.Notice == SeatNotice.NoPart) return s.Format($"Seat_Notice_NoPart_{which}", seatName);
         var part = parts[result.Index];
         string mine = partName(part.Name);
