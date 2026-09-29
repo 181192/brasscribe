@@ -5,7 +5,7 @@ license = "MIT OR Apache-2.0"
 description = "Symbolic core: the Composition model, quantization, spelling, arrangement and MusicXML export"
 readme = "README.md"
 authors = [
-    { name = "Kalliainen, Kristoffer-Andre", email = "k@kalli.no" }
+    { name = "Kristoffer-Andre Kalliainen" }
 ]
 requires-python = ">=3.12,<3.13"
 dependencies = [
