@@ -141,10 +141,12 @@ CHORD = {  # chord tones per section, as an offset from the part's comfortable m
 
 
 def band_phrase(mapping: dict) -> tuple[dict[str, list], tuple[float, float]]:
-    """All parts at once: three 4 s chords, cornets add 16ths above, drums keep time."""
+    """The brass band's parts at once: three 4 s chords, cornets add 16ths above, drums keep time. Only the
+    Brass band lineup: parts that stand in for one of them (1st Cornet, Tenor Horn, Trumpet) are not added."""
     out: dict[str, list] = {}
     t0 = 0.5
-    for name, part in mapping["parts"].items():
+    for name in (p.name for p in BRASS_BAND.parts):
+        part = mapping["parts"][name]
         inst = INSTRUMENTS[part["instrument"]]
         notes = []
         if inst.id == "drum-kit":

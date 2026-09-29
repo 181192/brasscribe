@@ -404,7 +404,7 @@ pub fn lineup_by_name(name: &str) -> Result<Lineup, String> {
 /// arrangement; parts of a lineup without their own bank take the band's.
 /// The own part of a seat that is not a brass-band part, by name: the trumpet's.
 pub fn seat_own_part(name: &str) -> Option<Part> {
-    (name == "Trumpet").then(|| ps("Trumpet", &TRUMPET, 1, "Tpt.", Some(1)))
+    (name == "Trumpet").then(|| ps("Trumpet", &TRUMPET, 1, "Tpt.", Some(8)))
 }
 
 pub fn part_banks() -> Vec<(&'static str, i64)> {

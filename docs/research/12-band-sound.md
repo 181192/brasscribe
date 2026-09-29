@@ -416,3 +416,42 @@ p is the worst fit. The sampler's velocity layers jump 5 dB between 55 and 56, s
 - **Android mono playback** is assumed to reach both speakers at full level (dual mono). This was not measured on a device.
 - **Android's clip player** fades over about 15 ms on stop, not 80 ms. The fade blocks its caller.
 - **Not run here:** the WinUI app (the `MediaPlayer` volume and fade are type-checked only), the Apple app target, and any physical phone.
+
+## 12. The low end, a solo cornet, a trumpet and a band kit (pack `sounds-2026.09.29`)
+
+**What made the low end sound bad.** Measured on the Mikkel golden, Old Hundredth, a minimal-band pop take and a full-band solo take, through Apple (PlaybackEngine, offline), alphaSynth (the Windows player; Android plays the same synth) and FluidSynth. The render harnesses are `RenderHarnessTests` in PlaybackKit and in the Windows tests (env-gated).
+
+1. **One waveform doubled.** Parts that shared a target played the same sample for the same key: Solo/1st/2nd Horn, 1st/2nd Baritone, 1st/2nd Trombone. Baritone, euphonium and trombone were the same VSCO recordings under different EQ, and so were E♭ and B♭ bass. The golden has 1,553 same-source unison onsets (horns 571, trombone family 511, cornets 471). A unison summed to +6.02 dB at correlation 1.00 (horns, baritones, trombones), +5.85 dB at 0.92 (the basses) and +5.8 dB at 0.91 (baritone with trombone): one louder instrument, not a section, and a comb filter where the EQs differ. The limiter's rare hits on the golden came from these parts.
+2. **Held notes pumped.** Loops were cut from decaying stretches. On the low brass the level stepped 2–4.5 dB at every seam (end quieter than start), and the loop body swung 3–8 dB, a sawtooth every 0.7–1.2 s on a held bass note. `checks.py loops` passed it, because it tested waveform continuity only.
+3. **Apple's hall drowned the band.** Without a room IR (the app), "Concert hall sound" is the environment node's medium hall at −6 dB with sampler reverb blend 0.35. It made the band 9.7 dB louder than the dry room (wet 9.2 dB over direct, against the 4.5 dB the reference renderer is calibrated to), with a further +1.6…+3.4 dB at 63–125 Hz. Turning the hall off dropped the band by 9.7–11.3 LU.
+4. **The kick carried the sub-bass.** MS Basic's kick has −5 dB of its energy below 60 Hz; the golden's 20–60 Hz band was mostly the kick.
+
+Not the cause:
+- **The limiter** is memoryless and active on 0.1% of golden samples.
+- **Sample stretch** is at most 3 semitones in the comfortable ranges.
+- **The 1–4 kHz level** of the euphonium (−28.2 dB re 100 Hz–1 kHz) and the B♭ bass (−36.7) is within the references (baritone −30.6; tuba −32.2 in ChoraleBricks, −36.0 in URMP). The trombones are 5–9 dB duller than the references, and EQ does not fix it (the VSCO mf samples lack the upper partials). That is left as is.
+
+**What changed.**
+- **Desk variants.** Same-source parts play different recordings per key (§ Band SoundFont in `sounds/README.md`). Every pair now sums to +2.8…+3.4 dB (median), with median correlation −0.05…0.09 and no key above 0.9.
+- **Steady loops.** The sustain is held at the level of its first half second. The loop is placed where level and brightness match and nothing dips inside it. The pump median is 0.31 dB (was 1.10), p95 1.03 (2.85), max 2.56 (46.9).
+- **Apple hall.** Reverb level −10.7 dB, with a −4 dB low shelf at 250 Hz on the reverb. The hall now adds as much energy as the dry room gives up to `dry_room_gain_db` (+5 dB, applied when the hall is off). Hall minus room: golden +0.4 dB total, 63 Hz −2.5 dB re 1 kHz. Loudness: golden −12.00 / −13.43 LUFS (hall / room), Old Hundredth −14.75 / −15.39, pop take −15.97 / −16.93 (before: −12.11 / −23.19, −20.00 / −25.07, −22.11 / −27.20).
+- **Band kit.** VSCO muted concert bass drum, concert snare and clash cymbals. The bass drum has −21 dB of its energy below 60 Hz, against −5 for the MS Basic kick.
+- **Solo cornet and trumpet.** See `sounds/README.md`. The solo cornet now sits about 1.4 LU further in front of the band on the golden than the old desk sound did.
+
+**Levels after** (the gates, all against the staged pack):
+
+| | Apple | alphaSynth (Windows; Android same synth) |
+|---|---|---|
+| Full-band phrase | −12.43 LUFS (gain 31.5 dB, was 26) | −12.80 (gain 5 dB, was 4); Android emulator −12.88 |
+| Golden arrangement | −12.00 (hall), −13.43 (room) | −11.48 desktop, −11.54 phone SoundFont |
+| Metronome click | unchanged | −9.41 dBFS (click −1 dB through the stage) |
+
+- The alphaSynth velocity knots were re-measured. The band estimate offset was refitted to −0.17 on the golden (−11.54 measured, −11.54 estimated); the phrase estimates −12.28.
+- The engine's MP3 (MuseScore's own sounds, not this pack) measures −4.6 LUFS, peaking at 0.0 dBFS; it is out of scope here.
+
+**Sizes.** 16-bit 195.1 → 200.3 MB; phone 77.3 → 70.8 MB. Loops now end earlier, which pays for the solo cornet, the trumpet and the kit. On Android the score screen uses 35–45 MB less Java heap.
+
+**Open.**
+- **Apple per-part balance.** Against alphaSynth, on the golden stems with the solo cornet as reference, Apple plays most parts 2.4–5.3 dB hotter. This was already the case before (0…+5.7 dB), and comes from the environment node's seating (HRTF, distance), not from the pack.
+- **The pop kit** needs a style signal from the arranger before anything can select it.
+- **Velocity layers.** The alphaSynth phrase still jumps 6 dB between mp and mf and 5.7 dB between f and ff, at the three-layer splits.

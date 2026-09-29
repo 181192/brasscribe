@@ -285,10 +285,7 @@ class ScoreController(
         currentCoroutineContext().ensureActive()
         val s = ScoreLoader.loadScoreFromBytes(Uint8Array(marked.asUByteArray()), settings)
         currentCoroutineContext().ensureActive()
-        // alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better.
-        val names = (0 until s.tracks.length.toInt()).map { i ->
-            s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace(' ', ' ').trim()
-        }
+        val names = BandPlan.partNames(s)
         val shown = pick(names).filter { it < names.size }.toSet().ifEmpty { setOf(0) }
         // Banks only exist in the band SoundFont; alphaTab's General MIDI one has bank 0 alone, and a
         // pitched channel on a missing bank is silent, so the basic tier keeps bank 0.
@@ -296,41 +293,10 @@ class ScoreController(
         return prepareSound(s, names, shown, band)
     }
 
-    /**
-     * One MIDI channel per part (drums on channel 10), the band SoundFont preset (program, bank) per
-     * part, and its balance as channel gain. The MusicXML importer turns <midi-instrument> into
-     * per-beat instrument and bank changes that would override the preset, so those are removed.
-     * Touches only the new score, which nothing else holds yet, so it is safe off the main thread.
-     */
+    /** The playback plan ([BandPlan]), which "Listen to this bar" plays too. */
     private fun prepareSound(s: Score, names: List<String>, shown: Set<Int>, band: Boolean): Parsed {
-        val percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
-        val channels = ChannelPlan.forPlayback(percussion)
-        val gains = DoubleArray(names.size) { 1.0 }
-        val sounds = names.indices.map { i ->
-            val t = s.tracks[i]
-            soundMap?.resolve(names[i], null, t.playbackInfo.program.toInt().takeIf { it in 0..127 })
-                ?.let { if (percussion[i] && !it.percussion) it.copy(percussion = true) else it }
-        }
-        for (i in names.indices) {
-            val t = s.tracks[i]
-            t.playbackInfo.primaryChannel = channels[i].toDouble()
-            t.playbackInfo.secondaryChannel = channels[i].toDouble()
-            val sound = sounds[i]
-            if (sound == null) {
-                android.util.Log.w("BrasscribePlay", "part '${names[i]}' is not a brass-band instrument; it keeps its MusicXML program")
-                continue
-            }
-            if (sound.step != "exact") android.util.Log.i("BrasscribePlay", "part '${names[i]}' plays the ${sound.part} preset (${sound.step})")
-            t.playbackInfo.program = if (sound.percussion) 0.0 else sound.program.toDouble()
-            t.playbackInfo.bank = if (sound.percussion || !band) 0.0 else sound.bank.toDouble()
-            gains[i] = sound.gain
-            for (staff in t.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) {
-                val keep = ArrayList<alphaTab.model.Automation>()
-                for (a in beat.automations) if (a.type != alphaTab.model.AutomationType.Instrument && a.type != alphaTab.model.AutomationType.Bank) keep += a
-                if (keep.size != beat.automations.length.toInt()) beat.automations = alphaTab.collections.List(*keep.toTypedArray())
-            }
-        }
-        return Parsed(s, names, shown, percussion, channels, sounds, gains, band)
+        val plan = BandPlan.apply(s, names, soundMap, band)
+        return Parsed(s, names, shown, plan.percussion, plan.channels, plan.sounds, plan.gains, band)
     }
 
     private var soundFontRequested = false

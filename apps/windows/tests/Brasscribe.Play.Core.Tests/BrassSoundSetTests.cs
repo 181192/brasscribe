@@ -40,13 +40,37 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
 
     private static string Sha(byte[] b) => Convert.ToHexStringLower(SHA256.HashData(b));
 
-    /// <summary>Without mapping.json, a trumpet player's lead part ("Trumpet") plays the Solo Cornet's sound.</summary>
+    /// <summary>
+    /// Without mapping.json, Solo Cornet and a trumpet player's lead part ("Trumpet") play their own
+    /// targets, and cornet-b in a set built before those targets.
+    /// </summary>
     [Fact]
-    public void The_trumpet_part_plays_the_solo_cornets_sound_without_a_mapping()
+    public void Solo_cornet_and_trumpet_play_their_own_targets_or_cornet_b_without_a_mapping()
     {
-        string Folder(string part) => BrassSoundSet.PartMap.First(m => part.Contains(m.PartContains, StringComparison.OrdinalIgnoreCase)).Instrument;
-        Assert.Equal("cornet-b", Folder("Trumpet"));
-        Assert.Equal(Folder("Solo Cornet"), Folder("Trumpet"));
+        static BrassSoundSet Set(string dir, params string[] folders)
+        {
+            foreach (var n in folders)
+            {
+                Directory.CreateDirectory(Path.Combine(dir, n));
+                File.WriteAllBytes(Path.Combine(dir, n, n + ".sf2"), []); // Load only lists the files
+            }
+            return BrassSoundSet.Load(dir);
+        }
+        var dir = Directory.CreateTempSubdirectory("brass-set").FullName;
+        try
+        {
+            var older = Set(Path.Combine(dir, "older"), "cornet-a", "cornet-b");
+            Assert.Equal(older.Programs["cornet-b"], older.ProgramFor("Solo Cornet"));
+            Assert.Equal(older.Programs["cornet-b"], older.ProgramFor("Trumpet"));
+            var set = Set(Path.Combine(dir, "set"), "cornet-a", "cornet-b", "solo-cornet", "trumpet");
+            Assert.Equal(set.Programs["solo-cornet"], set.ProgramFor("Solo Cornet"));
+            Assert.Equal(set.Programs["trumpet"], set.ProgramFor("Trumpet"));
+            Assert.Equal(set.Programs["cornet-a"], set.ProgramFor("2nd Cornet"));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     /// <summary>SHA-256 of MovePresets' output from before it patched in place (it cloned then), per offset.</summary>

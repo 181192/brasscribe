@@ -34,7 +34,7 @@ import sf2  # noqa: E402
 
 RAW = ROOT / "data" / "sounds" / "raw"
 BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))  # staging builds
-ANALYSIS = ROOT / "data" / "sounds" / "analysis.json"
+ANALYSIS = Path(os.environ.get("BRASSCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
 MAPPING = HERE / "mapping.json"
 
 # Nominal dynamic of each layer, by number of layers available (softest first).
@@ -91,11 +91,60 @@ def trim(x: np.ndarray) -> np.ndarray:
     return y
 
 
-def make_loop(x: np.ndarray) -> tuple[np.ndarray, tuple[int, int] | None]:
+LOOP_MIN_S, LOOP_MAX_S = 0.6, 2.0  # loop body length; longer loops put the seam further apart
+FLAT_WIN_S = 0.3  # the level curve the loop body is held to is smoothed over this (longer than a vibrato cycle)
+FLAT_MAX_DB = 6.0  # the flattening gain never exceeds this either way
+
+
+def _moving_rms(x: np.ndarray, n: int) -> np.ndarray:
+    c = np.concatenate([[0.0], np.cumsum(x * x)])
+    lo = np.clip(np.arange(len(x)) - n // 2, 0, len(x))
+    hi = np.clip(np.arange(len(x)) + n // 2 + 1, 0, len(x))
+    return np.sqrt((c[hi] - c[lo]) / np.maximum(hi - lo, 1) + 1e-20)
+
+
+def _centroid_track(x: np.ndarray, hop: int) -> np.ndarray:
+    """Spectral centroid per hop (2048-point frames), smoothed over FLAT_WIN_S."""
+    n = 2048
+    frames = max(1, (len(x) - n) // hop + 1)
+    idx = np.arange(n)[None, :] + hop * np.arange(frames)[:, None]
+    spec = np.abs(np.fft.rfft(x[np.minimum(idx, len(x) - 1)] * np.hanning(n), axis=1))
+    f = np.fft.rfftfreq(n, 1 / SR)
+    c = (spec * f).sum(axis=1) / (spec.sum(axis=1) + 1e-12)
+    k = max(1, int(FLAT_WIN_S * SR / hop))
+    return np.convolve(c, np.ones(k) / k, mode="same")
+
+
+def _vibrato(x: np.ndarray, hop: int) -> tuple[np.ndarray, float] | None:
+    """Pitch deviation (cents, per hop, from the median) and the vibrato period in hops, from YIN."""
+    import librosa
+    f0 = librosa.yin(x, fmin=80, fmax=1600, sr=SR, frame_length=2048, hop_length=hop)
+    ok = np.isfinite(f0) & (f0 > 0)
+    if ok.mean() < 0.8:
+        return None
+    cents = 1200 * np.log2(f0 / np.median(f0[ok]))
+    cents = np.where(ok, cents, 0.0)
+    d = cents - np.convolve(cents, np.ones(41) / 41, mode="same")  # remove slow drift (0.4 s)
+    ac = np.correlate(d, d, mode="full")[len(d) - 1:]
+    lo, hi = int(0.12 * SR / hop), int(0.3 * SR / hop)  # 3.3-8 Hz
+    if hi >= len(ac):
+        return None
+    period = lo + int(np.argmax(ac[lo:hi]))
+    if ac[period] < 0.3 * ac[0]:
+        return None
+    return d, float(period)
+
+
+def make_loop(x: np.ndarray, vibrato: bool = False) -> tuple[np.ndarray, tuple[int, int] | None]:
     """Crossfade loop in the stable sustain. Returns (audio cut after the loop, (start, end)) or no loop.
 
     The sustain is where the level stays within `drop` dB of the peak, starting where it first
-    comes within `rise` dB; a slow swell (a pp note that grows) gets a wider window."""
+    comes within `rise` dB; a slow swell (a pp note that grows) gets a wider window. Inside it the
+    loop (0.6-2 s) is placed where the level and brightness at its two ends match best, longer
+    loops preferred; a vibrato sample's loop is a whole number of vibrato cycles, placed where the
+    pitch deviation and its direction match at both ends. Before that the sustain is held at the level
+    of its first half second (a gain curve smoothed over 300 ms, at most 6 dB), so a held note neither
+    fades from its onset level nor decays or swells once per loop, and the seam has no level step."""
     for rise, drop in ((3, 9), (6, 12), (9, 15)):
         r = _loop_window(x, rise, drop)
         if r is not None:
@@ -104,23 +153,60 @@ def make_loop(x: np.ndarray) -> tuple[np.ndarray, tuple[int, int] | None]:
         return x, None
     a_frame, b_frame = r
     hop = int(0.01 * SR)
-    b = b_frame * hop
-    length = min(int(1.2 * SR), int((b_frame - a_frame) * hop * 0.8))
-    a = b - length
+    a_min, b_max = a_frame * hop, b_frame * hop
+    # hold the sustain at the level of its first half second: a slow gain curve (300 ms smoothing, at most
+    # FLAT_MAX_DB), faded in over 200 ms from where the sustain starts, so the attack is left as recorded
+    env = _moving_rms(x, int(FLAT_WIN_S * SR))
+    ref = float(np.median(env[a_min: min(len(x), a_min + int(0.5 * SR))]))
+    g = np.clip(ref / env, 10 ** (-FLAT_MAX_DB / 20), 10 ** (FLAT_MAX_DB / 20))
+    ramp = np.clip((np.arange(len(x)) - a_min) / (0.2 * SR), 0.0, 1.0)
+    x = x * (1 + ramp * (g - 1))
+    lvl = 20 * np.log10(_moving_rms(x, int(FLAT_WIN_S * SR)) + 1e-12)
+    lvl_hop = lvl[::hop]
+    cen = _centroid_track(x, hop)
+    vib = _vibrato(x, hop) if vibrato else None
+    if vib is not None:
+        dev, period = vib
+        k_max = int((LOOP_MAX_S * SR / hop) // period)
+        lengths = [int(round(k * period)) * hop for k in range(1, k_max + 1) if k * period * hop >= LOOP_MIN_S * SR]
+    else:
+        lengths = list(range(int(LOOP_MIN_S * SR), int(LOOP_MAX_S * SR) + 1, int(0.1 * SR)))
+    best = None
+    for b in range(b_max, a_min + int(LOOP_MIN_S * SR) - 1, -5 * hop):
+        for n in lengths:
+            a = b - n
+            if a < a_min:
+                continue
+            ia, ib = a // hop, min(b // hop, len(cen) - 1)
+            # prefer longer loops, but not later ones: the sample is cut after the loop end, so a later
+            # end only makes the SoundFont bigger
+            body = lvl_hop[ia: ib + 1]  # and no dip or swell the flattening could not smooth out inside the loop
+            cost = (abs(lvl[b] - lvl[a]) + 20 * abs(np.log(cen[ib] / max(cen[ia], 1.0))) - 0.5 * n / SR
+                    + 0.3 * (b - a_min) / SR + (float(body.max() - body.min()) if len(body) else 0.0))
+            if vib is not None:
+                ib = min(ib, len(dev) - 2)
+                slope_a, slope_b = dev[ia + 1] - dev[ia - 1], dev[ib + 1] - dev[ib - 1]
+                cost += abs(dev[ib] - dev[ia]) / 5 + (2.0 if slope_a * slope_b < 0 else 0.0)
+            if best is None or cost < best[0]:
+                best = (cost, a, b)
+    if best is None:
+        return x, None
+    _, a, b = best
     # nudge the loop start to the best waveform match with the loop end
     w = 512
     ref = x[b - w : b]
-    best, best_a = -np.inf, a
-    for cand in range(a - 400, a + 400):
+    reach = 150 if vib is not None else 400
+    best_c, best_a = -np.inf, a
+    for cand in range(a - reach, a + reach):
         if cand - w < 0:
             continue
         seg = x[cand - w : cand]
         c = float(np.dot(ref, seg) / (np.linalg.norm(ref) * np.linalg.norm(seg) + 1e-12))
-        if c > best:
-            best, best_a = c, cand
+        if c > best_c:
+            best_c, best_a = c, cand
     a = best_a
-    xf = min(int(0.12 * SR), (b - a) // 2, a)
     y = x[: b + 64].copy()
+    xf = min(int(0.12 * SR), (b - a) // 2, a)
     t = np.linspace(0, 1, xf)
     y[b - xf : b] = x[b - xf : b] * (1 - t) + x[a - xf : a] * t
     return y, (a, b)
@@ -301,7 +387,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 audio_of.append(apply_fir(y, fir) if fir is not None else y)
             extensions.append({"source": ext, "notes": sorted({n["midi"] for n in fill}), "match": info})
         layers = raw_layers["primary"]
-        dyns = LAYER_DYNAMICS[len(layers)]
+        dyns = (spec.get("dynamics") if art == "sus" else None) or LAYER_DYNAMICS[len(layers)]  # a target may name its sustain layers
         vels = velocity_ranges(dyns)
         lidx = [layer_of(n, raw_layers, len(dyns)) for n in chosen]
         scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - (body_db(y) if art == "sus" else loudest_window_db(y, win=0.08))) / 20)
@@ -324,7 +410,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 limited.append(round(float(20 * np.log10(peak / MAX_PEAK)), 1))
             loop = None
             if art == "sus":
-                y, loop = make_loop(y)
+                y, loop = make_loop(y, vibrato=spec.get("vibrato", False))
             elif derived or n.get("_derived"):  # staccato made from a sustain: keep the first 0.6 s
                 y = y[: int(0.6 * SR)].copy()
                 f = int(0.05 * SR)

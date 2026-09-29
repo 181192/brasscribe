@@ -5,7 +5,7 @@ Sample fetching, brass-band instrument building, seating and room placement, and
 ## Band sounds for the apps
 
 The apps bundle the band SoundFont at build time; users never download it. The files are not in git.
-`band-sounds.json` pins one sound pack: a pre-release of this (private) repository, currently `sounds-2026.09.27`,
+`band-sounds.json` pins one sound pack: a pre-release of this (private) repository, currently `sounds-2026.09.29`,
 with the size and sha256 of each file.
 
 ```sh
@@ -16,8 +16,8 @@ python3 sounds/tools/band_sounds.py verify                              # exit 1
 
 | File | Size | Bundled by |
 |---|---|---|
-| `brasscribe-band-mobile.sf2` | 77 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`) |
-| `brasscribe-band-16bit.sf2` | 195 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
+| `brasscribe-band-mobile.sf2` | 71 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`) |
+| `brasscribe-band-16bit.sf2` | 200 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
 
 CI uses the same script through `.github/actions/band-sounds` (the job's `GITHUB_TOKEN`, cached per pin). The
 Android, Apple and Windows release builds and the Bandroom Windows job fail when the files cannot be fetched or do
@@ -71,7 +71,7 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 ## How the instruments are built
 
-- **Samples:** mono, 44.1 kHz, 24-bit. Trimmed; with the EQ baked in (so no player needs an EQ); with a crossfade loop in the first ~3 s of the sustain. They are level-normalised per dynamic layer (sustain RMS over 80 ms–1.0 s at −30/−26/−21/−18.5/−16 dBFS for pp/p/mf/f/ff), then every target is scaled so velocity 80 over its comfortable range has the same K-weighted level (−24 dB). Presets are equally loud; part balance is `mapping.json` `balance_lu`, applied as channel gain.
+- **Samples:** mono, 44.1 kHz, 24-bit. Trimmed; with the EQ baked in (so no player needs an EQ); held at the level of their first half second of sustain (a gain curve smoothed over 300 ms, at most 6 dB), so a held note neither fades from its onset nor saws once per loop; with a 0.6–2 s crossfade loop in the first ~3 s of the sustain, placed where level and brightness match at both ends and nothing dips inside it (a vibrato sample's loop is whole vibrato cycles). They are level-normalised per dynamic layer (sustain RMS over 80 ms–1.0 s at −30/−26/−21/−18.5/−16 dBFS for pp/p/mf/f/ff), then every target is scaled so velocity 80 over its comfortable range has the same K-weighted level (−24 dB). Presets are equally loud; part balance is `mapping.json` `balance_lu`, applied as channel gain.
 - **Layers:** from the library's own labels. Iowa has pp/mf/ff. VSCO has v1 < v2 < …, and 2 layers are treated as p/f. Velocity splits sit halfway between the nominal velocities pp 30, p 48, mf 80, f 100, ff 116. The MuseScore export plays everything at velocity 80, which is the mf layer, or f for 2-layer sources.
 - **Missing notes in a layer:** a sample is transposed up to 3 semitones. Beyond that, the nearest sample from a neighbouring layer is used, brought to this layer's level in a copy of the sample (engines disagree on zone attenuation). Keys more than 2 semitones from every primary sample play a second real library (`targets[].extend`), spectrally matched to the primary on the pitches both have.
 - **Velocity curve:** dB-linear, 6 dB from velocity 127 down to 0. SFZ declares it with `amp_velcurve_N`. In SF2, the default velocity modulators are overridden and replaced by one linear velocity→attenuation modulator.
@@ -85,17 +85,20 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 ## Band SoundFont
 
-`sounds/band.py` builds `data/sounds/band/brasscribe-band.sf2`. It is one SF2 2.04 file for the whole band, 292.6 MB at 24-bit; `--bits 16` gives 195.1 MB; the phone build (apps/android/scripts/mobile_soundfont.py) is 77.3 MB. It lives outside `data/sounds/built/`, so per-instrument loaders that glob `built/**/*.sf2` do not pick it up.
+`sounds/band.py` builds `data/sounds/band/brasscribe-band.sf2`. It is one SF2 2.04 file for the whole band, `--bits 16` gives 200.3 MB; the phone build (apps/android/scripts/mobile_soundfont.py, the same bank builder with the sustain presets only) is 70.8 MB. It lives outside `data/sounds/built/`, so per-instrument loaders that glob `built/**/*.sf2` do not pick it up.
 
 **Presets.** Each brass part has its own sustain preset at (bank, program) and a staccato preset at (bank + 64, program).
 - The program is the part's General MIDI program from `instruments.py`: 56 cornets and flugel, 57 trombones, 58 basses, euphonium and baritones, 60 horns.
 - Bank 0 of each program is the section principal: Solo Cornet, 1st Trombone, E♭ Bass and Solo Horn. A player that ignores banks therefore still gets the right family.
-- Percussion is bank 128, program 0, on MIDI channel 10. This is the GM Standard kit copied from MS Basic (MIT) and decoded from its Ogg Vorbis samples. Stereo halves become mono samples, each keeping its zone's pan. Played through FluidSynth, it measures 0.0 dB against MS Basic itself.
-- VSCO 2 CE has no drum-kit hi-hat or toms. The Mikkel percussion part is 64% closed hi-hat, so the kit comes from MS Basic instead.
+- Percussion is bank 128, program 0, on MIDI channel 10: the band kit. It is MS Basic's GM Standard kit (MIT, decoded from its Ogg Vorbis samples; stereo halves become mono samples with their zone's pan) with the bass drums (35, 36), snares (38, 40) and crash cymbals (49, 57) replaced by VSCO 2 CE concert percussion (CC0): a muted concert bass drum (high-passed at 35 Hz, peak-limited), a concert snare and clash cymbals, 2–6 velocity layers each. Each hit is levelled to the MS Basic drum it replaces; on alphaSynth the snares and cymbals land within 1 dB and the bass drum 1.8 dB under, with 21 dB less of its energy below 60 Hz (−21 dB of the hit against −5). The replaced keys are left out inside copies of MS Basic's instruments: AVAudioUnitSampler ignores preset-level key ranges.
+- Bank 128 program 1 is MS Basic's Standard kit unchanged, a pop kit. Nothing selects it yet: the arranger writes program 0 and has no style signal.
+- VSCO 2 CE has no drum-kit hi-hat or toms, and the Mikkel percussion part is 64% closed hi-hat, so those stay MS Basic. No part writes timpani or suspended cymbal, so neither is bundled.
 - The full map is in `mapping.json` under `parts[].band_soundfont`: `program`, `bank`, `staccato_bank`, `channel_gain_db`, and the 1-based MusicXML `midi-program` and `midi-bank`.
 
 **Layering and balance.**
-- The cornet desks layer cornet-a and cornet-b, detuned by ±3 cents.
+- Solo Cornet (bank 0, so also 1st Cornet and a bank-less player) is one player with vibrato: `solo-cornet`, the VSCO trumpet vibrato sustains (4.6 Hz, about 14 cents) with the cornet EQ, its two dynamics played as mf and ff. The back-row desks (2nd and 3rd Cornet) layer cornet-a and cornet-b, detuned by ±3 cents.
+- Trumpet (program 56, bank 7; the core writes `<midi-bank>8`) is `trumpet`: Iowa trumpet, chromatic, without the cornet EQ (a 2.2 kHz dip and an 8 kHz low-pass stand in for the close microphone).
+- Desk variants: parts that share a target or a recording (the three tenor horns, the two baritones, the two trombones, baritone/euphonium/trombone, the two basses, the cornet desks) play `players[].variant` of it. Variant v sounds, per key, another round robin or the v-th nearest other sampled note within 3 (+v−1) semitones, so no sample is added. Two such parts in unison now sum to +2.8…+3.4 dB (median per pair) with median correlation −0.05…0.09; before, the tenor horns, baritones and trombones summed to +6.02 dB at correlation 1.00, and E♭/B♭ bass to +5.85 dB at 0.92.
 - Balance is not stored in the SoundFont. Apps set channel volume to `channel_gain_db`, which is `gain_db − max(gain_db)`, minus a further 3 dB when the preset is layered.
 - The reason: AVAudioUnitSampler applies almost none of a preset-level `initialAttenuation`, and FluidSynth applies 0.4 of it. Measured on Solo Horn against 1st Horn (1 dB apart) and Solo Cornet against 2nd Cornet (4 dB apart).
 
@@ -198,7 +201,7 @@ Mikkel golden score, `render.py` defaults (sfizz, central-hall, audience, `--com
   - Euphonium, now from VSCO trombone with 2 × 1.2 kHz low-pass: 2.67 (it was 3.61 from Iowa), against 2.00 for real baritones; the baseline is 1.23.
   - B♭ bass, now from VSCO tuba: 4.03 (it was 6.24), against 4.15 in ChoraleBricks and 1.81 in URMP; the baseline is 3.26.
   - Measured on samples alone, `timbre_probe.py` gives Iowa trombone 3.01 even with a 900 Hz 24 dB/oct low-pass, and Iowa tuba 4.31 with a 400 Hz one. The Iowa sources were therefore replaced rather than filtered harder.
-- **Loop seams** (`checks.py loops`): 507 loops. The jump step is at most 1.55× the largest natural step in the 40 ms before it (median 0.14×), and the seam correlation is at least 0.948.
+- **Loop seams** (`checks.py loops`): 855 loops. The jump step is at most 1.37× the largest natural step in the 40 ms before it (median 0.17×); seam correlation median 1.000, minimum 0.80. A held note's level swings (300 ms windows over 6 s of looping) median 0.31 dB, p95 1.03, max 2.56 (the old pack: median 1.10, p95 2.85, max 46.9).
 - **Articulation:** the score has no articulation marks. A length-only staccato rule would have played 546 of the 689 Solo Cornet notes as staccato. The gate-ratio rule plays 19.
 - **Room:**
   - The reverb is calibrated so its energy equals the band's direct energy at 5 m, with players summed as incoherent sources.
@@ -214,4 +217,4 @@ Mikkel golden score, `render.py` defaults (sfizz, central-hall, audience, `--com
 - The Usina del Arte IR page links both CC BY-SA 3.0 and CC BY 4.0. It is not the default room until that is confirmed.
 - The flugelhorn is built from Iowa horn, whose pp/mf runs have gaps (C2–B3). Most flugel mf keys borrow ff samples.
 - Does AVAudioUnitSampler apply SF2 `initialAttenuation` per spec, or scale it like FluidSynth does? Check with a parity render on macOS.
-- Samples loop after at most ~3 s. Notes longer than that sustain on a 1.2 s loop.
+- Samples loop after at most ~3 s. Notes longer than that sustain on a 0.6–2 s loop (median 1.4 s).

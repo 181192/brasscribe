@@ -1,15 +1,15 @@
 {
  "about": "The band SoundFonts every app bundles: assets of the GitHub release `version` in `repo`, fetched and checked by sounds/tools/band_sounds.py.",
- "version": "sounds-2026.09.27",
+ "version": "sounds-2026.09.29",
  "repo": "181192/brasscribe",
  "files": {
   "brasscribe-band-16bit.sf2": {
-   "sha256": "c27bd1c1dd8d928f9b076c907c529d55d3c5180ec117454ca351f1ad4b3cba64",
-   "size": 195102444
+   "sha256": "6d1089408bba858a7cde88010fb182c780f400b9498a7ac5e610818386cbb7e5",
+   "size": 200282828
   },
   "brasscribe-band-mobile.sf2": {
-   "sha256": "fefc7a5b013de29be52effc9987613da23382eea9fe5ca850299bf67f5268307",
-   "size": 77337164
+   "sha256": "f5ea27b94159f543d3eafcea91a4f80337e8161b935535b8ba61c926e72a8d82",
+   "size": 70785810
   }
  }
 }

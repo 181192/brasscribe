@@ -10,19 +10,22 @@ public enum PlaybackLevels {
     /// The full-band test phrase lands here (integrated LUFS) through the band stage.
     public static let bandPhraseLUFS = -12.0
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
-    public static let bandArrangementLUFS = -11.8
+    public static let bandArrangementLUFS = -11.54
     /// Make-up gain on the band before the limiter, measured for this app's band path.
-    public static let bandGainDB = 26.0
+    public static let bandGainDB = 31.5
+    /// Added to the make-up gain when "Concert hall sound" is off: the hall's share of the band's
+    /// loudness, measured on the golden arrangement and the full-band phrase (band.dry_room_gain_db).
+    public static let dryRoomGainDB = 5.0
     /// The original recording plays at the loudness the band plays the arrangement at
     /// (`bandEstimateLUFS`), clamped to this range; at the fallback without an arrangement.
     public static let recordingFallbackLUFS = -16.0
     public static let recordingMinTargetLUFS = -20.0
     public static let recordingMaxTargetLUFS = -10.0
     /// recording.band_estimate.offset_db: fitted on the golden arrangement, checked on the full-band phrase.
-    public static let bandEstimateOffsetDB = -1.2
+    public static let bandEstimateOffsetDB = -0.17
     /// dynamics.sampler_velocity.alphatab_lufs: (velocity, LUFS of the phrase's pitched parts on alphaSynth).
     public static let velocityLUFS: [(Int, Double)] = [
-        (15, -46.63), (31, -40.33), (47, -36.71), (63, -28.36), (79, -24.72), (95, -22.25), (111, -17.04), (127, -15.87),
+        (15, -44.51), (31, -38.20), (47, -34.58), (63, -28.61), (79, -25.39), (95, -23.36), (111, -17.66), (127, -16.49),
     ]
     public static let recordingMaxBoostDB = 12.0
     public static let recordingMaxCutDB = 30.0

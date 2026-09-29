@@ -1,5 +1,6 @@
 package no.brasscribe.play.score
 
+import alphaTab.model.Score
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -108,6 +109,57 @@ object ChannelPlan {
                 while (next == DRUMS || next == METRONOME) next++
                 next++
             }
+        }
+    }
+}
+
+/**
+ * How a score plays: one MIDI channel per part (drums on channel 10), the band SoundFont preset
+ * (program, bank) per part, and its balance as channel gain. The score screen plays this, and so
+ * does "Listen to this bar" ([BarAudio]), so a bar sounds as the band does.
+ */
+class BandPlan(val percussion: List<Boolean>, val channels: IntArray, val sounds: List<TrackSound?>, val gains: DoubleArray) {
+    companion object {
+        /** alphaTab keeps MusicXML part names with no-break spaces; plain spaces read and match better. */
+        fun partNames(s: Score): List<String> = (0 until s.tracks.length.toInt()).map { i ->
+            s.tracks[i].name.ifBlank { s.tracks[i].shortName }.replace('\u00A0', ' ').trim()
+        }
+
+        /**
+         * Writes the plan into [s]'s tracks. [band]: the band SoundFont plays (the basic tier keeps
+         * bank 0). The MusicXML importer turns <midi-instrument> into per-beat instrument and bank
+         * changes that would override the preset, so those are removed. Touches only [s]: safe off
+         * the main thread for a score nothing else holds yet.
+         */
+        fun apply(s: Score, names: List<String>, soundMap: BandSoundMap?, band: Boolean): BandPlan {
+            val percussion = (0 until s.tracks.length.toInt()).map { i -> s.tracks[i].staves.any { it.isPercussion } }
+            val channels = ChannelPlan.forPlayback(percussion)
+            val gains = DoubleArray(names.size) { 1.0 }
+            val sounds = names.indices.map { i ->
+                val t = s.tracks[i]
+                soundMap?.resolve(names[i], null, t.playbackInfo.program.toInt().takeIf { it in 0..127 })
+                    ?.let { if (percussion[i] && !it.percussion) it.copy(percussion = true) else it }
+            }
+            for (i in names.indices) {
+                val t = s.tracks[i]
+                t.playbackInfo.primaryChannel = channels[i].toDouble()
+                t.playbackInfo.secondaryChannel = channels[i].toDouble()
+                val sound = sounds[i]
+                if (sound == null) {
+                    android.util.Log.w("BrasscribePlay", "part '${names[i]}' is not a brass-band instrument; it keeps its MusicXML program")
+                    continue
+                }
+                if (sound.step != "exact") android.util.Log.i("BrasscribePlay", "part '${names[i]}' plays the ${sound.part} preset (${sound.step})")
+                t.playbackInfo.program = if (sound.percussion) 0.0 else sound.program.toDouble()
+                t.playbackInfo.bank = if (sound.percussion || !band) 0.0 else sound.bank.toDouble()
+                gains[i] = sound.gain
+                for (staff in t.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) {
+                    val keep = ArrayList<alphaTab.model.Automation>()
+                    for (a in beat.automations) if (a.type != alphaTab.model.AutomationType.Instrument && a.type != alphaTab.model.AutomationType.Bank) keep += a
+                    if (keep.size != beat.automations.length.toInt()) beat.automations = alphaTab.collections.List(*keep.toTypedArray())
+                }
+            }
+            return BandPlan(percussion, channels, sounds, gains)
         }
     }
 }

@@ -43,7 +43,7 @@ def test_the_quartet_gives_a_trumpet_the_1st_cornet():
 def test_seat_facts():
     s = seat_by_id("trumpet")
     assert s.tune and s.reads == ("treble",) and s.own_part.instrument.id == "bb-trumpet"
-    assert part_banks()["Trumpet"] == 1
+    assert part_banks()["Trumpet"] == 8
     take = seat_lineup("trumpet")
     assert take.lead == "Trumpet" and take.lead_part.instrument.pro == (52, 85)
     assert seat_part("minimal", "soprano-cornet").takes is None  # a band seat never takes the lead

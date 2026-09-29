@@ -40,13 +40,18 @@ RAW = ROOT / "data" / "sounds" / "raw"
 
 VSCO_REPO = "sgossner/VSCO-2-CE"
 VSCO_COMMIT = "440300901dfe9275fd84e0b7763af1f8443ae62e"
-# Sustain and staccato for the four modern brass instruments. OldTrombone, mutes and
-# vibrato variants are left out: the band plays open, non-vibrato sustains.
+# Sustain and staccato for the four modern brass instruments; the trumpet's vibrato sustains for
+# the solo cornet; the concert percussion the band kit is built from (VSCO 1 Percussion: bass drum,
+# snare and clash cymbals). OldTrombone, mutes, timpani (no part writes it), the suspended cymbal
+# (the kit's ride and crash come from MS Basic and the clash cymbals) and the other percussion are
+# left out.
 VSCO_DIRS = [
-    "Brass/Trumpet/sus", "Brass/Trumpet/stac",
+    "Brass/Trumpet/sus", "Brass/Trumpet/stac", "Brass/Trumpet/susvib",
     "Brass/F Horn/sus", "Brass/F Horn/stac",
     "Brass/Tenor Trombone/sus", "Brass/Tenor Trombone/stac",
     "Brass/Tuba/sus", "Brass/Tuba/stac",
+    "VSCO 1 Percussion/drums/bass", "VSCO 1 Percussion/drums/snare/drum1",
+    "VSCO 1 Percussion/varMetal/Cymbals/clash",
 ]
 
 MUSESCORE_REPO = "musescore/MuseScore"
@@ -156,7 +161,7 @@ def discover_iowa() -> list[dict]:
             html = http_get(IOWA_BASE + page).decode("latin-1")
             for href in re.findall(r'href="([^"]+\.aiff?)"', html):
                 name = href.rsplit("/", 1)[-1]
-                # Trumpet: keep the non-vibrato set; brass-band cornets play without vibrato by default.
+                # Trumpet: keep the non-vibrato set (the solo cornet's vibrato comes from VSCO).
                 if inst == "trumpet" and ".vib." in name:
                     continue
                 kind = "pitch" if "2012" in page else "run"
@@ -170,17 +175,21 @@ def discover_openair() -> list[dict]:
             for e in OPENAIR]
 
 
-def build_manifest() -> dict:
+def build_manifest(only: set[str] | None = None) -> dict:
+    """Every source; with `only`, the files of the other sources are not rediscovered (left empty)."""
+    def want(sid: str) -> bool:
+        return not only or sid in only
+
     sources = [
         {
             "id": "vsco2ce",
-            "title": "Versilian Studios Chamber Orchestra 2, Community Edition (brass)",
+            "title": "Versilian Studios Chamber Orchestra 2, Community Edition (brass and percussion)",
             "homepage": "https://github.com/sgossner/VSCO-2-CE",
             "licence": "CC0-1.0",
             "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
             "attribution": "Versilian Studios Chamber Orchestra 2 Community Edition, Versilian Studios LLC (CC0). Credit is not required; given as courtesy.",
             "pinned": f"git commit {VSCO_COMMIT}",
-            "files": discover_vsco(),
+            "files": discover_vsco() if want("vsco2ce") else [],
         },
         {
             "id": "iowa-mis",
@@ -191,7 +200,7 @@ def build_manifest() -> dict:
             "attribution": "Musical Instrument Samples, University of Iowa Electronic Music Studios (Lawrence Fritts).",
             "pinned": "no versioning on the host; sha256 per file",
             "notes": "pitch/ = 2014 per-note files (ff only). run/ = chromatic runs per octave at pp, mf and ff; the builder segments them into notes.",
-            "files": discover_iowa(),
+            "files": discover_iowa() if want("iowa-mis") else [],
         },
         {
             "id": "msbasic",
@@ -201,7 +210,7 @@ def build_manifest() -> dict:
             "licence_url": f"https://github.com/{MUSESCORE_REPO}/blob/{MUSESCORE_COMMIT}/share/sound/MS%20Basic_License.md",
             "attribution": "MS Basic SoundFont, MuseScore; MIT licence, notice in MS Basic_License.md must be kept.",
             "pinned": f"git commit {MUSESCORE_COMMIT}",
-            "files": discover_musescore(),
+            "files": discover_musescore() if want("msbasic") else [],
         },
     ]
     for e in OPENAIR:
@@ -215,7 +224,7 @@ def build_manifest() -> dict:
             "attribution": f"{e['title']}, OpenAIR Library, {e['attribution']}. Licensed under CC BY 4.0.",
             "role": e["role"],
             "pinned": "no versioning on the host; sha256 per file",
-            "files": [f for f in discover_openair() if e["id"] in f["url"]],
+            "files": [f for f in discover_openair() if e["id"] in f["url"]] if want(f"openair-{e['id']}") else [],
         }
         if "licence_note" in e:
             src["licence_note"] = e["licence_note"]
@@ -227,6 +236,9 @@ def build_manifest() -> dict:
 
 def fetch_one(entry: dict, pin: bool) -> tuple[str, str]:
     dest = RAW / entry["path"]
+    if pin and dest.exists():  # already downloaded: pin what is there
+        entry["sha256"], entry["size"] = sha256(dest), dest.stat().st_size
+        return entry["path"], "pinned"
     if dest.exists() and not pin and entry.get("sha256") and dest.stat().st_size == entry.get("size"):
         if sha256(dest) == entry["sha256"]:
             return entry["path"], "ok"
@@ -266,8 +278,13 @@ def main() -> int:
     ap.add_argument("-j", "--jobs", type=int, default=8)
     args = ap.parse_args()
 
-    manifest = build_manifest() if args.pin else json.loads(MANIFEST.read_text())
     only = set(args.only.split(",")) if args.only else None
+    manifest = json.loads(MANIFEST.read_text())
+    if args.pin:
+        # rediscover every source, or only the --only ones: the others keep their pinned entries
+        old = {s["id"]: s for s in manifest["sources"]}
+        manifest = build_manifest(only)
+        manifest["sources"] = [old.get(s["id"], s) if only and s["id"] not in only else s for s in manifest["sources"]]
     entries = [f for s in manifest["sources"] if not only or s["id"] in only for f in s["files"]]
     failures = 0
     with cf.ThreadPoolExecutor(args.jobs) as ex:

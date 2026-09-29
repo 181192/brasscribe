@@ -4,7 +4,7 @@
  "sources": [
   {
    "id": "vsco2ce",
-   "title": "Versilian Studios Chamber Orchestra 2, Community Edition (brass)",
+   "title": "Versilian Studios Chamber Orchestra 2, Community Edition (brass and percussion)",
    "homepage": "https://github.com/sgossner/VSCO-2-CE",
    "licence": "CC0-1.0",
    "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -1548,6 +1548,138 @@
      "size": 1638452
     },
     {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A%233_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A#3_v1_rr1.wav",
+     "sha256": "9abc3c1ff7d47aa2cc1d1a8beb8ea90434baf0f64f0b7647d08b2e1766b21e78",
+     "size": 1122252
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A%233_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A#3_v2_rr1.wav",
+     "sha256": "5f04aaf28173c366687de84b75ff6d3de8527d2be5df61695268ff8b49258530",
+     "size": 926408
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A2_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A2_v1_rr1.wav",
+     "sha256": "b21075d7aa044959e66eb1c6b5dec1a8152d4bdc3835245c766ed4fb278fea44",
+     "size": 825976
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A2_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A2_v2_rr1.wav",
+     "sha256": "d44ea3011a075e2e528a488dab25e273159b7f02590476b10b82c1a8151fda63",
+     "size": 764780
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A4_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A4_v1_rr1.wav",
+     "sha256": "284e78caa27badd8b5cf9e276594c49b4f36dc85848c72ae056541e9e85793d4",
+     "size": 1249260
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A4_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A4_v2_rr1.wav",
+     "sha256": "ee7a3b4e37c98821923fa4910cb59c2de5548a864929e5a2a5b824d31e3430cf",
+     "size": 960964
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C3_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C3_v1_rr1.wav",
+     "sha256": "4f26e4251a742f01c4423cf5039af412117ba60118763c4fcc2dfe2c52b73986",
+     "size": 811752
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C3_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C3_v2_rr1.wav",
+     "sha256": "a8bf991aaa2bbc8a0d2591c48fbf427f3c304c9f561c9fac4bec4c603a64bfbc",
+     "size": 824692
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C5_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C5_v1_rr1.wav",
+     "sha256": "f02e2469b5310499232a0a677ed3bf9438b39ae52213ee3b7cbe52306f37e3f0",
+     "size": 1094804
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C5_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_C5_v2_rr1.wav",
+     "sha256": "e71cdea01469ef454be62b7b6aa95b0bd52fa16682c6f8ef8a49996f4286d1d6",
+     "size": 1307068
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D%233_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D#3_v1_rr1.wav",
+     "sha256": "8c3b0580fe0a4f685e28a9fee7c421905d969c52a46bfb6a35195e31b5855e33",
+     "size": 1209520
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D%233_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D#3_v2_rr1.wav",
+     "sha256": "c856a86f32530f99ebae671352875d9ae57f2d45b1035cdbbb3d7183c1558350",
+     "size": 875568
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D4_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D4_v1_rr1.wav",
+     "sha256": "22b71e63e681fcb0c38d66a203bdf9a71f137757917f60bb573db83a603991c5",
+     "size": 994124
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D4_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_D4_v2_rr1.wav",
+     "sha256": "f0de028c0455e12af2e9f1e5897fa1486eca6803861be531f176ad43ee51d601",
+     "size": 912916
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F2_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F2_v1_rr1.wav",
+     "sha256": "01af629ade4d4a78042da39e4326c8647b69600e9ea3c95501cd0a64c2058ee5",
+     "size": 757128
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F2_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F2_v2_rr1.wav",
+     "sha256": "f2e0210140e1db4081474e85791e8c6e79a990d681d7794041bcdaf671dec27f",
+     "size": 1048748
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F3_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F3_v1_rr1.wav",
+     "sha256": "974702efc96c9e66493071a5c39e3a11be2b44771bb18d1be1840ac534e5e87d",
+     "size": 977788
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F3_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F3_v2_rr1.wav",
+     "sha256": "da060ac9624f0b7c0cdb8f4a0e0ba7b2c7580cc4611d1bf3be2dfabe50a0a5a6",
+     "size": 805084
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F4_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F4_v1_rr1.wav",
+     "sha256": "4769f9b47e68b022eae31f3095d189df89cc84ea6f46b5518a6a98b6d04b7c3f",
+     "size": 1007616
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F4_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_F4_v2_rr1.wav",
+     "sha256": "5e48dabae95f3d6af276214e892ad8bfc5d179bf505310ef2d7c75077ab69af2",
+     "size": 990092
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_G3_v1_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_G3_v1_rr1.wav",
+     "sha256": "726f8ecb796d82ec59277152e5dac6125991155fe75e3bab347fded2c5034ceb",
+     "size": 1269840
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_G3_v2_rr1.wav",
+     "path": "vsco2ce/Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_G3_v2_rr1.wav",
+     "sha256": "98b93773016fc327e8a4318f14040c220134d9ea933af0798bbd85daa858b87b",
+     "size": 854568
+    },
+    {
      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tuba/stac/Tuba3_stac_A%230_v1_rr1_Sum.wav",
      "path": "vsco2ce/Brass/Tuba/stac/Tuba3_stac_A#0_v1_rr1_Sum.wav",
      "sha256": "50d7b0f4acf1fb92e056928ab724e333c3b8670ee6c73b3a044ab41484f43dad",
@@ -2068,9 +2200,525 @@
      "path": "vsco2ce/Brass/Tuba/sus/Tuba3_sus_F2_v3_rr1_Mid.wav",
      "sha256": "0d60f5d3dd72d4a1b79d6f1366249a1b834e19f38a87b04645cad3bbf5982c0a",
      "size": 639552
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum2_pp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum2_pp_1.wav",
+     "sha256": "78ea19cb270fa5160512e04e04ef040b51a9194c04c4769d691dd47dd767d51e",
+     "size": 925666
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum2_pp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum2_pp_2.wav",
+     "sha256": "435f7192545f2873ab48c457c2b3be1c87a9cf46433aaab55243e19d12d877a7",
+     "size": 995524
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum2_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum2_ppp_1.wav",
+     "sha256": "7eeafc632b76e976ab2a9f0e2b1fad3dab10cc09d8c42bde8badd82d3b844b66",
+     "size": 611302
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum2_ppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum2_ppp_2.wav",
+     "sha256": "b3fa088b72b7433dde3b166a66cef646f134f1a8f348031391143cec427be160",
+     "size": 855808
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum3_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum3_fff_1.wav",
+     "sha256": "d4707c2858ab6fdc814815c7f8d9e0beab09c3a3a88f2a337720444291352ba4",
+     "size": 1938610
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum3_mp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum3_mp_1.wav",
+     "sha256": "a8e08ac626c084c84ca70f3248e5d575468065e59f510d2555c61c5597a68cb6",
+     "size": 1807624
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum3_p_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum3_p_1.wav",
+     "sha256": "fb7b6f9b3ebf82d5cc7235921654a1c1a163c255d56533fd503acbc00ed5e46f",
+     "size": 1947340
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum3_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum3_ppp_1.wav",
+     "sha256": "01257cb143c78b626898a81352a2e3de04d768dbf587cfc5a8feeb43c47a5f64",
+     "size": 1755232
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_f_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_f_1.wav",
+     "sha256": "e9a83b08229d395aacd76d8d2d7796d08c449a27be86aea0e9e6829f96611eec",
+     "size": 2275664
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_f_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_f_2.wav",
+     "sha256": "097020f9cad23da9e2afee7eebdecbe54c6b7e57d621951eeb2cf535d80cb988",
+     "size": 1921070
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_ff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_ff_1.wav",
+     "sha256": "549c1190c3da0a8a8f252f427f7ed03e22efc2e1f62ae86b01f6c3d27eca9bf0",
+     "size": 1763962
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_fff_1.wav",
+     "sha256": "b4b563c46d784d5a136db30d0ecd7d70dbb977f3cd80ad0eb72414afbf481095",
+     "size": 1991002
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_fff_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_fff_2.wav",
+     "sha256": "c3913ee030e74ca42a010054fe404ad851585cfa009339e2cb0c6ad61d6b2e24",
+     "size": 2104522
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_mp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_mp_1.wav",
+     "sha256": "68d537aba29277925f028eab9d3494a9316b48c2ddf3031f3af5460c150a1cb0",
+     "size": 1711570
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_mp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_mp_2.wav",
+     "sha256": "d30e69f157524135e06a080ec3f24c473751e54c08b4a3b3413e2e37e5a5a4ec",
+     "size": 1475800
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_ff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_ff_1.wav",
+     "sha256": "e480c320e2a256870372e64babfb5a07b28920370013717b8061701e0ee9b216",
+     "size": 785950
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_fff_1.wav",
+     "sha256": "cfc222225c940e3450a3d59031e2de3329fe3ecee9ddcf07f8f064a69dbe3484",
+     "size": 934396
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_fff_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_fff_2.wav",
+     "sha256": "11fa78b8273f871df970ad256395067e55c66afd73e399b1b6f0dfaf279ca50b",
+     "size": 1170166
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_mf_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_mf_1.wav",
+     "sha256": "7b8702ec8eeb6efef65d6e50282ab766ea867b7027f242f67d252e02add7537e",
+     "size": 768484
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_mp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_mp_1.wav",
+     "sha256": "62d8589563678873e7f9b7d1dbd41b4f52fd5bd47a5aa2a3b194a732c4bff31e",
+     "size": 829612
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_mp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_mp_2.wav",
+     "sha256": "5df82fd7340a80a676aff13d2d44ffe2554008b7ecda813b237499d15d65a09a",
+     "size": 593836
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_pp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_pp_1.wav",
+     "sha256": "b414b22b4487d0af4d23071014ea693ddaf2fe01b83c028f075453c1baa23cf7",
+     "size": 262012
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_pp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_pp_2.wav",
+     "sha256": "c77c4fc2d465b1784e020c4a4af2f140d7da7143cc61da3881959850b5877c71",
+     "size": 165958
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_pp_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_pp_3.wav",
+     "sha256": "d275c62a747a76eedaac83a3820246823b2c2e3dfbae0cdf1700ad3644f8b08d",
+     "size": 183424
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_ppp_1.wav",
+     "sha256": "5cee874a66f8795d1d5396ccde223b0791734337f72c0fd182035f1b19d15de7",
+     "size": 227086
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_muted_ppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_muted_ppp_2.wav",
+     "sha256": "4b5e81d0ff3a05fe6e7dcdfea5c787dc8135f15bbbdd3fd58b1a3901f52c4b7c",
+     "size": 148492
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_p_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_p_1.wav",
+     "sha256": "1134b069e0b96db24f483cffb8cf1beacf8314b1cf146ac8b4f5c05f28652af2",
+     "size": 1292422
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_pp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_pp_1.wav",
+     "sha256": "7fbe00bd2608536d3a297d11277f5ac3e26b1c2faf27e00c3ff1f1bf536d1a34",
+     "size": 1309882
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_pp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_pp_2.wav",
+     "sha256": "e97651a056302eadf7c0430c2bb353cf5087a5fed94945b6b5b169ef6b91f66c",
+     "size": 1344814
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_ppp_1.wav",
+     "sha256": "d9572e467052a1cc6d06582a6259dfb3947923186063f853925a8c6c4a711df1",
+     "size": 838348
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_ppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_ppp_2.wav",
+     "sha256": "9b30d123256693070fc71495a22b8913ee4dc1d594d2865c219d66646c5c8f60",
+     "size": 1021720
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_ppp_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_ppp_3.wav",
+     "sha256": "ebac75827ac50a3004481482737f62920722fe1868d1c499c73e89f5236ff4ce",
+     "size": 1257496
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll-quietest.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll-quietest.wav",
+     "sha256": "a2f69eba8bb77566a32cb14326b472f25900feb6b34fbaac57a95a47f1241cbb",
+     "size": 3676330
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll1.wav",
+     "sha256": "784100104e1a7cf725638719a04fc1e3e356b10ed71cfdbf20fb5e2fe1c359a7",
+     "size": 2689582
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll_long1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll_long1.wav",
+     "sha256": "2db69526d8aac06322982f8646f73e38c81fd3736233ac9f70e324871df9ceb3",
+     "size": 6042772
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll_quieter.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll_quieter.wav",
+     "sha256": "173f51ddeb6a380920a3482d3d0dde85e0e445635d41b38b713ee6ae71b6ea26",
+     "size": 7221628
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll_short_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll_short_1.wav",
+     "sha256": "66d7d700ec36f403d9eebd91a717cf15c2fd0feb34201e389c02bfd642525215",
+     "size": 1798894
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_roll_short_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_roll_short_2.wav",
+     "sha256": "f0b16229f63d6140a4f9b559fd5e300d0456e8a5fe6577801c7589a55879d5ab",
+     "size": 1929880
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/bass/bdrum_special_sidehit.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/bass/bdrum_special_sidehit.wav",
+     "sha256": "b5c99a2cf630bdacbdf29ee5dd7ba3674007e70556cefd6903cdd84c81538387",
+     "size": 227086
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_click.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_click.wav",
+     "sha256": "3f6aaba722d83629c2bc5dbbba3815eca496658cef3f6a48ae6972c74ba5b5e2",
+     "size": 74248
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_click2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_click2.wav",
+     "sha256": "6d35c7672759acc1291643b7ebfd117746afeb2c08e0d0b5297791836fdddfd0",
+     "size": 74254
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_click3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_click3.wav",
+     "sha256": "194aa73f229ba2dde4821bead1e9c078dcaff33839c4e269f3e8fc7a74e50faf",
+     "size": 77476
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_click4.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_click4.wav",
+     "sha256": "2f743883812666b108188386dc3ec8a462e0da474dc0df72107c0b4bc14c1cf3",
+     "size": 58120
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_f_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_f_1.wav",
+     "sha256": "a2b30cc19bd5688ee6d11629b53d24192c5dcc2033f41332cea9a789bc87b744",
+     "size": 193630
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_f_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_f_2.wav",
+     "sha256": "38fb22f435dbd646962c49cc96dcd3044a4503aced3fcd223fccb1b458122062",
+     "size": 183952
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_f_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_f_3.wav",
+     "sha256": "3426f234d6dad5e406ee0667fcd316e3f2c55dd31a83f1026e20c6449c5282f7",
+     "size": 148462
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_ff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_ff_1.wav",
+     "sha256": "88fcda74e24679bed36b1dc4de1a34abd5e3fc3204bdf788e02d478a658ca314",
+     "size": 154912
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_ff_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_ff_2.wav",
+     "sha256": "3426f234d6dad5e406ee0667fcd316e3f2c55dd31a83f1026e20c6449c5282f7",
+     "size": 148462
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_fff_1.wav",
+     "sha256": "4cf4cbea9986e38ace7e3385f1cf3b9d0f12a4824e7a84436660c6f054792a1e",
+     "size": 183946
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_fff_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_fff_2.wav",
+     "sha256": "b4a5be62d6337affb97bf5ef896c681d2357c6b0cdb11818f9e46577440ebd24",
+     "size": 187174
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_mp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_mp_1.wav",
+     "sha256": "a8342d77693782430feb2ec0b88c02015bae4724202f39858ef4375368bfeff4",
+     "size": 135556
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_mp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_mp_2.wav",
+     "sha256": "28d0200bc3a2b97f507351f91d5d872139c98f7c1f45b9b43e1a1d98cc1ada53",
+     "size": 116194
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_mp_snare.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_mp_snare.wav",
+     "sha256": "e8c3056b202033c6f30def9ffcc4d95a9a317e9b2e1611a781673f727cc0137f",
+     "size": 129100
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_mp_snare2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_mp_snare2.wav",
+     "sha256": "955718063791abdb82c6e198ba1bcd198750bd2bf469a5951ab2a5bc7eef822f",
+     "size": 129106
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_f_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_f_2.wav",
+     "sha256": "f3dc39c68010a53b04cb46eb42108def6a34e6b6ff1c61eb4918391a99a3f7a8",
+     "size": 138778
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_f_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_f_3.wav",
+     "sha256": "8d9891643184b17cd01affbce5501ede047eed4e8f0d7900f02ba4e10e14cd7f",
+     "size": 135550
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_ff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_ff_1.wav",
+     "sha256": "9c2e4f679375105b39eb7099382d585ea72dd518a2ca70621a01287d5e6cab85",
+     "size": 148462
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_fff_1.wav",
+     "sha256": "9f7e75cbf36bc3edc5af143a46346f3c083fdb81ec628f28bfb25d76183567f1",
+     "size": 135556
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_fff_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_fff_2.wav",
+     "sha256": "3e1a390c7eae65c3cc5aed9d4d3cc2674e0531411bbca85eca26cc7e8deb8ec1",
+     "size": 206536
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_fff_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_fff_3.wav",
+     "sha256": "078666a339f44a01f98b83967d6f4edda2ce9b3c6351a9457b60e86852d84db5",
+     "size": 135556
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_mf_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_mf_1.wav",
+     "sha256": "03694791cf179b9d38f59e26f99338f4c5d59d3228457c090d2a3899676deaee",
+     "size": 132328
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_mf_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_mf_2.wav",
+     "sha256": "22183f415ec34738853a56b1dd270691a172dc5f6226669381eeaa758fbf48ee",
+     "size": 122644
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_mp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_mp_1.wav",
+     "sha256": "46852ac0cb05e64fd7517e084647abcc9cba0f507dce259f9c9a6e55917066c9",
+     "size": 119422
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_mp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_mp_2.wav",
+     "sha256": "25abc19be74665ba5788e1eca44c58f5a7e9aa2135c44a455faa29999344d13d",
+     "size": 125878
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_pp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_pp_1.wav",
+     "sha256": "ee2ba0ea6cd22a77e7760d5059cef4d01b1856a68e83b77c728f7881984a3b69",
+     "size": 122650
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_ppp_1.wav",
+     "sha256": "b3d69806388a380976ac8ae42fb3ea11147170bfda1fb1c7d422bb2ab4adb499",
+     "size": 103288
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_ppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_ppp_2.wav",
+     "sha256": "ca32935addc3b434d68efe9a1d4aeb52e15668f602c30d54046460c42cf73c87",
+     "size": 87160
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_nosnare_ppp_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_nosnare_ppp_3.wav",
+     "sha256": "e0a1d75bccd734b0a3ebeee75aa865eafef7cc41d2ee0eecb354423a0d68046a",
+     "size": 161362
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_p_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_p_1.wav",
+     "sha256": "01bf6b1e91ea487bf580f30c847b996e50b5bd0ef9eabd9379bacefb04fdd5f0",
+     "size": 151690
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_pp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_pp_1.wav",
+     "sha256": "e6a0796fac0977045fa1c0b4aa84c856481288d95f28482872adf99ddf52022f",
+     "size": 106516
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_ppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_ppp_1.wav",
+     "sha256": "da7ac4de9926351c008035b59c5117e61b6ab3caa6dc872bbcb2caa32730424b",
+     "size": 133402
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_ppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_ppp_2.wav",
+     "sha256": "0830c8a8d6a7f5c58244717214671a83d814d3ee4dbc2375f8d6492119b441ba",
+     "size": 67804
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_ppp_3.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_ppp_3.wav",
+     "sha256": "a088b2a7b23005cad931f8480973cf1af722b117300617afcf841b1ac9e692cd",
+     "size": 67804
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_pppp_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_pppp_1.wav",
+     "sha256": "6faff93989b835baa55360199037b3e5d54356e4dd4c51b6fb87f8348905d7fb",
+     "size": 35536
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_pppp_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_pppp_2.wav",
+     "sha256": "c45a8ea27ef89abad6fb2807069fba8787156b8dd4b90dcc96b12c231fa10246",
+     "size": 45214
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_rim_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_rim_fff_1.wav",
+     "sha256": "c0623d65d4f247442b3deaed6a40ec25cb0ed511fd064832f777a9f9a469545c",
+     "size": 293644
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_rimshot_f.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_rimshot_f.wav",
+     "sha256": "16f6a9ae22030632d71393c891a6ce2196eb17e74a9a081b91a3b9b4b17b574c",
+     "size": 151684
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_rimshot_fff_1.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_rimshot_fff_1.wav",
+     "sha256": "e39a10f2c1690213f6c12f6c43410bf99a0ce85be305689b7cba57d34800ffee",
+     "size": 125872
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/snare/drum1/snare1_rimshot_mf.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/drums/snare/drum1/snare1_rimshot_mf.wav",
+     "sha256": "17bacb293bdfec7558f9fc34c20d21d8818964932b5cfc1b8148c32548f9cc6f",
+     "size": 138778
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_ff_loose.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_ff_loose.wav",
+     "sha256": "6df0292c3988665e9a4b35aabbc44699a9849d2df5bce8b835b0f1b2529381f9",
+     "size": 2121328
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_ff_tight.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_ff_tight.wav",
+     "sha256": "ac2846a7e0b48fbfe282c52c0e5cf2331d7c26cd592437eaaa8e86d418346b1d",
+     "size": 786478
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_ff_verytight.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_ff_verytight.wav",
+     "sha256": "388bc2b3bcc5df2fe6ea2dcda63af495a3e7bf4459ba88f8878bd1bd341a65e8",
+     "size": 1190032
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_fff_loose.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_fff_loose.wav",
+     "sha256": "0b34de3e32c5771df5625bd06837e557cdd020b193c87ae0ff33d42f65e0f3e4",
+     "size": 1841944
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_fff_loose_2.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_fff_loose_2.wav",
+     "sha256": "1ab8c4ef5b4438a7e2c96816ffa938d0900db7f50743b04411d46fb6bbca7d66",
+     "size": 2028202
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_mp_loose.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_mp_loose.wav",
+     "sha256": "7c6c86908ee5a7ef21f4f3b37fc8f0ed7acec1c4a2ff3fbbe5912e26b1c0febe",
+     "size": 4065220
+    },
+    {
+     "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_pp_loose.wav",
+     "path": "vsco2ce/VSCO 1 Percussion/varMetal/Cymbals/clash/crash_hit_pp_loose.wav",
+     "sha256": "749b5d98c877377c5ee3a6d8d9c723d94c8f559ea7c7fc85379dd6a33c308185",
+     "size": 1653220
     }
    ],
-   "total_bytes": 233118124
+   "total_bytes": 334384168
   },
   {
    "id": "iowa-mis",

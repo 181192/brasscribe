@@ -79,7 +79,7 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
     public bool Metronome
     {
         get { lock (Gate) return _synth.MetronomeVolume > 0; }
-        set { lock (Gate) _synth.MetronomeVolume = value ? 1 : 0; }
+        set { lock (Gate) _synth.MetronomeVolume = value ? Math.Pow(10, PlaybackLevels.MetronomeGainDb / 20) : 0; }
     }
 
     public bool CountIn

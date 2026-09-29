@@ -77,7 +77,7 @@ public class PartSoundTests(ITestOutputHelper log)
         var names = new Dictionary<string, string>
         {
             ["Soprano Cornet"] = "Soprano", ["Solo Cornet"] = "1st Cornet", ["Repiano Cornet"] = "Cornet", ["2nd Cornet"] = "Cornet 2",
-            ["3rd Cornet"] = "Trumpet in B♭", ["Flugelhorn"] = "Flügelhorn", ["Solo Horn"] = "Tenor Horn", ["1st Horn"] = "Horn in E♭",
+            ["3rd Cornet"] = "Cornet 3", ["Flugelhorn"] = "Flügelhorn", ["Solo Horn"] = "Tenor Horn", ["1st Horn"] = "Horn in E♭",
             ["2nd Horn"] = "Alto Horn", ["1st Baritone"] = "Baritone", ["2nd Baritone"] = "Baritone Horn", ["1st Trombone"] = "Trombone",
             ["2nd Trombone"] = "Tenor Trombone", ["Bass Trombone"] = "B. Tbn.", ["Euphonium"] = "Euph", ["E♭ Bass"] = "Tuba",
             ["B♭ Bass"] = "Bass", ["Percussion"] = "Drum Set",
