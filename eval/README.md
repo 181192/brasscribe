@@ -41,6 +41,7 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 | consensus-chorales | yes | |
 | solo-instruments, seat-voices | yes | |
 | fast-notes | yes | |
+| quartet-audio | yes | |
 | arrange | chorales part | URMP part: URMP licence not checked for redistribution |
 | durations | chorales part | URMP part: as above |
 | freetime | chorales part | URMP part and the combined means: as above |
@@ -48,6 +49,7 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 | slakh-transcription, consensus-slakh | no | Slakh licence not checked for redistribution |
 | melody | no | needs URMP and Slakh |
 | solo-vote | no | needs Slakh and the Mega-53 stems of every case |
+| solo-ondevice | no | the URMP Entertainer clip and the on-device reference run |
 | mikkel-golden, readability, musescore-roundtrip | no | Mikkel is a commercial recording; the round trip also needs MuseScore |
 
 On a machine with the full `data/` directory, `brasscribe bench cpu` runs all of them.

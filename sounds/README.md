@@ -16,16 +16,20 @@ python3 sounds/tools/band_sounds.py verify                              # exit 1
 
 | File | Size | Bundled by |
 |---|---|---|
-| `brasscribe-band-mobile.sf2` | 71 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`) |
-| `brasscribe-band-16bit.sf2` | 200 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
+| `brasscribe-band-mobile.sf2` | 71 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
+| `brasscribe-band-16bit.sf2` | 200 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`) |
 
 CI uses the same script through `.github/actions/band-sounds` (the job's `GITHUB_TOKEN`, cached per pin). The
 Android, Apple and Windows release builds and the Bandroom Windows job fail when the files cannot be fetched or do
 not match. A local build without them still works: the app says the band sounds are missing and plays the basic tier.
 
 A new pack: rebuild (`band.py --bits 16`, `apps/android/scripts/mobile_soundfont.py`), run
-`python3 sounds/tools/band_sounds.py pin --version sounds-YYYY.MM.DD` (rewrites the pin and `SHA256SUMS`),
-publish the two files and `SHA256SUMS` as a pre-release with that tag, and commit the pin.
+`python3 sounds/tools/band_sounds.py pin --version sounds-YYYY.MM.DD` (rewrites the pin and `SHA256SUMS`; `--dir DIR`
+for a pack built outside `data/sounds/band`), publish the two files and `SHA256SUMS` as a pre-release with that tag
+(`gh release create sounds-YYYY.MM.DD --prerelease …`; a `sounds-*` tag starts no workflow), and commit the pin.
+[docs/dev/release.md](../docs/dev/release.md) has the whole release flow.
+
+Where every sample comes from, and the licences and notices the apps ship with the SoundFont: [LICENSES.md](LICENSES.md).
 
 ## Run it
 
@@ -104,13 +108,13 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 **MusicXML.** `sounds/band_programs.py IN OUT` writes `<midi-bank>` and `<midi-program>` per part into a score. It is the reference for the arranger.
 
-**Checks** (all pass on the 24-bit and 16-bit files):
+**Checks** (the 16-bit file of `sounds-2026.09.29`: 38 presets, 36 of them brass, and the two kits):
 
 | Engine | Command | Result |
 |---|---|---|
 | Structure | `sounds/sf2check.py FILE` | Every SF2 2.04 structural rule checked: even chunks, generator order, loop margins, 46-frame padding, stereo links, unique presets |
-| FluidSynth 2.6.1 | `sounds/sf2play.py FILE` | 37/37 presets sound. Pitch is within 10 cents of the note played on all 34 brass presets |
-| AVAudioUnitSampler (macOS) | `sounds/tools/avsampler_probe.swift FILE sf2play.tsv` | 37/37 presets load and sound, rendered offline with `loadSoundBankInstrument` |
+| FluidSynth 2.6.1 | `sounds/sf2play.py FILE` | Every preset sounds, and pitch is within 10 cents of the note played on every brass preset. The probe flags the band kit's concert bass drum (key 36) at +3.7 dB over MS Basic's kick: it is levelled on alphaSynth (below), and FluidSynth plays it louder |
+| AVAudioUnitSampler (macOS) | `sounds/tools/avsampler_probe.swift FILE sf2play.tsv` | Every preset loads and sounds, rendered offline with `loadSoundBankInstrument` (last run on the previous pack, 37 presets) |
 | alphaTab 1.8.4 .NET | `apps/windows` `dotnet test --filter BandSoundFontTests` | Every pitched part of the golden score sounds, with or without `<midi-bank>`. The bank changes the preset (Flugelhorn rms 0.0265 → 0.0243). The bank-128 kit sounds when notes carry `<midi-unpitched>` |
 
 - **AVAudioUnitSampler addressing:** melodic presets are `bankMSB = 0x79`, `bankLSB = bank`. The kit is `bankMSB = 0x78`, `bankLSB = 0`.

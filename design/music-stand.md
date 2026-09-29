@@ -1,5 +1,7 @@
 # Music stand
 
+**Status:** built in Play for Android and Apple (iPhone, iPad, Mac). Not in Windows Play yet: it waits for a test run on Windows. §2 describes the apps as they were before the stand; the implementation plan (§11) still applies to Windows.
+
 The music stand (nb **Notestativ**) is the score alone, for reading from a stand, a phone clip or a tablet on stage. It replaces Android's "Full screen" and comes to Apple and Windows, which have no such mode today. This spec follows [`system.md`](system.md), [`brand/brand.md`](brand/brand.md) and [`docs/accessibility/`](../docs/accessibility/), and targets WCAG 2.2 AA.
 
 | Phone, upright | Phone, on its side | Tablet, on its side | The way in |
@@ -196,6 +198,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | Tab / Shift+Tab | Show the layer and move through it: Leave, then the layer in reading order | There is no trap (2.1.2). The stand is a screen, not a modal. |
 
 - **Mac.** The **Playback** menu binds ← and → as single-key shortcuts (`App/BrasscribePlayApp.swift:229-231`). Menu shortcuts fire before the view's handlers, so in the stand those commands turn pages (`model.stand ? nextPage() : nextBar()`).
+- **Mac page keys.** AppKit turns Page Up, Page Down, Home and End into scroll commands before the view's `onKeyPress` sees them, so on the Mac the stand binds them as key equivalents (`App/Views/MusicStandView.swift`).
 - **iPad.** With VoiceOver and Quick Nav on, VoiceOver takes the arrows. That is the user's setting. The pedal still works with Quick Nav off.
 
 ## 8. Platform idioms
@@ -260,7 +263,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | Criterion | How the stand meets it |
 |---|---|
 | 1.3.4 Orientation | Both orientations work everywhere. The app never locks on its own; the lock is the player's own toggle, and leaving the stand releases it. |
-| 1.4.3 / 1.4.11 Contrast | Tokens only, with **Leave** and the card on `surface-raised` with a `border-strong` edge (213 of 213 pairs pass). The HC variant has no tints or shadows. |
+| 1.4.3 / 1.4.11 Contrast | Tokens only, with **Leave** and the card on `surface-raised` with a `border-strong` edge (every pair passes: `qa/tools/contrast.py --tokens`). The HC variant has no tints or shadows. |
 | 1.4.4 / 1.4.10 Resize, reflow | The layer's rows wrap. The stand is a two-dimensional exception; the talking score is the reflow alternative, as for the score (checklist Q1). |
 | 1.4.13 Content on hover or focus | The first-time hint takes no focus, a tap dismisses it, and it does not return |
 | 2.1.1 / 2.1.2 Keyboard, no trap | Every control can be reached by Tab; F / Esc enter and leave; arrow and page keys turn pages (§7) |

@@ -151,7 +151,7 @@ then Always Allow). Bandroom reads the key in the background: the engine starts 
 restarts once the key is read. Keep the line about this prompt in the release notes until the apps
 have a real signing identity.
 
-After installing, `curl -s 127.0.0.1:8766/v1/health` reports the running engine's `build`, which should
+After installing, `curl -s 127.0.0.1:<port>/v1/health` (Bandroom takes the first free port of 8765–8775) reports the running engine's `build`, which should
 start with the release commit. Its `version` is the engine API version, not the app's.
 
 ## 5. The core command-line tool

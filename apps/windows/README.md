@@ -16,6 +16,12 @@ tools/CodeBehindCheck/               type-checks the app's C# without the XAML c
 tools/check-macos.sh                 everything that builds off Windows
 ```
 
+## Not on Windows yet
+
+The music stand, the Appearance setting (dark, high contrast) and "What do you play?" are in the
+Mac and Android apps but not in this one yet: they wait for a test run on a Windows machine. For the
+same reason no release has a Windows download.
+
 ## Prerequisites
 
 - .NET 10 SDK (`global.json` pins `10.0.100`, `rollForward: latestFeature`)
@@ -39,7 +45,7 @@ dotnet build src/Brasscribe.Play -c Release -p:Platform=x64 -p:RuntimeIdentifier
 The exe lands in `src/Brasscribe.Play/bin/Release/net10.0-windows10.0.20348.0/win-x64/BrasscribePlay.exe`,
 with `brasscribe_ffi.dll` beside it — the app will not start without it.
 
-The band sounds are bundled as `SoundFonts\brasscribe-band.sf2` (the 16-bit build, 195 MB) when
+The band sounds are bundled as `SoundFonts\brasscribe-band.sf2` (the 16-bit build, 200 MB with `sounds-2026.09.29`) when
 `data/sounds/band/brasscribe-band-16bit.sf2` is there: run `pixi run fetch-sounds` at the repository root once
 (the pack pinned in `sounds/band-sounds.json`; needs `gh auth login`). Without it the app says the band sounds
 are missing. Release builds in CI fetch it first and stop if they cannot.

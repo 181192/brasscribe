@@ -17,6 +17,7 @@ make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, macOS app unit tests, then app unit and UI tests on the iPhone simulator
 ../../scripts/mac-vm.sh test-ui   # macOS UI tests (make test-mac-ui), only in the macOS VM or in CI
 make size           # Release build for iOS devices, prints the .app size
+make install-mac    # Release build into /Applications/Brasscribe Play.app (ad-hoc signed), launched and checked
 scripts/run-fixture-mac.sh                                        # open the Old Hundredth fixture score on the Mac
 scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot
 scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/screenshots, from the same fixture
@@ -42,6 +43,15 @@ and skip themselves when it is missing.
 | `scripts/` | Verovio, core and sound-font builds, string catalog, fixture launchers, screenshots |
 | `docs/notation-spike.md` | Native vs WKWebView measurements and the decision |
 
+## Mac window
+
+Every main window keeps a 900 × 600 minimum (`App/WindowMinimum.swift`), also for windows opened later
+with New Window. Sheets are sized to their content and capped at the room between their top and the
+bottom of the visible frame, so Settings never reaches under the Dock, and zooming a window keeps it clear
+of the Dock. Controls drawn over the score (player bar, stand controls, video) come before the score in
+accessibility order, so VoiceOver and the UI tests reach them. `AppTests/ResponsiveLayoutTests.swift` checks
+these sizes off screen.
+
 ## Keyboard (macOS, and iPad with a keyboard)
 
 | Key | Action |
@@ -55,13 +65,13 @@ and skip themselves when it is missing.
 | O | Original recording ↔ score, at the same place |
 | ⌘+ / ⌘- | Zoom |
 | ⇧⌘P / ⇧⌘T / ⇧⌘E | Parts and sound / talking score / export |
-
 | F | Music stand (again to leave); View › Music Stand on the Mac. ⌃⌘F stays the window's own full screen |
 
 The Playback menu lists the same keys.
 
 In the music stand (`App/Views/MusicStandView.swift`, design/music-stand.md): → ↓ Page Down turn to the
-next page and ← ↑ Page Up to the previous one (what Bluetooth page turners send), Home and End go to the first
+next page and ← ↑ Page Up to the previous one (what Bluetooth page turners send; on the Mac Page Up, Page
+Down, Home and End are key equivalents, because AppKit turns them into scrolling first), Home and End go to the first
 and last page, Option-↓ ↑ move by bar, Space plays and pauses, and Esc or F leaves. Stand screenshots:
 `docs/screenshots/*stand*`, taken by `MusicStandUITests.testScreenshots` (set `TEST_RUNNER_STAND_SHOTS` to
 the folder and `TEST_RUNNER_NB=1` for Norwegian).
@@ -77,9 +87,9 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   own flag (the red colour in the MusicXML) is kept too.
 - **Bundled band sounds.** Each app bundle carries the band SoundFont in `Sounds/`, staged per platform
   by `scripts/stage-band-sounds.sh` (run by `make project`) from `data/sounds/band`: the Mac gets
-  `brasscribe-band-16bit.sf2` (195 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (77 MB: smaller, for
+  `brasscribe-band-16bit.sf2` (200 MB), iPhone and iPad `brasscribe-band-mobile.sf2` (71 MB: smaller, for
   phone memory and download size). `BandSounds.bandFiles` looks for the same file first on each
-  platform. The iOS Release app is 96 MB with the phone build, against 209 MB with the 16-bit one. Without
+  platform; `make size` prints the iOS Release app's size with the phone build. Without
   the files (`pixi run fetch-sounds` was not run) the app builds, plays the basic tier and says the band
   sounds are missing. Release builds in CI fetch them first and stop if they cannot.
 - **Sound.** With `BRASSCRIBE_SOUNDS` set to the repository root, each part plays its preset from the
@@ -87,10 +97,12 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   0x78/0, gain `channel_gain_db`), placed at its audience-seat position from `sounds/seating.json` in an
   AVAudioEnvironmentNode. The room is a convolution of the OpenAIR central-hall IR (vDSP partitioned
   convolution in an AUAudioUnit), calibrated to +4.5 dB wet-to-direct at the audience seat (measured
-  4.48 dB on the golden band recording). Without those files the app falls back to MuseScore_General.sf2 (or the system
-  DLS) and the environment node's hall reverb.
+  4.48 dB on the golden band recording). Without the room IR (the shipped app) "Concert hall sound" is the
+  environment node's medium hall at −10.7 dB with a −4 dB low shelf at 250 Hz on the reverb return, so held
+  bass notes don't bloom; turning it off adds 5 dB of make-up gain (`band.dry_room_gain_db`) so the band keeps
+  its loudness. Without the band SoundFont the app falls back to MuseScore_General.sf2 (or the system DLS).
 - **Output level.** The presets are level-matched to −24 LUFS, so the band goes through an output stage
-  (`OutputStageAU`): +26 dB of make-up gain, then a memoryless tanh soft limiter above 0.8 with a 0.98
+  (`OutputStageAU`): +31.5 dB of make-up gain (`band.gain_db.apple` in `sounds/playback-levels.json`), then a memoryless tanh soft limiter above 0.8 with a 0.98
   ceiling, the same shape as the Windows player. The full-band test phrase peaks at about −1 dBFS and a
   solo cornet at about −11. The limiter has no attack or release, so it never pumps at the Stop fade,
   and below the threshold Mute and Only this keep the balance. The metronome and the original recording

@@ -74,6 +74,8 @@ Styling is the Brasscribe design system (`design/system.md` §7, the workbench v
 
 Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colours and reduced motion all come from the tokens. The notation takes its ink and staff colours from them too.
 
+Scores play with the band SoundFont when the engine serves one at `/assets/band/` (`BRASSCRIBE_BAND_SOUNDS_DIR`, set by Bandroom to its bundled phone pack), each part on its preset from `sounds/mapping.json`; otherwise with alphaTab's General MIDI sounds.
+
 Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
 
 ## Test tiers

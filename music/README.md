@@ -31,7 +31,7 @@ defaults: files written before a field existed stay valid.
 | `free_regions` | FreeRegion[] | optional, default `[]` |
 | `review` | `{voice, start, end, notes, very}`[] | optional, absent when empty. Neighbouring uncertain notes of one voice reviewed together: `[start, end)` ticks, `notes` marked notes in it, `very` when any is very unsure. The score shows one "?" per item (boxed when `very`) with a dashed bracket over items of more than one note. See *Confidence and review marks* |
 | `sections` | `{tick, label}`[] | optional, default `[]`. Rehearsal marks (A, B, …; no I) at bar lines |
-| `arrangement` | object | optional, absent for default options. `{lineup: band|minimal|quartet, difficulty: faithful|standard|easier, transpose_semitones}`: how the arrangement was made. Pitches and keys in the file are already transposed |
+| `arrangement` | object | optional, absent for default options. `{lineup: band|minimal|quartet, difficulty: faithful|standard|easier, transpose_semitones}`, plus `seat` (the player's seat, e.g. `trumpet`), `reads` (the clef they read) and `lead: seat` (the tune is on the seat's part) when arranged for a player: how the arrangement was made. Pitches and keys in the file are already transposed |
 | `dynamics` | `{tick, layer, mark}`[] | optional, default `[]`. A marking (`pp` `p` `mp` `mf` `f` `ff`) for one textural layer from `tick` on; the parts playing that layer show it at their next note |
 
 ### Voice

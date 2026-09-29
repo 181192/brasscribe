@@ -195,6 +195,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
   - A row in the popover: "Version 1.3 is ready. It installs when nothing is being made." **Update now** is secondary.
   - While updating, the state is **Updating**: "Back in about a minute. Phones reconnect by themselves."
 - **An update never unpairs a phone.** The device credentials live in the data folder, not in the app bundle.
+- **As built today.** Neither Sparkle nor App Installer is wired up: an update is a new download that replaces the app. On its next launch Bandroom compares the stamp of the engine workspace in the data folder (`envs/.brasscribe-workspace.json`: a hash of the files and the commit, written last) with the one in the app. When they differ it shows **Updating**, stops the engine, swaps the code folders in all at once (a journal makes the swap safe to interrupt) and reinstalls environments only when `pixi.lock` changed; models, runs and paired phones stay. `/v1/health` reports which build is running. After updating an ad-hoc-signed Mac build, macOS asks once for the Keychain password before Bandroom can read the saved Hugging Face key (§3.2).
 
 ### 3.9 Remove a phone
 - Open **Phones and tablets**, then choose **Remove** on a row.

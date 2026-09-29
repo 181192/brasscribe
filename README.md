@@ -15,6 +15,8 @@ Research and prototype pipeline are in place. Start at [docs/research/00-summary
 | [apps/apple](apps/apple/README.md) | Swift (macOS, iOS, iPadOS) | `make build` | `scripts/run-fixture-mac.sh` | — |
 | [apps/android](apps/android/README.md) | Kotlin | `./gradlew assembleDebug` | `adb install` | — |
 | [apps/windows](apps/windows/README.md) | C# (WinUI 3) | `dotnet build` | `BrasscribePlay.exe` | — |
+| [apps/bandroom/macos](apps/bandroom/macos/Makefile) | Swift (macOS menu-bar app that runs the engine) | `make build` | `make run` | first free of 8765–8775 |
+| [apps/bandroom/windows](apps/bandroom/windows/README.md) | C# (WinUI 3 tray app that runs the engine) | `dotnet build` | `BrasscribeBandroom.exe` | first free of 8765–8775 |
 
 The Python library ([music](music/README.md)), the benchmarks ([eval](eval/README.md)), the model conversion ([convert](convert/README.md)) and the sound tier ([sounds](sounds/README.md)) are tools, not services; their own READMEs cover them.
 
@@ -125,7 +127,7 @@ To point an app at a LAN engine, start it with `pixi run serve --lan`, pick it f
 
 ## CI/CD
 
-Each native component builds and tests on its own GitHub Actions workflow; every run uploads its build as a downloadable artifact.
+Each native component has its own GitHub Actions workflow; every run uploads its build as a downloadable artifact. The hosted runners are currently not starting (the account's Actions billing blocks them), so run [the check tiers](docs/dev/verify.md) locally before merging and don't rely on a green workflow.
 
 | Workflow | Builds and tests | Artifact |
 | --- | --- | --- |
@@ -138,13 +140,11 @@ Each native component builds and tests on its own GitHub Actions workflow; every
 
 Download an artifact from a run: open the workflow's page above, pick a run, and its **Artifacts** section at the bottom lists the files (GitHub Actions → the workflow → a run → Artifacts). Artifacts expire after 90 days.
 
+The public site is served from the `gh-pages` branch, not from the pages workflow: build it with `site/build.sh` and publish `site/_site` there.
+
 ### Releases
 
-Pushing a tag matching `v<major>.<minor>.<patch>` (e.g. `v0.2.0`, `v1.0.0-beta.1`) runs [release](.github/workflows/release.yml), which builds `core`, `android`, `apple` and `windows` and publishes a [GitHub release](../../releases) with each artifact attached as a zip, plus auto-generated release notes:
-
-```sh
-git tag v0.2.0 && git push origin v0.2.0
-```
+Releases (v0.1.0, v0.2.0) are built by hand on a Mac and published with `gh release create`: signed Android APKs, the Mac apps, the `brasscribe-core` CLI and `SHA256SUMS`. [docs/dev/release.md](docs/dev/release.md) has the steps. The [release](.github/workflows/release.yml) workflow still runs on a `v*` tag push, but only when Actions runners are available.
 
 ## Configuration
 

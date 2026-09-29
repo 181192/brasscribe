@@ -9,12 +9,15 @@ identical Compositions, MusicXML, humanized notes and talking scores.
 ```
 brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   model            Composition + composition.json (field order and number format of the reference)
-  quantize         beat map, metrical level, grids (free-time grids), fill_gaps
+  quantize         beat map, metrical level, grids (free-time grids, dense grids for fast runs), fill_gaps
+  onsets           pitch-change onsets from the SwiftF0 contour (trills, runs, octave flips, bends)
+  rhythm_spelling  split and tie values so a part shows the beat
   freetime         unstable beat runs -> synthetic beats, FreeRegions, clipping, fermatas
   durations        contour offsets, written durations, staccato
   spelling         ps13 pitch spelling, Krumhansl-Kessler key
   harmony          harmonic-rhythm reduction
-  instruments      brass-band instruments, lineups (band, minimal, quartet) with their roles, ranges, transpositions
+  instruments      brass-band instruments (Trumpet in B♭ included), lineups (band, minimal, quartet) with their roles,
+                   ranges, transpositions; the players' seats with the clef each reads and the part it takes
   arranger         minimal band or quartet (`arrange_opts`) and solo with band (`arrange_layers_opts`: lineup, soprano
                    doubling, figuration); `voice_satb` voices the quartet's alto and tenor
   difficulty       faithful / standard / easier rewrites of the arranged parts
@@ -26,6 +29,7 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   talking_score    talking score: document from MusicXML, announcer, navigation, text/HTML export
   consensus, lines note voting across transcriptions, monophonic lines
   midi             SMF reading with pretty_midi's note semantics
+  py, pyjson       CPython/NumPy rounding, sums and JSON output, bit for bit
   pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
 brasscribe-ffi/    UniFFI exports + `bc_*` C ABI
@@ -67,14 +71,20 @@ brasscribe-core arrange-reference --reference reference.json --out out/
 brasscribe-core musicxml --composition composition.json --out band.musicxml
 brasscribe-core humanize --notes notes.json --part "Solo Cornet" --player 0 [--composition c.json] [--timing performed] --out h.json
 brasscribe-core talking-score --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
+brasscribe-core quantize --reference reference.json --beats b.beats --out q.json
+brasscribe-core meter --beats b.beats --notes notes.json --out meter.json
+brasscribe-core normalize --composition composition.json --out composition.json
+brasscribe-core version
 ```
 
 `arrange-layers` also takes `--lineup band|full|minimal|quartet`, `--difficulty
 faithful|standard|easier`, `--key Bb` or `--transpose N`, `--no-gate`,
-`--no-beat-cleanup` and `--single-key`, and reads the stems
+`--no-beat-cleanup`, `--single-key`, `--no-free-time` and `--free-tempo BPM`, the player's seat
+(`--seat trumpet`, `--reads` for the clef they read, `--lead lineup|seat`: `seat` gives the seat the
+tune) and `--lang nb` for the source footer on each part, and reads the stems
 (`solo.wav`, `bass.wav`, `drums.wav`, `orchestra.wav`) from the layers folder
 when present. `arrange-song` and `arrange-reference` take `--lineup
-minimal|quartet` (default minimal). The quartet is 1st Cornet, 2nd Cornet,
+minimal|quartet` (default minimal); `arrange-song` also takes `--seat`, `--reads` and `--lead`. The quartet is 1st Cornet, 2nd Cornet,
 Tenor Horn and Euphonium, one player each.
 
 ## Conformance
