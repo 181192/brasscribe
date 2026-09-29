@@ -22,6 +22,11 @@ data class SavedScore(
     val noticeSeen: Boolean = false,
     /** A note was changed on the phone: the computer's renders (audio, PDF, braille) are older than the score. */
     val changedOnPhone: Boolean = false,
+    /**
+     * Notes changed in Review, by their Composition note ("voice@start"): the pitch Brasscribe wrote. Kept so
+     * "Changed to … (was …)" is still on the card after reopening or arranging the score again.
+     */
+    val reviewChanges: Map<String, Int> = emptyMap(),
 )
 
 /** App-owned score copies: MusicXML is the editable score, with its transcription beside it. */
@@ -32,7 +37,7 @@ class SavedScoreLibrary(private val root: File) {
     fun save(
         id: String?, title: String, profile: String, musicXml: String, compositionJson: String?,
         jobId: String? = null, evidenceJson: String? = null, checked: Set<String> = emptySet(), part: String? = null, noticeSeen: Boolean = false,
-        changedOnPhone: Boolean = false,
+        changedOnPhone: Boolean = false, reviewChanges: Map<String, Int> = emptyMap(),
     ): SavedScore {
         val key = id ?: UUID.randomUUID().toString()
         val folder = File(root, key).apply { mkdirs() }
@@ -51,16 +56,17 @@ class SavedScoreLibrary(private val root: File) {
             part?.let { setProperty("part", it) }
             if (noticeSeen) setProperty("notice_seen", "true")
             if (changedOnPhone) setProperty("changed_on_phone", "true")
+            if (reviewChanges.isNotEmpty()) setProperty("review_changes", reviewChanges.toSortedMap().entries.joinToString(",") { "${it.key}=${it.value}" })
         }
         val temporary = File(folder, "score.properties.tmp")
         temporary.outputStream().use { metadata.store(it, null) }
         check(temporary.renameTo(File(folder, "score.properties"))) { "couldn't save score details" }
-        return SavedScore(key, title, profile, musicXml, compositionJson, updated, jobId, evidenceJson, checked, part, noticeSeen, changedOnPhone)
+        return SavedScore(key, title, profile, musicXml, compositionJson, updated, jobId, evidenceJson, checked, part, noticeSeen, changedOnPhone, reviewChanges)
     }
 
     fun rename(id: String, title: String): SavedScore? {
         val current = list().firstOrNull { it.id == id } ?: return null
-        return save(id, title, current.profile, current.musicXml, current.compositionJson, current.jobId, current.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone)
+        return save(id, title, current.profile, current.musicXml, current.compositionJson, current.jobId, current.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone, current.reviewChanges)
     }
 
     fun delete(id: String) {
@@ -82,6 +88,10 @@ class SavedScoreLibrary(private val root: File) {
             part = metadata.getProperty("part"),
             noticeSeen = metadata.getProperty("notice_seen") == "true",
             changedOnPhone = metadata.getProperty("changed_on_phone") == "true",
+            reviewChanges = metadata.getProperty("review_changes")?.split(',')?.mapNotNull { e ->
+                val at = e.lastIndexOf('=')
+                if (at <= 0) null else e.substring(at + 1).toIntOrNull()?.let { e.substring(0, at) to it }
+            }?.toMap().orEmpty(),
         )
     }.getOrNull()
 
