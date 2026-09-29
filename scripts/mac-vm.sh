@@ -26,6 +26,7 @@ CPUS="${MAC_VM_CPUS:-6}"
 MEMORY_MB="${MAC_VM_MEMORY_MB:-10240}"
 DISPLAY_SIZE="${MAC_VM_DISPLAY:-1440x900}"
 DISK_GB="${MAC_VM_DISK_GB:-72}"
+DOCK_TILE="${MAC_VM_DOCK_TILE:-36}"   # the Dock's icon size in the VM: small enough that the Dock never fills the width
 HOST_XCODE="${MAC_VM_XCODE:-/Applications/Xcode.app}"
 KEY="$HOME/.tart/brasscribe-ui_ed25519"
 PROVISIONED="$HOME/.tart/$BASE.provisioned"   # written when provisioning finished
@@ -172,6 +173,12 @@ up_vm() {
   # switch to the configured size (a no-op when it already is)
   vssh "$ip" "cat > /tmp/mac-vm-display.swift && swift /tmp/mac-vm-display.swift ${DISPLAY_SIZE%pt}" \
     <"$ROOT/scripts/mac-vm-display.swift" >/dev/null
+  # A Dock as wide as the screen shrinks its icons, and so its height, each time an app's icon comes
+  # or goes: the visible frame changed by a few points while a test ran, and the test runner (which
+  # reads it once) and the app disagreed about where the Dock begins. Small tiles keep the Dock
+  # narrower than the screen, so its height never changes.
+  vssh "$ip" '[ "$(defaults read com.apple.dock tilesize 2>/dev/null)" = '"$DOCK_TILE"' ] || {
+    defaults write com.apple.dock tilesize -int '"$DOCK_TILE"'; defaults write com.apple.dock magnification -bool false; killall Dock; sleep 2; }' >&2
   log "$vm is up at $ip"
   echo "$ip"
 }

@@ -60,6 +60,10 @@ Provisioning is idempotent: `provision` picks up where a failed run stopped, and
 - turns off sleep and the screensaver
 - (on every `up`) switches the display to the configured size with `scripts/mac-vm-display.swift`. Without this
   every boot comes back in the image's saved 1024 × 768 mode, whatever `tart set --display` says
+- (on every `up`) sets the Dock's icons to 36 pt (`MAC_VM_DOCK_TILE`). The image's Dock is as wide as
+  the screen, so it shrank its icons, and its height, by a few points each time an app's icon came or
+  went. The test runner reads the visible frame once and kept the old value, so a window the app had
+  zoomed to its own, current visible frame measured 2 pt "under the Dock"
 
 The image is `macos-tahoe-base`, not `macos-tahoe-xcode`, because of disk space. The Xcode 27
 image is 62 GB compressed and about 76 GB on disk. On a Mac with about 90 GB free, that leaves
@@ -104,6 +108,27 @@ finds a layout bug, add the case to the harness too, so it is caught without the
 
 Run only the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests`, or
 `test-ui WindowSizeUITests/testZoomStaysInsideTheVisibleFrame,PlayUITests`.
+
+What the VM tests found that the harness cannot see (September 2026), and how each was settled:
+
+- **Controls over the score were not hittable.** The pointer clicked them fine, but SwiftUI's
+  accessibility hit test on the Mac returns the first element in accessibility order whose frame
+  holds the point, whatever is drawn on top. The score came first, and its frame (its scroll
+  content runs on under the player band) covered Play, Next bar, the stand's controls and the video.
+  VoiceOver's pointer and Switch Control found the score there too. The overlaid controls now sort
+  before the score (`StackedAccessibility` in `ScoreScreen.swift`). The harness cannot check this:
+  SwiftUI builds no accessibility tree without an assistive client.
+- **The window's minimum is 900 × 600, the window itself.** SwiftUI gives the first window 900 × 600
+  (548 pt of content under the 52 pt toolbar), but a window it opens later (File › New Window, or the
+  first window at a background launch, which comes from the New Window action) gets 900 × 620 with
+  the same layout. The app holds every main window at 900 × 600 (`WindowMinimum`); the harness checks
+  that every screen lays out at 900 × 548 and that the minimum holds when SwiftUI sets 620 again.
+- **Sheets end above the Dock.** A sheet hangs from below the toolbar, so 90 % of the visible
+  height reached under the Dock. `sheetSize` caps a sheet at the room between its top and the
+  visible frame's bottom. Settings is longer than any screen, so its sheet takes that room (or the
+  window's height, which a sheet cannot pass) and scrolls; a sheet whose content fits keeps its size.
+- **Page Up, Page Down, Home and End on the stand.** AppKit turns them into scroll commands before
+  the focused view's `onKeyPress` sees them; on the Mac they are key equivalents on the stand.
 
 ## How a test run works
 
