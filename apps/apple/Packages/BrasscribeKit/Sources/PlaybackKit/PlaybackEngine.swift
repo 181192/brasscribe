@@ -56,7 +56,25 @@ public final class PlaybackEngine {
     let player = AVAudioPlayerNode()
     let timePitch = AVAudioUnitTimePitch()
     var sequencer: AVAudioSequencer!
-    var partTracks: [String: AVMusicTrack] = [:]
+    /// Each part's sequencer tracks: one, or for a band kit one per drum group (`PlaybackLevels.kitGroups`).
+    var partTracks: [String: [AVMusicTrack]] = [:]
+    /// The score's MIDI options: the sampler's velocity curve, and the band kit in drum groups.
+    lazy var midiOptions: MIDIWriter.Options = {
+        var o = MIDIWriter.Options(includeMetronome: true, velocityMap: { v, percussion in
+            PlaybackLevels.samplerVelocity(v, percussion: percussion)
+        })
+        if let kit = kitGroups {
+            o.drumGroup = { kit.of($0) }
+        }
+        return o
+    }()
+
+    /// The drum groups of the score's band kit (its first percussion part's kit), nil without one.
+    lazy var kitGroups: PlaybackLevels.KitGroups? = score.parts.lazy.filter(\.isPercussion)
+        .compactMap { self.soundBank.partSound(for: $0) }.first.map { PlaybackLevels.kitGroups(program: $0.program) }
+
+    /// The sampler of a band kit's drum group (the part's own sampler plays its first group).
+    func samplerKey(_ part: Part, group: Int) -> String { "part:\(part.id):kit\(group)" }
     var metronomeTrack: AVMusicTrack?
 
     // Original recording
@@ -180,6 +198,26 @@ public final class PlaybackEngine {
             s.reverbBlend = Self.hallReverbBlend
             samplers[key] = s
             if soundBank.load(into: s, part: part) { loadedInstruments += 1 }
+            // A band kit plays on one sampler per drum group, each at its group's trim: AVAudioUnitSampler hardly
+            // applies the kit's zone attenuation, which alphaSynth applies in full (band.apple_kit_trim_db).
+            if let groups = MIDIWriter.drumGroups(for: score, options: midiOptions)[part.id] {
+                for (i, g) in groups.enumerated() {
+                    let gs: AVAudioUnitSampler
+                    if i == 0 {
+                        gs = s
+                    } else {
+                        gs = AVAudioUnitSampler()
+                        engine.attach(gs)
+                        engine.connect(gs, to: environment, format: mono)
+                        gs.position = s.position
+                        gs.renderingAlgorithm = .HRTFHQ
+                        gs.reverbBlend = Self.hallReverbBlend
+                        soundBank.load(into: gs, part: part)
+                        samplers[samplerKey(part, group: g)] = gs
+                    }
+                    gs.overallGain += Float(kitGroups?.trimDB[g] ?? 0)
+                }
+            }
         }
         engine.attach(metronome)
         engine.connect(metronome, to: main, format: nil)
@@ -243,22 +281,27 @@ public final class PlaybackEngine {
 
     private func loadSequence() throws {
         // the score's dynamics, on AVAudioUnitSampler's velocity curve
-        let midi = MIDIWriter.data(for: score, options: .init(includeMetronome: true, velocityMap: { v, percussion in
-            PlaybackLevels.samplerVelocity(v, percussion: percussion)
-        }))
+        let midi = MIDIWriter.data(for: score, options: midiOptions)
         try sequencer.load(from: midi, options: [])
-        // The file's conductor track (title, tempo, meter) may or may not be folded into
-        // `tempoTrack`; the last track is always the metronome, preceded by one per part.
+        // The file's conductor track (title, tempo, meter) may or may not be folded into `tempoTrack`; then come
+        // one track per part, the metronome's, and a band kit's other drum groups.
         let tracks = sequencer.tracks
-        let offset = max(0, tracks.count - (score.parts.count + 1))
+        let extra = MIDIWriter.drumGroupTracks(for: score, options: midiOptions)
+        let offset = max(0, tracks.count - (score.parts.count + 1 + extra.count))
         for (i, part) in score.parts.enumerated() where offset + i < tracks.count {
             tracks[offset + i].destinationAudioUnit = samplers[samplerKey(part)]
-            partTracks[part.id] = tracks[offset + i]
+            partTracks[part.id] = [tracks[offset + i]]
         }
         if offset > 0 { for t in tracks[..<offset] { t.isMuted = true } }
         if tracks.count > offset + score.parts.count {
             metronomeTrack = tracks[offset + score.parts.count]
             metronomeTrack?.destinationAudioUnit = metronome
+        }
+        for (j, (id, g)) in extra.enumerated() where offset + score.parts.count + 1 + j < tracks.count {
+            guard let part = score.parts.first(where: { $0.id == id }) else { continue }
+            let t = tracks[offset + score.parts.count + 1 + j]
+            t.destinationAudioUnit = samplers[samplerKey(part, group: g)]
+            partTracks[id, default: []].append(t)
         }
         applyMutes()
         applyLoop()
@@ -539,7 +582,7 @@ public final class PlaybackEngine {
     }
 
     private func applyMutes() {
-        for (id, t) in partTracks { t.isMuted = !isAudible(id) }
+        for (id, ts) in partTracks { for t in ts { t.isMuted = !isAudible(id) } }
         metronomeTrack?.isMuted = !metronomeOn
     }
 
@@ -568,7 +611,7 @@ public final class PlaybackEngine {
     }
 
     private func applyLoop() {
-        let all = Array(partTracks.values) + [metronomeTrack].compactMap { $0 }
+        let all = partTracks.values.flatMap { $0 } + [metronomeTrack].compactMap { $0 }
         for t in all {
             if let loop {
                 let (s, e) = loopBeats(loop)
@@ -611,7 +654,8 @@ public final class PlaybackEngine {
     public func place(_ section: Section, azimuth: Double, distance: Double) {
         let az = azimuth * .pi / 180
         for part in score.parts where part.section == section {
-            sampler(for: part)?.position = AVAudio3DPoint(x: Float(distance * sin(az)), y: 0, z: Float(-distance * cos(az)))
+            let p = AVAudio3DPoint(x: Float(distance * sin(az)), y: 0, z: Float(-distance * cos(az)))
+            for (key, s) in samplers where key == samplerKey(part) || key.hasPrefix(samplerKey(part) + ":") { s.position = p }
         }
     }
 

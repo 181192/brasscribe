@@ -68,11 +68,16 @@ public enum MIDIWriter {
         /// Maps each note's velocity for a particular synth (velocity, percussion part); nil writes the
         /// score's velocities, as a MIDI file should.
         public var velocityMap: (@Sendable (Int, Bool) -> Int)?
+        /// The group of each drum of a percussion part, by key, for a player that levels the kit on one sampler per
+        /// group: the part's track keeps its first group, and every other group gets a track of its own after the
+        /// metronome's (`drumGroupTracks`). Nil writes one track per part, as a MIDI file should.
+        public var drumGroup: (@Sendable (Int) -> Int)?
         public init(parts: Set<String>? = nil, transposeSemitones: Int = 0, includeMetronome: Bool = false, leadInTicks: Int = 0,
-                    velocityMap: (@Sendable (Int, Bool) -> Int)? = nil) {
+                    velocityMap: (@Sendable (Int, Bool) -> Int)? = nil, drumGroup: (@Sendable (Int) -> Int)? = nil) {
             self.parts = parts; self.transposeSemitones = transposeSemitones
             self.includeMetronome = includeMetronome; self.leadInTicks = leadInTicks
             self.velocityMap = velocityMap
+            self.drumGroup = drumGroup
         }
     }
 
@@ -99,9 +104,27 @@ public enum MIDIWriter {
         return out
     }
 
+    /// The drum groups of each percussion part (`Options.drumGroup`), in order: the first plays on the part's own
+    /// track, the others on tracks after the metronome's.
+    public static func drumGroups(for score: Score, options: Options) -> [String: [Int]] {
+        guard let group = options.drumGroup else { return [:] }
+        var out: [String: [Int]] = [:]
+        for p in score.parts where p.isPercussion && (options.parts?.contains(p.id) ?? true) {
+            out[p.id] = Set(p.playbackNotes.map { group($0.pitch) }).sorted()
+        }
+        return out
+    }
+
+    /// The extra drum-group tracks `data` writes after the metronome's, in order: (part id, group).
+    public static func drumGroupTracks(for score: Score, options: Options) -> [(part: String, group: Int)] {
+        let groups = drumGroups(for: score, options: options)
+        return score.parts.filter { groups[$0.id] != nil }.flatMap { p in groups[p.id]!.dropFirst().map { (p.id, $0) } }
+    }
+
     public static func data(for score: Score, options: Options = Options()) -> Data {
         let chans = channels(for: score)
         let parts = score.parts.filter { options.parts?.contains($0.id) ?? true }
+        let groups = drumGroups(for: score, options: options)
         var tracks: [[UInt8]] = []
 
         // Tempo / meter track
@@ -133,6 +156,7 @@ public enum MIDIWriter {
                 guard (0...127).contains(pitch) else { continue }
                 let s = n.startTick + options.leadInTicks
                 let v = max(1, min(127, options.velocityMap?(n.velocity, p.isPercussion) ?? n.velocity))
+                if p.isPercussion, let g = options.drumGroup?(pitch), g != groups[p.id]?.first { continue }
                 events.append((s, [0x90 | ch, UInt8(pitch), UInt8(v)]))
                 events.append((s + n.durTicks, [0x80 | ch, UInt8(pitch), 0]))
             }
@@ -153,6 +177,23 @@ public enum MIDIWriter {
                     tb.event(t + m.beatTicks / 4, [0x89, key, 0])
                 }
             }
+            tracks.append(tb.finish())
+        }
+
+        for (id, g) in drumGroupTracks(for: score, options: options) {
+            guard let p = score.parts.first(where: { $0.id == id }), let group = options.drumGroup else { continue }
+            var tb = TrackBuilder()
+            let ch = UInt8(chans[p.id] ?? 9)
+            tb.meta(0, type: 0x03, Array("\(p.name) \(g)".utf8))
+            var events: [(Int, [UInt8])] = []
+            for n in p.playbackNotes where group(n.pitch) == g && (0...127).contains(n.pitch) {
+                let s = n.startTick + options.leadInTicks
+                let v = max(1, min(127, options.velocityMap?(n.velocity, true) ?? n.velocity))
+                events.append((s, [0x90 | ch, UInt8(n.pitch), UInt8(v)]))
+                events.append((s + n.durTicks, [0x80 | ch, UInt8(n.pitch), 0]))
+            }
+            events.sort { $0.0 != $1.0 ? $0.0 < $1.0 : ($0.1[0] & 0xF0) < ($1.1[0] & 0xF0) }
+            for (t, e) in events { tb.event(t, e) }
             tracks.append(tb.finish())
         }
 

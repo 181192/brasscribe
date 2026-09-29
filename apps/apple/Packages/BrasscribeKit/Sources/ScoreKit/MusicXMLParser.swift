@@ -72,6 +72,9 @@ private final class Delegate: NSObject, XMLParserDelegate {
     struct PartInfo {
         var id = "", name = "", abbreviation = "", instrumentName = "", instrumentSound = ""
         var midiProgram: Int?, midiChannel = 1
+        /// `<midi-unpitched>` (1-based) of each `<midi-instrument>`: the drum a note naming that instrument plays.
+        var unpitched: [String: Int] = [:]
+        var midiInstrument: String?
     }
     struct RawNote {
         var isRest = false, isChord = false, isGrace = false, isCue = false
@@ -81,6 +84,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         var hasPitch = false
         var accent = 0
         var trill = false, trillAccidental: String?, staccato = false
+        var instrument: String?
     }
     struct RawMeasure { var number = "", start = 0, maxPos = 0, beats = 4, beatType = 4, fifths = 0 }
 
@@ -129,6 +133,10 @@ private final class Delegate: NSObject, XMLParserDelegate {
             error = .notPartwise; parser.abortParsing()
         case "score-part":
             currentInfo = PartInfo(id: a["id"] ?? "P\(partOrder.count + 1)")
+        case "midi-instrument":
+            currentInfo?.midiInstrument = a["id"]
+        case "instrument" where note != nil:
+            note?.instrument = a["id"]
         case "part":
             let id = a["id"] ?? "P\(partMeasures.count + 1)"
             curPart = id
@@ -202,6 +210,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             case "instrument-sound": if info.instrumentSound.isEmpty { info.instrumentSound = t }
             case "midi-program": info.midiProgram = Int(t)
             case "midi-channel": info.midiChannel = Int(t) ?? 1
+            case "midi-unpitched": if let id = info.midiInstrument, let k = Int(t) { info.unpitched[id] = k }
             case "score-part":
                 partInfos[info.id] = info; partOrder.append(info.id); currentInfo = nil; return
             default: break
@@ -278,7 +287,12 @@ private final class Delegate: NSObject, XMLParserDelegate {
             kind = .rest
         } else if n.unpitched {
             kind = .unpitched(displayStep: n.displayStep, displayOctave: n.displayOctave, notehead: n.notehead)
-            midi = MusicXMLParser.drumKey(displayStep: n.displayStep, displayOctave: n.displayOctave, notehead: n.notehead)
+            // the instrument's <midi-unpitched> when the note names one, else the arranger's drum map by position
+            if let id = n.instrument, let k = partInfos[p]?.unpitched[id], (1...128).contains(k) {
+                midi = k - 1
+            } else {
+                midi = MusicXMLParser.drumKey(displayStep: n.displayStep, displayOctave: n.displayOctave, notehead: n.notehead)
+            }
         } else {
             let sp = SpelledPitch(step: n.step, alter: n.alter, octave: n.octave)
             kind = .pitched(written: sp)

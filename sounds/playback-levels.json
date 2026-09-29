@@ -11,19 +11,20 @@
     "tolerance_lu": 1.0,
     "arrangement_lufs": -14.44,
     "gain_db": {
-      "apple": 30.6,
+      "apple": 29.55,
       "android_alphatab": 11.0,
       "android_sfizz": 11.0,
       "windows": 11.0
     },
     "dry_room_gain_db": {
-      "about": "Apple only: added to the make-up gain when \"Concert hall sound\" is off, so the band keeps its loudness without the hall. The hall's share of the band's loudness, measured on the golden arrangement and the Old Hundredth fixture (hall minus room).",
-      "apple": 5.0
+      "about": "Apple only: added to the make-up gain when \"Concert hall sound\" is off, so the band keeps its loudness without the hall. The hall's share of the band's loudness, measured on the golden arrangement and the Old Hundredth fixture (hall minus room: the golden 1.82 LU and Old Hundredth 0.76 LU over 5.0 dB, so 6.3 leaves each within 0.53 LU).",
+      "apple": 6.3
     },
     "apple_seat_trim_db": {
       "about": "Apple only: added to each part's channel gain by its seat (mapping.json parts[].seat). The environment node places every part at its seat (HRTF, distance), which changes the balance against alphaSynth, which plays every part centred: measured with each part of the full-band phrase alone at velocity 80, hall off, relative to the Solo Cornet (DynamicsLevelTests.partBalance against RenderHarnessTests.Measure_part_balance). The trims bring every part within 1 dB of alphaSynth's balance.",
       "solo-cornets": 0.0, "soprano": 2.9, "repiano": 4.5, "second-cornets": 5.1, "third-cornets": 5.0, "flugel": 1.0, "solo-horn": 0.4, "first-horn": 0.3, "second-horn": 0.4, "first-baritone": 1.3, "second-baritone": 1.8, "first-trombone": 3.3, "second-trombone": 2.8, "bass-trombone": 1.9, "euphoniums": 0.1, "eb-basses": 3.6, "bb-basses": 3.7, "percussion": 13.8
-    }
+    },
+    "apple_kit_trim_db": {"about": "Apple only: added to each drum of the band kit, by GM key, on top of apple_seat_trim_db.percussion. AVAudioUnitSampler hardly applies the kit's zone attenuation, which alphaSynth applies in full, so the hi-hats played 16.6 dB and the ride 28.2 dB over alphaSynth's against the kick. Measured drum by drum at every dynamic from pp to fff through both players (sounds/tools/kit_probe.py). A sampler has one volume for all its MIDI channels, so the app plays the drums in groups whose trims lie within 2 dB, one sampler each, at the group's mean. pop_kit: the pop kit (program 1) plays MS Basic's own crashes, which take these instead.", "35": 3.6, "36": 3.6, "37": -15.9, "38": -6.0, "40": -6.0, "41": -11.9, "42": -16.6, "43": -11.8, "44": -16.6, "45": -5.5, "46": -6.7, "47": -5.5, "48": -5.5, "49": -11.3, "50": -5.5, "51": -28.2, "52": -24.1, "53": -25.2, "54": -11.9, "55": -21.7, "56": -10.6, "57": -12.2, "59": -27.7, "pop_kit": {"49": -23.8, "57": -28.3}}
   },
   "dynamics": {
     "about": "Score dynamics to MIDI velocity, alphaTab 1.8.4's rules (MusicXmlImporter, MidiFileGenerator._getNoteVelocity, MidiUtils.dynamicToVelocity), which Android and Windows get from alphaTab itself and Apple (ScoreKit Dynamics) copies. A <dynamics> mark, in a direction or in a note's notations, holds from where it is read until the next one, in document order; a part starts at default. velocity is each mark's velocity by MusicXML element name. The forced marks (sf, sfz, fz, sfp) play as ff and hold like any mark, as alphaTab plays them. accent_steps: an <accent/> adds one step (step velocity), a <strong-accent/> (marcato) two; the result is clamped to 1..127. <sound dynamics> is ignored.",

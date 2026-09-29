@@ -28,6 +28,12 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         var trims = try #require(band["apple_seat_trim_db"] as? [String: Any])
         trims["about"] = nil
         #expect(trims as? [String: Double] == PlaybackLevels.appleSeatTrimDB)
+        var kit = try #require(band["apple_kit_trim_db"] as? [String: Any])
+        let pop = try #require(kit.removeValue(forKey: "pop_kit") as? [String: Double])
+        kit["about"] = nil
+        #expect((kit as? [String: Double]).map { Dictionary(uniqueKeysWithValues: $0.map { (Int($0.key)!, $0.value) }) } == PlaybackLevels.appleKitTrimDB)
+        #expect(Dictionary(uniqueKeysWithValues: pop.map { (Int($0.key)!, $0.value) }) == PlaybackLevels.applePopKitTrimDB)
+        #expect((band["dry_room_gain_db"] as? [String: Any])?["apple"] as? Double == PlaybackLevels.dryRoomGainDB)
         let sampler = try #require((levels["dynamics"] as? [String: Any])?["sampler_velocity"] as? [String: Any])
         #expect((sampler["apple_pitched"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPitched.map { [$0.0, $0.1] })
         #expect((sampler["apple_percussion"] as? [[Int]])?.map { [$0[0], $0[1]] } == PlaybackLevels.samplerVelocityPercussion.map { [$0.0, $0.1] })

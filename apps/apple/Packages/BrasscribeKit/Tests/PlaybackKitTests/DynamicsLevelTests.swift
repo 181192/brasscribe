@@ -100,8 +100,14 @@ struct DynamicsLevelTests {
         let buf = try phrase.remapped.render(e, score: score)
         let lufs = LoudnessMeter.integrated(buf)
         print("LEVELS remapped full band phrase \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.bandPhraseLUFS) < 1)
+        #expect(abs(lufs - PlaybackLevels.windowsPhraseLUFS) < PlaybackLevels.phraseToleranceLU, "where Windows plays the phrase")
         #expect(buf.peak <= OutputStageKernel.ceiling)
+        // without the hall: the dry room gain keeps the level (band.dry_room_gain_db)
+        let dry = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
+        dry.roomOn = false
+        let dryLUFS = LoudnessMeter.integrated(try phrase.remapped.render(dry, score: score))
+        print("LEVELS remapped full band phrase, hall off \(dryLUFS) LUFS")
+        #expect(abs(dryLUFS - lufs) < 0.6)
     }
 
     /// Each dynamic lands within 1.5 dB of alphaSynth's level, and pp, mf and ff sit where they do
@@ -138,12 +144,7 @@ struct DynamicsLevelTests {
         let buf = try e.renderScore(fromBeat: 0, beats: Double(score.endTick) / Double(Score.ticksPerQuarter))
         let lufs = LoudnessMeter.integrated(buf)
         print("LEVELS golden arrangement \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        // Measured -11.99 against Windows' -14.44 (docs/research/12-band-sound.md §14): the brass matches within
-        // 0.2 LU, the kit plays 4.8 dB hot (the sampler hardly applies its zone attenuation) and the hall adds 1.2 LU
-        // over the dry band on this sparse score.
-        withKnownIssue("the kit and the hall play the golden 2.45 LU over Windows") {
-            #expect(abs(lufs - PlaybackLevels.bandArrangementLUFS) <= 1)
-        }
+        #expect(abs(lufs - PlaybackLevels.bandArrangementLUFS) <= 1)
         #expect(buf.peak <= OutputStageKernel.ceiling)
     }
 }

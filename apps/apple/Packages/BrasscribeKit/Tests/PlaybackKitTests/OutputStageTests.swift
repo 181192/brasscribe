@@ -138,7 +138,7 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         let peak = buf.peak
         let lufs = LoudnessMeter.integrated(buf)
         print("OUTPUT \(file) full band peak \(dB(peak)) dBFS, \(lufs) LUFS at \(e.outputGainDB) dB")
-        #expect(abs(lufs - PlaybackLevels.bandPhraseLUFS) < 1, "the shared phrase target")
+        #expect(abs(lufs - PlaybackLevels.windowsPhraseLUFS) < PlaybackLevels.phraseToleranceLU, "where Windows plays the phrase")
         #expect(peak < 1, "clipped")
         #expect(peak <= OutputStageKernel.ceiling)
         #expect(dB(peak) > -3 && dB(peak) < -0.5, "full band peak \(dB(peak)) dBFS")

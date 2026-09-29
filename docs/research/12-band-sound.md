@@ -2,7 +2,7 @@
 
 **Owner feedback:** "The real-life sounds aren't as convincing as we thought and often just fall back to MIDI instruments. We need support for each instrument in each band lineup. It must sound natural and balanced. The worst thing that can happen is that the sound breaks up or chops."
 
-**Status (2026-09-30).** Landed on every platform. Sections 1–11 describe the work as first built, with the `sounds-2026.09.27` pack; §12 the `sounds-2026.09.29` pack. The pinned pack is now `sounds-2026.10.01` (`sounds/band-sounds.json`): 16-bit 190.6 MB, phone 67.8 MB. The current make-up gains (Apple 30.6 dB, alphaSynth 11 dB, sfizz 11 dB; `sounds/playback-levels.json`) are in §13; §14 has the tie and trill fixes, the refitted arrangement levels and the one-sample pack change.
+**Status (2026-09-30).** Landed on every platform. Sections 1–11 describe the work as first built, with the `sounds-2026.09.27` pack; §12 the `sounds-2026.09.29` pack. The pinned pack is now `sounds-2026.10.01` (`sounds/band-sounds.json`): 16-bit 190.6 MB, phone 67.8 MB. The make-up gains are alphaSynth 11 dB and sfizz 11 dB (§13), and Apple 29.55 dB (§14; `sounds/playback-levels.json`). §14 has the tie and trill fixes, the kit levelled drum by drum on Apple, the refitted arrangement levels and the one-sample pack change.
 
 **Short answer.**
 - **Fallback.** The samples were never the reason parts fell back to MIDI instruments. The apps were. Apple never loaded the band sounds outside a developer checkout. Android and Studio played General MIDI (Sonivox) by default. On every platform, any part name missing from an exact-match table got General MIDI, a borrowed preset, a sine tone or silence.
@@ -525,16 +525,26 @@ Measured with the render harnesses (Windows `RenderHarnessTests`, PlaybackKit `R
 
 The arranger's writers (Rust and music21, identical in conformance) now number every tie, and every alphaTab parse on Android and Windows numbers the ties of older files (stop first) before alphaTab reads them (`AlphaTabMusicXml`). The golden with numbered ties is in `data/golden/mikkel-arranged-band.next` (and `-kit-pop.next`); only the `<tied>` elements change.
 
-**Apple's seat trims** (`band.apple_seat_trim_db`) were fitted on the full-band phrase, which the players get as MIDI, so the tie bug never reached the fit. On the golden they now hold: Apple's part stems summed without percussion measure −26.71 LUFS against alphaSynth's −26.90. They stay as they are. The kit does not match: Apple plays the golden's percussion 4.8 dB hot, 12–16 dB in bars of hi-hat alone, because AVAudioUnitSampler hardly applies the kit's zone attenuation, and its 13.8 dB trim was fitted at velocity 80 on the phrase's kick and snare. That is a follow-up for the kit.
+**Apple's seat trims** (`band.apple_seat_trim_db`) were fitted on the full-band phrase, which the players get as MIDI, so the tie bug never reached the fit. On the golden they hold, and they stay as they are: with the hall off, Apple's brass stems summed measure −26.46 LUFS against alphaSynth's −26.90, and every brass stem is within 1.1 dB.
 
-**Arrangement level.** With the held notes gone, the golden plays at −14.44 LUFS on Windows (−10.99 before). Old Hundredth, which has no ties, measures −15.68. The band estimate read both 3.45 and 3.76 LU too loud, so `recording.band_estimate.offset_db` is refitted on the two arrangements: 0.56 → −3.05 (golden estimate −14.60, Old Hundredth −15.53). The full-band phrase, a synthetic tutti, plays 3.4 LU over its estimate. Apple plays the golden at −11.99 with the hall and −13.23 without it, 2.45 LU over Windows: the kit adds 1.2 LU, and the hall adds 1.2 LU over the dry band with `dry_room_gain_db` 5.0. Old Hundredth measures hall −14.68 and room −15.44, a 0.8 LU gap; the golden's is 1.2. The Apple arrangement test records this as a known issue until the kit is fixed. `dry_room_gain_db` is unchanged.
+**The kit, drum by drum.** Apple played the golden's percussion 4.8 dB hot, and bars of hi-hat alone 12–16 dB hot. AVAudioUnitSampler hardly applies the kit's zone attenuation, which alphaSynth applies in full, and the one 13.8 dB kit trim had been fitted at velocity 80 on the phrase's kick and snare. `sounds/tools/kit_probe.py` plays every drum the arranger writes, one hit at each dynamic from pp to fff, through both players. Against alphaSynth, Apple played the kick 3.6 dB quiet, the snare 6.0 dB hot, the closed hi-hat 16.6 dB hot and the ride 28.2 dB hot, the same at every dynamic. Those are now per-drum trims (`band.apple_kit_trim_db`, with the pop kit's own crashes). A sampler has one volume for all its MIDI channels (CC 7 on any channel sets it), so Apple plays each group of drums whose trims lie within 2 dB on a sampler of its own, with its own sequencer track. The golden loads the kit four times. After: every drum is within 1 dB of alphaSynth at every dynamic, in both kits, and the golden's percussion stem is −32.79 against −33.08. Apple also reads a drum's `<midi-unpitched>`, so the golden's tambourine plays key 54 as on alphaSynth, not the cowbell the position map gave.
 
-| | before | after |
+**Arrangement level.** With the held notes gone, the golden plays at −14.44 LUFS on Windows (−10.99 before). Old Hundredth, which has no ties, measures −15.68. The band estimate read both 3.45 and 3.76 LU too loud, so `recording.band_estimate.offset_db` is refitted on the two arrangements: 0.56 → −3.05 (golden estimate −14.60, Old Hundredth −15.53). The full-band phrase, a synthetic tutti, plays 3.4 LU over its estimate.
+
+Apple's golden-to-phrase ratio is not alphaSynth's. With the hall off, Apple's golden sits 0.2 LU above its phrase; on Windows the golden is 1.64 LU under the phrase. The hall is not the cause: at reverb levels from −10.7 to −20.7 dB, Apple's golden minus phrase with the hall stays at +0.35 to +0.38 LU. No single band gain can match both the phrase and the arrangements, so Apple's band gain is now fitted on the arrangements, the music people play: 30.6 → 29.55 dB. Its phrase check is now "within 1.1 LU of Windows' phrase" rather than the shared ±1 LU around −12. `dry_room_gain_db` 5.0 → 6.3: the hall lifted the golden 1.82 LU and Old Hundredth 0.76 LU over the dry band with 5.0.
+
+| Apple (hall / hall off), against Windows | before | after |
+|---|---|---|
+| Golden | −11.99 / −13.23 (Windows −14.44) | −13.48 / −14.00 |
+| Old Hundredth | −14.68 / −15.44 (Windows −15.68) | −15.73 / −15.19 |
+| Full-band phrase | −12.78 / −14.47 (Windows −12.80) | −13.83 / −14.22 |
+| `band.gain_db.apple`, `dry_room_gain_db` | 30.6, 5.0 | 29.55, 6.3 |
+
+| Shared | before | after |
 |---|---|---|
 | `band.arrangement_lufs` (golden, Windows) | −10.99 | −14.44 |
 | `recording.band_estimate.offset_db` | 0.56 | −3.05 |
 | Golden recording target | −10.99 | −14.60 |
-| Apple golden, hall / room | −11.99 / −13.41 | −11.99 / −13.23 |
 
 **Trills.** alphaTab played every trill's auxiliary at the written note plus two semitones, whatever the key or the accidental-mark: a whole tone up on a concert-pitch part, and four semitones up on a B♭ part (it adds the step before transposing). Android and Windows now set each trill's value from the MusicXML: the next letter up, from the accidental-mark, else from the key. Apple played a trill as its main note; it now trills too, in alphaTab's 32nds. Apple also plays a staccato at half value, as alphaTab does. `apps/fixtures/ties-and-trills.musicxml` covers a semitone from the key, a whole tone, a sharp and a flat accidental-mark, a trill tied over the barline with a wavy line, and ties in transposing and concert parts. All three players are tested against the same expected notes. Verovio draws the tr mark, the accidental above it and the wavy line.
 

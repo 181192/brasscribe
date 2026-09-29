@@ -9,13 +9,19 @@ public enum PlaybackLevels {
     public static let limiterCeiling = 0.98
     /// The full-band test phrase lands here (integrated LUFS) through the band stage.
     public static let bandPhraseLUFS = -12.0
+    /// The full-band phrase as Windows plays it (alphaSynth), and how far Apple's may be from it: Apple's band gain
+    /// is fitted on whole arrangements, where its phrase-to-arrangement ratio is 1.9 LU off alphaSynth's
+    /// (docs/research/12-band-sound.md §14).
+    public static let windowsPhraseLUFS = -12.80
+    public static let phraseToleranceLU = 1.1
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
     public static let bandArrangementLUFS = -14.44
-    /// Make-up gain on the band before the limiter, measured for this app's band path.
-    public static let bandGainDB = 30.6
+    /// Make-up gain on the band before the limiter: fitted so the golden and Old Hundredth land where Windows plays
+    /// them (the largest deviation, the golden's, 1 LU).
+    public static let bandGainDB = 29.55
     /// Added to the make-up gain when "Concert hall sound" is off: the hall's share of the band's
-    /// loudness, measured on the golden arrangement and the full-band phrase (band.dry_room_gain_db).
-    public static let dryRoomGainDB = 5.0
+    /// loudness, measured on the golden arrangement and Old Hundredth (band.dry_room_gain_db).
+    public static let dryRoomGainDB = 6.3
     /// Added to a part's channel gain by its seat (band.apple_seat_trim_db): the environment node's seating (HRTF,
     /// distance) changes the balance against alphaSynth, which plays every part centred.
     public static let appleSeatTrimDB: [String: Double] = [
@@ -23,6 +29,54 @@ public enum PlaybackLevels {
         "solo-horn": 0.4, "first-horn": 0.3, "second-horn": 0.4, "first-baritone": 1.3, "second-baritone": 1.8, "first-trombone": 3.3,
         "second-trombone": 2.8, "bass-trombone": 1.9, "euphoniums": 0.1, "eb-basses": 3.6, "bb-basses": 3.7, "percussion": 13.8,
     ]
+    /// Added to each drum of the kit, by GM key (band.apple_kit_trim_db): AVAudioUnitSampler hardly applies the kit's
+    /// zone attenuation, which alphaSynth applies in full, so without it the hi-hats played 16 dB and the ride 28 dB
+    /// over alphaSynth's against the kick. Measured drum by drum at every dynamic (sounds/tools/kit_probe.py); a drum
+    /// not listed plays at 0.
+    public static let appleKitTrimDB: [Int: Double] = [
+        35: 3.6, 36: 3.6, 37: -15.9, 38: -6.0, 40: -6.0, 41: -11.9, 42: -16.6, 43: -11.8, 44: -16.6, 45: -5.5, 46: -6.7,
+        47: -5.5, 48: -5.5, 49: -11.3, 50: -5.5, 51: -28.2, 52: -24.1, 53: -25.2, 54: -11.9, 55: -21.7, 56: -10.6,
+        57: -12.2, 59: -27.7,
+    ]
+
+    /// The pop kit (bank 128 program 1) plays MS Basic's own crashes where the band kit has VSCO's
+    /// (band.apple_kit_trim_db.pop_kit): its other drums take the band kit's trims.
+    public static let applePopKitTrimDB: [Int: Double] = [49: -23.8, 57: -28.3]
+
+    /// A drum's trim in the kit of `program` (0 the band kit, 1 the pop kit).
+    public static func kitTrimDB(_ key: Int, program: Int) -> Double? {
+        (program == 1 ? applePopKitTrimDB[key] : nil) ?? appleKitTrimDB[key]
+    }
+
+    /// The kit's drums in groups whose trims lie within `kitGroupSpanDB`: each group plays on a sampler of its own at
+    /// the group's mean trim (AVAudioUnitSampler has one volume for all its MIDI channels), so a score with a kick,
+    /// a snare, hi-hats and a crash loads the kit four times. The group of every key, and each group's trim in dB; a
+    /// drum without a trim is in the group of 0 dB.
+    public static let kitGroupSpanDB = 2.0
+
+    public struct KitGroups: Sendable {
+        public var group: [Int: Int]
+        public var trimDB: [Double]
+        /// The group a drum plays in.
+        public func of(_ key: Int) -> Int { group[key] ?? group[-1]! }
+    }
+
+    /// The groups of the kit of `program`.
+    public static func kitGroups(program: Int) -> KitGroups {
+        var members: [[Double]] = []
+        var group: [Int: Int] = [:]
+        let keys = appleKitTrimDB.keys.map { ($0, kitTrimDB($0, program: program)!) } + [(-1, 0.0)]
+        for (key, t) in keys.sorted(by: { ($0.1, $0.0) > ($1.1, $1.0) }) {
+            if let top = members.last?.first, top - t <= kitGroupSpanDB {
+                members[members.count - 1].append(t)
+            } else {
+                members.append([t])
+            }
+            group[key] = members.count - 1
+        }
+        return KitGroups(group: group, trimDB: members.map { ($0.reduce(0, +) / Double($0.count) * 10).rounded() / 10 })
+    }
+
     /// The original recording plays at the loudness the band plays the arrangement at
     /// (`bandEstimateLUFS`), clamped to this range; at the fallback without an arrangement.
     public static let recordingFallbackLUFS = -16.0
