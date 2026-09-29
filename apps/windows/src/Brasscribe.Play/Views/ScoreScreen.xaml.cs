@@ -66,7 +66,12 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         _hideTimer.IsRepeating = false;
         _hideTimer.Tick += (_, _) => OnHideTimer();
         // "4 s after the last touch": any press in the stand starts the wait again.
-        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => { if (ViewModel?.Stand.IsOpen == true) RestartHideTimer(); }), handledEventsToo: true);
+        AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) =>
+        {
+            if (ViewModel?.Stand.IsOpen != true) return;
+            ViewModel.Stand.Touched(); // Tab or Space kept the layer up until now
+            RestartHideTimer();
+        }), handledEventsToo: true);
     }
 
     private static readonly TimeSpan StandLayer_HideDelay = Brasscribe.Play.Core.Stand.StandLayer.HideDelay;

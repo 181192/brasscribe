@@ -52,11 +52,12 @@ saw, and stop at the first crash.
 1. Open a multi-page score and press F (or F11): the stand opens full screen with two pages side by
    side on a landscape screen.
 2. Press → / Page Down / ↓, then ← / Page Up / ↑, then Home and End. Each press turns the page
-   (first/last with Home/End). The **controls do not appear**, and Narrator says "Page 3 of 6"
-   (and "First page." / "Last page." at the ends).
+   (first/last with Home/End). The **controls do not appear**, and Narrator says "Page 3 of 6, bars
+   17 to 32." (and "First page." / "Last page." at the ends).
 3. Play. Press only page keys for 10 s: the controls stay hidden, and the page turns follow the music.
 4. Press **Space**: the music pauses and the controls appear. Press Space again: it plays, and the
-   controls hide 4 s later.
+   controls **stay** (Tab or Space keep them until the next touch). Click the music once: they hide,
+   and after the next click they hide by themselves 4 s later while playing.
 5. Press **Tab**: the controls appear and focus moves to Leave, then through the layer. Shift+Tab
    goes back. Focus never gets stuck, and Esc leaves the stand.
 6. Pedal: a Bluetooth page turner in arrow or page mode behaves like step 2. In Space mode it starts
@@ -79,9 +80,10 @@ saw, and stop at the first crash.
    Colours): the app follows with Pink dark (bubblegum primary, coral errors).
 6. Turn on a Windows contrast theme (Aquatic, Desert): the app uses the system colours at once, and
    the contrast note shows. Turn it off: Pink comes back.
-7. Choose Light: Pink leaves every surface, including open flyouts, with no leftover pink brushes.
+7. Quit with Pink chosen and start the app again: it opens in Pink, caption buttons included.
+8. Choose Light: Pink leaves every surface, including open flyouts, with no leftover pink brushes.
    Restart the app: Pink is still listed.
-8. Check Home, the score, the stand, Review, "Choose what to make", Share or print and Settings in
+9. Check Home, the score, the stand, Review, "Choose what to make", Share or print and Settings in
    Pink light and Pink dark. Look for unreadable text and for surfaces left in the old palette.
    Radio buttons, checks and toggles keep the ink accent; that is expected.
 

@@ -207,6 +207,23 @@ public class StandLayerTests
         Assert.True(layer.IsShown);
     }
 
+    [Fact]
+    public void Tab_or_Space_keep_the_layer_up_until_the_next_touch()
+    {
+        var layer = new StandLayer(hintSeen: true);
+        layer.Enter(Playing);
+        layer.Key(); // Space: the player is on the keyboard
+        Assert.False(layer.AutoHide(Playing));
+        Assert.True(layer.IsShown);
+        layer.Touched(); // a press on the stand: the layer may hide by itself again
+        Assert.True(layer.AutoHide(Playing));
+        layer.Key();
+        layer.Tap(); // a tap hides it and ends the keyboard's hold
+        Assert.False(layer.IsShown);
+        layer.Tap();
+        Assert.True(layer.AutoHide(Playing));
+    }
+
     [Theory]
     [InlineData(ScoreKey.Space, true)]
     [InlineData(ScoreKey.Right, false)]

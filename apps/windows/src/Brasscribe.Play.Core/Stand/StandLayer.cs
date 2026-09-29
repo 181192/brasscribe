@@ -6,15 +6,16 @@ public readonly record struct StandContext(
     bool ScreenReader = false,
     bool FocusInLayer = false,
     bool KeepVisible = false,
-    bool TextInputOrTouchKeyboard = false);
+    bool TextInputOrTouchKeyboard = false,
+    bool Keyboard = false);
 
 /// <summary>
 /// Showing and hiding the stand's control layer (design/music-stand.md §4.2), without a UI framework:
 /// <list type="bullet">
 /// <item>a tap on the music toggles it (on pointer-up); a key shows it; it shows on entry while paused;</item>
 /// <item>it hides by itself <see cref="HideDelay"/> after the last touch, and only while the music plays;</item>
-/// <item>never by itself with a screen reader, focus in the layer, a text field or the touch keyboard, or
-/// Settings → Keep the stand controls visible (WCAG 2.2.1, 2.4.11);</item>
+/// <item>never by itself with a screen reader, focus in the layer, a text field or the touch keyboard, after Tab or
+/// Space until the next touch, or Settings → Keep the stand controls visible (WCAG 2.2.1, 2.4.11);</item>
 /// <item>the first time it hides, a hint says how to bring it back; the first tap dismisses it for good.</item>
 /// </list>
 /// </summary>
@@ -41,6 +42,7 @@ public sealed class StandLayer
     /// <summary>A tap on the music: the hint goes for good, and the layer toggles.</summary>
     public void Tap()
     {
+        FromKeyboard = false;
         if (HintShown)
         {
             HintShown = false;
@@ -57,8 +59,21 @@ public sealed class StandLayer
         Set(false);
     }
 
-    /// <summary>Tab or Space shows the layer (<see cref="ShowsLayer"/>).</summary>
-    public void Key() => Set(true);
+    /// <summary>
+    /// Tab or Space shows the layer (<see cref="ShowsLayer"/>), and it stays until the next touch: the player is on the
+    /// keyboard. A pedal's page keys keep nothing up.
+    /// </summary>
+    public void Key()
+    {
+        FromKeyboard = true;
+        Set(true);
+    }
+
+    /// <summary>Tab or Space showed the layer since the last touch.</summary>
+    public bool FromKeyboard { get; private set; }
+
+    /// <summary>A press on the stand (pointer or touch): the layer may hide by itself again.</summary>
+    public void Touched() => FromKeyboard = false;
 
     /// <summary>
     /// Whether a key pressed in the stand shows the layer and starts the hide wait again: Space does (Tab too, handled
@@ -71,9 +86,9 @@ public sealed class StandLayer
     public void Show() => Set(true);
 
     /// <summary>Whether the layer must stay whatever the timer says.</summary>
-    public static bool MustStay(StandContext c) => c.ScreenReader || c.FocusInLayer || c.KeepVisible || c.TextInputOrTouchKeyboard;
+    public static bool MustStay(StandContext c) => c.ScreenReader || c.FocusInLayer || c.KeepVisible || c.TextInputOrTouchKeyboard || c.Keyboard;
 
-    public bool CanAutoHide(StandContext c) => IsShown && c.Playing && !MustStay(c);
+    public bool CanAutoHide(StandContext c) => IsShown && c.Playing && !MustStay(c with { Keyboard = c.Keyboard || FromKeyboard });
 
     /// <summary>The timer ran out; returns true when the layer hid.</summary>
     public bool AutoHide(StandContext c)

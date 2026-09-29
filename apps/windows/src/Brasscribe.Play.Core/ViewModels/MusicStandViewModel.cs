@@ -289,5 +289,6 @@ public sealed partial class MusicStandViewModel : ObservableObject
 
     public void Tap() => Layer.Tap();
     public void KeyPressed() => Layer.Key();
+    public void Touched() => Layer.Touched();
     public bool AutoHide(StandContext context) => Layer.AutoHide(context with { KeepVisible = context.KeepVisible || KeepControlsVisible });
 }
