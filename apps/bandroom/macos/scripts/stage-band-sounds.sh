@@ -21,3 +21,5 @@ mkdir -p "$DEST"
 [ "$DEST/brasscribe-band.sf2" -nt "$SRC" ] || cp -c "$SRC" "$DEST/brasscribe-band.sf2" 2>/dev/null || cp "$SRC" "$DEST/brasscribe-band.sf2"
 cp "$ROOT/sounds/mapping.json" "$DEST/mapping.json"
 cp "$ROOT/sounds/band-notice.txt" "$DEST/NOTICE.txt"
+# the level the engine renders its MP3 at (engine audio_level): the apps' loudness target and band estimate
+cp "$ROOT/sounds/playback-levels.json" "$ROOT/sounds/playback_levels.py" "$DEST/"

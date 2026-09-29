@@ -103,6 +103,8 @@
   <ItemGroup Condition="Exists('$(RepoRoot)data\sounds\band\brasscribe-band-mobile.sf2')">
     <Content Include="$(RepoRoot)data\sounds\band\brasscribe-band-mobile.sf2" Link="band\brasscribe-band.sf2" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)sounds\mapping.json" Link="band\mapping.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)sounds\playback-levels.json" Link="band\playback-levels.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)sounds\playback_levels.py" Link="band\playback_levels.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)sounds\band-notice.txt" Link="band\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Condition="'$(BandroomPixiExe)' != '' And Exists('$(BandroomPixiExe)')">
