@@ -572,9 +572,10 @@ public sealed partial class ScoreView : UserControl
             base.OnKeyDown(e); // Tab always leaves the score (WCAG 2.1.2)
             return;
         }
-        if (IsStand) StandKey?.Invoke(this, EventArgs.Empty);
         var mods = Modifiers();
         var key = MapKey(e.Key);
+        // Space shows the stand's controls; a pedal's page keys turn the page and leave them as they are.
+        if (IsStand && Brasscribe.Play.Core.Stand.StandLayer.ShowsLayer(key)) StandKey?.Invoke(this, EventArgs.Empty);
         if (key is null)
         {
             base.OnKeyDown(e);

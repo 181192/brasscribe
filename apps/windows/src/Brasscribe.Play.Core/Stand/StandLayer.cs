@@ -57,8 +57,16 @@ public sealed class StandLayer
         Set(false);
     }
 
-    /// <summary>Tab, Space or any mapped key shows the layer.</summary>
+    /// <summary>Tab or Space shows the layer (<see cref="ShowsLayer"/>).</summary>
     public void Key() => Set(true);
+
+    /// <summary>
+    /// Whether a key pressed in the stand shows the layer and starts the hide wait again: Space does (Tab too, handled
+    /// on its own as it moves into the layer). The page keys (arrows, Page Up/Down, Home/End) turn the page and leave
+    /// the layer and its timer as they are: a Bluetooth page turner or pedal is a keyboard that sends them, and a pedal
+    /// press must not put controls over the music (design/music-stand.md §4.2). No other key shows it either.
+    /// </summary>
+    public static bool ShowsLayer(ViewModels.ScoreKey? key) => key == ViewModels.ScoreKey.Space;
 
     public void Show() => Set(true);
 

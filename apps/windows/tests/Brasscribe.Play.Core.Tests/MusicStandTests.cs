@@ -207,6 +207,27 @@ public class StandLayerTests
         Assert.True(layer.IsShown);
     }
 
+    [Theory]
+    [InlineData(ScoreKey.Space, true)]
+    [InlineData(ScoreKey.Right, false)]
+    [InlineData(ScoreKey.Left, false)]
+    [InlineData(ScoreKey.Down, false)]
+    [InlineData(ScoreKey.Up, false)]
+    [InlineData(ScoreKey.PageDown, false)]
+    [InlineData(ScoreKey.PageUp, false)]
+    [InlineData(ScoreKey.Home, false)]
+    [InlineData(ScoreKey.End, false)]
+    [InlineData(ScoreKey.Escape, false)]
+    [InlineData(null, false)]
+    public void Space_shows_the_layer_and_a_pedals_page_keys_leave_it(ScoreKey? key, bool shows)
+    {
+        // A page turner or pedal is a keyboard sending arrows or Page Up/Down: it turns the page with no controls over
+        // the music. Tab (handled on its own, as it moves into the layer) and Space show them (design/music-stand.md §4.2).
+        Assert.Equal(shows, StandLayer.ShowsLayer(key));
+        if (key is { } k and not ScoreKey.Space and not ScoreKey.Escape)
+            Assert.NotNull(ScoreKeyMap.Map(k, KeyModifiers.None, singleKeyShortcuts: true, stand: true));
+    }
+
     [Fact]
     public void The_hint_comes_the_first_time_the_layer_hides_and_goes_for_good_on_a_tap()
     {

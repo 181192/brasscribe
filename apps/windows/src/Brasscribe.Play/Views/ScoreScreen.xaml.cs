@@ -437,12 +437,13 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Handled || ViewModel?.Stand.IsOpen != true) return;
-        StandInteraction(showLayer: e.Key == Windows.System.VirtualKey.Tab);
+        var mapped = ScoreView.MapKey(e.Key);
+        // Tab and Space show the layer and start its wait again; a pedal's page keys leave both as they are.
+        if (e.Key == Windows.System.VirtualKey.Tab || Brasscribe.Play.Core.Stand.StandLayer.ShowsLayer(mapped)) StandInteraction(showLayer: true);
         if (XamlRoot is not null && FocusManager.GetFocusedElement(XamlRoot) is TextBox or NumberBox) return;
-        if (ScoreView.MapKey(e.Key) is not { } key || key == ScoreKey.Space) return; // Space presses the focused button
+        if (mapped is not { } key || key == ScoreKey.Space) return; // Space presses the focused button
         // Single-key shortcuts (F, L, -, +) work only while the score has focus (WCAG 2.1.4).
         if (ScoreKeyMap.Map(key, ScoreView.Modifiers(), singleKeyShortcuts: false, stand: true) is not { } command) return;
-        ViewModel.Stand.KeyPressed();
         ViewModel.Execute(command);
         e.Handled = true;
     }
