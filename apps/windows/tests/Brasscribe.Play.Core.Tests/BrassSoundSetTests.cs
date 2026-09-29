@@ -40,6 +40,15 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
 
     private static string Sha(byte[] b) => Convert.ToHexStringLower(SHA256.HashData(b));
 
+    /// <summary>Without mapping.json, a trumpet player's lead part ("Trumpet") plays the Solo Cornet's sound.</summary>
+    [Fact]
+    public void The_trumpet_part_plays_the_solo_cornets_sound_without_a_mapping()
+    {
+        string Folder(string part) => BrassSoundSet.PartMap.First(m => part.Contains(m.PartContains, StringComparison.OrdinalIgnoreCase)).Instrument;
+        Assert.Equal("cornet-b", Folder("Trumpet"));
+        Assert.Equal(Folder("Solo Cornet"), Folder("Trumpet"));
+    }
+
     /// <summary>SHA-256 of MovePresets' output from before it patched in place (it cloned then), per offset.</summary>
     [SkippableTheory]
     [InlineData(0, "032f22e0f58c379876dd1cac6920392e050b0957ddfbaed269ef406dfc271832", "4978cf37e7164206f2d22dc4fdf4020ffe040787210bf781e31bdc79961f59ef")]
