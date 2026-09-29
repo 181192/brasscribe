@@ -496,3 +496,22 @@ extension View {
 
 /// Percent in the user's locale: "75%" in English, "75 %" in Norwegian.
 func percentText(_ value: Double) -> String { (value / 100).formatted(.percent.precision(.fractionLength(0))) }
+
+/// The selected row of the review's note list (design/system.md: selection is `selection-tint`
+/// with a 1 px `selection-edge`), under the page's text colour. The system highlight fills with the
+/// tint instead (primary, near black in light), under text that keeps its own colour.
+enum SelectedRow {
+    static let fill = Color.Brasscribe.selectionTint
+    static let edge = Color.Brasscribe.selectionEdge
+    static let text = Color.Brasscribe.text
+
+    /// The row background: this for the selected row, the list's own for the rest.
+    static func background(_ selected: Bool) -> AnyView? {
+        guard selected else { return nil }
+        return AnyView(
+            RoundedRectangle(cornerRadius: Radius.sm)
+                .fill(fill)
+                .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(edge, lineWidth: 1))
+        )
+    }
+}

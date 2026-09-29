@@ -146,6 +146,10 @@ struct ReviewView: View {
                         }
                         .frame(minHeight: 44)
                         .tag(it.id)
+                        // the row draws its own selection, as the library sidebar does: the system's
+                        // highlight fills with the tint (primary, near black in light), under text
+                        // that keeps the page's colour
+                        .listRowBackground(SelectedRow.background(it.id == item?.id))
                         .accessibilityLabel(Text("\(barLabel(it)), \(pitchName(it)), \(levelWords(it))"))
                     }
                 }
