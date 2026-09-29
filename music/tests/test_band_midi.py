@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.instruments import BRASS_BAND
+from brasscribe_music.instruments import BRASS_BAND, SEAT_OWN_PARTS
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
@@ -59,7 +59,7 @@ def test_percussion_instruments_per_drum(tmp_path):
 @pytest.mark.skipif(not MAPPING.exists(), reason="sounds/mapping.json not available")
 def test_banks_match_the_band_soundfont_mapping():
     parts = json.loads(MAPPING.read_text())["parts"]
-    for p in BRASS_BAND.parts:
+    for p in [*BRASS_BAND.parts, *SEAT_OWN_PARTS.values()]:
         mx = parts.get(p.name, {}).get("band_soundfont", {}).get("musicxml", {})
         if "midi-bank" in mx:
             assert p.midi_bank == mx["midi-bank"], p.name

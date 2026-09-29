@@ -18,7 +18,8 @@ func repoRoot() -> URL? {
 func builtSounds() -> URL? {
     guard let r = repoRoot() else { return nil }
     let b = r.appending(path: "data/sounds/built")
-    return FileManager.default.fileExists(atPath: b.appending(path: "cornet-a/cornet-a.sf2").path) ? b : nil
+    // A set built before Solo Cornet had its own target lacks the lead part.
+    return FileManager.default.fileExists(atPath: b.appending(path: "solo-cornet/solo-cornet.sf2").path) ? b : nil
 }
 
 func bandSoundFont() -> URL? {
@@ -58,7 +59,7 @@ func bandSoundFont() -> URL? {
     let root = try #require(repoRoot())
     let parts = try BandSounds.load(mapping: root.appending(path: "sounds/mapping.json"),
                                     seating: root.appending(path: "sounds/seating.json"), built: try #require(builtSounds()))
-    #expect(parts["Solo Cornet"]?.target.hasPrefix("cornet") == true)
+    #expect(parts["Solo Cornet"]?.target == "solo-cornet")
     #expect(parts["Solo Cornet"]?.azimuth != nil)
     let score = try MusicXMLParser.parse(url: try #require(goldenDir()).appending(path: "brass-band.musicxml"))
     let bank = SoundBank(general: nil, perPart: parts)

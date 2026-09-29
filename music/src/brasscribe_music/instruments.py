@@ -266,7 +266,7 @@ def lineup_key(lineup: Lineup) -> str:
 
 
 # The own parts of seats that are not a brass-band part, by name: the trumpet's.
-SEAT_OWN_PARTS: dict[str, Part] = {"Trumpet": _p("Trumpet", "bb-trumpet", 1, "Tpt.", 1)}
+SEAT_OWN_PARTS: dict[str, Part] = {"Trumpet": _p("Trumpet", "bb-trumpet", 1, "Tpt.", 8)}
 
 
 def part_banks() -> dict[str, int]:

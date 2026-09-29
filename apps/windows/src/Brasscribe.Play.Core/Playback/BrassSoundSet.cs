@@ -13,12 +13,14 @@ namespace Brasscribe.Play.Core.Playback;
 /// </summary>
 public sealed class BrassSoundSet
 {
-    /// <summary>Part names (as written by the arranger) to instrument folders, first match wins.</summary>
+    /// <summary>Part names (as written by the arranger) to instrument folders, first match whose folder is in the set wins.</summary>
     public static readonly (string PartContains, string Instrument)[] PartMap =
     [
         ("Soprano Cornet", "soprano-cornet"),
+        // Solo Cornet and Trumpet have their own targets; a set built before them plays cornet-b.
+        ("Solo Cornet", "solo-cornet"),
         ("Solo Cornet", "cornet-b"),
-        // A trumpet player's lead part plays the Solo Cornet's sound.
+        ("Trumpet", "trumpet"),
         ("Trumpet", "cornet-b"),
         ("Cornet", "cornet-a"),
         ("Flugel", "flugelhorn"),

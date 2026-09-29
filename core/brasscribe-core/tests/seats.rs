@@ -50,7 +50,8 @@ fn the_trumpet_takes_the_lead() {
         assert!(!l.has("Solo Cornet") && l.soloist_lead() && !l.lead_moved);
         assert_eq!(l.parts.len(), base.parts.len());
         let (t, sc) = (l.by_name("Trumpet"), base.by_name("Solo Cornet"));
-        assert_eq!((t.instrument.id, t.players, t.midi_bank.or(Some(1))), ("bb-trumpet", sc.players, sc.midi_bank.or(Some(1))));
+        // Its own preset (sounds/mapping.json "Trumpet": bank 7, 1-based 8), not the Solo Cornet's.
+        assert_eq!((t.instrument.id, t.players, t.midi_bank), ("bb-trumpet", sc.players, Some(8)));
         assert_eq!(l.parts.iter().position(|p| p.name == "Trumpet"), base.parts.iter().position(|p| p.name == "Solo Cornet"));
         // lead=seat: the tune is on the trumpet already.
         assert_eq!(lead_lineup(base, "trumpet").unwrap(), l);
@@ -62,7 +63,7 @@ fn the_trumpet_takes_the_lead() {
     assert_eq!((take.lead, take.parts[0].instrument.pro), ("Trumpet", (52, 85)));
     assert!(seat_by_id("trumpet").unwrap().tune());
     assert_eq!(nb_part_name("Trumpet"), "Trompet");
-    assert!(part_banks().contains(&("Trumpet", 1)));
+    assert!(part_banks().contains(&("Trumpet", 8)));
     // Only a seat that is no band part takes the lead: the soprano cornet maps to Solo Cornet as before.
     assert_eq!(seat_part("minimal", "soprano-cornet").unwrap().takes, None);
 }
