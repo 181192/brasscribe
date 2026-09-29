@@ -100,6 +100,8 @@ func goldenDir() -> URL? {
 final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var requests: [URLRequest] = []
     nonisolated(unsafe) static var musicXML = Data("<score-partwise/>".utf8)
+    /// The bodies of the job uploads, in order (the request's body stream can be read only once).
+    nonisolated(unsafe) static var uploads: [String] = []
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -132,6 +134,9 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (202, Data(#"{"request_id":"r1","name":"test","platform":"ios","match_code":"4821","created_at":"2026-09-27T10:00:00+00:00","status":"pending"}"#.utf8), "application/json")
             case ("GET", "/v1/pair/requests/r1"):
                 return (200, Data(#"{"status":"approved","token":"tok","device_id":"d1","server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
+            // An engine from before the trumpet seat refuses it (the seat enum), with no refusal code.
+            case ("POST", "/v1/jobs/upload") where { Self.uploads.append(request.bodyStreamData); return Self.uploads.last!.contains("\r\n\r\ntrumpet\r\n") }():
+                return (422, Data(#"{"detail":[{"loc":["body","seat"],"msg":"Input should be 'soprano-cornet', ..."}]}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload"):
                 return (200, Data(#"{"id":"j1","profile":"solo","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/events"):
@@ -249,6 +254,26 @@ extension URLRequest {
         #expect(upload.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("multipart/form-data; boundary=") == true)
         #expect(try await svc.artifact(.brailleBRF, jobID: "j1") == Data("#A BRF".utf8))
         #expect(try await svc.artifact(.talkingScore, jobID: "j1") == Data("Bar 1".utf8))
+    }
+
+    /// An older engine refuses the trumpet seat: the job goes once more as solo-cornet (the same notes).
+    @Test func anOlderEngineGetsATrumpetJobAsSoloCornet() async throws {
+        StubEngine.requests = []
+        StubEngine.uploads = []
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
+        let audio = FileManager.default.temporaryDirectory.appending(path: "t.wav")
+        try Data(repeating: 1, count: 3000).write(to: audio)
+        var done: TranscriptionResult?
+        for try await ev in svc.transcribe(.init(audioURL: audio, profile: .orchestraWithSoloist, title: "t",
+                                                  output: OutputChoice(seat: "trumpet", lead: "seat"))) {
+            if case .finished(let r) = ev { done = r }
+        }
+        #expect(done?.jobID == "j1")
+        let uploads = StubEngine.uploads
+        #expect(uploads.count == 2)
+        #expect(uploads.first?.contains("\r\n\r\ntrumpet\r\n") == true)
+        #expect(uploads.last?.contains("\r\n\r\nsolo-cornet\r\n") == true && uploads.last?.contains("name=\"lead\"") == false)
     }
 
     @Test func recentScoresEvidenceAndRunManagement() async throws {

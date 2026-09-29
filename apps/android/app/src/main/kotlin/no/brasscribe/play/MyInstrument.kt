@@ -167,3 +167,23 @@ object YourParts {
 /** A text option of the recorded arrangement ("seat", "lead"), or null. */
 fun Composition.arrangementString(key: String): String? =
     (arrangement?.get(key) as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+
+/**
+ * Seats an engine from before them refuses (422, no refusal code): the seat whose part it writes the same
+ * notes for. A trumpet takes the Solo Cornet part, written for trumpet.
+ */
+val SEAT_FALLBACK = mapOf("trumpet" to "solo-cornet")
+
+/**
+ * [EngineApi.createJob], and for a seat an older engine refuses, once more with [SEAT_FALLBACK]'s seat.
+ * The second value says it fell back, so the player hears that the computer is too old for their instrument.
+ */
+suspend fun no.brasscribe.play.engine.EngineApi.createJobForSeat(
+    request: no.brasscribe.play.engine.JobCreate,
+): Pair<no.brasscribe.play.engine.Job, Boolean> = try {
+    createJob(request) to false
+} catch (e: no.brasscribe.play.engine.EngineException) {
+    val fallback = request.seat?.let { SEAT_FALLBACK[it] }
+    if (e.status != 422 || e.code != null || fallback == null) throw e
+    createJob(request.copy(seat = fallback, reads = null, lead = null)) to true
+}

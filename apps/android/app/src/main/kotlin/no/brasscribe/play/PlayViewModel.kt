@@ -655,7 +655,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                     else -> null
                 }
                 if (updated != null) { lastApplied = opts; result.value = updated; saveCurrentScore(updated) }
-                say(R.string.arrangement_ready)
+                if (updated != null && !updated.onDevice && seatFellBack)
+                    sayText(res.getString(R.string.arrangement_ready) + " " + res.getString(R.string.engine_too_old_seat))
+                else say(R.string.arrangement_ready)
                 then()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -671,18 +673,24 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private var lastApplied: OutputOptions = OutputOptions()
 
-    /** A seat went to the computer and came back unrecorded: that Brasscribe is too old to write for it. */
+    /** The engine refused the seat and wrote for [SEAT_FALLBACK]'s instead (the last engine job). */
+    private var seatFellBack = false
+
+    /** A seat went to the computer and came back unrecorded or refused: that Brasscribe is too old to write for it. */
     private fun seatIgnored(r: TranscriptionResult): Boolean =
-        !r.onDevice && output.value.seat != null && r.composition != null && r.composition.arrangementString("seat") == null
+        !r.onDevice && output.value.seat != null && r.composition != null &&
+            (seatFellBack || r.composition.arrangementString("seat") == null)
 
     private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
         val engine = container.engine() ?: throw NoCompanionException()
         val core = opts.toCore()
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
+        seatFellBack = false
         val job = try {
-            engine.createJob(JobCreate(r.audioId, r.profile.id, renderAudio = false,
+            engine.createJobForSeat(JobCreate(r.audioId, r.profile.id, renderAudio = false,
                 allowHeavy = container.settings.allowHeavy, title = r.composition?.title.orEmpty(), lineup = opts.lineup.madeFor(r.fullBandMade).engine,
                 difficulty = core.difficulty, transpose = core.transpose, seat = core.seat, reads = core.reads, lead = core.lead))
+                .also { seatFellBack = it.second }.first
         } catch (e: EngineException) {
             // The engine's own words stay out of the app: a refused quartet gets the card's reason.
             if (e.status == 422 && e.code == null && opts.lineup == Lineup.QUARTET) throw QuartetNeedsGroupException()
@@ -713,10 +721,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         transcribe.update { it.copy(fraction = 0.0) }
-        val created = engine.createJob(
+        seatFellBack = false
+        val created = engine.createJobForSeat(
             JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                 title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null }),
-        )
+        ).also { seatFellBack = it.second }.first
         engineJobId = created.id
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
         transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }

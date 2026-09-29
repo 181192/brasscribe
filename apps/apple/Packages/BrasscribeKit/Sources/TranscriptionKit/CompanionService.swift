@@ -261,8 +261,27 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/runs/\(jobID)", method: "DELETE"))
     }
 
-    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory.
+    /// Seats an engine from before them refuses (422): the seat whose part it writes the same notes for.
+    /// A trumpet takes the Solo Cornet part, written for trumpet.
+    public static let seatFallback = ["trumpet": "solo-cornet"]
+
+    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory. An older
+    /// engine that refuses the seat gets the job once more with `seatFallback`'s seat: the same notes, and
+    /// the score's part notice says which part it is.
     func upload(_ req: TranscriptionRequest) async throws -> Job {
+        do {
+            return try await uploadOnce(req)
+        } catch TranscriptionError.http(422, let body) {
+            guard let s = req.output.seat, let fallback = Self.seatFallback[s] else { throw TranscriptionError.http(422, body) }
+            var again = req
+            again.output.seat = fallback
+            again.output.reads = nil
+            again.output.lead = nil
+            return try await uploadOnce(again)
+        }
+    }
+
+    private func uploadOnce(_ req: TranscriptionRequest) async throws -> Job {
         let boundary = "brasscribe-\(UUID().uuidString)"
         let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
