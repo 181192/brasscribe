@@ -11,7 +11,7 @@ Inputs:  design/tokens/tokens.json (DTCG), design/tokens/icons.json, design/bran
          design/brand/fonts/*
 Outputs: design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
          design/dist/android/    kotlin/no/brasscribe/design/*.kt, res/drawable/ic_bc_*.xml, res/font/
-         design/dist/windows/    BrasscribeTheme.xaml, Assets/Fonts/
+         design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
          design/dist/web/        brasscribe.css, fonts.css, studio-compat.css, icons/*.svg, fonts/
          design/dist/icon-map.md
          docs/accessibility/design-tokens.json (the accessibility palette, kept in its existing shape)
@@ -530,16 +530,11 @@ HC_SYSTEM = {  # role -> WinUI system colour in contrast themes (visual-design-t
 }
 
 
-def windows_outputs() -> dict[str, str | bytes]:
+def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
+    """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json."""
     rs = roles()
-    X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
-         "<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/BrasscribeTheme.xaml\"/>.",
-         "     Use {ThemeResource BcTextBrush} etc. Contrast themes map every role to the user's system colours. -->",
-         '<ResourceDictionary',
-         '    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"',
-         '    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">',
-         "    <ResourceDictionary.ThemeDictionaries>"]
-    for mode, key in (("light", "Light"), ("dark", "Dark")):
+    X = ["    <ResourceDictionary.ThemeDictionaries>"]
+    for mode, key in ((light, "Light"), (dark, "Dark")):
         X.append(f'        <ResourceDictionary x:Key="{key}">')
         for r in rs:
             a = alpha(mode, r)
@@ -553,7 +548,29 @@ def windows_outputs() -> dict[str, str | bytes]:
         X.append(f'            <StaticResource x:Key="Bc{pascal(r)}Color" ResourceKey="{HC_SYSTEM[r]}"/>')
     for r in rs:
         X.append(f'            <SolidColorBrush x:Key="Bc{pascal(r)}Brush" Color="{{ThemeResource {HC_SYSTEM[r]}}}"/>')
-    X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>", ""]
+    X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>"]
+    return X
+
+
+XAML_OPEN = ['<ResourceDictionary',
+             '    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"',
+             '    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">']
+
+
+def windows_pink() -> str:
+    """The hidden Pink palette (design/system.md §10): the colour roles only, merged after BrasscribeTheme.xaml."""
+    X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
+         "<!-- The hidden Pink palette (design/system.md §10). Merged after BrasscribeTheme.xaml while Pink is chosen, so its",
+         "     colour roles win; Light and Dark follow the system. Contrast themes still map every role to the system's colours. -->"]
+    X += XAML_OPEN + windows_theme_dictionaries("pink", "pink-dark") + ["</ResourceDictionary>", ""]
+    return "\n".join(X)
+
+
+def windows_outputs() -> dict[str, str | bytes]:
+    X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
+         "<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/BrasscribeTheme.xaml\"/>.",
+         "     Use {ThemeResource BcTextBrush} etc. Contrast themes map every role to the user's system colours. -->"]
+    X += XAML_OPEN + windows_theme_dictionaries("light", "dark") + [""]
     X.append("    <!-- Spacing (epx), radii, sizes -->")
     for k, v in group("space").items():
         X.append(f'    <x:Double x:Key="BcSpace{k}">{fmt(dimension(v))}</x:Double>')
@@ -593,6 +610,7 @@ def windows_outputs() -> dict[str, str | bytes]:
             X.append(f'    <x:String x:Key="BcIconPath{pascal(a)}">{transform_path(v, 20 / 960, 0, 20)}</x:String>')
     X += ["</ResourceDictionary>", ""]
     return {"windows/BrasscribeTheme.xaml": "\n".join(X),
+            "windows/BrasscribePinkTheme.xaml": windows_pink(),
             "windows/Assets/Fonts/InstrumentSerif-Regular.ttf": (BRAND / "fonts" / "InstrumentSerif-Regular.ttf").read_bytes(),
             "windows/Assets/Fonts/OFL.txt": (BRAND / "fonts" / "OFL.txt").read_bytes()}
 

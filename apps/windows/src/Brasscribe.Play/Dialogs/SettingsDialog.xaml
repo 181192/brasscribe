@@ -111,6 +111,10 @@
             <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
             <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
+            <!-- The version is an ordinary button (click, Space, Enter, Narrator): five in a row unlock the hidden Pink
+                 appearance (design/system.md §10). Nothing about it hints that it does more. -->
+            <Button x:Name="AppVersion" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Padding="0" Click="OnVersion" />
+            <TextBlock x:Name="PinkNote" Style="{StaticResource LabelStyle}" Visibility="Collapsed" />
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

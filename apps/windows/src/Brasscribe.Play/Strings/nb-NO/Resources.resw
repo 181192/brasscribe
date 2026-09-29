@@ -75,6 +75,9 @@
   <data name="AppearanceSystem.Content" xml:space="preserve">
     <value>Følg systemet</value>
   </data>
+  <data name="Appearance_Pink" xml:space="preserve">
+    <value>Rosa</value>
+  </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Spør på datamaskinen i stedet</value>
   </data>
@@ -957,6 +960,9 @@
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Stemmer</value>
   </data>
+  <data name="Pink_Unlocked" xml:space="preserve">
+    <value>🎺 Rosa låst opp</value>
+  </data>
   <data name="PipItem.Text" xml:space="preserve">
     <value>Video i eget vindu</value>
   </data>
@@ -1706,6 +1712,9 @@
   </data>
   <data name="SettingsYouHeading.Text" xml:space="preserve">
     <value>Instrumentet ditt</value>
+  </data>
+  <data name="Settings_AppVersion" xml:space="preserve">
+    <value>Versjon {0}</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>innebygd (den fulle arrangøren er ikke installert)</value>

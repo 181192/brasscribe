@@ -41,6 +41,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _time = time ?? TimeProvider.System;
         Language = store.Get(nameof(Language), "system");
         Appearance = AppearanceSetting.Parse(store.Get<string?>(AppearanceSetting.Key, null));
+        _pinkUnlock = new PinkUnlock(store.Get(AppearanceSetting.PinkUnlockedKey, false) || Appearance == Appearance.Pink, _time);
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
         StandKeepControls = store.Get(nameof(StandKeepControls), false);
@@ -105,18 +106,46 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
-    /// <summary>Match system, Light or Dark, for this PC only (design/system.md §10).</summary>
+    /// <summary>Match system, Light, Dark or (once unlocked) Pink, for this PC only (design/system.md §10).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RootTheme))]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
     public partial Appearance Appearance { get; set; }
 
     /// <summary>A Windows contrast theme is on (set by the app from AccessibilitySettings): it decides the colours.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RootTheme))]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
     public partial bool HighContrast { get; set; }
 
     /// <summary>What every window root asks for: the choice, or Default while a contrast theme is on.</summary>
     public RootTheme RootTheme => AppearanceSetting.Resolve(Appearance, HighContrast);
+
+    /// <summary>The Pink palette is on the chrome now (chosen, and no contrast theme).</summary>
+    public bool UsesPink => AppearanceSetting.UsesPink(Appearance, HighContrast);
+
+    private readonly PinkUnlock _pinkUnlock;
+
+    /// <summary>Pink is in the Appearance list: unlocked on this PC, or chosen.</summary>
+    public bool PinkUnlocked => _pinkUnlock.IsUnlocked;
+
+    /// <summary>The Appearance box's choices, in order (Pink last once unlocked).</summary>
+    public IReadOnlyList<Appearance> AppearanceChoices => AppearanceSetting.Choices(PinkUnlocked);
+
+    /// <summary>Raised once, when the version in About unlocks Pink.</summary>
+    public event EventHandler? PinkUnlockedNow;
+
+    /// <summary>
+    /// The version in About was activated (a click, Space or Enter, Narrator): the fifth in a row unlocks Pink, keeps it
+    /// on this PC, and says so once. Nothing switches by itself.
+    /// </summary>
+    public void ActivateVersion()
+    {
+        if (!_pinkUnlock.Tap()) return;
+        _store.Set(AppearanceSetting.PinkUnlockedKey, true);
+        OnPropertyChanged(nameof(PinkUnlocked));
+        OnPropertyChanged(nameof(AppearanceChoices));
+        _announcer.Announce(_s["Pink_Unlocked"], AnnouncementKind.Important);
+        PinkUnlockedNow?.Invoke(this, EventArgs.Empty);
+    }
 
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; }
     [ObservableProperty] public partial bool ReduceMotion { get; set; }

@@ -19,7 +19,11 @@ public sealed partial class SettingsDialog : ContentDialog
         ConnectionStatus.Show(viewModel.Connection);
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
+        if (viewModel.PinkUnlocked) AddPinkChoice();
         AppearanceBox.SelectedIndex = (int)viewModel.Appearance;
+        AppVersion.Content = App.Strings.Format("Settings_AppVersion", AppVersionText());
+        viewModel.PinkUnlockedNow += OnPinkUnlocked;
+        Closed += (_, _) => viewModel.PinkUnlockedNow -= OnPinkUnlocked;
         ShowSeat();
         // Without the core's seats there is nothing to choose from.
         SeatChangeButton.IsEnabled = main.Seats.IsAvailable;
@@ -72,6 +76,40 @@ public sealed partial class SettingsDialog : ContentDialog
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LanguageBox.SelectedItem is ComboBoxItem { Tag: string tag }) ViewModel.Language = tag;
+    }
+
+    /// <summary>The app's version: the package's when installed, else the assembly's.</summary>
+    private static string AppVersionText()
+    {
+        try
+        {
+            var v = Windows.ApplicationModel.Package.Current.Id.Version;
+            return $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+        catch (InvalidOperationException)
+        {
+            return typeof(SettingsDialog).Assembly.GetName().Version is { } a ? $"{a.Major}.{a.Minor}.{a.Build}" : "";
+        }
+    }
+
+    private void OnVersion(object sender, RoutedEventArgs e) => ViewModel.ActivateVersion();
+
+    /// <summary>Pink goes last in Appearance (nothing switches), and a small note says so for a few seconds.</summary>
+    private void OnPinkUnlocked(object? sender, EventArgs e)
+    {
+        AddPinkChoice();
+        PinkNote.Text = App.Strings["Pink_Unlocked"];
+        PinkNote.Visibility = Visibility.Visible;
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromSeconds(4);
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) => PinkNote.Visibility = Visibility.Collapsed;
+        timer.Start();
+    }
+
+    private void AddPinkChoice()
+    {
+        if (AppearanceBox.Items.Count <= (int)Appearance.Pink) AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_Pink"] });
     }
 
     /// <summary>Applies at once: the app's theme controller re-themes every window and this dialog; focus stays here.</summary>

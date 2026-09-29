@@ -75,6 +75,9 @@
   <data name="AppearanceSystem.Content" xml:space="preserve">
     <value>Match system</value>
   </data>
+  <data name="Appearance_Pink" xml:space="preserve">
+    <value>Pink</value>
+  </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Ask on the computer instead</value>
   </data>
@@ -957,6 +960,9 @@
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Parts</value>
   </data>
+  <data name="Pink_Unlocked" xml:space="preserve">
+    <value>🎺 Pink unlocked</value>
+  </data>
   <data name="PipItem.Text" xml:space="preserve">
     <value>Video in its own window</value>
   </data>
@@ -1706,6 +1712,9 @@
   </data>
   <data name="SettingsYouHeading.Text" xml:space="preserve">
     <value>Your instrument</value>
+  </data>
+  <data name="Settings_AppVersion" xml:space="preserve">
+    <value>Version {0}</value>
   </data>
   <data name="Settings_CoreManaged" xml:space="preserve">
     <value>built in (the full arranger isn't installed)</value>
