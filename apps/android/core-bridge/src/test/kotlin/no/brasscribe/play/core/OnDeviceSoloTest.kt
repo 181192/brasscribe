@@ -18,8 +18,8 @@ import kotlin.math.abs
 import no.brasscribe.play.test.Slow
 import org.junit.experimental.categories.Category
 
-/** The on-device reference clip's directory under data/runs/apple (a sibling until promoted: docs/plan/fast-notes.md). */
-private const val ONDEVICE_REF = "entertainer-ref.fast-notes"
+/** The on-device reference clip's directory under data/runs/apple. */
+private const val ONDEVICE_REF = "entertainer-ref"
 
 /**
  * The phone's offline solo path on the JVM (the same ONNX models and the host build of the core) on

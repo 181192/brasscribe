@@ -5,8 +5,8 @@ import Testing
 import TranscriptionKit
 @testable import BrasscribePlay
 
-/// The on-device reference clip's directory under data/runs/apple (a sibling until promoted: docs/plan/fast-notes.md).
-let onDeviceRefName = "entertainer-ref.fast-notes"
+/// The on-device reference clip's directory under data/runs/apple.
+let onDeviceRefName = "entertainer-ref"
 
 func onDeviceRef() -> URL? {
     guard let d = fixtureDir() else { return nil }

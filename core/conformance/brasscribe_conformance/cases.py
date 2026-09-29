@@ -17,10 +17,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
 # The Mikkel golden output.
-# (a sibling of data/golden/mikkel-arranged-band until the coordinator promotes it: docs/plan/fast-notes.md)
-MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band.fast-notes"
-# The on-device reference clip (the same sibling rule).
-ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref.fast-notes"
+MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band"
+# The on-device reference clip.
+ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 # SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"
