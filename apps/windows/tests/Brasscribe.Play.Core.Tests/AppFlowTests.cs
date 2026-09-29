@@ -196,6 +196,30 @@ public class AppFlowTests
         Assert.Equal(Screen.Review, main.Screen);
         Assert.Equal("Changed to C5 (was B♭4)", review.ChangedText);
         Assert.False(review.Current!.IsKept);
+
+        // The original pitch is kept with the score: reopened, the card still says what Brasscribe wrote,
+        // and Listen plays the changed score rather than the recording.
+        main.OpenLibraryItemCommand.Execute(Assert.Single(main.LibraryItems));
+        Assert.Equal(Screen.Score, main.Screen);
+        main.CheckNotesCommand.Execute(null);
+        Assert.Equal(Screen.Review, main.Screen);
+        Assert.True(review.IsChanged);
+        Assert.Equal("Changed to C5 (was B♭4)", review.ChangedText);
+        // Written elsewhere now (another band or key): the original is named again from the note as written.
+        string id = Assert.Single(library.Entries).Id;
+        var (key, kept) = Assert.Single(library.LoadReviewChanges(id));
+        Assert.Equal(2, kept.Shift);
+        library.SaveReviewChanges(id, new Dictionary<string, ReviewChange> { [key] = kept with { Was = "X9", WrittenMidi = 0 } });
+        main.OpenLibraryItemCommand.Execute(Assert.Single(main.LibraryItems));
+        main.CheckNotesCommand.Execute(null);
+        Assert.Matches(@"^Changed to C5 \(was (B♭|A♯)4\)$", review.ChangedText);
+        review.UndoChangeCommand.Execute(null);
+        Assert.Equal("", review.ChangedText);
+        main.OpenLibraryItemCommand.Execute(Assert.Single(main.LibraryItems));
+        main.CheckNotesCommand.Execute(null);
+        Assert.False(review.IsChanged); // Undo forgot it with the score too
+        Assert.True(review.ChangeNote(2));
+
         review.KeepCommand.Execute(null);
         Assert.Equal(Screen.Score, main.Screen);
         var entry = Assert.Single(library.Entries);

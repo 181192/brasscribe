@@ -87,6 +87,10 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (_libraryId is { } id) Library?.SaveEvidence(id, evidence);
         };
+        Score.PersistReviewChanges = changes =>
+        {
+            if (_libraryId is { } id) Library?.SaveReviewChanges(id, changes);
+        };
         RefreshLibrary();
         if (library is not null) library.Changed += (_, _) => RefreshLibrary();
         Screen = settings.FirstRunDone ? Screen.Start : Screen.FirstRun;
@@ -195,6 +199,8 @@ public sealed partial class MainViewModel : ObservableObject
             _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
                 Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence,
                 Lineups.Engine(Lineups.Recorded(r.Composition) ?? Output.AppliedLineup)).Id;
+            // A new score, or the notes written again for other choices: no "was" from before applies.
+            ForgetReviewChanges();
             OpenReviewOrScore(rearranged);
         };
         Transcription.PropertyChanged += (_, e) =>
@@ -203,12 +209,16 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Output.Arranged += (_, xml) =>
         {
+            // Arranged from the Composition, which has the changed notes: they stay changed, and Review finds
+            // them by their Composition note.
             Score.Load(xml, Score.Composition);
             Screen = Screen.Score;
         };
         Output.ArrangedBand += (_, band) =>
         {
             Score.Load(band.MusicXml, core.ParseComposition(band.CompositionJson));
+            // Arranged again from the recording's layers, without the notes changed here.
+            ForgetReviewChanges();
             Screen = Screen.Score;
         };
         Output.RearrangeRequested += async (_, options) =>
@@ -401,6 +411,7 @@ public sealed partial class MainViewModel : ObservableObject
             Output.ShowingSaved(Lineups.Parse(entry.Lineup) ?? Lineups.Recorded(composition), Lineups.RecordedDifficulty(composition), composition);
             Score.Evidence = Library.LoadEvidence(entry);
             Score.Load(xml, composition);
+            Score.UseReviewChanges(Library.LoadReviewChanges(entry.Id));
             Screen = Screen.Score;
         }
         catch (Exception e) when (e is IOException or FormatException or System.Xml.XmlException or UnauthorizedAccessException
@@ -427,6 +438,13 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private bool _chooseOutputNext;
+
+    /// <summary>The score on screen has no changed notes: forgotten here and in the library.</summary>
+    private void ForgetReviewChanges()
+    {
+        Score.UseReviewChanges(null);
+        if (_libraryId is { } id) Library?.SaveReviewChanges(id, Score.ReviewChanges);
+    }
 
     /// <summary>
     /// A new score: check the notes, then "How should the score be?". A score arranged again with new
@@ -496,6 +514,8 @@ public sealed partial class MainViewModel : ObservableObject
                 Score.Load(xml, composition);
                 _libraryId = Library?.AddMade(job.Title ?? item.Title, xml, composition, Score.Parts.Count, Score.Player.BarCount,
                     Score.UncertainLeft, jobId, evidence, Lineups.Recorded(composition) is { } recorded ? Lineups.Engine(recorded) : null).Id;
+                // The engine's score replaces the saved one, without the notes changed here.
+                ForgetReviewChanges();
                 Screen = Screen.Score;
             }
             catch (Exception e) when (e is EngineException or HttpRequestException or IOException or FormatException
@@ -678,6 +698,7 @@ public sealed partial class MainViewModel : ObservableObject
             Score.Load(xml, null);
             _libraryId = Library?.AddOpened(path, Score.Title is { Length: > 0 } t ? t : Path.GetFileNameWithoutExtension(path),
                 Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft).Id;
+            Score.UseReviewChanges(null);
             Screen = Screen.Score;
         }
         catch (Exception e) when (e is IOException or FormatException or System.Xml.XmlException or UnauthorizedAccessException)

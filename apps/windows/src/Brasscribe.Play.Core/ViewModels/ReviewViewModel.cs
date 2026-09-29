@@ -354,11 +354,13 @@ public sealed partial class ReviewViewModel : ObservableObject
         else score.ListenToBarCommand.Execute(null);
     }
 
-    /// <summary>A note changed in this review: what it was, and how far it has moved since.</summary>
-    private sealed record NoteChange(string Was, int Shift);
+    /// <summary>
+    /// Changed notes by <see cref="ChangeKey"/>, for "Changed to D5 (was C5)" and Undo: the score's own, so
+    /// they are kept with it and come back when it is opened again.
+    /// </summary>
+    private Dictionary<string, ReviewChange> _changes => score.ReviewChanges;
 
-    /// <summary>Changed notes by <see cref="ChangeKey"/>, for "Changed to D5 (was C5)" and Undo.</summary>
-    private readonly Dictionary<string, NoteChange> _changes = [];
+    private void PersistChanges() => score.PersistReviewChanges?.Invoke(_changes);
 
     /// <summary>The same note across reloads: its Composition note, else its place in the MusicXML.</summary>
     private static string ChangeKey(ReviewItem item) =>
@@ -371,7 +373,15 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     /// <summary>"Changed to D5 (was C5)" on the card while the current note is changed.</summary>
     public string ChangedText => Current is { } item && _changes.TryGetValue(ChangeKey(item), out var c)
-        ? s.Format("Review_ChangedFrom", PitchNameAt(item, 0, octave: true), c.Was) : "";
+        ? s.Format("Review_ChangedFrom", PitchNameAt(item, 0, octave: true), WasName(item, c)) : "";
+
+    /// <summary>
+    /// What Brasscribe wrote, as the card named it while the part still writes the note there; after another
+    /// band or key, named again from the note as it is written now.
+    /// </summary>
+    private string WasName(ReviewItem item, ReviewChange c) =>
+        c.WrittenMidi is { } w && item.Event.Written is { } now && Announcer.Midi(now) - c.Shift == w
+            ? c.Was : PitchNameAt(item, -c.Shift, octave: true);
 
     /// <summary>
     /// "Change note…" → Save: moves the note by <paramref name="shift"/> semitones, saves the score and
@@ -383,11 +393,13 @@ public sealed partial class ReviewViewModel : ObservableObject
         if (shift == 0 || Current is not { } selected) return false;
         string key = ChangeKey(selected);
         var before = _changes.GetValueOrDefault(key);
-        string was = before?.Was ?? PitchNameAt(selected, 0, octave: true);
+        string was = before is not null ? WasName(selected, before) : PitchNameAt(selected, 0, octave: true);
+        int? writtenMidi = before is not null ? before.WrittenMidi : selected.Event.Written is { } w ? Announcer.Midi(w) : null;
         if (!Move(selected, shift)) return false;
         int total = (before?.Shift ?? 0) + shift;
         if (total == 0) _changes.Remove(key);
-        else _changes[key] = new NoteChange(was, total);
+        else _changes[key] = new ReviewChange(was, total, writtenMidi);
+        PersistChanges();
         NotifyChange();
         announcer.Announce(total == 0 ? s.Format("Review_ChangeUndone", was) : ChangedText);
         return true;
@@ -399,9 +411,11 @@ public sealed partial class ReviewViewModel : ObservableObject
     {
         if (Current is not { } selected || !_changes.TryGetValue(ChangeKey(selected), out var change)) return;
         if (!Move(selected, -change.Shift)) return;
+        string was = WasName(selected, change);
         _changes.Remove(ChangeKey(selected));
+        PersistChanges();
         NotifyChange();
-        announcer.Announce(s.Format("Review_ChangeUndone", change.Was));
+        announcer.Announce(s.Format("Review_ChangeUndone", was));
     }
 
     /// <summary>Writes the note moved by <paramref name="shift"/>, reloads the review and selects the same note again.</summary>

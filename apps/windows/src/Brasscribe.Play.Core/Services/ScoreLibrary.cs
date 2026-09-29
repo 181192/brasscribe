@@ -20,8 +20,15 @@ public sealed record LibraryEntry(
     string? Lineup = null,
     string? MyPart = null);
 
+/// <summary>
+/// A note changed in Review: how far it has moved since Brasscribe wrote it, and what Brasscribe wrote, as
+/// the card named it and as a written MIDI pitch (so another arrangement of the score names it again).
+/// </summary>
+public sealed record ReviewChange(string Was, int Shift, int? WrittenMidi = null);
+
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, WriteIndented = true)]
 [JsonSerializable(typeof(List<LibraryEntry>))]
+[JsonSerializable(typeof(Dictionary<string, ReviewChange>))]
 internal sealed partial class LibraryJsonContext : JsonSerializerContext;
 
 /// <summary>
@@ -97,6 +104,41 @@ public sealed class ScoreLibrary
             _entries[i] = _entries[i] with { EvidencePath = path };
             Save();
         }
+    }
+
+    private string? ReviewChangesPath(string id)
+    {
+        var entry = _entries.FirstOrDefault(e => e.Id == id);
+        if (entry is null) return null;
+        string path = Path.Combine(Path.GetDirectoryName(entry.MusicXmlPath)!, "review-changes.json");
+        return IsInside(path) ? path : null; // an opened file: nothing is written beside it
+    }
+
+    /// <summary>The notes changed in Review for this score, by change key; empty when there are none.</summary>
+    public IReadOnlyDictionary<string, ReviewChange> LoadReviewChanges(string id)
+    {
+        try
+        {
+            return ReviewChangesPath(id) is { } p && File.Exists(p)
+                ? JsonSerializer.Deserialize(File.ReadAllText(p), LibraryJsonContext.Default.DictionaryStringReviewChange) ?? []
+                : new Dictionary<string, ReviewChange>();
+        }
+        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return new Dictionary<string, ReviewChange>();
+        }
+    }
+
+    /// <summary>Keeps the notes changed in Review with the score; none removes the file.</summary>
+    public void SaveReviewChanges(string id, IReadOnlyDictionary<string, ReviewChange> changes)
+    {
+        if (ReviewChangesPath(id) is not { } path) return;
+        try
+        {
+            if (changes.Count == 0) { File.Delete(path); return; }
+            WriteAtomically(path, JsonSerializer.Serialize(new Dictionary<string, ReviewChange>(changes), LibraryJsonContext.Default.DictionaryStringReviewChange));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     /// <summary>Remembers a score file the player opened.</summary>

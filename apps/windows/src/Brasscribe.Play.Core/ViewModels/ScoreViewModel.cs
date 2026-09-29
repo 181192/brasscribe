@@ -79,6 +79,20 @@ public sealed partial class ScoreViewModel : ObservableObject
     public Engine.Evidence? Evidence { get; set; }
 
     public Action<Engine.Evidence>? PersistEvidence { get; set; }
+
+    /// <summary>
+    /// Notes changed in Review ("Change note…" → Save), by the review's change key: what Brasscribe wrote
+    /// and how far the note has moved since. Kept with the score (<see cref="PersistReviewChanges"/>), so
+    /// after reopening it the card still says "Changed to D5 (was C5)" and Listen plays the changed score.
+    /// Set by whoever opens the score; <see cref="Load"/> leaves it alone, since a change reloads the score.
+    /// </summary>
+    public Dictionary<string, Services.ReviewChange> ReviewChanges { get; private set; } = [];
+
+    public Action<IReadOnlyDictionary<string, Services.ReviewChange>>? PersistReviewChanges { get; set; }
+
+    /// <summary>The changed notes for the score just opened; none for a new score or a new arrangement.</summary>
+    public void UseReviewChanges(IReadOnlyDictionary<string, Services.ReviewChange>? changes) =>
+        ReviewChanges = changes is null ? [] : new Dictionary<string, Services.ReviewChange>(changes);
     public ScoreNavigator? Navigator => _nav;
 
     public ObservableCollection<ScorePartItem> Parts { get; } = [];
