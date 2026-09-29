@@ -26,6 +26,7 @@ pub mod midi;
 pub mod model;
 pub mod musicxml;
 pub mod notation;
+pub mod onsets;
 pub mod pipeline;
 pub mod py;
 pub mod pyjson;

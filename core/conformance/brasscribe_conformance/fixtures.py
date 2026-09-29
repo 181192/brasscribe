@@ -64,6 +64,97 @@ def quantize_cases(rng) -> list[dict]:
     return cases
 
 
+def quantize_dense_cases() -> list[dict]:
+    """Monophonic lines with fast runs, trills and tuplets (and collisions a grid cannot hold) through
+    quantize(dense=True), on steady, drifting and doubled beat grids."""
+    rng = np.random.default_rng(20260929)
+    cases = []
+    for k in range(120):
+        spb = float(rng.choice([0.25, 0.4, 0.5, 0.6667, 0.8]))
+        nb = int(rng.integers(8, 40))
+        beats = np.cumsum(spb * rng.uniform(0.93, 1.07, size=nb)) + rng.uniform(0, 1)
+        on: list[float] = []
+        t = beats[0] + rng.uniform(-0.2, 0.3)
+        while t < beats[-1] + 0.5:
+            per = int(rng.choice([1, 2, 3, 4, 4, 6, 8, 12]))
+            n = int(rng.integers(1, 3 * per + 1))
+            step = spb / per
+            jit = float(rng.choice([0.0, 0.004, 0.012, 0.025]))
+            on += list(t + np.arange(n) * step + rng.uniform(-jit, jit, n))
+            t += n * step + float(rng.choice([0.0, spb / 2, spb]))
+        on = sorted(on)
+        pitches = rng.integers(55, 80, size=len(on))
+        notes = [{"pitch": int(p), "onset": float(a), "offset": float(a + rng.uniform(0.02, 0.4)),
+                  "confidence": float(np.round(rng.uniform(0.2, 1.0), 3))} for p, a in zip(pitches, on)]
+        coarse = [(float(nb // 3), float(nb // 2))] if k % 4 == 3 else None
+        q = quantize(notes, beats, monophonic=True, auto_level=False, coarse=coarse, dense=True)
+        cases.append({"beats": beats.tolist(), "notes": notes, "coarse": coarse,
+                      "quantized": [[x.pitch, x.start, x.end, x.confidence] for x in q]})
+    return cases
+
+
+def onsets_cases() -> list[dict]:
+    """contour_notes on seeded synthetic contours: trills, runs, repeated notes, vibrato (centred, one-sided),
+    scoops, falls, rips, octave flips, frames exactly at TIGHT and runs of exactly MIN_RUN frames, with and
+    without SwiftF0 confidence, with and without confirming notes."""
+    from brasscribe_music.durations import Contour
+    from brasscribe_music.onsets import FRAME, MIN_RUN, TIGHT, contour_notes
+
+    rng = np.random.default_rng(20260930)
+    cases = []
+    for k in range(160):
+        n = int(rng.integers(40, 400))
+        t = np.arange(n) * FRAME
+        base = float(rng.integers(55, 80))
+        tune = float(rng.uniform(-0.3, 0.3))
+        kind = k % 8
+        pitch = np.full(n, base)
+        if kind == 0:  # trill at 1-3 semitones, 3-8 frames a note
+            w, d = int(rng.integers(3, 9)), int(rng.integers(1, 4))
+            pitch += d * ((np.arange(n) // w) % 2)
+        elif kind == 1:  # run
+            w = int(rng.integers(3, 8))
+            pitch += np.array([0, 2, 4, 5, 7, 9, 11, 12])[(np.arange(n) // w) % 8]
+        elif kind == 2:  # vibrato, centred or one-sided
+            depth, rate = float(rng.uniform(0.3, 1.6)), float(rng.uniform(5, 7))
+            v = np.sin(2 * np.pi * rate * t)
+            pitch += depth * (v if rng.random() < 0.5 else -(1 - np.cos(2 * np.pi * rate * t)) / 2)
+        elif kind == 3:  # scoop / rip / fall
+            g = int(rng.integers(4, 15))
+            pitch[:g] -= np.linspace(float(rng.uniform(1, 7)), 0, g)
+            pitch[-g:] -= np.linspace(0, float(rng.uniform(1, 5)), g)
+        elif kind == 4:  # exactly at the tolerance, exactly MIN_RUN frames
+            pitch[10:10 + MIN_RUN] = base + 1 + TIGHT
+            pitch[20:20 + MIN_RUN] = base + 1 - TIGHT
+            pitch[30:30 + MIN_RUN - 1] = base + 2
+        elif kind == 5:  # random walk with steps
+            pitch += np.cumsum(rng.choice([0, 0, 0, 0, 1, -1, 2, -2], size=n) * (rng.random(n) < 0.08))
+        pitch += tune + rng.normal(0, float(rng.choice([0.0, 0.03, 0.1])), n)
+        hz = 440 * 2 ** ((pitch - 69) / 12)
+        conf = rng.uniform(0.3, 1.0, n)
+        hz[rng.random(n) < 0.05] = 0
+        with np.errstate(divide="ignore", invalid="ignore"):
+            midi = np.where(hz > 0, 69 + 12 * np.log2(hz / 440), np.nan)
+        c = Contour(t, midi, np.zeros(n), conf if k % 3 else None)
+        # SwiftF0-like notes over the contour: a few long notes (and octave-flipped neighbours)
+        cuts = sorted({0, n, *map(int, rng.integers(1, n, size=int(rng.integers(0, 6))))})
+        notes = []
+        for a, b in zip(cuts, cuts[1:]):
+            if b - a < 2:
+                continue
+            p = int(round(float(np.nanmedian(midi[a:b])) if np.isfinite(midi[a:b]).any() else base))
+            if kind == 6 and len(notes) % 2:
+                p += 12
+            notes.append({"pitch": p, "onset": float(t[a]), "offset": float(t[b - 1] + FRAME)})
+        others = [{"pitch": x["pitch"], "onset": x["onset"] + float(rng.uniform(-0.04, 0.04)), "offset": x["offset"]}
+                  for x in notes if rng.random() < 0.5]
+        out = contour_notes([dict(x) for x in notes], c, others)
+        cases.append({"t": t.tolist(), "midi": [None if not np.isfinite(x) else float(x) for x in midi],
+                      "confidence": None if c.confidence is None else conf.tolist(), "notes": notes, "others": others,
+                      "out": [[x["pitch"], x["onset"], x["offset"], bool(x.get("split"))] for x in out]})
+    return cases
+
+
 def argsort_cases(rng) -> list[dict]:
     out = []
     for k in range(200):
@@ -325,7 +416,8 @@ def main() -> None:
                        ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
                        ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng)),
                        ("voice_satb", voice_satb_cases(rng)), ("seats", seat_cases()),
-                       ("part_sources", part_sources_cases())):
+                       ("part_sources", part_sources_cases()), ("quantize_dense", quantize_dense_cases()),
+                       ("onsets", onsets_cases())):
         (OUT / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 

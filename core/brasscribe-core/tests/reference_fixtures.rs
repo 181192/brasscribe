@@ -5,7 +5,7 @@
 use brasscribe_core::midi::RawNote;
 use brasscribe_core::notation::duration::{quarter_conversion, Rat};
 use brasscribe_core::py::np_argsort;
-use brasscribe_core::quantize::{choose_level, fill_gaps, quantize};
+use brasscribe_core::quantize::{choose_level, fill_gaps, quantize, quantize_with};
 use brasscribe_core::spelling::{key_of, spell};
 use serde_json::Value;
 
@@ -119,6 +119,67 @@ fn quantize_matches_reference() {
         let filled = fill_gaps(q, 12, 0.0);
         let want: Vec<Vec<i64>> = c["filled"].as_array().unwrap().iter().map(i64s).collect();
         assert_eq!(rows(&filled), want, "fill_gaps case {i}");
+    }
+}
+
+#[test]
+fn dense_quantize_matches_reference() {
+    for (i, c) in load("quantize_dense").iter().enumerate() {
+        let beats = f64s(&c["beats"]);
+        let notes: Vec<RawNote> = c["notes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|n| {
+                let mut r = RawNote::new(n["pitch"].as_i64().unwrap() as i32, n["onset"].as_f64().unwrap(), n["offset"].as_f64().unwrap());
+                r.confidence = n["confidence"].as_f64();
+                r
+            })
+            .collect();
+        let coarse: Option<Vec<(f64, f64)>> =
+            c["coarse"].as_array().map(|r| r.iter().map(|x| (x[0].as_f64().unwrap(), x[1].as_f64().unwrap())).collect());
+        let q = quantize_with(&notes, &beats, true, false, coarse.as_deref(), true);
+        let got: Vec<(i64, i64, i64, u64)> = q.iter().map(|x| (x.pitch as i64, x.start, x.end, x.confidence.to_bits())).collect();
+        let want: Vec<(i64, i64, i64, u64)> = c["quantized"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| (x[0].as_i64().unwrap(), x[1].as_i64().unwrap(), x[2].as_i64().unwrap(), x[3].as_f64().unwrap().to_bits()))
+            .collect();
+        assert_eq!(got, want, "dense quantize case {i}");
+    }
+}
+
+#[test]
+fn contour_onsets_match_reference() {
+    use brasscribe_core::durations::Contour;
+    use brasscribe_core::onsets::contour_notes;
+    let notes_of = |v: &Value| -> Vec<RawNote> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|n| RawNote::new(n["pitch"].as_i64().unwrap() as i32, n["onset"].as_f64().unwrap(), n["offset"].as_f64().unwrap()))
+            .collect()
+    };
+    for (i, c) in load("onsets").iter().enumerate() {
+        let t = f64s(&c["t"]);
+        let contour = Contour {
+            midi: c["midi"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap_or(f64::NAN)).collect(),
+            loudness_db: vec![0.0; t.len()],
+            confidence: if c["confidence"].is_null() { None } else { Some(f64s(&c["confidence"])) },
+            t,
+        };
+        let got: Vec<(i64, u64, u64, bool)> = contour_notes(&notes_of(&c["notes"]), Some(&contour), &notes_of(&c["others"]))
+            .iter()
+            .map(|n| (n.pitch as i64, n.onset.to_bits(), n.offset.to_bits(), n.split))
+            .collect();
+        let want: Vec<(i64, u64, u64, bool)> = c["out"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| (x[0].as_i64().unwrap(), x[1].as_f64().unwrap().to_bits(), x[2].as_f64().unwrap().to_bits(), x[3].as_bool().unwrap()))
+            .collect();
+        assert_eq!(got, want, "onsets case {i}");
     }
 }
 

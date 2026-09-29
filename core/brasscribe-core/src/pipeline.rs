@@ -26,7 +26,7 @@ use crate::model::{Composition, Dynamic, KeySig, Meter, Note, Section, Voice, Vo
 use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
 use crate::notation::score::write_score_with_parts;
 use crate::py;
-use crate::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, BeatMap, QNote};
+use crate::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, quantize_with, BeatMap, QNote};
 use crate::separation::{check_stem, FAIL_DB as SEPARATION_FAIL_DB};
 use crate::spelling::key_of;
 use crate::structure::{bar_features, letters, section_starts};
@@ -378,8 +378,10 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             crate::instruments::lead_lineup(crate::instruments::lineup_by_name(lineup_name)?, s).map_err(|e| format!("--lead seat: {e}"))?;
         }
     }
+    // Pitch-change onsets the segmentation merged (slurred trills and runs), octave flips and glides.
+    let solo_sw_f1 = crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp);
     let votes: Sources = vec![
-        ("sw".into(), line(&solo_sw, lo, hi, true, MIN_DUR)),
+        ("sw".into(), line(&solo_sw_f1, lo, hi, true, MIN_DUR)),
         ("mus".into(), line(&solo_mus, lo, hi, true, MIN_DUR)),
         ("bp".into(), line(&solo_bp, lo, hi, true, MIN_DUR)),
     ];
@@ -393,6 +395,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     let mus_is_bp = key_set(&solo_mus) == key_set(&solo_bp);
     let separated = layers.bass_audio.is_some() || layers.drums_audio.is_some() || layers.orchestra_audio.is_some();
     let model = crate::confidence::Model::load();
+    let split_onsets: HashSet<u64> = votes[0].1.iter().filter(|n| n.split).map(|n| n.onset.to_bits()).collect();
     let cand: Vec<RawNote> = cluster(&votes)
         .into_iter()
         .filter(|c| c.sources.contains("sw"))
@@ -404,7 +407,13 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             }
             let sup = crate::confidence::support(opts.solo_contour.as_ref(), on, c.pitch);
             let x = crate::confidence::features(&src, off - on, sup, separated);
-            RawNote { pitch: c.pitch, onset: on, offset: off, confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)) }
+            RawNote {
+                pitch: c.pitch,
+                onset: on,
+                offset: off,
+                confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)),
+                split: c.onsets.iter().any(|o| split_onsets.contains(&o.to_bits())),
+            }
         })
         .collect();
     let mut solo_line = line(&cand, lo, hi, true, MIN_DUR);
@@ -418,7 +427,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             }
         }
     }
-    let mut solo = written_line(quantize_coarse(&solo_line, &times, true, false, coarse), &times, pickup, "solo")?;
+    let mut solo = written_line(quantize_with(&solo_line, &times, true, false, coarse, true), &times, pickup, "solo")?;
     let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
 
     let solo_keys: HashSet<(u64, i32)> = solo_line.iter().map(|n| (py::py_round(n.onset, 1).to_bits(), n.pitch)).collect();
@@ -827,6 +836,7 @@ pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
             onset: o.get("onset").and_then(|v| v.as_f64()).unwrap_or(0.0),
             offset: o.get("offset").and_then(|v| v.as_f64()).unwrap_or(0.0),
             confidence: o.get("confidence").and_then(|v| v.as_f64()),
+            split: false,
         })
         .collect();
     quantize(&raw, &beats.times, false, true)

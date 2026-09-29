@@ -486,7 +486,7 @@ pub fn quantize_notes(notes: Vec<PerformedNote>, beat_times: Vec<f64>, monophoni
     if beat_times.len() < 2 {
         return Err(invalid("need at least two beats"));
     }
-    let raw: Vec<RawNote> = notes.iter().map(|n| RawNote { pitch: n.pitch, onset: n.onset, offset: n.offset, confidence: n.confidence }).collect();
+    let raw: Vec<RawNote> = notes.iter().map(|n| RawNote { pitch: n.pitch, onset: n.onset, offset: n.offset, confidence: n.confidence, split: false }).collect();
     let mut q = quantize(&raw, &beat_times, monophonic, auto_level);
     if fill_gap_ticks > 0 {
         q = fill_gaps(q, fill_gap_ticks, 0.0);

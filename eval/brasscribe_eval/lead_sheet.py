@@ -21,13 +21,22 @@ from .consensus import consensus
 from .score import load_notes
 
 
+SPLIT_MIN_DUR = 0.03  # notes from the contour's pitch-change onsets (onsets.py): 32nds at 150 BPM are 50 ms
+SPLIT_MERGE = 0.02
+
+
 def line(notes: list[dict], lo: int, hi: int, top: bool, min_dur: float = 0.06) -> list[dict]:
-    """Extract a monophonic line: highest (or lowest) note among overlapping candidates."""
-    cand = sorted((n for n in notes if lo <= n["pitch"] <= hi and n["offset"] - n["onset"] >= min_dur),
+    """Extract a monophonic line: highest (or lowest) note among overlapping candidates.
+
+    Notes marked "split" (pitch-change onsets from the contour) are kept down to SPLIT_MIN_DUR, and two of
+    them compete for one onset only within SPLIT_MERGE."""
+    cand = sorted((n for n in notes if lo <= n["pitch"] <= hi
+                   and n["offset"] - n["onset"] >= (SPLIT_MIN_DUR if n.get("split") else min_dur)),
                   key=lambda n: n["onset"])
     out: list[dict] = []
     for n in cand:
-        if out and n["onset"] - out[-1]["onset"] < 0.05:
+        merge = SPLIT_MERGE if n.get("split") and out and out[-1].get("split") else 0.05
+        if out and n["onset"] - out[-1]["onset"] < merge:
             better = n["pitch"] > out[-1]["pitch"] if top else n["pitch"] < out[-1]["pitch"]
             if better:
                 out[-1] = n

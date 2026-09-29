@@ -312,11 +312,13 @@ pub struct RawNote {
     pub onset: f64,
     pub offset: f64,
     pub confidence: Option<f64>,
+    /// A pitch-change onset from the contour (onsets.rs): the solo line keeps it down to 30 ms.
+    pub split: bool,
 }
 
 impl RawNote {
     pub fn new(pitch: i32, onset: f64, offset: f64) -> Self {
-        RawNote { pitch, onset, offset, confidence: None }
+        RawNote { pitch, onset, offset, confidence: None, split: false }
     }
 }
 

@@ -33,6 +33,7 @@ from brasscribe_music.instruments import CLEF_READINGS, LEADS, PERCUSSION_SOLO, 
 from brasscribe_music.keys import key_plan, semitones_to
 from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
 from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from brasscribe_music.onsets import contour_notes
 from brasscribe_music.parts import STYLE as PART_STYLE
 from brasscribe_music.parts import split_parts
 from brasscribe_music.structure import bar_features, letters, section_starts
@@ -209,6 +210,11 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     # calibrated probability that it is right (confidence.py: agreement class, length, contour
     # support, separated or not), fitted by confidence_bench on notes with ground truth.
     solo_sw = pitched(L / "solo-sw.mid")
+    if args.solo_contour is None and (L / "solo-sw.contour.npz").exists():
+        args.solo_contour = L / "solo-sw.contour.npz"
+    solo_contour = Contour.load(args.solo_contour) if args.solo_contour else None
+    # Pitch-change onsets the segmentation merged (slurred trills and runs), and glides it split off.
+    solo_sw = contour_notes(solo_sw, solo_contour, solo_bp)
     # A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise the
     # solo line is the soloist's, a cornet or trumpet (E3-E6).
     solo_take = bool(args.seat) and not (bass_raw or orch_raw or drum_raw)
@@ -225,19 +231,18 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     # Basic Pitch standing in for MuScriptor (the solo path) is one vote for the confidence, not two;
     # the clustering (and so every note's timing) is unchanged.
     mus_is_bp = sorted((n["onset"], n["pitch"]) for n in solo_mus) == sorted((n["onset"], n["pitch"]) for n in solo_bp)
-    if args.solo_contour is None and (L / "solo-sw.contour.npz").exists():
-        args.solo_contour = L / "solo-sw.contour.npz"
-    solo_contour = Contour.load(args.solo_contour) if args.solo_contour else None
     separated = any((L / f"{n}.wav").exists() for n in ("bass", "drums", "orchestra"))
     model = CalibrationModel.load()
     cand = []
+    split_onsets = {n["onset"] for n in votes["sw"] if n.get("split")}
     for c in cluster(votes):
         if "sw" not in c.sources:
             continue
         on, off = float(np.median(c.onsets)), float(np.median(c.offsets))
         src = set(c.sources) - ({"mus"} if mus_is_bp else set())
         x = confidence_features(src, off - on, contour_support(solo_contour, on, c.pitch), separated)
-        cand.append({"pitch": c.pitch, "onset": on, "offset": off, "confidence": round(p_correct(x, model), 3)})
+        cand.append({"pitch": c.pitch, "onset": on, "offset": off, "confidence": round(p_correct(x, model), 3),
+                     **({"split": True} if any(o in split_onsets for o in c.onsets) else {})})
     solo_line = line(cand, lo, hi, top=True)
     if args.solo_contour:
         # Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
@@ -245,7 +250,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
                                **SEPARATED_STEM)
         for n, e in zip(solo_line, ends):
             n["offset"] = max(n["offset"], e)
-    solo_q = quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse)
+    solo_q = quantize(solo_line, times, monophonic=True, auto_level=False, coarse=coarse, dense=True)
     if trace is not None:
         trace.update(line=[dict(n) for n in solo_line], quantized=[(q.pitch, q.start, q.end) for q in solo_q],
                      times=np.asarray(times, float).copy(), pickup=pickup, coarse=coarse)
