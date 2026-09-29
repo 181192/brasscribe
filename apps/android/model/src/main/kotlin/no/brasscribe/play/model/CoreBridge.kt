@@ -75,7 +75,13 @@ enum class PartSource(val id: String) {
 }
 
 /** SwiftF0 frames of a solo take: where sustained notes really end (the core's written durations). */
-data class Contour(val timesS: List<Double>, val pitchHz: List<Double>, val loudnessDb: List<Double>)
+data class Contour(
+    val timesS: List<Double>,
+    val pitchHz: List<Double>,
+    val loudnessDb: List<Double>,
+    /** SwiftF0 voicing confidence per frame: which frames the core's pitch-change onsets trust. */
+    val confidence: List<Double>? = null,
+)
 
 /**
  * What the phone heard in a solo take, per transcriber (seconds), plus the beat table

@@ -5,7 +5,9 @@ using System.Text;
 namespace Brasscribe.Play.Core.Arrangement;
 
 /// <summary>Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.</summary>
-public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb);
+/// <param name="Confidence">SwiftF0 voicing confidence per frame, when the contour has it: which frames the core's
+/// pitch-change onsets trust.</param>
+public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb, double[]? Confidence = null);
 
 /// <summary>
 /// What the layered arranger reads: six MIDI transcriptions (solo SwiftF0, solo MuScriptor, solo
@@ -80,7 +82,8 @@ public sealed record LayerInputs(byte[][] Midi, byte[]?[] Wav, string Beats, Sol
             s.ReadExactly(bytes);
             return ReadNpy(bytes, name);
         }
-        return new SoloContour(Array("t"), Array("pitch_hz"), Array("loudness_db"));
+        return new SoloContour(Array("t"), Array("pitch_hz"), Array("loudness_db"),
+            zip.GetEntry("confidence.npy") is null ? null : Array("confidence"));
     }
 
     private static double[] ReadNpy(byte[] b, string name)

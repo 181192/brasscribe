@@ -58,7 +58,7 @@ class SoloPipeline(
         val seconds = audio.size.toDouble() / sampleRate
         val beatsText = if (beats != null && beats.beats.size >= 2) beats.toBeatsText()
         else MidiWriter.steadyBeats(sw.firstOrNull()?.onsetS ?: 0.0, TempoEstimator.estimate(sw.map { it.onsetS }), seconds)
-        val contour = Contour(List(track.size) { track.timeOf(it) }, track.pitchHz.toList(), track.loudnessDb.toList())
+        val contour = Contour(List(track.size) { track.timeOf(it) }, track.pitchHz.toList(), track.loudnessDb.toList(), track.confidence.toList())
         val take = SoloTake(title, sw, bp, beatsText, contour, wav)
         val stats = SoloStats(seconds, sw.size, bp.size, beats?.beats?.size ?: 0, beats?.downbeats?.size ?: 0,
             if (beats != null) "beat-this" else "tempo estimate", ms, (System.nanoTime() - t0) / 1_000_000)

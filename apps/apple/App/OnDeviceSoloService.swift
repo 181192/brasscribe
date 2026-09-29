@@ -59,7 +59,8 @@ struct OnDeviceSoloService: TranscriptionService {
         let layers = LayerMidi(soloSwiftf0: solo.swiftF0MIDI, soloMuscriptor: solo.basicPitchMIDI, soloBasicPitch: solo.basicPitchMIDI,
                                bass: empty, orchestra: empty, drums: empty)
         var o = layersSongDefaults()
-        o.soloContour = SoloContour(times: solo.contour.times, pitchHz: solo.contour.pitchHz, loudnessDb: solo.contour.loudnessDB)
+        o.soloContour = SoloContour(times: solo.contour.times, pitchHz: solo.contour.pitchHz, loudnessDb: solo.contour.loudnessDB,
+                                    confidence: solo.contour.confidence)
         switch output.lineup {
         case .fullBand, .minimalBand: o.lineup = output.lineup.coreValue
         // the Output screen never offers the quartet for a solo take

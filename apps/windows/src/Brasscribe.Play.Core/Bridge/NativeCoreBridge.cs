@@ -177,10 +177,12 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             var wav = inputs.Wav.Select(Pin).ToArray();
             var wavLen = inputs.Wav.Select(b => (nuint)(b?.Length ?? 0)).ToArray();
             var c = contourAsJson ? null : inputs.Contour;
-            if (c is not null && (c.PitchHz.Length != c.Times.Length || c.LoudnessDb.Length != c.Times.Length))
+            if (c is not null && (c.PitchHz.Length != c.Times.Length || c.LoudnessDb.Length != c.Times.Length
+                                  || (c.Confidence is { } cf && cf.Length != c.Times.Length)))
                 throw new ArgumentException("contour arrays differ in length", nameof(inputs));
-            // Times, pitch, loudness, no confidence. Non-finite values are read as the JSON form has them.
-            nint[]? contour = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), 0];
+            // Times, pitch, loudness, confidence (0 when the contour has none). Non-finite values are read as the
+            // JSON form has them.
+            nint[]? contour = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), Pin(c.Confidence)];
             var json = LayersOptions(contourAsJson ? inputs.Contour : null, options);
             Check(bc_arrange_layers_band_contour(midi, midiLen, wav, wavLen, contour, (nuint)(c?.Times.Length ?? 0), inputs.Beats, title, json,
                 out var result, out var err), err);
@@ -217,6 +219,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
                 ["pitch_hz"] = Floats(contour.PitchHz, 0),
                 ["loudness_db"] = Floats(contour.LoudnessDb, -140),
             };
+        if (contour?.Confidence is { } conf)
+            o["solo_contour"]!["confidence"] = Floats(conf, 0);
         return o.ToJsonString();
     }
 

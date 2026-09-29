@@ -78,7 +78,7 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         // MuScriptor slot too (the phone has no MuScriptor), as the other apps and the reference do.
         val layers = LayerMidi(sw, bp, bp, MidiWriter.EMPTY, MidiWriter.EMPTY, MidiWriter.EMPTY)
         val opts = layersSongDefaults().apply {
-            soloContour = take.contour?.let { SoloContour(it.timesS, it.pitchHz, it.loudnessDb) }
+            soloContour = take.contour?.let { SoloContour(it.timesS, it.pitchHz, it.loudnessDb, it.confidence) }
             lineup = coreLineup(options.lineup)
             difficulty = options.difficulty
             key = options.key
