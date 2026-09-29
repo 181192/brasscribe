@@ -34,7 +34,7 @@ import soundfile as sf
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import sf2  # noqa: E402
-from build import BUILT, DYN_LEVEL_DB, MAX_STRETCH, SR, VEL_SPAN_DB  # noqa: E402
+from build import BUILT, DYN_LEVEL_DB, MAX_STRETCH, SR, VEL_SPAN_DB, vel_curve_db  # noqa: E402
 from dsp import apply_eq, k_weight  # noqa: E402
 from sf3 import SoundFontReader  # noqa: E402
 
@@ -50,6 +50,11 @@ G_FINE_TUNE = 52
 G_SAMPLE_MODES = 54
 G_OVERRIDING_ROOT_KEY = 58
 LAYER_DETUNE_CENTS = 3
+# alphaSynth steps a voice's gain once per 64-sample block, so a release is a staircase: on the lowest notes, whose
+# waveform is a train of loud pulses 30-40 ms apart, a step that lands on a pulse is a click (B-flat Bass B-flat0).
+# Keys up to LOW_RELEASE_KEY release LOW_RELEASE_FACTOR times slower: smaller steps, and a pedal note rings a little.
+LOW_RELEASE_KEY = 27
+LOW_RELEASE_FACTOR = 2.0
 # A key that has no other recording within MAX_STRETCH semitones for a desk variant plays the same
 # sample as variant 0, detuned by this much, so a unison of the two beats instead of doubling.
 FALLBACK_DETUNE_CENTS = 4
@@ -109,15 +114,21 @@ class Bank:
         ins = sf2.Instrument(name=f"{tid}-{art}" + (f"-{variant}" if variant else ""), release_s=a["sf2_release_s"],
                              vel_span_db=VEL_SPAN_DB)
         detuned: list[int] = []
+        level = {tuple(v): DYN_LEVEL_DB[d] for v, d in zip(a["velocity"], a["layers"])}
         for z in desk_variant(a, variant):
             s = by_file[z["file"]]
-            ins.zones.append(sf2.Zone(self._sample(tid, s), z["lokey"], z["hikey"], z["lovel"], z["hivel"],
-                                      int(round(-z["volume_db"] * 10)), bool(s["loop"])))
-            if z.get("detune"):
-                detuned.append(len(ins.zones))  # 1-based: zone 0 of the raw instrument is the global zone
+            for lo, hi, att_db in velocity_steps(z["lovel"], z["hivel"], level[(z["lovel"], z["hivel"])]):
+                ins.zones.append(sf2.Zone(self._sample(tid, s), z["lokey"], z["hikey"], lo, hi,
+                                          int(round((att_db - z["volume_db"]) * 10)), bool(s["loop"])))
+                if z.get("detune"):
+                    detuned.append(len(ins.zones))  # 1-based: zone 0 of the raw instrument is the global zone
         raw = sf2.target_instrument(ins)
         for zi in detuned:
             raw.zones[zi].gens.append((G_FINE_TUNE, z_detune(variant)))
+        for z in raw.zones[1:]:
+            lokey = dict(z.gens)[G_KEY_RANGE] & 0xFF
+            if lokey <= LOW_RELEASE_KEY:
+                z.gens.append((G_RELEASE_VOL_ENV, sf2.timecents(a["sf2_release_s"] * LOW_RELEASE_FACTOR)))
         self._inst_index[key] = len(self.instruments)
         self.instruments.append(raw)
         return self._inst_index[key]
@@ -232,6 +243,49 @@ class Bank:
             extra.append(sf2.RawZone(list(p_gens), [], len(self.instruments) - 1))
         replaced = {k for keys, *_ in KIT for k in keys}
         self.drum_kit(MSBASIC, 0, as_program=program, name="Band kit", exclude=replaced, extra=extra)
+
+
+# The band SoundFont's velocity curve (build.py VEL_CURVE). alphaSynth plays amplitude proportional to velocity
+# inside a layer (it ignores the SoundFont's velocity modulators): 2 dB from mp to mf but 6 dB from pp to p. Each
+# layer's velocity range is therefore cut into steps at most VEL_STEP_MAX_DB apart, each attenuated so the level
+# follows VEL_CURVE. No step boosts, so the curve sits VEL_CURVE_OFFSET_DB under full scale at velocity 127; the
+# apps' make-up gain restores the loudness. AVAudioUnitSampler hardly applies zone attenuation: it plays its own
+# steep velocity curve, continuous across the layer splits because every layer is baked at one level, and the app
+# remaps the score's velocities onto it (playback-levels.json dynamics.sampler_velocity).
+VEL_STEP_MAX_DB = 1.0  # 0.5 dB steps overflow the SF2 generator index (65,535)
+
+
+def _residual(v: int, layer_db: float) -> float:
+    """How far a layer at `layer_db` plays over the curve at velocity v on alphaSynth (amplitude ~ velocity)."""
+    return layer_db + 20 * np.log10(v / 127) - vel_curve_db(v)
+
+
+def _curve_offset() -> float:
+    """The largest offset under which every layer of LAYER_DYNAMICS reaches the curve over its whole range."""
+    from build import LAYER_DYNAMICS, velocity_ranges
+    worst = np.inf
+    dyn_sets = list(LAYER_DYNAMICS.values()) + [["mf", "ff"]]  # + the solo cornet's named sustain layers
+    for dyns in dyn_sets:
+        for (lo, hi), d in zip(velocity_ranges(dyns), dyns):
+            worst = min(worst, min(_residual(v, DYN_LEVEL_DB[d]) for v in range(lo, hi + 1)))
+    return float(worst)
+
+
+VEL_CURVE_OFFSET_DB = _curve_offset()
+
+
+def velocity_steps(lovel: int, hivel: int, layer_db: float) -> list[tuple[int, int, float]]:
+    """A layer's velocity range as (lo, hi, attenuation dB) steps that follow VEL_CURVE (see above)."""
+    out: list[tuple[int, int, float]] = []
+    lo = lovel
+    while lo <= hivel:
+        r = [_residual(v, layer_db) - VEL_CURVE_OFFSET_DB for v in range(lo, hivel + 1)]
+        n = 1
+        while n < len(r) and max(r[:n + 1]) - min(r[:n + 1]) <= VEL_STEP_MAX_DB:
+            n += 1
+        out.append((lo, lo + n - 1, max(0.0, float(np.mean(r[:n])))))
+        lo += n
+    return out
 
 
 def z_detune(variant: int) -> int:
