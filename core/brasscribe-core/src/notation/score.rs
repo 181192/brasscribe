@@ -1455,7 +1455,9 @@ fn transpose_xml(diatonic: i32, chromatic: i32) -> X {
     x
 }
 
-fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
+/// `line_base`: review brackets in the parts before this one (the reference numbers them 1..6 across the
+/// whole score, in part order).
+fn part_xml(part: &Part, idx: usize, bpb: i64, line_base: usize) -> X {
     let bar = Rat::int(bpb);
     let mut px = X::new("part").attr("id", format!("P{}", idx + 1));
     for (mi, m) in part.measures.iter().enumerate() {
@@ -1487,29 +1489,36 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
         offsets.dedup();
         let mut children = Vec::new();
         let mut cur = Rat::ZERO;
+        // The reference exporter (music21) tracks the position in the measure as a float sum of the
+        // written lengths, and writes a direction's <offset> whenever its exact offset differs from that
+        // sum: after tuplets the float drifts, and a zero <offset> appears.
+        let mut cur_f = 0.0f64;
         for o in offsets {
             if o > cur && m.els.iter().any(|e| e.off == o) {
                 let fwd = (Rat::int(DIVISIONS) * (o - cur)).round_even();
                 children.push(X::new("forward").child(X::text("duration", fwd.to_string())));
+                cur_f += (o - cur).to_f64();
                 cur = o;
             }
             for (_, d) in m.dirs.iter().filter(|d| d.0 == o) {
-                let off = if o == cur { None } else { Some(((o - cur) * Rat::int(DIVISIONS)).to_f64() as i64) };
+                let exact = o.d & (o.d - 1) == 0 && o.to_f64() == cur_f;
+                let off = if exact { None } else { Some(((o.to_f64() - cur_f) * DIVISIONS as f64) as i64) };
                 children.push(dir_xml(d, off));
             }
             for e in m.els.iter().filter(|e| e.off == o) {
                 for (k, l) in part.lines.iter().enumerate() {
                     if l.0 == e.id {
-                        children.push(bracket_xml(k, "start"));
+                        children.push(bracket_xml(line_base + k, "start"));
                     }
                 }
                 elem_xml(e, bar, &mut children);
                 for (k, l) in part.lines.iter().enumerate() {
                     if l.1 == e.id {
-                        children.push(bracket_xml(k, "stop"));
+                        children.push(bracket_xml(line_base + k, "stop"));
                     }
                 }
                 cur = cur + e.dur.ql;
+                cur_f += e.dur.ql.to_f64();
             }
         }
         mx.children.extend(children);
@@ -1522,7 +1531,7 @@ fn part_xml(part: &Part, idx: usize, bpb: i64) -> X {
     px
 }
 
-/// A dashed review bracket (spanner number: its index in the part, cycling 1..6).
+/// A dashed review bracket (spanner number: its index in the score, cycling 1..6).
 fn bracket_xml(k: usize, typ: &str) -> X {
     X::new("direction").attr("placement", "above").child(
         X::new("direction-type").child(
@@ -1697,8 +1706,10 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
         pl.push(score_part_xml(p, i, channels[i], &spec.sounds));
     }
     root.push(pl);
+    let mut line_base = 0;
     for (i, p) in parts.iter().enumerate() {
-        root.push(part_xml(p, i, spec.beats_per_bar));
+        root.push(part_xml(p, i, spec.beats_per_bar, line_base));
+        line_base += p.lines.len();
     }
     if !spec.sounds.is_empty() {
         band_midi(&mut root);
