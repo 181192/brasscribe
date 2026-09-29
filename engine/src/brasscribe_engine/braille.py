@@ -99,6 +99,9 @@ class BrailleResult:
     text_directions_dropped: bool
 
 
+LONG_LINES = (60, 80, 120, 200, 400)  # cells: fallback line lengths for measures longer than a line
+
+
 def _prepare(score) -> None:
     md = score.metadata
     if md is not None:
@@ -134,6 +137,15 @@ def translate(musicxml: Path) -> BrailleResult:
         score = converter.parse(str(musicxml))
         _prepare(score)
         _drop_text_directions(score)
-        cells = bt.objectToBraille(score, maxLineLength=LINE_CELLS)
         dropped = True
+        cells = None
+        # A measure too long for one braille line (a bar of 32nds or sextuplets): music21 cannot break it,
+        # so translate on the shortest longer line that works and let paginate() wrap at the page width.
+        for width in (LINE_CELLS, *LONG_LINES):
+            try:
+                cells = bt.objectToBraille(score, maxLineLength=width)
+                break
+            except (BrailleTextException, BrailleBasicException):
+                if width == LONG_LINES[-1]:
+                    raise
     return BrailleResult(paginate(unicode_to_brf(cells)), cells, dropped)

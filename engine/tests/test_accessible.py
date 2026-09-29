@@ -190,3 +190,23 @@ GOLDEN = braille.Path(__file__).resolve().parents[2] / "data" / "golden" / "mikk
 def test_every_line_of_the_golden_score_and_parts_fits_the_page():
     for xml in [GOLDEN / "brass-band.musicxml", *sorted((GOLDEN / "parts").glob("*.musicxml"))]:
         assert _lines_ok(braille.translate(xml).brf), xml.name
+
+
+def test_a_bar_of_32nds_with_review_marks_still_translates(tmp_path):
+    """A measure longer than a braille line (a bar of 32nds, a "?" on it) cannot be broken by music21: it is
+    translated on a longer line and wrapped at the page width."""
+    steps = [("C", 5), ("D", 5), ("E", 5), ("F", 5), ("G", 5), ("A", 5), ("B", 5), ("C", 6)] * 4
+    notes = "".join(f"<note><pitch><step>{s}</step><octave>{o}</octave></pitch><duration>1</duration><voice>1</voice>"
+                    f"<type>32nd</type></note>" for s, o in steps)
+    mark = '<direction placement="above"><direction-type><words>?</words></direction-type></direction>'
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><work><work-title>Run</work-title></work>
+<part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>8</divisions><key><fifths>0</fifths></key>
+<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+{mark}{notes}</measure></part></score-partwise>"""
+    src = tmp_path / "run.musicxml"
+    src.write_text(xml)
+    r = braille.translate(src)
+    assert all(len(line) <= braille.LINE_CELLS for page in r.brf.split("\f") for line in page.split("\r\n"))
+    assert len(r.brf.replace("\r\n", "").replace(" ", "")) > 32
