@@ -77,8 +77,16 @@ def velocity_ranges(dyns: list[str]) -> list[tuple[int, int]]:
     return list(zip(lows, highs))
 
 
+# Where a source note really starts, seconds into its segment, when trim() cannot find it: (file, MIDI note) -> s.
+# The Iowa bass trombone's pp C3 (first note of its C3-B3 run) sits in noise only 13 dB under the note, with a
+# blip at 0.10 s, and speaks at 0.14 s; from the segment start it played 150 ms of noise before the note, which the
+# phrase check read as a 20 dB dropout on every player.
+SEGMENT_START_S = {("iowa-mis/bass-trombone/run/BassTrombone.pp.C3B3.aiff", 48): 0.14}
+
+
 def load_segment(note: dict) -> np.ndarray:
-    x, sr = sf.read(str(RAW / note["file"]), dtype="float64", always_2d=True, start=note["start"], stop=note["end"])
+    start = note["start"] + int(SEGMENT_START_S.get((note["file"], note["midi"]), 0.0) * SR)
+    x, sr = sf.read(str(RAW / note["file"]), dtype="float64", always_2d=True, start=start, stop=note["end"])
     assert sr == SR
     return x.mean(axis=1)
 
