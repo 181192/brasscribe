@@ -30,10 +30,41 @@ const TABLE: [(&str, Option<&str>, Option<&str>, Option<&str>); 18] = [
 const OTHER_KEY: [(&str, &str); 3] = [("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("eb-bass", "quartet")];
 
 #[test]
-fn seats_are_the_contest_band() {
+fn seats_are_the_contest_band_then_the_trumpet() {
     let names: Vec<&str> = SEATS.iter().map(|s| s.part).collect();
     let band: Vec<&str> = brass_band().parts.iter().map(|p| p.name).collect();
-    assert_eq!(names, band);
+    assert_eq!(names[..band.len()], band[..]);
+    assert_eq!(names[band.len()..], ["Trumpet"]);
+}
+
+/// A trumpet player takes the lead part in the bands (written for trumpet), and 1st Cornet in the quartet.
+#[test]
+fn the_trumpet_takes_the_lead() {
+    use brasscribe_core::instruments::{lead_lineup, seat_by_id, seat_lineup, with_seat, SeatPart};
+    for lineup in ["band", "minimal"] {
+        let sp = seat_part(lineup, "trumpet").unwrap();
+        assert_eq!(sp, SeatPart { part: Some("Trumpet"), exact: false, same_key: true, takes: Some("Solo Cornet") }, "{lineup}");
+        let base = lineup_by_name(lineup).unwrap();
+        let l = with_seat(base.clone(), lineup, "trumpet");
+        assert_eq!(l.lead, "Trumpet");
+        assert!(!l.has("Solo Cornet") && l.soloist_lead() && !l.lead_moved);
+        assert_eq!(l.parts.len(), base.parts.len());
+        let (t, sc) = (l.by_name("Trumpet"), base.by_name("Solo Cornet"));
+        assert_eq!((t.instrument.id, t.players, t.midi_bank.or(Some(1))), ("bb-trumpet", sc.players, sc.midi_bank.or(Some(1))));
+        assert_eq!(l.parts.iter().position(|p| p.name == "Trumpet"), base.parts.iter().position(|p| p.name == "Solo Cornet"));
+        // lead=seat: the tune is on the trumpet already.
+        assert_eq!(lead_lineup(base, "trumpet").unwrap(), l);
+    }
+    let q = seat_part("quartet", "trumpet").unwrap();
+    assert_eq!((q.part, q.exact, q.same_key, q.takes), (Some("1st Cornet"), false, true, None));
+    assert_eq!(with_seat(lineup_by_name("quartet").unwrap(), "quartet", "trumpet"), lineup_by_name("quartet").unwrap());
+    let take = seat_lineup("trumpet", None).unwrap();
+    assert_eq!((take.lead, take.parts[0].instrument.pro), ("Trumpet", (52, 85)));
+    assert!(seat_by_id("trumpet").unwrap().tune());
+    assert_eq!(nb_part_name("Trumpet"), "Trompet");
+    assert!(part_banks().contains(&("Trumpet", 1)));
+    // Only a seat that is no band part takes the lead: the soprano cornet maps to Solo Cornet as before.
+    assert_eq!(seat_part("minimal", "soprano-cornet").unwrap().takes, None);
 }
 
 #[test]
@@ -71,7 +102,8 @@ fn default_reading_in_every_lineup() {
     for s in &SEATS {
         for lineup in ["band", "minimal", "quartet"] {
             let Some(part) = seat_part(lineup, s.id).unwrap().part else { continue };
-            let l = with_reading(lineup_by_name(lineup).unwrap(), seat_by_id(s.id).unwrap(), Some(part), None);
+            let base = brasscribe_core::instruments::with_seat(lineup_by_name(lineup).unwrap(), lineup, s.id);
+            let l = with_reading(base.clone(), seat_by_id(s.id).unwrap(), Some(part), None);
             let inst = l.by_name(part).instrument;
             match s.default_reading() {
                 Some("bass") => assert!(inst.clef == Clef::Bass && inst.chromatic == 0, "{} in {lineup}: {part}", s.id),
@@ -80,7 +112,7 @@ fn default_reading_in_every_lineup() {
             }
             // An explicit reading still wins.
             if s.reads.contains(&"bass") {
-                let l = with_reading(lineup_by_name(lineup).unwrap(), seat_by_id(s.id).unwrap(), Some(part), Some("bass"));
+                let l = with_reading(base, seat_by_id(s.id).unwrap(), Some(part), Some("bass"));
                 assert_eq!((l.by_name(part).instrument.clef, l.by_name(part).instrument.chromatic), (Clef::Bass, 0));
             }
         }
@@ -120,12 +152,12 @@ fn tune_follows_the_roles() {
         tune,
         [
             "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn", "1st-horn",
-            "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium",
+            "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium", "trumpet",
         ]
     );
     let band = brass_band();
     for s in &SEATS {
-        let roles = band.by_name(s.part).instrument.roles;
+        let roles = s.own_part().instrument.roles;
         let melodic = roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo));
         assert_eq!(s.tune(), melodic && s.part != band.bass && Some(s.part) != band.second_bass, "{}", s.id);
         // the same seats lead_lineup takes the tune for

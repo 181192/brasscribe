@@ -280,7 +280,8 @@ def seat_cases() -> list[dict]:
     for seat in SEAT_IDS:
         for lineup in ("band", "full", "", "minimal", "quartet"):
             sp = seat_part(lineup or None, seat)
-            out.append({"seat": seat, "lineup": lineup, "part": sp.part, "exact": sp.exact, "same_key": sp.same_key})
+            out.append({"seat": seat, "lineup": lineup, "part": sp.part, "exact": sp.exact, "same_key": sp.same_key,
+                        "takes": sp.takes})
         for reads in (*CLEF_READINGS, "alto"):
             try:
                 check_reads(seat, reads)

@@ -215,7 +215,7 @@ def build(args: argparse.Namespace) -> tuple[Composition, Arrangement]:
             lead_lineup(lineup_by_name(args.lineup), args.seat)
         except ValueError as e:
             raise SystemExit(f"--lead seat: {e}") from e
-    lo, hi = seat_by_id(args.seat).band_part.instrument.pro if solo_take else SOLO_WINDOW
+    lo, hi = seat_by_id(args.seat).own_part.instrument.pro if solo_take else SOLO_WINDOW
     votes = {"sw": line(solo_sw, lo, hi, top=True), "mus": line(solo_mus, lo, hi, top=True),
              "bp": line(solo_bp, lo, hi, top=True)}
     # Basic Pitch standing in for MuScriptor (the solo path) is one vote for the confidence, not two;

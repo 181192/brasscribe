@@ -1038,7 +1038,7 @@ export interface components {
              */
             render_audio: boolean;
             /** Seat */
-            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion") | null;
+            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion" | "trumpet") | null;
             /** Title */
             title?: string | null;
             /** Transpose */
@@ -1456,7 +1456,7 @@ export interface components {
              * Seat
              * @description the player's seat. A solo take is written for it: one part, the seat's, in its range and in the octave played. A band take's notes do not change; the seat names the player's part. Default: none
              */
-            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion") | null;
+            seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion" | "trumpet") | null;
             /** Source Id */
             source_id?: string | null;
             /** Title */

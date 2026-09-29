@@ -18,6 +18,8 @@ public sealed class BrassSoundSet
     [
         ("Soprano Cornet", "soprano-cornet"),
         ("Solo Cornet", "cornet-b"),
+        // A trumpet player's lead part plays the Solo Cornet's sound.
+        ("Trumpet", "cornet-b"),
         ("Cornet", "cornet-a"),
         ("Flugel", "flugelhorn"),
         ("Horn", "tenor-horn"),

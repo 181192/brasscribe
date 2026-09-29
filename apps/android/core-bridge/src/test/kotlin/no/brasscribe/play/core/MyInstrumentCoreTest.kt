@@ -22,9 +22,10 @@ class MyInstrumentCoreTest {
     @Test
     fun seatsComeFromTheCoreInScoreOrder() {
         val seats = core().seats()
-        assertEquals(18, seats.size)
+        assertEquals(19, seats.size)
         assertEquals("soprano-cornet", seats.first().id)
-        assertEquals("percussion", seats.last().id)
+        // The contest band's 18 in score order, then the trumpet (it takes the lead part).
+        assertEquals(listOf("percussion", "trumpet"), seats.takeLast(2).map { it.id })
         val baritone = seats.first { it.id == "1st-baritone" }
         assertEquals("1st Baritone", baritone.name)
         assertEquals("1. baryton", baritone.nbName)

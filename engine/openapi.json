@@ -282,7 +282,8 @@
                   "euphonium",
                   "eb-bass",
                   "bb-bass",
-                  "percussion"
+                  "percussion",
+                  "trumpet"
                 ],
                 "type": "string"
               },
@@ -1264,7 +1265,8 @@
                   "euphonium",
                   "eb-bass",
                   "bb-bass",
-                  "percussion"
+                  "percussion",
+                  "trumpet"
                 ],
                 "type": "string"
               },

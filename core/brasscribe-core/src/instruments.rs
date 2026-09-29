@@ -142,6 +142,14 @@ pub static CORNET: Instrument = Instrument {
     // The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
     solo: Some((52, 84)),
 };
+/// Not a brass-band part: the lead a trumpet player takes (a trumpet seat, [`seat_own_part`]). MuseScore
+/// 4.7.5 bb-trumpet ranges; reading and placement as the cornet's, so every mode writes the cornet's notes.
+pub static TRUMPET: Instrument = Instrument {
+    id: "bb-trumpet", name: "Trumpet in B♭", short: "Tpt.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
+    pro: (52, 85), comfortable: (52, 80), roles: &[Melody, Countermelody, UpperHarmony, Solo],
+    gm_program: 56, musescore_id: "bb-trumpet", section: "cornets", sound: "brass.trumpet.bflat",
+    reading: Some((55, 79)), reading_limit: Some((52, 82)), solo: None,
+};
 pub static FLUGELHORN: Instrument = Instrument {
     id: "flugelhorn", name: "Flugelhorn in B♭", short: "Flug.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
     pro: (52, 82), comfortable: (52, 79), roles: &[Melody, Countermelody, InnerHarmony, Solo], gm_program: 56,
@@ -188,8 +196,8 @@ pub static PERCUSSION: Instrument = Instrument {
     section: "percussion", sound: "drum.group.set",    reading: None, reading_limit: None, solo: None,
 };
 
-pub static INSTRUMENTS: [&Instrument; 11] = [
-    &SOPRANO_CORNET, &CORNET, &FLUGELHORN, &TENOR_HORN, &BARITONE, &TENOR_TROMBONE, &BASS_TROMBONE, &EUPHONIUM, &EB_BASS,
+pub static INSTRUMENTS: [&Instrument; 12] = [
+    &SOPRANO_CORNET, &CORNET, &TRUMPET, &FLUGELHORN, &TENOR_HORN, &BARITONE, &TENOR_TROMBONE, &BASS_TROMBONE, &EUPHONIUM, &EB_BASS,
     &BB_BASS, &PERCUSSION,
 ];
 
@@ -394,14 +402,18 @@ pub fn lineup_by_name(name: &str) -> Result<Lineup, String> {
 /// 1-based MusicXML <midi-bank> per part name, over every lineup. A part name
 /// means the same preset in every lineup, so one table serves any
 /// arrangement; parts of a lineup without their own bank take the band's.
+/// The own part of a seat that is not a brass-band part, by name: the trumpet's.
+pub fn seat_own_part(name: &str) -> Option<Part> {
+    (name == "Trumpet").then(|| ps("Trumpet", &TRUMPET, 1, "Tpt.", Some(1)))
+}
+
 pub fn part_banks() -> Vec<(&'static str, i64)> {
     let mut out: Vec<(&'static str, i64)> = Vec::new();
-    for key in LINEUP_KEYS {
-        for p in lineup_by_name(key).expect("known lineup").parts {
-            if let Some(b) = p.midi_bank {
-                if !out.iter().any(|(n, _)| *n == p.name) {
-                    out.push((p.name, b));
-                }
+    let own = seat_own_part("Trumpet").into_iter();
+    for p in LINEUP_KEYS.iter().flat_map(|k| lineup_by_name(k).expect("known lineup").parts).chain(own) {
+        if let Some(b) = p.midi_bank {
+            if !out.iter().any(|(n, _)| *n == p.name) {
+                out.push((p.name, b));
             }
         }
     }
@@ -453,15 +465,21 @@ pub const CLEF_READINGS: [&str; 2] = ["treble", "bass"];
 pub struct Seat {
     /// Stable ASCII id (JSON, form fields, OpenAPI enums).
     pub id: &'static str,
-    /// The contest band's part: name, instrument, transposition, clef and ranges.
+    /// The seat's own part (the contest band's, else [`seat_own_part`]): name, instrument,
+    /// transposition, clef and ranges.
     pub part: &'static str,
     /// Clefs a player of this seat may read, the band's own first; empty for percussion.
     pub reads: &'static [&'static str],
 }
 
 impl Seat {
-    pub fn band_part(&self) -> Part {
-        brass_band().by_name(self.part).clone()
+    pub fn own_part(&self) -> Part {
+        let band = brass_band();
+        if band.has(self.part) {
+            band.by_name(self.part).clone()
+        } else {
+            seat_own_part(self.part).unwrap_or_else(|| panic!("no part {}", self.part))
+        }
     }
 
     /// The seat's part can carry the tune in the band: its instrument has Role::Melody or Solo and it
@@ -475,7 +493,7 @@ impl Seat {
         let band = brass_band();
         self.part != band.bass
             && Some(self.part) != band.second_bass
-            && band.by_name(self.part).instrument.roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo))
+            && self.own_part().instrument.roles.iter().any(|r| matches!(r, Role::Melody | Role::Solo))
     }
 }
 
@@ -483,7 +501,7 @@ const TREBLE: &[&str] = &["treble"];
 const BOTH: &[&str] = &["treble", "bass"];
 const BASS: &[&str] = &["bass"];
 
-pub static SEATS: [Seat; 18] = [
+pub static SEATS: [Seat; 19] = [
     Seat { id: "soprano-cornet", part: "Soprano Cornet", reads: TREBLE },
     Seat { id: "solo-cornet", part: "Solo Cornet", reads: TREBLE },
     Seat { id: "repiano-cornet", part: "Repiano Cornet", reads: TREBLE },
@@ -502,13 +520,14 @@ pub static SEATS: [Seat; 18] = [
     Seat { id: "eb-bass", part: "E♭ Bass", reads: BOTH },
     Seat { id: "bb-bass", part: "B♭ Bass", reads: BOTH },
     Seat { id: "percussion", part: "Percussion", reads: &[] },
+    Seat { id: "trumpet", part: "Trumpet", reads: TREBLE },
 ];
 
 /// Seat -> its part in the full band, the small (minimal) band and the quartet; None: no part.
 /// This table is authoritative. It was built by, in order: the same part; a part the player
 /// can play with the closest range; of those, one in the same key; then the same family and
 /// role (tune, bass or inner). The apps read it through the core and keep no copy.
-pub static SEAT_PARTS: [(&str, [Option<&str>; 3]); 18] = [
+pub static SEAT_PARTS: [(&str, [Option<&str>; 3]); 19] = [
     ("soprano-cornet", [Some("Soprano Cornet"), Some("Solo Cornet"), Some("1st Cornet")]),
     ("solo-cornet", [Some("Solo Cornet"), Some("Solo Cornet"), Some("1st Cornet")]),
     ("repiano-cornet", [Some("Repiano Cornet"), Some("2nd Cornet"), Some("2nd Cornet")]),
@@ -527,6 +546,8 @@ pub static SEAT_PARTS: [(&str, [Option<&str>; 3]); 18] = [
     ("eb-bass", [Some("E♭ Bass"), Some("E♭ Bass"), Some("Euphonium")]),
     ("bb-bass", [Some("B♭ Bass"), Some("B♭ Bass"), Some("Euphonium")]),
     ("percussion", [Some("Percussion"), None, None]),
+    // Not a band part: the lead, in the same key ([`with_seat`] writes it for trumpet in the bands).
+    ("trumpet", [Some("Solo Cornet"), Some("Solo Cornet"), Some("1st Cornet")]),
 ];
 
 /// The player's part in a lineup for their seat.
@@ -538,6 +559,8 @@ pub struct SeatPart {
     pub exact: bool,
     /// The part is in the seat's key (transposition), so it reads without transposing.
     pub same_key: bool,
+    /// The lineup's part the seat's own part replaces: a trumpet takes the lead ([`with_seat`]).
+    pub takes: Option<&'static str>,
 }
 
 pub fn seat_by_id(seat: &str) -> Result<&'static Seat, String> {
@@ -554,14 +577,36 @@ pub fn seat_part(lineup: &str, seat: &str) -> Result<SeatPart, String> {
     let col = LINEUP_KEYS.iter().position(|k| *k == key).expect("known lineup");
     let row = SEAT_PARTS.iter().find(|(id, _)| *id == s.id).expect("every seat has a row").1;
     Ok(match row[col] {
-        None => SeatPart { part: None, exact: false, same_key: false },
+        None => SeatPart { part: None, exact: false, same_key: false, takes: None },
         Some(name) => {
             // As the player reads them by default: a bass-clef reader gets the mapped part at concert pitch.
-            let mine = reading_instrument(s.band_part().instrument, s.default_reading());
+            let mine = reading_instrument(s.own_part().instrument, s.default_reading());
             let theirs = reading_instrument(lineup_by_name(key)?.by_name(name).instrument, s.default_reading());
-            SeatPart { part: Some(name), exact: name == s.part, same_key: mine.chromatic.rem_euclid(12) == theirs.chromatic.rem_euclid(12) }
+            let same_key = mine.chromatic.rem_euclid(12) == theirs.chromatic.rem_euclid(12);
+            let band = lineup_by_name(key)?;
+            if seat_own_part(s.part).is_some() && name == band.lead && !band.satb {
+                // A seat whose own part is not in the lineup takes the lineup's lead: the part is theirs.
+                SeatPart { part: Some(s.part), exact: false, same_key, takes: Some(name) }
+            } else {
+                SeatPart { part: Some(name), exact: name == s.part, same_key, takes: None }
+            }
         }
     })
+}
+
+/// `lineup` (option value `key`) with the part the seat takes ([`SeatPart::takes`]) replaced by the
+/// seat's own part, keeping its players, and the lead with it: a trumpet player's band.
+pub fn with_seat(mut lineup: Lineup, key: &str, seat: &str) -> Lineup {
+    let (Ok(sp), Ok(s)) = (seat_part(key, seat), seat_by_id(seat)) else { return lineup };
+    let Some(takes) = sp.takes.filter(|t| lineup.has(t)) else { return lineup };
+    let own = s.own_part();
+    for p in lineup.parts.iter_mut().filter(|p| p.name == takes) {
+        *p = Part { players: p.players, ..own.clone() };
+    }
+    if lineup.lead == takes {
+        lineup.lead = own.name;
+    }
+    lineup
 }
 
 /// `reads` ("treble", "bass", or None for the band's default) must be a clef the seat offers.
@@ -606,7 +651,7 @@ pub fn seat_lineup(seat: &str, reads: Option<&str>) -> Result<Lineup, String> {
     if s.reads.is_empty() {
         return Err(PERCUSSION_SOLO.into());
     }
-    let mut part = s.band_part();
+    let mut part = s.own_part();
     part.instrument = reading_instrument(part.instrument, reads);
     let name = part.name;
     Ok(Lineup { name, parts: vec![part], lead: name, bass: name, second_bass: None, satb: false, as_played: true, lead_moved: false })
@@ -627,7 +672,7 @@ pub fn with_reading(mut lineup: Lineup, seat: &Seat, part: Option<&str>, reads: 
 
 /// Instruments whose part sits on top of the band: with the tune on one of them, the inner parts
 /// are voiced under it; with the tune lower down (a euphonium or horn solo), the band keeps its own top.
-pub const TOP_INSTRUMENTS: [&str; 3] = ["bb-cornet", "eb-soprano-cornet", "flugelhorn"];
+pub const TOP_INSTRUMENTS: [&str; 4] = ["bb-cornet", "bb-trumpet", "eb-soprano-cornet", "flugelhorn"];
 
 /// `lineup` with the tune on the seat's part (lead "seat"): "Euphonium solo with band".
 ///
@@ -638,7 +683,12 @@ pub fn lead_lineup(mut lineup: Lineup, seat: &str) -> Result<Lineup, String> {
         return Err("the quartet keeps the tune on its 1st Cornet; lead=seat is for the band lineups".into());
     }
     let key = LINEUP_KEYS.iter().copied().find(|k| lineup_by_name(k).is_ok_and(|l| l.name == lineup.name)).unwrap_or("band");
-    let part = seat_part(key, seat)?.part.ok_or_else(|| format!("the {} has no part for the seat {seat}", lineup.name.to_lowercase()))?;
+    let sp = seat_part(key, seat)?;
+    if sp.takes.is_some() && sp.takes == Some(lineup.lead) {
+        // The seat takes the lead part: the tune is theirs already.
+        return Ok(with_seat(lineup, key, seat));
+    }
+    let part = sp.part.ok_or_else(|| format!("the {} has no part for the seat {seat}", lineup.name.to_lowercase()))?;
     if part == lineup.lead {
         return Ok(lineup);
     }

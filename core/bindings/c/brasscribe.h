@@ -78,7 +78,8 @@ int32_t bc_arrange_layers_song(const uint8_t *const *midi,
 // `[{"step": "F", "alter": 1, "octave": 4}, ...]`.
 int32_t bc_spell_json(const char *request, char **out, char **err);
 
-// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool}`
+// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool,
+// "takes": "Solo Cornet" | null}`
 // to `*out` for `lineup` ("band", "minimal", "quartet") and `seat` (an id of [`bc_seats`]).
 int32_t bc_seat_part(const char *lineup,
                      const char *seat,
@@ -91,7 +92,7 @@ int32_t bc_part_sources(const char *composition_json,
                         char **out,
                         char **err);
 
-// The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
+// The seats (the contest band's in score order, then the trumpet): writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
 // "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"], "tune": true}, ...]` to `*out`.
 int32_t bc_seats(char **out,
                  char **err);

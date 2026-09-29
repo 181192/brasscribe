@@ -582,6 +582,9 @@ pub struct SeatPart {
     pub exact: bool,
     /// The part is in the seat's key (transposition), so it reads without transposing.
     pub same_key: bool,
+    /// The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands): the
+    /// score writes `part` in its place. None for every band seat.
+    pub takes: Option<String>,
 }
 
 /// Which part of `lineup` ("band", "minimal" or "quartet") is the player's, for `seat`. One table in
@@ -589,7 +592,7 @@ pub struct SeatPart {
 #[uniffi::export]
 pub fn seat_part(lineup: String, seat: String) -> Result<SeatPart, CoreError> {
     let sp = brasscribe_core::instruments::seat_part(&lineup, &seat).map_err(invalid)?;
-    Ok(SeatPart { part: sp.part.map(String::from), exact: sp.exact, same_key: sp.same_key })
+    Ok(SeatPart { part: sp.part.map(String::from), exact: sp.exact, same_key: sp.same_key, takes: sp.takes.map(String::from) })
 }
 
 /// Where one part comes from: "your-recording" (a solo take's own line), "recording" (a line heard
@@ -634,13 +637,13 @@ pub struct SeatInfo {
     pub tune: bool,
 }
 
-/// The 18 seats of the contest band, in score order.
+/// The seats: the 18 of the contest band in score order, then the trumpet (it takes the lead part).
 #[uniffi::export]
 pub fn seats() -> Vec<SeatInfo> {
     brasscribe_core::instruments::SEATS
         .iter()
         .map(|s| {
-            let inst = s.band_part().instrument;
+            let inst = s.own_part().instrument;
             SeatInfo {
                 id: s.id.into(),
                 name: s.part.into(),

@@ -49,7 +49,7 @@ def build(beats: Path, sw: Path, mus: Path, bp: Path, title: str, seat: str | No
     first_down = int(np.argmax(pos == 1))
     if seat and not seat_by_id(seat).reads:
         raise SystemExit(PERCUSSION_SOLO)
-    window = seat_by_id(seat).band_part.instrument.pro if seat else (52, 88)
+    window = seat_by_id(seat).own_part.instrument.pro if seat else (52, 88)
     notes = solo_line(pitched(sw), pitched(mus), pitched(bp), window)
     if not notes:
         raise SystemExit("no solo notes found")

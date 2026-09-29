@@ -42,13 +42,18 @@ MIKKEL_VARIANTS = [
     ("layers-lead-seat-euphonium-easier", ["--lead", "seat", "--seat", "euphonium", "--difficulty", "easier"]),
     ("layers-minimal-lead-seat-1st-horn", ["--lineup", "minimal", "--lead", "seat", "--seat", "1st-horn"]),
     ("layers-lead-seat-flugelhorn", ["--lead", "seat", "--seat", "flugelhorn"]),
+    # A trumpet player: the lead part is written for trumpet in the bands (same notes), 1st Cornet in the quartet.
+    ("layers-seat-trumpet", ["--seat", "trumpet"]),
+    ("layers-minimal-seat-trumpet", ["--lineup", "minimal", "--seat", "trumpet"]),
+    ("layers-quartet-seat-trumpet", ["--lineup", "quartet", "--seat", "trumpet"]),
+    ("layers-lead-seat-trumpet-easier", ["--lead", "seat", "--seat", "trumpet", "--difficulty", "easier"]),
     # The footer on the arranged parts in Norwegian.
     ("layers-lang-nb", ["--lang", "nb"]),
 ]
 # Song lineup options on the chorales: the tune on the player's part (non-layered arranger).
 SONG_SEAT = ["--seat", "euphonium", "--lead", "seat", "--reads", "bass"]
 # ChoraleBricks instrument -> the seat its solo take is written for.
-SOLO_SEATS = [("bar", "1st-baritone"), ("tb", "1st-trombone"), ("tba", "eb-bass"), ("fho", "solo-horn")]
+SOLO_SEATS = [("bar", "1st-baritone"), ("tb", "1st-trombone"), ("tba", "eb-bass"), ("fho", "solo-horn"), ("tp", "trumpet")]
 # Eval sets whose songs are also arranged for the quartet (song and bench cases): the chorales,
 # which a brass quartet plays.
 QUARTET_SETS = ("choralebricks-brass4",)
@@ -153,7 +158,7 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
         variants = [("no-seat", ["--lineup", "minimal"]), (seat, ["--lineup", "minimal", "--seat", seat])]
         from brasscribe_music.instruments import seat_by_id
 
-        if "bass" in seat_by_id(seat).reads and seat_by_id(seat).band_part.instrument.clef != "bass":
+        if "bass" in seat_by_id(seat).reads and seat_by_id(seat).own_part.instrument.clef != "bass":
             variants.append((f"{seat}-bass-clef", ["--lineup", "minimal", "--seat", seat, "--reads", "bass"]))
         for tag, options in variants:
             cases.append(Case(f"solo-seat/{song.name}/{stem}/{tag}", "layers", {**base, "options": options}))

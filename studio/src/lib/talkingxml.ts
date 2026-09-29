@@ -40,6 +40,7 @@ const NB_PARTS: Record<string, string> = {
   "Solo Horn": "Solo althorn", "1st Horn": "1. althorn", "2nd Horn": "2. althorn",
   "1st Baritone": "1. baryton", "2nd Baritone": "2. baryton", "1st Trombone": "1. trombone", "2nd Trombone": "2. trombone",
   "Bass Trombone": "Basstrombone", Euphonium: "Eufonium", "E♭ Bass": "Ess-bass", "B♭ Bass": "B-bass", Percussion: "Slagverk",
+  Trumpet: "Trompet",
 };
 const NB_INSTRUMENTS: Record<string, string> = {
   "Bass Drum": "stortromme", "Acoustic Bass Drum": "stortromme", "Snare": "skarptromme", "Snare Drum": "skarptromme", "Acoustic Snare": "skarptromme",

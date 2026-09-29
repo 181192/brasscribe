@@ -39,9 +39,9 @@ TABLE = {
 OTHER_KEY = {("soprano-cornet", "minimal"), ("soprano-cornet", "quartet"), ("eb-bass", "quartet")}
 
 
-def test_seats_are_the_contest_band():
-    assert [s.part for s in SEATS] == [p.name for p in BRASS_BAND.parts]
-    assert len(set(SEAT_IDS)) == 18 and all(i.isascii() and " " not in i for i in SEAT_IDS)
+def test_seats_are_the_contest_band_then_the_trumpet():
+    assert [s.part for s in SEATS] == [p.name for p in BRASS_BAND.parts] + ["Trumpet"]
+    assert len(set(SEAT_IDS)) == 19 and all(i.isascii() and " " not in i for i in SEAT_IDS)
 
 
 @pytest.mark.parametrize("seat", list(TABLE))
@@ -73,7 +73,7 @@ def test_every_resolved_part_has_a_sound_and_a_bank():
 
 # Seats whose part can carry the tune (Role MELODY/SOLO, not the bass line); the Rust core's list too.
 TUNE = ["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn", "1st-horn",
-        "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium"]
+        "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium", "trumpet"]
 
 
 def test_tune_follows_the_roles():

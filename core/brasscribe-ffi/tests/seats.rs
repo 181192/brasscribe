@@ -34,7 +34,10 @@ fn c_call(f: impl FnOnce(*mut *mut c_char, *mut *mut c_char) -> i32) -> Result<S
 #[test]
 fn seats_carry_the_core_names() {
     let s = seats();
-    assert_eq!(s.len(), 18);
+    assert_eq!(s.len(), 19);
+    let tpt = s.iter().find(|x| x.id == "trumpet").unwrap();
+    assert_eq!((tpt.name.as_str(), tpt.nb_name.as_str(), tpt.instrument.as_str()), ("Trumpet", "Trompet", "bb-trumpet"));
+    assert!(tpt.tune);
     let horn = s.iter().find(|x| x.id == "solo-horn").unwrap();
     assert_eq!((horn.name.as_str(), horn.nb_name.as_str(), horn.clef.as_str()), ("Solo Horn", "Solo althorn", "treble"));
     assert_eq!(s.iter().find(|x| x.id == "bass-trombone").unwrap().reads, vec!["bass"]);
@@ -51,13 +54,21 @@ fn seats_carry_the_core_names() {
 
 #[test]
 fn seat_part_spot_checks() {
-    assert_eq!(seat_part("minimal".into(), "1st-baritone".into()).unwrap(), SeatPart { part: Some("Euphonium".into()), exact: false, same_key: true });
-    assert_eq!(seat_part("quartet".into(), "eb-bass".into()).unwrap(), SeatPart { part: Some("Euphonium".into()), exact: false, same_key: false });
-    assert_eq!(seat_part("band".into(), "2nd-cornet".into()).unwrap(), SeatPart { part: Some("2nd Cornet".into()), exact: true, same_key: true });
+    assert_eq!(seat_part("minimal".into(), "1st-baritone".into()).unwrap(), SeatPart { part: Some("Euphonium".into()), exact: false, same_key: true, takes: None });
+    assert_eq!(seat_part("quartet".into(), "eb-bass".into()).unwrap(), SeatPart { part: Some("Euphonium".into()), exact: false, same_key: false, takes: None });
+    assert_eq!(seat_part("band".into(), "2nd-cornet".into()).unwrap(), SeatPart { part: Some("2nd Cornet".into()), exact: true, same_key: true, takes: None });
+    assert_eq!(
+        seat_part("band".into(), "trumpet".into()).unwrap(),
+        SeatPart { part: Some("Trumpet".into()), exact: false, same_key: true, takes: Some("Solo Cornet".into()) }
+    );
+    assert_eq!(seat_part("quartet".into(), "trumpet".into()).unwrap().part.as_deref(), Some("1st Cornet"));
     assert!(seat_part("band".into(), "tuba".into()).is_err());
     let (l, s) = (CString::new("quartet").unwrap(), CString::new("percussion").unwrap());
     let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
-    assert_eq!(json, r#"{"part":null,"exact":false,"same_key":false}"#);
+    assert_eq!(json, r#"{"part":null,"exact":false,"same_key":false,"takes":null}"#);
+    let (l, s) = (CString::new("band").unwrap(), CString::new("trumpet").unwrap());
+    let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
+    assert_eq!(json, r#"{"part":"Trumpet","exact":false,"same_key":true,"takes":"Solo Cornet"}"#);
 }
 
 #[test]

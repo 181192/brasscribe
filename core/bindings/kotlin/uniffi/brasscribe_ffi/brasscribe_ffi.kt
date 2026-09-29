@@ -1007,7 +1007,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_seat_part() and 0xFFFF) != 14392) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_seats() and 0xFFFF) != 39596) {
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_seats() and 0xFFFF) != 38330) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 24205) {
@@ -3266,6 +3266,12 @@ data class SeatPart (
      * The part is in the seat's key (transposition), so it reads without transposing.
      */
     var `sameKey`: kotlin.Boolean
+    , 
+    /**
+     * The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands): the
+     * score writes `part` in its place. None for every band seat.
+     */
+    var `takes`: kotlin.String?
     
 ){
     
@@ -3285,19 +3291,22 @@ public object FfiConverterTypeSeatPart: FfiConverterRustBuffer<SeatPart> {
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
     override fun allocationSize(value: SeatPart) = (
             FfiConverterOptionalString.allocationSize(value.`part`) +
             FfiConverterBoolean.allocationSize(value.`exact`) +
-            FfiConverterBoolean.allocationSize(value.`sameKey`)
+            FfiConverterBoolean.allocationSize(value.`sameKey`) +
+            FfiConverterOptionalString.allocationSize(value.`takes`)
     )
 
     override fun write(value: SeatPart, buf: ByteBuffer) {
             FfiConverterOptionalString.write(value.`part`, buf)
             FfiConverterBoolean.write(value.`exact`, buf)
             FfiConverterBoolean.write(value.`sameKey`, buf)
+            FfiConverterOptionalString.write(value.`takes`, buf)
     }
 }
 
@@ -4769,7 +4778,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     
 
         /**
-         * The 18 seats of the contest band, in score order.
+         * The seats: the 18 of the contest band in score order, then the trumpet (it takes the lead part).
          */ fun `seats`(): List<SeatInfo> {
             return FfiConverterSequenceTypeSeatInfo.lift(
     uniffiRustCall() { _status ->

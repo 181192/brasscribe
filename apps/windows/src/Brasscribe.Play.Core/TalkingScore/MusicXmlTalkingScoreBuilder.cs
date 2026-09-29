@@ -465,6 +465,8 @@ public static class PartNames
         // The quartet: 1st Cornet, 2nd Cornet, Tenor Horn, Euphonium.
         ["1st Cornet"] = "1. kornett",
         ["Tenor Horn"] = "Althorn",
+        // A trumpet player's lead part.
+        ["Trumpet"] = "Trompet",
     };
 
     /// <summary>The English part names this table knows.</summary>
@@ -475,7 +477,7 @@ public static class PartNames
     public static string InstrumentNb(string en)
     {
         string s = en
-            .Replace("Soprano Cornet", "sopran-kornett").Replace("Cornet", "kornett")
+            .Replace("Soprano Cornet", "sopran-kornett").Replace("Cornet", "kornett").Replace("Trumpet", "trompet")
             .Replace("Flugelhorn", "flygelhorn").Replace("Tenor Horn", "althorn").Replace("Horn", "althorn")
             .Replace("Baritone", "baryton").Replace("Euphonium", "eufonium").Replace("Bass Trombone", "basstrombone")
             .Replace("Trombone", "trombone").Replace("Drum Kit", "trommesett");

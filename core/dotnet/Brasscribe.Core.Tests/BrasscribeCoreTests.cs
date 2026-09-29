@@ -39,7 +39,7 @@ public class BrasscribeCoreTests
     public void SeatsAndTheirParts()
     {
         var seats = BrasscribeCore.Seats();
-        Assert.Equal(18, seats.Count);
+        Assert.Equal(19, seats.Count);
         var euph = seats.Single(s => s.Id == "euphonium");
         Assert.Equal("Euphonium", euph.Name);
         Assert.Equal("Eufonium", euph.NbName);
@@ -47,11 +47,14 @@ public class BrasscribeCoreTests
         Assert.Equal("Solo althorn", seats.Single(s => s.Id == "solo-horn").NbName);
         // Tune: Role Melody or Solo, not the bass line.
         Assert.Equal(new[] { "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn",
-            "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium" }, seats.Where(s => s.Tune).Select(s => s.Id));
+            "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium", "trumpet" }, seats.Where(s => s.Tune).Select(s => s.Id));
         // Three spot checks of the seat -> part table.
         Assert.Equal(new SeatPart("Euphonium", false, true), BrasscribeCore.SeatPart("minimal", "1st-baritone"));
         Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));
         Assert.Equal(new SeatPart(null, false, false), BrasscribeCore.SeatPart("quartet", "percussion"));
+        // A trumpet player takes the lead part, written for trumpet.
+        Assert.Equal(new SeatPart("Trumpet", false, true, "Solo Cornet"), BrasscribeCore.SeatPart("band", "trumpet"));
+        Assert.Equal("Trompet", BrasscribeCore.PartNameNb("Trumpet"));
         Assert.Throws<BrasscribeException>(() => BrasscribeCore.SeatPart("band", "tuba"));
         Assert.Equal("Solo althorn", BrasscribeCore.PartNameNb("Solo Horn"));
         Assert.Equal("1. kornett", BrasscribeCore.PartNameNb("1st Cornet"));

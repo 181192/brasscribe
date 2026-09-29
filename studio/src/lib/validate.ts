@@ -29,6 +29,8 @@ export const RANGES: Record<string, Range> = {
   "Bass Trombone": R([21, 77], [32, 65]),
   Euphonium: R([34, 74], [40, 70]),
   "E♭ Bass": R([24, 72], [26, 64]),
+  // A trumpet player's band: the lead part, written for trumpet (soloist range = MuseScore's pro 52-85).
+  Trumpet: R([52, 85], [52, 80]),
   "B♭ Bass": R([22, 72], [28, 58]),
 };
 
@@ -43,6 +45,7 @@ export const CROSSING_PAIRS: [string, string][] = [
   ["1st Trombone", "2nd Trombone"],
   ["2nd Trombone", "Bass Trombone"],
   ["E♭ Bass", "B♭ Bass"],
+  ["Trumpet", "Repiano Cornet"],
   // Brass quartet
   ["1st Cornet", "2nd Cornet"],
   ["2nd Cornet", "Tenor Horn"],

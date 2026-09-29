@@ -36,7 +36,7 @@ def voices(est: list[dict]) -> dict[str, list[dict]]:
     """S, A, T, B lines from one transcription of the mix, by seat range."""
     from brasscribe_music.instruments import seat_by_id
 
-    rng = {v: seat_by_id(s).band_part.instrument.pro for v, s in VOICE_SEATS.items()}
+    rng = {v: seat_by_id(s).own_part.instrument.pro for v, s in VOICE_SEATS.items()}
     s = line(est, *rng["S"], top=True)
     b = line(est, *rng["B"], top=False)
     taken = {_key(n) for n in s + b}

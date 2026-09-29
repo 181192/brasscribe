@@ -47,6 +47,7 @@ RANGES: list[tuple[str, tuple[int, int, int, int]]] = [
     ("soprano", (54, 60, 81, 86)),       # F#3  C4  A5  D6
     ("solo cornet", (54, 57, 84, 86)),   # F#3  A3  C6  D6
     ("cornet", (54, 57, 81, 84)),        # F#3  A3  A5  C6
+    ("trumpet", (54, 57, 84, 87)),      # F#3  A3  C6  D#6 (MuseScore bb-trumpet pro 52-85 sounding)
     ("flugel", (54, 57, 79, 84)),        # F#3  A3  G5  C6
     ("horn", (54, 57, 79, 84)),          # tenor horn in Eb
     ("baritone", (54, 57, 79, 84)),

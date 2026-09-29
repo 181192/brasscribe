@@ -671,7 +671,8 @@ pub fn arrange_opts(comp: &Composition, lineup: Lineup, difficulty: &str) -> Res
 }
 
 /// The band lineups' own lead.
-pub const BAND_LEADS: [&str; 1] = ["Solo Cornet"];
+/// The band lineups' own lead (a trumpet player's: `instruments::with_seat`).
+pub const BAND_LEADS: [&str; 2] = ["Solo Cornet", "Trumpet"];
 
 /// The part that plays the countermelody: the Euphonium, or with the tune on it, Solo Horn, then 1st Baritone.
 pub fn counter_part(lineup: &Lineup) -> Option<&'static str> {
@@ -1025,6 +1026,10 @@ pub fn composition_lineup(comp: &Composition) -> (Lineup, bool) {
             Ok(k) => (k, crate::instruments::lineup_by_name(k).expect("known lineup")),
             Err(_) => ("band", brass_band()),
         }
+    };
+    let l = match seat.as_deref() {
+        Some(s) => crate::instruments::with_seat(l, key, s),
+        None => l,
     };
     let l = match seat.as_deref().and_then(|s| Some((crate::instruments::seat_by_id(s).ok()?, crate::instruments::seat_part(key, s).ok()?))) {
         Some((s, sp)) => crate::instruments::with_reading(l, s, sp.part, reads.as_deref()),

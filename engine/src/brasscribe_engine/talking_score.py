@@ -446,12 +446,13 @@ NB_PART_NAMES = {
     "1st Horn": "1. althorn", "2nd Horn": "2. althorn", "1st Baritone": "1. baryton", "2nd Baritone": "2. baryton",
     "1st Trombone": "1. trombone", "2nd Trombone": "2. trombone", "Bass Trombone": "Basstrombone",
     "Euphonium": "Eufonium", "E♭ Bass": "Ess-bass", "B♭ Bass": "B-bass", "Percussion": "Slagverk",
+    "Trumpet": "Trompet",
 }
 
 
 def instrument_nb(en: str) -> str:
     s = en
-    for a, b in (("Soprano Cornet", "sopran-kornett"), ("Cornet", "kornett"), ("Flugelhorn", "flygelhorn"),
+    for a, b in (("Soprano Cornet", "sopran-kornett"), ("Cornet", "kornett"), ("Trumpet", "trompet"), ("Flugelhorn", "flygelhorn"),
                  ("Tenor Horn", "althorn"), ("Horn", "althorn"), ("Baritone", "baryton"), ("Euphonium", "eufonium"),
                  ("Bass Trombone", "basstrombone"), ("Drum Kit", "trommesett"),
                  (" in B♭", " i B"), (" in E♭", " i Ess"), (" in C", " i C")):

@@ -100,6 +100,11 @@ _INSTRUMENTS = [
                frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 82),
                # The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
                solo=(52, 84)),
+    # Not a brass-band part: the lead a trumpet player takes (a trumpet seat, SEAT_OWN_PARTS). MuseScore
+    # 4.7.5 bb-trumpet ranges; reading and placement as the cornet's, so every mode writes the cornet's notes.
+    Instrument("bb-trumpet", "Trumpet in B♭", "Tpt.", -2, -1, "treble", (52, 85), (52, 80),
+               frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.SOLO}), 56, "bb-trumpet", "cornets", "brass.trumpet.bflat",
+               reading=(55, 79), reading_limit=(52, 82)),
     Instrument("flugelhorn", "Flugelhorn in B♭", "Flug.", -2, -1, "treble", (52, 82), (52, 79),
                frozenset({R.MELODY, R.COUNTERMELODY, R.INNER_HARMONY, R.SOLO}), 56, "flugelhorn", "horns", "brass.flugelhorn", reading=(55, 77)),
     Instrument("eb-tenor-horn", "Tenor Horn in E♭", "Hn.", -9, -5, "treble", (45, 75), (45, 72),
@@ -260,6 +265,10 @@ def lineup_key(lineup: Lineup) -> str:
     return next(k for k, v in LINEUPS.items() if v is lineup)
 
 
+# The own parts of seats that are not a brass-band part, by name: the trumpet's.
+SEAT_OWN_PARTS: dict[str, Part] = {"Trumpet": _p("Trumpet", "bb-trumpet", 1, "Tpt.", 1)}
+
+
 def part_banks() -> dict[str, int]:
     """1-based MusicXML <midi-bank> per part name, over every lineup.
 
@@ -272,6 +281,8 @@ def part_banks() -> dict[str, int]:
         for p in lineup.parts:
             if p.midi_bank is not None:
                 banks.setdefault(p.name, p.midi_bank)
+    for p in SEAT_OWN_PARTS.values():
+        banks.setdefault(p.name, p.midi_bank)
     return banks
 
 
@@ -315,12 +326,12 @@ CLEF_READINGS = ("treble", "bass")
 @dataclass(frozen=True)
 class Seat:
     id: str  # stable ASCII id (JSON, form fields, OpenAPI enums)
-    part: str  # the contest band's part (BRASS_BAND): name, instrument, transposition, clef and ranges
+    part: str  # the seat's own part (BRASS_BAND, else SEAT_OWN_PARTS): name, instrument, transposition, clef, ranges
     reads: tuple[str, ...]  # clefs a player of this seat may read, the band's own first; () for percussion
 
     @property
-    def band_part(self) -> Part:
-        return BRASS_BAND.by_name(self.part)
+    def own_part(self) -> Part:
+        return BRASS_BAND.by_name(self.part) if BRASS_BAND.has(self.part) else SEAT_OWN_PARTS[self.part]
 
     @property
     def default_reading(self) -> str | None:
@@ -332,7 +343,7 @@ class Seat:
         """The seat's part can carry the tune in the band: its instrument has Role.MELODY or SOLO and it
         is not the band's bass line. The seats `lead_lineup` accepts for lead="seat"."""
         return self.part not in (BRASS_BAND.bass, BRASS_BAND.second_bass) \
-            and bool({Role.MELODY, Role.SOLO} & self.band_part.instrument.roles)
+            and bool({Role.MELODY, Role.SOLO} & self.own_part.instrument.roles)
 
 
 _TREBLE, _BOTH, _BASS = ("treble",), ("treble", "bass"), ("bass",)
@@ -355,6 +366,7 @@ SEATS: list[Seat] = [
     Seat("eb-bass", "E♭ Bass", _BOTH),
     Seat("bb-bass", "B♭ Bass", _BOTH),
     Seat("percussion", "Percussion", ()),
+    Seat("trumpet", "Trumpet", _TREBLE),
 ]
 SEAT_IDS: tuple[str, ...] = tuple(s.id for s in SEATS)
 
@@ -381,6 +393,8 @@ SEAT_PARTS: dict[str, tuple[str | None, str | None, str | None]] = {
     "eb-bass": ("E♭ Bass", "E♭ Bass", "Euphonium"),
     "bb-bass": ("B♭ Bass", "B♭ Bass", "Euphonium"),
     "percussion": ("Percussion", None, None),
+    # Not a band part: the lead, in the same key (with_seat writes it for trumpet in the bands).
+    "trumpet": ("Solo Cornet", "Solo Cornet", "1st Cornet"),
 }
 _SEAT_COLUMN = {"band": 0, "minimal": 1, "quartet": 2}
 
@@ -390,6 +404,7 @@ class SeatPart:
     part: str | None  # the lineup's part for the seat; None: the lineup has none (percussion)
     exact: bool  # the seat's own part
     same_key: bool  # the part is in the seat's key (transposition), so it reads without transposing
+    takes: str | None = None  # the lineup's part the seat's own part replaces (a trumpet takes the lead; with_seat)
 
 
 def seat_by_id(seat: str) -> Seat:
@@ -409,9 +424,25 @@ def seat_part(lineup: str | None, seat: str) -> SeatPart:
     if name is None:
         return SeatPart(None, False, False)
     # As the player reads them by default: a bass-clef reader gets the mapped part at concert pitch.
-    mine = reading_instrument(s.band_part.instrument, s.default_reading)
+    mine = reading_instrument(s.own_part.instrument, s.default_reading)
     theirs = reading_instrument(LINEUPS[key].by_name(name).instrument, s.default_reading)
-    return SeatPart(name, name == s.part, mine.chromatic % 12 == theirs.chromatic % 12)
+    same_key = mine.chromatic % 12 == theirs.chromatic % 12
+    band = LINEUPS[key]
+    if s.part in SEAT_OWN_PARTS and name == band.lead and not band.satb:
+        # A seat whose own part is not in the lineup takes the lineup's lead: the part is theirs.
+        return SeatPart(s.part, False, same_key, takes=name)
+    return SeatPart(name, name == s.part, same_key)
+
+
+def with_seat(lineup: Lineup, key: str, seat: str) -> Lineup:
+    """`lineup` (option value `key`) with the part the seat takes (seat_part(...).takes) replaced by the
+    seat's own part, keeping its players, and the lead with it: a trumpet player's band."""
+    sp = seat_part(key, seat)
+    if sp.takes is None or not lineup.has(sp.takes):
+        return lineup
+    own = seat_by_id(seat).own_part
+    parts = [replace(own, players=p.players) if p.name == sp.takes else p for p in lineup.parts]
+    return replace(lineup, parts=parts, lead=own.name if lineup.lead == sp.takes else lineup.lead)
 
 
 def check_reads(seat: str | None, reads: str | None) -> None:
@@ -443,7 +474,7 @@ def seat_lineup(seat: str, reads: str | None = None) -> Lineup:
     check_reads(seat, reads)
     if not seat_by_id(seat).reads:
         raise ValueError(PERCUSSION_SOLO)
-    band = seat_by_id(seat).band_part
+    band = seat_by_id(seat).own_part
     part = replace(band, instrument=reading_instrument(band.instrument, reads))
     return Lineup(part.name, [part], lead=part.name, bass=part.name, second_bass=None, as_played=True)
 
@@ -464,7 +495,7 @@ def with_reading(lineup: Lineup, seat: str, part: str | None, reads: str | None)
 
 # Instruments whose part sits on top of the band: with the tune on one of them, the inner parts are
 # voiced under it; with the tune lower down (a euphonium or horn solo), the band keeps its own top.
-TOP_INSTRUMENTS = ("bb-cornet", "eb-soprano-cornet", "flugelhorn")
+TOP_INSTRUMENTS = ("bb-cornet", "bb-trumpet", "eb-soprano-cornet", "flugelhorn")
 
 
 def lead_lineup(lineup: Lineup, seat: str) -> Lineup:
@@ -476,9 +507,12 @@ def lead_lineup(lineup: Lineup, seat: str) -> Lineup:
     if lineup.satb:
         raise ValueError("the quartet keeps the tune on its 1st Cornet; lead=seat is for the band lineups")
     key = next((k for k, v in LINEUPS.items() if v.name == lineup.name), "band")
-    part = seat_part(key, seat).part
+    sp = seat_part(key, seat)
+    part = sp.part
     if part is None:
         raise ValueError(f"the {lineup.name.lower()} has no part for the seat {seat}")
+    if sp.takes is not None and sp.takes == lineup.lead:
+        return with_seat(lineup, key, seat)  # the seat takes the lead part: the tune is theirs already
     if part == lineup.lead:
         return lineup
     if part in (lineup.bass, lineup.second_bass) or not {Role.MELODY, Role.SOLO} & lineup.by_name(part).instrument.roles:

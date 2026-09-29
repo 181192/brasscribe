@@ -43,7 +43,8 @@ public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool Fre
 /// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
 /// <param name="Exact">The seat's own part.</param>
 /// <param name="SameKey">The part is in the seat's key, so it reads without transposing.</param>
-public sealed record SeatPart(string? Part, bool Exact, bool SameKey);
+/// <param name="Takes">The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands); null for a band seat.</param>
+public sealed record SeatPart(string? Part, bool Exact, bool SameKey, string? Takes = null);
 
 /// <summary>Where one part comes from: "your-recording", "recording" or "arranged".</summary>
 public readonly record struct PartSource(string Part, string Source);
@@ -333,7 +334,8 @@ public static class BrasscribeCore
         var r = doc.RootElement;
         var part = r.GetProperty("part");
         return new SeatPart(part.ValueKind == JsonValueKind.Null ? null : part.GetString(), r.GetProperty("exact").GetBoolean(),
-            r.GetProperty("same_key").GetBoolean());
+            r.GetProperty("same_key").GetBoolean(),
+            r.TryGetProperty("takes", out var takes) && takes.ValueKind == JsonValueKind.String ? takes.GetString() : null);
     }
 
     /// <summary>Where each part of a Composition's arrangement comes from, in score order.</summary>

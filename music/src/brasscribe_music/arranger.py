@@ -503,7 +503,7 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
     """The lineup a Composition is arranged for (as recorded in `comp.arrangement`), and whether
     the layered arranger makes it (its voices carry layers)."""
     from .instruments import (BRASS_BAND, QUARTET, lead_lineup, lineup_by_name, lineup_key, seat_lineup, seat_part,
-                              with_reading)
+                              with_reading, with_seat)
 
     opts = comp.arrangement or {}
     seat, reads = opts.get("seat"), opts.get("reads")
@@ -519,7 +519,9 @@ def composition_lineup(comp: Composition) -> tuple[Lineup, bool]:
             # Anything but a known lineup arranges for the band, as before lineups carried their roles.
             lineup = BRASS_BAND
     if seat:
-        lineup = with_reading(lineup, seat, seat_part(lineup_key(lineup), seat).part, reads)
+        key = lineup_key(lineup)
+        lineup = with_seat(lineup, key, seat)
+        lineup = with_reading(lineup, seat, seat_part(key, seat).part, reads)
         if opts.get("lead") == "seat":
             try:
                 lineup = lead_lineup(lineup, seat)
@@ -652,7 +654,7 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
     return None
 
 
-BAND_LEADS = ("Solo Cornet",)  # the band lineups' own lead
+BAND_LEADS = ("Solo Cornet", "Trumpet")  # the band lineups' own lead (a trumpet player's: with_seat)
 
 
 def counter_part(lineup: Lineup) -> str | None:

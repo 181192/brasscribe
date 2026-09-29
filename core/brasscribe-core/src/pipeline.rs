@@ -370,7 +370,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         }
     }
     let (lo, hi) = match &opts.seat {
-        Some(s) if solo_take => crate::instruments::seat_by_id(s)?.band_part().instrument.pro,
+        Some(s) if solo_take => crate::instruments::seat_by_id(s)?.own_part().instrument.pro,
         _ => SOLO_WINDOW,
     };
     if let (Some(s), false) = (&opts.seat, solo_take) {

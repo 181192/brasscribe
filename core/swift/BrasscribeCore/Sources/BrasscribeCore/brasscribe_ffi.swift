@@ -2453,6 +2453,11 @@ public struct SeatPart: Equatable, Hashable {
      * The part is in the seat's key (transposition), so it reads without transposing.
      */
     public var sameKey: Bool
+    /**
+     * The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands): the
+     * score writes `part` in its place. None for every band seat.
+     */
+    public var takes: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -2465,10 +2470,15 @@ public struct SeatPart: Equatable, Hashable {
          */exact: Bool, 
         /**
          * The part is in the seat's key (transposition), so it reads without transposing.
-         */sameKey: Bool) {
+         */sameKey: Bool, 
+        /**
+         * The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands): the
+         * score writes `part` in its place. None for every band seat.
+         */takes: String?) {
         self.part = part
         self.exact = exact
         self.sameKey = sameKey
+        self.takes = takes
     }
 
     
@@ -2489,7 +2499,8 @@ public struct FfiConverterTypeSeatPart: FfiConverterRustBuffer {
             try SeatPart(
                 part: FfiConverterOptionString.read(from: &buf), 
                 exact: FfiConverterBool.read(from: &buf), 
-                sameKey: FfiConverterBool.read(from: &buf)
+                sameKey: FfiConverterBool.read(from: &buf), 
+                takes: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -2497,6 +2508,7 @@ public struct FfiConverterTypeSeatPart: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.part, into: &buf)
         FfiConverterBool.write(value.exact, into: &buf)
         FfiConverterBool.write(value.sameKey, into: &buf)
+        FfiConverterOptionString.write(value.takes, into: &buf)
     }
 }
 
@@ -3975,7 +3987,7 @@ public func seatPart(lineup: String, seat: String)throws  -> SeatPart  {
 })
 }
 /**
- * The 18 seats of the contest band, in score order.
+ * The seats: the 18 of the contest band in score order, then the trumpet (it takes the lead part).
  */
 public func seats() -> [SeatInfo]  {
     return try!  FfiConverterSequenceTypeSeatInfo.lift(try! rustCall() {
@@ -4109,7 +4121,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_seat_part() != 14392) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_seats() != 39596) {
+    if (uniffi_brasscribe_ffi_checksum_func_seats() != 38330) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 24205) {

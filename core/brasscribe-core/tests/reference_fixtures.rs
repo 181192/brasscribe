@@ -255,6 +255,7 @@ fn seats_match_reference() {
         assert_eq!(sp.part, c["part"].as_str(), "{c}");
         assert_eq!(sp.exact, c["exact"].as_bool().unwrap(), "{c}");
         assert_eq!(sp.same_key, c["same_key"].as_bool().unwrap(), "{c}");
+        assert_eq!(sp.takes, c["takes"].as_str(), "{c}");
     }
 }
 

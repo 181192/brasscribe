@@ -282,7 +282,8 @@
                   "euphonium",
                   "eb-bass",
                   "bb-bass",
-                  "percussion"
+                  "percussion",
+                  "trumpet"
                 ],
                 "type": "string"
               },
@@ -936,6 +937,18 @@
             "title": "Auth Required",
             "type": "boolean"
           },
+          "build": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "which build is running: the commit and workspace stamp of an installed engine, the commit of a checkout; null when unknown",
+            "title": "Build"
+          },
           "device": {
             "description": "accelerator torch adapters use on this host: cuda, mps or cpu",
             "title": "Device",
@@ -1252,7 +1265,8 @@
                   "euphonium",
                   "eb-bass",
                   "bb-bass",
-                  "percussion"
+                  "percussion",
+                  "trumpet"
                 ],
                 "type": "string"
               },

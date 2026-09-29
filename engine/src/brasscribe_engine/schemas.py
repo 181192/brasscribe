@@ -12,7 +12,7 @@ Difficulty = Literal["faithful", "standard", "easier"]
 # The player's seat: one of the contest band's parts (brasscribe_music.instruments.SEATS).
 Seat = Literal["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn",
                "solo-horn", "1st-horn", "2nd-horn", "1st-baritone", "2nd-baritone", "1st-trombone",
-               "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion"]
+               "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion", "trumpet"]
 Reads = Literal["treble", "bass"]
 Lead = Literal["lineup", "seat"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]

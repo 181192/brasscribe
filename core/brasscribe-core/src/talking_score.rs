@@ -829,6 +829,7 @@ pub fn nb_part_name(name: &str) -> &str {
         "E♭ Bass" => "Ess-bass",
         "B♭ Bass" => "B-bass",
         "Percussion" => "Slagverk",
+        "Trumpet" => "Trompet",
         other => other,
     }
 }
@@ -838,6 +839,7 @@ pub fn instrument_nb(en: &str) -> String {
     for (a, b) in [
         ("Soprano Cornet", "sopran-kornett"),
         ("Cornet", "kornett"),
+        ("Trumpet", "trompet"),
         ("Flugelhorn", "flygelhorn"),
         ("Tenor Horn", "althorn"),
         ("Horn", "althorn"),

@@ -214,14 +214,15 @@ fn str_of(opts: &serde_json::Value, key: &str) -> Option<String> {
     opts.get(key).and_then(|v| v.as_str()).map(String::from)
 }
 
-/// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool}`
+/// The player's part in a lineup: writes `{"part": "Euphonium" | null, "exact": bool, "same_key": bool,
+/// "takes": "Solo Cornet" | null}`
 /// to `*out` for `lineup` ("band", "minimal", "quartet") and `seat` (an id of [`bc_seats`]).
 #[no_mangle]
 pub unsafe extern "C" fn bc_seat_part(lineup: *const c_char, seat: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     let (Some(lineup), Some(seat)) = (from_c(lineup), from_c(seat)) else { return BC_NULL };
     run(out, err, || {
         let sp = crate::seat_part(lineup, seat).map_err(map_err)?;
-        Ok(serde_json::json!({"part": sp.part, "exact": sp.exact, "same_key": sp.same_key}).to_string())
+        Ok(serde_json::json!({"part": sp.part, "exact": sp.exact, "same_key": sp.same_key, "takes": sp.takes}).to_string())
     })
 }
 
@@ -237,7 +238,7 @@ pub unsafe extern "C" fn bc_part_sources(composition_json: *const c_char, out: *
     })
 }
 
-/// The seats of the contest band, in score order: writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
+/// The seats (the contest band's in score order, then the trumpet): writes `[{"id": "2nd-cornet", "name": "2nd Cornet",
 /// "nb_name": "2. kornett", "instrument": "bb-cornet", "clef": "treble", "reads": ["treble"], "tune": true}, ...]` to `*out`.
 #[no_mangle]
 pub unsafe extern "C" fn bc_seats(out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
