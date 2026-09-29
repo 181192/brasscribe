@@ -120,8 +120,8 @@ public class PlaybackLevelTests(ITestOutputHelper log)
         {
             var (estimate, notes) = Estimate(golden);
             log.WriteLine($"golden: {notes} pitched notes, estimate {estimate:0.000}");
-            // sounds/playback_levels.py --calibrate: -11.82, the measured -11.8 of Golden_arrangement_plays_at_the_recording_target
-            if (Math.Abs(estimate!.Value + 11.82) > 0.1) wrong.Add("golden");
+            // sounds/playback_levels.py --calibrate: -11.54, the measured -11.54 of Golden_arrangement_plays_at_the_recording_target
+            if (Math.Abs(estimate!.Value + 11.54) > 0.1) wrong.Add("golden");
         }
         Assert.Empty(wrong);
     }

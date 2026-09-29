@@ -6,15 +6,19 @@
     "ceiling": 0.98
   },
   "band": {
-    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. Every app plays the score's dynamics (see dynamics), so a whole arrangement lands at the same level everywhere: arrangement_lufs is the Mikkel golden score, -11.8 LUFS on Windows (alphaSynth) and within 1 LU of it on Apple.",
+    "about": "Calibration: the full-band test phrase (sounds/phrases.py, phrases.json 'band') played through each app's band path lands at phrase_lufs within tolerance_lu, peaking at or below the ceiling. gain_db is each path's make-up gain before the limiter, measured, because the synths leave the band at different levels. Every app plays the score's dynamics (see dynamics), so a whole arrangement lands at the same level everywhere: arrangement_lufs is the Mikkel golden score, -11.54 LUFS on Windows (alphaSynth) and within 1 LU of it on Apple (-12.08).",
     "phrase_lufs": -12.0,
     "tolerance_lu": 1.0,
-    "arrangement_lufs": -11.8,
+    "arrangement_lufs": -11.54,
     "gain_db": {
-      "apple": 26.0,
-      "android_alphatab": 4.0,
+      "apple": 31.5,
+      "android_alphatab": 5.0,
       "android_sfizz": 4.0,
-      "windows": 4.0
+      "windows": 5.0
+    },
+    "dry_room_gain_db": {
+      "about": "Apple only: added to the make-up gain when \"Concert hall sound\" is off, so the band keeps its loudness without the hall. The hall's share of the band's loudness, measured on the golden arrangement and the Old Hundredth fixture (hall minus room).",
+      "apple": 5.0
     }
   },
   "dynamics": {
@@ -59,22 +63,22 @@
       "apple_pitched": [[1, 8], [3, 15], [5, 19], [10, 27], [15, 33], [31, 47], [47, 55], [63, 65], [79, 77], [87, 81], [95, 89], [111, 99], [127, 101]],
       "apple_percussion": [[1, 1], [3, 15], [5, 21], [10, 30], [15, 36], [31, 52], [47, 64], [63, 75], [79, 83], [87, 88], [95, 92], [111, 100], [127, 107]],
       "alphatab_lufs": {
-        "15": -46.63,
-        "31": -40.33,
-        "47": -36.71,
-        "63": -28.36,
-        "79": -24.72,
-        "95": -22.25,
-        "111": -17.04,
-        "127": -15.87
+        "15": -44.51,
+        "31": -38.2,
+        "47": -34.58,
+        "63": -28.61,
+        "79": -25.39,
+        "95": -23.36,
+        "111": -17.66,
+        "127": -16.49
       }
     }
   },
   "recording": {
     "about": "The original recording plays at the loudness the band plays the arrangement at: target = clamp(band_estimate(arrangement), min_target_lufs, max_target_lufs), or fallback_lufs when there is no arrangement or it has no pitched note. The recording is measured once, as a whole (EBU R128 integrated, whole file, a mono file measured as dual mono because it plays from both speakers). gain = clamp(target - measured, -max_cut_db, max_boost_db); 0 when the file is silent. The limiter follows the gain, so a boost cannot clip.",
     "band_estimate": {
-      "about": "Estimated integrated LUFS of the band playing an arrangement, from its dynamics and how many parts sound at once: estimate = offset_db + 10*log10(sum over notes of d * 10^(L(v)/10) / U). The notes: every pitched note of every part (percussion parts are left out; each note of a chord counts, grace notes do not), d its length in quarter notes of score time (tempo is not read), v the velocity it plays at by the dynamics rules (the mark in effect plus accents, before any per-synth velocity correction). L(v): dynamics.sampler_velocity.alphatab_lufs, linear between its knots, L(lowest) + 20*log10(v/lowest) below the lowest knot, L(highest) above the highest. U: the length of score time in which at least one pitched note sounds. More parts sounding at once, or louder marks, raise the estimate by the energy they add. offset_db is fitted on the Mikkel golden arrangement (-11.8 LUFS measured with its dynamics on Windows; estimate -11.82) and checked on the full-band phrase (band.phrase_lufs -12.0; estimate -11.90) and on the golden at one velocity, 80 (-15.95 measured on Apple; estimate -15.97).",
-      "offset_db": -1.2
+      "about": "Estimated integrated LUFS of the band playing an arrangement, from its dynamics and how many parts sound at once: estimate = offset_db + 10*log10(sum over notes of d * 10^(L(v)/10) / U). The notes: every pitched note of every part (percussion parts are left out; each note of a chord counts, grace notes do not), d its length in quarter notes of score time (tempo is not read), v the velocity it plays at by the dynamics rules (the mark in effect plus accents, before any per-synth velocity correction). L(v): dynamics.sampler_velocity.alphatab_lufs, linear between its knots, L(lowest) + 20*log10(v/lowest) below the lowest knot, L(highest) above the highest. U: the length of score time in which at least one pitched note sounds. More parts sounding at once, or louder marks, raise the estimate by the energy they add. offset_db is fitted on the Mikkel golden arrangement (-11.54 LUFS measured with its dynamics on Windows with the sounds-2026.09.29 pack; estimate -11.54) and checked on the full-band phrase (-12.90 measured on Windows, band.phrase_lufs -12.0; estimate -11.46). The phrase's tutti lost more to the desk variants (unisons now add like two players) than the golden's soloist-led texture, which is why the two no longer fit within 0.1 LU.",
+      "offset_db": -0.17
     },
     "fallback_lufs": -16.0,
     "min_target_lufs": -20.0,
@@ -88,8 +92,8 @@
     "tolerance_db": 1.5,
     "gain_db": {
       "apple": 0.0,
-      "android_alphatab": 0.0,
-      "windows": 0.0
+      "android_alphatab": -1.0,
+      "windows": -1.0
     }
   }
 }

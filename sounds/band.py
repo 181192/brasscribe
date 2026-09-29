@@ -165,13 +165,37 @@ class Bank:
             if pz.ref is None:
                 zones.append(sf2.RawZone(pz.gens, pz.mods, None))
                 continue
-            for lo, hi in key_ranges_without(exclude):
-                gens = [g for g in pz.gens if g[0] != G_KEY_RANGE]
-                if exclude:
-                    gens = [(G_KEY_RANGE, (hi << 8) | lo)] + gens
-                zones.append(sf2.RawZone(gens, pz.mods, inst_map[pz.ref]))
+            # Keys are left out inside the instrument, not with preset-level key ranges: AVAudioUnitSampler
+            # ignores a preset zone's key range and would sound every split copy of the instrument at once.
+            zones.append(sf2.RawZone(pz.gens, pz.mods, self._without_keys(inst_map[pz.ref], exclude)))
         zones.extend(extra)
         self.presets.append(sf2.RawPreset(name or f"{preset.name} kit", program if as_program is None else as_program, 128, zones))
+
+    def _without_keys(self, index: int, exclude) -> int:
+        """A copy of instrument `index` whose zones leave out the keys in `exclude` (the same samples)."""
+        if not exclude:
+            return index
+        key = f"without/{index}/{sorted(exclude)}"
+        if key in self._inst_index:
+            return self._inst_index[key]
+        src = self.instruments[index]
+        zones = []
+        for z in src.zones:
+            g = dict(z.gens)
+            if z.ref is None:
+                zones.append(z)
+                continue
+            kr = g.get(G_KEY_RANGE, 127 << 8)
+            lo, hi = kr & 0xFF, kr >> 8
+            for a, b in _runs([k for k in range(lo, hi + 1) if k not in exclude]):
+                gens = [(G_KEY_RANGE, (b << 8) | a)] + [x for x in z.gens if x[0] != G_KEY_RANGE]
+                zones.append(sf2.RawZone(gens, z.mods, z.ref))
+        if len(zones) == len(src.zones) and all(a is b for a, b in zip(zones, src.zones)):
+            self._inst_index[key] = index  # nothing to leave out
+            return index
+        self._inst_index[key] = len(self.instruments)
+        self.instruments.append(sf2.RawInstrument(src.name[:15] + " band", zones))
+        return self._inst_index[key]
 
     def band_kit(self, program: int = 0) -> None:
         """The band kit: MS Basic Standard with VSCO 2 CE concert bass drum, snare and clash cymbals."""
@@ -200,8 +224,7 @@ class Bank:
                 lovel = hivel + 1
         self.instruments.append(sf2.RawInstrument("VSCO concert perc", izones))
         replaced = {k for keys, *_ in KIT for k in keys}
-        extra = [sf2.RawZone([(G_KEY_RANGE, (hi << 8) | lo)], [], len(self.instruments) - 1)
-                 for lo, hi in _runs(sorted(replaced))]
+        extra = [sf2.RawZone([], [], len(self.instruments) - 1)]  # its zones are on the replaced keys only
         self.drum_kit(MSBASIC, 0, as_program=program, name="Band kit", exclude=replaced, extra=extra)
 
 
@@ -217,10 +240,6 @@ def _runs(keys: list[int]) -> list[tuple[int, int]]:
         else:
             out.append((k, k))
     return out
-
-
-def key_ranges_without(exclude) -> list[tuple[int, int]]:
-    return _runs([k for k in range(128) if k not in exclude])
 
 
 def load_drum(path: Path, keep_s: float, highpass: float | None = None) -> np.ndarray:

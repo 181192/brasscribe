@@ -74,6 +74,16 @@ public final class PlaybackEngine {
     /// would (its reverb is strongest where the band's energy is): measured on the Mikkel
     /// band render, 14.5 dB wet at unit gain with a 4.5 dB send, so 10 dB.
     public static let roomColorationDB = 10.0
+    /// "Concert hall sound" without a room IR (the app): the environment node's medium hall at this
+    /// level, with sampler reverb blend `hallReverbBlend`. Set so the hall adds about as much as the
+    /// reference renderer's calibrated room (wet 4.5 dB over the direct sound, sounds/render.py); at
+    /// -6 dB it was 9 dB over, and the band's low end smeared into the reverb.
+    public static let hallReverbLevelDB = -10.7
+    public static let hallReverbBlend: Float = 0.35
+    /// Low shelf on the hall reverb's output: real halls hold their bass longer than their mids, but
+    /// the medium hall preset on a band already +2 to +3 dB heavy at 63-125 Hz adds boom, not space.
+    public static let hallLowShelfHz = 250.0
+    public static let hallLowShelfDB = -4.0
     /// The convolution reverb, when a room IR is loaded.
     public private(set) var convolution: ConvolutionReverbAU?
     public var usesRoomIR: Bool { convolution != nil }
@@ -85,7 +95,7 @@ public final class PlaybackEngine {
     /// at about −10 dBFS on its own; the original recording has its own stage.
     public static let defaultOutputGainDB = PlaybackLevels.bandGainDB
     public var outputGainDB: Double = PlaybackEngine.defaultOutputGainDB {
-        didSet { outputStage?.kernel.gain = Float(pow(10, outputGainDB / 20)) }
+        didSet { applyStageGain() }
     }
     let bandBus = AVAudioMixerNode()
     let recordingBus = AVAudioMixerNode()
@@ -122,7 +132,7 @@ public final class PlaybackEngine {
         engine.connect(bandBus, to: stage, format: stereo)
         engine.connect(stage, to: main, format: stereo)
         outputStage = stage.auAudioUnit as? OutputStageAU
-        outputStage?.kernel.gain = Float(pow(10, outputGainDB / 20))
+        applyStageGain()
         let out = bandBus
         if let irURL = roomIR, let (ch, sr) = try? RoomIR.load(irURL) {
             // Direct sound from the environment node, reverberant field from the room IR.
@@ -144,7 +154,12 @@ public final class PlaybackEngine {
         environment.listenerPosition = AVAudio3DPoint(x: 0, y: 0, z: 0)
         environment.reverbParameters.enable = true
         environment.reverbParameters.loadFactoryReverbPreset(.mediumHall)
-        environment.reverbParameters.level = -6
+        environment.reverbParameters.level = Float(Self.hallReverbLevelDB)
+        // the hall's low end: a shelf on the reverb only, so held bass notes do not bloom in it
+        environment.reverbParameters.filterParameters.filterType = .lowShelf
+        environment.reverbParameters.filterParameters.frequency = Float(Self.hallLowShelfHz)
+        environment.reverbParameters.filterParameters.gain = Float(Self.hallLowShelfDB)
+        environment.reverbParameters.filterParameters.bypass = false
 
         let mono = AVAudioFormat(standardFormatWithSampleRate: out.outputFormat(forBus: 0).sampleRate > 0
                                  ? out.outputFormat(forBus: 0).sampleRate : 44100, channels: 1)
@@ -162,7 +177,7 @@ public final class PlaybackEngine {
             let dist = own?.distance ?? seat.distance
             s.position = AVAudio3DPoint(x: Float(dist * sin(az)), y: 0, z: Float(-dist * cos(az)))
             s.renderingAlgorithm = .HRTFHQ
-            s.reverbBlend = 0.35
+            s.reverbBlend = Self.hallReverbBlend
             samplers[key] = s
             if soundBank.load(into: s, part: part) { loadedInstruments += 1 }
         }
@@ -580,8 +595,16 @@ public final class PlaybackEngine {
     private func applyRoom() {
         // the environment node's hall reverb stands in only when no room IR is loaded
         environment.reverbParameters.enable = roomOn && convolution == nil
-        for s in samplers.values { s.reverbBlend = roomOn && convolution == nil ? 0.35 : 0 }
+        for s in samplers.values { s.reverbBlend = roomOn && convolution == nil ? Self.hallReverbBlend : 0 }
         convolution?.kernel.enabled = roomOn
+        applyStageGain()
+    }
+
+    /// The band stage's make-up gain: `outputGainDB`, plus PlaybackLevels.dryRoomGainDB when the hall
+    /// is off (without a room IR), so switching "Concert hall sound" keeps the band's loudness.
+    private func applyStageGain() {
+        let dry = !roomOn && convolution == nil ? PlaybackLevels.dryRoomGainDB : 0
+        outputStage?.kernel.gain = Float(pow(10, (outputGainDB + dry) / 20))
     }
 
     /// Place a section's parts (azimuth in degrees, negative = left of the conductor; distance in m).

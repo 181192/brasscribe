@@ -142,9 +142,9 @@ def make_loop(x: np.ndarray, vibrato: bool = False) -> tuple[np.ndarray, tuple[i
     comes within `rise` dB; a slow swell (a pp note that grows) gets a wider window. Inside it the
     loop (0.6-2 s) is placed where the level and brightness at its two ends match best, longer
     loops preferred; a vibrato sample's loop is a whole number of vibrato cycles, placed where the
-    pitch deviation and its direction match at both ends. The loop body is then held at the level
-    it starts with (a gain curve smoothed over 300 ms, at most 6 dB), so a held note neither
-    decays nor swells once per loop, and the seam has no level step."""
+    pitch deviation and its direction match at both ends. Before that the sustain is held at the level
+    of its first half second (a gain curve smoothed over 300 ms, at most 6 dB), so a held note neither
+    fades from its onset level nor decays or swells once per loop, and the seam has no level step."""
     for rise, drop in ((3, 9), (6, 12), (9, 15)):
         r = _loop_window(x, rise, drop)
         if r is not None:
@@ -154,7 +154,15 @@ def make_loop(x: np.ndarray, vibrato: bool = False) -> tuple[np.ndarray, tuple[i
     a_frame, b_frame = r
     hop = int(0.01 * SR)
     a_min, b_max = a_frame * hop, b_frame * hop
+    # hold the sustain at the level of its first half second: a slow gain curve (300 ms smoothing, at most
+    # FLAT_MAX_DB), faded in over 200 ms from where the sustain starts, so the attack is left as recorded
+    env = _moving_rms(x, int(FLAT_WIN_S * SR))
+    ref = float(np.median(env[a_min: min(len(x), a_min + int(0.5 * SR))]))
+    g = np.clip(ref / env, 10 ** (-FLAT_MAX_DB / 20), 10 ** (FLAT_MAX_DB / 20))
+    ramp = np.clip((np.arange(len(x)) - a_min) / (0.2 * SR), 0.0, 1.0)
+    x = x * (1 + ramp * (g - 1))
     lvl = 20 * np.log10(_moving_rms(x, int(FLAT_WIN_S * SR)) + 1e-12)
+    lvl_hop = lvl[::hop]
     cen = _centroid_track(x, hop)
     vib = _vibrato(x, hop) if vibrato else None
     if vib is not None:
@@ -170,7 +178,11 @@ def make_loop(x: np.ndarray, vibrato: bool = False) -> tuple[np.ndarray, tuple[i
             if a < a_min:
                 continue
             ia, ib = a // hop, min(b // hop, len(cen) - 1)
-            cost = abs(lvl[b] - lvl[a]) + 20 * abs(np.log(cen[ib] / max(cen[ia], 1.0))) - 0.5 * n / SR
+            # prefer longer loops, but not later ones: the sample is cut after the loop end, so a later
+            # end only makes the SoundFont bigger
+            body = lvl_hop[ia: ib + 1]  # and no dip or swell the flattening could not smooth out inside the loop
+            cost = (abs(lvl[b] - lvl[a]) + 20 * abs(np.log(cen[ib] / max(cen[ia], 1.0))) - 0.5 * n / SR
+                    + 0.3 * (b - a_min) / SR + (float(body.max() - body.min()) if len(body) else 0.0))
             if vib is not None:
                 ib = min(ib, len(dev) - 2)
                 slope_a, slope_b = dev[ia + 1] - dev[ia - 1], dev[ib + 1] - dev[ib - 1]
@@ -193,14 +205,10 @@ def make_loop(x: np.ndarray, vibrato: bool = False) -> tuple[np.ndarray, tuple[i
         if c > best_c:
             best_c, best_a = c, cand
     a = best_a
-    # hold the loop body at the level it starts with
     y = x[: b + 64].copy()
-    env = _moving_rms(x, int(FLAT_WIN_S * SR))
-    g = np.clip(env[a] / env[a : b + 64], 10 ** (-FLAT_MAX_DB / 20), 10 ** (FLAT_MAX_DB / 20))
-    y[a : b + 64] *= g
     xf = min(int(0.12 * SR), (b - a) // 2, a)
     t = np.linspace(0, 1, xf)
-    y[b - xf : b] = y[b - xf : b] * (1 - t) + x[a - xf : a] * t
+    y[b - xf : b] = x[b - xf : b] * (1 - t) + x[a - xf : a] * t
     return y, (a, b)
 
 
@@ -379,7 +387,7 @@ def build_target(tid: str, spec: dict, notes: list[dict]) -> dict:
                 audio_of.append(apply_fir(y, fir) if fir is not None else y)
             extensions.append({"source": ext, "notes": sorted({n["midi"] for n in fill}), "match": info})
         layers = raw_layers["primary"]
-        dyns = LAYER_DYNAMICS[len(layers)]
+        dyns = (spec.get("dynamics") if art == "sus" else None) or LAYER_DYNAMICS[len(layers)]  # a target may name its sustain layers
         vels = velocity_ranges(dyns)
         lidx = [layer_of(n, raw_layers, len(dyns)) for n in chosen]
         scaled = [y * 10 ** ((DYN_LEVEL_DB[dyns[lidx[i]]] - (body_db(y) if art == "sus" else loudest_window_db(y, win=0.08))) / 20)
