@@ -296,9 +296,14 @@ build_host() {
   # the band sounds are bundled at build time from data/sounds/band; a worktree borrows the main checkout's
   if [ ! -e "$ROOT/data/sounds/band" ] && [ -n "$BAND" ]; then mkdir -p "$ROOT/data/sounds"; ln -s "$BAND" "$ROOT/data/sounds/band"; fi
   log "building for testing on the host"
-  (cd "$ROOT/apps/apple" && xcodegen generate >/dev/null \
+  local blog="$OUT/host-build.log"; mkdir -p "$OUT"
+  # a failed build must stop the run: the VMs would otherwise test the previous build's products
+  if ! (cd "$ROOT/apps/apple" && xcodegen generate >/dev/null \
     && xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath "$HOST_DERIVED" -scheme BrasscribePlay-macOS-UITests \
-         -destination platform=macOS build-for-testing -quiet 2>&1 | grep -E "error:|FAILED" >&2) || true
+         -destination platform=macOS build-for-testing -quiet >"$blog" 2>&1); then
+    grep -E "error:|FAILED" "$blog" >&2 || tail -20 "$blog" >&2
+    echo "error: build-for-testing failed (log: ${blog#$ROOT/})" >&2; exit 1
+  fi
   XCTESTRUN="$(ls -t "$HOST_DERIVED"/Build/Products/*.xctestrun 2>/dev/null | head -1)"
   [ -n "$XCTESTRUN" ] || { echo "error: build-for-testing produced no .xctestrun" >&2; exit 1; }
 }
