@@ -24,11 +24,24 @@ tag="v$version"
 git fetch -q origin main --tags
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "main is not at origin/main; pull first" >&2; exit 1; }
 git rev-parse -q --verify "refs/tags/$tag" >/dev/null && { echo "$tag already exists" >&2; exit 1; }
-email=$(git config user.email)
-case $email in *dnb.no|*dnbcarnegie*|"") echo "git user.email is '$email'; set this repo's email first (see AGENTS.md)" >&2; exit 1 ;; esac
+# The release commit carries the committer's email into the public history: it must be the one the
+# previous release was made with, so a clone with some other default identity can't slip in.
+email=$(git config user.email || true)
+previous=$(git log -1 --format=%ae --grep='^chore(release): ' || true)
+if [ -z "$email" ] || { [ -n "$previous" ] && [ "$email" != "$previous" ] && [ "${RELEASE_NEW_IDENTITY:-}" != 1 ]; }; then
+  echo "git user.email is '$email', the last release was made as '$previous'." >&2
+  echo "Set this repository's email (git config user.email ...), or RELEASE_NEW_IDENTITY=1 if the change is intended." >&2
+  exit 1
+fi
+
+# The new version must be higher than the current one.
+gradle=apps/android/app/build.gradle.kts
+current=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
+if [ "$version" = "$current" ] || [ "$(printf '%s\n%s\n' "$current" "$version" | sort -V | tail -1)" != "$version" ]; then
+  echo "version $version is not higher than the current $current" >&2; exit 1
+fi
 
 # The build number goes up by one on every release; Android's versionCode is where it is kept.
-gradle=apps/android/app/build.gradle.kts
 build=$(( $(sed -nE 's/^ *versionCode = ([0-9]+).*/\1/p' "$gradle") + 1 ))
 sed -i.bak -E "s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/" "$gradle"
 for y in apps/apple/project.yml apps/bandroom/macos/project.yml; do
@@ -45,8 +58,8 @@ echo "Release notes for $tag:"
 git-cliff --latest --strip header 2>/dev/null
 
 if [ "$push" = --push ]; then
-  git push -q origin main "$tag"
+  git push -q --atomic origin main "$tag"
   echo "Pushed. The release workflow is building $tag: gh run list -w release -L 1"
 else
-  echo "Ready. Push to start the release: git push origin main $tag"
+  echo "Ready. Push to start the release: git push --atomic origin main $tag"
 fi
