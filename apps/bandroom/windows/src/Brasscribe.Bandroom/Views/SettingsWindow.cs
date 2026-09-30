@@ -1,5 +1,6 @@
 using Brasscribe.Bandroom.Core;
 using Brasscribe.Bandroom.Core.Appearance;
+using Brasscribe.Bandroom.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -21,13 +22,14 @@ public interface ISettingsHost
     bool HuggingFaceKeySaved { get; }
     /// <returns>False when Credential Manager refused.</returns>
     bool SaveHuggingFaceKey(string key);
-    /// <summary>The MuScriptor page on Hugging Face, where the licence is accepted.</summary>
+    /// <summary>The MuScriptor page on Hugging Face, where the licence is accepted and the full terms are.</summary>
     void OpenModelPage();
 }
 
 /// <summary>
 /// Settings (server-app.md, "Settings page in the window"): SettingsCard-style rows for Name shown to phones
-/// (only when the device name looks machine-made, or one is set), Hugging Face access, Appearance
+/// (only when the device name looks machine-made, or one is set), Hugging Face access (the band writer's terms,
+/// accepted before a key is saved, since saving starts its download), Appearance
 /// (design/system.md §10) and Start when I log in. Appearance is a ComboBox, as in Windows Settings ›
 /// Personalisation › Choose your mode; it applies at once, and focus stays on it.
 /// </summary>
@@ -64,14 +66,23 @@ internal sealed class SettingsWindow : Window
         }
 
         // ----- Hugging Face access -----
+        var hf = new HuggingFaceKeyViewModel(s);
         var hfHeader = new TextBlock { Text = s["Settings_Hf"], Style = S("StrongStyle") };
+        var licence = new TextBlock { Text = hf.Licence, Style = S("BodyStyle"), TextWrapping = TextWrapping.Wrap };
+        var terms = new TextBlock { Text = hf.Terms, Style = S("BodyStyle"), TextWrapping = TextWrapping.Wrap };
+        var agree = new CheckBox
+        {
+            Content = new TextBlock { Text = hf.Agree, TextWrapping = TextWrapping.Wrap },
+            IsEnabled = !settings.HuggingFaceKeyFromEnvironment,
+        };
+        AutomationProperties.SetName(agree, hf.Agree);
         var keyLabel = new TextBlock { Text = s["Setup_2_Key_Label"], Style = S("BodyStyle") };
         var keyBox = new PasswordBox { MinWidth = 240, IsEnabled = !settings.HuggingFaceKeyFromEnvironment };
         AutomationProperties.SetLabeledBy(keyBox, keyLabel);
         var keyNote = new TextBlock { Text = s["Settings_Hf_Note"], Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap };
         var keyState = new TextBlock { Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap };
         var saveKey = new Button { Content = s["Settings_Save"], Style = S("OutlineButtonStyle"), IsEnabled = false };
-        var openPage = new Button { Content = s["Setup_3_Licence_Fix"], Style = S("PlainButtonStyle") };
+        var openPage = new Button { Content = hf.ReadTerms, Style = S("PlainButtonStyle") };
         void ShowKey()
         {
             keyState.Text = settings.HuggingFaceKeyFromEnvironment ? s["Settings_Hf_FromEnvironment"]
@@ -79,16 +90,19 @@ internal sealed class SettingsWindow : Window
             keyState.Visibility = keyState.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         ShowKey();
-        keyBox.PasswordChanged += (_, _) => saveKey.IsEnabled = keyBox.Password.Trim().Length > 0;
+        keyBox.PasswordChanged += (_, _) => hf.Key = keyBox.Password;
+        agree.Checked += (_, _) => hf.TermsAccepted = true;
+        agree.Unchecked += (_, _) => hf.TermsAccepted = false;
+        hf.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(HuggingFaceKeyViewModel.CanSave)) saveKey.IsEnabled = hf.CanSave; };
         saveKey.Click += (_, _) =>
         {
-            if (!settings.SaveHuggingFaceKey(keyBox.Password)) return;
+            if (!hf.CanSave || !settings.SaveHuggingFaceKey(keyBox.Password)) return;
             keyBox.Password = "";
             ShowKey();
             AutomationProperties.SetHelpText(keyBox, keyState.Text);
         };
         openPage.Click += (_, _) => settings.OpenModelPage();
-        var hfCard = Stacked(hfHeader, keyNote, keyLabel, Row(keyBox, saveKey), keyState, openPage);
+        var hfCard = Stacked(hfHeader, licence, keyNote, keyLabel, keyBox, terms, agree, Row(openPage, saveKey), keyState);
 
         // ----- Appearance -----
         var appearanceHeader = new TextBlock { Text = appearance.Header, Style = S("StrongStyle") };

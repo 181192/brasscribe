@@ -76,6 +76,8 @@ NB = {
     "Brasscribe: stopped": "Brasscribe: stoppet",
     "Brasscribe: updating": "Brasscribe: oppdaterer",
     "Busy": "Travel",
+    "By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that.":
+        "Når du laster den ned, bekrefter du at du har rettighetene til musikken du lar Brasscribe skrive ned. De som laget den, ber deg ta ansvaret for det.",
     "Calm": "Rolig",
     "Cancel": "Avbryt",
     "Check that both are on the same Wi-Fi.": "Sjekk at begge er på samme wifi.",
@@ -119,6 +121,8 @@ NB = {
     "Got it": "OK",
     "Hugging Face access": "Tilgang til Hugging Face",
     "Hugging Face didn't accept the access key": "Hugging Face godtok ikke tilgangsnøkkelen",
+    "I'll use it only non-commercially, and only for music I have the rights to.":
+        "Jeg bruker den bare ikke-kommersielt, og bare til musikk jeg har rettighetene til.",
     "Increase contrast is on, so Brasscribe uses its high-contrast colours.":
         "Øk kontrast er på, så Brasscribe bruker høykontrastfargene.",
     "Instrument separator": "Instrumentskiller",
@@ -184,7 +188,7 @@ NB = {
     "QR code for pairing with Brasscribe on %@. It holds the same code: %@.":
         "QR-kode for å koble til Brasscribe på %@. Den inneholder den samme koden: %@.",
     "Quit Brasscribe Bandroom": "Avslutt Brasscribe Bandroom",
-    "Read the licence": "Les lisensen",
+    "Read the full terms": "Les alle vilkårene",
     "Ready": "Klar",
     "Ready to make scores": "Klar til å lage partitur",
     "Ready. Phones and tablets can send recordings.": "Klar. Telefoner og nettbrett kan sende opptak.",
@@ -231,8 +235,8 @@ NB = {
         "Brasscribe-merket kan være skjult bak kamerahakket. Du kan alltid åpne Brasscribe fra Launchpad, eller gi plass i Systeminnstillinger › Menylinje.",
     "The band writer isn't downloaded yet.": "Bandskriveren er ikke lastet ned ennå.",
     "The band writer needs your Hugging Face access key": "Bandskriveren trenger tilgangsnøkkelen din fra Hugging Face",
-    "The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.":
-        "Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto.",
+    "The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account.":
+        "Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto.",
     "The download stopped": "Nedlastingen stoppet",
     "The downloads need about %@ GB; %@ GB is free.": "Nedlastingene trenger omtrent %@ GB, og %@ GB er ledig.",
     "The downloads stay in %@, so installing again doesn't fetch them again.": "Nedlastingene blir liggende i %@, så en ny installasjon slipper å hente dem på nytt.",

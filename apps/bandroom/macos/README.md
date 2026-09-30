@@ -20,7 +20,8 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   After an app update it swaps in the new workspace and installs again only when `pixi.lock` changed.
 - **Models.** It downloads the three models a full-band score needs from their makers' release pages
   (`ModelCatalog.swift`). The band writer is gated on Hugging Face: the user accepts its licence with
-  their own account and pastes their key, which Bandroom keeps in the keychain.
+  their own account and pastes their key, which Bandroom keeps in the keychain. Setup shows the model's
+  terms, and Continue waits for the user to tick the box under them (`LicenceStep.swift`).
 - **Engine.** It starts `brasscribe serve --lan` on the first free port of 8765–8775, restarts it if it
   stops, and shows its state in the menu bar. The band sounds Studio plays are bundled
   (`scripts/stage-band-sounds.sh`).

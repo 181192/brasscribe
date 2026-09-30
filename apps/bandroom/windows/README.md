@@ -111,7 +111,8 @@ Axe.Windows scan of six views; screenshots (artifact `bandroom-windows-screensho
   (the separators into `models\`, the band writer into the Hugging Face hub cache) from their upstream URLs:
   progress shows in the flyout's **Ready to make scores** row, Pause and Resume are in the icon's menu, and the
   Hugging Face key (HF_TOKEN, or the one saved in Settings in Credential Manager) is asked for through a
-  Needs-attention problem.
+  Needs-attention problem. The Settings card where the key is saved shows the band writer's terms, and Save waits
+  for the box under them to be ticked.
 - Check for updates and About (the More menu has Open Studio, Start when I log in, Remove, Quit).
 - Needs-attention detection for Windows Firewall blocking and a Public network (strings and fixes are in place).
 - Actionable toast for a pair request while the Pair window is closed: an always-on-top Allow window is shown instead.

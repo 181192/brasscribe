@@ -195,6 +195,13 @@ ROWS = [
     ("Setup_3_Network_Why", "Check the internet connection, then try again. It continues where it stopped.", "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet."),
     ("Setup_3_Disk_Title", "Brasscribe couldn't save the download", "Brasscribe fikk ikke lagret nedlastingen"),  # (+) mac setup window
     ("Setup_3_Disk_Why", "Check that there's room on the drive, then try again.", "Sjekk at det er plass på disken, og prøv igjen."),  # (+) the file system's own message goes in the details
+    ("Setup_2_Body", "The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account.",
+     "Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto."),
+    ("Setup_2_Terms", "By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that.",
+     "Når du laster den ned, bekrefter du at du har rettighetene til musikken du lar Brasscribe skrive ned. De som laget den, ber deg ta ansvaret for det."),
+    ("Setup_2_Agree", "I'll use it only non-commercially, and only for music I have the rights to.",
+     "Jeg bruker den bare ikke-kommersielt, og bare til musikk jeg har rettighetene til."),
+    ("Setup_2_Read", "Read the full terms", "Les alle vilkårene"),
     ("Setup_2_Key_Label", "Access key from Hugging Face", "Tilgangsnøkkel fra Hugging Face"),
     ("Setup_Item_Listening", "Listening tools", "Lytteverktøy"),
     ("Setup_Item_Soloist", "Soloist separator", "Solistskiller"),
