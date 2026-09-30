@@ -55,8 +55,12 @@ class ScoreMemoryTest {
 
     private fun resetPeaks() { peakHeap = used(); peakNative = Debug.getNativeHeapAllocatedSize() }
 
+    private lateinit var library: LibrarySnapshot
+
     @Before
     fun setUp() {
+        assumeScreenUsable(rule.activity)
+        library = LibrarySnapshot(rule.activity)
         container.firstRunDone = true
         container.standHintShown = true
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
@@ -66,6 +70,7 @@ class ScoreMemoryTest {
     fun tearDown() {
         sampling = false
         runCatching { vm.scoreController?.let { c -> if (c.state.value.playing) rule.runOnUiThread { c.stop() } } }
+        if (::library.isInitialized) library.deleteAdded()
     }
 
     private fun gc() { repeat(3) { Runtime.getRuntime().gc(); System.runFinalization(); Thread.sleep(100) } }

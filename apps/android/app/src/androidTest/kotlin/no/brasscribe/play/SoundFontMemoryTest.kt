@@ -10,6 +10,7 @@ import no.brasscribe.play.score.BandSoundFontFile
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -29,11 +30,19 @@ class SoundFontMemoryTest {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private lateinit var activity: MainActivity
     private val vm get() = ViewModelProvider(activity)[PlayViewModel::class.java]
+    private lateinit var library: LibrarySnapshot
 
     @Before
     fun setUp() {
         scenario.scenario.onActivity { activity = it }
+        assumeScreenUsable(activity)
+        library = LibrarySnapshot(activity)
         (activity.application as PlayApplication).container.firstRunDone = true
+    }
+
+    @After
+    fun tearDown() {
+        if (::library.isInitialized) library.deleteAdded()
     }
 
     private fun used(): Long { val rt = Runtime.getRuntime(); return rt.totalMemory() - rt.freeMemory() }
