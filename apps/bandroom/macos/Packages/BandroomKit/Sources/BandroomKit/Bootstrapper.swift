@@ -3,7 +3,9 @@ import Observation
 
 /// The engine environment (design/server-app.md §5.1 option A). First run: copy the workspace that ships in the app
 /// (pixi.toml, pixi.lock and the engine source) into `<data>/envs`, then `pixi install` from the lockfile; a
-/// checkout only needs the install. After an app update: replace that copy with the app's (`WorkspaceSwap`) and
+/// checkout only needs the install. The install always runs: an environment left from an earlier build may not
+/// match the lockfile just copied in, and the engine must not install it at launch (it would outlast the health
+/// timeout). With an environment that matches, it takes seconds. After an app update: replace that copy with the app's (`WorkspaceSwap`) and
 /// install again only when the lockfile changed; a failure puts the old copy back.
 @MainActor
 @Observable
@@ -51,10 +53,6 @@ public final class Bootstrapper {
                 phase = .copying
                 guard let bundledWorkspace else { throw LaunchFailure.notInstalled("this build has no engine workspace") }
                 try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: workspace).commit() }.value
-            }
-            if configuration.source.isEnvironmentReady {
-                phase = .done
-                return
             }
             phase = .installing
             let (status, log) = try await install(configuration, base: base)
