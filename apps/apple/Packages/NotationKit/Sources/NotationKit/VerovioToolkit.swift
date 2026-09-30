@@ -31,7 +31,8 @@ public final class VerovioToolkit: @unchecked Sendable {
 
     public static var version: String {
         guard let t = VerovioToolkit(resourcePath: defaultResourcePath()) else { return "?" }
-        return String(cString: vrvToolkit_getVersion(t.handle))
+        // the string lives in the toolkit: keep it until it is copied
+        return withExtendedLifetime(t) { String(cString: vrvToolkit_getVersion(t.handle)) }
     }
 
     @discardableResult
