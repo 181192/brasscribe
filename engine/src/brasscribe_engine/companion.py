@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 import secrets
@@ -40,8 +41,11 @@ PAIRING_PAYLOAD_VERSION = 1
 CODE_DIGITS = 6
 WINDOW_S = 600.0  # a pairing window opened on the computer
 REQUEST_S = 120.0  # an approve-on-the-computer request waits this long
-MAX_PENDING = 3
-LOCK_AFTER = 5  # wrong codes before pairing locks
+MAX_PENDING = 3  # approve-on-the-computer requests waiting at once
+MAX_PENDING_PER_CLIENT = 1  # a client's new request replaces its waiting one
+LOCK_AFTER = 5  # wrong codes before pairing locks for the client that sent them
+LOCK_AFTER_ALL = 20  # wrong codes from all clients together before pairing locks for everyone
+MAX_CLIENTS = 1024  # clients whose wrong codes are remembered
 LOCK_BASE_S = 30.0
 LOCK_MAX_S = 900.0
 SEEN_FLUSH_S = 60.0  # last_seen is kept in memory and written to disk at most this often
@@ -62,6 +66,15 @@ def token_hash(token: str) -> str:
 
 def new_code() -> str:
     return f"{secrets.randbelow(10**CODE_DIGITS):0{CODE_DIGITS}d}"
+
+
+def client_key(host: str | None) -> str:
+    """Whose wrong codes and requests count together: one address (an IPv4-mapped IPv6 one as its IPv4)."""
+    try:
+        ip = ipaddress.ip_address(host or "")
+    except ValueError:
+        return host or ""
+    return str(getattr(ip, "ipv4_mapped", None) or ip)
 
 
 def clean_name(name: str | None, fallback: str = "Unnamed device") -> str:
@@ -345,25 +358,53 @@ def reset_server(state_dir: Path, clock: Clock = time.time) -> ServerIdentity:
 
 
 @dataclass
+class Strikes:
+    """Wrong codes counted towards a lock; each lock lasts twice as long as the one before."""
+
+    failures: int = 0
+    lockouts: int = 0
+    locked_until: float = 0.0
+
+    def strike(self, now: float, lock_after: int) -> None:
+        self.failures += 1
+        if self.failures >= lock_after:
+            self.failures = 0
+            self.locked_until = now + min(LOCK_MAX_S, LOCK_BASE_S * 2 ** self.lockouts)
+            self.lockouts += 1
+
+
+@dataclass
 class PairingWindow:
     """The code a new device types (or scans). Wrong codes lock pairing for a while; the code itself never
-    changes behind the user's back, so the code on screen stays the one that works."""
+    changes behind the user's back, so the code on screen stays the one that works.
+
+    Wrong codes lock pairing for the client that sent them (LOCK_AFTER), so one device on the network cannot
+    keep another from pairing. Many wrong codes from all clients together (LOCK_AFTER_ALL) still lock it for
+    everyone. A new code, opened on the computer, lifts every lock."""
 
     code: str | None = field(default_factory=new_code)
     expires_at: float | None = None  # None: until closed
     single_use: bool = False
-    failures: int = 0
-    lockouts: int = 0
-    locked_until: float = 0.0
+    everyone: Strikes = field(default_factory=Strikes)
+    clients: dict[str, Strikes] = field(default_factory=dict)
     clock: Clock = time.time
     lock: threading.Lock = field(default_factory=threading.Lock)
+
+    @property
+    def locked_until(self) -> float:
+        """Until when pairing is locked for everyone."""
+        return self.everyone.locked_until
+
+    @locked_until.setter
+    def locked_until(self, t: float) -> None:
+        self.everyone.locked_until = t
 
     def open(self, ttl: float | None = WINDOW_S, single_use: bool = True) -> str:
         with self.lock:
             self.code = new_code()
             self.expires_at = None if ttl is None else self.clock() + ttl
             self.single_use = single_use
-            self.failures = 0
+            self.everyone, self.clients = Strikes(), {}
             return self.code
 
     def extend(self, ttl: float = WINDOW_S) -> bool:
@@ -385,26 +426,34 @@ class PairingWindow:
         with self.lock:
             return self.is_open_locked()
 
-    def retry_after(self) -> float:
-        return max(0.0, self.locked_until - self.clock())
+    def retry_after(self, client: str | None = None) -> float:
+        """Seconds until pairing is open again for everyone, or, given a client, for that client."""
+        mine = self.clients.get(client_key(client)) if client is not None else None
+        until = max(self.everyone.locked_until, mine.locked_until if mine else 0.0)
+        return max(0.0, until - self.clock())
 
-    def check(self, code: str) -> str:
-        """'ok', 'wrong', 'locked' or 'closed'."""
+    def check(self, code: str, client: str | None = None) -> str:
+        """'ok', 'wrong', 'locked' or 'closed'. `client` is the address the code came from."""
+        key = client_key(client)
         with self.lock:
-            if self.clock() < self.locked_until:
+            now = self.clock()
+            mine = self.clients.get(key)
+            if now < self.everyone.locked_until or (mine and now < mine.locked_until):
                 return "locked"
             if not self.is_open_locked():
                 return "closed"
             if hmac.compare_digest(code.strip().replace(" ", "").encode(), self.code.encode()):
-                self.failures = self.lockouts = 0
+                self.everyone = Strikes()
+                self.clients.pop(key, None)
                 if self.single_use:
                     self.code, self.expires_at = None, None
                 return "ok"
-            self.failures += 1
-            if self.failures >= LOCK_AFTER:
-                self.failures = 0
-                self.locked_until = self.clock() + min(LOCK_MAX_S, LOCK_BASE_S * 2 ** self.lockouts)
-                self.lockouts += 1
+            self.everyone.strike(now, LOCK_AFTER_ALL)
+            if mine is None:
+                if len(self.clients) >= MAX_CLIENTS:  # forget clients whose lock has passed
+                    self.clients = {k: v for k, v in self.clients.items() if now < v.locked_until}
+                mine = self.clients[key] = Strikes()
+            mine.strike(now, LOCK_AFTER)
             return "wrong"
 
 
@@ -421,6 +470,7 @@ class PairRequestEntry:
     status: str = "pending"  # pending | approved | denied
     token: str | None = None
     device_id: str | None = None
+    client: str = ""  # client_key() of the address that asked
 
     def public(self) -> dict:
         return {"request_id": self.request_id, "name": self.name, "platform": self.platform,
@@ -440,13 +490,20 @@ class PairRequests:
         for k in [k for k, r in self._items.items() if now - r.created > REQUEST_S]:
             del self._items[k]
 
-    def create(self, name: str | None, platform: str | None) -> PairRequestEntry | None:
+    def create(self, name: str | None, platform: str | None, client: str | None = None) -> PairRequestEntry | None:
+        """A new waiting request, or None when MAX_PENDING are waiting. A client that already has
+        MAX_PENDING_PER_CLIENT waiting requests has its oldest one replaced."""
+        key = client_key(client)
         with self.lock:
             self._expire()
+            mine = sorted((r for r in self._items.values() if r.status == "pending" and r.client == key),
+                          key=lambda r: r.created)
+            for old in mine[: max(0, len(mine) - MAX_PENDING_PER_CLIENT + 1)]:
+                del self._items[old.request_id]
             if sum(r.status == "pending" for r in self._items.values()) >= MAX_PENDING:
                 return None
             r = PairRequestEntry(secrets.token_urlsafe(24), clean_name(name), clean_name(platform, "unknown")[:24],
-                                 f"{secrets.randbelow(10**4):04d}", self.clock())
+                                 f"{secrets.randbelow(10**4):04d}", self.clock(), client=key)
             self._items[r.request_id] = r
             return r
 

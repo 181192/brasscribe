@@ -20,6 +20,7 @@ from pathlib import Path
 import brasscribe_eval
 import brasscribe_music
 
+from .config import child_env
 from .dag import StageContext, StageFailed
 
 MUSIC_SRC = Path(brasscribe_music.__file__).resolve().parent
@@ -32,7 +33,7 @@ SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS, THIS.with_name("compare.py")) + ((PA
 
 def _python(ctx: StageContext, module: str, *args: str) -> None:
     proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, *args], stdin=subprocess.DEVNULL,
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, env=child_env())
     if proc.stdout.strip():
         for line in proc.stdout.strip().splitlines()[-20:]:
             ctx.log(line)
@@ -138,7 +139,7 @@ def arrange_layered(ctx: StageContext) -> None:
         # The footer on arranged parts is in the job's language when it has one (en otherwise).
         lang = ["--lang", ctx.params["lang"]] if ctx.params.get("lang") else []
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
-                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render", *lang,
+                "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render", *lang,
                 *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
     _stable_musicxml(ctx)
 
@@ -148,7 +149,7 @@ def arrange_band(ctx: StageContext) -> None:
     i = ctx.inputs
     harmony = [str(v) for k, v in sorted(i.items()) if k.startswith("harmony")]
     args = ["--beats", str(i["beats"]), "--melody", str(i["melody"]), "--bass", str(i["bass"]),
-            "--harmony", *harmony, "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render"]
+            "--harmony", *harmony, "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render"]
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
     _python(ctx, "brasscribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "brasscribe_eval.arrange_song"))

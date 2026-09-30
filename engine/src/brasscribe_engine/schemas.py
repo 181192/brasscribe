@@ -73,7 +73,8 @@ class RotateResponse(BaseModel):
 
 
 class PairingOpen(BaseModel):
-    ttl_s: float | None = Field(600, description="seconds the code stays valid; null keeps it open until closed")
+    ttl_s: float | None = Field(600, ge=30, le=86400,
+                                description="seconds the code stays valid; null keeps it open until closed")
     single_use: bool = True
     extend: bool = Field(False, description="keep the current code and push its expiry out by ttl_s")
 
@@ -146,13 +147,14 @@ class AudioRef(BaseModel):
 
 
 class JobCreate(BaseModel):
-    """Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory)."""
+    """Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory)."""
 
     audio_id: str | None = None
     source_id: str | None = None
-    path: str | None = Field(None, description="audio file path; must lie inside the engine's data directory")
+    path: str | None = Field(None, description="audio file under uploads/, captures/ or eval/, relative to the engine's "
+                                               "data directory ('/'-separated); not for paired devices")
     profile: str = "orchestra-with-soloist"
-    title: str | None = None
+    title: str | None = Field(None, max_length=200)
     render_audio: bool = Field(True, description="also render an MP3 of the score")
     allow_heavy: bool = Field(True, description="allow heavy models to run on cache misses")
     lineup: Lineup | None = Field(None, description="full: the 18-part brass band; minimal: the 8-part minimal band; "

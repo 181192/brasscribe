@@ -7,7 +7,7 @@ environments) or an installed package.
     BRASSCRIBE_DATA         data directory (default: <repo>/data)
     BRASSCRIBE_MODELS       model weights (default: <data>/models, else <repo>/models)
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
-    BRASSCRIBE_GPU_LOCK     machine-wide mutex for heavy model runs (default: /tmp/brasscribe-gpu.lock)
+    BRASSCRIBE_GPU_LOCK     mutex for heavy model runs (default: /tmp/brasscribe-gpu-<uid>.lock; gpulock.py)
     BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
     BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
     BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
@@ -18,6 +18,10 @@ environments) or an installed package.
                                  0: they need a token like any other client. Turn it off whenever something on
                                  this computer forwards outside traffic to the engine (tailscale serve,
                                  cloudflared, a reverse proxy, an SSH tunnel): that traffic looks local.
+    BRASSCRIBE_ALLOWED_HOSTS     extra host names, comma-separated, by which clients on this computer may reach the
+                                 engine (for a proxy on this computer; guard.py). IP addresses, localhost, .local
+                                 names and this computer's host name are always accepted.
+    BRASSCRIBE_MAX_UPLOAD_BYTES  largest request body, e.g. an upload, the engine accepts (default: 2 GiB)
     BRASSCRIBE_ADMIN_TOKEN       owner credential for device management (/v1/status, /v1/devices, /v1/pairing*):
                                  `Authorization: Bearer <token>`. While one is set, those endpoints require it
                                  and loopback alone is not enough. It also works on every other endpoint.
@@ -33,14 +37,26 @@ environments) or an installed package.
 from __future__ import annotations
 
 import os
-import sys
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .gpulock import default_path
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-# The machine-wide mutex other tools also use: /tmp on POSIX, the temp dir on Windows.
-DEFAULT_GPU_LOCK = Path(tempfile.gettempdir() if sys.platform == "win32" else "/tmp") / "brasscribe-gpu.lock"
+# The heavy-model mutex brasscribe_eval also uses: per user, in /tmp on POSIX and the temp folder on Windows.
+DEFAULT_GPU_LOCK = default_path()
+
+
+# Credentials the engine reads from its environment. Programs it starts (adapters, arrangers, MuseScore, the
+# conformance suite) never get them: child_env() leaves them out, and `brasscribe serve` removes them from its
+# own environment once the app has read them.
+CREDENTIAL_ENV = ("BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE", "BRASSCRIBE_TOKEN")
+
+
+def child_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment for a program the engine starts: its own, without the credentials, plus `extra`."""
+    env = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_ENV}
+    return {**env, **(extra or {})}
 
 
 def _env_flag(name: str, default: bool) -> bool:
@@ -62,6 +78,9 @@ class Settings:
     token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_TOKEN"))
     device_idle_days: float = field(default_factory=lambda: float(os.environ.get("BRASSCRIBE_DEVICE_IDLE_DAYS") or 180))
     trust_local: bool = field(default_factory=lambda: _env_flag("BRASSCRIBE_TRUST_LOCAL", True))
+    allowed_hosts: tuple[str, ...] = field(default_factory=lambda: tuple(
+        h.strip() for h in os.environ.get("BRASSCRIBE_ALLOWED_HOSTS", "").split(",") if h.strip()))
+    max_upload_bytes: int = field(default_factory=lambda: int(os.environ.get("BRASSCRIBE_MAX_UPLOAD_BYTES") or 2 << 30))
     admin_token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_ADMIN_TOKEN") or None)
     admin_token_file: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_ADMIN_TOKEN_FILE", Path())
                                           if os.environ.get("BRASSCRIBE_ADMIN_TOKEN_FILE") else None)

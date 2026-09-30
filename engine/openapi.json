@@ -296,6 +296,7 @@
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1130,7 +1131,7 @@
         "type": "object"
       },
       "JobCreate": {
-        "description": "Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).",
+        "description": "Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory).",
         "properties": {
           "allow_heavy": {
             "default": true,
@@ -1214,7 +1215,7 @@
                 "type": "null"
               }
             ],
-            "description": "audio file path; must lie inside the engine's data directory",
+            "description": "audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices",
             "title": "Path"
           },
           "profile": {
@@ -1291,6 +1292,7 @@
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1814,6 +1816,8 @@
           "ttl_s": {
             "anyOf": [
               {
+                "maximum": 86400.0,
+                "minimum": 30.0,
                 "type": "number"
               },
               {
@@ -5209,7 +5213,7 @@
     },
     "/v1/pair/requests": {
       "post": {
-        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).",
+        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).\nA new request from the same address replaces the one it has waiting.",
         "operationId": "requestPairing",
         "requestBody": {
           "content": {

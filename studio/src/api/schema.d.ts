@@ -621,6 +621,7 @@ export interface paths {
          * Request Pairing
          * @description Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
          *     poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+         *     A new request from the same address replaces the one it has waiting.
          */
         post: operations["requestPairing"];
         delete?: never;
@@ -1390,7 +1391,7 @@ export interface components {
         };
         /**
          * JobCreate
-         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).
+         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory).
          */
         JobCreate: {
             /**
@@ -1433,7 +1434,7 @@ export interface components {
             muscriptor: boolean;
             /**
              * Path
-             * @description audio file path; must lie inside the engine's data directory
+             * @description audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices
              */
             path?: string | null;
             /**

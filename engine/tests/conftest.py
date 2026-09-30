@@ -59,7 +59,7 @@ def fake_pipeline(title: str, params: dict) -> Pipeline:
 
 ENGINE_ENV = ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS", "BRASSCRIBE_COMPUTER_NAME",
               "BRASSCRIBE_SERVER_NAME", "BRASSCRIBE_TRUST_LOCAL", "BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE",
-              "BRASSCRIBE_BAND_SOUNDS_DIR", "BRASSCRIBE_STAGE_PARALLELISM")
+              "BRASSCRIBE_BAND_SOUNDS_DIR", "BRASSCRIBE_STAGE_PARALLELISM", "BRASSCRIBE_ALLOWED_HOSTS")
 
 
 @pytest.fixture(autouse=True)
@@ -68,6 +68,15 @@ def _host_name_only(monkeypatch):
     from brasscribe_engine import discovery
 
     monkeypatch.setattr(discovery, "os_computer_name", lambda: None)
+
+
+@pytest.fixture(autouse=True)
+def _test_client_host(monkeypatch):
+    """TestClient sends `Host: testserver`; accept it as one of this computer's names."""
+    from brasscribe_engine import guard
+
+    names = guard.own_names() | {"testserver"}
+    monkeypatch.setattr(guard, "own_names", lambda: names)
 
 
 @pytest.fixture
