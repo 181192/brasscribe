@@ -287,29 +287,32 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
         defer { try? FileManager.default.removeItem(at: tmp) }
         let h = try FileHandle(forWritingTo: tmp)
-        func field(_ name: String, _ value: String) {
-            h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        defer { try? h.close() }
+        // the throwing write: the old write(_:) raises an Objective-C exception when the disk is full
+        func field(_ name: String, _ value: String) throws {
+            try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
         }
-        field("profile", req.profile.rawValue)
-        if let t = req.title { field("title", t) }
+        try field("profile", req.profile.rawValue)
+        if let t = req.title { try field("title", t) }
         // The app renders audio itself; skipping it on the engine avoids an extra MuseScore launch.
-        field("render_audio", "false")
+        try field("render_audio", "false")
         // Arrangement options (engine/openapi.json: lineup full|minimal|quartet, difficulty, key as
         // FIFTHS[:MODE]).
-        field("lineup", req.output.lineup.engineValue)
-        field("difficulty", req.output.difficulty.rawValue)
-        if let k = req.output.keyFifths { field("key", String(k)) }
+        try field("lineup", req.output.lineup.engineValue)
+        try field("difficulty", req.output.difficulty.rawValue)
+        if let k = req.output.keyFifths { try field("key", String(k)) }
         // The player's seat, reading and who plays the tune: only when set, so a job without a seat
         // is the same job as before.
-        if let s = req.output.seat { field("seat", s) }
-        if let r = req.output.reads { field("reads", r) }
-        if let l = req.output.lead { field("lead", l) }
+        if let s = req.output.seat { try field("seat", s) }
+        if let r = req.output.reads { try field("reads", r) }
+        if let l = req.output.lead { try field("lead", l) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
-        h.write(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
+        try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)
-        while let chunk = try src.read(upToCount: 1 << 20), !chunk.isEmpty { h.write(chunk) }
+        defer { try? src.close() }
+        while let chunk = try src.read(upToCount: 1 << 20), !chunk.isEmpty { try h.write(contentsOf: chunk) }
         try src.close()
-        h.write(Data("\r\n--\(boundary)--\r\n".utf8))
+        try h.write(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
         try h.close()
 
         var r = request("v1/jobs/upload", method: "POST")
@@ -377,7 +380,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                     continuation.yield(.finished(.init(jobID: job.id, composition: comp, musicXML: xml, available: available, evidence: evidence)))
                     continuation.finish()
                 } catch {
-                    if let jobID, Task.isCancelled || error is CancellationError { await cancel(jobID) }
+                    if let jobID, Task.isCancelled || error is CancellationError {
+                        // from a task of its own: this one is cancelled, and URLSession would not send the request
+                        await Task { await self.cancel(jobID) }.value
+                    }
                     continuation.finish(throwing: Task.isCancelled ? TranscriptionError.cancelled : error)
                 }
             }
