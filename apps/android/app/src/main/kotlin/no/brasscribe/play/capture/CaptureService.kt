@@ -49,6 +49,9 @@ object CaptureController {
         .flatMapLatest { it?.state ?: flowOf(CaptureState()) }
         .stateIn(scope, SharingStarted.Eagerly, CaptureState())
 
+    /** The file of the take being recorded now, which a clean-up must leave alone. */
+    fun activeFile(): File? = current.value?.file
+
     internal fun attach(capture: AudioCapture, kind: CaptureKind) {
         failed.value = false
         this.kind.value = kind

@@ -100,8 +100,9 @@ class ReviewChangeNoteTest {
         changeUp()
         val changed = changedText()
         assertNotNull(changed)
+        // Saved in the background.
+        rule.waitUntil(10_000) { vm.savedScores.value.firstOrNull()?.reviewChanges?.size == 1 }
         val saved = vm.savedScores.value.first()
-        assertEquals(1, saved.reviewChanges.size)
 
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
         rule.waitUntil(20_000) { changedText() != null }
@@ -113,8 +114,9 @@ class ReviewChangeNoteTest {
         rule.waitForIdle()
         assertEquals(null, changedText())
         assertEquals(pitchesBefore, melodyPitches())
-        assertTrue(vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty())
+        rule.waitUntil(10_000) { vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty() }
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
+        rule.waitUntil(10_000) { vm.openingScore.value == null }
         rule.waitForIdle()
         assertEquals(null, changedText())
     }

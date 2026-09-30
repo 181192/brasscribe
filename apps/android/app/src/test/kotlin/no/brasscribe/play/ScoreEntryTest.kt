@@ -11,7 +11,7 @@ class ScoreEntryTest {
 
     @Test
     fun latestScoresMergeThisPhoneAndTheComputerWithoutDuplicates() {
-        val local = listOf(SavedScore("a", "Opened", "solo", "<x/>", null, 2_500_000, jobId = "j3"))
+        val local = listOf(SavedScore("a", "Opened", "solo", 2_500_000, jobId = "j3"))
         val jobs = listOf(
             job("j1", 1000.0, "audio-1"), job("j2", 3000.0, "audio-1"), // re-run: only the latest shows
             job("j3", 2000.0, "audio-2"),                               // already on the phone

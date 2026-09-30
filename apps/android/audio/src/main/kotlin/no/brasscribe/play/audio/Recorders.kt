@@ -36,6 +36,8 @@ data class CaptureState(
 
 /** Something that records mono float audio into a WAV file until stopped. */
 interface AudioCapture {
+    /** The WAV the take is written to. */
+    val file: File
     val state: StateFlow<CaptureState>
     fun start(scope: CoroutineScope): Boolean
     suspend fun stop(): CapturedTake
@@ -58,7 +60,7 @@ private fun peak(buf: FloatArray, n: Int): Float { var p = 0f; for (i in 0 until
  * Microphone capture through Oboe/AAudio (native, low latency), written to [file] as it is recorded
  * ([TakeSink]): memory holds a 4096-sample buffer and, while the take is short enough, its samples.
  */
-class MicRecorder(private val file: File, private val requestedRate: Int = 48000) : AudioCapture {
+class MicRecorder(override val file: File, private val requestedRate: Int = 48000) : AudioCapture {
     private val _state = MutableStateFlow(CaptureState())
     override val state: StateFlow<CaptureState> = _state
     private var sink: TakeSink? = null
@@ -115,7 +117,7 @@ class MicRecorder(private val file: File, private val requestedRate: Int = 48000
  * [file] as it is recorded, as [MicRecorder] does.
  */
 class PlaybackCaptureRecorder(
-    private val projection: MediaProjection, private val file: File, private val sampleRate: Int = 48000,
+    private val projection: MediaProjection, override val file: File, private val sampleRate: Int = 48000,
 ) : AudioCapture {
     private val _state = MutableStateFlow(CaptureState())
     override val state: StateFlow<CaptureState> = _state

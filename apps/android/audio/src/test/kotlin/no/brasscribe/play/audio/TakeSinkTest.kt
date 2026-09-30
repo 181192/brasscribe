@@ -96,6 +96,55 @@ class TakeSinkTest {
         assertEquals(44L + 20_000, take.file.length())
     }
 
+    /** A file that takes [capacity] bytes and then fails, part-way through a write, as a full disk does. */
+    private class FullDisk(file: java.io.File, private val capacity: Long) : WavOutput {
+        private val raf = java.io.RandomAccessFile(file, "rw").apply { setLength(0); write(ByteArray(44)) }
+        var closed = false
+        override fun append(bytes: ByteArray, off: Int, len: Int) {
+            val room = (capacity - raf.length()).coerceAtLeast(0).toInt()
+            raf.write(bytes, off, minOf(room, len))
+            if (room < len) throw java.io.IOException("No space left on device")
+        }
+        override val length: Long get() = raf.length()
+        override fun truncate(length: Long) = raf.setLength(length)
+        override fun writeHeader(header: ByteArray) { raf.seek(0); raf.write(header) }
+        override fun close() { closed = true; raf.close() }
+    }
+
+    @Test
+    fun aFullDiskEndsTheTakeWithAReadableWav() {
+        val file = tmp.newFile("fulldisk.wav")
+        // Room for 50 001 bytes of samples: the write that fills it stops half-way through a sample.
+        val disk = FullDisk(file, 44L + 100_001)
+        val sink = TakeSink(file, 48_000, maxInMemory = 1_000_000, output = disk)
+        val sent = feed(sink, 200_000)
+        assertTrue(sink.failed)
+        assertTrue(sink.full)
+        val take = sink.finish()
+        assertTrue("the file is closed", disk.closed)
+        assertEquals("only the whole samples that reached the disk", 50_000L, take.samples)
+        assertEquals(44L + 2 * 50_000, file.length())
+        val read = WavFile.read(file)
+        assertEquals(50_000, read.samples.size)
+        assertArrayEquals(sent.copyOf(50_000), read.samples, 1f / 32_000)
+        // Memory holds the same samples as the file, not the ones the disk refused.
+        assertEquals(50_000, take.audio!!.samples.size)
+    }
+
+    @Test
+    fun aDiskFullAtTheLastBufferStillGetsItsHeader() {
+        val file = tmp.newFile("lastbuffer.wav")
+        // Everything fits but the final flush at close.
+        val disk = FullDisk(file, 44L + 65_536)
+        val sink = TakeSink(file, 48_000, maxInMemory = 1_000_000, output = disk)
+        feed(sink, 40_000)
+        assertFalse(sink.failed)
+        val take = sink.finish()
+        assertTrue(disk.closed)
+        assertEquals(32_768L, take.samples)
+        assertEquals(32_768, WavFile.read(file).samples.size)
+    }
+
     @Test
     fun aDiscardedTakeLeavesNoFile() {
         val file = tmp.newFile("gone.wav")
