@@ -170,7 +170,7 @@ class JobCreate(BaseModel):
                                                      "player each (not for the solo profile: it needs a recording of "
                                                      "the whole group); default: the profile's (minimal for solo, "
                                                      "full otherwise)")
-    muscriptor: bool = Field(True, description="solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch "
+    muscriptor: bool = Field(True, description="solo and brass-band profiles: use MuScriptor; false puts Basic Pitch "
                                                "in its place, as the apps do on device")
     difficulty: Difficulty = Field("faithful", description="faithful keeps every transcribed note; standard and "
                                                            "easier simplify rhythms and ranges")
