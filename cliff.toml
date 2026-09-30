@@ -76,8 +76,9 @@ filter_unconventional = true
 split_commits = false
 protect_breaking_commits = true
 filter_commits = false
-# Releases of the apps only: the band sound packs (sounds-*) are separate pre-releases.
-tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+# Releases of the apps only, including pre-releases (vX.Y.Z-beta.1); the band sound packs
+# (sounds-*) are separate.
+tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
 sort_commits = "oldest"
 commit_parsers = [
   { message = "^chore\\(release\\)", skip = true },
