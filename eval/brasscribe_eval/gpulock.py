@@ -8,12 +8,23 @@ kernel drops the lock when the holder dies, so a crashed run cannot block the GP
 from __future__ import annotations
 
 import os
+import sys
+import tempfile
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK", "/tmp/brasscribe-gpu.lock"))
+
+
+def default_path() -> Path:
+    """brasscribe_engine.gpulock.default_path, for when the engine is not installed: the same file."""
+    if sys.platform == "win32":
+        return Path(tempfile.gettempdir()) / "brasscribe-gpu.lock"
+    return Path("/tmp") / f"brasscribe-gpu-{os.getuid()}.lock"
+
+
+GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK") or default_path())
 
 
 @contextmanager
@@ -33,7 +44,7 @@ def gpu_lock(poll: float = 1.0) -> Iterator[None]:
             GPU_LOCK.rmdir()  # the mkdir lock of an older version
         except OSError:
             pass
-    fd = os.open(GPU_LOCK, os.O_RDWR | os.O_CREAT, 0o666)
+    fd = os.open(GPU_LOCK, os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600)
     try:
         while True:
             try:

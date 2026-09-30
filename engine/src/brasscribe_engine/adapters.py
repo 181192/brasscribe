@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from .gpulock import file_lock
+from .gpulock import default_path, file_lock
 from .hashing import HashIndex, sha256_bytes
 
 
@@ -105,7 +105,7 @@ class AdapterRegistry:
     root: Path
     models_dir: Path
     hashes: HashIndex
-    gpu_lock: Path = Path("/tmp/brasscribe-gpu.lock")
+    gpu_lock: Path = field(default_factory=default_path)
     _fingerprints: dict[str, str] = field(default_factory=dict)
 
     def get(self, name: str) -> Adapter:

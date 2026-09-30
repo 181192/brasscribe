@@ -7,7 +7,7 @@ environments) or an installed package.
     BRASSCRIBE_DATA         data directory (default: <repo>/data)
     BRASSCRIBE_MODELS       model weights (default: <data>/models, else <repo>/models)
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
-    BRASSCRIBE_GPU_LOCK     machine-wide mutex for heavy model runs (default: /tmp/brasscribe-gpu.lock)
+    BRASSCRIBE_GPU_LOCK     mutex for heavy model runs (default: /tmp/brasscribe-gpu-<uid>.lock; gpulock.py)
     BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
     BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
     BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
@@ -37,14 +37,14 @@ environments) or an installed package.
 from __future__ import annotations
 
 import os
-import sys
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .gpulock import default_path
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-# The machine-wide mutex other tools also use: /tmp on POSIX, the temp dir on Windows.
-DEFAULT_GPU_LOCK = Path(tempfile.gettempdir() if sys.platform == "win32" else "/tmp") / "brasscribe-gpu.lock"
+# The heavy-model mutex brasscribe_eval also uses: per user, in /tmp on POSIX and the temp folder on Windows.
+DEFAULT_GPU_LOCK = default_path()
 
 
 def _env_flag(name: str, default: bool) -> bool:
