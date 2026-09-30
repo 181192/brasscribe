@@ -31,9 +31,11 @@ public struct Uninstaller: Sendable {
         self.hub = hub
     }
 
-    /// The downloads: the models folder, and the band writer's folder in the hub cache.
+    /// The downloads: the models folder, and the band writer's folder in the hub cache when that is inside the home
+    /// folder (a cache moved to another disk with HF_HUB_CACHE or HF_HOME is left alone).
     var downloads: [URL] {
-        [paths.models] + (hub.map { [ModelCatalog.hubRepoFolder(ModelCatalog.muscriptorRepo, hub: $0)] } ?? [])
+        let writer = hub.map { ModelCatalog.hubRepoFolder(ModelCatalog.muscriptorRepo, hub: $0) }
+        return [paths.models] + (writer.flatMap { (try? checkSafe($0)) != nil ? [$0] : nil } ?? [])
     }
 
     /// The size of the downloads in bytes, or nil when there are none.

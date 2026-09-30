@@ -79,6 +79,23 @@ import Testing
         #expect(fm.fileExists(atPath: other.path), "someone else's models stay")
     }
 
+    @Test func aHuggingFaceCacheOnAnotherDiskIsLeftAlone() throws {
+        let (home, paths) = try makeHome()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let fm = FileManager.default
+        let elsewhere = fm.temporaryDirectory.appending(path: "bandroom-external-\(UUID().uuidString)/hub", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: elsewhere.deletingLastPathComponent()) }
+        let writer = ModelCatalog.hubRepoFolder(ModelCatalog.muscriptorRepo, hub: elsewhere)
+        try fm.createDirectory(at: writer.appending(path: "blobs"), withIntermediateDirectories: true)
+        try Data(repeating: 2, count: 8192).write(to: writer.appending(path: "blobs/ac80"))
+        let u = Uninstaller(paths: paths, home: home, hub: elsewhere)
+        #expect(u.downloadsSize() == Uninstaller(paths: paths, home: home).downloadsSize(), "not offered for deletion")
+        try u.remove(keepDownloads: false)
+        #expect(!fm.fileExists(atPath: paths.data.path))
+        #expect(!fm.fileExists(atPath: paths.logs.path))
+        #expect(fm.fileExists(atPath: writer.path))
+    }
+
     @Test func aFolderChosenElsewhereLosesOnlyWhatBrasscribePutThere() throws {
         let fm = FileManager.default
         let home = fm.temporaryDirectory.appending(path: "bandroom-override-\(UUID().uuidString)", directoryHint: .isDirectory)
