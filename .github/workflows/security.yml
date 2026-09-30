@@ -56,6 +56,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # The versions pinned in build.gradle.kts, as the android workflow installs them.
+      - uses: android-actions/setup-android@v3
+        if: matrix.language == 'java-kotlin'
+        with:
+          packages: platform-tools ndk;28.2.13676358 cmake;3.31.6
+
       - uses: gradle/actions/setup-gradle@v4
         if: matrix.language == 'java-kotlin'
 
