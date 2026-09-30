@@ -182,6 +182,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                               list(app.state.hosts), code),
                               locked_until=iso(w.locked_until) if w.retry_after() > 0 else None)
 
+    def request_info(r) -> m.PairRequestInfo:
+        """A pairing request as both sides see it; `name_in_use` when another paired device has the same name."""
+        taken = {d.name.casefold() for d in app.state.devices.list() if d.device_id != r.device_id}
+        return m.PairRequestInfo(**r.public(), name_in_use=r.name.casefold() in taken)
+
     jobs: JobManager = app.state.jobs
     from .conformance import ConformanceRunner
 
@@ -253,7 +258,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                            request.client.host if request.client else "")
         if r is None:
             raise HTTPException(429, "too many pairing requests are waiting", {"Retry-After": "30"})
-        return m.PairRequestInfo(**r.public())
+        return request_info(r)
 
     @app.get("/v1/pair/requests/{request_id}", response_model=m.PairRequestResult, operation_id="pollPairingRequest",
              tags=["session"], responses={404: {"description": "unknown or expired request"}})
@@ -347,7 +352,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.get("/v1/pairing/requests", response_model=list[m.PairRequestInfo], operation_id="listPairingRequests",
              tags=["devices"], dependencies=[Depends(owner)])
     def list_pairing_requests() -> list[m.PairRequestInfo]:
-        return [m.PairRequestInfo(**r.public()) for r in app.state.pair_requests.pending()]
+        return [request_info(r) for r in app.state.pair_requests.pending()]
 
     @app.post("/v1/pairing/requests/{request_id}/{decision}", response_model=m.PairRequestInfo,
               operation_id="decidePairingRequest", tags=["devices"], dependencies=[Depends(owner)],
@@ -356,7 +361,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         r = app.state.pair_requests.decide(request_id, decision == "approve", app.state.devices)
         if r is None:
             raise HTTPException(404, "unknown, expired or already decided")
-        return m.PairRequestInfo(**r.public())
+        return request_info(r)
 
     @app.get("/v1/profiles", response_model=list[m.ProfileInfo], operation_id="listProfiles", tags=["session"],
              dependencies=[Depends(auth)])

@@ -289,6 +289,26 @@ def test_approve_on_the_computer(settings):
         assert c.get(f"/v1/pair/requests/{rid}").status_code == 404  # the token is handed out once
 
 
+def test_a_request_with_the_name_of_a_paired_device_says_so(settings):
+    with lan(settings) as c:
+        pair(c, "Pixel 9")
+        req = c.post("/v1/pair/requests", json={"device_name": "pixel 9", "platform": "android"}).json()
+        assert req["name_in_use"] is True
+        with as_owner(c):
+            [shown] = c.get("/v1/pairing/requests").json()
+            assert shown["name_in_use"] is True
+            assert c.post(f"/v1/pairing/requests/{req['request_id']}/approve").json()["name_in_use"] is True
+        other = TestClient(c.app, client=("192.0.2.9", 50000))
+        assert other.post("/v1/pair/requests", json={"device_name": "Pixel 10"}).json()["name_in_use"] is False
+
+
+def test_an_approved_request_does_not_count_its_own_device(settings):
+    with lan(settings) as c:
+        req = c.post("/v1/pair/requests", json={"device_name": "Pixel 9"}).json()
+        with as_owner(c):
+            assert c.post(f"/v1/pairing/requests/{req['request_id']}/approve").json()["name_in_use"] is False
+
+
 def test_denied_and_capped_requests(settings):
     app = create_app(settings, trust_loopback=False)
     phones = [TestClient(app, client=(f"192.0.2.{i}", 50000)) for i in range(companion.MAX_PENDING + 1)]

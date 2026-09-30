@@ -1676,6 +1676,12 @@
             "title": "Name",
             "type": "string"
           },
+          "name_in_use": {
+            "default": false,
+            "description": "a device already paired with this engine has the same name (ignoring case): the owner can't tell the two apart by name, so the apps can suggest another one",
+            "title": "Name In Use",
+            "type": "boolean"
+          },
           "platform": {
             "title": "Platform",
             "type": "string"
