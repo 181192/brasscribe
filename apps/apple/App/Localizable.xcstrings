@@ -2421,6 +2421,16 @@
         }
       }
     },
+    "No microphone was found. Connect one and try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen mikrofon. Koble til en og prøv igjen."
+          }
+        }
+      }
+    },
     "No note": {
       "localizations": {
         "nb": {
