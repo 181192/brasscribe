@@ -1,0 +1,752 @@
+# Changelog
+
+Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
+
+## 0.3.1 (2026-09-30)
+
+<details><summary>Under the hood (8 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- Link to the latest release instead of naming a version
+- Prepare the repository for public release
+- **QA:** Expect the pink themes in the design tokens
+- **Release:** Sign the Android APKs with the release key and allow starting a release by hand
+- **Release:** Ship Bandroom for Mac and Windows, and re-sign the Mac apps ad hoc
+- **iPhone, iPad and Mac:** Build only the Verovio slices a build needs; the release builds macOS alone
+- **iPhone, iPad and Mac:** Keep the full Verovio build time in the make help
+- **Release:** Pass the secrets on to the Android build so the signing job gets the key
+
+</details>
+
+## 0.3.0 (2026-09-30)
+
+### New features
+
+- **Design:** Add the hidden Pink palette to the tokens
+- **Studio:** Hidden Pink appearance, unlocked from the lockup
+- **Android:** Hidden Pink appearance, unlocked from About
+- **iPhone, iPad and Mac:** Hidden Pink appearance, unlocked from About
+- **Band sounds:** Fetch the trumpet vibrato sustains and concert percussion from VSCO 2 CE
+- **Android:** Play Listen to this bar with the band SoundFont
+- **Band sounds:** Solo cornet, trumpet, band kit, desk variants and steady loops
+- The trumpet part plays its own trumpet preset
+- **Band sounds:** Pin the sounds-2026.09.29 band pack
+- **Eval:** Measure where fast notes and two-note alternations are lost
+- **Core:** Collision-aware quantization for the solo line
+- **Core:** Pitch-change onsets from the SwiftF0 contour for the solo line
+- **Apps:** Pass the SwiftF0 confidence with the solo contour
+- **Windows:** Music stand page model, layer rules and keys in Core
+- **Windows:** Music stand in Play
+- **Windows:** Appearance setting (Match system, Light, Dark)
+- **Windows:** Ask what the player plays, and follow their part
+- **Windows:** Trumpet in What do you play, tune from the core
+- **Windows:** Refuse a solo take for the percussion seat, and say why
+- **Windows:** Show empty parts as empty, not arranged
+- **Windows:** Hidden Pink appearance, unlocked from About
+- **Windows:** Boost a quiet recording to the band's level
+- **iPhone, iPad and Mac:** Mac score window screenshots from the macOS VM, in English and Norwegian
+- Hear a candidate pitch in Change note before saving
+- **Notation:** Write sustained two-note alternations as trills
+- **Band sounds:** Even velocity steps, pedal-note samples and slower pedal releases
+- **Playback:** A percussion part's midi-program picks the pop kit on every player
+- **Arranger:** Write the pop kit for a pop or rock take
+- **iPhone, iPad and Mac:** Play trills with their written auxiliary, staccato at half value
+
+### Fixes
+
+- **Bandroom for Mac:** Read the Hugging Face key off the main thread
+- **Bandroom for Mac:** Close setup after re-entering the key when nothing is missing
+- **Playback:** A drier hall on Apple and level parity with the new band sounds
+- **Band sounds:** Band kit bass drum level, the full-band phrase and pack tooling
+- **Core:** Direction offsets and review bracket numbers as the reference writes them
+- **Core:** Compare pitches as music21 does when consolidating tuplets
+- **Engine:** Braille for measures longer than a braille line
+- **Core:** Name split notes by their own plateau, dense grids only on evidence, faithful only
+- **Core:** A short semitone into or off a held note is its bend, not a note
+- Keep the fast-notes data out of data/eval, document the contour parameters
+- **iPhone, iPad and Mac:** Credit the band sound sources in About
+- **Windows:** Music stand shows the music, takes taps on both pages
+- **Windows:** Name the Play button by what it does
+- **Windows:** Say the seat notice once and build the part menu as it opens
+- **Windows:** Mockup tile words, one article in the notices, bass-clef key wording
+- **Windows:** «Notert (F-nøkkel)» for the bass-clef toolbar label
+- **Windows:** Pedals turn stand pages without showing the controls
+- **Windows:** Tab or Space keep the stand's controls up until the next touch
+- **Studio:** The viewer's themed screenshots show Old Hundredth
+- **Bandroom for Mac:** Say so when the Keychain prompt for the key goes unanswered
+- **Android:** Make the bottom sheet's drag handle a 48 dp target
+- **iPhone, iPad and Mac:** Keep a changed note's original pitch with the score
+- **Windows:** Keep a changed note's original pitch with the score
+- **Android:** Keep a changed note's original pitch with the score
+- **iPhone, iPad and Mac:** Readable selected note in the review list on iPad and Mac
+- **iPhone, iPad and Mac:** Review actions follow the note at the accessibility text sizes
+- **Quantization:** Read tuplets from runs of beats, robust to timing jitter
+- **Pipeline:** Estimate a beat grid for takes with under two tracked beats
+- **Quantization:** Tuplet runs need three beats; keep trills through app re-encodes
+- **Band sounds:** The band kit bass drum plays level with the MS Basic kick on every player
+- **Playback:** Levels for the even velocity curve, and Apple seat trims
+- **Engine:** The rendered MP3 plays at the band's loudness under the apps' ceiling
+- **Play:** Pair alphaTab's ties and trills from the MusicXML
+- **MusicXML:** Number every tie the writers write
+- **Band sounds:** Start the Bass Trombone's pp C3 where it speaks, pack sounds-2026.10.01
+- **Playback:** Refit the arrangement level and band estimate on the golden without held notes
+- **iPhone, iPad and Mac:** Level the band kit drum by drum and fit the band gain on arrangements
+
+<details><summary>Under the hood (43 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- Cover Bandroom for macOS in the check tiers
+- **Design:** Describe the hidden Pink appearance
+- **Band sounds:** Sources and licences of the band sounds, with the MS Basic notice
+- Offline render harnesses for the Apple and alphaSynth band paths
+- Freeze the fast-notes clips as a CI bench suite
+- **Eval:** Fast-notes traps, real vibrato, separated and URMP sets, readability
+- Check against the fast-notes golden and on-device reference siblings
+- **Eval:** Freeze the new controls and separated clips into the fast-notes suite
+- **Plan:** Fast-notes results, gates and the bars for the owner to check
+- **Windows:** Read the fast-notes golden sibling through one constant
+- Promote the fast-notes golden and on-device reference
+- **Android:** Pin the band estimate to the promoted fast-notes golden
+- **Research:** The trumpet and fast-notes critiques, with the range and contour tests
+- **Dev:** The release process, bandroom-mac in the tiers, the VM's full-suite rule
+- **Plan,research:** Status lines checked against main
+- READMEs and design docs checked against the code
+- **Site:** Download 0.2.0, What do you play?, sound credits, correct pairing
+- Refusal codes, device installs in the release, reviewer wording
+- Mac install uses Open Anyway, since right-click › Open no longer bypasses Gatekeeper
+- **Design:** Appearance setting spec (Match system, Light, Dark)
+- **Design:** Name the contrast setting per platform
+- **Windows:** Manual checklist for the Windows parity run
+- License the project under MIT OR Apache-2.0
+- Rewrite the root README for a public audience, add engine and Bandroom Mac READMEs
+- Rerun readability baseline, difficulty table and conformance totals on the current golden
+- Drop the work email from the music package metadata
+- **iPhone, iPad and Mac:** Screenshots.sh takes SIM_DEVICE for a dedicated simulator
+- **iPhone, iPad and Mac:** Retake the iPhone and iPad site screenshots in English and Norwegian
+- **iPhone, iPad and Mac:** Keep the earlier iPad review screenshots
+- **Site:** Refresh the screenshots, with a Norwegian Mac shot, and the alt text follows
+- **Site:** Transparent corners on the Mac window shots
+- **Android:** Pass the first run's seat question in PlayFlowA11yTest
+- **Android:** Confirm the immersive-mode prompt on pool emulators
+- **iPhone, iPad and Mac:** Pin the golden recording target to the promoted fast-notes golden
+- **Site:** Retake the iPad review and large-text shots
+- **Fast-notes:** Follow-up results; gate trills in the fast-notes suite
+- Point the on-device reference at its sibling for the tuplet-run change
+- **Fast-notes:** Note the on-device reference change from tuplet runs
+- **Core:** Regenerate bindings for the trills options
+- **Band sounds:** Pin sounds-2026.09.30 and document the pack
+- **Conformance:** The pop-kit arrangement has its own golden
+- Merge the pop kit style signal into the sound follow-ups
+- **Android:** Memory tests leave the library as they found it and skip on a locked screen
+
+</details>
+
+## 0.2.0 (2026-09-29)
+
+### New features
+
+- **Design:** Light high-contrast palette
+- **Studio:** Keep Light or Dark under more contrast
+- **Band sounds:** One playback loudness target and shared output-stage vectors
+- **iPhone, iPad and Mac:** Level-match the original recording to the band
+- **Windows:** Shared output stage and level-matched recording
+- **Android:** Shared output stage on alphaTab and sfizz, level-matched recording
+- **Engine:** Cache-Control on Studio files and band sounds
+- **iPhone, iPad and Mac:** Play score dynamics at alphaTab's velocities
+- **Engine:** Record GPU queue wait apart from stage run time
+- **Engine:** Optional bounded stage parallelism
+- **Android:** One overflow entry on the score, the top bar's ⋯
+- **Ffi:** Part_name_nb over UniFFI, the C ABI and .NET
+- **Android:** Ask what the player plays and make it their part
+- **Android:** Who played, who plays the tune and where each part came from
+- **Core:** Tune flag on each seat
+- **Core:** Source footer on arranged parts
+- **Playback:** Play the recording at the band's loudness for the score
+- **iPhone, iPad and Mac:** Ask what the player plays, and use it as their part
+- **iPhone, iPad and Mac:** Offer the tune only to seats the core says can carry it; screenshots
+- **Android:** Add an emulator pool for parallel device tests
+- **Engine:** Report the running build in /v1/health
+- **Engine:** Give each refused job option a code the apps can word
+- **Core:** Write a faithful soloist's lead in the octave played
+- **Core:** Trumpet in B♭ and a trumpet seat that takes the lead part
+- **Android:** Trumpet in What do you play
+- **iPhone, iPad and Mac:** Trumpet in What do you play
+
+### Fixes
+
+- **Bandroom:** Plain Norwegian for the tools and separator lines
+- **Android:** The score shows on first open, not only after the music stand
+- **Studio:** Score viewer no longer overflows the stack on open
+- **Android:** A phone on its side keeps the score in view
+- **Play:** Recording fade cannot be restarted, app player checked for the stage
+- **Studio:** Piano roll and beat summary without argument spreading
+- **Engine:** Event streams wait in their own threads
+- **Android:** The job event stream outlasts a quiet stage
+- **Notation:** Publish the engraving as one snapshot the cursor reads safely
+- **Engine:** GPU mutex that a crashed holder cannot leave locked
+- **Engine:** Processes sharing the file-hash index no longer collide
+- **Android:** Bottom sheets open fully and keep clear of the navigation bar
+- **Android:** A full disk ends a recording instead of crashing it
+- **Android:** The score keeps 55 % of the height upright
+- **Studio:** Compare e2e runs on its own fixture pair of runs
+- **Studio:** Explain a stage's GPU wait in the stage panel, not a hover title
+- **Android:** No control is cut off above the score on a phone
+- **Android:** Title Case for every instrument tile in English
+- **Windows:** Keep a marked note with the uncertain tune when linking the golden
+- **iPhone, iPad and Mac:** Keep the part view's header with the music, and align the tile words
+- **iPhone, iPad and Mac:** The score keeps 55 % of an iPhone's height
+- **iPhone, iPad and Mac:** Zooming a Mac window keeps it clear of the Dock
+- **iPhone, iPad and Mac:** Keep the part's name on the phone at the largest text sizes
+- **iPhone, iPad and Mac:** One window minimum on the Mac, content-sized sheets, actions under the content
+- **Test:** Report golden tests as skipped when their data is missing
+- **Core-artifacts:** Build from a fixed copy of the sources
+- **Check:** Test against the current core and the branch's own files
+- **iPhone, iPad and Mac:** Mark the in-process audio units sandbox-safe so a score opens on the Mac
+- **Bandroom for Mac:** Update the installed engine workspace after an app update
+- **Bandroom-win:** Replace the engine workspace atomically after an app update
+- **Bandroom:** Make the workspace swap's commit point the journal delete
+- **Engine:** Give child processes /dev/null as stdin
+- **Adapters:** Decode m4a/mp4/mov with ffmpeg for swift-f0, basic-pitch and separator
+- Set the VM display mode, reach xcodegen over SSH, copy Xcode without a share
+- **Android:** Offer the tune only to seats the core says can carry it
+- **Core:** Write a seat's mapped part in its own default clef
+- **Core:** Refuse a solo take for the percussion seat
+- **Core:** Label parts left without notes as empty, with no footer
+- **Android:** Show empty parts as empty, not arranged
+- **Studio:** Name the empty part source
+- **Engine:** Check a band take's tune against the small band it is made for
+- **Studio:** Show the band a run is actually made for
+- **iPhone, iPad and Mac:** Show empty parts as empty, not arranged
+- **Windows:** Offer the full band only where it is made
+- **Windows:** Say «Demp stemmen min» for mute my part
+- **Android:** Don't offer the full band for whole-band recordings
+- **Windows:** Say engine and core failures in plain en and nb
+- **Android:** Refuse a solo take for the percussion seat, and say why
+- **iPhone, iPad and Mac:** Don't offer the full band for whole-band recordings
+- **iPhone, iPad and Mac:** Refuse a solo take for the percussion seat, and say why
+- **Android:** Say «Demp stemmen min» for mute my part
+- **iPhone, iPad and Mac:** Say «Demp stemmen min» for mute my part
+- **Android:** Reach How should the score be? from any score
+- **iPhone, iPad and Mac:** Reach How should the score be? from any score
+- **iPhone, iPad and Mac:** Keep each score's seat when the instrument changes in Settings
+- **Android:** Say engine and core failures in plain en and nb
+- **Engine:** Put the refusal code first in a 422 body
+- **iPhone, iPad and Mac:** Say engine and core failures in plain en and nb
+- **Apps:** Read a seat's default clef where the notes say how a part is written
+- **iPhone, iPad and Mac:** Give an unopened score the seat it was made for
+- **Android:** Don't blame the file when a computer's score can't be fetched
+- **Windows:** Stay on the note after Change note → Save
+- **iPhone, iPad and Mac:** Stay on the note after Change note → Save
+- **Android:** Stay on the note after Change note → Save
+- **iPhone, iPad and Mac:** Reachable controls over the score, one window minimum, sheets above the Dock
+- Stop a VM test run when the host build fails
+- Rerun the Python conformance side when its sources changed
+- **Core:** Keep a soloist phrase's contour when it goes past the solo range
+- **Core:** Split a soloist phrase past the range inside the solo range
+- **Studio:** Announce a Trumpet part as a trumpet, not by its transposition
+- **Apps:** Send a trumpet job to an older engine as solo-cornet
+
+### Performance
+
+- **Core:** Separation check without copies of the stems
+- **Windows:** Read the band SoundFont in the background, not before the first frame
+- **Ffi:** Move the stems into the band arrangement instead of cloning them
+- **iPhone, iPad and Mac:** Open a score without blocking the main thread
+- **Studio:** One synthesizer and SoundFont per page
+- **Studio:** Keep the band SoundFont across visits
+- **Engine:** List jobs from cached manifest summaries
+- **Android:** Parse the composition once per score for humanization
+- **Android:** Load the band SoundFont when it is needed and let it go with the score
+- **Android:** Parse the score off the main thread
+- **Android:** Recordings stream to disk, with a stated length limit
+- **Bandroom:** Verify model checksums off the main actor
+- **Windows:** Stop a recording without blocking the UI thread
+- **Windows:** Read the dev brass SoundFonts one at a time, in the background
+- **Windows:** Read cached layer stems off the UI thread
+- **Bandroom:** Check setup off the UI thread and remember when it is complete
+- **Ffi:** Borrow the caller's stems and contour in the band arrangement
+- Build the UI tests on the host and split them over two VMs
+
+<details><summary>Under the hood (40 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Band sounds:** Playback loudness target, per-app stages and measured levels
+- **Perf:** Probes for the performance audit
+- **Research:** Performance audit across engine, core, Studio and apps
+- **Research:** Start-up per app, network and FFI payloads in the performance audit
+- **Research:** Engine job list, GPU wait and stage parallelism results
+- **Research:** Studio SoundFont before and after in the performance audit
+- **Studio:** Rebuild the static bundle
+- **Research:** App-side performance fixes and the Android memory measurement
+- **Android:** Landscape screenshots with the controls group in the ⋯ sheet
+- **Android:** What do you play? on the emulator, with screenshots
+- **Windows:** Golden note count after the cornet-limit golden update
+- **Site:** Link How it works from every page's menu
+- **iPhone, iPad and Mac:** Audit macOS window and sheet sizing with an off-screen layout harness
+- Add worktree setup and a shared core artifact cache
+- Add fast and affected-only tiers for the engine and the core
+- Add check tiers per area and repeatable Apple unit-test targets
+- Mark the slow Swift and JVM tests and enable the Gradle configuration cache
+- **Windows:** Mark the three multi-second golden tests Category=Slow
+- Point each README at the test tiers
+- **Check:** Compare only the Rust side of the Mikkel cases in the fast tier
+- Describe the verification tiers, worktree setup and measurements
+- **iPhone, iPad and Mac:** Add install-mac target for a launchable ad-hoc Release
+- Run the macOS UI tests in a headless Tart VM
+- **iPhone, iPad and Mac:** Check the sidebar relayout and the 900 x 600 minimum in the VM
+- Place the macOS VM UI tests in tier 3 of the verify guide
+- **Research:** User flow review from recording to my part
+- **Apps:** Pin the empty source, the default reading and «Demp» wording
+- Queue macOS VM runs on one lock and keep the full suite for releases
+- Cover a changed note staying open, and remember it across launches
+- **iPhone, iPad and Mac:** Change note → Save stays on the note on iPhone
+- **iPhone, iPad and Mac:** Read the stand's position as the Mac reports it, skip tooltips in the audit
+- **Mac-vm:** Keep the VM Dock's height fixed, document the UI test findings
+- **Plan:** Trumpet as a soloist and a seat, with instrument facts from the core
+- **Plan:** Trumpet plan scoped to the soloist range and a trumpet seat
+- Save the soloist golden next to the current one
+- **Plan:** Trumpet plan with the soloist rule as built and the owner defaults
+- **Windows:** A Trumpet part plays the Solo Cornet's sound without a mapping
+- **Plan:** Trumpet plan with the step 2 and 3 review answers
+- Promote the soloist golden
+- **iPhone, iPad and Mac:** Read the change-note card's words as label or value on macOS
+
+</details>
+
+## 0.1.0 (2026-09-28)
+
+### New features
+
+- Add capture CLI, model adapters, and ChoraleBricks eval harness
+- Add beat, separation and tagging adapters; record first benchmark
+- Add Slakh trumpet-lead song benchmark, pipeline B, notation-tolerance metrics
+- Add note-level consensus engine; fix Slakh bass octave in reference
+- Add beat-grid quantizer and notation-level rhythm benchmark
+- Add MusicXML export and draft lead-sheet tool; Mega-53 adapter env
+- Add URMP brass benchmark and metrical-level selection
+- Add brass-band instrument model with range validation; record melody extraction results
+- Ps13 pitch spelling with key estimation, gap filling, confidence-flagged melody line
+- Canonical score model, minimal deterministic arranger, transposing band export with round-trip test
+- Harmony reduction and end-to-end song arrangement; first Mikkel brass-band draft
+- Write instrument-sound ids, MuseScore round-trip gate, safer tick origin and key in composition
+- Layered solo-with-band arrangement for full brass band with percussion
+- SwiftF0 adapter and three-way solo vote; SwiftF0-spine rule for solo lines
+- Reproducible song pipeline with Mega-53 adapter; align docs with solo-vote findings
+- ScoreKit for the Apple app: Composition, MusicXML parser, talking score, MIDI
+- TranscriptionKit with companion engine client and fixture service
+- PlaybackKit with sectioned samplers, seating, speed, loop, metronome, count-in
+- Native SVG renderer for Verovio output with element frames and highlights
+- NotationKit wraps the Verovio framework with part filtering, concert pitch and timemap cursor
+- Brasscribe Play SwiftUI app for macOS, iOS and iPadOS
+- Tempo changes, dynamics, rehearsal marks and free-time regions from the re-saved golden score
+- Norwegian (bokmål) and English string catalogs; engrave once the view width is known
+- Configurable data/adapter paths, render-free arrange runs and a solo arranger
+- Engine service with job DAG, artifact cache, manifests and CLI
+- Benchmark suites with a baseline gate, and Studio inspection endpoints
+- Free-time regions, performed duration and articulations in Composition
+- Written durations and staccato from performed lengths and SwiftF0 contours
+- Free-time detection and proportional ad lib. notation
+- **QA:** MusicXML readability heuristics with CI gate
+- **QA:** Report accidental density and mixed sharp/flat bars
+- **QA:** Colour tokens with WCAG contrast and CVD check
+- Adapters run in their uv project or the pixi environment; SwiftF0 contour entry
+- Contour stage, duration/free-time/readability suites and Linux CI
+- **Band sounds:** Fetch VSCO 2 CE, Iowa MIS, MS Basic and OpenAIR IRs with pinned checksums
+- **Band sounds:** Brass-band instrument builder (SFZ + SF2), seating plan and offline room renderer
+- **Band sounds:** Blind A/B generator and scorer, engine parity check, recording plan
+- **Band sounds:** Specified deterministic humanization, VSCO sources for euphonium and B-flat bass, calibrated reverb level, room-matched baseline control
+- **QA:** Count a "?" words direction at a note's onset as uncertainty shape encoding
+- Beat-showing rhythm spelling, plain written spellings, shape-encoded uncertainty
+- Individual parts, energy gate for layer notes, part-writing durations
+- Beat-track cleanup for missed and inserted beats; bar phase from downbeat labels
+- Key changes and modes per passage
+- Separation-failure check for the solo stem
+- Dynamics per layer from loudness
+- Gated beat cleanup, rehearsal marks, part rendering style
+- **Core:** Rust port of the symbolic pipeline with a conformance runner
+- **Core:** UniFFI and C bindings with Swift, Android and .NET packages
+- Cross-platform adapter runner
+- CI gates chorale suites on pinned annotations and committed model outputs
+- **Studio:** Browser workbench with live stage graph, inspector, compare, benchmarks and score viewer
+- **Studio:** Live-run e2e, parity latency, reflow and trend fixes
+- **Studio:** Open .mxl, dark and high-contrast axe, re-run and compare e2e
+- **Windows:** Play core with Composition model and companion engine client
+- **Windows:** Talking-score announcer in English and bokmål
+- **Windows:** Talking score from MusicXML, score navigator and core bridge
+- **Windows:** AlphaTab playback, rendering and uncertainty styling
+- **Windows:** SwiftF0 on ONNX Runtime, capture contracts and exports
+- **Windows:** View models for import, transcription, score, player and export
+- **Windows:** WASAPI capture with per-app process loopback, Media Foundation decode
+- **Windows:** Score view with UI Automation peer for Narrator and NVDA
+- **Windows:** Score geometry for overlays and native core bridge on the shipped C ABI
+- **Windows:** WinUI 3 app shell, screens, dialogs and bokmål/English resources
+- Difficulty modes, minimal lineup, transposition, soprano doubling, figuration
+- **Android:** Gradle project and Composition model with talking-score announcer
+- **Android:** Engine companion client with golden fixture engine
+- **Android:** On-device SwiftF0 pitch detection with ONNX Runtime
+- **Android:** Brasscribe Play app with capture, transcription, review and score
+- **Android:** Realistic tier loads installed SFZ instruments per part
+- **Android:** Free-time announcements, live-engine checks, export tests
+- DELETE /v1/runs/{id} removes a finished run and keeps the cache
+- **Studio:** Norwegian and English UI, talking score, notation compare, run cleanup
+- Braille music (BRF) and talking-score exports, arrangement options on jobs
+- **Band sounds:** Single band SoundFont with a preset per part, GM programs plus banks, MS Basic drum kit on bank 128
+- Arrange on device with the Rust core; companion braille, talking-score and arrangement options
+- Realistic brass-band tier per part with seating and mix gain; contrast fixes from the iPad audit
+- **Windows:** Band SoundFont with one channel per part and balance
+- **Windows:** Braille export and lineup, difficulty and key through the engine
+- **Windows:** Switch between the score and the original, synced video with picture-in-picture
+- Band SoundFont MIDI setup in MusicXML; transposed bass lines split where too wide
+- **Core:** Port beat cleanup, key plans, dynamics, rehearsal marks, energy gate and part splitting
+- **Core:** Port humanization and the talking score
+- **Ffi:** Stems-aware band arrangement, humanization and talking score
+- **Bindings:** Regenerate Swift, Kotlin and C bindings; platform tests for humanization and the talking score
+- **Core:** Difficulty modes, lineups, transposition and band MIDI mapping
+- **Ffi:** Arrangement options (lineup, difficulty, key, transposition) over UniFFI and the C ABI
+- **Dotnet:** Band arrangement with stems, humanization and talking score; vector tests
+- SwiftF0 Core ML and static ONNX conversion with parity report
+- Basic Pitch parity for Core ML, TFLite and ONNX exports vs TensorFlow
+- Beat This! ONNX and Core ML conversion with beat parity report
+- HT-Demucs ONNX and Core ML core with separator parity report
+- BS-RoFormer core export (ONNX fp32/fp16, Core ML fp16) with SW parity report
+- **Windows:** Run on the native Rust core by default
+- Mega-53 ONNX fp32 and Core ML fp16 parity report
+- MuScriptor ONNX prefill and decode-with-past graphs with token parity
+- OnDeviceKit runs SwiftF0, Basic Pitch and Beat This! with Core ML
+- Offline solo transcription on iPhone and iPad
+- Send lineup and key to the engine, show the key picker, route solos to the device
+- Play the band SoundFont, one preset per part with channel_gain_db
+- Convolution reverb with the OpenAIR central-hall IR, calibrated to +4.5 dB wet-to-direct
+- Picture in picture for the synced video on iOS, iPadOS and macOS
+- Solo profile uses the layered arranger, as the Play apps do on device
+- **Android:** Basic Pitch on ONNX Runtime with upstream note decoding and parity tests
+- **Android:** On-device Beat This! small with the log-mel frontend and minimal postprocessor
+- **Android:** Rust core behind CoreBridge; braille, talking score and job options in the engine client
+- **Android:** Offline solo with Basic Pitch confirmation and Beat This beats, arranged by the Rust core
+- **Android:** Band SoundFont with one channel per part, humanized realistic tier, reference-exact offline solo
+- **Android:** Live full-band engine run, braille export and per-part talking score checks
+- **Android:** Assemble the reduced ONNX Runtime AAR, debug channel counts, keep the last on-device arrangement
+- Flexible-length Beat This small0 Core ML build
+- SwiftF0 mixed-precision build with an fp16 Neural Engine trunk
+- MuScriptor static KV cache for Core ML and the CoreML EP
+- Meter and bar phase for single-instrument beat tracks
+- **Design:** Design tokens in DTCG format with contrast checks for every role
+- **Design:** Brasscribe mark, wordmark, lockups and app icons for every platform
+- **Design:** Generate Swift, Compose, WinUI and CSS themes from the tokens
+- **Design:** Play and Studio mockups rendered from the generated tokens
+- **iPhone, iPad and Mac:** Link the design system tokens, display face, mark and app icon
+- **Core:** Meter and bar phase for single-instrument beat tracks
+- **Android:** Full screen for the music stand
+- **Design:** Apply the usability review to the spec, tokens and mockups
+- **Android:** Open a MusicXML file as a score
+- **Studio:** Restyle onto the Brasscribe design system
+- **Studio:** Score side panel, blended score tints, screenshots in every theme
+- **Windows:** Restyle Brasscribe Play onto the design system
+- **Android:** Restyle Play onto the Brasscribe design system
+- Discover the engine on the LAN over Bonjour/mDNS
+- **Site:** Bilingual promotion page and user guide for GitHub Pages
+- **Ci:** Add build/test workflows and semver-tag release pipeline
+- Rename scores and correct note pitch/duration on all three apps
+- Recent scores, score options and evidence-based note review on all apps
+- **Windows:** Review triage, Change note and the key for your instrument
+- Lightweight conformance summary and a background conformance run
+- **iPhone, iPad and Mac:** Norwegian for every new string, screenshot scenes for the review states
+- **Android:** Second usability review: share or print scope, triage, "?" at spec size, both keys
+- **Studio:** Readable type scale, simpler views, 44 px targets
+- Calibrated solo-note confidence and grouped review marks
+- **Site:** Show real app screenshots in device and window frames
+- **Site:** Use the restyled iPhone, iPad and macOS screenshots
+- **Windows:** Review by group, score titles and the selected note
+- **Core:** Calibrated solo-note confidence and grouped review marks
+- **Ffi:** Contour voicing confidence over UniFFI, the C ABI and .NET; regenerate bindings
+- **Android:** Interim review UI, selection column and caret, nb compound breaks, radio column
+- **Android:** Review by the engine's groups, readable score titles on Home
+- **iPhone, iPad and Mac:** Review the engine's note groups, one item per group, with the group's bars on the staff
+- **iPhone, iPad and Mac:** Readable score titles and rows, an iPhone review with Listen and Change note in view
+- **iPhone, iPad and Mac:** Change note and Keep write to the Composition; Change note arranges the score again through the Rust core
+- **Engine:** Pair each device once with its own long-lived credential
+- **Engine:** Name the engine after the computer's user-visible name
+- **Design:** Bandroom mockups, state icons and panel components
+- Arrange for a brass quartet in the Python reference
+- Benchmark the quartet against the ChoraleBricks voices
+- Port the quartet arrangement to the Rust core
+- Re-arrange a composition for any lineup through the FFI
+- Offer the quartet lineup in the engine and Studio
+- **Engine:** Device presence, /v1/status, computer name and local-trust switch
+- **Windows:** Stoppable Listen to this bar, connection status and pair once
+- **Engine:** Name the paired device that started each job
+- **Bandroom:** MacOS menu-bar app that supervises the engine
+- **Bandroom:** Bokmål copy deck, one primary per state, device in the Now line
+- **iPhone, iPad and Mac:** Keychain credentials, pairing link and connection state machine
+- **iPhone, iPad and Mac:** Stoppable Listen to this bar, connection status row and pair once
+- **Android:** Stoppable listen-to-bar, connection status, pair once
+- **Band sounds:** One part-to-preset resolver for every lineup, plus test phrases and sound checks
+- **Band sounds:** Equal-loudness presets, natural releases and real samples across each part's range
+- **Android:** Band sounds by default, one resolver for every part, no chopped notes
+- **Windows:** Every part resolves to its band preset, with a release tail, stop fade and headroom
+- **Studio:** Play the band sounds with one channel and preset per part
+- **Band sounds:** Coverage and phrase checks that fail on GM fallback, range holes and chops
+- **Android:** Say when the band sounds are missing, and fade out on stop and pause
+- **iPhone, iPad and Mac:** Say above the player when the band sounds are missing
+- **Windows:** Say above the player when the band sounds are missing
+- **Bandroom:** Brasscribe Bandroom for Windows, tray app with engine supervision
+- **Engine:** Report the wrong-code lockout in the pairing state
+- **Bandroom:** Show the wrong-code lockout in Pair a phone on Windows
+- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in Mikkel demo
+- **Android:** **Breaking:** Remove the built-in Mikkel demo
+- **iPhone, iPad and Mac:** Offer the brass quartet as a third output
+- **Android:** Offer the brass quartet as a third output
+- **Windows:** Offer a brass quartet as the third output option
+- **Bandroom for Mac:** Add Remove Brasscribe from this Mac to the More menu
+- **Site:** Mac, iPad and iPhone group in the hero, slim iPhone frames below
+- **Android:** Music stand with pages, a hiding control layer and rotation that keeps playing
+- Seats, the seat-to-part table and part sources
+- Benchmark the solo path per brass instrument and seat voices
+- Write a solo take for the player's seat
+- Measure the "?" rate on low brass and test a register recalibration
+- Port the seat's solo take to Rust, and put the tune on the seat's part
+- Seat, reads and lead over the FFI, the engine API and Studio
+- **Studio:** Appearance setting (Match system, Light, Dark)
+- **Bandroom-macos:** Appearance setting (Match system, Light, Dark)
+- **Bandroom for Windows:** Appearance setting (Match system, Light, Dark)
+- **Android:** Appearance setting (Match system, Light, Dark)
+- **Band sounds:** Bundle the pinned band sound pack in every build
+- **iPhone, iPad and Mac:** Bundle the phone band SoundFont on iOS
+- **Bandroom:** Bundle the band SoundFont and serve it to Studio
+- **iPhone, iPad and Mac:** Band output stage with make-up gain and a soft limiter
+- **iPhone, iPad and Mac:** The music stand on iPhone, iPad and Mac
+- **iPhone, iPad and Mac:** Appearance setting, stand screenshots and stand polish
+- **Bandroom-win:** Download the models, name what's missing, name shown to phones
+- **Android:** Pedals turn pages without the controls; drop open-on-turn
+
+### Fixes
+
+- Unescape ampersands in adapter scripts
+- Tolerate MuseScore CLI shutdown crash when output was written
+- Launch on iOS, open phones on the player's part, engrave pages progressively
+- 44 pt hit targets and unclipped position text from the iOS accessibility audit
+- Keep free-region notes and their fermata inside the region; contour in the song pipeline
+- **QA:** Make the talking-score grammar produce every vector; add readability baseline
+- Deterministic MusicXML part ids so unchanged arrangements hit the cache
+- GPU mutex for heavy adapters in live suites; stricter stage and reference file routes
+- **Band sounds:** Gate-ratio articulation, even-sized sm24 for TinySoundFont, section balance, per-part transposition
+- Band reading ranges and continuous bass octaves
+- **Core:** Reproduce NumPy's argsort order in pitch spelling
+- Batch MuseScore conversions into one launch and serialise instances
+- Basic Pitch uses its ONNX model outside macOS
+- Engine arrange stage matches the v2 layered song output
+- No fragment values where a triplet and a 16th grid meet in one beat
+- Keep MuseScore's playable ranges for range checks; place notes by reading range
+- **Windows:** Thread-safe synth, brass SoundFont routing, back after a failed run
+- **Windows:** Clean MIDI export, bounded engine connect, shorter durations
+- **Android:** Lint-clean Compose state, per-API foreground service type, faster resampler
+- Arrange the small band on device instead of sending lineup/key the engine rejects; emit SSE events on their data line
+- Stable ids for per-drum percussion instruments
+- Include the id canonicaliser in the arrange stage cache key
+- Arrow keys move by bar even when the score's scroll view has focus
+- BRF lines never exceed 40 cells
+- **iPhone, iPad and Mac:** Open a window and route shortcuts so macOS UI tests pass
+- Infer the solo meter on the final beat grid, never merge notes, keep bars on weak evidence
+- **Android:** 16 KB page-size alignment for the 64-bit native libraries
+- **iPhone, iPad and Mac:** Crash when picking a single part in the score
+- **Android:** Score follows the theme so it reads in dark mode
+- **Build:** Change trigger branch to main
+- **Android:** Say why offline transcription is unavailable for the sample
+- **Design:** 20% cursor tint as specified, DTCG colour objects for shadows, counts
+- **Conformance:** Meter reference cases use the module numpy; regenerate bindings
+- **Windows:** Title-bar clicks, glyph sizes, single-key review keys, re-arranged scores
+- **Android:** Reach LAN engines over Wi-Fi when mobile data is the default network
+- **Ml:** Transcode beat_this/muscriptor input to wav via ffmpeg
+- **Studio:** Plain fetch-error states, Run conformance, review polish
+- **iPhone, iPad and Mac:** Card shadows off the text, a wrapping Check them line, opaque phone player
+- **iPhone, iPad and Mac:** IPad keeps the score clear of the sidebar, stacks the score toolbar at the largest text sizes
+- **iPhone, iPad and Mac:** Window keeps its size beside wrapping notices, Mac export sheet without a title bar, screenshot script
+- **Site:** Float guide phone shots beside the text and keep nb percentages together
+- **Site:** Qualify record-what's-playing by platform and match copy to the shots
+- **Studio:** Parity names failing formats and says where each model is ready
+- **Android:** Part chip counts follow the review groups; retake screenshots
+- **iPhone, iPad and Mac:** "Hear the recording" chip on iPhone, the Hear control only where it fits, Dynamic Type for the "?" legend mark
+- **Android:** Lead line says where to start when most places are very unsure; drop "(draft)" from Home titles; cut the bar snippet below the staff so alphaTab's credit stays in About; only the engine's grouped parts have places to check
+- **Windows:** Lead line says where to start when most places are very unsure; Home's count matches Review
+- **iPhone, iPad and Mac:** Review places only in the parts the arranger marked, so Home and Review both count 83; lead line says where to start when most places are very unsure
+- **Android:** Cut the review snippet above alphaTab's credit line; test Home's count against the golden; retake the review screenshots
+- **Windows:** English recording titles use invariant month names
+- **Windows:** Function bindings on Visibility return Visibility
+- **Ci:** Run Apple tests on the newest iPhone Pro simulator with Xcode 26.6 selected
+- **iPhone, iPad and Mac:** Beat This small0 download sizes
+- **Windows:** Log unhandled exceptions and show them when the smoke test sees the app exit
+- **Windows:** Add the Back-key accelerator in code so the main window loads
+- **Windows:** Keep no frame back stack instead of clearing it after each navigation
+- **Windows:** Create the selection canvas before the score surface adds it
+- **Windows:** Score screen passes the Axe.Windows rules
+- **Engine:** Keep the rotating token valid until its replacement is used
+- Treat the re-arrange transposition as the total from the recording
+- **Studio:** Read the brass-band profile's lineups as a plain list in nb
+- **Apps:** Sync Android and Windows engine contracts with the current spec
+- **Bandroom:** One address per line in tech details, reuse ports in TIME_WAIT
+- **Bandroom:** Short bokmål name for separating the instruments
+- **iPhone, iPad and Mac:** No pairing prompt for Brasscribe on the same Mac; refresh iPad and Mac screenshots
+- **Android:** Status row layout, tablet wording, reconnect on emulators
+- **Android:** Fade out on Stop, quiet retry after giving up, README
+- **Android:** Space toggles Listen, nb stem-separation step, screenshots
+- **iPhone, iPad and Mac:** Band sounds by default, one resolved preset per part, no streaming dropouts
+- **Band sounds:** Level sustain samples on what short notes hear
+- Compare waveforms in the midi-bank test, and resolve part names in the offline renderer
+- **Band sounds:** Level the drum kit against the levelled brass presets
+- **Studio:** Use the layered-preset gains with the phone band SoundFont
+- **iPhone, iPad and Mac:** Find the repository by sounds/band.py, and check unisons by relative level
+- **Windows:** Connection status row as a bordered row like the other Play apps
+- **Android:** Status row in Apple's form, nb tech-details label
+- **Bandroom:** Project file loads, stage names match Play, Stop names the phone
+- **Bandroom:** Flyout fits its content, problem title in the status, list in a card
+- **Bandroom:** Tray icon on a hidden tool window, Enter only opens the flyout
+- **Bandroom:** Bundle every pyproject.toml; recopy the workspace when the app's sources change
+- **iPhone, iPad and Mac:** Load samples into memory only where the SDK has the switch
+- **Windows:** Leave out a null review list when writing a Composition
+- **Android:** Put docked actions on a band with a hairline
+- **Android:** Point the tech details at Brasscribe Bandroom
+- **iPhone, iPad and Mac:** Dock Show the score on an opaque band
+- Keep the Solo Cornet inside its playable range
+- **Android:** Stand pages start with the title, Turn the music joins the layer
+- **Site:** Correct the research article after fact-check
+- **Android:** Two-page spread on a tablet on its side, no alphaTab credit, no title after page 1
+- Credit the arrangement to Brasscribe and drop the repeated subtitle
+- **Apps:** Model the seat, reads and lead job fields in the engine clients
+- **Android:** One full-width stand page on tablets, bars never squeezed, no half title or credit
+- **Bandroom-macos:** Name the settings pickers once, by their section
+- **iPhone, iPad and Mac:** Stand fits every part, large text and pedals
+- **iPhone, iPad and Mac:** Mac windows stay on their screen; output stage checked on the phone SoundFont
+- **Bandroom for Mac:** Download the models, name what is missing, find a hidden menu-bar mark
+- **Android:** Stream uploads and take a video's sound out on the phone
+- **Android:** An upload without a file stays empty; SoundFont check per score
+
+### Performance
+
+- **Windows:** Lay out and draw notation off the UI thread, page by page
+
+<details><summary>Under the hood (120 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- Add model research reports and architecture summary
+- Verify eval dataset and checkpoints, add recognition/embedding picks
+- Record architecture decision from benchmark evidence
+- Record Mikkel performance setup from live video
+- Add build plan for the Studio workbench and Play musician apps
+- Revise app plan for native per-platform apps and non-commercial licensing; add external comparison
+- Confirm app names and Linux coverage via Studio
+- Turn capture into a Swift package with a reusable process-tap recorder
+- App unit tests, UI test that plays a bar of Mikkel, and accessibility audit
+- WKWebView side of the notation spike, hosted in the macOS app
+- Pixi workspace for the engine and every model adapter
+- Free-time benchmark and composition diff
+- **Accessibility:** WCAG 2.2 AA and EN 301 549 checklist for Play and Studio
+- **Accessibility:** Talking-score announcement spec with conformance vectors
+- **Accessibility:** Uncertainty palette, shape encoding, contrast, motion and zoom rules
+- **QA:** Screen-reader and keyboard acceptance scripts for Play and Studio
+- **QA:** Readability review of the Mikkel golden output
+- **QA:** Tighten horn range wording
+- Correct amendment history of the universal design regulation
+- **Band sounds:** Pass the Composition in the A/B render command
+- **Accessibility:** Record that the boxed ? survives MuseScore re-export
+- **Core:** Unit fixtures from the Python reference for spelling, quantize, argsort and durations
+- **Core:** Free-time and duration fixtures, composition read-back checks, options in the C ABI
+- Linux-aarch64 platform, conda-forge torchaudio/torchvision and a Linux Docker image
+- **Studio:** Refresh screenshots from the e2e run
+- **Studio:** Regenerate API types from the engine's openapi.json
+- Re-save Mikkel golden output after free-time, duration and readability changes
+- **Windows:** Type-check the WinUI app's C# off Windows
+- **Windows:** Build, test and Axe.Windows scan of Brasscribe Play on windows-latest
+- **Android:** Instrumented accessibility flow and verify-command wiring
+- **Android:** README, per-ABI release APKs and emulator screenshots
+- **Studio:** No MuseScore launches in the default e2e run
+- DeleteRun path-traversal check accepts router rejection
+- **Studio:** Refresh screenshots from the e2e run
+- Check the re-saved golden rewrites byte-identical; keep the legacy-format check on the previous golden
+- Lower URMP uncomfortable-note baseline to the measured 1.0
+- Arrangement options in composition.json and the difficulty modes; round trip uses recorded options
+- Run package tests on the iOS simulator; fixture artifact checks follow the golden files
+- Notation spike results, app README and screenshots
+- Companion client against a running engine; skip the engine's audio render
+- Video import extracts audio and keeps the picture
+- IPad screenshot with the synced video inset
+- **Band sounds:** Band SoundFont alphaTab checks follow the banked golden score; drums measured where they enter
+- Merge master
+- **Core:** Regenerate duration fixtures from the current reference
+- Conversion README with method, results and blockers; fix >2 GB ONNX export
+- Record free-time, duration, bar-line, difficulty, readability, conformance and sound results
+- Sound, room, offline solo and video notes in the Apple README
+- **Android:** Pass the converted-model and data paths to pitch tests
+- **Android:** Offline solo on the JVM against the engine's solo profile
+- Document how to build and run every component
+- Ignore SwiftPM's local Xcode state in core/swift
+- **Design:** Design system, brand and voice guide, per-app implementation checklist
+- Usability review of the design mockups for non-technical players
+- Second usability review on restyled Android and Studio screens
+- Fix failing workflows and split checks from release builds
+- **Site:** Explain the transcription pipeline and design choices
+- **Studio:** Regenerate API types for evidence and run-edit endpoints
+- **iPhone, iPad and Mac:** Screenshots of every key screen, light and dark, on iPhone, iPad and Mac
+- Studio usability and accessibility review
+- Correct the registry path finding in the Studio review
+- Third usability review on Android
+- Third usability review, Apple section
+- Re-save Mikkel golden output with calibrated confidence
+- Third usability review, Studio section and remaining P1s
+- **Android:** The core keeps the review groups; drop the JSON workaround
+- **iPhone, iPad and Mac:** Screenshots for the third review: populated Home, the new review, Norwegian main screens
+- Final usability pass, all P1s closed
+- **Site:** Refresh screenshots with Norwegian iPhone shots and the 83-place review; alt text follows
+- **Windows:** Print the app's crash log when a step fails
+- **Research:** Overlapping instruments and in-between tones
+- **Plan:** Pairing once per device, and reaching the engine from outside
+- **Plan:** Name changes by what they do; rotation grace, tailnet and Windows migration notes
+- **Design:** Brasscribe Bandroom spec for running the engine in the background
+- **Design:** Complete the Bandroom copy deck and mark unverified platform facts
+- **Design:** Bandroom passes the computer name through BRASSCRIBE_COMPUTER_NAME
+- Plan a brass quartet (kvartett) output option
+- Add quartet share labels, accessible disabled card and sound-branch conflict to kvartett plan
+- Let lineups carry their lead, bass and second-bass roles
+- **Design:** Bandroom's engine assumptions include the admin token and /v1/status
+- **iPhone, iPad and Mac:** Screenshots of Review listening/stopped and Home with the connection row
+- Band sound coverage, chop diagnosis, balance and remaining gaps
+- Release builds fetch the pinned band sounds and fail without them
+- Plan for asking what the player plays and writing for it
+- **Design:** Mockups for the instrument question, settings row and part source labels
+- Measurement scripts, URMP cross-check and review fixes for the instrument plan
+- **Design:** Mark the current note in the review mockup with a tint column and caret
+- **Design:** Music stand spec, mockups and platform plan
+- **Design:** Apply the music stand review
+- List the quartet lineup and arrange_musicxml_with in the READMEs
+- **Bandroom:** Windows build, how it runs and MSIX packaging
+- **Bandroom:** Check that the engine's whole process tree ends with Bandroom
+- **Bandroom:** What CI checks, and that the MSIX build is not yet exercised
+- Add the Old Hundredth screenshot fixture, arranged by the core
+- **Windows:** Show Old Hundredth in the preview scenes and screenshots
+- **Bandroom for Windows:** Use Old Hundredth as the sample job title
+- Use Old Hundredth as the example title and drop the demo from design, QA and site
+- **Site:** Regenerate the Apple screenshots and site shots from Old Hundredth
+- **Android:** Let syncOpenApi run in the same build as the tests
+- **Android:** Retake the Choose output screenshots with the quartet
+- **Site:** Call the small band «Lite band» in the nb pages
+- **iPhone, iPad and Mac:** Retake the output and library screenshots with the quartet
+- **Site:** Show the Norwegian computer name in the nb guide
+- Re-save the Mikkel golden output with the cornet's playable top
+- **iPhone, iPad and Mac:** Add Norwegian iPhone and iPad shots and large-text review from Old Hundredth
+- **Site:** Add a research article on how Brasscribe works
+- **Site:** Add the Norwegian research article and home-page teasers
+- **Site:** Correct the review threshold and the spelling dataset on the home pages
+- Run only fast Linux checks on push; platform builds on release or by hand
+- A release tag runs the checks once, inside the release
+- **Design:** Appearance setting spec (Match system, Light, Dark)
+- **Design:** Name the contrast setting per platform
+- **iPhone, iPad and Mac:** Give the reason iOS bundles the phone SoundFont correctly
+- **Bandroom:** Bundle the phone band SoundFont for Studio playback
+- **iPhone, iPad and Mac:** Keep macOS UI tests inside the app window and out of make test
+- **iPhone, iPad and Mac:** MacOS UI tests in their own scheme
+- **Bandroom for Mac:** Ship pinned MSST code for Mega-53, bokmål for the new strings
+- **Bandroom:** Model downloads, hidden menu-bar mark and the name shown to phones
+- **Android:** A video larger than the heap imports and uploads; SoundFont bytes released
+- **Android:** Page keys leave the hide timer alone; WAV, too-large and non-AAC coverage
+
+</details>
+

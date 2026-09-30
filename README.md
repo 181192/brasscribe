@@ -66,7 +66,7 @@ The band SoundFonts are not in git; `pixi run fetch-sounds` downloads the pinned
 CLI, logged in). Some tests use recordings and reference output under `data/`, which is not in the
 repository either; without it those tests are skipped.
 
-Releases are built by hand on a Mac: [docs/dev/release.md](docs/dev/release.md).
+Releases are built by CI from a tag; `scripts/release.sh X.Y.Z` prepares one ([docs/dev/release.md](docs/dev/release.md)). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Repository layout
 
