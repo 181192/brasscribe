@@ -621,6 +621,7 @@ export interface paths {
          * Request Pairing
          * @description Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
          *     poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+         *     A new request from the same address replaces the one it has waiting.
          */
         post: operations["requestPairing"];
         delete?: never;

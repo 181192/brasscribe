@@ -224,7 +224,7 @@ This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and
 
 Other changes:
 
-- **Wrong codes.** Five wrong codes lock pairing for 30 s, then 60 s, 120 s and so on, up to 15 min. The code on screen never changes.
+- **Wrong codes.** Five wrong codes from one address lock pairing for that address for 30 s, then 60 s, 120 s and so on, up to 15 min. Twenty wrong codes from all addresses together lock it for everyone the same way. Opening a new code on the computer lifts every lock. The code on screen never changes.
 - **Presence.** Every authenticated request updates the device's `last_seen` in memory. It is written to disk at most once a minute, and when the engine stops. A device is `online` when it was seen in the last 60 s. The Play apps call `GET /v1/devices/me` every 20 s while they are open and paired, so `online` means "the app is open and connected".
 - **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `BRASSCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the operating system's name for the computer (`scutil --get ComputerName` on macOS), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the payload and the mDNS instance name is always `Brasscribe on <computer name>`, word for word what the helper shows. `BRASSCRIBE_SERVER_NAME` replaces the whole name. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
 - **Static token.** `BRASSCRIBE_TOKEN` still works, as a static token for scripts.
@@ -373,8 +373,8 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 | **E: a local proxy makes remote traffic look like loopback** | remote and hosted | Everything trusted, including (after this change) device management | Loopback trust off outside home mode (§5.1). Owner actions need the admin role or a local socket. **Top risk: build the mode switch before recommending any proxy or tunnel on the same machine.** |
 | S: a fake engine on the LAN collects tokens | home | Possible: plain HTTP, no identity | Pinned `fp` from the QR code or TOFU (§4.9). Until then, `server_id` only routes and doesn't authenticate |
 | S: guessing the pairing code | home | ~10⁶ tries, unlimited rate, code quietly replaced (§2 cause 2) | Lockout with backoff; windows opened on the computer are single use and last 10 min |
-| D: locking out pairing on purpose | home | n/a | A LAN attacker can keep pairing locked (5 wrong codes every lock period). Accepted: it's a LAN nuisance, and approve-on-the-computer is still available. Pending requests are capped at 3 |
-| S: spamming approval prompts on the computer | home | n/a | 3 pending at most, 2 min expiry, match code shown on both screens |
+| D: locking out pairing on purpose | home | n/a | Wrong codes lock pairing per address, so one device cannot keep another from pairing. Many addresses together can still lock it for everyone; opening a new code on the computer lifts that, and approve-on-the-computer is still available. Pending requests are capped at one per address and 3 in all |
+| S: spamming approval prompts on the computer | home | n/a | 3 pending at most (a new request from an address replaces its waiting one), 2 min expiry, match code shown on both screens |
 | I: a token sniffed on the LAN | home | shared token, plain HTTP | per-device token (limited blast radius, revocable); TLS next; DPoP later |
 | I: a token copied from app storage or a backup | device | UserDefaults, SharedPreferences, plain JSON | Keychain (`ThisDeviceOnly`), Android Keystore-wrapped, Credential Locker (§7) |
 | I: one user sees another's uploads or jobs | hosted | global `audio_id` dedup; `/v1/jobs` lists all | tenant-scoped ids, filtered listings, 404 for others' ids |

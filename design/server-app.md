@@ -135,7 +135,7 @@ The **Pair a phone** window offers three ways, easiest first. They all end in th
    - The phone lists "Brasscribe on Kalli's MacBook", found over the local network (mDNS, `_brasscribe._tcp`).
    - The user taps it, and the computer asks **Allow Kari's iPhone?**
    - The dialog shows a four-digit match number that the phone also shows. The user compares the numbers but never copies one.
-   - A request waits 2 minutes, and at most three can wait at once. If it lapses, the dialog says "This request has expired. Choose this computer on the phone again."
+   - A request waits 2 minutes, and at most three can wait at once (a phone that asks again replaces its own waiting request). If it lapses, the dialog says "This request has expired. Choose this computer on the phone again."
    - If the Pair window is closed, the request arrives as an actionable notification (§6.3).
 2. **Scan the code** with the phone's camera or with Play. The QR holds the pairing link: the addresses, the server id and the code.
 3. **Type the code:** six digits, shown as `482 913`.
@@ -146,7 +146,7 @@ The **Pair a phone** window offers three ways, easiest first. They all end in th
 - The code works **while the Pair window is open**, and each code works **once**. The window says exactly that: "This code works while this window is open, and only once."
 - Behind the scenes, the app opens the engine's pairing window with no expiry while the window is open, and closes it when the window closes. If a fixed lifetime is ever needed, the app extends the 10-minute window in the background instead. Either way, the user never sees a timer or races one.
 - **Pair another phone** in the window issues the next code.
-- The code never changes under the user. After 5 wrong codes, the engine locks code entry for 30 s, and the lock grows up to 15 min. The window then says, politely: "Too many wrong codes. Wait a moment, or allow the phone here." Way 1 still works during a lockout, so a stranger on the network can't block pairing.
+- The code never changes under the user. After 5 wrong codes from one address, the engine locks code entry for that address for 30 s, and the lock grows up to 15 min; after 20 from all addresses together it locks entry for everyone the same way. A new code lifts every lock. The window then says, politely: "Too many wrong codes. Wait a moment, or allow the phone here." Way 1 still works during a lockout, so a stranger on the network can't block pairing.
 
 **After pairing:**
 - The window shows "Kari's iPhone is paired", and focus moves to that line, which is announced.
@@ -675,7 +675,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
 - **The QR** is the `uri`: `brasscribe://pair?v=1&id=<server id>&name=<"Brasscribe on host">&h=<ip:port>[,…]&code=<6 digits>[&fp=<SPKI SHA-256>]`.
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
-- **Wrong codes:** after 5, code entry is locked for 30 s, doubling up to 15 min. The engine answers 429 with `Retry-After`. It never swaps the code silently.
+- **Wrong codes:** after 5 from one address, code entry is locked for that address for 30 s, doubling up to 15 min (after 20 from all addresses, for everyone; a new code lifts every lock). The engine answers 429 with `Retry-After`. It never swaps the code silently.
 - **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at, online) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
 - **Approve on the computer:** the phone sends `POST /v1/pair/requests` and gets `{request_id, name, platform, match_code (4 digits), created_at, status}`.
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.

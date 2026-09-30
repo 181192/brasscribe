@@ -5209,7 +5209,7 @@
     },
     "/v1/pair/requests": {
       "post": {
-        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).",
+        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).\nA new request from the same address replaces the one it has waiting.",
         "operationId": "requestPairing",
         "requestBody": {
           "content": {

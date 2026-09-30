@@ -114,7 +114,7 @@ def test_wrong_codes_lock_pairing_but_never_change_the_code_on_screen(settings):
         r = c.post("/v1/pair", json={"code": code})
         assert r.status_code == 429 and int(r.headers["Retry-After"]) > 0
         assert c.app.state.pairing.code == code
-        c.app.state.pairing.locked_until = 0  # the lock has passed
+        c.app.state.pairing.clients.clear()  # the lock has passed
         assert c.post("/v1/pair", json={"code": code}).status_code == 200
 
 

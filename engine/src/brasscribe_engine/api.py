@@ -226,11 +226,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.post("/v1/pair", response_model=m.PairResponse, operation_id="pairDevice", tags=["session"],
               responses={403: {"description": "wrong pairing code, or pairing is closed"},
                          429: {"description": "too many wrong codes; retry after Retry-After seconds"}})
-    def pair(body: m.PairRequest, authorization: str | None = Header(None)) -> m.PairResponse:
-        result = app.state.pairing.check(body.code)
+    def pair(body: m.PairRequest, request: Request, authorization: str | None = Header(None)) -> m.PairResponse:
+        client = request.client.host if request.client else ""
+        result = app.state.pairing.check(body.code, client)
         if result == "locked":
             raise HTTPException(429, "too many wrong codes; wait and try again",
-                                {"Retry-After": str(int(app.state.pairing.retry_after()) + 1)})
+                                {"Retry-After": str(int(app.state.pairing.retry_after(client)) + 1)})
         if result == "closed":
             raise HTTPException(403, "pairing is closed: open it on the computer")
         if result != "ok":
@@ -244,10 +245,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.post("/v1/pair/requests", response_model=m.PairRequestInfo, status_code=202, operation_id="requestPairing",
               tags=["session"], responses={429: {"description": "too many requests are waiting"}})
-    def request_pairing(body: m.PairRequestCreate) -> m.PairRequestInfo:
+    def request_pairing(body: m.PairRequestCreate, request: Request) -> m.PairRequestInfo:
         """Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
-        poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes)."""
-        r = app.state.pair_requests.create(body.device_name, body.platform)
+        poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+        A new request from the same address replaces the one it has waiting."""
+        r = app.state.pair_requests.create(body.device_name, body.platform,
+                                           request.client.host if request.client else "")
         if r is None:
             raise HTTPException(429, "too many pairing requests are waiting", {"Retry-After": "30"})
         return m.PairRequestInfo(**r.public())
