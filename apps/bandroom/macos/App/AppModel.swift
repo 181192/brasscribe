@@ -129,6 +129,9 @@ final class AppModel {
         downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
         supervisor.onFailure = { [weak self] _ in self?.notifyFailure() }
+        supervisor.onPhaseChange = { [weak self] phase in
+            if phase != .running { self?.engineLeftRunning() }
+        }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
         savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
@@ -268,6 +271,13 @@ final class AppModel {
         } else {
             Task { _ = try? await client.closePairing() }
         }
+    }
+
+    /// Stopped, restarting or gone: its client and any score it was making go with it, and the Mac may sleep again.
+    private func engineLeftRunning() {
+        monitor.client = nil
+        pairing.client = nil
+        releaseSleep()
     }
 
     private func startSampling() {

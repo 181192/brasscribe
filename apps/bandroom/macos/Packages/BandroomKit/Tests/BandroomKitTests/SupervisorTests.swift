@@ -173,6 +173,21 @@ import Testing
         #expect(sup.pid != first)
     }
 
+    @Test func everyPhaseChangeIsReported() async {
+        let launcher = FakeLauncher(), engine = FakeEngine()
+        let (sup, _) = make(launcher, engine)
+        var phases: [SupervisorPhase] = []
+        sup.onPhaseChange = { phases.append($0) }
+        sup.start()
+        await settle()
+        launcher.crash(sup.pid!)
+        await settle()
+        #expect(Array(phases.prefix(3)) == [.starting, .running, .waitingToRetry(attempt: 1, delay: 2)])
+        sup.stop()
+        await settle()
+        #expect(phases.last == .stopped)
+    }
+
     @Test func stopTerminatesTheProcessGroupAndRemovesEngineJSON() async {
         let launcher = FakeLauncher(), engine = FakeEngine()
         let (sup, statusFile) = make(launcher, engine)

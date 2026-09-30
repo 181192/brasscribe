@@ -77,6 +77,21 @@ import Testing
         #expect(running == [0, 1])
     }
 
+    @Test func withoutAnEngineNothingIsBeingMade() async {
+        let engine = FakeEngine()
+        engine.statusValue.jobsRunning = 1
+        engine.jobsValue = [Job(id: "j1", profile: "solo", title: "Old Hundredth", status: "running", created: 0, started: 0,
+                                progress: 0.5, stages: [])]
+        let m = StatusMonitor(sleep: { _ in })
+        m.client = engine
+        await m.refresh()
+        #expect(m.status?.jobsRunning == 1)
+        #expect(m.job != nil)
+        m.client = nil
+        #expect(m.status == nil)
+        #expect(m.job == nil)
+    }
+
     @Test func unreachableEngineIsNotReachable() async {
         let engine = FakeEngine()
         engine.failAll = true

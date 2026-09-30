@@ -19,6 +19,9 @@ public final class EngineSupervisor {
     public var onHealthy: ((any EngineAPI) -> Void)?
     /// Called when the engine is given up on (Error).
     public var onFailure: ((LaunchFailure?) -> Void)?
+    /// Called on every change of phase, with the new one: whatever held on to the running engine (a client, the
+    /// sleep assertion while a score is made) lets go when it isn't `.running` any more.
+    public var onPhaseChange: ((SupervisorPhase) -> Void)?
     public var log: (String) -> Void = { _ in }
 
     @ObservationIgnored private let launcher: ProcessLauncher
@@ -88,6 +91,7 @@ public final class EngineSupervisor {
         let before = machine.phase
         let effects = machine.handle(event, now: now())
         if before != machine.phase { log("engine: \(before) → \(machine.phase) on \(event)") }
+        if before != machine.phase { onPhaseChange?(machine.phase) }
         for effect in effects { run(effect) }
     }
 

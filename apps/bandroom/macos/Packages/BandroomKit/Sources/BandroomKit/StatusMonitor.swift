@@ -197,8 +197,10 @@ public final class StatusMonitor {
         }
     }
 
+    /// No engine: nothing is being made and its numbers are gone, so nothing waits on a job that isn't there.
     private func clear() {
         reachable = false
+        status = nil
         job = nil
         requests = []
     }
