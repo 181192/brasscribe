@@ -30,8 +30,12 @@ New-Item -ItemType Directory -Force -Path C:\ProgramData\ssh | Out-Null
 Copy-Item "$Drive\authorized_keys" $keys -Force
 # sshd ignores the file unless only Administrators and SYSTEM can read it
 icacls $keys /inheritance:r /grant "*S-1-5-32-544:F" /grant "*S-1-5-18:F" | Out-Null
+# the MSI's config names sftp-server.exe without a path, which this sshd can't start: scp then fails
+$cfg = "C:\ProgramData\ssh\sshd_config"
+if (-not (Test-Path $cfg)) { Copy-Item "C:\Program Files\OpenSSH\sshd_config_default" $cfg }
+(Get-Content $cfg) -replace '^Subsystem\s+sftp\s+.*$', 'Subsystem sftp "C:\Program Files\OpenSSH\sftp-server.exe"' | Set-Content -Encoding ascii $cfg
 Set-Service sshd -StartupType Automatic
-Start-Service sshd
+Restart-Service sshd
 if (-not (Get-NetFirewallRule -Name brasscribe-sshd -ErrorAction SilentlyContinue)) {
     New-NetFirewallRule -Name brasscribe-sshd -DisplayName "OpenSSH Server (brasscribe VM)" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow | Out-Null
 }
