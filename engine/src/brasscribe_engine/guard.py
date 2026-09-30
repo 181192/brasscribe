@@ -12,6 +12,9 @@ send requests to that address too, and it must not count as a client the owner c
   address, localhost, a .local name, this computer's host name, or a name in BRASSCRIBE_ALLOWED_HOSTS (for
   a proxy on this computer); anything else gets 400.
 
+Request bodies are capped (BRASSCRIBE_MAX_UPLOAD_BYTES, 2 GiB by default): a larger one gets 413, from its
+Content-Length before it is read, or as soon as a body sent without one passes the cap.
+
 Studio is served by the engine, so its requests are same-origin. The native apps send neither Origin nor
 Sec-Fetch headers and are not affected; LAN clients authenticate with a token, so their Host is not checked.
 """
@@ -24,6 +27,7 @@ import socket
 from collections.abc import Callable, Iterable
 from urllib.parse import urlsplit
 
+from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 STATE_CHANGING = {"POST", "PUT", "PATCH", "DELETE"}
@@ -95,3 +99,31 @@ class RequestGuard:
                 return await JSONResponse({"detail": "requests from other web pages are not accepted"},
                                           status_code=403)(scope, receive, send)
         return await self.app(scope, receive, send)
+
+
+class BodyLimit:
+    """ASGI middleware: 413 for a request body over `max_bytes`."""
+
+    def __init__(self, app, *, max_bytes: int):
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["method"] not in STATE_CHANGING:
+            return await self.app(scope, receive, send)
+        too_large = f"the request is larger than {self.max_bytes} bytes (BRASSCRIBE_MAX_UPLOAD_BYTES)"
+        length = dict(scope["headers"]).get(b"content-length", b"")
+        if length.isdigit() and int(length) > self.max_bytes:
+            return await JSONResponse({"detail": too_large}, status_code=413)(scope, receive, send)
+        received = 0
+
+        async def counted():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise HTTPException(413, too_large)
+            return message
+
+        return await self.app(scope, counted, send)

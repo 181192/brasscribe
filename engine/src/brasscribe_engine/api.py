@@ -42,7 +42,7 @@ from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdenti
 from . import schemas as m
 from .adapters import host_device
 from .config import Settings
-from .guard import RequestGuard
+from .guard import BodyLimit, RequestGuard
 from .jobs import TERMINAL, Job, JobManager
 from .names import is_audio, valid_id, valid_relpath
 
@@ -130,6 +130,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def is_trusted(request: Request) -> bool:
         return trusted_address(request.client.host if request.client else "")
 
+    app.add_middleware(BodyLimit, max_bytes=settings.max_upload_bytes)
     app.add_middleware(RequestGuard, trusted=trusted_address, allowed_hosts=settings.allowed_hosts)
 
     def bearer(authorization: str | None) -> str | None:
@@ -382,25 +383,30 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                 f.write(chunk)
         digest = h.hexdigest()
         name = Path(file.filename or "audio.wav").name
-        suffix = Path(name).suffix.lower() or ".wav"
+        # The client's name is only shown; the stored file keeps an audio suffix, never one like .json.
+        suffix = Path(name).suffix.lower() if is_audio(name) else ".wav"
         audio_id = digest[:16]
         dst = up / f"{audio_id}{suffix}"
         if dst.exists():
             tmp.unlink()
         else:
             shutil.move(tmp, dst)
-        (up / f"{audio_id}.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
+        (up / f"{audio_id}.meta.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
                                                          "bytes": size, "path": dst.name}))
         return m.AudioRef(audio_id=audio_id, sha256=digest, filename=name, bytes=size)
 
     def audio_path(audio_id: str) -> tuple[Path, dict]:
-        if not valid_id(audio_id):
-            raise HTTPException(404, f"no audio {audio_id}")
-        meta = settings.uploads_dir / f"{audio_id}.json"
-        if not meta.exists():
-            raise HTTPException(404, f"no audio {audio_id}")
-        d = json.loads(meta.read_text())
-        return settings.uploads_dir / d["path"], d
+        """An upload and its metadata: <id>.meta.json, or <id>.json as engines before it wrote it."""
+        if valid_id(audio_id):
+            for meta in (settings.uploads_dir / f"{audio_id}.meta.json", settings.uploads_dir / f"{audio_id}.json"):
+                try:
+                    d = json.loads(meta.read_text())
+                    stored = d["path"]
+                except (OSError, ValueError, KeyError, TypeError):
+                    continue
+                if isinstance(stored, str) and valid_id(stored) and is_audio(stored):
+                    return settings.uploads_dir / stored, d
+        raise HTTPException(404, f"no audio {audio_id}")
 
     def input_allowed(p: Path, anywhere: bool = False) -> bool:
         """Jobs read audio (or video) from the engine's own audio folders: uploads, captures and eval sets.

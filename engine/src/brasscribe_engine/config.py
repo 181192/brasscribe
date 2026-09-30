@@ -21,6 +21,7 @@ environments) or an installed package.
     BRASSCRIBE_ALLOWED_HOSTS     extra host names, comma-separated, by which clients on this computer may reach the
                                  engine (for a proxy on this computer; guard.py). IP addresses, localhost, .local
                                  names and this computer's host name are always accepted.
+    BRASSCRIBE_MAX_UPLOAD_BYTES  largest request body, e.g. an upload, the engine accepts (default: 2 GiB)
     BRASSCRIBE_ADMIN_TOKEN       owner credential for device management (/v1/status, /v1/devices, /v1/pairing*):
                                  `Authorization: Bearer <token>`. While one is set, those endpoints require it
                                  and loopback alone is not enough. It also works on every other endpoint.
@@ -67,6 +68,7 @@ class Settings:
     trust_local: bool = field(default_factory=lambda: _env_flag("BRASSCRIBE_TRUST_LOCAL", True))
     allowed_hosts: tuple[str, ...] = field(default_factory=lambda: tuple(
         h.strip() for h in os.environ.get("BRASSCRIBE_ALLOWED_HOSTS", "").split(",") if h.strip()))
+    max_upload_bytes: int = field(default_factory=lambda: int(os.environ.get("BRASSCRIBE_MAX_UPLOAD_BYTES") or 2 << 30))
     admin_token: str | None = field(default_factory=lambda: os.environ.get("BRASSCRIBE_ADMIN_TOKEN") or None)
     admin_token_file: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_ADMIN_TOKEN_FILE", Path())
                                           if os.environ.get("BRASSCRIBE_ADMIN_TOKEN_FILE") else None)

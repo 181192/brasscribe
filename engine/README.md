@@ -55,6 +55,7 @@ A job option the engine refuses answers 422 with `{"code": …, "detail": …}`;
 | `BRASSCRIBE_TOKEN` | none | Static bearer token for scripts; the apps pair and get their own |
 | `BRASSCRIBE_TRUST_LOCAL` | `1` | Clients on this computer use the API without a token |
 | `BRASSCRIBE_ALLOWED_HOSTS` | none | Extra host names (comma-separated) clients on this computer may use, e.g. a local proxy's |
+| `BRASSCRIBE_MAX_UPLOAD_BYTES` | 2 GiB | Largest upload (request body); larger ones get 413 |
 | `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu.lock` | Machine-wide lock for heavy models |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
 
