@@ -18,6 +18,8 @@ void noteAt(int channel, int note, int velocity, double delaySeconds);
 // Output position (seconds of audio rendered).
 double positionSeconds();
 void allOff();
+// Frees every synth and its samples (the score that used them has gone).
+void unloadAll();
 // Drops queued events and releases every held note (the SFZ release plays out).
 void releaseAll();
 // Stop: drops queued events, fades the output to silence over [seconds], then cuts every voice.

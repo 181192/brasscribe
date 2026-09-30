@@ -61,7 +61,8 @@ struct HomeView: View {
                 Button { app.showSettings = true } label: { Label("Settings", systemImage: BrasscribeIcon.settings.systemName) }
             }
         }
-        .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml]) { result in
+        .fileImporter(isPresented: $app.importing, allowedContentTypes: [.audio, .movie, .xml, .json, UTType(filenameExtension: "musicxml") ?? .xml,
+                                                                    UTType("com.recordare.musicxml") ?? UTType(filenameExtension: "mxl") ?? .xml]) { result in
             if case .success(let url) = result { Task { await app.accept(url: url) } }
         }
         .dropDestination(for: URL.self) { urls, _ in

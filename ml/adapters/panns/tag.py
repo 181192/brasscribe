@@ -8,7 +8,7 @@ path, win = sys.argv[1], float(sys.argv[2]) if len(sys.argv) > 2 else 15.0
 y, _ = librosa.load(path, sr=32000, mono=True)
 at = AudioTagging(checkpoint_path=None, device="cpu")
 n = int(win * 32000)
-chunks = [y[i:i + n] for i in range(0, len(y) - n // 2, n)]
+chunks = [y[i:i + n] for i in range(0, max(1, len(y) - n // 2), n)]  # at least one, however short the audio
 probs = []
 for k, c in enumerate(chunks):
     c = np.pad(c, (0, n - len(c)))

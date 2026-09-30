@@ -38,7 +38,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import no.brasscribe.play.audio.TakeSink
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +58,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.launch
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PlayViewModel
@@ -89,7 +87,6 @@ fun rememberRecorder(vm: PlayViewModel): Recorder {
             vm.navigate(Screen.RECORD)
         } else vm.say(R.string.device_consent_denied)
     }
-    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) { vm.say(R.string.record_permission_needed); return@rememberLauncherForActivityResult }
         if (pendingDevice) {
@@ -101,10 +98,7 @@ fun rememberRecorder(vm: PlayViewModel): Recorder {
         }
     }
 
-    fun withMic(device: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    fun withMicGranted(device: Boolean) {
         pendingDevice = device
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             if (device) {
@@ -115,6 +109,19 @@ fun rememberRecorder(vm: PlayViewModel): Recorder {
                 vm.navigate(Screen.RECORD)
             }
         } else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    // Android asks one permission at a time: the microphone is asked once the notification question is answered
+    // (whatever the answer; the recording notification is optional), never while it is still on screen.
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { withMicGranted(pendingDevice) }
+
+    fun withMic(device: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingDevice = device
+            notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else withMicGranted(device)
     }
 
     if (showDeviceNotice) {
@@ -292,7 +299,6 @@ private fun FirstRunPoint(icon: Int, title: Int, text: Int, tint: androidx.compo
 @Composable
 fun RecordScreen(vm: PlayViewModel) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val state by CaptureController.state.collectAsState()
     val kind by CaptureController.kind.collectAsState()
     val failed by CaptureController.failed.collectAsState()
@@ -315,18 +321,29 @@ fun RecordScreen(vm: PlayViewModel) {
     fun finish() {
         if (stopping) return
         stopping = true
-        scope.launch {
-            val silent = device && state.silentFor >= state.seconds - 1.0
-            val take = CaptureController.stop(context) ?: return@launch
+        val silent = device && state.silentFor >= state.seconds - 1.0
+        // Ended outside this screen's lifetime: leaving it mid-stop still closes the take properly.
+        CaptureController.finish(context) { take ->
+            if (take == null) { stopping = false; return@finish }
+            // Only the Record screen hands the take on; if the player has left it, the take is not wanted.
+            if (vm.screen.value.lastOrNull() != Screen.RECORD) { take.file.delete(); return@finish }
             if (silent) { take.file.delete(); vm.showProblem(Problem.NOTHING_HEARD) }
             else vm.recorded(take, if (device) SourceKind.DEVICE else SourceKind.MICROPHONE)
         }
     }
-    // At the length limit the take ends as if Stop was pressed.
-    LaunchedEffect(state.full) { if (state.full) finish() }
+    // At the length limit, or when the input went away, the take ends as if Stop was pressed.
+    LaunchedEffect(state.full, state.interrupted) { if (state.full || state.interrupted) finish() }
+    // Back (the gesture or the button) throws the take away, as the toolbar's back does; while Stop is
+    // ending the take it waits for that.
+    fun leave() {
+        if (stopping) return
+        CaptureController.discard(context)
+        vm.back()
+    }
+    androidx.activity.compose.BackHandler { leave() }
     PlayScaffold(
         title = null,
-        onBack = { scope.launch { CaptureController.discard(context) }; vm.back() },
+        onBack = ::leave,
         backLabel = stringResource(R.string.home),
         status = status,
         bottom = {

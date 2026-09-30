@@ -209,6 +209,8 @@
                 <TextBlock x:Name="DevicesHeading" Grid.Column="1" Text="{x:Bind Vm.DevicesHeading}" Style="{StaticResource PanelHeadingStyle}"
                            VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1" />
             </Grid>
+            <TextBlock Text="{x:Bind Vm.DevicesNotice, Mode=OneWay}" Style="{StaticResource BodyStyle}"
+                       Visibility="{x:Bind Vm.HasDevicesNotice, Mode=OneWay}" />
             <Border Style="{StaticResource CardStyle}" Padding="0" Visibility="{x:Bind Vm.HasDevices, Mode=OneWay}">
             <ItemsRepeater x:Name="DeviceList" ItemsSource="{x:Bind Vm.Devices}">
                 <ItemsRepeater.Layout>

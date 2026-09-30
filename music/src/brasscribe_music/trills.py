@@ -96,7 +96,8 @@ def with_trills(line: list[dict], split: list[dict]) -> list[dict]:
         return line
     spans = []
     for i, j in found:
-        lo, hi = min(s[i]["pitch"], s[i + 1]["pitch"]), max(s[i]["pitch"], s[i + 1]["pitch"])
+        # the run's two pitches (its first two notes can be one turn on the same pitch)
+        lo, hi = min(n["pitch"] for n in s[i:j + 1]), max(n["pitch"] for n in s[i:j + 1])
         spans.append({"pitch": lo, "onset": s[i]["onset"], "offset": s[j]["offset"], "trill": hi - lo})
     out = []
     for n in line:
@@ -146,7 +147,7 @@ def collapse_trills(notes: list) -> list:
     for i, j in found:
         out += ns[k:i]
         run = ns[i:j + 1]
-        lo, hi = min(run[0].pitch, run[1].pitch), max(run[0].pitch, run[1].pitch)
+        lo, hi = min(n.pitch for n in run), max(n.pitch for n in run)  # a first turn can repeat one pitch
         conf = max(n.confidence for n in run)  # the alternation is as sure as its best-confirmed note
         arts = [a for a in run[-1].articulations if str(getattr(a, "value", a)) == "fermata"]
         out.append(replace(run[0], pitch=lo, dur=run[-1].end - run[0].start, confidence=conf,

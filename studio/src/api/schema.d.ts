@@ -389,7 +389,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Manifest */
+        /**
+         * Get Manifest
+         * @description What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,
+         *     and no git or host details.
+         */
         get: operations["getJobManifest"];
         put?: never;
         post?: never;
@@ -621,6 +625,7 @@ export interface paths {
          * Request Pairing
          * @description Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
          *     poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+         *     A new request from the same address replaces the one it has waiting.
          */
         post: operations["requestPairing"];
         delete?: never;
@@ -806,6 +811,7 @@ export interface paths {
         /**
          * List Datasets
          * @description Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.
+         *     Paired devices get paths relative to the data folder.
          */
         get: operations["listDatasets"];
         put?: never;
@@ -835,7 +841,8 @@ export interface paths {
         head?: never;
         /**
          * Update Run
-         * @description Rename a finished score: the title in its manifest, Composition and MusicXML.
+         * @description Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and
+         *     the talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
          */
         patch: operations["updateRun"];
         trace?: never;
@@ -850,6 +857,7 @@ export interface paths {
         /**
          * List Sources
          * @description Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).
+         *     Paired devices get paths relative to the data folder.
          */
         get: operations["listSources"];
         put?: never;
@@ -1390,7 +1398,7 @@ export interface components {
         };
         /**
          * JobCreate
-         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).
+         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory).
          */
         JobCreate: {
             /**
@@ -1433,7 +1441,7 @@ export interface components {
             muscriptor: boolean;
             /**
              * Path
-             * @description audio file path; must lie inside the engine's data directory
+             * @description audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices
              */
             path?: string | null;
             /**
@@ -1628,6 +1636,12 @@ export interface components {
             match_code: string;
             /** Name */
             name: string;
+            /**
+             * Name In Use
+             * @description a device already paired with this engine has the same name (ignoring case): the owner can't tell the two apart by name, so the apps can suggest another one
+             * @default false
+             */
+            name_in_use: boolean;
             /** Platform */
             platform: string;
             /** Request Id */

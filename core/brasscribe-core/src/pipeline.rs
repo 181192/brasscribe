@@ -95,6 +95,11 @@ impl Beats {
     }
 }
 
+/// `n` doubles `line`: the same pitch within the consensus onset tolerance of one of its notes.
+fn doubles(line: &[RawNote], n: &RawNote) -> bool {
+    line.iter().any(|m| m.pitch == n.pitch && (m.onset - n.onset).abs() <= crate::consensus::ONSET_TOL)
+}
+
 fn to_notes(qnotes: &[QNote], pickup: i64, source: &str) -> Vec<Note> {
     qnotes
         .iter()
@@ -463,13 +468,8 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     }
     let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
 
-    let solo_keys: HashSet<(u64, i32)> = solo_line.iter().map(|n| (py::py_round(n.onset, 1).to_bits(), n.pitch)).collect();
-    let orch: Vec<RawNote> = orch_raw
-        .iter()
-        // Solo onsets are Python floats (medians), orchestra onsets NumPy scalars: they round differently.
-        .filter(|n| 36 <= n.pitch && n.pitch <= 88 && !solo_keys.contains(&(py::np_round(n.onset, 1).to_bits(), n.pitch)))
-        .cloned()
-        .collect();
+    // the solo as the orchestra stem plays it too: not part of the orchestra
+    let orch: Vec<RawNote> = orch_raw.iter().filter(|n| 36 <= n.pitch && n.pitch <= 88 && !doubles(&solo_line, n)).cloned().collect();
     let orch_q: Vec<Note> =
         to_notes(&quantize_coarse(&orch, &times, false, false, coarse), pickup, "orchestra").into_iter().filter(|n| n.start >= 0).collect();
     let (mut hits, mut lines) = split_orchestra(orch_q);
@@ -732,13 +732,8 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
     let melody = to_notes(&fill_gaps(quantize(&mel_raw, &times, true, false), half, 0.0), pickup, "melody");
     let bass = to_notes(&fill_gaps(quantize(&line(&bass_all, 28, 55, false, MIN_DUR), &times, true, false), half, 0.0), pickup, "bass");
 
-    let mel_keys: HashSet<(u64, i32)> = mel_raw.iter().map(|n| (py::py_round(n.onset, 2).to_bits(), n.pitch)).collect();
-    let acc: Vec<RawNote> = harm_all
-        .iter()
-        .flatten()
-        .filter(|n| 40 <= n.pitch && n.pitch <= 84 && !mel_keys.contains(&(py::np_round(n.onset, 2).to_bits(), n.pitch)))
-        .cloned()
-        .collect();
+    // the melody as the harmony stems play it too: not part of the harmony
+    let acc: Vec<RawNote> = harm_all.iter().flatten().filter(|n| 40 <= n.pitch && n.pitch <= 84 && !doubles(&mel_raw, n)).cloned().collect();
     let acc_q = to_notes(&quantize(&acc, &times, false, false), pickup, "accompaniment");
     let end = melody.iter().chain(bass.iter()).chain(acc_q.iter()).map(|n| n.end()).max().ok_or("no notes")?;
     let harm = slots_to_notes(&harmony_slots(&acc_q, end, 4, 0.35), 0.8);

@@ -1,8 +1,8 @@
 """Model adapters: subprocesses behind the `<input> <output>` contract.
 
-Each adapter lives in `<adapters_dir>/<name>/` with its own environment (uv
-project, or the pixi environment of the same name when
-BRASSCRIBE_ADAPTER_RUNNER=pixi). The engine never imports model code; it runs
+Each adapter lives in `<adapters_dir>/<name>/` with its own environment (the uv
+project on Apple silicon Macs; elsewhere, or with BRASSCRIBE_ADAPTER_RUNNER=pixi,
+the pixi environment of the same name). The engine never imports model code; it runs
 `<adapters_dir>/run_adapter.py <name> <input> <output>` with its own Python (the
 same runner every run.sh delegates to, so it works on Windows too; an adapter
 dir without the runner falls back to run.sh) and records what ran:
@@ -13,15 +13,20 @@ dir without the runner falls back to run.sh) and records what ran:
   device       the accelerator the adapter will use on this host
 
 Heavy adapters (large models on long audio) take the machine-wide GPU mutex.
+An adapter that runs longer than its time limit (HEAVY_TIMEOUT_S, LIGHT_TIMEOUT_S, or
+BRASSCRIBE_ADAPTER_TIMEOUT_S for all), or whose job is cancelled, is stopped with every
+process it started: the model itself usually runs as a grandchild, under uv or pixi.
 """
 
 from __future__ import annotations
 
 import os
 import platform
+import signal
 import sys
 import shutil
 import subprocess
+import threading
 import time
 import tomllib
 from contextlib import contextmanager
@@ -29,7 +34,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from .gpulock import file_lock
+from .config import child_env
+from .gpulock import default_path, file_lock
 from .hashing import HashIndex, sha256_bytes
 
 
@@ -92,8 +98,69 @@ def adapter_device(adapter: Adapter) -> str:
     return "cpu"
 
 
+# Time limits for one adapter run: long enough for a large model on a long recording on the CPU.
+HEAVY_TIMEOUT_S = 3 * 3600.0
+LIGHT_TIMEOUT_S = 3600.0
+
+
 class AdapterError(RuntimeError):
     pass
+
+
+class AdapterCancelled(AdapterError):
+    """The job was cancelled while the adapter ran or waited for the GPU mutex."""
+
+
+def _descendants(pid: int) -> list[int]:
+    """Every process below `pid` (POSIX, from ps); empty when ps is not there."""
+    try:
+        out = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    children: dict[int, list[int]] = {}
+    for line in out.splitlines():
+        fields = line.split()
+        if len(fields) == 2 and fields[0].isdigit() and fields[1].isdigit():
+            children.setdefault(int(fields[1]), []).append(int(fields[0]))
+    found, todo = [], [pid]
+    while todo:
+        for child in children.get(todo.pop(), []):
+            found.append(child)
+            todo.append(child)
+    return found
+
+
+def kill_tree(proc: subprocess.Popen) -> None:
+    """Kill an adapter and every process it started, then reap it. The adapter stays in the engine's
+    process group, so Bandroom stopping the engine's group still stops a model that is running."""
+    if os.name == "nt":
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, timeout=30)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        proc.kill()
+    else:
+        # Stop the whole tree first, so nothing in it starts another process while it is being killed.
+        stopped: set[int] = set()
+        for _ in range(3):
+            new = [p for p in [proc.pid, *_descendants(proc.pid)] if p not in stopped]
+            if not new:
+                break
+            for p in new:
+                try:
+                    os.kill(p, signal.SIGSTOP)
+                except OSError:
+                    pass
+            stopped.update(new)
+        for p in stopped:
+            try:
+                os.kill(p, signal.SIGKILL)
+            except OSError:
+                pass
+    try:
+        proc.communicate(timeout=10)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 class HeavyRunRefused(AdapterError):
@@ -105,7 +172,8 @@ class AdapterRegistry:
     root: Path
     models_dir: Path
     hashes: HashIndex
-    gpu_lock: Path = Path("/tmp/brasscribe-gpu.lock")
+    gpu_lock: Path = field(default_factory=default_path)
+    timeout_s: float | None = None  # every adapter's time limit (BRASSCRIBE_ADAPTER_TIMEOUT_S); None: by weight
     _fingerprints: dict[str, str] = field(default_factory=dict)
 
     def get(self, name: str) -> Adapter:
@@ -164,19 +232,26 @@ class AdapterRegistry:
                 "heavy": a.heavy, "device": adapter_device(a), "licence": a.licence, "models": self.models(name)}
 
     gpu_poll = 1.0  # seconds between tries while another process holds the GPU mutex
+    poll = 0.2  # seconds between checks for a cancelled job or an exceeded time limit while an adapter runs
+
+    def time_limit(self, name: str) -> float:
+        return self.timeout_s or (HEAVY_TIMEOUT_S if self.get(name).heavy else LIGHT_TIMEOUT_S)
 
     @contextmanager
-    def gpu_mutex(self, poll: float | None = None, on_blocked: Callable[[], None] | None = None):
+    def gpu_mutex(self, poll: float | None = None, on_blocked: Callable[[], None] | None = None,
+                  cancel: threading.Event | None = None):
         """Machine-wide lock on `gpu_lock` (an OS file lock: it excludes other processes and other
         threads alike, and the kernel drops it when the holder dies, so a crash cannot block the GPU).
-        Yields the seconds spent waiting; `on_blocked` is called once, only if the lock was held."""
-        with file_lock(self.gpu_lock, poll=self.gpu_poll if poll is None else poll, on_blocked=on_blocked) as waited:
+        Yields the seconds spent waiting; `on_blocked` is called once, only if the lock was held.
+        Raises InterruptedError when `cancel` is set while waiting."""
+        with file_lock(self.gpu_lock, poll=self.gpu_poll if poll is None else poll, on_blocked=on_blocked,
+                       cancel=cancel) as waited:
             yield waited
 
     def run(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None, allow_heavy: bool = True,
-            log=None, waited: Callable[[float], None] | None = None) -> float:
+            log=None, waited: Callable[[float], None] | None = None, cancel: threading.Event | None = None) -> float:
         """Run an adapter; returns wall-clock seconds, including any wait for the GPU mutex, which is
-        also reported to `waited` (heavy adapters only)."""
+        also reported to `waited` (heavy adapters only). Setting `cancel` stops it (AdapterCancelled)."""
         a = self.get(name)
         if a.heavy and not allow_heavy:
             raise HeavyRunRefused(f"{name} would run on {src.name}, but heavy runs are disabled (cache miss)")
@@ -187,26 +262,48 @@ class AdapterRegistry:
             cmd = [str(self.script(name)), str(src), str(dst)]
         else:
             raise AdapterError(f"no run_adapter.py or {self.script(name)}")
-        full_env = {**os.environ, **dict(a.env), **(env or {})}
+        # The adapter reads its weights from the folder the engine hashes for the manifest.
+        full_env = child_env({**dict(a.env), **(env or {}), "BRASSCRIBE_MODELS": str(self.models_dir)})
         t0 = time.time()
+        limit = self.time_limit(name)
 
         def call():
             # the engine's own stdin may be a closed terminal; Python children abort on a dead fd 0
-            proc = subprocess.run(cmd, env=full_env, stdin=subprocess.DEVNULL, capture_output=True, text=True)
+            proc = subprocess.Popen(cmd, env=full_env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, text=True)
+            end = time.monotonic() + limit
+            while True:
+                try:
+                    stdout, stderr = proc.communicate(timeout=self.poll)
+                    break
+                except subprocess.TimeoutExpired:
+                    if cancel is not None and cancel.is_set():
+                        kill_tree(proc)
+                        raise AdapterCancelled(f"{name} stopped: the job was cancelled") from None
+                    if time.monotonic() > end:
+                        kill_tree(proc)
+                        raise AdapterError(f"{name} stopped after {limit:.0f} s, its time limit "
+                                           "(BRASSCRIBE_ADAPTER_TIMEOUT_S)") from None
+                except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no model running
+                    kill_tree(proc)
+                    raise
             if proc.returncode != 0:
-                raise AdapterError(f"{name} failed ({proc.returncode}): {(proc.stderr or proc.stdout)[-2000:]}")
+                raise AdapterError(f"{name} failed ({proc.returncode}): {(stderr or stdout)[-2000:]}")
 
         if a.heavy:
             def blocked():
                 if log:
                     log(f"{name}: waiting for GPU mutex {self.gpu_lock}")
 
-            with self.gpu_mutex(on_blocked=blocked) as wait:
-                if waited:
-                    waited(wait)
-                if log and wait >= 1.0:
-                    log(f"{name}: got GPU mutex after {wait:.1f} s")
-                call()
+            try:
+                with self.gpu_mutex(on_blocked=blocked, cancel=cancel) as wait:
+                    if waited:
+                        waited(wait)
+                    if log and wait >= 1.0:
+                        log(f"{name}: got GPU mutex after {wait:.1f} s")
+                    call()
+            except InterruptedError:
+                raise AdapterCancelled(f"{name} not started: the job was cancelled while it waited for the GPU") from None
         else:
             call()
         return time.time() - t0

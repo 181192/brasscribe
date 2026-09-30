@@ -36,23 +36,34 @@ class ClipPlayer : ClipOutput {
             .setTransferMode(AudioTrack.MODE_STATIC)
             .setBufferSizeInBytes(total * 4)
             .build()
-        t.write(data, 0, total, AudioTrack.WRITE_BLOCKING)
-        t.play()
+        try {
+            t.write(data, 0, total, AudioTrack.WRITE_BLOCKING)
+            t.play()
+        } catch (e: RuntimeException) {
+            t.release()
+            throw e
+        }
         track = t
         return total * 1000L / rate
     }
 
     override fun stop() {
-        track?.run {
-            // Stopping mid-waveform clicks: fade out over about 15 ms first.
-            if (playState == AudioTrack.PLAYSTATE_PLAYING) for (step in 4 downTo 0) {
-                runCatching { setVolume(step / 5f) }
+        val t = track ?: return
+        track = null
+        // Stopping mid-waveform clicks: it fades out over about 15 ms first, on a thread of its own, so the
+        // caller (the main thread) never waits for it.
+        fader.execute {
+            if (runCatching { t.playState == AudioTrack.PLAYSTATE_PLAYING }.getOrDefault(false)) for (step in 4 downTo 0) {
+                runCatching { t.setVolume(step / 5f) }
                 Thread.sleep(3)
             }
-            runCatching { stop() }
-            release()
+            runCatching { t.stop() }
+            runCatching { t.release() }
         }
-        track = null
+    }
+
+    private companion object {
+        val fader: java.util.concurrent.Executor = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "clip-fade").apply { isDaemon = true } }
     }
 
     private fun resampleLinear(x: FloatArray, from: Int, to: Int): FloatArray {

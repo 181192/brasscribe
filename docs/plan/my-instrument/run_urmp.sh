@@ -1,6 +1,7 @@
 #!/bin/sh
 # Transcribe the URMP brass stems (horn, trombone, tuba, trumpet) with SwiftF0 and Basic Pitch (cached).
-U=/Users/k/private/brasscribe/data/urmp/Dataset
+DATA=${BRASSCRIBE_DATA:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/data}
+U=$DATA/urmp/Dataset
 HERE=$(cd "$(dirname "$0")" && pwd)
 AD="$HERE/../../../ml/adapters"
 OUT="$HERE/urmp"

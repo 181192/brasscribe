@@ -305,6 +305,38 @@ import Testing
         userDataIsIntact(ws, root: root)
     }
 
+    @MainActor @Test func setupInstallsEvenOverAnEnvironmentFromAnEarlierBuild() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        // Setup never finished with v1; this build ships a new lockfile.
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio", lock: "version: 6\n# numpy 2.6\n")
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 0
+        let boot = Bootstrapper(launcher: launcher)
+        await boot.run(configuration: configuration(root, workspace: ws), bundledWorkspace: v2)
+        #expect(boot.phase == .done)
+        #expect(launcher.launched.map(\.arguments.first) == ["install"])
+        #expect(read(ws.appending(path: "pixi.lock")) == "version: 6\n# numpy 2.6\n")
+    }
+
+    @MainActor @Test func quittingStopsAnInstallUnderWay() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio", lock: "version: 6\n# numpy 2.6\n")
+        let launcher = FakeLauncher()
+        let boot = Bootstrapper(launcher: launcher)
+        let update = Task { await boot.update(configuration: configuration(root, workspace: ws), bundledWorkspace: v2, lockChanged: true) }
+        while launcher.launched.isEmpty { await Task.yield() }
+        boot.cancel()
+        #expect(launcher.terminated == [4001])
+        #expect(await update.value == false)
+        #expect(studio(ws) == "old studio")
+        boot.cancel()
+        #expect(launcher.terminated == [4001], "nothing left to stop")
+    }
+
     @MainActor @Test func aCopyThatCantBeMadeKeepsTheOldOne() async throws {
         let root = tempDir()
         defer { try? fm.removeItem(at: root) }

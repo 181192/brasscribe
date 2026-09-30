@@ -17,14 +17,20 @@ public struct LaunchPlan: Equatable, Sendable {
 }
 
 public protocol ProcessLauncher: Sendable {
-    /// Starts the process in its own process group; `onExit` gets the wait status once it has exited.
+    /// Starts the process in its own process group; `onExit` gets the wait status once it has exited. When it exits by
+    /// itself (not through `terminate`), whatever is left in its group is killed first: an engine whose `pixi run`
+    /// died must not keep the port or the graphics chip.
     func launch(_ plan: LaunchPlan, onExit: @escaping @Sendable (Int32) -> Void) throws -> Int32
     /// SIGTERM to the whole group, then SIGKILL after `grace` seconds if anything is left.
     func terminate(pid: Int32, grace: TimeInterval)
 }
 
 /// posix_spawn with a new process group, so `pixi run` and the Python engine under it stop together.
-public final class PosixLauncher: ProcessLauncher {
+public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
+    private let lock = NSLock()
+    /// Groups asked to stop: `terminate` gives them their grace period.
+    private var terminating: Set<Int32> = []
+
     public init() {}
 
     public func launch(_ plan: LaunchPlan, onExit: @escaping @Sendable (Int32) -> Void) throws -> Int32 {
@@ -66,9 +72,12 @@ public final class PosixLauncher: ProcessLauncher {
         guard rc == 0 else { throw LaunchFailure.spawn(String(cString: strerror(rc))) }
 
         let waited = pid
-        let thread = Thread {
+        let thread = Thread { [self] in
             var status: Int32 = 0
             while waitpid(waited, &status, 0) == -1 && errno == EINTR {}
+            // Right away, while the group id can't have been handed to anyone else.
+            let asked = lock.withLock { terminating.remove(waited) != nil }
+            if !asked { kill(-waited, SIGKILL) }
             onExit(status)
         }
         thread.name = "engine-wait-\(pid)"
@@ -78,6 +87,7 @@ public final class PosixLauncher: ProcessLauncher {
 
     public func terminate(pid: Int32, grace: TimeInterval) {
         guard pid > 0 else { return }
+        lock.withLock { _ = terminating.insert(pid) }
         kill(-pid, SIGTERM)
         kill(pid, SIGTERM)
         DispatchQueue.global().asyncAfter(deadline: .now() + grace) {
@@ -86,9 +96,11 @@ public final class PosixLauncher: ProcessLauncher {
         }
     }
 
-    /// Stops an engine left behind by an earlier Bandroom that didn't get to stop it (engine.json).
-    public static func killStrayGroup(pid: Int32) {
-        guard pid > 0, kill(-pid, 0) == 0 else { return }
+    /// Stops an engine left behind by an earlier Bandroom that didn't get to stop it (engine.json, written at
+    /// `recordedAt`). Only when that pid is still the process the file names: one that started after the file was
+    /// written got the number later and is somebody else's.
+    public static func killStrayGroup(pid: Int32, recordedAt: Date) {
+        guard pid > 0, kill(-pid, 0) == 0, isRecordedProcess(pid: pid, recordedAt: recordedAt) else { return }
         var name = [CChar](repeating: 0, count: 256)
         proc_name(pid, &name, UInt32(name.count))
         let proc = String(cString: name).lowercased()
@@ -97,9 +109,31 @@ public final class PosixLauncher: ProcessLauncher {
         for _ in 0..<50 where kill(-pid, 0) == 0 { usleep(100_000) }
         if kill(-pid, 0) == 0 { kill(-pid, SIGKILL) }
     }
+
+    /// `pid` is running and started no later than `recordedAt` (with a second's slack for the clock's rounding).
+    static func isRecordedProcess(pid: Int32, recordedAt: Date) -> Bool {
+        guard let started = startTime(of: pid) else { return false }
+        return started <= recordedAt.addingTimeInterval(1)
+    }
+
+    /// When `pid` started, or nil when there is no such process.
+    static func startTime(of pid: Int32) -> Date? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
+        return Date(timeIntervalSince1970: Double(info.pbi_start_tvsec) + Double(info.pbi_start_tvusec) / 1_000_000)
+    }
 }
 
 extension LaunchFailure: Error {}
+
+/// A wait status in words, for logs and the tech-person details: "exit code 1", "signal 9".
+public enum ExitStatus {
+    public static func describe(_ status: Int32) -> String {
+        let signal = status & 0x7f
+        return signal == 0 ? "exit code \((status >> 8) & 0xff)" : "signal \(signal)"
+    }
+}
 
 enum LogRotation {
     static func rotate(_ url: URL, maxBytes: Int) {

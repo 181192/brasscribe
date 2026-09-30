@@ -51,6 +51,16 @@
         }
       }
     },
+    "%@ (playing)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (spiller)"
+          }
+        }
+      }
+    },
     "%@ (you)": {
       "localizations": {
         "nb": {
@@ -961,6 +971,16 @@
         }
       }
     },
+    "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe åpner opptak, videoer og MusicXML-partiturer (.musicxml, .xml eller .mxl)."
+          }
+        }
+      }
+    },
     "Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.": {
       "localizations": {
         "nb": {
@@ -1257,6 +1277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kornett"
+          }
+        }
+      }
+    },
+    "Couldn't lay out the score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klarte ikke å sette partituret"
           }
         }
       }
@@ -2421,6 +2451,16 @@
         }
       }
     },
+    "No microphone was found. Connect one and try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen mikrofon. Koble til en og prøv igjen."
+          }
+        }
+      }
+    },
     "No note": {
       "localizations": {
         "nb": {
@@ -2791,6 +2831,16 @@
         }
       }
     },
+    "Only pair with a computer you know. The recordings you send go to it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den."
+          }
+        }
+      }
+    },
     "Only this": {
       "localizations": {
         "nb": {
@@ -2927,6 +2977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koble til telefonen på nytt"
+          }
+        }
+      }
+    },
+    "Pair with %@ at %@?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til %1$@ på adressen %2$@?"
           }
         }
       }
@@ -4321,6 +4381,16 @@
         }
       }
     },
+    "The notes are still here: Read aloud and playback work.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notene er her fortsatt: Les opp og avspilling virker."
+          }
+        }
+      }
+    },
     "The quartet has no %@ — showing %@": {
       "localizations": {
         "nb": {
@@ -4537,6 +4607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Disse filene kunne ikke lages. Prøv færre formater, eller prøv igjen."
+          }
+        }
+      }
+    },
+    "This device is paired with %@. If you pair with %@, this device uses it instead.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enheten er koblet til %1$@. Hvis du kobler til %2$@, bruker enheten den i stedet."
           }
         }
       }

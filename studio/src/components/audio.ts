@@ -2,8 +2,9 @@
 // playback that keeps the position when switching sources.
 import { fetchBytes } from "../api/client";
 import { mixdown, peaks, spectrogram } from "../lib/dsp";
+import { SizedLru } from "../lib/lru";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, loading, nextId, token } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, loading, nextId, onPanelHidden, token } from "../ui/dom";
 import { plot, timeAxis, type Plot } from "./canvas";
 
 let ctx: AudioContext | null = null;
@@ -12,16 +13,15 @@ export function audioContext(): AudioContext {
   return ctx;
 }
 
-const cache = new Map<string, Promise<AudioBuffer>>();
-/** Fetch and decode a file once per page. */
+/**
+ * Decoded audio is large (a few minutes of stereo take about 100 MB), so only the most recently
+ * used files are kept for switching back and forth; a player holds on to the ones it plays itself.
+ */
+const DECODED_BUDGET = 256 * 1024 * 1024;
+const cache = new SizedLru<string, AudioBuffer>(DECODED_BUDGET, (b) => b.length * b.numberOfChannels * 4);
+/** Fetch and decode a file, reusing a recent decode of it. */
 export function decode(url: string): Promise<AudioBuffer> {
-  let p = cache.get(url);
-  if (!p) {
-    p = fetchBytes(url).then((b) => audioContext().decodeAudioData(b));
-    p.catch(() => cache.delete(url));
-    cache.set(url, p);
-  }
-  return p;
+  return cache.get(url, () => fetchBytes(url).then((b) => audioContext().decodeAudioData(b)));
 }
 
 export interface AudioSource {
@@ -51,6 +51,8 @@ export class AudioAB extends HTMLElement {
   private wave!: Plot;
   private spec!: Plot;
   private status!: HTMLElement;
+  /** A notice per source that could not be loaded, next to the status line. */
+  private problems!: HTMLElement;
   private playBtn!: HTMLButtonElement;
   private radios!: HTMLElement;
   private specCache: { key: string; img: ImageData } | null = null;
@@ -62,8 +64,20 @@ export class AudioAB extends HTMLElement {
     this.render();
   }
 
+  private offHidden: (() => void) | null = null;
+
+  connectedCallback(): void {
+    // Another tab chosen: pause, so it doesn't play on under a panel no one sees.
+    this.offHidden?.();
+    this.offHidden = onPanelHidden(this, () => {
+      if (this.node) this.pause();
+    });
+  }
+
   disconnectedCallback(): void {
     this.stopPlayback();
+    this.offHidden?.();
+    this.offHidden = null;
   }
 
   private get duration(): number {
@@ -78,6 +92,7 @@ export class AudioAB extends HTMLElement {
         h("input", { type: "radio", name, value: String(i), checked: i === 0, onchange: () => this.switchTo(i) }),
         `${String.fromCharCode(65 + i)}: ${s.label}`)));
     this.status = h("p", { class: "hint", role: "status" }, t("audio.loading"));
+    this.problems = h("div", {});
     this.wave = plot("Waveform", 110, (c, w, hh) => this.drawWave(c, w, hh));
     this.spec = plot("Spectrogram", 220, (c, w, hh) => this.drawSpec(c, w, hh));
     this.wave.canvas.addEventListener("click", (e) => {
@@ -93,6 +108,7 @@ export class AudioAB extends HTMLElement {
     clear(this,
       h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.seek(0) }, t("audio.backToStart")), this.radios),
       this.status,
+      this.problems,
       h("p", { class: "small muted" }, t("audio.hint")),
       this.wave.box,
       h("div", { style: "height:0.5rem" }),
@@ -112,7 +128,8 @@ export class AudioAB extends HTMLElement {
       this.wave.redraw();
       this.spec.redraw();
     } catch (e) {
-      this.status.replaceWith(errorNotice(e));
+      this.problems.append(h("p", { class: "small" }, t("audio.failed", { which: String.fromCharCode(65 + i), label: s.label })), errorNotice(e));
+      if (!this.loaded.some(Boolean)) this.status.textContent = t("audio.noneLoaded");
     }
   }
 
@@ -142,13 +159,17 @@ export class AudioAB extends HTMLElement {
     const node = ac.createBufferSource();
     node.buffer = l.buffer;
     node.connect(ac.destination);
-    const start = Math.max(0, Math.min(at, l.buffer.duration - 0.01));
+    // Play from the end means play again from the start.
+    const start = playFrom(at, l.buffer.duration);
     node.start(0, start);
     node.onended = () => {
+      // Played to the end (a pause or a seek stops a node that is no longer this.node).
       if (this.node === node) {
-        this.offset = this.position();
-        this.node = null;
+        this.stopPlayback();
+        this.offset = 0;
         this.playBtn.textContent = t("score.play");
+        this.wave.redraw();
+        this.updateStatus();
       }
     };
     this.node = node;
@@ -326,6 +347,11 @@ export class AudioAB extends HTMLElement {
     c.fillText("0", 4, plotH - 4);
     timeAxis(c, w, plotH, this.viewStart, this.viewStart + this.window, token("text-muted"));
   }
+}
+
+/** Where playback starts when asked for `at`: from the start once `at` is at (or past) the end. */
+export function playFrom(at: number, duration: number): number {
+  return at >= duration - 0.05 ? 0 : Math.max(0, at);
 }
 
 /** Viridis colour map (perceptually uniform, colour-blind safe), 0..1 -> RGB. */

@@ -104,8 +104,10 @@ public sealed class ProcessLoopbackCapture : IDisposable
                 }
             }
         }
-        catch (Exception e) when (e is COMException or InvalidOperationException)
+        catch (Exception e)
         {
+            // Any failure ends the recording, never the app: a thread of our own has nothing above it to catch it
+            // (a full disk while writing, the capture closed under it).
             error = e;
         }
         Stopped?.Invoke(error);

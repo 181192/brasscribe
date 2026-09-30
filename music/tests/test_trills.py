@@ -135,3 +135,13 @@ def test_musicxml_trill_mark_spelled_from_the_written_key(tmp_path):
     root = ET.parse(path).getroot()
     orn = next(o for o in root.iter("ornaments") if o.find("wavy-line") is not None and o.find("trill-mark") is not None)
     assert [c.tag for c in orn] == ["trill-mark", "accidental-mark", "wavy-line"]
+
+
+def test_a_first_turn_on_one_pitch_still_names_both_pitches():
+    # C C D C D C D C in 16ths: the first two Cs are one turn (a dropped note), the trill is C to D
+    pitches = [60, 60, 62, 60, 62, 60, 62, 60]
+    written = [Note(p, i * 6, 6) for i, p in enumerate(pitches)]
+    assert [(n.pitch, n.start, n.dur, n.trill) for n in collapse_trills(written)] == [(60, 0, 48, 2)]
+    performed = [{"pitch": p, "onset": 1 + i * 0.1, "offset": 1.1 + i * 0.1} for i, p in enumerate(pitches)]
+    out = with_trills(performed, performed)
+    assert [(n["pitch"], n["trill"]) for n in out] == [(60, 2)]

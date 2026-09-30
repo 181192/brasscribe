@@ -275,6 +275,11 @@ def contour_notes(notes: list[dict], c, others: list[dict] | None = None) -> lis
         if (touch_prev or touch_next) and _glide(n, c, tau, voiced, toward or None):
             if touch_next:
                 carry = n["onset"] if carry is None else carry
+            elif carry is not None:
+                # glides that lead into no note (the one before this is itself a glide): one note on the
+                # pitch they reach, from where they start; the last note kept is not next to them
+                kept.append({**n, "onset": carry})
+                carry = None
             elif kept:
                 kept[-1] = {**kept[-1], "offset": n["offset"]}
             continue

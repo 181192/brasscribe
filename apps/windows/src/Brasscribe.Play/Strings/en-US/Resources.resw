@@ -306,6 +306,18 @@
   <data name="Error_ReadsNotOffered" xml:space="preserve">
     <value>Your part isn't written in that clef. Choose the clef again in Settings, What you play.</value>
   </data>
+  <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
+    <value>Brasscribe couldn't open the recording on this PC. It may have been moved or deleted, or another app is using it.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step1" xml:space="preserve">
+    <value>Close other apps that use the file, then choose Try again.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step2" xml:space="preserve">
+    <value>Or choose another recording.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Title" xml:space="preserve">
+    <value>The recording can't be read</value>
+  </data>
   <data name="Error_ScoreFailed_Reason" xml:space="preserve">
     <value>Your recording is safe. Something stopped Brasscribe on your computer while it worked.</value>
   </data>
@@ -720,6 +732,9 @@
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Recording, {0}</value>
   </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Your change couldn't be saved on this PC. Check that the disk isn't full, then try again.</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Small band</value>
   </data>
@@ -734,6 +749,9 @@
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>Today</value>
+  </data>
+  <data name="Library_Unavailable" xml:space="preserve">
+    <value>Not found. Connect the drive it's on to open it.</value>
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>Yesterday</value>
@@ -860,6 +878,9 @@
   </data>
   <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Next bar</value>
+  </data>
+  <data name="Notice_Problem" xml:space="preserve">
+    <value>Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.</value>
   </data>
   <data name="OutputBackButton.Content" xml:space="preserve">
     <value>Back</value>
@@ -1424,6 +1445,9 @@
   </data>
   <data name="Score_RenameFailed" xml:space="preserve">
     <value>Couldn't rename {0}</value>
+  </data>
+  <data name="Score_RenderFailed" xml:space="preserve">
+    <value>The notes can't be drawn. Try another zoom or part, or open the score again.</value>
   </data>
   <data name="Score_SaveTitle" xml:space="preserve">
     <value>Save</value>
@@ -2118,6 +2142,9 @@
   <data name="Start_Error_MicrophonePermission" xml:space="preserve">
     <value>Brasscribe may not use the microphone. Allow it in Windows Settings, Privacy, Microphone.</value>
   </data>
+  <data name="Start_Error_NeedsCodec" xml:space="preserve">
+    <value>Windows couldn't read {0}. Files like this may need Web Media Extensions from the Microsoft Store. Try an MP3, WAV or MP4 file, or record it instead.</value>
+  </data>
   <data name="Start_Error_Score" xml:space="preserve">
     <value>{0} can't be opened as a score.</value>
   </data>
@@ -2141,6 +2168,9 @@
   </data>
   <data name="Start_Level_TooLoud" xml:space="preserve">
     <value>Input level, too loud</value>
+  </data>
+  <data name="Start_Notice_Interrupted" xml:space="preserve">
+    <value>Recording stopped by itself: the device was disconnected, or the disk is full. Choose Stop to keep what was recorded.</value>
   </data>
   <data name="Start_Notice_NothingPlaying" xml:space="preserve">
     <value>Only silence is arriving. Check that something is playing. Streaming apps usually block recording.</value>

@@ -9,7 +9,8 @@ public sealed record ModelCheckResult(IReadOnlyList<ModelComponent> Missing, IRe
 
 /// <summary>
 /// Whether the downloads a full-band score needs are there (§7 "Ready to make scores"). Runs every few
-/// seconds, so it looks at names and sizes only; checksums are checked once, when a download finishes.
+/// seconds, so it looks at names and sizes (and reads a .json with no size to check, once per change); checksums are
+/// checked once, when a download finishes.
 /// </summary>
 public static class ModelCheck
 {
@@ -68,7 +69,10 @@ public static class ModelCheck
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
     }
 
-    /// <summary>A regular file (through symbolic links) and, when <paramref name="size"/> &gt; 0, exactly that many bytes.</summary>
+    /// <summary>
+    /// A regular file (through symbolic links) and, when <paramref name="size"/> &gt; 0, exactly that many bytes;
+    /// otherwise one <see cref="IsUsable(string, string)"/> accepts.
+    /// </summary>
     public static bool FileMatches(string path, long size)
     {
         try
@@ -76,8 +80,38 @@ public static class ModelCheck
             var info = new FileInfo(path);
             if (info.LinkTarget is not null && info.ResolveLinkTarget(returnFinalTarget: true) is FileInfo target) info = target;
             if (!info.Exists) return false;
-            return size <= 0 || info.Length == size;
+            return size > 0 ? info.Length == size : IsUsable(info, Path.GetFileName(path));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (long Length, DateTime Written, bool Ok)> Parsed = new();
+
+    /// <summary>
+    /// A file with no size or checksum to check it by (upstream edits it): not empty and, for a <c>.json</c>
+    /// (<paramref name="name"/>), JSON, so an error or Wi-Fi sign-in page saved in its place is never taken for it.
+    /// Parsed again only when the file's size or time changes, since this runs every few seconds.
+    /// </summary>
+    public static bool IsUsable(string path, string name)
+    {
+        try { return IsUsable(new FileInfo(path), name); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    private static bool IsUsable(FileInfo info, string name)
+    {
+        if (!info.Exists || info.Length == 0) return false;
+        if (!name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) return true;
+        if (Parsed.TryGetValue(info.FullName, out var c) && c.Length == info.Length && c.Written == info.LastWriteTimeUtc) return c.Ok;
+        bool ok;
+        try
+        {
+            using var stream = info.OpenRead();
+            using var doc = System.Text.Json.JsonDocument.Parse(stream);
+            ok = true;
+        }
+        catch (System.Text.Json.JsonException) { ok = false; }
+        Parsed[info.FullName] = (info.Length, info.LastWriteTimeUtc, ok);
+        return ok;
     }
 }

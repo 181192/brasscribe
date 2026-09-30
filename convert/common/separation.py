@@ -9,6 +9,7 @@ stem's notes.
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from pathlib import Path
 
@@ -47,7 +48,9 @@ def _swift_f0():
 
 
 def basic_pitch_notes(path: Path) -> P.Notes:
-    mid = path.with_suffix(".bp.mid")
+    # Keyed on the WAV's content: a stem that changed (a regressed separator) is transcribed again.
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+    mid = path.with_suffix(f".{digest}.bp.mid")
     if not mid.exists():
         subprocess.run([str(BASIC_PITCH), str(path), str(mid)], check=True, capture_output=True)
     return P.midi_notes(mid)

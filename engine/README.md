@@ -35,8 +35,9 @@ Other commands: `bench` (benchmark suites against `eval/baselines.json`), `compa
 reference output), `manifest` (show or re-run a run), `devices` (list or revoke paired devices).
 `pixi run brasscribe <command> --help` has the options.
 
-The model adapters use [uv](https://docs.astral.sh/uv/) by default (`uv run --project ml/adapters/<name>`);
-with `BRASSCRIBE_ADAPTER_RUNNER=pixi` they use the pixi environment of the same name
+On macOS on Apple silicon the model adapters use [uv](https://docs.astral.sh/uv/) by default
+(`uv run --frozen --project ml/adapters/<name>`; the uv lock files are solved for that platform only).
+Elsewhere, or with `BRASSCRIBE_ADAPTER_RUNNER=pixi`, they use the pixi environment of the same name
 (`pixi install -e muscriptor`, …). Model weights are not in git: they go under `BRASSCRIBE_MODELS`, or
 the adapter downloads them from where their makers publish them (licences in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)).
@@ -51,10 +52,13 @@ A job option the engine refuses answers 422 with `{"code": …, "detail": …}`;
 | `BRASSCRIBE_DATA` | `<repo>/data` | Cache, runs, uploads, datasets |
 | `BRASSCRIBE_MODELS` | `<data>/models`, then `<repo>/models` | Model weights |
 | `BRASSCRIBE_ADAPTERS` | `<repo>/ml/adapters` | Adapter directory |
-| `BRASSCRIBE_ADAPTER_RUNNER` | `uv` | `uv` or `pixi` |
+| `BRASSCRIBE_ADAPTER_RUNNER` | `uv` on Apple silicon Macs, else `pixi` | `uv` or `pixi` |
 | `BRASSCRIBE_TOKEN` | none | Static bearer token for scripts; the apps pair and get their own |
 | `BRASSCRIBE_TRUST_LOCAL` | `1` | Clients on this computer use the API without a token |
-| `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu.lock` | Machine-wide lock for heavy models |
+| `BRASSCRIBE_ALLOWED_HOSTS` | none | Extra host names (comma-separated) clients on this computer may use, e.g. a local proxy's |
+| `BRASSCRIBE_MAX_UPLOAD_BYTES` | 2 GiB | Largest upload (request body); larger ones get 413 |
+| `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
+| `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
 
 `src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner

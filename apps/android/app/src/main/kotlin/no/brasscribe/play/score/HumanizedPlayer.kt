@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit
 class HumanizedPlayer(private val core: CoreBridge) {
     private class Part(val channel: Int, val notes: List<PlayedNote>)
 
+    // The schedule ([parts], [sentUntil], [next]) belongs to the executor's thread: alphaTab's position
+    // events and the controller hand their changes to it, so a seek never races a tick.
     private var parts: List<Part> = emptyList()
-    private var tickSeconds: (Double) -> Double = { it / 960.0 * 0.5 }
+    @Volatile private var tickSeconds: (Double) -> Double = { it / 960.0 * 0.5 }
     private val exec = Executors.newSingleThreadScheduledExecutor { Thread(it, "humanized-player").apply { isDaemon = true } }
     private var task: ScheduledFuture<*>? = null
 
@@ -31,10 +33,19 @@ class HumanizedPlayer(private val core: CoreBridge) {
     private var sentUntil = 0.0
     private val next = HashMap<Int, Int>()
 
-    /** Humanizes [score]'s pitched tracks; [channels] and [audible] come from the score controller. */
+    /** Runs [action] on the schedule's thread; after [release] there is none, and nothing runs. */
+    private fun onSchedule(action: () -> Unit) {
+        try { exec.execute(action) } catch (e: java.util.concurrent.RejectedExecutionException) { }
+    }
+
+    /**
+     * Humanizes [score]'s pitched tracks; [channels] and [audible] come from the score controller.
+     * Slow (the core humanizes every note): call it off the main thread.
+     */
     fun prepare(score: Score, channels: IntArray, percussion: List<Boolean>, compositionJson: String?): Int {
-        tickSeconds = tempoMap(score)
-        parts = (0 until score.tracks.length.toInt()).mapNotNull { i ->
+        val seconds = tempoMap(score)
+        tickSeconds = seconds
+        val prepared = (0 until score.tracks.length.toInt()).mapNotNull { i ->
             if (percussion[i]) return@mapNotNull null
             val track = score.tracks[i]
             val name = track.name.replace(' ', ' ').trim()
@@ -48,7 +59,7 @@ class HumanizedPlayer(private val core: CoreBridge) {
                     val start = beat.absolutePlaybackStart
                     notes += ScoreNote(
                         tick = Math.round(start / 960.0 * 24), durTicks = Math.round(dur / 960.0 * 24),
-                        startS = tickSeconds(start), endS = tickSeconds(start + dur), pitch = n.realValue.toInt(), velocity = 80,
+                        startS = seconds(start), endS = seconds(start + dur), pitch = n.realValue.toInt(), velocity = 80,
                     )
                 }
             }
@@ -57,7 +68,8 @@ class HumanizedPlayer(private val core: CoreBridge) {
             val played = core.humanize(notes.sortedWith(compareBy({ it.tick }, { it.pitch })), name, player, compositionJson) ?: return@mapNotNull null
             Part(channels[i], trimSamePitch(played).sortedBy { it.startS })
         }
-        return parts.sumOf { it.notes.size }
+        onSchedule { parts = prepared; next.clear(); sentUntil = 0.0 }
+        return prepared.sumOf { it.notes.size }
     }
 
     fun secondsAt(tick: Double): Double = tickSeconds(tick)
@@ -74,12 +86,13 @@ class HumanizedPlayer(private val core: CoreBridge) {
         anchorScoreS = scoreSeconds
         anchorNanos = System.nanoTime()
         speed = playbackSpeed
-        if (scoreSeconds < predicted - 0.3 || scoreSeconds > predicted + 1.0) rewind(scoreSeconds)
+        if (scoreSeconds < predicted - 0.3 || scoreSeconds > predicted + 1.0) onSchedule { rewind(scoreSeconds) }
     }
 
     private fun predictedScoreSeconds(): Double =
         if (!playing) anchorScoreS else anchorScoreS + (System.nanoTime() - anchorNanos) / 1e9 * speed
 
+    /** On the schedule's thread only. */
     private fun rewind(from: Double) {
         RealisticSynth.releaseAll()
         sentUntil = from
@@ -90,9 +103,11 @@ class HumanizedPlayer(private val core: CoreBridge) {
         playing = true
         sent = 0
         anchorNanos = System.nanoTime()
-        rewind(anchorScoreS)
+        val from = anchorScoreS
         task?.cancel(false)
-        task = exec.scheduleAtFixedRate({ tick(audible) }, 0, 10, TimeUnit.MILLISECONDS)
+        // In order on the one thread: the rewind lands before the first tick.
+        onSchedule { rewind(from) }
+        task = runCatching { exec.scheduleAtFixedRate({ tick(audible) }, 0, 10, TimeUnit.MILLISECONDS) }.getOrNull()
     }
 
     /** Notes handed to sfizz since the last start (for the log). */

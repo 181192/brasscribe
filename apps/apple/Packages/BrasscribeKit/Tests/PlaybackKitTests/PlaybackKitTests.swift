@@ -118,3 +118,23 @@ func goldenDir() -> URL? {
         #expect(e.sampler(for: score.parts[1])?.globalTuning == -200)
     }
 }
+
+/// A count-in queues its start on the main thread when it ends; a pause that comes first wins.
+@MainActor @Test func aPauseAtTheEndOfTheCountInKeepsPlaybackStopped() async throws {
+    let xml = """
+    <score-partwise><part-list><score-part id="P1"><part-name>Cornet</part-name></score-part></part-list>
+    <part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <sound tempo="1000"/><note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration></note></measure>
+    <measure number="2"><note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration></note></measure></part></score-partwise>
+    """
+    let score = try MusicXMLParser.parse(Data(xml.utf8))
+    let e = try PlaybackEngine(score: score, soundBank: .locate(bundle: .main), offlineFormat: PlaybackEngine.offlineFormat())
+    e.countInBars = 1
+    try e.play()
+    #expect(e.state == .countingIn(beat: 1))
+    // four clicks at 60 ms: the count-in ends and queues its start while the main thread is busy
+    usleep(500_000)
+    e.pause()
+    try await Task.sleep(for: .milliseconds(300))
+    #expect(e.state == .stopped)
+}

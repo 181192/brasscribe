@@ -55,4 +55,9 @@ for sig in [SIGINT, SIGTERM] {
     signalSources.append(src)
 }
 if seconds > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { stop() } }
+// the output device went away: nothing more arrives, so keep what was recorded
+let lostTimer = DispatchSource.makeTimerSource(queue: .main)
+lostTimer.schedule(deadline: .now() + 0.5, repeating: 0.5)
+lostTimer.setEventHandler { if recorder.outputLost { log("the output device went away"); stop() } }
+lostTimer.resume()
 dispatchMain()

@@ -57,16 +57,31 @@ public sealed class ServerSentEventParser
         return null;
     }
 
+    /// <summary>
+    /// The events on a stream. With <paramref name="idleTimeout"/>, a stream that sends no line at all
+    /// (comments such as keepalives count) for that long ends with a <see cref="TimeoutException"/>.
+    /// </summary>
     public static async IAsyncEnumerable<ServerSentEvent> ReadAsync(
         Stream stream,
         ServerSentEventParser? parser = null,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default,
+        TimeSpan? idleTimeout = null)
     {
         parser ??= new ServerSentEventParser();
         using var reader = new StreamReader(stream, Encoding.UTF8);
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
         while (true)
         {
-            string? line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
+            if (idleTimeout is { } t) idle.CancelAfter(t);
+            string? line;
+            try
+            {
+                line = await reader.ReadLineAsync(idle.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
+            {
+                throw new TimeoutException("The event stream sent nothing in time.", e);
+            }
             if (line is null) yield break;
             var ev = parser.Feed(line);
             if (ev is not null) yield return ev;

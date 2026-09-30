@@ -12,12 +12,13 @@ public sealed class SupervisorTests : IDisposable
     private readonly FakeLauncher _launcher = new();
     private readonly FakePorts _ports = new();
     private bool _healthy = true;
+    private int _healthChecks;
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
     private EngineSupervisor Make(EngineLaunchConfig? config = null) => new(
         _launcher, _ports,
-        (port, _) => Task.FromResult(_healthy && _launcher.Started.Count > 0 && !_launcher.Last.WaitForExitAsync().IsCompleted
+        (port, _) => Task.FromResult(Interlocked.Increment(ref _healthChecks) > 0 && _healthy && _launcher.Started.Count > 0 && !_launcher.Last.WaitForExitAsync().IsCompleted
             ? new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kalli's PC")
             : null),
         port => (config ?? Config()).Build(port),
@@ -185,6 +186,40 @@ public sealed class SupervisorTests : IDisposable
         await Until(() => _launcher.Started.Count == 1);
         await Until(() => _launcher.Started[0].Process.Killed, advance: true, stepSeconds: 10);
         await Until(() => sup.RecentFailures == 1);
+    }
+
+    [Fact]
+    public async Task A_running_engine_that_stops_answering_is_restarted()
+    {
+        await using var sup = Make();
+        await sup.StartAsync();
+        await Until(() => sup.State == EngineState.Running);
+        var first = _launcher.Last;
+
+        // Slow for a while (fewer misses in a row than the limit), then well again: left alone.
+        _healthy = false;
+        for (int i = 0; i < 3; i++) await Liveness();
+        _healthy = true;
+        await Liveness();
+        _healthy = false;
+        for (int i = 0; i < 3; i++) await Liveness();
+        Assert.False(first.Killed);
+        Assert.Equal(EngineState.Running, sup.State);
+
+        // The fourth miss in a row: stuck, so it is ended and started again like a crash.
+        await Liveness();
+        await Until(() => first.Killed, advance: true, stepSeconds: new SupervisorOptions().LivenessInterval.TotalSeconds);
+        _healthy = true;
+        await Until(() => _launcher.Started.Count == 2 && sup.State == EngineState.Running, advance: true);
+        Assert.Equal(1, sup.RecentFailures);
+    }
+
+    /// <summary>Moves on to the next liveness check and waits until it has asked.</summary>
+    private async Task Liveness()
+    {
+        int before = Volatile.Read(ref _healthChecks);
+        await Until(() => Volatile.Read(ref _healthChecks) > before, advance: true, stepSeconds: new SupervisorOptions().LivenessInterval.TotalSeconds);
+        await Task.Delay(5);
     }
 
     [Fact]

@@ -156,10 +156,13 @@ def plan_free_time(beat_times: np.ndarray, onsets: np.ndarray, beats_per_bar: in
         s0 = float(min(t[a], on.min())) if at_start and len(on) else float(t[a])
         s1 = float(t[r])
         bpm = tempo or local_tempo(on if tempo_onsets is None else tempo_onsets, s0, s1)
-        n = max(1, int(np.ceil((s1 - s0) * bpm / 60.0 / beats_per_bar))) * beats_per_bar
-        bpm = n * 60.0 / (s1 - s0)
         out.extend(t[cursor:a])
         start_idx = len(out)
+        # Whole bars, plus the rest of the bar the region starts in when that is not on a bar line (a region
+        # inside the pickup bar), so the grid resumes on a bar line.
+        rest = 0 if at_start else (new_first - start_idx) % beats_per_bar
+        n = rest + max(0 if rest else 1, int(np.ceil(((s1 - s0) * bpm / 60.0 - rest) / beats_per_bar))) * beats_per_bar
+        bpm = n * 60.0 / (s1 - s0)
         out.extend(s0 + np.arange(n) * (s1 - s0) / n)
         spans.append((start_idx, start_idx + n, s0, s1, bpm))
         if at_start:

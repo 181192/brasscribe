@@ -17,9 +17,14 @@ mockups are `design/mockups/png/server-win-flyout-*`, `server-pair-*`.
 ```powershell
 dotnet test tests/Brasscribe.Bandroom.Core.Tests
 dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
-# A development run against this checkout, with pixi on PATH:
-$env:BRASSCRIBE_BANDROOM_WORKSPACE = "C:\src\brasscribe"; .\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
+# A development run against this checkout, with pixi on PATH (installs from the workspace\ the build put next to it):
+.\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
 ```
+
+`-p:BandroomBundleWorkspace=true` copies the pixi workspace from this checkout next to the exe (`workspace\`: the
+same files a release bundles), and Bandroom installs from there. `BRASSCRIBE_BANDROOM_WORKSPACE` points it at
+another folder laid out the same way. Never point it at the checkout itself: Bandroom copies and hashes the whole
+folder, `.git`, `.pixi` and `data` included.
 
 The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the phone
 build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the
@@ -52,7 +57,8 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   when `pixi.lock` changed.
 - **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default brasscribe serve --lan
   --port N` on the first free port from 8765, in a job object (Stop, Restart and Bandroom exiting end the
-  whole tree). It is Running once `/v1/health` answers. An unexpected exit restarts it after 2, 4, 8 … 30 s;
+  whole tree). It is Running once `/v1/health` answers, and is asked again every 30 s: four unanswered in a row
+  count as stuck, and it is ended and restarted like an exit. An unexpected exit restarts it after 2, 4, 8 … 30 s;
   three in five minutes is **Stopped unexpectedly**.
 - **Admin credential**: 256 random bits in `bandroom\admin-token`, with an ACL that allows only the current
   user (inheritance removed). Passed as `BRASSCRIBE_ADMIN_TOKEN`; sent as `Authorization: Bearer` on every

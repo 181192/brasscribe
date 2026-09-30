@@ -29,8 +29,11 @@ public sealed class BandroomController
     private readonly BandroomPaths _paths;
     private readonly TimeProvider _time;
     private readonly LoadAverager _load;
+    private readonly SemaphoreSlim _ticking = new(1, 1);
     private (int Port, IEngineApi Api)? _api;
     private DateTimeOffset _lastEnginePoll = DateTimeOffset.MinValue;
+    private volatile bool _pollNow;
+    private volatile bool _again;
     private StatusInfo? _status;
     private JobView? _job;
     private HealthSnapshot? _health;
@@ -65,8 +68,12 @@ public sealed class BandroomController
     public bool Updating { get; set; }
     /// <summary>Why the last engine update failed; the previous engine runs meanwhile.</summary>
     public string? UpdateFailure { get; set; }
+    /// <summary>Why setup stopped (details for the tech person); Finish setting up tries again.</summary>
+    public string? SetupFailure { get; set; }
     /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
     public string? WorkspaceStamp { get; set; }
+    /// <summary>Where a check that went wrong is written (engine.log).</summary>
+    public Action<string>? Log { get; set; }
 
     public event Action<BandroomSnapshot>? SnapshotReady;
     public event Action<IReadOnlyList<DeviceInfo>>? DevicesChanged;
@@ -88,10 +95,11 @@ public sealed class BandroomController
         set
         {
             _flyoutOpen = value;
-            if (value) _lastEnginePoll = DateTimeOffset.MinValue;
+            if (value) _pollNow = true;
         }
     }
 
+    /// <summary>Checks every <see cref="Tick"/> until cancelled.</summary>
     public async Task RunAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -102,18 +110,44 @@ public sealed class BandroomController
         }
     }
 
+    /// <summary>
+    /// One check. The loop, opening the flyout or the window all ask for one, and only one runs at a time: asking
+    /// while one runs returns at once, and the running one checks once more when it is done. A check that goes
+    /// wrong is logged and the next one runs as usual: nothing an engine answers stops the polling.
+    /// </summary>
     public async Task TickAsync(CancellationToken ct = default)
+    {
+        if (!await _ticking.WaitAsync(0, CancellationToken.None).ConfigureAwait(false))
+        {
+            _again = true;
+            return;
+        }
+        try
+        {
+            do
+            {
+                _again = false;
+                try { await CheckAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+                catch (Exception e) { Log?.Invoke("bandroom: status check failed: " + e); }
+            } while (_again && !ct.IsCancellationRequested);
+        }
+        finally { _ticking.Release(); }
+    }
+
+    private async Task CheckAsync(CancellationToken ct)
     {
         SampleHost();
         var api = Api;
         if (api is not null)
         {
             try { await Requests.PollAsync(api, ct).ConfigureAwait(false); }
-            catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException) { }
 
             var now = _time.GetUtcNow();
-            if (now - _lastEnginePoll >= (FlyoutOpen ? Tick : IdlePoll))
+            if (_pollNow || now - _lastEnginePoll >= (FlyoutOpen ? Tick : IdlePoll))
             {
+                _pollNow = false;
                 _lastEnginePoll = now;
                 await PollEngineAsync(api, ct).ConfigureAwait(false);
             }
@@ -143,6 +177,11 @@ public sealed class BandroomController
         {
             _status = null; // an engine that doesn't know our admin credential
         }
+        catch (EngineHttpException e)
+        {
+            // An error answer (a 500 while it is busy) is a missed reading, like a slow one.
+            Log?.Invoke("bandroom: status: " + e.Message);
+        }
     }
 
     /// <summary>Refreshes the devices now (opening Phones and tablets, after a removal).</summary>
@@ -150,7 +189,7 @@ public sealed class BandroomController
     {
         if (Api is not { } api) { DevicesChanged?.Invoke([]); return; }
         try { DevicesChanged?.Invoke(await api.GetDevicesAsync().ConfigureAwait(false)); }
-        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException) { }
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException) { }
     }
 
     private void SampleHost()
@@ -164,6 +203,7 @@ public sealed class BandroomController
             _health = new HealthSnapshot(cpu, total == 0 ? 1 : (double)avail / total, free, _models.Missing);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
+        catch (Exception e) { Log?.Invoke("bandroom: host reading failed: " + e.Message); } // the engine is still checked
     }
 
     public BandroomSnapshot Build()
@@ -171,6 +211,7 @@ public sealed class BandroomController
         var problems = new List<Problem>();
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (UpdateFailure is { } failure && !Updating) problems.Add(Problems.UpdateFailed(_s, failure));
+        if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })

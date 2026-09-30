@@ -110,3 +110,42 @@ def test_the_holder_pid_is_in_the_file(tmp_path):
     lock = tmp_path / "gpu.lock"
     with file_lock(lock):
         assert lock.read_text().strip() == str(os.getpid())
+
+
+def test_the_default_lock_is_per_user_and_shared_with_eval():
+    from brasscribe_eval import gpulock as eval_lock
+
+    from brasscribe_engine.gpulock import default_path
+
+    assert eval_lock.default_path() == default_path()
+    if sys.platform != "win32":
+        assert default_path().name == f"brasscribe-gpu-{os.getuid()}.lock"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
+def test_a_new_lock_file_is_private(tmp_path):
+    with file_lock(tmp_path / "gpu.lock"):
+        pass
+    assert (tmp_path / "gpu.lock").stat().st_mode & 0o077 == 0
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX symbolic links")
+def test_a_symbolic_link_is_not_followed(tmp_path):
+    target = tmp_path / "other.txt"
+    target.write_text("keep")
+    (tmp_path / "gpu.lock").symlink_to(target)
+    with pytest.raises(OSError):
+        with file_lock(tmp_path / "gpu.lock"):
+            pass
+    assert target.read_text() == "keep"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX owners")
+def test_a_lock_file_of_another_user_is_refused(tmp_path, monkeypatch):
+    (tmp_path / "gpu.lock").write_text("")
+    monkeypatch.setattr(os, "getuid", lambda: os.stat(tmp_path).st_uid + 1)
+    with pytest.raises(PermissionError):
+        with file_lock(tmp_path / "gpu.lock"):
+            pass
+    with pytest.raises(PermissionError):
+        is_locked(tmp_path / "gpu.lock")

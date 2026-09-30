@@ -60,7 +60,7 @@ public sealed partial class MainViewModel : ObservableObject
         Score.PersistMyPart = name =>
         {
             _myPartOverride = name;
-            if (_libraryId is { } id) Library?.SetMyPart(id, name);
+            if (_libraryId is { } id) Keep(() => Library?.SetMyPart(id, name));
         };
         Output.Seats = Seats;
         Output.PartLabel = PartLabel;
@@ -81,11 +81,11 @@ public sealed partial class MainViewModel : ObservableObject
         Library = library;
         Score.PersistEditedScore = (xml, compositionJson) =>
         {
-            if (_libraryId is { } id) Library?.SaveMusicXml(id, xml, compositionJson, Output.Applied.Lineup);
+            if (_libraryId is { } id) Keep(() => Library?.SaveMusicXml(id, xml, compositionJson, Output.Applied.Lineup));
         };
         Score.PersistEvidence = evidence =>
         {
-            if (_libraryId is { } id) Library?.SaveEvidence(id, evidence);
+            if (_libraryId is { } id) Keep(() => Library?.SaveEvidence(id, evidence));
         };
         Score.PersistReviewChanges = changes =>
         {
@@ -132,8 +132,12 @@ public sealed partial class MainViewModel : ObservableObject
         Error.Alternative += (_, _) => Screen = Screen.Start;
         Transcription.FailedWith += (_, failure) =>
         {
-            Error.Show(failure == TranscriptionFailure.ComputerUnreachable ? ErrorKind.ComputerUnreachable : ErrorKind.ScoreFailed,
-                Transcription.ErrorDetail);
+            Error.Show(failure switch
+            {
+                TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
+                TranscriptionFailure.RecordingUnreadable => ErrorKind.RecordingUnreadable,
+                _ => ErrorKind.ScoreFailed,
+            }, Transcription.ErrorDetail);
             Screen = Screen.Error;
         };
 
@@ -196,9 +200,10 @@ public sealed partial class MainViewModel : ObservableObject
             if (Score.Original is { } original) _ = RecordingLevel.ApplyAsync(original, r.Source.WavPath);
             Score.Evidence = r.Evidence;
             Score.Load(r.MusicXml, r.Composition);
-            _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
+            _libraryId = null;
+            Keep(() => _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
                 Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence,
-                Lineups.Engine(Lineups.Recorded(r.Composition) ?? Output.AppliedLineup)).Id;
+                Lineups.Engine(Lineups.Recorded(r.Composition) ?? Output.AppliedLineup)).Id);
             // A new score, or the notes written again for other choices: no "was" from before applies.
             ForgetReviewChanges();
             OpenReviewOrScore(rearranged);
@@ -463,8 +468,26 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void UpdateLibraryCount()
     {
-        if (_libraryId is { } id) Library?.SetNotesToCheck(id, Score.UncertainLeft);
+        if (_libraryId is { } id) Keep(() => Library?.SetNotesToCheck(id, Score.UncertainLeft));
     }
+
+    /// <summary>
+    /// A write to "Your scores" that must not end what the player is doing: a full disk or a file another
+    /// app holds is said (and shown through <see cref="ProblemNoticed"/>), and the score on screen stays as it is.
+    /// </summary>
+    private void Keep(Action write)
+    {
+        try { write(); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            string text = _s["Library_SaveFailed"];
+            _announcer.Announce(text, AnnouncementKind.Important);
+            ProblemNoticed?.Invoke(this, text);
+        }
+    }
+
+    /// <summary>Something went wrong that the player should see; the window shows it in its notice bar.</summary>
+    public event EventHandler<string>? ProblemNoticed;
 
     /// <summary>"Your scores" has entries (else Home shows the empty state).</summary>
     [ObservableProperty] public partial bool HasLibrary { get; set; }
@@ -574,7 +597,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         else
         {
-            Library?.Remove(item.Id);
+            Keep(() => Library?.Remove(item.Id));
             if (_libraryId == item.Id)
             {
                 _libraryId = null;
@@ -663,6 +686,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private string LibrarySubtitle(LibraryEntry e)
     {
+        if (!e.IsAvailable) return _s["Library_Unavailable"];
         string lineup = LineupLabel(Lineups.Parse(e.Lineup), e.Parts);
         string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
         return _s.Format("Library_Subtitle", lineup, e.Bars, WhenText(e.Updated)) + check;

@@ -451,6 +451,16 @@
         }
       }
     },
+    "Brasscribe isn't answering": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe svarer ikke"
+          }
+        }
+      }
+    },
     "Brasscribe isn't running. Start it from the menu bar, then pair.": {
       "localizations": {
         "nb": {
@@ -1057,6 +1067,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den kan ikke sende opptak hit før den kobles til igjen. Partitur som allerede ligger på den, blir liggende."
+          }
+        }
+      }
+    },
+    "It couldn't be started. Recordings on your phones are safe.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kunne ikke startes. Opptakene på telefonene er trygge."
+          }
+        }
+      }
+    },
+    "It is running but hasn't answered for a while. Restarting it usually helps.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt."
           }
         }
       }

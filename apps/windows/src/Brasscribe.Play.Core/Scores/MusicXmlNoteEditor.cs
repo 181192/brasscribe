@@ -30,7 +30,8 @@ public static class MusicXmlNoteEditor
         var notes = part.Elements(ns + "measure").SelectMany(m => m.Elements(ns + "note"))
             .Where(n => n.Element(ns + "grace") is null && n.Element(ns + "cue") is null).ToList();
         if (noteIndex < 0 || noteIndex >= notes.Count) throw new ArgumentOutOfRangeException(nameof(noteIndex));
-        var pitch = notes[noteIndex].Element(ns + "pitch") ?? throw new InvalidOperationException("Selected MusicXML note is not pitched");
+        var note = notes[noteIndex];
+        var pitch = note.Element(ns + "pitch") ?? throw new InvalidOperationException("Selected MusicXML note is not pitched");
         var spelled = Spell(midi, fifths);
         var stepElement = pitch.Element(ns + "step") ?? new XElement(ns + "step");
         var octaveElement = pitch.Element(ns + "octave") ?? new XElement(ns + "octave");
@@ -42,7 +43,35 @@ public static class MusicXmlNoteEditor
         pitch.Add(stepElement);
         if (spelled.Alter != 0) pitch.Add(new XElement(ns + "alter", spelled.Alter));
         pitch.Add(octaveElement);
+        SetAccidental(note, ns, spelled, fifths);
         return document.ToString(SaveOptions.DisableFormatting);
+    }
+
+    /// <summary>
+    /// The printed accidental of a changed note: the old one goes (an F♯ made F must not keep its sharp), and
+    /// a sharp, flat or natural is printed where the new note leaves the key signature. Accidentals earlier
+    /// in the bar are left to the renderer.
+    /// </summary>
+    private static void SetAccidental(XElement note, XNamespace ns, TalkingScore.TsPitch spelled, int fifths)
+    {
+        note.Elements(ns + "accidental").Remove();
+        if (spelled.Alter == KeyAlter(spelled.Step, fifths)) return;
+        var accidental = new XElement(ns + "accidental", spelled.Alter switch { > 0 => "sharp", < 0 => "flat", _ => "natural" });
+        // MusicXML order: pitch, duration, tie, instrument, footnote, level, voice, type, dot, then accidental.
+        string[] before = ["pitch", "duration", "tie", "instrument", "footnote", "level", "voice", "type", "dot"];
+        var anchor = note.Elements().LastOrDefault(e => e.Name.Namespace == ns && before.Contains(e.Name.LocalName));
+        if (anchor is null) note.AddFirst(accidental);
+        else anchor.AddAfterSelf(accidental);
+    }
+
+    /// <summary>What the key signature does to a step: +1 sharpened, -1 flattened, 0 natural.</summary>
+    internal static int KeyAlter(string step, int fifths)
+    {
+        const string sharpOrder = "FCGDAEB", flatOrder = "BEADGCF";
+        int n = Math.Clamp(Math.Abs(fifths), 0, 7);
+        if (fifths > 0) return sharpOrder.IndexOf(step[0]) is var i and >= 0 && i < n ? 1 : 0;
+        if (fifths < 0) return flatOrder.IndexOf(step[0]) is var j and >= 0 && j < n ? -1 : 0;
+        return 0;
     }
 
     /// <summary>A MIDI pitch spelled with sharps, or with flats in flat keys.</summary>

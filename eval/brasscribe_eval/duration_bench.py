@@ -66,7 +66,7 @@ def evaluate(song: Path, contours: Path | None = None, stem_settings: bool = Fal
         for part, notes in by_part.items():
             f = cdir / f"{part}.npz"
             if not f.exists():
-                raise SystemExit(f"missing contour {f}")
+                raise FileNotFoundError(f"missing contour {f}")
             notes.sort(key=lambda r: r["onset"])
             offs = contour_offsets(Contour.load(f), [(r["onset"], r["pitch"]) for r in notes],
                                    **(SEPARATED_STEM if stem_settings else {}))
@@ -76,10 +76,11 @@ def evaluate(song: Path, contours: Path | None = None, stem_settings: bool = Fal
     beats = reference_beats(song)
     bm = BeatMap(beats)
     q = quantize(ref, beats, auto_level=False)
-    by_key = {(round(x.onset_s, 6), x.pitch): x for x in q}
+    # (onset, pitch, offset): parts in unison on one onset keep their own lengths
+    by_key = {(round(x.onset_s, 6), x.pitch, round(x.offset_s, 6)): x for x in q}
     parts: dict[str, list[tuple[dict, QNote]]] = defaultdict(list)
     for r in ref:
-        parts[r["part"]].append((r, by_key[(round(r["onset"], 6), r["pitch"])]))
+        parts[r["part"]].append((r, by_key[(round(r["onset"], 6), r["pitch"], round(r["offset"], 6))]))
     counts = {k: 0 for k in RULES}
     stacc = stacc_short = 0
     n = 0

@@ -13,6 +13,16 @@ import Testing
         #expect(m.phase == .running)
     }
 
+    @Test func startAndStopFollowThePhase() {
+        let all: [SupervisorPhase] = [.idle, .starting, .running, .stopping(then: .stop), .stopping(then: .restart),
+                                      .stopping(then: .fail), .stopped, .waitingToRetry(attempt: 1, delay: 2), .failed(nil)]
+        #expect(all.filter(\.offersStart) == [.stopped])
+        #expect(all.filter(\.offersStop) == [.starting, .running, .stopping(then: .restart), .waitingToRetry(attempt: 1, delay: 2)])
+        // Low disk space outranks Stopped in what the panel shows; the phase still offers Start.
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .stopped, updating: false, problems: [.lowDisk(freeGB: 2)], jobPercent: nil)
+                == .attention(.lowDisk(freeGB: 2)))
+    }
+
     @Test func backoffDoublesAndCaps() {
         #expect((1...6).map(SupervisorMachine.backoff(attempt:)) == [2, 4, 8, 16, 30, 30])
     }
@@ -133,7 +143,7 @@ import Testing
                                          computerName: "Kalli's MacBook", adminToken: "secret")
         let sup = EngineSupervisor(configuration: config, launcher: launcher, makeClient: { _, _ in engine },
                                    sleep: { _ in await Task.yield() }, now: { clock.now }, pickPort: { port },
-                                   baseEnvironment: ["HOME": "/Users/k", "PATH": "/nowhere"])
+                                   baseEnvironment: ["HOME": "/Users/test", "PATH": "/nowhere"])
         return (sup, paths.engineStatus)
     }
 
@@ -171,6 +181,21 @@ import Testing
         #expect(launcher.launched.count == 2)
         #expect(sup.phase == .running)
         #expect(sup.pid != first)
+    }
+
+    @Test func everyPhaseChangeIsReported() async {
+        let launcher = FakeLauncher(), engine = FakeEngine()
+        let (sup, _) = make(launcher, engine)
+        var phases: [SupervisorPhase] = []
+        sup.onPhaseChange = { phases.append($0) }
+        sup.start()
+        await settle()
+        launcher.crash(sup.pid!)
+        await settle()
+        #expect(Array(phases.prefix(3)) == [.starting, .running, .waitingToRetry(attempt: 1, delay: 2)])
+        sup.stop()
+        await settle()
+        #expect(phases.last == .stopped)
     }
 
     @Test func stopTerminatesTheProcessGroupAndRemovesEngineJSON() async {
@@ -229,6 +254,63 @@ import Testing
     @Test func skipsBusyPorts() {
         #expect(PortPicker.firstFree(isFree: { $0 >= 8767 }) == 8767)
         #expect(PortPicker.firstFree(isFree: { _ in false }) == nil)
+    }
+
+    /// A listening socket on `address` at a port the system picks; returns the descriptor and the port.
+    private func listen(on address: in_addr_t, reuse: Bool) throws -> (fd: Int32, port: Int) {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        try #require(fd >= 0)
+        var one: Int32 = 1
+        if reuse { setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<Int32>.size)) }
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr = in_addr(s_addr: address)
+        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) == 0 && Darwin.listen(fd, 4) == 0 && getsockname(fd, $0, &len) == 0 }
+        }
+        try #require(bound)
+        return (fd, Int(UInt16(bigEndian: addr.sin_port)))
+    }
+
+    @Test(arguments: [true, false])
+    func aPortAnotherProgramListensOnIsBusy(reuse: Bool) throws {
+        let loopback = UInt32(0x7f00_0001).bigEndian
+        for address in [loopback, INADDR_ANY] {
+            let (fd, port) = try listen(on: address, reuse: reuse)
+            #expect(!PortPicker.isFree(port), "listening on \(address == INADDR_ANY ? "all addresses" : "127.0.0.1")")
+            close(fd)
+        }
+    }
+
+    @Test func aPortNobodyUsesIsFree() throws {
+        let (fd, port) = try listen(on: INADDR_ANY, reuse: true)
+        close(fd)
+        #expect(PortPicker.isFree(port))
+    }
+}
+
+@Suite struct ModelsFolderTests {
+    @Test func bandroomAndTheEngineReadTheSameModelsFolder() throws {
+        let root = tempDir()
+        let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
+        let checkout = root.appending(path: "checkout", directoryHint: .isDirectory)
+        func engineModels(_ source: EngineSource) -> String? {
+            EngineConfiguration(source: source, pixi: nil, paths: paths, computerName: "Mac", adminToken: "t")
+                .environment(base: [:])["BRASSCRIBE_MODELS"]
+        }
+        // A checkout, and no models in the data folder: the checkout's.
+        #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == checkout.appending(path: "models").path)
+        #expect(engineModels(.checkout(checkout)) == checkout.appending(path: "models").path)
+        // Models in the data folder (downloaded there earlier): both use those, adapters included.
+        try FileManager.default.createDirectory(at: paths.models, withIntermediateDirectories: true)
+        #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == paths.models.path)
+        #expect(engineModels(.checkout(checkout)) == paths.models.path)
+        // Installed: always the data folder's.
+        let installed = EngineSource.installed(workspace: paths.workspace, adapters: nil)
+        #expect(installed.modelsFolder(paths: paths).path == paths.models.path)
+        #expect(engineModels(installed) == paths.models.path)
     }
 }
 

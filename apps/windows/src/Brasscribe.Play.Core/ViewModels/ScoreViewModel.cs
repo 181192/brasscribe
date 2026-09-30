@@ -516,8 +516,9 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     partial void OnZoomPercentChanged(double value)
     {
-        double snapped = Math.Clamp(Math.Round(value / 10) * 10, 50, 400);
-        if (Math.Abs(snapped - value) > 1e-9) ZoomPercent = snapped;
+        // A cleared zoom box gives NaN: back to 100 %.
+        double snapped = double.IsFinite(value) ? Math.Clamp(Math.Round(value / 10) * 10, 50, 400) : 100;
+        if (!(Math.Abs(snapped - value) <= 1e-9)) ZoomPercent = snapped;
     }
 
     private void ApplySettings()

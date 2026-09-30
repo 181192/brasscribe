@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// The Pair a phone window (design/server-app.md §3.4). The engine's pairing window is open, with no expiry,
-/// exactly while this window is open; each code works once.
+/// The Pair a phone window (design/server-app.md §3.4). The engine's pairing window is open exactly while this
+/// window is open; each code works once. It opens for 10 minutes and is extended in the background while the window
+/// stays open, so a window that is never closed (Bandroom quits or crashes) doesn't leave a code working.
 @MainActor
 @Observable
 public final class PairingModel {
@@ -26,10 +27,14 @@ public final class PairingModel {
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let sleep: @Sendable (TimeInterval) async -> Void
+    /// Bumped by every open() and close(), so an open() still waiting on the engine knows it was overtaken.
+    @ObservationIgnored private var generation = 0
 
     /// Refresh cadence while the window is open.
     public static let pollInterval: TimeInterval = 2
-    /// Extend a fixed-lifetime window when less than this is left (engines that ignore "no expiry").
+    /// How long a code works unless it is extended.
+    public static let lifetime: TimeInterval = 600
+    /// Extend the window when less than this is left.
     public static let extendMargin: TimeInterval = 120
 
     public init(client: (any EngineAPI)? = nil, now: @escaping () -> Date = Date.init,
@@ -52,16 +57,28 @@ public final class PairingModel {
 
     /// Opens a pairing window with a fresh code and starts watching for a phone.
     public func open() async {
+        generation += 1
+        let gen = generation
         guard let client else { phase = .unavailable; return }
         phase = .opening
         pairedDevice = nil
         isLockedOut = false
         do {
-            knownDevices = Set(try await client.devices().map(\.deviceId))
-            state = try await client.openPairing(PairingOpen(ttlSeconds: nil, singleUse: true))
+            let known = Set(try await client.devices().map(\.deviceId))
+            guard gen == generation else { return }
+            knownDevices = known
+            let opened = try await client.openPairing(PairingOpen(ttlSeconds: Self.lifetime, singleUse: true))
+            guard gen == generation else {
+                // The window closed while the code was being made: close the engine's window again. (A newer
+                // open() has made its own code, which the next poll shows.)
+                if phase == .idle { _ = try? await client.closePairing() }
+                return
+            }
+            state = opened
             phase = .open
             startPolling()
         } catch {
+            guard gen == generation else { return }
             phase = .unavailable
         }
     }
@@ -73,6 +90,7 @@ public final class PairingModel {
 
     /// Closes the engine's pairing window; call when the window closes.
     public func close() async {
+        generation += 1
         loop?.cancel()
         loop = nil
         phase = .idle
@@ -102,16 +120,17 @@ public final class PairingModel {
             }
             knownDevices = ids
         }
-        guard var s = try? await client.pairing() else { return }
+        guard phase == .open, var s = try? await client.pairing(), phase == .open else { return }
         if let locked = s.lockedUntil.flatMap(ISODate.parse) {
             isLockedOut = locked > now()
         } else {
             isLockedOut = false
         }
         if s.open, let expires = s.expiresAt.flatMap(ISODate.parse), expires.timeIntervalSince(now()) < Self.extendMargin,
-           let extended = try? await client.openPairing(PairingOpen(ttlSeconds: 600, singleUse: true, extend: true)) {
+           let extended = try? await client.openPairing(PairingOpen(ttlSeconds: Self.lifetime, singleUse: true, extend: true)) {
             s = extended
         }
+        guard phase == .open else { return }
         state = s
     }
 }

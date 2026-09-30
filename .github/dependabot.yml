@@ -1,5 +1,6 @@
-# Dependency updates: weekly, minor and patch versions grouped into one pull request per ecosystem,
-# majors on their own. Security updates come separately, as soon as an advisory lands.
+# Dependency updates: monthly, minor and patch versions grouped into one pull request per ecosystem,
+# majors on their own. Security updates come as soon as an advisory lands, grouped into one pull
+# request per ecosystem and directory.
 # Python (pixi.lock) is not a Dependabot ecosystem: update it with `pixi update` and the checks.
 # Swift has no remote packages (all local), and engine/Dockerfile's base image is updated by hand.
 # ml/adapters and convert/ pin their ML stacks on purpose (torch for coremltools, TensorFlow 2.15);
@@ -9,20 +10,26 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
-    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    schedule: { interval: monthly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+      security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: ci }
 
   - package-ecosystem: cargo
     directory: /core
-    schedule: { interval: weekly }
-    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    schedule: { interval: monthly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+      security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
 
   - package-ecosystem: npm
     directory: /studio
-    schedule: { interval: weekly }
-    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    schedule: { interval: monthly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+      security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
     ignore:
       # openapi-typescript (gen:api) needs TypeScript 5; move with it.
@@ -34,12 +41,26 @@ updates:
 
   - package-ecosystem: gradle
     directories: [/apps/android, /core/android]
-    schedule: { interval: weekly }
-    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    schedule: { interval: monthly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+      security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
 
   - package-ecosystem: nuget
     directories: [/apps/windows, /apps/bandroom/windows, /core/dotnet]
-    schedule: { interval: weekly }
-    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    schedule: { interval: monthly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+      security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
+
+  # The model-conversion environments turn upstream checkpoints into the models the apps bundle. They
+  # run on a developer's machine only, never ship, and are pinned on purpose (torch for coremltools,
+  # tensorflow-macos for Basic Pitch): a bump can change the converted models. No update pull requests,
+  # version or security, for them. ml/adapters is not covered here and keeps its security updates.
+  - package-ecosystem: uv
+    directories: ["/convert/*"]
+    schedule: { interval: monthly }
+    ignore:
+      - dependency-name: "*"

@@ -52,3 +52,30 @@ def test_mixed_grid_ends_are_moved_to_clean_spans():
     # The report case: a triplet-quarter note followed by a 26-tick rest.
     e = _clean_end(0, 16, 42)
     assert _clean_span(0, e) and _clean_span(e, 42)
+
+
+def test_triplet_values_fill_whole_tuplet_groups(tmp_path):
+    import xml.etree.ElementTree as ET
+
+    from brasscribe_music.musicxml import PartSpec, _clean_end, _clean_span, build_score, write_musicxml
+    from brasscribe_music.quantize import QNote
+
+    # A triplet 8th followed by a plain 8th off the 16th grid: the plain value would leave the bracket open.
+    assert not _clean_span(8, 20) and _clean_span(8, 16) and _clean_span(16, 20)
+    assert _clean_end(8, 20, 20) == 16
+    notes = [QNote(60 + i, s, e, 0.0, 0.0) for i, (s, e) in enumerate([(0, 8), (8, 20), (20, 24)])]
+    path = write_musicxml(build_score([PartSpec("Solo", notes)], 2, 100, "t"), tmp_path / "t.musicxml")
+    root = ET.parse(path).getroot()
+    eighth = int(root.findtext(".//divisions")) // 2
+    open_at, spans = None, []
+    for i, n in enumerate(root.iter("note")):
+        types = [t.get("type") for t in n.iter("tuplet")]
+        assert types != ["start", "stop"], "a tuplet bracket over one note"
+        if "start" in types:
+            open_at, total = i, 0
+        if open_at is not None:
+            total += int(n.findtext("duration"))
+        if "stop" in types:
+            spans.append(total)
+            open_at = None
+    assert open_at is None and spans and all(s % eighth == 0 for s in spans)

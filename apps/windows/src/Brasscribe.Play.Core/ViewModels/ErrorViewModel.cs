@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>What went wrong, for the error screen.</summary>
-public enum ErrorKind { ComputerUnreachable, ScoreFailed }
+public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable }
 
 /// <summary>
 /// An error with a way forward (design/system.md §5, Errors with recovery): the title says what

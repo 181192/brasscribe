@@ -4,10 +4,13 @@
 
 For every case the Python reference writes to <work>/<case>/py and the Rust
 CLI (`brasscribe-core`) to <work>/<case>/rust. Every file the reference wrote
-is compared: JSON exactly (parsed, floats bit-equal; byte identity reported
-too), MusicXML after canonicalisation (see canon.py), including the split
-parts. The Mikkel case is also compared file by file against the golden
-output in data/golden/mikkel-arranged-band. With --musescore every Rust score
+is compared: JSON byte for byte (the report names the first value that differs
+when parsed: types, bit-equal floats, key order), MusicXML after
+canonicalisation (see canon.py), including the split parts. Each run starts
+from an empty <case>/rust, and the reference from an empty <case>/py. The
+Mikkel case is also compared file by file against the golden output in
+data/golden/mikkel-arranged-band; a case whose golden output is missing fails.
+A run that selects no cases fails too. With --musescore every Rust score
 and lead sheet is round-tripped through MuseScore in one batched launch.
 """
 
@@ -17,6 +20,7 @@ import argparse
 import contextlib
 import io
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -102,7 +106,7 @@ def compare(ref_dir: Path, rs_dir: Path, names: list[str]) -> list[tuple[str, bo
             rows.append((name, False, f"missing: ref={a.exists()} rs={b.exists()}"))
         elif name.endswith(".json"):
             same, byte_same, detail = json_equal(a, b)
-            rows.append((name, same, detail or ("" if byte_same else "(parsed equal, bytes differ)")))
+            rows.append((name, same and byte_same, detail or ("" if byte_same else "parsed equal, bytes differ")))
         elif name.endswith((".txt", ".html")):
             same = a.read_bytes() == b.read_bytes()
             rows.append((name, same, "" if same else "text differs"))
@@ -152,6 +156,8 @@ def main() -> None:
     ap.add_argument("--no-extras", action="store_true", help="skip the talking-score and humanize checks")
     args = ap.parse_args()
     cases = all_cases(args.work, args.only)
+    if not cases and not args.skip_rust:
+        sys.exit(f"no conformance cases{f' match --only {args.only!r}' if args.only else ''}: nothing was compared")
     binary = None if args.skip_rust else rust_bin()
     results = []
     ms_items: list[tuple[str, Path, Path | None]] = []
@@ -167,7 +173,9 @@ def main() -> None:
         t_py = time.time() - t0
         if binary is None:
             continue
-        rs.mkdir(parents=True, exist_ok=True)
+        # Only what this run writes is compared: a file an earlier run left behind must not stand in for one missing now.
+        shutil.rmtree(rs, ignore_errors=True)
+        rs.mkdir(parents=True)
         t0 = time.time()
         p = subprocess.run(rust_cmd(binary, case, rs), capture_output=True, text=True)
         t_rs = time.time() - t0
@@ -184,7 +192,10 @@ def main() -> None:
                             str(rs / "composition.json"), "--json-utf8", str(rs / "talking-score.json"),
                             "--html", str(rs / "talking-score.html"), "--text", str(rs / "talking-score.txt")], check=True)
             gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists() and not n.endswith(".brf")]
-            rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
+            if gold:
+                rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
+            else:
+                rows.append(("golden", False, f"missing: no golden output in {case.golden}"))
         ok = all(r[1] for r in rows)
         entry = {"case": case.id, "ok": ok, "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
                  "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows],

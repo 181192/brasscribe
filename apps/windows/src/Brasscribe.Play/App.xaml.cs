@@ -19,14 +19,49 @@ public partial class App : Application
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
-        UnhandledException += (_, e) => WriteCrash(e.Exception);
+        UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.SetObserved();
+        };
         var settings = new JsonSettingsStore();
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
+        {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+            // .NET formats with its own culture: the chosen language also decides key and pitch names, dates and
+            // percentages, or a Norwegian app on an English Windows would mix the two.
+            try
+            {
+                var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+                System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+                System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+                System.Globalization.CultureInfo.CurrentCulture = culture;
+                System.Globalization.CultureInfo.CurrentUICulture = culture;
+            }
+            catch (System.Globalization.CultureNotFoundException) { }
+        }
         InitializeComponent();
         Settings = settings;
     }
+
+    /// <summary>
+    /// The last line of defence for an exception nothing else caught (an event handler, a command, an
+    /// async void): it is logged, and unless the process is in a state it cannot go on from, the app
+    /// stays open and says that something went wrong.
+    /// </summary>
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        WriteCrash(e.Exception);
+        if (IsFatal(e.Exception)) return;
+        e.Handled = true;
+        _window?.DispatcherQueue.TryEnqueue(() => _window?.ShowProblem());
+    }
+
+    private static bool IsFatal(Exception? e) =>
+        e is null or OutOfMemoryException or AccessViolationException or StackOverflowException or InvalidProgramException
+            or BadImageFormatException or System.Runtime.InteropServices.SEHException;
 
     /// <summary>An unhandled exception, appended to crash.log next to settings.json (read by the CI smoke test).</summary>
     private static void WriteCrash(Exception? e)
@@ -78,12 +113,10 @@ public partial class App : Application
         var synthOut = new BufferedSynthOutput();
         var player = new AlphaTabScorePlayer(synthOut);
         LoadSoundFonts(player);
+        // The output device opens when the band plays, and follows Windows' default device. Without one the
+        // app still works for reading and exports, and playing starts once a device appears.
         _audioOut = new WasapiSynthOutput();
-        try { _audioOut.Start(synthOut); }
-        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException)
-        {
-            // No output device: the app still works for reading and exports.
-        }
+        _audioOut.Start(synthOut);
 
         var original = new MediaPlayerOriginal(queue);
         var playerVm = new PlayerViewModel(player, announcer, Strings, ui);

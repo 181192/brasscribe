@@ -138,6 +138,12 @@ class KtorEngineApi(
     override suspend fun jobs(): List<Job> = http.get("v1/jobs") { auth() }.ok().body()
     override suspend fun cancel(jobId: String): Job = http.delete("v1/jobs/$jobId") { auth() }.ok().body()
 
+    /**
+     * The job's events as they happen. A lost stream is opened again after the last event seen; when it
+     * ends without the job's last event, the job's status says whether it is done. Losing the engine
+     * there counts as a lost stream too: after [MAX_RECONNECTS] in a row (with a growing pause between
+     * them) the flow fails. An answer from the engine that is an error ends it at once.
+     */
     override fun events(jobId: String, after: Int): Flow<JobEvent> = flow {
         var last = after
         var failures = 0
@@ -161,23 +167,29 @@ class KtorEngineApi(
                         val event = BrasscribeJson.decodeFromString(JobEvent.serializer(), message.data)
                         last = event.id
                         failures = 0
-                        emit(event)
+                        // What the collector throws is its own: it is not a lost stream.
+                        try { emit(event) } catch (t: Throwable) { throw Downstream(t) }
                         if (event.type == "job" && event.status in TERMINAL) terminal = true
                     }
                 }
+                // The stream ended without a terminal event: the engine closes it once the job is done.
+                if (!terminal && job(jobId).status.terminal) terminal = true
+            } catch (e: Downstream) {
+                throw e.cause!!
             } catch (e: CancellationException) {
                 throw e
             } catch (e: EngineException) {
-                throw e
+                if (e.status != 0) throw e
+                if (++failures > MAX_RECONNECTS) throw e
             } catch (e: Exception) {
                 if (++failures > MAX_RECONNECTS) throw EngineException(0, "event stream lost: ${e.message}")
             }
             if (terminal) return@flow
-            // The stream ended without a terminal event: the engine closes it once the job is done.
-            if (job(jobId).status.terminal) return@flow
-            delay(RECONNECT_MS)
+            delay(reconnectDelay(failures))
         }
     }
+
+    private class Downstream(cause: Throwable) : Exception(cause)
 
     override suspend fun composition(jobId: String): Composition =
         CompositionJson.decode(http.get("v1/jobs/$jobId/composition") { auth() }.ok().bodyAsText())
@@ -218,11 +230,16 @@ class KtorEngineApi(
         })
     }
 
-    private companion object {
+    internal companion object {
         val TERMINAL = setOf("succeeded", "failed", "cancelled")
         const val MAX_RECONNECTS = 5
         const val RECONNECT_MS = 1000L
+        const val MAX_RECONNECT_MS = 8_000L
         const val EVENTS_SOCKET_TIMEOUT_MS = 60_000L
+
+        /** 1 s after a stream that ended normally, then 1, 2, 4, 8 s after failures in a row. */
+        fun reconnectDelay(failures: Int): Long =
+            if (failures <= 1) RECONNECT_MS else minOf(MAX_RECONNECT_MS, RECONNECT_MS shl (failures - 1).coerceAtMost(10))
     }
 }
 

@@ -48,7 +48,7 @@ jobs:
         with:
           global-json-file: apps/windows/global.json
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('apps/windows/Directory.Packages.props', 'apps/windows/**/*.csproj') }}
@@ -204,7 +204,7 @@ jobs:
         with:
           files: brasscribe-band-mobile.sf2
 
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
         with:
           pixi-version: v0.81.0
           run-install: false
@@ -251,7 +251,7 @@ jobs:
         with:
           global-json-file: apps/bandroom/windows/global.json
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .nuget/packages
           key: nuget-bandroom-${{ runner.os }}-${{ hashFiles('apps/bandroom/windows/Directory.Packages.props', 'apps/bandroom/windows/**/*.csproj') }}
@@ -309,7 +309,7 @@ jobs:
 
       # The engine for real: the first run installs the engine environment from pixi.lock (no torch, about
       # 0.5 GB), Bandroom starts it in its job object, and the owner endpoints answer with the admin bearer.
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
         with:
           pixi-version: v0.81.0
           run-install: false

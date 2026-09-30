@@ -19,7 +19,9 @@ public sealed partial class ConnectionRow : UserControl
     {
         InitializeComponent();
         SizeChanged += (_, _) => Layout();
-        _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Layout);
+        // Sessions without these notifications (see ThemeController) keep the text size read at start.
+        try { _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Layout); }
+        catch (System.Runtime.InteropServices.COMException) { }
         Loaded += (_, _) => Layout();
     }
 

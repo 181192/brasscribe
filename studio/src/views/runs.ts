@@ -38,9 +38,19 @@ export function runsView(root: HTMLElement): void {
   let limit = PAGE; // 20 rows, then "Show more"
   const matches = (j: Job, f: Filter) => f === "all" || (f === "failed" ? j.status === "failed" || j.status === "cancelled" : j.status === "running" || j.status === "queued");
 
-  const renderChips = () => clear(chips, (["all", "failed", "running"] as Filter[]).map((f) =>
-    h("button", { type: "button", class: "chip", "aria-pressed": String(filter === f), onclick: () => { filter = f; limit = PAGE; renderList(); } },
-      t(`runs.filter.${f}`), h("span", { class: "count" }, String(jobs.filter((j) => matches(j, f)).length)))));
+  // The chips are made once and updated in place, so the one just pressed keeps focus.
+  const chipEls = (["all", "failed", "running"] as Filter[]).map((f) => {
+    const count = h("span", { class: "count" });
+    const b = h("button", { type: "button", class: "chip", onclick: () => { filter = f; limit = PAGE; renderList(); } }, t(`runs.filter.${f}`), count);
+    return { f, b, count };
+  });
+  clear(chips, chipEls.map((c) => c.b));
+  const renderChips = () => {
+    for (const { f, b, count } of chipEls) {
+      b.setAttribute("aria-pressed", String(filter === f));
+      count.textContent = String(jobs.filter((j) => matches(j, f)).length);
+    }
+  };
 
   const renderList = () => {
     renderChips();
@@ -48,7 +58,7 @@ export function runsView(root: HTMLElement): void {
       clear(listEl, h("div", { class: "empty" },
         h("p", {}, h("strong", {}, t("runs.none"))),
         h("p", { class: "hint" }, t("runs.noneBody")),
-        h("p", {}, h("a", { class: "button primary", href: `#/viewer?src=${encodeURIComponent(api.referenceFileUrl("mikkel-arranged-band", "brass-band.musicxml"))}&name=${encodeURIComponent("Mikkel")}` }, t("runs.demo")))));
+        h("p", {}, h("a", { class: "button primary", href: "#/viewer?example=old-hundredth" }, t("runs.demo")))));
       formEl.querySelector("button[type=submit]")?.classList.remove("primary");
       return;
     }

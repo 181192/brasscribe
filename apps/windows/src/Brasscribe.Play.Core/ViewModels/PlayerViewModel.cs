@@ -182,8 +182,11 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void SetLoop()
     {
-        int a = (int)Math.Clamp(Math.Round(LoopStart), 1, Math.Max(1, BarCount));
-        int b = (int)Math.Clamp(Math.Round(LoopEnd), 1, Math.Max(1, BarCount));
+        // A cleared bar box gives NaN: an empty start is the first bar, an empty end repeats just the start bar.
+        double start = double.IsFinite(LoopStart) ? LoopStart : 1;
+        double end = double.IsFinite(LoopEnd) ? LoopEnd : start;
+        int a = (int)Math.Clamp(Math.Round(start), 1, Math.Max(1, BarCount));
+        int b = (int)Math.Clamp(Math.Round(end), 1, Math.Max(1, BarCount));
         if (b < a) (a, b) = (b, a);
         LoopStart = a;
         LoopEnd = b;

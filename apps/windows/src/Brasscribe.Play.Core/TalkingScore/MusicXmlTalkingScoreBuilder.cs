@@ -83,13 +83,13 @@ public static class MusicXmlTalkingScoreBuilder
                     switch (el.Name.LocalName)
                     {
                         case "attributes":
-                            divisions = (int?)el.Element("divisions") ?? divisions;
-                            fifths = (int?)el.Element("key")?.Element("fifths") ?? fifths;
+                            divisions = Int(el.Element("divisions")) ?? divisions;
+                            fifths = Int(el.Element("key")?.Element("fifths")) ?? fifths;
                             if (el.Element("time") is { } t)
-                                time = new TsTime((int?)t.Element("beats") ?? 4, (int?)t.Element("beat-type") ?? 4);
+                                time = new TsTime(Int(t.Element("beats")) ?? 4, Int(t.Element("beat-type")) ?? 4);
                             if (el.Element("transpose") is { } tr)
-                                part.Transpose = new TsTranspose((int?)tr.Element("chromatic") ?? 0, (int?)tr.Element("diatonic") ?? 0,
-                                    (int?)tr.Element("octave-change") ?? 0);
+                                part.Transpose = new TsTranspose(Int(tr.Element("chromatic")) ?? 0, Int(tr.Element("diatonic")) ?? 0,
+                                    Int(tr.Element("octave-change")) ?? 0);
                             if ((string?)el.Element("clef")?.Element("sign") == "percussion") part.Percussion = true;
                             break;
                         case "direction":
@@ -101,24 +101,26 @@ public static class MusicXmlTalkingScoreBuilder
                                 pendingDynamic = dyn.Name.LocalName;
                             break;
                         case "backup":
-                            offset -= (long?)el.Element("duration") ?? 0;
+                            offset -= Long(el.Element("duration")) ?? 0;
                             break;
                         case "forward":
-                            offset += (long?)el.Element("duration") ?? 0;
+                            offset += Long(el.Element("duration")) ?? 0;
                             measureLength = Math.Max(measureLength, offset);
                             break;
                         case "note":
                         {
-                            long dur = (long?)el.Element("duration") ?? 0;
+                            long dur = Long(el.Element("duration")) ?? 0;
                             bool chord = el.Element("chord") is not null;
                             bool grace = el.Element("grace") is not null;
                             bool cue = el.Element("cue") is not null;
                             int noteIndex = musicXmlNoteIndex;
                             if (!grace && !cue) musicXmlNoteIndex++;
                             string voice = (string?)el.Element("voice") ?? "1";
-                            if (chord && last is not null)
+                            if (chord)
                             {
-                                AddChordTone(last, el, part);
+                                // A chord tone sounds with the note before it and takes no time of its own; the tones
+                                // of a grace, cue or other-voice chord are not read out.
+                                if (last is not null) AddChordTone(last, el, part);
                                 continue;
                             }
                             long start = offset;
@@ -126,7 +128,7 @@ public static class MusicXmlTalkingScoreBuilder
                             measureLength = Math.Max(measureLength, offset);
                             if (grace || cue || voice != "1")
                             {
-                                if (voice != "1") last = null;
+                                last = null;
                                 continue;
                             }
 
@@ -234,6 +236,17 @@ public static class MusicXmlTalkingScoreBuilder
         public int ChainCount { get; set; } = 1;
     }
 
+    /// <summary>
+    /// A number in the score. MusicXML allows decimals in &lt;duration&gt; and &lt;alter&gt; ("1.0", "-1.0"),
+    /// which some programs write; they are rounded. Anything unreadable counts as missing.
+    /// </summary>
+    private static long? Long(XElement? e) =>
+        e is not null && double.TryParse(e.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v)
+            ? (long)Math.Round(v, MidpointRounding.AwayFromZero)
+            : null;
+
+    private static int? Int(XElement? e) => Long(e) is { } v ? (int)Math.Clamp(v, int.MinValue, int.MaxValue) : null;
+
     private static bool HasTie(XElement note, string type) =>
         note.Elements("tie").Any(t => (string?)t.Attribute("type") == type)
         || note.Element("notations")?.Elements("tied").Any(t => (string?)t.Attribute("type") == type) == true;
@@ -265,7 +278,7 @@ public static class MusicXmlTalkingScoreBuilder
 
         if (el.Element("time-modification") is { } tm)
         {
-            int actual = (int?)tm.Element("actual-notes") ?? 3, normal = (int?)tm.Element("normal-notes") ?? 2;
+            int actual = Int(tm.Element("actual-notes")) ?? 3, normal = Int(tm.Element("normal-notes")) ?? 2;
             ev.Tuplet = new TsTuplet(actual, normal, tupletCount % actual + 1);
             tupletCount++;
         }
@@ -287,7 +300,7 @@ public static class MusicXmlTalkingScoreBuilder
         if (el.Element("unpitched") is { } up)
         {
             ev.Kind = EventKind.Unpitched;
-            var (en, nb) = PartNames.Drum((string?)up.Element("display-step") ?? "C", (int?)up.Element("display-octave") ?? 5,
+            var (en, nb) = PartNames.Drum((string?)up.Element("display-step") ?? "C", Int(up.Element("display-octave")) ?? 5,
                 (string?)el.Element("notehead"));
             ev.Instruments = [en];
             ev.InstrumentsNb = [nb];
@@ -295,7 +308,7 @@ public static class MusicXmlTalkingScoreBuilder
         }
 
         if (el.Element("pitch") is not { } p) return null;
-        var written = new TsPitch((string?)p.Element("step") ?? "C", (int?)p.Element("alter") ?? 0, (int?)p.Element("octave") ?? 4);
+        var written = new TsPitch((string?)p.Element("step") ?? "C", Int(p.Element("alter")) ?? 0, Int(p.Element("octave")) ?? 4);
         ev.Kind = EventKind.Note;
         ev.Written = written;
         ev.Concert = part.Percussion ? written : ToConcert(written, part.Transpose);
@@ -307,14 +320,14 @@ public static class MusicXmlTalkingScoreBuilder
     {
         if (el.Element("unpitched") is { } up)
         {
-            var (en, nb) = PartNames.Drum((string?)up.Element("display-step") ?? "C", (int?)up.Element("display-octave") ?? 5,
+            var (en, nb) = PartNames.Drum((string?)up.Element("display-step") ?? "C", Int(up.Element("display-octave")) ?? 5,
                 (string?)el.Element("notehead"));
             if (head.Instruments is not null && !head.Instruments.Contains(en)) head.Instruments.Add(en);
             if (head.InstrumentsNb is not null && !head.InstrumentsNb.Contains(nb)) head.InstrumentsNb.Add(nb);
             return;
         }
         if (el.Element("pitch") is not { } p || head.Written is null) return;
-        var written = new TsPitch((string?)p.Element("step") ?? "C", (int?)p.Element("alter") ?? 0, (int?)p.Element("octave") ?? 4);
+        var written = new TsPitch((string?)p.Element("step") ?? "C", Int(p.Element("alter")) ?? 0, Int(p.Element("octave")) ?? 4);
         if (head.Kind == EventKind.Note)
         {
             head.Kind = EventKind.Chord;

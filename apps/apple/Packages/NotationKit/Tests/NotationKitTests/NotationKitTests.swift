@@ -121,3 +121,17 @@ private func oldHundredth() -> String? {
     #expect(ScoreRenderer.breakingSystems(every: 2, in: #"<part id="P1"><measure number="1"></measure><measure number="2"><print new-page="yes"/></measure><measure number="3"></measure></part>"#)
         == #"<part id="P1"><measure number="1"></measure><measure number="2"><print/></measure><measure number="3"><print new-system="yes"/></measure></part>"#)
 }
+
+/// `<part-symbol>`, `<part-clef>` and `<part-list>` are not parts: the bar count runs on through them.
+@Test func systemBreaksCountBarsAcrossPartLikeElements() {
+    let xml = """
+    <score-partwise><part-list><score-part id="P1"/></part-list><part id="P1">\
+    <measure number="1"><attributes><part-symbol>brace</part-symbol><staves>2</staves></attributes></measure>\
+    <measure number="2"><attributes><part-clef><sign>F</sign></part-clef></attributes></measure>\
+    <measure number="3"></measure><measure number="4"></measure><measure number="5"></measure></part>\
+    <part id="P2"><measure number="1"></measure><measure number="2"></measure><measure number="3"></measure></part></score-partwise>
+    """
+    let out = ScoreRenderer.breakingSystems(every: 2, in: xml)
+    let marked = out.components(separatedBy: "<measure ").dropFirst().map { $0.contains(#"<print new-system="yes"/>"#) }
+    #expect(marked == [false, false, true, false, true, false, false, true])
+}

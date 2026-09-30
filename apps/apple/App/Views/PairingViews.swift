@@ -16,6 +16,8 @@ struct YourComputerSection: View {
     @State private var approval: Approval?
     @State private var scanning = false
     @State private var confirmForget = false
+    /// A pairing link opened from outside the app, waiting for the player to say yes.
+    @State private var confirmLink: PairingLink?
 
     /// Waiting for the computer to allow this device.
     struct Approval: Equatable {
@@ -69,9 +71,18 @@ struct YourComputerSection: View {
         .onDisappear { browser.stop() }
         .onChange(of: showPairing) { _, show in if show { browser.start() } else { browser.stop() } }
         .task(id: app.pendingLink) {
+            // a link from outside the app (the camera, another app, a web page) pairs only when the player says so
             guard let link = app.pendingLink else { return }
             app.pendingLink = nil
-            await pair(link)
+            confirmLink = link
+        }
+        .alert(Text(confirmLink.map(confirmTitle) ?? ""),
+               isPresented: Binding(get: { confirmLink != nil }, set: { if !$0 { confirmLink = nil } }),
+               presenting: confirmLink) { link in
+            Button("Pair") { Task { await pair(link) } }
+            Button("Cancel", role: .cancel) {}
+        } message: { link in
+            Text(confirmMessage(link))
         }
         .confirmationDialog(Text("Forget this computer?"), isPresented: $confirmForget) {
             Button("Forget", role: .destructive) { Task { await forget() } }
@@ -251,6 +262,18 @@ struct YourComputerSection: View {
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }
+    }
+
+    private func confirmTitle(_ link: PairingLink) -> String {
+        String(localized: "Pair with \(ConnectionCopy.name(link.serverName)) at \(link.displayHost)?")
+    }
+
+    /// Says when the link would take the place of the computer this device is paired with.
+    private func confirmMessage(_ link: PairingLink) -> String {
+        if let current = app.connection.record, current.token != nil, current.serverID != link.serverID {
+            return String(localized: "This device is paired with \(ConnectionCopy.name(current.serverName)). If you pair with \(ConnectionCopy.name(link.serverName)), this device uses it instead.")
+        }
+        return String(localized: "Only pair with a computer you know. The recordings you send go to it.")
     }
 
     private func paired(name: String) {

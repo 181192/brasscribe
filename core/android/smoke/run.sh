@@ -10,5 +10,8 @@ if [ -z "$jna" ]; then
 fi
 out=target/kotlin-smoke
 mkdir -p "$out"
-kotlinc -cp "$jna" bindings/kotlin/uniffi/brasscribe_ffi/brasscribe_ffi.kt android/smoke/Smoke.kt -include-runtime -d "$out/smoke.jar" 2>&1 | grep -v "^warning" || true
+# A failed compile stops here (pipefail) rather than running the jar of an earlier run.
+rm -f "$out/smoke.jar"
+kotlinc -cp "$jna" bindings/kotlin/uniffi/brasscribe_ffi/brasscribe_ffi.kt android/smoke/Smoke.kt -include-runtime -d "$out/smoke.jar" 2>&1 \
+  | sed '/^warning/d'
 java --enable-native-access=ALL-UNNAMED -Djna.library.path=dist/macos -cp "$out/smoke.jar:$jna" SmokeKt

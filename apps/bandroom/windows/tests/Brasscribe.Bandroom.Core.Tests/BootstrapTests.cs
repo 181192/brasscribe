@@ -208,6 +208,34 @@ public sealed class BootstrapTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Progress_says_when_the_engine_can_start_so_the_handler_never_hashes()
+    {
+        var paths = new BandroomPaths(Path.Combine(_dir, "data"));
+        var boot = new Bootstrapper(paths, Bundle(), "pixi", new FakeLauncher { ExitImmediately = _ => 0 }, new EngineLog(null));
+        var progress = new List<BootstrapProgress>();
+        await boot.RunAsync(false, new SyncProgress(progress), CancellationToken.None);
+        Assert.Equal(["workspace", "default", "swift-f0", "basic-pitch", "beat-this", "separator", "muscriptor", "mega53", "panns", ""],
+            progress.Select(p => p.Environment));
+        // Not while the workspace is copied or the engine environment installs; from the first adapter on.
+        Assert.Equal([false, false, true, true, true, true, true, true, true, true], progress.Select(p => p.EngineCurrent));
+    }
+
+    [Fact]
+    public async Task Resuming_the_adapters_can_start_the_engine_at_once()
+    {
+        var paths = new BandroomPaths(Path.Combine(_dir, "data"));
+        var launcher = new FakeLauncher();
+        int calls = 0;
+        launcher.ExitImmediately = _ => ++calls == 3 ? 1 : 0; // basic-pitch fails once
+        var boot = new Bootstrapper(paths, Bundle(), "pixi", launcher, new EngineLog(null));
+        await Assert.ThrowsAsync<BootstrapException>(() => boot.RunAsync(false, null, CancellationToken.None));
+        var progress = new List<BootstrapProgress>();
+        await boot.RunAsync(false, new SyncProgress(progress), CancellationToken.None);
+        Assert.Equal("basic-pitch", progress[0].Environment);
+        Assert.All(progress, p => Assert.True(p.EngineCurrent));
+    }
+
     private sealed class SyncProgress(List<BootstrapProgress> list) : IProgress<BootstrapProgress>
     {
         public void Report(BootstrapProgress value) => list.Add(value);

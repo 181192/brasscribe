@@ -73,6 +73,7 @@ public sealed class ExportService
             case ExportFormat.MusicXmlPart:
             {
                 var parts = MusicXmlParts.List(s.MusicXml!);
+                if (parts.Count == 0) throw new InvalidOperationException(ReasonNoScore);
                 int i = Math.Clamp(partIndex ?? 0, 0, parts.Count - 1);
                 await WriteText(destination, MusicXmlParts.Extract(s.MusicXml!, parts[i].Id), ct);
                 break;
@@ -89,6 +90,7 @@ public sealed class ExportService
             case ExportFormat.PdfPart:
             {
                 var pdfs = PartPdfs(s);
+                if (pdfs.Count == 0) throw new InvalidOperationException(ReasonNeedsEngine);
                 string name = pdfs[Math.Clamp(partIndex ?? 0, 0, pdfs.Count - 1)];
                 await using var src = await s.Engine!.GetArtifactAsync(s.JobId!, name, ct);
                 await src.CopyToAsync(destination, ct);

@@ -20,7 +20,9 @@ public sealed partial class MusicStandLayer : UserControl
         InitializeComponent();
         SizeChanged += (_, _) => Arrange();
         Card.SizeChanged += (_, _) => ObscuredChanged?.Invoke(this, EventArgs.Empty);
-        _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Arrange);
+        // Sessions without these notifications (see ThemeController) keep the text size read at start.
+        try { _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Arrange); }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 
     public ScoreViewModel? Score { get; private set; }

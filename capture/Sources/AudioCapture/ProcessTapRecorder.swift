@@ -54,10 +54,17 @@ public final class ProcessTapRecorder: @unchecked Sendable {
     private let queue = DispatchQueue(label: "brasscribe.capture")
     private var framesWritten: AVAudioFramePosition = 0
     private var peakValue: Float = 0
+    private var writeError: Error?
     private var running = false
+    private var outputDevice = AudioObjectID(kAudioObjectUnknown)
+    private var aliveListener: AudioObjectPropertyListenerBlock?
+    private var lost = false
 
     /// Latest peak level (0...1) since start; safe to poll from the UI for a meter.
     public var currentPeak: Float { queue.sync { peakValue } }
+    /// The output device the recording is clocked by went away (unplugged, or turned off): nothing more
+    /// arrives, so the caller should `stop()` and keep what was recorded.
+    public var outputLost: Bool { queue.sync { lost } }
     public var elapsedSeconds: Double { queue.sync { sampleRate > 0 ? Double(framesWritten) / sampleRate : 0 } }
 
     public init(source: CaptureSource, outputURL: URL) {
@@ -84,10 +91,17 @@ public final class ProcessTapRecorder: @unchecked Sendable {
         desc.muteBehavior = .unmuted
 
         try check(AudioHardwareCreateProcessTap(desc, &tapID), "AudioHardwareCreateProcessTap")
-        let tapUID: CFString = try getProperty(tapID, kAudioTapPropertyUID, "" as CFString)
-        var asbd: AudioStreamBasicDescription = try getProperty(tapID, kAudioTapPropertyFormat, AudioStreamBasicDescription())
-
-        let outputUID = try Self.defaultOutputDeviceUID()
+        let tapUID: String
+        var asbd: AudioStreamBasicDescription
+        let output: AudioDeviceID, outputUID: String
+        do {
+            tapUID = try getString(tapID, kAudioTapPropertyUID)
+            asbd = try getProperty(tapID, kAudioTapPropertyFormat, AudioStreamBasicDescription())
+            (output, outputUID) = try Self.defaultOutputDevice()
+        } catch {
+            destroyDevices()
+            throw error
+        }
         let aggDesc: [String: Any] = [
             kAudioAggregateDeviceNameKey: "brasscribe-aggregate",
             kAudioAggregateDeviceUIDKey: "brasscribe-aggregate-\(UUID().uuidString)",
@@ -97,7 +111,7 @@ public final class ProcessTapRecorder: @unchecked Sendable {
             kAudioAggregateDeviceTapAutoStartKey: true,
             kAudioAggregateDeviceSubDeviceListKey: [[kAudioSubDeviceUIDKey: outputUID]],
             kAudioAggregateDeviceTapListKey: [[kAudioSubTapDriftCompensationKey: true,
-                                               kAudioSubTapUIDKey: tapUID as String]],
+                                               kAudioSubTapUIDKey: tapUID]],
         ]
         do {
             try check(AudioHardwareCreateAggregateDevice(aggDesc as CFDictionary, &aggID), "AudioHardwareCreateAggregateDevice")
@@ -117,17 +131,27 @@ public final class ProcessTapRecorder: @unchecked Sendable {
             self.file = file
             framesWritten = 0
             peakValue = 0
+            writeError = nil
+            lost = false
             try check(AudioDeviceCreateIOProcIDWithBlock(&procID, aggID, queue) { [unowned self] _, inInputData, _, _, _ in
-                guard let buf = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: inInputData, deallocator: nil) else { return }
+                guard self.writeError == nil,
+                      let buf = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: inInputData, deallocator: nil) else { return }
                 if let ch = buf.floatChannelData {
+                    // interleaved: every sample is in the one buffer; otherwise one buffer per channel
+                    let buffers = format.isInterleaved ? 1 : Int(format.channelCount)
                     let n = Int(buf.frameLength) * (format.isInterleaved ? Int(format.channelCount) : 1)
                     var p = self.peakValue
-                    for i in 0..<n { p = max(p, abs(ch[0][i])) }
+                    for c in 0..<buffers { for i in 0..<n { p = max(p, abs(ch[c][i])) } }
                     self.peakValue = p
                 }
-                try? file.write(from: buf)
+                do { try file.write(from: buf) } catch {
+                    // the disk is full or the file went away: keep what is there and say so at stop()
+                    self.writeError = error
+                    return
+                }
                 self.framesWritten += AVAudioFramePosition(buf.frameLength)
             }, "AudioDeviceCreateIOProcIDWithBlock")
+            try watchOutput(output)
             try check(AudioDeviceStart(aggID, procID), "AudioDeviceStart")
             running = true
         } catch {
@@ -145,11 +169,35 @@ public final class ProcessTapRecorder: @unchecked Sendable {
         file?.close()
         file = nil
         running = false
-        let (frames, peak) = queue.sync { (framesWritten, peakValue) }
+        let (frames, peak, failed) = queue.sync { (framesWritten, peakValue, writeError) }
+        if let failed { throw CaptureError("writing the recording: \(failed.localizedDescription)") }
         return Result(url: outputURL, seconds: sampleRate > 0 ? Double(frames) / sampleRate : 0, peak: peak)
     }
 
+    /// Notes when the output device the aggregate device runs on stops being alive.
+    private func watchOutput(_ device: AudioDeviceID) throws {
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsAlive,
+                                              mScope: kAudioObjectPropertyScopeGlobal,
+                                              mElement: kAudioObjectPropertyElementMain)
+        let listener: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            guard let self else { return }
+            let alive: UInt32 = (try? getProperty(device, kAudioDevicePropertyDeviceIsAlive, UInt32(1))) ?? 0
+            if alive == 0 { self.lost = true }
+        }
+        try check(AudioObjectAddPropertyListenerBlock(device, &addr, queue, listener), "watch the output device")
+        outputDevice = device
+        aliveListener = listener
+    }
+
     private func destroyDevices() {
+        if let listener = aliveListener, outputDevice != kAudioObjectUnknown {
+            var addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsAlive,
+                                                  mScope: kAudioObjectPropertyScopeGlobal,
+                                                  mElement: kAudioObjectPropertyElementMain)
+            AudioObjectRemovePropertyListenerBlock(outputDevice, &addr, queue, listener)
+        }
+        aliveListener = nil
+        outputDevice = AudioObjectID(kAudioObjectUnknown)
         if let procID, aggID != kAudioObjectUnknown { AudioDeviceDestroyIOProcID(aggID, procID) }
         procID = nil
         if aggID != kAudioObjectUnknown { AudioHardwareDestroyAggregateDevice(aggID) }
@@ -160,11 +208,12 @@ public final class ProcessTapRecorder: @unchecked Sendable {
 
     // MARK: device and process queries
 
-    public static func defaultOutputDeviceUID() throws -> String {
+    public static func defaultOutputDeviceUID() throws -> String { try defaultOutputDevice().uid }
+
+    static func defaultOutputDevice() throws -> (id: AudioDeviceID, uid: String) {
         let dev: AudioDeviceID = try getProperty(AudioObjectID(kAudioObjectSystemObject),
                                                  kAudioHardwarePropertyDefaultSystemOutputDevice, AudioDeviceID(0))
-        let uid: CFString = try getProperty(dev, kAudioDevicePropertyDeviceUID, "" as CFString)
-        return uid as String
+        return (dev, try getString(dev, kAudioDevicePropertyDeviceUID))
     }
 
     /// Apps that have registered with the audio server, playing ones first.
@@ -178,11 +227,10 @@ public final class ProcessTapRecorder: @unchecked Sendable {
         guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &ids) == noErr else { return [] }
         var apps: [String: AudioApp] = [:]
         for id in ids {
-            guard let bundle: CFString = try? getProperty(id, kAudioProcessPropertyBundleID, "" as CFString),
-                  !(bundle as String).isEmpty else { continue }
+            guard let bundle = try? getString(id, kAudioProcessPropertyBundleID), !bundle.isEmpty else { continue }
             let pid: pid_t = (try? getProperty(id, kAudioProcessPropertyPID, pid_t(0))) ?? 0
             let out: UInt32 = (try? getProperty(id, kAudioProcessPropertyIsRunningOutput, UInt32(0))) ?? 0
-            let app = AudioApp(bundleID: bundle as String, pid: pid, isPlaying: out != 0)
+            let app = AudioApp(bundleID: bundle, pid: pid, isPlaying: out != 0)
             if let existing = apps[app.bundleID], existing.isPlaying { continue }
             apps[app.bundleID] = app
         }
@@ -202,4 +250,17 @@ private func getProperty<T>(_ obj: AudioObjectID, _ selector: AudioObjectPropert
     var size = UInt32(MemoryLayout<T>.size)
     try check(AudioObjectGetPropertyData(obj, &addr, 0, nil, &size, &value), "get property \(selector)")
     return value
+}
+
+/// A CFString property. Core Audio hands it over retained (+1), so it is taken, not borrowed.
+private func getString(_ obj: AudioObjectID, _ selector: AudioObjectPropertySelector) throws -> String {
+    var addr = AudioObjectPropertyAddress(mSelector: selector,
+                                          mScope: kAudioObjectPropertyScopeGlobal,
+                                          mElement: kAudioObjectPropertyElementMain)
+    var value: Unmanaged<CFString>?
+    var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+    try check(withUnsafeMutablePointer(to: &value) { AudioObjectGetPropertyData(obj, &addr, 0, nil, &size, $0) },
+              "get property \(selector)")
+    guard let value else { throw CaptureError("get property \(selector): empty") }
+    return value.takeRetainedValue() as String
 }
