@@ -196,6 +196,8 @@ final class AppModel {
 
     func quit() {
         monitor.stop()
+        bootstrapper.cancel()
+        updater.cancel()
         supervisor.shutdown()
         releaseSleep()
     }
@@ -452,6 +454,8 @@ final class AppModel {
         logger.write("removing Brasscribe from this Mac (delete downloads: \(deleteDownloads))")
         if demo { NSApp.terminate(nil); return }
         monitor.stop()
+        bootstrapper.cancel()
+        updater.cancel()
         supervisor.shutdown()
         releaseSleep()
         try? SMAppService.mainApp.unregister()

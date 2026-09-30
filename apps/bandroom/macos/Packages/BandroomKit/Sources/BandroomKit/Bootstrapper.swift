@@ -21,6 +21,8 @@ public final class Bootstrapper {
     public private(set) var isUpdate = false
 
     @ObservationIgnored private let launcher: ProcessLauncher
+    /// The `pixi install` under way. It runs in its own process group, so quitting Bandroom doesn't stop it.
+    @ObservationIgnored private var installPid: Int32?
 
     public init(launcher: ProcessLauncher = PosixLauncher()) {
         self.launcher = launcher
@@ -101,15 +103,23 @@ public final class Bootstrapper {
         }
     }
 
+    /// Stops a `pixi install` under way (quitting, removing Brasscribe); the run then fails.
+    public func cancel(grace: TimeInterval = 5) {
+        guard let pid = installPid else { return }
+        installPid = nil
+        launcher.terminate(pid: pid, grace: grace)
+    }
+
     private func install(_ configuration: EngineConfiguration, base: [String: String]) async throws -> (status: Int32, log: URL) {
         let plan = try configuration.installPlan(base: base)
         let status: Int32 = try await withCheckedThrowingContinuation { cont in
             do {
-                _ = try launcher.launch(plan) { cont.resume(returning: $0) }
+                installPid = try launcher.launch(plan) { cont.resume(returning: $0) }
             } catch {
                 cont.resume(throwing: error)
             }
         }
+        installPid = nil
         return (status, plan.log)
     }
 }
