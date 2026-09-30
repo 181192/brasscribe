@@ -16,11 +16,15 @@ tools/CodeBehindCheck/               type-checks the app's C# without the XAML c
 tools/check-macos.sh                 everything that builds off Windows
 ```
 
-## Not on Windows yet
+## Not released yet
 
-The music stand, the Appearance setting (dark, high contrast) and "What do you play?" are in the
-Mac and Android apps but not in this one yet: they wait for a test run on a Windows machine. For the
-same reason no release has a Windows download.
+The music stand, the Appearance setting (dark, Pink, high contrast) and "What do you play?" are built
+and screenshot in the Windows VM ([docs/dev/windows-vm.md](../../docs/dev/windows-vm.md)), but no
+release has a Windows download until [the Windows checklist](../../docs/dev/windows-checklist.md) has
+passed on a real PC. Some screens from the VM are in [docs/screenshots](docs/screenshots).
+
+Only x64 is built for release. An ARM64 build starts but can't draw scores: `AlphaSkia.Native.Windows`
+has no win-arm64 library.
 
 ## Prerequisites
 
@@ -97,6 +101,6 @@ The full Windows build, the start-up smoke test and the Axe.Windows scan run in
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows (CI) |
+| `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows: `scripts/win-vm.sh test` and `shots` (CI runs the same smoke tests) |
 
 See [docs/dev/verify.md](../../docs/dev/verify.md).
